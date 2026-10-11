@@ -9,14 +9,16 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/version.ts` reads the version from `package.json`.
 - `src/commands/` holds one file for each command. `src/commands/index.ts` lists them.
 - `src/config/` holds the configuration loader. `path.ts` finds the file, `expand.ts` expands paths, `allowed-env-names.ts` holds the default env allowlist, `schema.ts` validates the file, and `load.ts` reads it.
-- `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, and `store.ts` opens the database and reads and writes tasks and events.
+- `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, `transaction.ts` holds `immediateTransaction()`, the shared helper that runs each write and each migration in one `BEGIN IMMEDIATE` transaction, and `store.ts` opens the database and reads and writes tasks and events.
 - `src/issue-key/` holds the issue key parsers. `ref.ts` holds the `IssueRef` type and `IssueKeyError`, `path-slug.ts` makes a string safe for a file path and a git branch name, `github.ts` parses a GitHub key, and `jira.ts` parses a Jira key. The caller selects the parser and passes the repo key.
+- `src/state/` holds the state machine. `machine.ts` declares the task states and the legal edges, and checks a change of state.
 - `docs/config.md` is the configuration reference.
 - `docs/dev/data-root.md` describes the folders under `dataRoot` and the tables of the database.
+- `docs/statemachine.md` describes the task states, the edges between them and the diagrams.
 - `skills/tasker/SKILL.md` is the skill that tells an agent how to use tasker. It lists each command and its options.
 - `test/` holds the tests.
 - `test/fixtures/` holds scripts that tests spawn as child processes.
-- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command, `validConfig()`, which returns a new valid configuration object for each call, `makeTempDir()`, which makes a new temporary folder for each call, `repoRoot`, the repo root URL that spawn tests use as `cwd`, and `writeTempConfig()`, which writes a configuration to `config.json` in a new temp dir.
+- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command, `validConfig()`, which returns a new valid configuration object for each call, `makeTempDir()`, which makes a new temporary folder for each call, `repoRoot`, the repo root URL that spawn tests use as `cwd`, `writeTempConfig()`, which writes a configuration to `config.json` in a new temp dir, and `tableNames()`, which lists the table names of a database.
 - `dist/` holds the build output. Git ignores it.
 
 ## Add a command
