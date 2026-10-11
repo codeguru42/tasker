@@ -1,4 +1,4 @@
-// A child process for the runGit quiet test. It calls runGit and prints nothing itself.
+// A child process for the runGit quiet test. It calls runGit and prints nothing unless a call goes wrong.
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { GitError, runGit } from "../../src/vcs/git/run.js";
@@ -26,7 +26,7 @@ try {
   await runGit(["clone", source, join(dir, "copy")], { cwd: dir, env });
   // A failing git must not write to the terminal either.
   await expectGitError(
-    runGit(["rev-parse", "HEAD"], { cwd: join(dir, "copy", "nothing-here"), env }),
+    runGit(["rev-parse", "--verify", "no-such-ref"], { cwd: join(dir, "copy"), env }),
   );
   await expectGitError(runGit(["checkout", "no-such-branch"], { cwd: source, env }));
 } catch (error) {

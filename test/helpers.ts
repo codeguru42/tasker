@@ -80,7 +80,7 @@ export function writeTempConfig(raw: unknown): { dir: string; path: string } {
 export const GIT_TEST_IDENTITY = { name: "Tasker Test", email: "tasker-test@example.com" };
 
 // The env for a git child process. home is a temp folder that stands in for $HOME.
-// It reads no git configuration of the host and never asks the terminal.
+// It reads no git configuration of the host and sets GIT_TERMINAL_PROMPT=0.
 export function gitTestEnv(home: string): NodeJS.ProcessEnv {
   return {
     PATH: process.env.PATH,
