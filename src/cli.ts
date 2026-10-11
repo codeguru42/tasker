@@ -27,6 +27,7 @@ export function buildProgram(commands: readonly RegisterCommand[], io: Io): Comm
     .exitOverride()
     .showHelpAfterError("(run 'tasker --help' for usage)")
     .allowExcessArguments(true)
+    .usage("[options] [command]")
     .argument("[operands...]")
     .action((operands: string[]) => {
       const [name] = operands;
