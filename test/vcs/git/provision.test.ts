@@ -144,6 +144,15 @@ describe("provisionClone", () => {
     }
   }
 
+  it("leaves only the tasker fetch refspec on a complete clone", async () => {
+    await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+    await addLines("remote.origin.fetch", ["+refs/tags/*:refs/tags/*"]);
+    await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+    expect(await localConfigAll("remote.origin.fetch")).toEqual([
+      "+refs/heads/*:refs/remotes/origin/*",
+    ]);
+  });
+
   describe("identity and signing", () => {
     it("removes every user.email line when authorEmail is not set", async () => {
       await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
