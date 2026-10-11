@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import { rollbackQuietly } from "./transaction.js";
+import { immediateTransaction } from "./transaction.js";
 
 export function schemaVersion(db: DatabaseSync): number {
   const row = db.prepare("PRAGMA user_version").get() as { user_version: number };
@@ -8,8 +8,7 @@ export function schemaVersion(db: DatabaseSync): number {
 
 // Version N means that the first N migrations ran.
 export function migrate(db: DatabaseSync, migrations: readonly string[]): void {
-  db.exec("BEGIN IMMEDIATE");
-  try {
+  immediateTransaction(db, () => {
     const found = schemaVersion(db);
     if (found > migrations.length) {
       throw new Error(
@@ -20,9 +19,5 @@ export function migrate(db: DatabaseSync, migrations: readonly string[]): void {
       db.exec(migrations[i]);
       db.exec(`PRAGMA user_version = ${i + 1}`);
     }
-    db.exec("COMMIT");
-  } catch (error) {
-    rollbackQuietly(db);
-    throw error;
-  }
+  });
 }
