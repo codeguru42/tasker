@@ -327,6 +327,74 @@ describe("parseConfig assistant", () => {
   });
 });
 
+function parsedVcs(raw: unknown): unknown {
+  return (parseConfig(raw, {}, home).repos.tasker as Record<string, unknown>).vcs;
+}
+
+describe("parseConfig vcs", () => {
+  it("defaults to git with an empty config when vcs is missing", () => {
+    expect(parsedVcs(validConfig())).toEqual({ provider: "git", config: {} });
+  });
+
+  it("defaults the provider to git when vcs is empty", () => {
+    const raw = validConfig();
+    raw.repos.tasker.vcs = {};
+    expect(parsedVcs(raw)).toEqual({ provider: "git", config: {} });
+  });
+
+  it("keeps the git config", () => {
+    const raw = validConfig();
+    const config = {
+      authorName: "Tasker",
+      authorEmail: "tasker@example.com",
+      sshKey: "~/.ssh/tasker",
+    };
+    raw.repos.tasker.vcs = { provider: "git", config };
+    expect(parsedVcs(raw)).toEqual({ provider: "git", config });
+  });
+
+  it("rejects a provider other than git", () => {
+    const raw = validConfig();
+    raw.repos.tasker.vcs = { provider: "hg" };
+    expectIssueAt(issuesOf(raw), "repos.tasker.vcs.provider");
+  });
+
+  it("rejects an unknown key in the git config", () => {
+    const raw = validConfig();
+    raw.repos.tasker.vcs = { config: { authorname: "Tasker" } };
+    expect(issuesOf(raw)).toContain("repos.tasker.vcs.config.authorname: unrecognized key");
+  });
+
+  it("rejects a git key next to provider", () => {
+    const raw = validConfig();
+    raw.repos.tasker.vcs = { provider: "git", sshKey: "~/.ssh/id" };
+    expect(issuesOf(raw)).toContain("repos.tasker.vcs.sshKey: unrecognized key");
+  });
+
+  it.each(["authorName", "authorEmail", "sshKey"])("rejects an empty %s", (key) => {
+    const raw = validConfig();
+    raw.repos.tasker.vcs = { config: { [key]: "" } };
+    expectIssueAt(issuesOf(raw), `repos.tasker.vcs.config.${key}`);
+  });
+
+  it("rejects a vcs given as a bare string", () => {
+    const raw = validConfig();
+    raw.repos.tasker.vcs = "git";
+    const issues = issuesOf(raw);
+    expect(issues).not.toContain("repos.tasker.vcs: unrecognized key");
+    expectIssueAt(issues, "repos.tasker.vcs");
+  });
+
+  it("reports a bad provider together with the other errors of the repo", () => {
+    const raw = validConfig();
+    raw.repos.tasker.vcs = { provider: "hg" };
+    raw.repos.tasker.verify.commands = [];
+    const issues = issuesOf(raw);
+    expectIssueAt(issues, "repos.tasker.vcs.provider");
+    expectIssueAt(issues, "repos.tasker.verify.commands");
+  });
+});
+
 describe.each(["verify", "bootstrap"])("parseConfig %s.env", (phase) => {
   const at = `repos.tasker.${phase}.env.0`;
 
