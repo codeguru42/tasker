@@ -2,7 +2,7 @@
 
 Each task is in one state. An edge is a permitted change from one state to another.
 
-The edges come from the tasker spec (`statemachine.md`). The spec counts 29 states. This module declares 28, because it drops `awaiting_input`. The module does not declare `awaiting_input`.
+The module declares 28 states. It does not declare `awaiting_input`.
 
 The code is in `src/state/machine.ts`. No command uses the module yet. Later commands will use it to check their starting state.
 
