@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { delimiter, join, parse, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
@@ -17,11 +17,13 @@ describe("provisionClone", () => {
   let origin: GitOrigin;
   let tmp: string;
   let clone: string;
+  let tokens: string;
 
   beforeEach(async () => {
     origin = await makeGitOrigin();
     tmp = makeTempDir("tasker-provision-");
     clone = join(tmp, "data", "clones", "x", "repo.git");
+    tokens = join(tmp, "data", "clones", "x", "publish-tokens");
   });
 
   afterEach(() => {
@@ -377,6 +379,47 @@ describe("provisionClone", () => {
       const file = readFileSync(join(clone, "tasker-ssh.config"), "utf8");
       expect(file).toContain(sshCommand("/keys/a"));
       expect(file).not.toContain("/keys/b");
+    });
+  });
+
+  describe("the pre-push hook", () => {
+    const hook = (): string => join(clone, "hooks", "pre-push");
+
+    function provision(): Promise<void> {
+      return provisionClone({
+        remote: origin.path,
+        clone,
+        config: {},
+        env: origin.env,
+        publishTokens: tokens,
+      });
+    }
+
+    it("writes an executable shell script", async () => {
+      await provision();
+      expect(statSync(hook()).mode & 0o777).toBe(0o755);
+      expect(readFileSync(hook(), "utf8").startsWith("#!/bin/sh\n")).toBe(true);
+    });
+
+    it("writes a deleted hook again", async () => {
+      await provision();
+      rmSync(hook());
+      await provision();
+      expect(existsSync(hook())).toBe(true);
+    });
+
+    it("makes a deleted hooks folder again", async () => {
+      await provision();
+      rmSync(join(clone, "hooks"), { recursive: true });
+      await provision();
+      expect(existsSync(hook())).toBe(true);
+    });
+
+    it("removes a leftover temporary hook file", async () => {
+      await provision();
+      writeFileSync(`${hook()}.tmp`, "left behind");
+      await provision();
+      expect(existsSync(`${hook()}.tmp`)).toBe(false);
     });
   });
 });
