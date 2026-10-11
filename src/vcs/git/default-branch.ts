@@ -17,7 +17,7 @@ export async function remoteDefaultBranch(options: RemoteDefaultBranchOptions): 
   );
   for (const line of out.split("\n")) {
     const match = /^ref: refs\/heads\/(.+)\tHEAD$/.exec(line);
-    if (match?.[1] !== undefined) {
+    if (match !== null) {
       return match[1];
     }
   }

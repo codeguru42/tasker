@@ -138,17 +138,15 @@ async function setConfig(
   clone: string,
   args: readonly string[],
   env: NodeJS.ProcessEnv,
-): Promise<string> {
-  const failure = await runGit(["config", ...args], { gitDir: clone, env }).then(
-    (out) => ({ out }),
-    (error: unknown) => ({ error }),
-  );
-  if ("out" in failure) {
-    return failure.out;
+): Promise<void> {
+  try {
+    await runGit(["config", ...args], { gitDir: clone, env });
+  } catch (error) {
+    if (existsSync(join(clone, "config.lock"))) {
+      // The new error sets no cause: it needs no text of git.
+      // eslint-disable-next-line preserve-caught-error
+      throw new Error(`the clone configuration is locked: ${clone}`);
+    }
+    throw error;
   }
-  if (existsSync(join(clone, "config.lock"))) {
-    // The new error sets no cause: it needs no text of git.
-    throw new Error(`the clone configuration is locked: ${clone}`);
-  }
-  throw failure.error;
 }
