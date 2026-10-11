@@ -93,7 +93,8 @@ describe("run", () => {
     const code = await run(["bogus"], { commands: [], io });
 
     expect(code).toBe(1);
-    expect(io.err.join("")).toContain("unknown command 'bogus'");
+    expect(io.err.join("")).toContain("bogus");
+    expect(io.err.join("")).toContain("tasker --help");
   });
 
   it("suggests a similar command for a mistyped command", async () => {
@@ -104,6 +105,17 @@ describe("run", () => {
     expect(code).toBe(1);
     expect(io.err.join("")).toContain("unknown command 'gret'");
     expect(io.err.join("")).toContain("Did you mean greet?");
+  });
+
+  it("reports a mistyped command before the options of that command", async () => {
+    const io = captureIo();
+
+    const code = await run(["gret", "--name", "bob"], { commands: [greet], io });
+
+    expect(code).toBe(1);
+    expect(io.err.join("")).toContain("unknown command 'gret'");
+    expect(io.err.join("")).toContain("Did you mean greet?");
+    expect(io.err.join("")).not.toContain("unknown option");
   });
 
   it("prints usage to stderr and fails when given no arguments", async () => {
