@@ -438,6 +438,22 @@ describe("parseConfig named trackers", () => {
     );
   });
 
+  it("reports a bad provider next to tracker once", () => {
+    const issues = issuesOf(withTracker({ tracker: "acme", provider: "gitlab" }));
+    expect(issues).toEqual([
+      "repos.tasker.issueTracker.provider: must not be set next to tracker; provider comes from tracker 'acme'",
+    ]);
+  });
+
+  it("reports a bad provider next to an undefined tracker once", () => {
+    const issues = issuesOf(withTracker({ tracker: "nope", provider: "gitlab" }));
+    expect(issues).toHaveLength(2);
+    expectIssueAt(issues, "repos.tasker.issueTracker.tracker");
+    expect(issues.filter((line) => line.startsWith("repos.tasker.issueTracker.provider"))).toEqual([
+      "repos.tasker.issueTracker.provider: must not be set next to tracker; provider comes from tracker 'nope'",
+    ]);
+  });
+
   it("does not change the raw object", () => {
     const raw = withTracker({ tracker: "acme", project: "CIR" });
     const copy = structuredClone(raw);
