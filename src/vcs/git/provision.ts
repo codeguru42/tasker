@@ -1,7 +1,9 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, parse } from "node:path";
 import { GitError, runGit } from "./run.js";
-import { runRemoteGit } from "./ssh.js";
+import { runRemoteGit, sshCommand } from "./ssh.js";
+
+const INCLUDE_FILE = "tasker-ssh.config";
 
 // The same structure as the output of GitConfigSchema, so a caller passes repo.vcs.config.
 export interface GitVcsConfig {
@@ -85,6 +87,25 @@ async function applyConfig(
   await setConfig(clone, ["commit.gpgSign", "false"], env);
   await setConfig(clone, ["tag.gpgSign", "false"], env);
   await setConfig(clone, ["tag.forceSignAnnotated", "false"], env);
+  await setConfig(clone, ["include.path", INCLUDE_FILE], env);
+  // The include file goes last, so a failed git config call leaves it as it was.
+  writeIncludeFile(clone, config.sshKey);
+}
+
+// Writes the include file through a temp file and a rename. The value is in double quotes:
+// git reads \\, \" and \n as escapes there, and every other character as it is.
+function writeIncludeFile(clone: string, sshKey: string | undefined): void {
+  let content = "";
+  if (sshKey !== undefined) {
+    const value = sshCommand(sshKey)
+      .replaceAll("\\", "\\\\")
+      .replaceAll('"', '\\"')
+      .replaceAll("\n", "\\n");
+    content = `[core]\n\tsshCommand = "${value}"\n`;
+  }
+  const temp = join(clone, `${INCLUDE_FILE}.tmp`);
+  writeFileSync(temp, content);
+  renameSync(temp, join(clone, INCLUDE_FILE));
 }
 
 async function setOrUnset(
