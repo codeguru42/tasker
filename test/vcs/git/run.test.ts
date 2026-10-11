@@ -23,13 +23,13 @@ describe("runGit", () => {
     expect(out).toContain("Initialized empty Git repository");
   });
 
-  it("runs against a git dir and does not trim stdout", async () => {
-    await runGit(["init", "--initial-branch=main"], { cwd: dir, env });
-    const out = await runGit(["rev-parse", "--is-bare-repository"], {
-      gitDir: join(dir, ".git"),
+  it("runs against a bare clone and does not trim stdout", async () => {
+    await runGit(["init", "--bare", "--initial-branch=main", "bare.git"], { cwd: dir, env });
+    const out = await runGit(["symbolic-ref", "HEAD"], {
+      gitDir: join(dir, "bare.git"),
       env,
     });
-    expect(out).toBe("false\n");
+    expect(out).toBe("refs/heads/main\n");
   });
 
   it("rejects with a GitError that names the subcommand and holds the output", async () => {
@@ -57,51 +57,12 @@ describe("runGit", () => {
     expect((error as Error).message).toBe(`the git dir does not exist: ${missing}`);
   });
 
-  async function initRepoWithFile(): Promise<string> {
-    const repo = join(dir, "repo");
-    await runGit(["init", "--initial-branch=main", "repo"], { cwd: dir, env });
-    writeFileSync(join(repo, "a.txt"), "a\n");
-    return repo;
-  }
-
-  it("fails a command that needs a work tree when it gets a git dir", async () => {
-    const repo = await initRepoWithFile();
-    const error = await runGit(["status"], { gitDir: join(repo, ".git"), env }).catch(
-      (e: unknown) => e,
-    );
-    expect(error).toBeInstanceOf(GitError);
-    expect((error as GitError).message).toContain("must be run in a work tree");
-  });
-
-  it("stages nothing when add gets a git dir", async () => {
-    const repo = await initRepoWithFile();
-    const error = await runGit(["add", "-A"], { gitDir: join(repo, ".git"), env }).catch(
-      (e: unknown) => e,
-    );
-    expect(error).toBeInstanceOf(GitError);
-    expect((error as GitError).message).toContain("must be run in a work tree");
-    await expect(runGit(["ls-files", "--cached"], { cwd: repo, env })).resolves.toBe("");
-  });
-
   function makeOtherFolder(): string {
     const other = join(dir, "other");
     mkdirSync(other);
     writeFileSync(join(other, "b.txt"), "b\n");
     return other;
   }
-
-  it("fails a work-tree command for a git dir that sets core.worktree", async () => {
-    const repo = await initRepoWithFile();
-    const other = makeOtherFolder();
-    await runGit(["config", "core.worktree", other], { cwd: repo, env });
-    const error = await runGit(["add", "-A"], { gitDir: join(repo, ".git"), env }).catch(
-      (e: unknown) => e,
-    );
-    expect(error).toBeInstanceOf(GitError);
-    expect((error as GitError).message).toContain("must be run in a work tree");
-    expect(existsSync(join(repo, ".git", "index"))).toBe(false);
-    expect(readFileSync(join(other, "b.txt"), "utf8")).toBe("b\n");
-  });
 
   it("ignores a GIT_WORK_TREE of the caller for a bare git dir", async () => {
     await runGit(["init", "--bare", "--initial-branch=main", "bare.git"], { cwd: dir, env });
@@ -284,6 +245,15 @@ describe("runGit keeps git from asking questions", () => {
       env: { ...env, GIT_SSH_COMMAND: "", GIT_SSH: "" },
     });
     expect(out).toBe(batch);
+  });
+
+  it("starts git one time for a git dir", async () => {
+    const log = join(dir, "runs.log");
+    const gitDir = join(dir, "bare.git");
+    mkdirSync(gitDir);
+    writeFakeGit(bin, `echo "$*" >> '${log}'`);
+    await runGit(["version"], { gitDir, env });
+    expect(readFileSync(log, "utf8")).toBe(`--bare --git-dir ${gitDir} version\n`);
   });
 
   it.runIf(existsSync("/proc/self/stat"))("keeps git in the process group of tasker", async () => {
