@@ -1,5 +1,5 @@
 import { userInfo } from "node:os";
-import { parse } from "node:path";
+import { isAbsolute, parse } from "node:path";
 import { GitError, runGit, type RunGitOptions } from "./run.js";
 
 const HIDDEN = "<sshKey>";
@@ -70,4 +70,18 @@ export async function runRemoteGit(
 // One cwd for all of them, so a relative remote path names the same repo in each call.
 export function remoteCwd(): string {
   return parse(process.cwd()).root;
+}
+
+// The remote.origin.url that git clone writes for remote, with remoteCwd() as cwd.
+// A remote is a local path when it has no "://" and either no ":" or a "/" before its first ":"
+// (the rule of git, url_is_local_not_ssh). A relative local path becomes remoteCwd() plus the
+// path, with no normalizing. Any other remote stays as it is.
+export function cloneUrl(remote: string): string {
+  const colon = remote.indexOf(":");
+  const slash = remote.indexOf("/");
+  const local = !remote.includes("://") && (colon === -1 || (slash !== -1 && slash < colon));
+  if (local && !isAbsolute(remote)) {
+    return remoteCwd() + remote;
+  }
+  return remote;
 }
