@@ -54,3 +54,6 @@ export function validConfig(): Record<string, any> {
 export function makeTempDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix));
 }
+
+// The repo root, for spawn tests that need it as cwd.
+export const repoRoot = new URL("..", import.meta.url);

@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
@@ -5,7 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
 import { migrations } from "../../src/store/migrations.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { makeTempDir } from "../helpers.js";
+import { createDataRoot } from "../../src/store/layout.js";
+import { makeTempDir, repoRoot } from "../helpers.js";
 
 describe("task store", () => {
   let dir: string;
@@ -178,4 +180,53 @@ describe("task store", () => {
       }
     });
   });
+
+  it(
+    "lets two processes write to one new database at once",
+    async () => {
+      const layout = createDataRoot(join(dir, "root"));
+      const count = 300;
+      const run = (issueKey: string) =>
+        new Promise<{ code: number | null; stderr: string }>((resolve, reject) => {
+          const child = spawn(
+            process.execPath,
+            [
+              "--import",
+              "tsx",
+              "test/fixtures/store-writer.ts",
+              layout.database,
+              issueKey,
+              String(count),
+            ],
+            { cwd: repoRoot },
+          );
+          let stderr = "";
+          child.stderr.on("data", (chunk) => (stderr += chunk));
+          child.on("error", reject);
+          child.on("close", (code) => resolve({ code, stderr }));
+        });
+
+      const results = await Promise.all([run("a/b#1"), run("a/b#2")]);
+      for (const result of results) {
+        expect(result.stderr).not.toContain("database is locked");
+        expect(result.code).toBe(0);
+      }
+
+      const reader = openStore(layout.database);
+      const db = new DatabaseSync(layout.database);
+      try {
+        const tasks = db.prepare("SELECT id FROM tasks").all() as { id: number }[];
+        expect(tasks).toHaveLength(2);
+        for (const { id } of tasks) {
+          expect(reader.listEvents(id)).toHaveLength(count);
+          expect(reader.getTask(id)?.state).toBe(String(count - 1));
+        }
+        expect(schemaVersion(db)).toBe(migrations.length);
+      } finally {
+        db.close();
+        reader.close();
+      }
+    },
+    60_000,
+  );
 });
