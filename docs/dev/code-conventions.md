@@ -12,6 +12,8 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, `transaction.ts` holds `immediateTransaction()`, the shared helper that runs each write and each migration in one `BEGIN IMMEDIATE` transaction, and `store.ts` opens the database and reads and writes tasks and events.
 - `src/issue-key/` holds the issue key parsers. `ref.ts` holds the `IssueRef` type and `IssueKeyError`, `path-slug.ts` makes a string safe for a file path and a git branch name, `github.ts` parses a GitHub key, and `jira.ts` parses a Jira key. The caller selects the parser and passes the repo key.
 - `src/state/` holds the state machine. `machine.ts` declares the task states and the legal edges, and checks a change of state.
+- `AGENTS.md` gives the rules of the repo in a short form and links to the docs. Each assistant session reads it first.
+- `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.
 - `docs/config.md` is the configuration reference.
 - `docs/dev/data-root.md` describes the folders under `dataRoot` and the tables of the database.
 - `docs/statemachine.md` describes the task states, the edges between them and the diagrams.
