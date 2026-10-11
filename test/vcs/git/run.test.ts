@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
-import { rmSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { GitError, runGit } from "../../../src/vcs/git/run.js";
+import { GitError, GitNotInstalledError, runGit } from "../../../src/vcs/git/run.js";
 import { gitTestEnv, makeTempDir, repoRoot } from "../../helpers.js";
 
 describe("runGit", () => {
@@ -54,6 +54,24 @@ describe("runGit", () => {
     await expect(runGit(["-c", "x.y=z", "status"], { cwd: dir, env })).rejects.toThrow(
       "runGit needs the git subcommand as the first argument",
     );
+  });
+
+  it("reports that git is not installed when git is not on PATH", async () => {
+    const emptyPath = join(dir, "empty-bin");
+    mkdirSync(emptyPath);
+    const error = await runGit(["version"], {
+      cwd: dir,
+      env: { ...env, PATH: emptyPath },
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(GitNotInstalledError);
+    expect((error as Error).message).toBe("git is not installed: git was not found on PATH");
+  });
+
+  it("reports a missing working folder, not a missing git", async () => {
+    const missing = join(dir, "no-such-folder");
+    const error = await runGit(["status"], { cwd: missing, env }).catch((e: unknown) => e);
+    expect(error).not.toBeInstanceOf(GitNotInstalledError);
+    expect((error as Error).message).toBe(`the working folder does not exist: ${missing}`);
   });
 
   it("writes nothing to the terminal, also when git fails", async () => {
