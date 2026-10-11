@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
@@ -52,6 +52,15 @@ describe("provisionClone", () => {
     await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
     expect(await revParse("origin/main")).toBe(await origin.branchHead("main"));
     expect(await revParse("origin/feature")).toBe(await origin.branchHead("feature"));
+  });
+
+  it("fetches and keeps the clone when it is complete", async () => {
+    await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+    writeFileSync(join(clone, "sentinel"), "keep me");
+    const head = await origin.addCommit("main");
+    await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+    expect(existsSync(join(clone, "sentinel"))).toBe(true);
+    expect(await revParse("origin/main")).toBe(head);
   });
 
   it("removes the marker after success", async () => {
