@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
 import { migrations } from "../../src/store/migrations.js";
-import { openStore, type TaskStore } from "../../src/store/store.js";
+import { openStore, type Task, type TaskStore } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { makeTempDir, repoRoot } from "../helpers.js";
 
@@ -75,6 +75,31 @@ describe("task store", () => {
     expect(() => store.updateTask(999, { state: "x" })).toThrow(
       "task not found: 999",
     );
+  });
+
+  it("passes the current task to the check", () => {
+    const task = store.createTask(newTask);
+    let seen: Task | undefined;
+    store.updateTask(task.id, { state: "planned" }, (current) => {
+      seen = current;
+    });
+    expect(seen).toEqual(task);
+  });
+
+  it("keeps the row and rethrows when the check throws", () => {
+    const task = store.createTask(newTask);
+    clock = new Date("2026-01-02T00:00:00.000Z");
+    const error = new Error("no");
+    let caught: unknown;
+    try {
+      store.updateTask(task.id, { state: "planned" }, () => {
+        throw error;
+      });
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBe(error);
+    expect(store.getTask(task.id)).toEqual(task);
   });
 
   it("allows two tasks for the same repo and issue", () => {
