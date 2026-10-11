@@ -57,6 +57,7 @@ The key names the repo. It can contain `/`, for example `codeguru42/tasker`. An 
 | `quotaApprovalThreshold` | number above 0 and at most 1 | `0.9` | The share of the quota at which approval is needed. |
 | `updateBranchStrategy` | `"rebase"` or `"merge"` | `"rebase"` | How to bring a branch up to date. |
 | `forge` | object | optional | See [`forge`](#forge). |
+| `vcs` | object | `{ "provider": "git", "config": {} }` | See [`vcs`](#vcs). |
 
 ### `env` lists
 
@@ -119,6 +120,25 @@ Each entry of `models` is an object with two required keys: `model` (non-empty s
 | `provider` | `"github"` | required | The kind of forge. |
 | `account` | non-empty string | required | The account to use. |
 | `mergeMethod` | `"merge"`, `"squash"` or `"rebase"` | `"merge"` | How to merge a pull request. |
+
+## `vcs`
+
+`vcs` selects the version control provider of the repo. It also holds the configuration of that provider.
+
+| Key | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `provider` | `"git"` | `"git"` | The kind of version control. `"git"` is the only permitted value. |
+| `config` | object | `{}` | The configuration of the provider. The provider validates it. |
+
+For `"git"`, `config` takes these keys:
+
+| Key | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `authorName` | non-empty string | optional | The name of the author of a commit. If it is missing, git uses the global identity of the machine. |
+| `authorEmail` | non-empty string | optional | The email of the author of a commit. If it is missing, git uses the global identity of the machine. |
+| `sshKey` | non-empty string | optional | The SSH key that git uses. tasker keeps the value as it is. If it is missing, git uses no special key. |
+
+The key `repos.<key>.git` does not exist. tasker reports it as `repos.<key>.git: unrecognized key`. Put the git configuration under `vcs.config`.
 
 ## Errors
 
