@@ -44,4 +44,58 @@ describe("parseJiraKey", () => {
       `not a Jira issue key: ${JSON.stringify(rawKey)} (expected PROJ-N or <site>/browse/PROJ-N)`,
     );
   });
+
+  it("parses a <site>/browse/PROJ-N key", () => {
+    expect(
+      parseJiraKey("example.atlassian.net/browse/PROJ-7", "r"),
+    ).toStrictEqual({
+      key: "example.atlassian.net/browse/PROJ-7",
+      repoKey: "r",
+      shortRef: "example.atlassian.net-browse-PROJ-7",
+    });
+  });
+
+  it("stores the site in lower case", () => {
+    expect(
+      parseJiraKey("Example.Atlassian.NET/browse/PROJ-7", "r"),
+    ).toStrictEqual({
+      key: "example.atlassian.net/browse/PROJ-7",
+      repoKey: "r",
+      shortRef: "example.atlassian.net-browse-PROJ-7",
+    });
+  });
+
+  it("accepts a site with one label", () => {
+    expect(parseJiraKey("jira/browse/AB-1", "r")).toStrictEqual({
+      key: "jira/browse/AB-1",
+      repoKey: "r",
+      shortRef: "jira-browse-AB-1",
+    });
+  });
+
+  it.each([
+    "https://example.atlassian.net/browse/PROJ-7",
+    "http://example.atlassian.net/browse/PROJ-7",
+    "/browse/PROJ-7",
+    "example.atlassian.net/browse/",
+    "example.atlassian.net/PROJ-7",
+    "example.atlassian.net/browse/PROJ-7/",
+    "example.atlassian.net/browse/proj-7",
+    "example.com/jira/browse/PROJ-7",
+    "example.atlassian.net:8080/browse/PROJ-7",
+    "a..b/browse/PROJ-7",
+    "-x.com/browse/PROJ-7",
+  ])("rejects the site form %j", (rawKey) => {
+    let error: unknown;
+    try {
+      parseJiraKey(rawKey, "r");
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeInstanceOf(IssueKeyError);
+    expect((error as IssueKeyError).key).toBe(rawKey);
+    expect((error as IssueKeyError).message).toBe(
+      `not a Jira issue key: ${JSON.stringify(rawKey)} (expected PROJ-N or <site>/browse/PROJ-N)`,
+    );
+  });
 });
