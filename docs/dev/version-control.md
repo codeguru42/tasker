@@ -69,22 +69,27 @@ The checks of the first two rows, of the `PATH` row, of the `gitDir` row and of 
 
 `provisionClone({ remote, clone, config, env })` in `src/vcs/git/provision.ts` makes the bare clone of a remote and fetches it. `clone` is the `clone` path of `repoPaths()`. `config` is the `vcs.config` of the repo (`authorName`, `authorEmail` and `sshKey`, see [docs/config.md](../config.md)). No command calls it yet.
 
-The marker is the file `<clone>.incomplete`, that is `<dataRoot>/clones/<slug>/repo.git.incomplete`, next to `repo.git`. Provision writes it before `git clone` (step 4) and removes it after the first fetch of a fresh clone (step 8). If a step from 5 to 8 fails, the marker stays. If `git ls-remote` fails on the path from step 1, the marker also stays. While the marker exists, each provision takes the path of step 1.
+The marker is the file `<clone>.incomplete`, that is `<dataRoot>/clones/<slug>/repo.git.incomplete`, next to `repo.git`. Provision writes it before `git clone` (step 4) and removes it after the first fetch of a fresh clone (step 8). While the marker exists, each provision takes the path of step 1.
 
 These are the steps:
 
 1. If the marker exists, an earlier clone stopped partway. Provision deletes only the clone folder `repo.git`, including each file that a person put there. The marker and the parent folder `<dataRoot>/clones/<slug>/` stay. Then it goes on with step 3.
-2. If the clone folder exists and the marker does not, the clone is complete. Provision applies the clone configuration (step 6), which includes the fetch refspec. Then it runs `git fetch --prune origin` (step 7) and returns. It does not clone again. On each run, provision writes `remote.origin.url` from `remote` with `--replace-all`. For a relative local path, it writes the root of the file system followed by the path, which is the form that `git clone` writes. It writes any other remote unchanged.
-3. Provision runs `git ls-remote --exit-code -- <remote>`. The cwd is `remoteCwd()`, the root of the file system, so a relative remote path resolves against `/`. On the fresh path, provision has made no file and no folder yet, so a failed `ls-remote` leaves nothing on disk. On the path from step 1, the marker and the parent folder still exist, because step 1 removes only the clone folder. If `ls-remote` fails on that path, the marker stays, and the next provision takes the path of step 1 again.
-4. Provision makes the parent folder of the clone when it is missing. It writes an empty marker, or overwrites the marker that step 1 left with an empty file.
-5. Provision runs `git clone --bare -- <remote> <clone>` with the same cwd, the root of the file system. It passes the clone path as an absolute path (`resolve(clone)`), so the cwd does not move the clone. As a result, a relative remote path names the same repo in `ls-remote` and in `clone`. For a relative local remote path, `git clone` writes the root of the file system followed by the path in `remote.origin.url`. This is the same value as `cloneUrl(remote)`. The fetch runs with the clone as cwd and uses that value.
+2. If the clone folder exists and the marker does not, the clone is complete. Provision applies the clone configuration (step 6), then runs `git fetch --prune origin` (step 7), and returns. It does not clone again.
+3. Provision runs `git ls-remote --exit-code -- <remote>`. The cwd is `remoteCwd()`, the root of the file system, so a relative remote path resolves against `/`. On the fresh path, provision has made no file and no folder yet, so a failed `ls-remote` leaves nothing on disk. On the path from step 1, the marker and the parent folder still exist, because step 1 removes only the clone folder.4. Provision makes the parent folder of the clone when it is missing. It writes an empty marker, or overwrites the marker that step 1 left with an empty file.
+5. Provision runs `git clone --bare -- <remote> <clone>` with the same cwd, the root of the file system. It passes the clone path as an absolute path (`resolve(clone)`), so the cwd does not move the clone. As a result, a relative remote path names the same repo in `ls-remote` and in `clone`. The fetch runs with the clone as cwd and uses `remote.origin.url` (see [The clone configuration](#the-clone-configuration)).
 6. Provision applies the clone configuration: see [The clone configuration](#the-clone-configuration).
 7. Provision runs `git fetch --prune origin`. The `--prune` option removes the remote-tracking refs of branches that the remote deleted.
 8. On the fresh-clone path, provision removes the marker.
 
-If a step from 5 to 7 fails, provision rejects. The parent folder, the marker and the clone folder stay on disk, with the clone folder in the state that the failed step left it. A failed `git clone` can leave a partial clone folder. If step 8 fails, the clone is complete, but the marker stays. In both cases the next provision sees the marker, deletes the clone folder and clones again.
+A step can fail in these ways:
 
-A second provision on a complete clone applies the clone configuration again and fetches with `--prune`. It writes `remote.origin.url` and `remote.origin.fetch` again with `--replace-all`. It writes `user.name` or `user.email` again with `--replace-all`. It removes every local line of one of them with `--unset-all` when the field is gone from `vcs.config`. It writes the signing keys and `include.path` again with `--replace-all`, and it writes the include file again. A change to `vcs.config` takes effect at the next provision. On each run, provision writes `remote.origin.url` from `remote` with `--replace-all`. For a relative local path, it writes the root of the file system followed by the path, which is the form that `git clone` writes. It writes any other remote unchanged.
+- If `ls-remote` fails on the path from step 1, the marker and the parent folder stay.
+- If a step from 5 to 7 fails, provision rejects. The parent folder, the marker and the clone folder stay, with the clone folder in the state that the failed step left it. A failed `git clone` can leave a partial clone folder.
+- If step 8 fails, the clone is complete, but the marker stays.
+
+In each case, the next provision takes the path of step 1.
+
+A second provision on a complete clone takes step 2. A change to `vcs.config` or to `remote` takes effect at the next provision.
 
 A changed `remote` in the configuration has these effects at the next provision:
 
@@ -105,17 +110,15 @@ Provision reads no text of git to find a lock. The errors above have no `cause`.
 
 ### The clone configuration
 
-Each git config write is one `git config` call with `gitDir` set to the clone. Each value goes in with `git config --replace-all <key> <value>`. This leaves exactly one local line, even when the key had several lines. In this order, provision:
+Each git config write is one `git config` call with `gitDir` set to the clone. Each value goes in with `git config --replace-all <key> <value>`. This leaves exactly one local line, even when the key had several lines. So an extra local line of each key in this list goes away. An example is a second `include.path` or a second fetch refspec that a person added with `git config --add`. These rules cover only the local configuration of the clone. The global and system configuration do not change. Each run writes each key of this list. In this order, provision:
 
-- Sets `remote.origin.url` to `cloneUrl(remote)`. This leaves exactly one URL.
-- Sets `remote.origin.fetch` to `+refs/heads/*:refs/remotes/origin/*`. This leaves exactly one fetch refspec, so a fetch makes `origin/<branch>` refs.
+- Sets `remote.origin.url` to `cloneUrl(remote)`. For a relative local path, this is the root of the file system followed by the path, which is the form that `git clone` writes. Any other remote stays unchanged.
+- Sets `remote.origin.fetch` to `+refs/heads/*:refs/remotes/origin/*`, so a fetch makes `origin/<branch>` refs.
 - Sets `user.name` to `authorName`. If `authorName` is not set, provision runs `git config --unset-all user.name`. This removes every local line of the key. Provision reads exit code 5 of `--unset-all` as "the key is missing" and treats it as success. Every other failure passes through. On a fresh clone this writes nothing, so git uses the global identity.
 - Does the same for `user.email` and `authorEmail`.
 - Sets `commit.gpgSign`, `tag.gpgSign` and `tag.forceSignAnnotated` to `false`.
-- Sets `include.path` to `tasker-ssh.config`. Because `--replace-all` leaves one value, a second provision also leaves one value.
+- Sets `include.path` to `tasker-ssh.config`.
 - After all git config calls succeed, writes the include file.
-
-An extra local line of `user.name`, `user.email`, `commit.gpgSign`, `tag.gpgSign`, `tag.forceSignAnnotated`, `include.path`, `remote.origin.url` or `remote.origin.fetch` goes away. An example is a second `include.path` or a second fetch refspec that a person added with `git config --add`. These rules cover only the local configuration of the clone. The global and system configuration do not change.
 
 The include file is `<clone>/tasker-ssh.config`, that is `<dataRoot>/clones/<slug>/repo.git/tasker-ssh.config`. A relative `include.path` in the config of a bare clone resolves against the clone folder. Provision writes `<clone>/tasker-ssh.config.tmp` first and renames it to `tasker-ssh.config`. A crash between the write and the rename leaves the `.tmp` file in the clone. The next provision overwrites it. A held `config.lock` makes a git config call fail first, so the include file stays as it was.
 
@@ -136,8 +139,7 @@ Use `git config --get core.sshCommand` to read the value. `git config --local --
 
 `sshCommand(sshKey)` gives `ssh -i '<key>' -o IdentitiesOnly=yes -o BatchMode=yes`, with each `'` in the key path written as `'\''`. The command and the key path never go on the git command line. They go in the include file and in the env.
 
-`sshEnv(env, sshKey)` returns `env` with `GIT_SSH_COMMAND` set to `sshCommand(sshKey)`. If `sshKey` is not set, it returns `env` as it is. `runRemoteGit(args, options, sshKey)` runs `runGit()` with that env. Provision runs `ls-remote`, `clone` and `fetch` through it. As a result, `GIT_SSH_COMMAND` reaches ssh in the env of git. A `GIT_SSH_COMMAND` that the user exported is replaced when `sshKey` is set and stays when it is not. If no ssh command is set at all, `runGit()` still adds its BatchMode default.
-
+`sshEnv(env, sshKey)` returns `env` with `GIT_SSH_COMMAND` set to `sshCommand(sshKey)`. If `sshKey` is not set, it returns `env` as it is. `runRemoteGit(args, options, sshKey)` runs `runGit()` with that env. Provision runs `ls-remote`, `clone` and `fetch` through it. As a result, `GIT_SSH_COMMAND` reaches ssh in the env of git. A `GIT_SSH_COMMAND` that the user exported is replaced when `sshKey` is set and stays when it is not.
 Each git call that reaches the remote must pass the env from `sshEnv()`. The reason is that `runGit()` sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes` when the caller sets no ssh command, and an env `GIT_SSH_COMMAND` wins over `core.sshCommand`. So the `core.sshCommand` of the clone takes effect only when git runs with no `GIT_SSH_COMMAND` and no `GIT_SSH` in its env.
 
 When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with no `cause`. The message, `stdout` and `stderr` went through `hideSshKey(text, sshKey, homeDir)`. It replaces each occurrence of these forms with `<sshKey>`, in this order:
@@ -145,7 +147,7 @@ When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with
 1. `sshCommand(sshKey)`.
 2. The key as it is.
 3. If the key starts with `~/`, the home folder plus the rest of the key. The home folder is `os.userInfo().homedir`, the folder from the password database that ssh uses, not `$HOME`.
-4. If the key starts with `~` and a user name (`~name/...`), the part of the key from its first `/` to the end, when that part is not empty. For a `~name/` key, tasker cannot find the home folder of that user. It hides only the part of the key from the first `/` to the end. The home folder of that user can still appear in the error.
+4. If the key starts with `~` and a user name (`~name/...`), and the part from the first `/` to the end is not empty: For a `~name/` key, tasker cannot find the home folder of that user. It hides only the part of the key from the first `/` to the end. The home folder of that user can still appear in the error.
 
 `hideSshKey()` hides no other form. If the key path is short, or the part after the first `/` of a `~name/` key is short, other text of the message also becomes `<sshKey>`. If no key is set, the text stays as it is.
 
