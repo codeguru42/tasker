@@ -1,6 +1,10 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 
+// Where git runs. cwd: a folder in a work tree, for any command.
+// gitDir: a git dir, for a bare repo or a command that needs no work tree.
+// With gitDir, git runs with --bare and with the git dir as its cwd,
+// so a command that needs a work tree fails.
 export type GitLocation = { cwd: string } | { gitDir: string };
 export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv };
 
@@ -73,8 +77,11 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
   if ("gitDir" in options && !existsSync(options.gitDir)) {
     return Promise.reject(new Error(`the git dir does not exist: ${options.gitDir}`));
   }
-  const fullArgs = "gitDir" in options ? ["--git-dir", options.gitDir, ...args] : [...args];
-  const cwd = "cwd" in options ? options.cwd : undefined;
+  // --bare: git has no work tree, so a command that needs one fails and never uses
+  // the folder of tasker. cwd is the git dir.
+  const fullArgs =
+    "gitDir" in options ? ["--bare", "--git-dir", options.gitDir, ...args] : [...args];
+  const cwd = "cwd" in options ? options.cwd : options.gitDir;
 
   return new Promise((resolve, reject) => {
     const child = spawn("git", fullArgs, {
