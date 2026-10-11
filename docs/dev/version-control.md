@@ -8,6 +8,20 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 
 The test `test/vcs/git/boundary.test.ts` enforces this rule. It fails when a file outside `src/vcs/git/` loads `child_process` and has a string literal that is `git` or starts with `git `. The test finds each way to load the module: `import ... from`, `import "..."`, `import("...")`, `require("...")` and `export ... from`. It does this for `child_process` and `node:child_process`. The test has two known gaps. It cannot find a module name that the code builds at run time. It cannot find a git name that the code builds at run time.
 
+## How tasker uses git
+
+This section describes the design. No command uses this code yet.
+
+tasker makes one bare clone for each repo that it owns. The clone is at the `clone` path of `repoPaths()`: `<dataRoot>/clones/<slug>/repo.git`. A bare clone has no work tree.
+
+tasker starts each task in its own worktree. tasker makes the worktree from the bare clone. The worktree is under the `worktrees` path of `repoPaths()`: `<dataRoot>/worktrees/<slug>/`.
+
+tasker never works directly in the bare clone. Task work happens only in the worktree of the task.
+
+tasker owns the repo that it uses. It never uses a different repo because of the environment of the caller. For this reason, `runGit()` removes the repo-local git variables (see the `options.env` rule in the next section).
+
+As a result, `options.gitDir` is only for the bare clone, and task commands use `options.cwd`.
+
 ## `runGit()`
 
 `runGit(args, options)` runs one git command. It resolves with the stdout of git as UTF-8 text. It does not trim the text.
