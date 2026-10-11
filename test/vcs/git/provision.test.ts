@@ -152,6 +152,18 @@ describe("provisionClone", () => {
       expect(await localConfigAll("user.email")).toEqual([]);
     });
 
+    it("leaves one user.name line with authorName when the clone has two", async () => {
+      await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+      await addLines("user.name", ["Old One", "Old Two"]);
+      await provisionClone({
+        remote: origin.path,
+        clone,
+        config: { authorName: "New Name" },
+        env: origin.env,
+      });
+      expect(await localConfigAll("user.name")).toEqual(["New Name"]);
+    });
+
     it("writes authorName and authorEmail as user.name and user.email", async () => {
       const config = { authorName: "Bot Name", authorEmail: "bot@example.com" };
       await provisionClone({ remote: origin.path, clone, config, env: origin.env });
