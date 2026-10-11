@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { migrate } from "./migrate.js";
 import { migrations } from "./migrations.js";
-import { rollbackQuietly } from "./transaction.js";
+import { immediateTransaction } from "./transaction.js";
 
 export interface Task {
   id: number;
@@ -133,18 +133,6 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     throw error;
   }
 
-  function write<T>(fn: () => T): T {
-    db.exec("BEGIN IMMEDIATE");
-    try {
-      const result = fn();
-      db.exec("COMMIT");
-      return result;
-    } catch (error) {
-      rollbackQuietly(db);
-      throw error;
-    }
-  }
-
   function readTask(id: number): Task | undefined {
     const row = statements.selectTask.get(id) as TaskRow | undefined;
     return row === undefined ? undefined : rowToTask(row);
@@ -152,7 +140,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
   return {
     createTask(task) {
-      return write(() => {
+      return immediateTransaction(db, () => {
         const at = now().toISOString();
         const row = statements.insertTask.get(
           task.issueKey,
@@ -170,7 +158,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     getTask: readTask,
 
     updateTask(id, changes) {
-      return write(() => {
+      return immediateTransaction(db, () => {
         const current = readTask(id);
         if (current === undefined) {
           throw new Error(`task not found: ${id}`);
@@ -193,7 +181,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     appendEvent(taskId, type, data) {
-      return write(() => {
+      return immediateTransaction(db, () => {
         const at = now().toISOString();
         const row = statements.insertEvent.get(
           taskId,
