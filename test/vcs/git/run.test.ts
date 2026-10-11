@@ -67,6 +67,24 @@ describe("runGit", () => {
     expect((error as Error).message).toBe("git is not installed: git was not found on PATH");
   });
 
+  it("reports that git is not installed when the env has no PATH", async () => {
+    const withoutPath = { ...env };
+    delete withoutPath.PATH;
+    const error = await runGit(["version"], { cwd: dir, env: withoutPath }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(GitNotInstalledError);
+    expect((error as Error).message).toBe("git is not installed: the env has no PATH");
+  });
+
+  it("reports that git is not installed when PATH is empty", async () => {
+    const error = await runGit(["version"], { cwd: dir, env: { ...env, PATH: "" } }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(GitNotInstalledError);
+    expect((error as Error).message).toBe("git is not installed: the env has no PATH");
+  });
+
   it("reports a missing working folder, not a missing git", async () => {
     const missing = join(dir, "no-such-folder");
     const error = await runGit(["status"], { cwd: missing, env }).catch((e: unknown) => e);
