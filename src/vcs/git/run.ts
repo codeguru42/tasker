@@ -33,9 +33,24 @@ export class GitNotInstalledError extends Error {
   }
 }
 
+const BATCH_SSH_COMMAND = "ssh -o BatchMode=yes";
+
+// The env of the child: env, plus GIT_TERMINAL_PROMPT=0, which always wins.
+// If the caller sets no ssh command (GIT_SSH_COMMAND and GIT_SSH missing or empty),
+// ssh runs in batch mode, so it asks no question and fails instead.
+function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const result: NodeJS.ProcessEnv = { ...env, GIT_TERMINAL_PROMPT: "0" };
+  if (!env.GIT_SSH_COMMAND && !env.GIT_SSH) {
+    result.GIT_SSH_COMMAND = BATCH_SSH_COMMAND;
+  }
+  return result;
+}
+
 // Runs git with args (the subcommand first) and resolves with its stdout.
-// The child gets options.env plus GIT_TERMINAL_PROMPT=0, which always wins over the value of the caller.
-// It gets no input stream and no controlling terminal, and its output goes only to runGit().
+// Git gets no input stream, and its stdout and stderr go to pipes, not to the terminal.
+// Git asks no credential question (GIT_TERMINAL_PROMPT=0), and ssh asks no question
+// (BatchMode), unless the caller sets its own ssh command.
+// Git stays in the process group of tasker, so a Ctrl-C stops git too.
 export function runGit(args: readonly string[], options: RunGitOptions): Promise<string> {
   if (args.length === 0) {
     return Promise.reject(new Error("runGit needs a git subcommand"));
@@ -53,7 +68,7 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
   return new Promise((resolve, reject) => {
     const child = spawn("git", fullArgs, {
       cwd,
-      env: { ...options.env, GIT_TERMINAL_PROMPT: "0" },
+      env: childEnv(options.env),
       stdio: ["ignore", "pipe", "pipe"],
     });
     const out: Buffer[] = [];
