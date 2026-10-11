@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { GitError, runGit } from "./run.js";
-import { remoteCwd, runRemoteGit, sshCommand } from "./ssh.js";
+import { cloneUrl, remoteCwd, runRemoteGit, sshCommand } from "./ssh.js";
 
 const INCLUDE_FILE = "tasker-ssh.config";
 
@@ -32,9 +32,9 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     rmSync(clone, { recursive: true, force: true });
   }
 
-  // A complete clone gets the clone configuration and a fetch. Its remote.origin.url stays as it is.
+  // A complete clone gets the clone configuration, including remote.origin.url from remote, and a fetch.
   if (existsSync(clone)) {
-    await applyConfig(clone, config, env);
+    await applyConfig(clone, remote, config, env);
     await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
     return;
   }
@@ -70,18 +70,20 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     { cwd: remoteCwd(), env },
     config.sshKey,
   );
-  await applyConfig(clone, config, env);
+  await applyConfig(clone, remote, config, env);
   await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
   rmSync(marker, { force: true });
 }
 
-// Writes the fetch refspec and the identity of config, and turns off signing.
+// Writes the url and the fetch refspec of origin and the identity of config, and turns off signing.
 // A field of the identity that is not set is unset.
 async function applyConfig(
   clone: string,
+  remote: string,
   config: GitVcsConfig,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
+  await setConfig(clone, ["--replace-all", "remote.origin.url", cloneUrl(remote)], env);
   await setConfig(
     clone,
     ["--replace-all", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"],
