@@ -137,6 +137,28 @@ describe("provisionClone", () => {
     }
   }
 
+  it("fetches from a changed remote into the same clone", async () => {
+    await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+    const other = await makeGitOrigin();
+    try {
+      const head = await other.addCommit("main");
+      await provisionClone({ remote: other.path, clone, config: {}, env: origin.env });
+      expect(await localConfigAll("remote.origin.url")).toEqual([other.path]);
+      expect(await revParse("origin/main")).toBe(head);
+    } finally {
+      other.remove();
+    }
+  });
+
+  it("writes the same url for a relative remote as git clone does", async () => {
+    const remote = relative(parse(origin.path).root, origin.path);
+    await provisionClone({ remote, clone, config: {}, env: origin.env });
+    const first = await localConfigAll("remote.origin.url");
+    await provisionClone({ remote, clone, config: {}, env: origin.env });
+    expect(await localConfigAll("remote.origin.url")).toEqual(first);
+    expect(first).toEqual([parse(origin.path).root + remote]);
+  });
+
   // Adds each value as one more local line of key in the clone.
   async function addLines(key: string, values: string[]): Promise<void> {
     for (const value of values) {
