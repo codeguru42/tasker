@@ -24,7 +24,7 @@ Run each git command in the clone of the operator or in its worktree.
 6. Run `git worktree add -b <task branch> <path> tasker/<task branch>`. This makes a worktree with a local task branch.
 7. In the worktree, rebase the task branch onto `origin/<base branch>`. Fix the conflicts.
 8. In the worktree, run `npm run check`. The command must pass.
-9. Push the task branch to `origin` with a normal push. Do not force-push.
+9. Push the task branch to `origin` with a normal push: `git push -u origin <task branch>`. Do not force-push. Step 6 makes `tasker/<task branch>` the upstream of the task branch. As a result, a plain `git push` goes to the `tasker` remote and fails, so the operator must name `origin`.
 10. If `origin` already has the task branch, the normal push fails. In this case, stop and do not force-push. A person decides the next step. If the operator is a person, that person decides. If the operator is an assistant session, it reports the failed push to the person who runs it.
 11. Run `tasker update-branch <issue> --take-remote`. tasker resets its task branch to the task branch on `origin`.
 12. Run `tasker show <issue>`. It prints the state of the task and the next valid commands.
