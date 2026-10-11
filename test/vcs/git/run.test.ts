@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, GitNotInstalledError, runGit } from "../../../src/vcs/git/run.js";
@@ -110,7 +110,7 @@ describe("runGit", () => {
   });
 });
 
-describe("runGit keeps git away from the terminal", () => {
+describe("runGit keeps git from asking questions", () => {
   let dir: string;
   let bin: string;
   let env: NodeJS.ProcessEnv;
@@ -137,15 +137,14 @@ describe("runGit keeps git away from the terminal", () => {
     expect(out).toBe("prompt=0\nno-tty\n");
   });
 
-  it.runIf(existsSync("/proc/self/stat"))("starts git in its own session", async () => {
+  it.runIf(existsSync("/proc/self/stat"))("keeps git in the process group of tasker", async () => {
     writeFakeGit(
       bin,
-      [
-        "read -r pid comm state ppid pgrp session rest < /proc/$$/stat",
-        'if [ "$session" = "$$" ]; then echo own-session; else echo shared-session; fi',
-      ].join("\n"),
+      ["read -r pid comm state ppid pgrp rest < /proc/$$/stat", 'echo "$pgrp"'].join("\n"),
     );
+    const stat = readFileSync("/proc/self/stat", "utf8");
+    const pgrp = stat.slice(stat.lastIndexOf(")") + 2).split(" ")[2];
     const out = await runGit(["version"], { cwd: dir, env });
-    expect(out).toBe("own-session\n");
+    expect(out).toBe(`${pgrp}\n`);
   });
 });
