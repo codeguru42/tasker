@@ -6,7 +6,7 @@ This repo is a rebuild of tasker. Work is tracked on the [project board](https:/
 
 ## Requirements
 
-- Node.js 22 or later
+- Node.js 22.13 or later
 - npm
 
 ## Install from source
