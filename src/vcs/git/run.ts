@@ -70,6 +70,9 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
   if (!options.env.PATH) {
     return Promise.reject(new GitNotInstalledError("git is not installed: the env has no PATH"));
   }
+  if ("gitDir" in options && !existsSync(options.gitDir)) {
+    return Promise.reject(new Error(`the git dir does not exist: ${options.gitDir}`));
+  }
   const fullArgs = "gitDir" in options ? ["--git-dir", options.gitDir, ...args] : [...args];
   const cwd = "cwd" in options ? options.cwd : undefined;
 
