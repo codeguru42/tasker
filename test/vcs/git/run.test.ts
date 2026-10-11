@@ -33,17 +33,28 @@ describe("runGit", () => {
   });
 
   it("rejects with a GitError that names the subcommand and holds the output", async () => {
-    const error = await runGit(["rev-parse", "HEAD"], {
-      gitDir: join(dir, "missing.git"),
+    await runGit(["init", "--bare", "--initial-branch=main", "bare.git"], { cwd: dir, env });
+    const error = await runGit(["rev-parse", "--verify", "no-such-ref"], {
+      gitDir: join(dir, "bare.git"),
       env,
     }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(GitError);
     const gitError = error as GitError;
     expect(gitError.message).toContain("git rev-parse failed with exit code");
-    expect(gitError.message).toContain("not a git repository");
+    expect(gitError.message).toContain("Needed a single revision");
     expect(gitError.subcommand).toBe("rev-parse");
-    expect(gitError.stderr).toContain("not a git repository");
+    expect(gitError.stderr).toContain("Needed a single revision");
     expect(gitError.stdout).toBe("");
+  });
+
+  it("rejects a git dir that does not exist", async () => {
+    const missing = join(dir, "missing.git");
+    const error = await runGit(["rev-parse", "HEAD"], { gitDir: missing, env }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(GitError);
+    expect((error as Error).message).toBe(`the git dir does not exist: ${missing}`);
   });
 
   it("rejects empty args", async () => {
