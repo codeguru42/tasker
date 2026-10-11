@@ -73,4 +73,34 @@ describe("makeGitOrigin", () => {
     origin.remove();
     expect(existsSync(origin.dir)).toBe(false);
   });
+
+  it("commits a file in a nested folder", async () => {
+    await origin.addCommit("main", { file: "dir/sub/a.txt", content: "y" });
+    expect(await git("show", "main:dir/sub/a.txt")).toBe("y");
+  });
+
+  it("adds one commit for each call, also with the same file and content", async () => {
+    const first = await origin.addCommit("main", { file: "same.txt", content: "z" });
+    const second = await origin.addCommit("main", { file: "same.txt", content: "z" });
+    expect(second).not.toBe(first);
+    expect(await git("rev-list", "--count", "main")).toBe("3");
+  });
+
+  it.each(["/tmp/x", "../x", "a/../../x", ".git/config"])(
+    "rejects the file %s and leaves main as it was",
+    async (file) => {
+      const before = await origin.branchHead("main");
+      await expect(origin.addCommit("main", { file })).rejects.toThrow(
+        "addCommit needs a file inside the work repo",
+      );
+      expect(await origin.branchHead("main")).toBe(before);
+    },
+  );
+
+  it("rejects a branch name that starts with -", async () => {
+    await expect(origin.createBranch("-d")).rejects.toThrow(
+      "the branch name must not start with -",
+    );
+    await expect(origin.addCommit("-x")).rejects.toThrow("the branch name must not start with -");
+  });
 });
