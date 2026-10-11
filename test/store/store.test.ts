@@ -2,8 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { migrate, schemaVersion } from "../../src/store/migrate.js";
 import { migrations } from "../../src/store/migrations.js";
-import { schemaVersion } from "../../src/store/migrate.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
 import { makeTempDir } from "../helpers.js";
 
@@ -94,5 +94,88 @@ describe("task store", () => {
     } finally {
       db.close();
     }
+  });
+
+  describe("events", () => {
+    it("appends an event with the time and the JSON data", () => {
+      const task = store.createTask(newTask);
+      const event = store.appendEvent(task.id, "state-changed", {
+        from: "new",
+        to: "planned",
+      });
+      expect(event).toEqual({
+        id: event.id,
+        taskId: task.id,
+        at: "2026-01-01T00:00:00.000Z",
+        type: "state-changed",
+        data: { from: "new", to: "planned" },
+      });
+    });
+
+    it("stores null data when the event has none", () => {
+      const task = store.createTask(newTask);
+      const event = store.appendEvent(task.id, "note");
+      expect(event.data).toBeNull();
+      expect(store.listEvents(task.id)[0].data).toBeNull();
+    });
+
+    it("lists the events of one task in the order they were added", () => {
+      const a = store.createTask(newTask);
+      const b = store.createTask(newTask);
+      store.appendEvent(a.id, "one");
+      store.appendEvent(b.id, "other");
+      store.appendEvent(a.id, "two", { n: 2 });
+      const events = store.listEvents(a.id);
+      expect(events.map((event) => event.type)).toEqual(["one", "two"]);
+      expect(events[1].id).toBeGreaterThan(events[0].id);
+      expect(events[1].data).toEqual({ n: 2 });
+    });
+
+    it("throws when the task of the event does not exist", () => {
+      expect(() => store.appendEvent(999, "x")).toThrow();
+    });
+
+    it("rejects a raw UPDATE or DELETE and keeps the events", () => {
+      const task = store.createTask(newTask);
+      store.appendEvent(task.id, "one");
+      const before = store.listEvents(task.id);
+      const db = new DatabaseSync(dbPath);
+      try {
+        expect(() => db.exec("UPDATE events SET type = 'y'")).toThrow(
+          "events are append-only",
+        );
+        expect(() => db.exec("DELETE FROM events")).toThrow(
+          "events are append-only",
+        );
+      } finally {
+        db.close();
+      }
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+
+    it("upgrades a version-1 database when it opens", () => {
+      const oldPath = join(dir, "old.db");
+      const db = new DatabaseSync(oldPath);
+      try {
+        migrate(db, migrations.slice(0, 1));
+        expect(schemaVersion(db)).toBe(1);
+      } finally {
+        db.close();
+      }
+      const upgraded = openStore(oldPath, { now });
+      try {
+        const task = upgraded.createTask(newTask);
+        expect(upgraded.appendEvent(task.id, "note").type).toBe("note");
+      } finally {
+        upgraded.close();
+      }
+      const check = new DatabaseSync(oldPath);
+      try {
+        expect(schemaVersion(check)).toBe(migrations.length);
+        expect(migrations.length).toBe(2);
+      } finally {
+        check.close();
+      }
+    });
   });
 });
