@@ -124,6 +124,26 @@ describe("runGit", () => {
     expect(out).toBe("true\n");
   });
 
+  it("rejects a git dir that is a file", async () => {
+    const file = join(dir, "file");
+    writeFileSync(file, "x\n");
+    const error = await runGit(["rev-parse", "HEAD"], { gitDir: file, env }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(GitError);
+    expect((error as Error).message).toBe(`the git dir does not exist: ${file}`);
+  });
+
+  it("rejects a working folder that is a file", async () => {
+    const file = join(dir, "file");
+    writeFileSync(file, "x\n");
+    const error = await runGit(["status"], { cwd: file, env }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(GitError);
+    expect((error as Error).message).toBe(`the working folder does not exist: ${file}`);
+  });
+
   it("rejects empty args", async () => {
     await expect(runGit([], { cwd: dir, env })).rejects.toThrow("runGit needs a git subcommand");
   });
