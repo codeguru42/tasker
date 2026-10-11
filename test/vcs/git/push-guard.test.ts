@@ -1,10 +1,11 @@
-import { rmSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { type GitOrigin, makeGitOrigin, makeTempDir } from "../../helpers.js";
 
+const HEX = "0123456789abcdef";
 const NO_TOKEN = "tasker: the push has no valid publish token";
 
 describe("the pre-push hook", () => {
@@ -77,5 +78,45 @@ describe("the pre-push hook", () => {
     );
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("y")).toBeUndefined();
+  });
+
+  // Pushes HEAD of the worktree to x with token in TASKER_PUBLISH_TOKEN.
+  function pushWith(token: string): Promise<string> {
+    return runGit(["push", "origin", "HEAD:refs/heads/x"], {
+      cwd: wt,
+      env: { ...origin.env, TASKER_PUBLISH_TOKEN: token },
+    });
+  }
+
+  it("accepts a push with a valid token and uses the token up", async () => {
+    const token = HEX.repeat(4);
+    mkdirSync(tokens, { recursive: true });
+    writeFileSync(join(tokens, token), "");
+    await pushWith(token);
+    const head = (await runGit(["rev-parse", "HEAD"], { cwd: wt, env: origin.env })).trim();
+    expect(await origin.branchHead("x")).toBe(head);
+    expect(existsSync(join(tokens, token))).toBe(false);
+    const error = await failure(pushWith(token));
+    expect(error.stderr).toContain(NO_TOKEN);
+  });
+
+  it.each([
+    ["an empty token", ""],
+    ["a path", "../evil"],
+    ["a token that starts with a dash", "-x"],
+    ["a token of 63 characters", HEX.repeat(4).slice(1)],
+    ["a token of 65 characters", `${HEX.repeat(4)}a`],
+    ["a token in upper case", HEX.repeat(4).toUpperCase()],
+    ["a token with a space", "a b"],
+  ])("rejects %s and keeps the file", async (_name, token) => {
+    mkdirSync(tokens, { recursive: true });
+    const file = join(tokens, token);
+    if (token !== "") {
+      writeFileSync(file, "");
+    }
+    const error = await failure(pushWith(token));
+    expect(error.stderr).toContain(NO_TOKEN);
+    expect(await origin.branchHead("x")).toBeUndefined();
+    expect(existsSync(file)).toBe(true);
   });
 });
