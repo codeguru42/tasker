@@ -11,4 +11,16 @@ export const migrations: readonly string[] = [
   updated_at TEXT NOT NULL
 );
 CREATE INDEX tasks_repo_issue ON tasks (repo_key, issue_key);`,
+  `CREATE TABLE events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  at TEXT NOT NULL,
+  type TEXT NOT NULL,
+  data TEXT
+);
+CREATE INDEX events_task_id ON events (task_id, id);
+CREATE TRIGGER events_no_update BEFORE UPDATE ON events
+BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
+CREATE TRIGGER events_no_delete BEFORE DELETE ON events
+BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;`,
 ];

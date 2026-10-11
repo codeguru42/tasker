@@ -27,6 +27,15 @@ export interface TaskChanges {
   worktreePath?: string | null;
 }
 
+export interface TaskEvent {
+  id: number;
+  taskId: number;
+  at: string;
+  type: string;
+  // null when the event has no data
+  data: unknown;
+}
+
 export interface StoreOptions {
   now?: () => Date;
 }
@@ -35,6 +44,8 @@ export interface TaskStore {
   createTask(task: NewTask): Task;
   getTask(id: number): Task | undefined;
   updateTask(id: number, changes: TaskChanges): Task;
+  appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
+  listEvents(taskId: number): TaskEvent[];
   close(): void;
 }
 
@@ -47,6 +58,24 @@ interface TaskRow {
   worktree_path: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface EventRow {
+  id: number;
+  task_id: number;
+  at: string;
+  type: string;
+  data: string | null;
+}
+
+function rowToEvent(row: EventRow): TaskEvent {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    at: row.at,
+    type: row.type,
+    data: row.data === null ? null : JSON.parse(row.data),
+  };
 }
 
 function rowToTask(row: TaskRow): Task {
@@ -65,6 +94,7 @@ function rowToTask(row: TaskRow): Task {
 export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   const now = options.now ?? (() => new Date());
   const db = new DatabaseSync(path);
+  db.exec("PRAGMA foreign_keys = ON");
   migrate(db, migrations);
 
   function write<T>(fn: () => T): T {
@@ -130,6 +160,28 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         ).run(next.state, next.branch, next.worktreePath, now().toISOString(), id);
         return readTask(id) as Task;
       });
+    },
+
+    appendEvent(taskId, type, data) {
+      return write(() => {
+        const at = now().toISOString();
+        const result = db
+          .prepare(
+            "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?)",
+          )
+          .run(taskId, at, type, data === undefined ? null : JSON.stringify(data));
+        const row = db
+          .prepare("SELECT * FROM events WHERE id = ?")
+          .get(Number(result.lastInsertRowid)) as unknown as EventRow;
+        return rowToEvent(row);
+      });
+    },
+
+    listEvents(taskId) {
+      const rows = db
+        .prepare("SELECT * FROM events WHERE task_id = ? ORDER BY id")
+        .all(taskId) as unknown as EventRow[];
+      return rows.map(rowToEvent);
     },
 
     close() {
