@@ -24,6 +24,11 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
   const marker = `${clone}.incomplete`;
   const root = parse(process.cwd()).root;
 
+  // An earlier clone stopped partway. Delete what it left and clone again.
+  if (existsSync(marker)) {
+    rmSync(clone, { recursive: true, force: true });
+  }
+
   // A complete clone only gets a fetch. Its remote.origin.url stays as it is.
   if (existsSync(clone) && !existsSync(marker)) {
     await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
