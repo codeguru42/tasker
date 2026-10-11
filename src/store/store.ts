@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { migrate } from "./migrate.js";
+import { migrate, rollbackQuietly } from "./migrate.js";
 import { migrations } from "./migrations.js";
 
 export interface Task {
@@ -139,7 +139,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       db.exec("COMMIT");
       return result;
     } catch (error) {
-      db.exec("ROLLBACK");
+      rollbackQuietly(db);
       throw error;
     }
   }

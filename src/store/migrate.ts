@@ -5,6 +5,16 @@ export function schemaVersion(db: DatabaseSync): number {
   return row.user_version;
 }
 
+// Rolls back the open transaction. On some errors SQLite already ended the
+// transaction, so ROLLBACK fails. The caller rethrows its first error.
+export function rollbackQuietly(db: DatabaseSync): void {
+  try {
+    db.exec("ROLLBACK");
+  } catch {
+    // No transaction is open. Keep the first error.
+  }
+}
+
 // Version N means that the first N migrations ran.
 export function migrate(db: DatabaseSync, migrations: readonly string[]): void {
   db.exec("BEGIN IMMEDIATE");
@@ -21,7 +31,7 @@ export function migrate(db: DatabaseSync, migrations: readonly string[]): void {
     }
     db.exec("COMMIT");
   } catch (error) {
-    db.exec("ROLLBACK");
+    rollbackQuietly(db);
     throw error;
   }
 }
