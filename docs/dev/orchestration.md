@@ -2,7 +2,7 @@
 
 This page gives the rules for an orchestrator. The orchestrator is the assistant session that picks tickets, starts one agent for each ticket, moves the cards, sets the landing order and writes memory.
 
-A ticket is an issue on the project board. An agent is an assistant session that the orchestrator starts for one ticket. The agent runs the steps of "Run one ticket" for that ticket. The user is the person who runs the orchestrator.
+A ticket is an issue on the project board. An agent is an assistant session that the orchestrator starts for one ticket. The agent runs the steps of "Run one ticket" for that ticket. The user is the person who runs the orchestrator. A task is the record that tasker keeps for one ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
 
 Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo.
 
@@ -61,6 +61,10 @@ The steps to land a ticket are in "Run one ticket". This section gives the rules
 
 - After `tasker approve`, each agent sends the orchestrator the list of files that the plan changes. `tasker refine` and `tasker approve` also print a warning when another task in progress changes the same file.
 - If the edit of a shared file is not required, the agent removes it in a refine. If it is required, the orchestrator sets the landing order.
+- When the orchestrator sets the landing order, it tells the later agent which ticket must land first. The earlier ticket is the ticket that must land first. The later agent is the agent of the ticket that lands after it.
+- The later agent does the steps of "Run one ticket" up to `tasker accept` in step 9. Before it runs `tasker accept`, it waits until the issue of the earlier ticket is closed. While the agent waits, the task is in `awaiting_work_review`.
+- To wait, the agent reads the state of the issue of the earlier ticket one time: `gh issue view <number> --json state -q .state`. If the state is `OPEN`, the agent reads it again every 30 seconds until it is `CLOSED`.
+- When the issue of the earlier ticket is closed, the agent runs `tasker update-branch`. The task goes from `awaiting_work_review` to `executed`. Then the agent continues step 9 of "Run one ticket" from its `tasker verify`.
 - If `tasker update-branch` reports a rebase conflict, the agent follows [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent does not copy that procedure.
 
 ## Limits
