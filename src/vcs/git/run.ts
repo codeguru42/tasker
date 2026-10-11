@@ -7,7 +7,8 @@ import { existsSync, statSync } from "node:fs";
 // tasker never sets core.worktree or core.bare=false in that clone. A non-bare
 // git dir is out of scope: its configuration can give git a work tree.
 // In both modes, runGit() removes the repo-local git variables of the caller (see
-// REPO_LOCAL_GIT_VARS). Other variables, such as GIT_CONFIG_GLOBAL, still reach git.
+// REPO_LOCAL_GIT_VARS). Apart from the ssh and prompt rules of childEnv(), other
+// variables, such as GIT_CONFIG_GLOBAL, reach git unchanged.
 export type GitLocation = { cwd: string } | { gitDir: string };
 export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv };
 
@@ -70,8 +71,9 @@ const CONFIG_PAIR_VAR = /^GIT_CONFIG_(KEY|VALUE)_\d+$/;
 // The env of the child: env, plus GIT_TERMINAL_PROMPT=0, which always wins.
 // tasker owns the repo that it uses, so the repo-local git variables of the caller go
 // away in both modes (see "How tasker uses git" in docs/dev/version-control.md).
-// Each other variable passes as it is. For example, GIT_CONFIG_GLOBAL and
-// GIT_CONFIG_SYSTEM name configuration files that git reads. They do not choose the repo.
+// Apart from the ssh and prompt rules, no other variable is removed or changed.
+// For example, GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM name configuration files
+// that git reads. They do not choose the repo.
 // Git uses a GIT_SSH_COMMAND that is present, even an empty one. So:
 // a non-empty GIT_SSH_COMMAND of the caller stays. Otherwise GIT_SSH_COMMAND goes away,
 // and a non-empty GIT_SSH of the caller stays. Otherwise GIT_SSH goes away too,
