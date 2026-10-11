@@ -3,14 +3,7 @@ import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { immediateTransaction, rollbackQuietly } from "../../src/store/transaction.js";
-import { makeTempDir } from "../helpers.js";
-
-function tableNames(db: DatabaseSync): string[] {
-  const rows = db
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
-    .all() as { name: string }[];
-  return rows.map((row) => row.name);
-}
+import { makeTempDir, tableNames } from "../helpers.js";
 
 describe("transaction", () => {
   let dir: string;

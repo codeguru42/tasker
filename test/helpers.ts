@@ -1,6 +1,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { DatabaseSync } from "node:sqlite";
 import type { Io, RegisterCommand } from "../src/cli.js";
 
 export interface CapturedIo extends Io {
@@ -53,6 +54,14 @@ export function validConfig(): Record<string, any> {
 // A new empty folder under the system temp folder. The caller removes it.
 export function makeTempDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix));
+}
+
+// The names of the tables in db, in alphabetical order.
+export function tableNames(db: DatabaseSync): string[] {
+  const rows = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+    .all() as { name: string }[];
+  return rows.map((row) => row.name);
 }
 
 // The repo root, for spawn tests that need it as cwd.
