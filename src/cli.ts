@@ -29,11 +29,11 @@ export function buildProgram(commands: readonly RegisterCommand[], io: Io): Comm
     .usage("[options] [command]")
     .argument("[operands...]")
     .action((operands: string[]) => {
-      const [name] = operands;
-      if (name === undefined) {
+      if (operands.length === 0) {
         program.help({ error: true });
       }
-      program.error(`error: unknown command '${name}'`);
+      // Commander's own unknown-command error adds the "Did you mean ...?" hint.
+      (program as Command & { unknownCommand(): never }).unknownCommand();
     });
   for (const register of commands) {
     register(program);
