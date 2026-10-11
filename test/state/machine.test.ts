@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { STATES, TERMINAL_STATES, isTaskState } from "../../src/state/machine.js";
+import {
+  STATES,
+  TERMINAL_STATES,
+  canTransition,
+  isTaskState,
+  type TaskState,
+} from "../../src/state/machine.js";
 
 describe("task states", () => {
   it("declares the 28 states in order", () => {
@@ -47,5 +53,37 @@ describe("task states", () => {
     expect(isTaskState("planning")).toBe(true);
     expect(isTaskState("awaiting_input")).toBe(false);
     expect(isTaskState("new")).toBe(false);
+  });
+});
+
+const NON_TERMINAL = STATES.filter((s) => !TERMINAL_STATES.has(s));
+
+describe("rule edges", () => {
+  it.each(STATES)("refuses the self-transition of %s", (state) => {
+    expect(canTransition(state, state)).toBe(false);
+  });
+
+  it.each(NON_TERMINAL)("allows %s -> cancelled", (state) => {
+    expect(canTransition(state, "cancelled")).toBe(true);
+  });
+
+  it.each(NON_TERMINAL.filter((s) => s !== "failed"))(
+    "allows %s -> failed",
+    (state) => {
+      expect(canTransition(state, "failed")).toBe(true);
+    },
+  );
+
+  it.each(["finished", "cancelled"] as TaskState[])(
+    "allows no edge out of %s",
+    (terminal) => {
+      for (const to of STATES) {
+        expect(canTransition(terminal, to)).toBe(false);
+      }
+    },
+  );
+
+  it("refuses failed -> failed", () => {
+    expect(canTransition("failed", "failed")).toBe(false);
   });
 });
