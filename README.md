@@ -18,7 +18,7 @@ This repo is a rebuild of tasker. Work is tracked on the [project board](https:/
 5. Link the `tasker` command on your machine: `npm link`
 6. Make sure that the command works: `tasker --help`
 
-`tasker --help` lists the options and the commands. `tasker --version` prints the version. An unknown command or option prints an error and exits with a non-zero code.
+`tasker --help` lists the options and the commands. `tasker --version` prints the version. `tasker` with no command prints the same usage to stderr and exits with code 1. An unknown command or option prints an error and exits with a non-zero code.
 
 ## Configuration
 
