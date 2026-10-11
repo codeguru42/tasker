@@ -29,11 +29,54 @@ const ForgeSchema = z.strictObject({
   mergeMethod: z.enum(["merge", "squash", "rebase"]).default("merge"),
 });
 
+const nonEmptyList = z.array(nonEmpty).min(1);
+
+const MatchSchema = z
+  .strictObject({
+    labels: nonEmptyList.optional(),
+    components: nonEmptyList.optional(),
+  })
+  .superRefine((match, ctx) => {
+    if (match.labels === undefined && match.components === undefined) {
+      ctx.addIssue({ code: "custom", message: "must name labels or components" });
+    }
+  });
+
+const IssueTrackerSchema = z.strictObject({
+  provider: z.enum(["github", "jira"]),
+  project: nonEmpty.optional(),
+  match: MatchSchema.optional(),
+  site: nonEmpty.transform((site) => site.toLowerCase()).optional(),
+  tracker: nonEmpty.optional(),
+  account: nonEmpty.optional(),
+  releaseBranchFieldId: nonEmpty.optional(),
+  releaseBranchField: nonEmpty.optional(),
+  updateOnStart: z.boolean().default(false),
+  assignee: nonEmpty.default("@me"),
+  inProgressLabel: nonEmpty.optional(),
+  inProgressStatus: nonEmpty.optional(),
+  updateOnFinish: z.boolean().default(false),
+  doneLabel: nonEmpty.optional(),
+  doneStatus: nonEmpty.optional(),
+});
+
+const RoleSchema = z.strictObject({
+  model: nonEmpty,
+  effort: z.enum(["low", "medium", "high"]),
+});
+
+const AssistantSchema = z.strictObject({
+  provider: z.enum(["claude-code", "copilot", "pi"]),
+  models: z.strictObject({ plan: RoleSchema, execute: RoleSchema, review: RoleSchema }),
+  trustedExtensions: z.array(nonEmpty).default([]),
+  account: nonEmpty.optional(),
+  correctiveTurns: z.number().int().min(0).default(1),
+});
+
 const RepoSchema = z.strictObject({
   remote: nonEmpty,
-  // Placeholders: later todos replace them with strict schemas.
-  issueTracker: z.record(z.string(), z.unknown()),
-  assistant: z.record(z.string(), z.unknown()),
+  issueTracker: IssueTrackerSchema,
+  assistant: AssistantSchema,
   verify: VerifySchema,
   bootstrap: BootstrapSchema.default({ commands: [], env: [] }),
   defaultBaseBranch: nonEmpty.optional(),
