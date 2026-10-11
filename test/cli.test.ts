@@ -96,13 +96,19 @@ describe("run", () => {
     expect(io.err.join("")).not.toContain("unknown option");
   });
 
-  it("prints usage to stderr and fails when given no arguments", async () => {
-    const io = captureIo();
+  it.each([
+    { label: "no commands", commands: [] },
+    { label: "commands", commands: [greet] },
+  ])("prints the --help usage to stderr and fails when given no arguments, with $label", async ({ commands }) => {
+    const helpIo = captureIo();
+    await run(["--help"], { commands, io: helpIo });
 
-    const code = await run([], { commands: [greet], io });
+    const io = captureIo();
+    const code = await run([], { commands, io });
 
     expect(code).toBe(1);
-    expect(io.err.join("")).toContain("Usage: tasker");
+    expect(io.out.join("")).toBe("");
+    expect(io.err.join("")).toBe(helpIo.out.join(""));
   });
 
   it("does not show the internal operands placeholder in the usage line", async () => {
