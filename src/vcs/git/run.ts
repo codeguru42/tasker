@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 
 export type GitLocation = { cwd: string } | { gitDir: string };
 export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv };
@@ -55,7 +56,16 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
     const err: Buffer[] = [];
     child.stdout.on("data", (chunk: Buffer) => out.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => err.push(chunk));
-    child.on("error", reject);
+    child.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") {
+        reject(error);
+      } else if (cwd !== undefined && !existsSync(cwd)) {
+        // Node also reports a missing cwd as ENOENT.
+        reject(new Error(`the working folder does not exist: ${cwd}`));
+      } else {
+        reject(new GitNotInstalledError("git is not installed: git was not found on PATH"));
+      }
+    });
     child.on("close", (code, signal) => {
       const stdout = Buffer.concat(out).toString("utf8");
       const stderr = Buffer.concat(err).toString("utf8");
