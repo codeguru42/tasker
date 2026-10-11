@@ -303,3 +303,37 @@ describe("parseConfig assistant", () => {
     expect(issuesOf(raw)).toContain("repos.tasker.assistant.model: unrecognized key");
   });
 });
+
+describe.each(["verify", "bootstrap"])("parseConfig %s.env", (phase) => {
+  const at = `repos.tasker.${phase}.env.0`;
+
+  function withEnv(names: string[]): Record<string, unknown> {
+    const raw = validConfig();
+    raw.repos.tasker[phase] = { ...raw.repos.tasker[phase], env: names };
+    return raw;
+  }
+
+  it("accepts and keeps an ordinary name", () => {
+    const repo = parseConfig(withEnv(["NPM_TOKEN"]), {}, home).repos.tasker as unknown as Record<
+      string,
+      { env: string[] }
+    >;
+    expect(repo[phase].env).toEqual(["NPM_TOKEN"]);
+  });
+
+  it("rejects a TASKER_ name", () => {
+    expect(issuesOf(withEnv(["TASKER_CONFIG"]))).toContain(
+      `${at}: must not start with TASKER_: a TASKER_ variable is tasker's own and is never handed to a phase`,
+    );
+  });
+
+  it.each(["HOME", "NVM_DIR"])("rejects the name %s that every phase receives", (name) => {
+    expect(issuesOf(withEnv([name]))).toContain(
+      `${at}: must not be a name every phase already receives (such as HOME); remove it from env`,
+    );
+  });
+
+  it.each(["1BAD", "A-B"])("rejects %s as a variable name", (name) => {
+    expect(issuesOf(withEnv([name]))).toContain(`${at}: must be an environment variable name`);
+  });
+});
