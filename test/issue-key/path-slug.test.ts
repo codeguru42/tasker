@@ -20,6 +20,22 @@ describe("pathSlug", () => {
     expect(pathSlug("..x/")).toBe("x");
   });
 
+  it("collapses a run of . into one .", () => {
+    expect(pathSlug("a..b")).toBe("a.b");
+  });
+
+  it("removes a trailing .lock", () => {
+    expect(pathSlug("x.lock")).toBe("x");
+  });
+
+  it("removes each trailing .lock", () => {
+    expect(pathSlug("x.lock.lock")).toBe("x");
+  });
+
+  it("throws when nothing safe is left", () => {
+    expect(() => pathSlug("///")).toThrow('cannot make a path slug from "///"');
+  });
+
   it("keeps the case", () => {
     expect(pathSlug("AbC/d")).toBe("AbC-d");
   });
