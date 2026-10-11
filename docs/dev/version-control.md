@@ -74,16 +74,15 @@ The marker is the file `<clone>.incomplete`, that is `<dataRoot>/clones/<slug>/r
 These are the steps:
 
 1. If the marker exists, an earlier clone stopped partway. Provision deletes the whole clone folder, including each file that a person put there. Then it goes on with step 3.
-2. If the clone folder exists and the marker does not, the clone is complete. Provision applies the clone configuration (step 7), runs `git fetch --prune origin` (step 8) and returns. It does not clone again. It does not change `remote.origin.url`.
+2. If the clone folder exists and the marker does not, the clone is complete. Provision applies the clone configuration (step 6), which includes the fetch refspec. Then it runs `git fetch --prune origin` (step 7) and returns. It does not clone again. It does not change `remote.origin.url`.
 3. Provision runs `git ls-remote --exit-code -- <remote>`. The cwd is `remoteCwd()`, the root of the file system, so a relative remote path resolves against `/`. No file exists yet at this point.
 4. Provision makes the parent folder of the clone and writes the empty marker.
 5. Provision runs `git clone --bare -- <remote> <clone>` with the same cwd, the root of the file system. It passes the clone path as an absolute path (`resolve(clone)`), so the cwd does not move the clone. As a result, a relative remote path names the same repo in `ls-remote` and in `clone`. For a relative local remote path, `git clone` writes its absolute path in `remote.origin.url`. The fetch runs with the clone as cwd and uses that value.
-6. Provision runs `git config --replace-all remote.origin.fetch +refs/heads/*:refs/remotes/origin/*`. This leaves exactly one fetch refspec. As a result, a fetch makes `origin/<branch>` refs.
-7. Provision applies the clone configuration: see [The clone configuration](#the-clone-configuration).
-8. Provision runs `git fetch --prune origin`. The `--prune` option removes the remote-tracking refs of branches that the remote deleted.
-9. On the fresh-clone path, provision removes the marker.
+6. Provision applies the clone configuration: see [The clone configuration](#the-clone-configuration).
+7. Provision runs `git fetch --prune origin`. The `--prune` option removes the remote-tracking refs of branches that the remote deleted.
+8. On the fresh-clone path, provision removes the marker.
 
-A second provision on a complete clone applies the clone configuration again and fetches with `--prune`. It writes `user.name` or `user.email` again with `--replace-all`. It removes every local line of one of them with `--unset-all` when the field is gone from `vcs.config`. It writes the signing keys and `include.path` again with `--replace-all`, and it writes the include file again. A change to `vcs.config` takes effect at the next provision. A changed `remote` has no effect on a complete clone, because provision does not change `remote.origin.url` of a complete clone.
+A second provision on a complete clone applies the clone configuration again and fetches with `--prune`. It writes `remote.origin.fetch` again with `--replace-all`. It writes `user.name` or `user.email` again with `--replace-all`. It removes every local line of one of them with `--unset-all` when the field is gone from `vcs.config`. It writes the signing keys and `include.path` again with `--replace-all`, and it writes the include file again. A change to `vcs.config` takes effect at the next provision. A changed `remote` has no effect on a complete clone, because provision does not change `remote.origin.url` of a complete clone.
 
 Provision rejects with these errors:
 
@@ -99,6 +98,7 @@ Provision reads no text of git to find a lock. The errors above have no `cause`.
 
 Each git config write is one `git config` call with `gitDir` set to the clone. Each value goes in with `git config --replace-all <key> <value>`. This leaves exactly one local line, even when the key had several lines. In this order, provision:
 
+- Sets `remote.origin.fetch` to `+refs/heads/*:refs/remotes/origin/*`. This leaves exactly one fetch refspec, so a fetch makes `origin/<branch>` refs.
 - Sets `user.name` to `authorName`. If `authorName` is not set, provision runs `git config --unset-all user.name`. This removes every local line of the key. Provision reads exit code 5 of `--unset-all` as "the key is missing" and treats it as success. Every other failure passes through. On a fresh clone this writes nothing, so git uses the global identity.
 - Does the same for `user.email` and `authorEmail`.
 - Sets `commit.gpgSign`, `tag.gpgSign` and `tag.forceSignAnnotated` to `false`.
