@@ -1,29 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { run, type Io, type RegisterCommand } from "../src/cli.js";
-
-interface CapturedIo extends Io {
-  out: string[];
-  err: string[];
-}
-
-function captureIo(): CapturedIo {
-  const out: string[] = [];
-  const err: string[] = [];
-  return {
-    out,
-    err,
-    stdout: (text) => out.push(text),
-    stderr: (text) => err.push(text),
-  };
-}
-
-const greet: RegisterCommand = (program) => {
-  program
-    .command("greet")
-    .description("Say hello")
-    .option("--name <name>", "Who to greet");
-};
+import { run } from "../src/cli.js";
+import { captureIo, greet } from "./helpers.js";
 
 const packageVersion: string = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),

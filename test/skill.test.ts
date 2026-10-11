@@ -1,34 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { run, type Io, type RegisterCommand } from "../src/cli.js";
+import { run, type RegisterCommand } from "../src/cli.js";
+import { captureIo, greet } from "./helpers.js";
 import { commandsInHelp, commandsMissingFromSkill } from "./skill-coverage.js";
 
 function readSkill(): string {
   return readFileSync(new URL("../skills/tasker/SKILL.md", import.meta.url), "utf8");
 }
-
-interface CapturedIo extends Io {
-  out: string[];
-  err: string[];
-}
-
-function captureIo(): CapturedIo {
-  const out: string[] = [];
-  const err: string[] = [];
-  return {
-    out,
-    err,
-    stdout: (text) => out.push(text),
-    stderr: (text) => err.push(text),
-  };
-}
-
-const greet: RegisterCommand = (program) => {
-  program
-    .command("greet")
-    .description("Say hello")
-    .option("--name <name>", "Who to greet");
-};
 
 async function helpText(commands?: readonly RegisterCommand[]): Promise<string> {
   const io = captureIo();
