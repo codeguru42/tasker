@@ -20,12 +20,14 @@ export interface ProvisionOptions {
 }
 
 // Makes the bare clone of the remote at options.clone and fetches all branches as origin/*.
-// The marker file <clone>.incomplete exists while a fresh clone is not complete.
+// The marker file <clone>.incomplete exists from before git clone until the first fetch succeeds.
+// If a step fails, the marker stays.
 export async function provisionClone(options: ProvisionOptions): Promise<void> {
   const { remote, clone, config, env } = options;
   const marker = `${clone}.incomplete`;
 
-  // An earlier clone stopped partway. Delete what it left and clone again.
+  // An earlier clone stopped partway. Delete the clone folder and clone again.
+  // The marker stays until the clone is complete.
   if (existsSync(marker)) {
     rmSync(clone, { recursive: true, force: true });
   }
