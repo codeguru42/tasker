@@ -1,11 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { rmSync } from "node:fs";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   STATES,
   TERMINAL_STATES,
   canTransition,
   isTaskState,
+  transitionTask,
   type TaskState,
 } from "../../src/state/machine.js";
+import { openStore, type TaskStore } from "../../src/store/store.js";
+import { makeTempDir } from "../helpers.js";
 
 describe("task states", () => {
   it("declares the 28 states in order", () => {
@@ -178,5 +183,61 @@ describe("table edges", () => {
 
   it.each(ILLEGAL_EDGES)("refuses %s -> %s", (from, to) => {
     expect(canTransition(from, to)).toBe(false);
+  });
+});
+
+describe("transitionTask", () => {
+  let dir: string;
+  let store: TaskStore;
+
+  beforeEach(() => {
+    dir = makeTempDir("tasker-data-");
+    store = openStore(join(dir, "tasker.db"));
+  });
+
+  afterEach(() => {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  const newTask = (state: string) => ({
+    issueKey: "codeguru42/tasker#7",
+    repoKey: "tasker",
+    state,
+  });
+
+  it("moves a task along a legal edge", () => {
+    const task = store.createTask(newTask("planning"));
+    const moved = transitionTask(store, task.id, "awaiting_plan_review");
+    expect(moved.state).toBe("awaiting_plan_review");
+    expect(store.getTask(task.id)!.state).toBe("awaiting_plan_review");
+  });
+
+  it("refuses an illegal edge and keeps the state", () => {
+    const task = store.createTask(newTask("planning"));
+    expect(() => transitionTask(store, task.id, "finished")).toThrow(
+      "illegal state transition: planning -> finished",
+    );
+    expect(store.getTask(task.id)!.state).toBe("planning");
+  });
+
+  it("names both states when a terminal task moves", () => {
+    const task = store.createTask(newTask("finished"));
+    expect(() => transitionTask(store, task.id, "cancelled")).toThrow(
+      /finished.*cancelled/,
+    );
+  });
+
+  it("refuses a stored state that is not a known state", () => {
+    const task = store.createTask(newTask("awaiting_input"));
+    expect(() => transitionTask(store, task.id, "workspace_ready")).toThrow(
+      "illegal state transition: awaiting_input -> workspace_ready",
+    );
+  });
+
+  it("keeps the store error for a missing task", () => {
+    expect(() => transitionTask(store, 999, "planning")).toThrow(
+      "task not found: 999",
+    );
   });
 });
