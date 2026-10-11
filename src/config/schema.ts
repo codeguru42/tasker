@@ -109,32 +109,42 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function rejectLanding(raw: unknown, ctx: z.RefinementCtx): unknown {
-  if (!isObject(raw) || !Object.hasOwn(raw, "landing")) return raw;
-  ctx.addIssue({
-    code: "custom",
-    path: ["landing"],
-    message:
-      "is not accepted: there is no landing setting; the command you run picks how a task lands",
-  });
-  const rest = { ...raw };
-  delete rest.landing;
-  return rest;
+interface Prepared {
+  input: unknown;
+  issues: string[];
 }
 
-function resolveNamedTrackers(raw: unknown, ctx: z.RefinementCtx): unknown {
-  if (!isObject(raw) || !isObject(raw.repos)) return raw;
-  if (raw.trackers !== undefined && !isObject(raw.trackers)) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["trackers"],
-      message: "must be an object that maps each tracker name to its definition",
-    });
-    return raw;
+function issueLine(path: readonly (string | number)[], message: string): string {
+  return `${path.join(".")}: ${message}`;
+}
+
+// Runs before the schema. It finds the errors that the schema cannot see, and it
+// returns a cleaned copy of the input. It never changes raw or an object inside it.
+function prepareConfig(raw: unknown): Prepared {
+  if (!isObject(raw)) return { input: raw, issues: [] };
+  const issues: string[] = [];
+  const copy: Record<string, unknown> = { ...raw };
+  if (Object.hasOwn(copy, "landing")) {
+    issues.push(
+      issueLine(
+        ["landing"],
+        "is not accepted: there is no landing setting; the command you run picks how a task lands",
+      ),
+    );
+    delete copy.landing;
   }
-  const trackers = raw.trackers ?? {};
+  let trackersBroken = false;
+  if (copy.trackers !== undefined && !isObject(copy.trackers)) {
+    issues.push(
+      issueLine(["trackers"], "must be an object that maps each tracker name to its definition"),
+    );
+    delete copy.trackers;
+    trackersBroken = true;
+  }
+  if (!isObject(copy.repos)) return { input: copy, issues };
+  const trackers = isObject(copy.trackers) ? copy.trackers : {};
   const repos: Record<string, unknown> = {};
-  for (const [key, repo] of Object.entries(raw.repos)) {
+  for (const [key, repo] of Object.entries(copy.repos)) {
     const issueTracker = isObject(repo) ? repo.issueTracker : undefined;
     if (!isObject(repo) || !isObject(issueTracker) || typeof issueTracker.tracker !== "string") {
       repos[key] = repo;
@@ -142,35 +152,40 @@ function resolveNamedTrackers(raw: unknown, ctx: z.RefinementCtx): unknown {
     }
     const name = issueTracker.tracker;
     const at = ["repos", key, "issueTracker"];
+    // A repo that names a missing or bad tracker gets a placeholder provider.
+    // The real error is already reported once: under the tracker name for a
+    // missing definition, or under trackers.<name> for a bad one. Without the
+    // placeholder, the issueTracker schema adds a second error for the provider.
+    const placeholder = { provider: "github", ...issueTracker };
+    if (trackersBroken) {
+      repos[key] = { ...repo, issueTracker: placeholder };
+      continue;
+    }
     const definition = Object.hasOwn(trackers, name) ? trackers[name] : undefined;
     if (definition === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: [...at, "tracker"],
-        message: `names tracker '${name}', which is not defined under trackers`,
-      });
+      issues.push(
+        issueLine(
+          [...at, "tracker"],
+          `names tracker '${name}', which is not defined under trackers`,
+        ),
+      );
     }
     if (Object.hasOwn(issueTracker, "provider")) {
-      ctx.addIssue({
-        code: "custom",
-        path: [...at, "provider"],
-        message: `must not be set next to tracker; provider comes from tracker '${name}'`,
-      });
+      issues.push(
+        issueLine(
+          [...at, "provider"],
+          `must not be set next to tracker; provider comes from tracker '${name}'`,
+        ),
+      );
     }
     // Merge the raw definition, so the issueTracker schema applies the defaults once.
-    // When the definition is missing or bad, the parse fails anyway. A placeholder
-    // provider then stops a second error about the missing provider.
     const merged =
       definition !== undefined && TrackerDefinitionSchema.safeParse(definition).success
         ? { ...(definition as Record<string, unknown>), ...issueTracker }
-        : { provider: "github", ...issueTracker };
+        : placeholder;
     repos[key] = { ...repo, issueTracker: merged };
   }
-  return { ...raw, repos };
-}
-
-function prepare(raw: unknown, ctx: z.RefinementCtx): unknown {
-  return resolveNamedTrackers(rejectLanding(raw, ctx), ctx);
+  return { input: { ...copy, repos }, issues };
 }
 
 export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
@@ -201,7 +216,7 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
     repos: z.record(z.string(), RepoSchema),
   });
 
-  return z.preprocess(prepare, top);
+  return top;
 }
 
 export type Config = z.output<ReturnType<typeof buildConfigSchema>>;
@@ -232,7 +247,9 @@ export class ConfigError extends Error {
 }
 
 export function parseConfig(raw: unknown, env: NodeJS.ProcessEnv, homedir: string): Config {
-  const result = buildConfigSchema(env, homedir).safeParse(raw);
-  if (!result.success) throw new ConfigError(formatIssues(result.error.issues));
+  const { input, issues } = prepareConfig(raw);
+  const result = buildConfigSchema(env, homedir).safeParse(input);
+  if (!result.success) throw new ConfigError([...issues, ...formatIssues(result.error.issues)]);
+  if (issues.length > 0) throw new ConfigError(issues);
   return result.data;
 }
