@@ -58,4 +58,50 @@ describe("run", () => {
     expect(io.out.join("")).toContain("--name <name>");
     expect(io.out.join("")).toContain("Who to greet");
   });
+
+  it("rejects an unknown option and points to --help", async () => {
+    const io = captureIo();
+
+    const code = await run(["--bogus"], { commands: [greet], io });
+
+    expect(code).toBe(1);
+    expect(io.err.join("")).toContain("unknown option '--bogus'");
+    expect(io.err.join("")).toContain("tasker --help");
+  });
+
+  it("rejects an unknown option of a command", async () => {
+    const io = captureIo();
+
+    const code = await run(["greet", "--bogus"], { commands: [greet], io });
+
+    expect(code).toBe(1);
+    expect(io.err.join("")).toContain("unknown option '--bogus'");
+  });
+
+  it("rejects an unknown command", async () => {
+    const io = captureIo();
+
+    const code = await run(["bogus"], { commands: [greet], io });
+
+    expect(code).toBe(1);
+    expect(io.err.join("")).toContain("unknown command 'bogus'");
+  });
+
+  it("rejects an unknown command when no commands exist", async () => {
+    const io = captureIo();
+
+    const code = await run(["bogus"], { commands: [], io });
+
+    expect(code).toBe(1);
+    expect(io.err.join("")).toContain("unknown command 'bogus'");
+  });
+
+  it("prints usage to stderr and fails when given no arguments", async () => {
+    const io = captureIo();
+
+    const code = await run([], { commands: [greet], io });
+
+    expect(code).toBe(1);
+    expect(io.err.join("")).toContain("Usage: tasker");
+  });
 });
