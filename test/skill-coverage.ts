@@ -9,7 +9,7 @@ export function commandsInHelp(helpText: string): string[] {
     if (line.trim() === "") {
       break;
     }
-    const name = /^ {2}(\S+)/.exec(line)?.[1];
+    const name = /^ {2}([^\s|]+)/.exec(line)?.[1];
     if (name !== undefined && name !== "help") {
       names.push(name);
     }
