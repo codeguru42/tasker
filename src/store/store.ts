@@ -94,11 +94,14 @@ function rowToTask(row: TaskRow): Task {
 export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   const now = options.now ?? (() => new Date());
   const db = new DatabaseSync(path);
+  // The busy timeout comes first because the switch to WAL takes a lock.
+  db.exec("PRAGMA busy_timeout = 5000");
+  db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA foreign_keys = ON");
   migrate(db, migrations);
 
   function write<T>(fn: () => T): T {
-    db.exec("BEGIN");
+    db.exec("BEGIN IMMEDIATE");
     try {
       const result = fn();
       db.exec("COMMIT");

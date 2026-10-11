@@ -7,7 +7,7 @@ export function schemaVersion(db: DatabaseSync): number {
 
 // Version N means that the first N migrations ran.
 export function migrate(db: DatabaseSync, migrations: readonly string[]): void {
-  db.exec("BEGIN");
+  db.exec("BEGIN IMMEDIATE");
   try {
     const found = schemaVersion(db);
     if (found > migrations.length) {
