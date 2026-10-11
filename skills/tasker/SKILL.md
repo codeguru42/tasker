@@ -16,6 +16,12 @@ tasker takes an issue from an issue tracker and drives an AI coding assistant th
 - `tasker --help` (`-h`): prints the usage, the options, and the commands.
 - `tasker --version` (`-V`): prints the version.
 
+## Configuration
+
+tasker reads one configuration file. It reads `$TASKER_CONFIG`. If that is not set, it reads `$XDG_CONFIG_HOME/tasker/config.json`. If that is not set, it reads `~/.config/tasker/config.json`.
+
+See `docs/config.md` for the keys.
+
 ## Commands
 
 tasker has no commands yet.
