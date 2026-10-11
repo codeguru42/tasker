@@ -96,6 +96,16 @@ describe("run", () => {
     expect(io.err.join("")).toContain("unknown command 'bogus'");
   });
 
+  it("suggests a similar command for a mistyped command", async () => {
+    const io = captureIo();
+
+    const code = await run(["gret"], { commands: [greet], io });
+
+    expect(code).toBe(1);
+    expect(io.err.join("")).toContain("unknown command 'gret'");
+    expect(io.err.join("")).toContain("Did you mean greet?");
+  });
+
   it("prints usage to stderr and fails when given no arguments", async () => {
     const io = captureIo();
 
