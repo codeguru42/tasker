@@ -9,10 +9,13 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/version.ts` reads the version from `package.json`.
 - `src/commands/` holds one file for each command. `src/commands/index.ts` lists them.
 - `src/config/` holds the configuration loader. `path.ts` finds the file, `expand.ts` expands paths, `allowed-env-names.ts` holds the default env allowlist, `schema.ts` validates the file, and `load.ts` reads it.
+- `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, and `store.ts` opens the database and reads and writes tasks and events.
 - `docs/config.md` is the configuration reference.
+- `docs/dev/data-root.md` describes the folders under `dataRoot` and the tables of the database.
 - `skills/tasker/SKILL.md` is the skill that tells an agent how to use tasker. It lists each command and its options.
 - `test/` holds the tests.
-- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command and `validConfig()`, which returns a new valid configuration object for each call.
+- `test/fixtures/` holds scripts that tests spawn as child processes.
+- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command, `validConfig()`, which returns a new valid configuration object for each call, `makeTempDir()`, which makes a new temporary folder for each call, and `repoRoot`, the repo root URL that spawn tests use as `cwd`.
 - `dist/` holds the build output. Git ignores it.
 
 ## Add a command
