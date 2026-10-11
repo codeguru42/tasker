@@ -55,4 +55,23 @@ describe("show-config", () => {
     ];
     expect(io.out.join("")).toBe(`${JSON.stringify(expected, null, 2)}\n`);
   });
+
+  it.each(["missing", "toString"])(
+    "reports the repo key %s that does not exist",
+    async (key) => {
+      const written = writeTempConfig(validConfig());
+      dir = written.dir;
+      vi.stubEnv("TASKER_CONFIG", written.path);
+      const io = captureIo();
+
+      const code = await run(["show-config", "--repo", key], {
+        commands: [showConfig],
+        io,
+      });
+
+      expect(code).toBe(1);
+      expect(io.out).toEqual([]);
+      expect(io.err.join("")).toBe(`repo key not found: ${key}\n`);
+    },
+  );
 });
