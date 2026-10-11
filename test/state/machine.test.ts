@@ -87,3 +87,96 @@ describe("rule edges", () => {
     expect(canTransition("failed", "failed")).toBe(false);
   });
 });
+
+const SPECIFIC: Record<string, string[]> = {
+  provisioning: ["workspace_ready"],
+  workspace_ready: ["planning", "updating_branch"],
+  planning: ["awaiting_plan_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  awaiting_plan_review: ["refining", "approved", "updating_branch"],
+  refining: ["awaiting_plan_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  approved: ["awaiting_plan_review", "executing", "updating_branch"],
+  executing: ["executed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  executed: ["verifying", "updating_branch"],
+  verifying: ["awaiting_work_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  awaiting_work_review: ["reviewing", "refining", "accepted", "updating_branch"],
+  reviewing: ["awaiting_work_review", "reviewed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  reviewed: ["refining", "awaiting_work_review", "updating_branch"],
+  accepted: ["landed", "merging", "pushing", "refining", "updating_branch"],
+  pushing: ["pushed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  pushed: ["landed", "opening_pr", "refining", "updating_branch"],
+  opening_pr: ["in_peer_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  in_peer_review: ["landed", "merging", "updating_branch"],
+  merging: ["landed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  landed: ["finishing"],
+  finishing: ["finished", "cleanup_failed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  cleanup_failed: ["finishing", "updating_branch"],
+  updating_branch: [
+    "workspace_ready", "awaiting_plan_review", "approved", "executed", "awaiting_work_review",
+    "reviewed", "accepted", "pushed", "in_peer_review", "failed", "cleanup_failed",
+    "quota_blocked", "awaiting_quota_approval", "interrupted",
+  ],
+  quota_blocked: ["workspace_ready", "awaiting_plan_review", "approved", "awaiting_work_review", "accepted", "reviewed"],
+  awaiting_quota_approval: ["workspace_ready", "awaiting_plan_review", "approved", "awaiting_work_review", "accepted", "reviewed"],
+  interrupted: [
+    "workspace_ready", "awaiting_plan_review", "approved", "awaiting_work_review", "accepted", "reviewed",
+    "executed", "in_peer_review", "pushed", "cleanup_failed", "landed",
+  ],
+  failed: [
+    "provisioning", "workspace_ready", "awaiting_plan_review", "approved", "executed", "accepted",
+    "awaiting_work_review", "reviewed", "in_peer_review", "refining", "pushed", "updating_branch",
+  ],
+};
+
+// An independent copy of the specific edges of the table.
+const TABLE_EDGES = Object.entries(SPECIFIC).flatMap(([from, targets]) =>
+  targets.map((to) => [from, to] as [TaskState, TaskState]),
+);
+
+const LEGAL_EDGES = new Set(TABLE_EDGES.map(([from, to]) => `${from} -> ${to}`));
+for (const state of NON_TERMINAL) {
+  if (state !== "failed") LEGAL_EDGES.add(`${state} -> failed`);
+  LEGAL_EDGES.add(`${state} -> cancelled`);
+}
+
+const ILLEGAL_EDGES: [TaskState, TaskState][] = [
+  ["provisioning", "planning"],
+  ["workspace_ready", "approved"],
+  ["planning", "executing"],
+  ["awaiting_plan_review", "executing"],
+  ["executing", "verifying"],
+  ["verifying", "accepted"],
+  ["awaiting_work_review", "landed"],
+  ["accepted", "in_peer_review"],
+  ["pushed", "merging"],
+  ["landed", "refining"],
+  ["quota_blocked", "planning"],
+  ["interrupted", "provisioning"],
+  ["failed", "verifying"],
+  ["finished", "provisioning"],
+  ["cancelled", "failed"],
+];
+
+describe("table edges", () => {
+  it("has 120 specific edges", () => {
+    expect(TABLE_EDGES).toHaveLength(120);
+  });
+
+  it.each(TABLE_EDGES)("allows %s -> %s", (from, to) => {
+    expect(canTransition(from, to)).toBe(true);
+  });
+
+  it("allows exactly the legal edges", () => {
+    const found = new Set<string>();
+    for (const from of STATES) {
+      for (const to of STATES) {
+        if (canTransition(from, to)) found.add(`${from} -> ${to}`);
+      }
+    }
+    expect(found).toEqual(LEGAL_EDGES);
+    expect(found.size).toBe(170);
+  });
+
+  it.each(ILLEGAL_EDGES)("refuses %s -> %s", (from, to) => {
+    expect(canTransition(from, to)).toBe(false);
+  });
+});
