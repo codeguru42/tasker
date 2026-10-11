@@ -73,6 +73,12 @@ const IssueTrackerSchema = z.strictObject({
   doneStatus: nonEmpty.optional(),
 });
 
+const TrackerDefinitionSchema = IssueTrackerSchema.omit({
+  project: true,
+  tracker: true,
+  match: true,
+}).strict();
+
 const RoleSchema = z.strictObject({
   model: nonEmpty,
   effort: z.enum(["low", "medium", "high"]),
@@ -116,6 +122,57 @@ function rejectLanding(raw: unknown, ctx: z.RefinementCtx): unknown {
   return rest;
 }
 
+function resolveNamedTrackers(raw: unknown, ctx: z.RefinementCtx): unknown {
+  if (!isObject(raw) || !isObject(raw.repos)) return raw;
+  if (raw.trackers !== undefined && !isObject(raw.trackers)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["trackers"],
+      message: "must be an object that maps each tracker name to its definition",
+    });
+    return raw;
+  }
+  const trackers = raw.trackers ?? {};
+  const repos: Record<string, unknown> = {};
+  for (const [key, repo] of Object.entries(raw.repos)) {
+    const issueTracker = isObject(repo) ? repo.issueTracker : undefined;
+    if (!isObject(repo) || !isObject(issueTracker) || typeof issueTracker.tracker !== "string") {
+      repos[key] = repo;
+      continue;
+    }
+    const name = issueTracker.tracker;
+    const at = ["repos", key, "issueTracker"];
+    const definition = Object.hasOwn(trackers, name) ? trackers[name] : undefined;
+    if (definition === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: [...at, "tracker"],
+        message: `names tracker '${name}', which is not defined under trackers`,
+      });
+    }
+    if (Object.hasOwn(issueTracker, "provider")) {
+      ctx.addIssue({
+        code: "custom",
+        path: [...at, "provider"],
+        message: `must not be set next to tracker; provider comes from tracker '${name}'`,
+      });
+    }
+    // Merge the raw definition, so the issueTracker schema applies the defaults once.
+    // When the definition is missing or bad, the parse fails anyway. A placeholder
+    // provider then stops a second error about the missing provider.
+    const merged =
+      definition !== undefined && TrackerDefinitionSchema.safeParse(definition).success
+        ? { ...(definition as Record<string, unknown>), ...issueTracker }
+        : { provider: "github", ...issueTracker };
+    repos[key] = { ...repo, issueTracker: merged };
+  }
+  return { ...raw, repos };
+}
+
+function prepare(raw: unknown, ctx: z.RefinementCtx): unknown {
+  return resolveNamedTrackers(rejectLanding(raw, ctx), ctx);
+}
+
 export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
   const dataRoot = z.string().transform((value, ctx) => {
     let expanded: string;
@@ -140,11 +197,11 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
     retentionDays: z.number().default(30),
     dataRootMinFreeBytes: positive.default(1073741824),
     limits: LimitsSchema,
-    trackers: z.record(z.string(), z.unknown()).default({}),
+    trackers: z.record(z.string(), TrackerDefinitionSchema).default({}),
     repos: z.record(z.string(), RepoSchema),
   });
 
-  return z.preprocess(rejectLanding, top);
+  return z.preprocess(prepare, top);
 }
 
 export type Config = z.output<ReturnType<typeof buildConfigSchema>>;
