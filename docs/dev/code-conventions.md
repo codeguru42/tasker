@@ -16,6 +16,7 @@ This page describes how the code of tasker is laid out and how to test it.
 - `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.
 - `docs/config.md` is the configuration reference.
 - `docs/dev/data-root.md` describes the folders under `dataRoot` and the tables of the database.
+- `docs/dev/rebase-conflicts.md` gives the procedure for a rebase conflict that `tasker update-branch` reports.
 - `docs/statemachine.md` describes the task states, the edges between them and the diagrams.
 - `skills/tasker/SKILL.md` is the skill that tells an agent how to use tasker. It lists each command and its options.
 - `test/` holds the tests.
