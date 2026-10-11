@@ -1,6 +1,15 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import {
+  accessSync,
+  constants,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir, userInfo } from "node:os";
+import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import type { Io, RegisterCommand } from "../src/cli.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -208,4 +217,83 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
 export function writeFakeGit(binDir: string, body: string): void {
   mkdirSync(binDir, { recursive: true });
   writeFileSync(join(binDir, "git"), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
+}
+
+// A path in single quotes for a shell script. Each ' in the path becomes '\''.
+function shellQuote(text: string): string {
+  return `'${text.replaceAll("'", "'\\''")}'`;
+}
+
+// The shell line that appends one call to the log: the argument count, then each argument.
+// Each item ends with a NUL, so an argument can hold a newline.
+function logLine(logPath: string): string {
+  return `printf '%s\\0' "$#" "$@" >> ${shellQuote(logPath)}`;
+}
+
+// Writes an executable ssh into binDir. Each call goes in the log at logPath (see readArgLog()).
+// "serve" runs the last argument in a shell, so the real git-upload-pack on PATH serves a local origin.
+// "refuse" prints what ssh prints for a missing key file at $2, then exits with 255.
+// Use the remote ssh://tasker.invalid<origin.path> and PATH=<binDir>:<process.env.PATH>.
+export function writeFakeSsh(binDir: string, logPath: string, mode: "serve" | "refuse"): void {
+  mkdirSync(binDir, { recursive: true });
+  const body =
+    mode === "serve"
+      ? [logLine(logPath), "for last; do :; done", 'exec sh -c "$last"']
+      : [
+          logLine(logPath),
+          `home=${shellQuote(userInfo().homedir)}`,
+          'case "$2" in',
+          '  "~/"*) key="$home${2#"~"}" ;;',
+          '  *) key="$2" ;;',
+          "esac",
+          'printf \'Warning: Identity file %s not accessible: No such file or directory.\\n\' "$key" >&2',
+          "echo 'Permission denied (publickey).' >&2",
+          "exit 255",
+        ];
+  writeFileSync(join(binDir, "ssh"), `#!/bin/sh\n${body.join("\n")}\n`, { mode: 0o755 });
+}
+
+// Writes a git wrapper into binDir. It logs each call (see readArgLog()), then runs the real git.
+// The real git is the first git file on process.env.PATH.
+export function writeGitRecorder(binDir: string, logPath: string): void {
+  let realGit: string | undefined;
+  for (const folder of (process.env.PATH ?? "").split(delimiter)) {
+    if (folder === "") continue;
+    const candidate = join(folder, "git");
+    try {
+      if (statSync(candidate).isFile()) {
+        accessSync(candidate, constants.X_OK);
+        realGit = candidate;
+        break;
+      }
+    } catch {
+      // Not here. Try the next folder.
+    }
+  }
+  if (realGit === undefined) {
+    throw new Error("no git found on PATH");
+  }
+  writeFakeGit(binDir, `${logLine(logPath)}\nexec ${shellQuote(realGit)} "$@"`);
+}
+
+// Reads a log of writeFakeSsh() or writeGitRecorder(). It returns one argument list for each call.
+// A missing log gives no calls.
+export function readArgLog(logPath: string): string[][] {
+  let text: string;
+  try {
+    text = readFileSync(logPath, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  const items = text.split("\0");
+  items.pop(); // The text after the last NUL is empty.
+  const calls: string[][] = [];
+  let index = 0;
+  while (index < items.length) {
+    const count = Number(items[index]);
+    calls.push(items.slice(index + 1, index + 1 + count));
+    index += 1 + count;
+  }
+  return calls;
 }
