@@ -581,5 +581,14 @@ publishTokens: tokens,
       expect((await get("--get")).trim()).toBe(resolve(clone, "hooks"));
       expect((await get("--get-all")).trim().split("\n")).toEqual([resolve(clone, "hooks")]);
     });
+
+    it("rejects when the hook cannot be installed", async () => {
+      await provision();
+      rmSync(join(clone, "hooks"), { recursive: true });
+      writeFileSync(join(clone, "hooks"), "a file where the folder belongs");
+      await expect(provision()).rejects.toThrow(
+        `cannot install the pre-push hook in the clone: ${clone}`,
+      );
+    });
   });
 });
