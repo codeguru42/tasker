@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, parse } from "node:path";
+import { dirname, join, parse } from "node:path";
 import { GitError, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
 
@@ -107,7 +107,22 @@ async function setOrUnset(
   }
 }
 
-// One git config write in the clone.
-function setConfig(clone: string, args: readonly string[], env: NodeJS.ProcessEnv): Promise<string> {
-  return runGit(["config", ...args], { gitDir: clone, env });
+// One git config write in the clone. When it fails and config.lock exists, the clone is locked.
+async function setConfig(
+  clone: string,
+  args: readonly string[],
+  env: NodeJS.ProcessEnv,
+): Promise<string> {
+  const failure = await runGit(["config", ...args], { gitDir: clone, env }).then(
+    (out) => ({ out }),
+    (error: unknown) => ({ error }),
+  );
+  if ("out" in failure) {
+    return failure.out;
+  }
+  if (existsSync(join(clone, "config.lock"))) {
+    // The new error sets no cause: it needs no text of git.
+    throw new Error(`the clone configuration is locked: ${clone}`);
+  }
+  throw failure.error;
 }
