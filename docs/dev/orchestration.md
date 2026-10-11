@@ -1,0 +1,73 @@
+# Orchestration
+
+This page gives the rules for an orchestrator. The orchestrator is the assistant session that picks tickets, starts one agent for each ticket, moves the cards, sets the landing order and writes memory.
+
+A ticket is an issue on the project board. An agent is an assistant session that the orchestrator starts for one ticket. The agent runs the steps of "Run one ticket" for that ticket. The user is the person who runs the orchestrator.
+
+Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo.
+
+tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are not agents and they do not run the steps on this page.
+
+The orchestrator and its agents run tasker from the local clone of the orchestrator. For one ticket, the agent of that ticket is the operator that [docs/dev/rebase-conflicts.md](rebase-conflicts.md) names.
+
+Every `tasker` command on this page is the installed `tasker`: the `tasker` command on the PATH from a global install. It is not the tasker that this repo builds. For this reason, `skills/tasker/SKILL.md` does not list its commands. See the `npm link` bullet under Limits.
+
+## Pick the tickets
+
+The orchestrator does all the steps of this section.
+
+- Take tickets only from the Todo column of the project board, and only from the current milestone. Do not start a ticket from a later milestone.
+- Start a ticket only when all the issues that block it are closed.
+- Run at most 3 agents at the same time, one ticket for each agent.
+- Do not run two tickets at the same time when both edit the same shared file, for example `test/helpers.ts` or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands.
+- When a ticket starts, the orchestrator moves its card to In progress. `tasker start` does not move the card. The board moves the card to Done when `tasker finish` closes the issue.
+- When the Todo column of the milestone is empty, stop and tell the user. Do not write the issues of the next milestone.
+
+## Run one ticket
+
+The agent of the ticket runs steps 1 to 10. Each step gives the state of the task after its command succeeds.
+
+1. Run `tasker doctor`.
+2. Run `tasker start <issue>`. The task goes to `workspace_ready`. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
+3. Read the plan with `tasker show-plan` and `tasker show-questions`. Compare the plan with the Requirements and the Docs sections of the issue.
+4. If the plan needs changes, run `tasker refine <issue> "<feedback>"`. The task goes to `awaiting_plan_review` again. Put the answers to the plan questions in the feedback text. `tasker plan` takes no feedback.
+5. Run `tasker approve`. The task goes to `approved`. Run `tasker execute`. The task goes to `executed`. Run `tasker verify`. When the verify commands pass, the task goes to `awaiting_work_review`. Run `tasker review`. When the review has findings, the task goes to `reviewed`. When it has none, the task stays in `awaiting_work_review`.
+6. Read the findings with `tasker show-review`. Refine each real finding with `tasker refine`. From `reviewed`, the task goes to `awaiting_plan_review`, and step 5 starts again with `tasker approve`.
+7. Dismiss a finding only with a reason: `tasker dismiss-review <issue> --finding N "<reason>"`. The task stays in `reviewed` until each finding is refined or dismissed. Then it goes to `awaiting_work_review`.
+8. Do steps 5 to 7 again until the review has no open findings. The "Review findings" section limits the number of loops.
+9. Run `tasker accept`. The task goes to `accepted`. Run `tasker merge`. The task goes to `landed`. Run `tasker finish`. The task goes to `finished`, and the issue closes.
+10. After `tasker finish`, post a comment on the issue that starts with `## Decisions made during implementation`. List the choices that the issue did not state, with the reasons. Name each detail that the issue did not give.
+
+If a command fails or the task is in another state, run `tasker show <issue>` and follow the commands that it prints.
+
+To find the next command, use these:
+
+- `tasker --help` lists the commands.
+- `tasker <command> --help` shows the states where the command is valid.
+- `tasker show <issue>` shows the state of the task and the next commands.
+
+## Review findings
+
+- The agent runs 3 review loops at most. On the 3rd loop, the agent dismisses cosmetic findings with a reason.
+- The agent runs a 4th loop only for a small, real correctness bug. After that, the agent stops and reports to the orchestrator. The orchestrator reports to the user.
+- A refactor or duplication finding is not cosmetic. The agent refines it in the ticket that added the duplicated code.
+- If such a finding is missed, the orchestrator adds it to a ticket that has not started (it edits the issue). Or the orchestrator tells the agent of a ticket in progress to add it to its next refine. If neither is possible, the orchestrator opens a new issue.
+- When the agent sends a fix in the refine text, it writes "apply everywhere it fits". Otherwise the next review finds the same problem in other places.
+
+## Land the work
+
+- The agent runs `tasker update-branch`, `tasker verify`, `tasker review`, `tasker accept`, `tasker merge` and `tasker finish`.
+- `tasker accept` refuses when the branch does not contain the tip of `origin/main`. If `main` moved, the agent runs `tasker update-branch`. The task goes to `executed`. The agent then runs `tasker verify` and `tasker review` again, before `tasker accept`.
+- After `tasker approve`, each agent sends the orchestrator the list of files that the plan changes. `tasker refine` and `tasker approve` also print a warning when another task in progress changes the same file.
+- If the edit of a shared file is not required, the agent removes it in a refine. If it is required, the orchestrator sets the landing order.
+- If `tasker update-branch` reports a rebase conflict, the agent follows [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent does not copy that procedure.
+
+## Limits
+
+These limits apply to the orchestrator and to the agents, except where a bullet names one actor.
+
+- Do not change the repo or the worktrees of tasker by hand. Only `tasker` commands change them.
+- If the issue does not give a detail that the work needs, the agent asks the user through the orchestrator.
+- If tasker stops for a quota, the agent runs `tasker resume` later. Never run `tasker approve-credits`.
+- Do not run `npm link` or a global install from a task worktree. The global `tasker` runs the tickets, and the install replaces it.
+- Only the orchestrator writes memory, so that two agents do not write the same file. Agents report what they learn to the orchestrator in their final report.
