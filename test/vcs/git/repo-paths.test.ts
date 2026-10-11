@@ -28,16 +28,16 @@ function seededKeys(count: number): string[] {
   let state = 12345;
   const next = () => {
     state = (state * 1103515245 + 12345) % 2147483648;
-    return state;
+    return state >>> 8;
   };
-  const keys: string[] = [];
-  for (let n = 0; n < count; n++) {
-    const length = 1 + (next() % 8);
+  const keys = new Set<string>();
+  while (keys.size < count) {
+    const length = 3 + (next() % 8);
     let key = "";
     for (let i = 0; i < length; i++) key += alphabet[next() % alphabet.length];
-    keys.push(key);
+    keys.add(key);
   }
-  return [...new Set(keys)];
+  return [...keys];
 }
 
 describe("repoPaths", () => {
@@ -77,7 +77,7 @@ describe("repoSlug", () => {
 
   it("gives 1000 generated keys their own slugs", () => {
     const keys = seededKeys(1000);
-    expect(keys.length).toBeGreaterThan(900);
+    expect(keys.length).toBe(1000);
     expect(new Set(keys.map(repoSlug)).size).toBe(keys.length);
   });
 
