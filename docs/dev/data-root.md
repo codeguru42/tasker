@@ -10,8 +10,13 @@ tasker keeps all of its data under one folder, the `dataRoot` of the configurati
 | --- | --- |
 | `<dataRoot>/clones/` | Clones of the repos. |
 | `<dataRoot>/worktrees/` | The worktrees of the tasks. |
+| `<dataRoot>/clones/<slug>/repo.git` | The bare clone of one repo. |
+| `<dataRoot>/clones/<slug>/publish-tokens/` | The publish tokens of one repo. |
+| `<dataRoot>/worktrees/<slug>/` | The worktrees of the tasks of one repo. |
 | `<dataRoot>/artifacts/` | The files that tasks produce. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
+
+`<slug>` comes from the repo key. `repoPaths()` gives these paths, and [version-control.md](version-control.md) describes the slug. `createDataRoot()` does not make the folders of a repo.
 
 SQLite runs in WAL mode (write-ahead log). It also makes `tasker.db-wal` and `tasker.db-shm` next to the database file. Do not delete these files while a tasker process runs.
 
