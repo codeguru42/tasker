@@ -128,13 +128,14 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     createTask(task) {
       return write(() => {
         const at = now().toISOString();
-        const result = db
+        const row = db
           .prepare(
             `INSERT INTO tasks
                (issue_key, repo_key, state, branch, worktree_path, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             RETURNING *`,
           )
-          .run(
+          .get(
             task.issueKey,
             task.repoKey,
             task.state,
@@ -142,8 +143,8 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
             task.worktreePath ?? null,
             at,
             at,
-          );
-        return readTask(Number(result.lastInsertRowid)) as Task;
+          ) as unknown as TaskRow;
+        return rowToTask(row);
       });
     },
 
@@ -173,14 +174,16 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     appendEvent(taskId, type, data) {
       return write(() => {
         const at = now().toISOString();
-        const result = db
-          .prepare(
-            "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?)",
-          )
-          .run(taskId, at, type, data === undefined ? null : JSON.stringify(data));
         const row = db
-          .prepare("SELECT * FROM events WHERE id = ?")
-          .get(Number(result.lastInsertRowid)) as unknown as EventRow;
+          .prepare(
+            "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *",
+          )
+          .get(
+            taskId,
+            at,
+            type,
+            data === undefined ? null : JSON.stringify(data),
+          ) as unknown as EventRow;
         return rowToEvent(row);
       });
     },
