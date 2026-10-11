@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import type { Io, RegisterCommand } from "../src/cli.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -115,6 +115,30 @@ export interface GitOrigin {
   remove(): void;
 }
 
+// Git reads a name that starts with "-" as an option.
+function assertBranchName(name: string): void {
+  if (name.startsWith("-")) {
+    throw new Error(`the branch name must not start with -: ${name}`);
+  }
+}
+
+// The absolute path of file in work. It throws when the path is not inside work.
+function resolveInside(work: string, file: string): string {
+  const target = resolve(work, file);
+  const rel = relative(work, target);
+  if (
+    isAbsolute(file) ||
+    rel === "" ||
+    rel === ".." ||
+    rel.startsWith(`..${sep}`) ||
+    isAbsolute(rel) ||
+    rel.split(sep)[0] === ".git"
+  ) {
+    throw new Error(`addCommit needs a file inside the work repo: ${file}`);
+  }
+  return target;
+}
+
 // A real local bare origin repo with one commit on main. No test needs the network.
 // A private scratch repo, "work", makes the commits and pushes them by local path.
 export async function makeGitOrigin(): Promise<GitOrigin> {
@@ -140,12 +164,12 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
     path,
     env,
     async addCommit(branch, change = {}) {
+      assertBranchName(branch);
       counter += 1;
       const message = change.message ?? `commit ${counter}`;
-      const file = change.file ?? `file-${counter}.txt`;
+      const target = resolveInside(work, change.file ?? `file-${counter}.txt`);
       await runGit(["fetch", "origin"], { cwd: work, env });
       await runGit(["checkout", "-B", branch, `origin/${branch}`], { cwd: work, env });
-      const target = join(work, file);
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, change.content ?? message);
       await runGit(["add", "-A"], { cwd: work, env });
@@ -154,9 +178,12 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
       return (await runGit(["rev-parse", "HEAD"], { cwd: work, env })).trim();
     },
     async createBranch(name, from = "main") {
+      assertBranchName(name);
+      assertBranchName(from);
       await runGit(["branch", name, from], { gitDir: path, env });
     },
     async branchHead(branch) {
+      assertBranchName(branch);
       try {
         const out = await runGit(
           ["rev-parse", "--verify", "--quiet", `refs/heads/${branch}^{commit}`],
