@@ -44,7 +44,7 @@ export interface StoreOptions {
 export interface TaskStore {
   createTask(task: NewTask): Task;
   getTask(id: number): Task | undefined;
-  updateTask(id: number, changes: TaskChanges): Task;
+  updateTask(id: number, changes: TaskChanges, check?: (current: Task) => void): Task;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
   listEvents(taskId: number): TaskEvent[];
   close(): void;
@@ -157,12 +157,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     getTask: readTask,
 
-    updateTask(id, changes) {
+    updateTask(id, changes, check) {
       return immediateTransaction(db, () => {
         const current = readTask(id);
         if (current === undefined) {
           throw new Error(`task not found: ${id}`);
         }
+        check?.(current);
         const next = { ...current };
         if (changes.state !== undefined) next.state = changes.state;
         if (changes.branch !== undefined) next.branch = changes.branch;
