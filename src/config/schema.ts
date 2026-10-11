@@ -11,6 +11,38 @@ const LimitsSchema = z.strictObject({
   executeTimeoutMin: positive.default(90),
 });
 
+const nonEmpty = z.string().min(1);
+
+const VerifySchema = z.strictObject({
+  commands: z.array(nonEmpty).min(1),
+  env: z.array(z.string()).default([]),
+});
+
+const BootstrapSchema = z.strictObject({
+  commands: z.array(z.string()).default([]),
+  env: z.array(z.string()).default([]),
+});
+
+const ForgeSchema = z.strictObject({
+  provider: z.literal("github"),
+  account: nonEmpty,
+  mergeMethod: z.enum(["merge", "squash", "rebase"]).default("merge"),
+});
+
+const RepoSchema = z.strictObject({
+  remote: nonEmpty,
+  // Placeholders: later todos replace them with strict schemas.
+  issueTracker: z.record(z.string(), z.unknown()),
+  assistant: z.record(z.string(), z.unknown()),
+  verify: VerifySchema,
+  bootstrap: BootstrapSchema.default({ commands: [], env: [] }),
+  defaultBaseBranch: nonEmpty.optional(),
+  overagePolicy: z.enum(["decline", "ask"]).default("decline"),
+  quotaApprovalThreshold: z.number().gt(0).max(1).default(0.9),
+  updateBranchStrategy: z.enum(["rebase", "merge"]).default("rebase"),
+  forge: ForgeSchema.optional(),
+});
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -53,7 +85,7 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
     dataRootMinFreeBytes: positive.default(1073741824),
     limits: LimitsSchema,
     trackers: z.record(z.string(), z.unknown()).default({}),
-    repos: z.record(z.string(), z.unknown()),
+    repos: z.record(z.string(), RepoSchema),
   });
 
   return z.preprocess(rejectLanding, top);
