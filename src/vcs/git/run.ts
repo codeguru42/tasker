@@ -6,6 +6,8 @@ import { existsSync, statSync } from "node:fs";
 // --bare --git-dir and with the git dir as its cwd, so it has no work tree.
 // tasker never sets core.worktree or core.bare=false in that clone. A non-bare
 // git dir is out of scope: its configuration can give git a work tree.
+// In both modes, the repo-local git variables of the caller do not reach git, so the
+// env cannot pick another repo.
 export type GitLocation = { cwd: string } | { gitDir: string };
 export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv };
 
@@ -40,17 +42,48 @@ export class GitNotInstalledError extends Error {
 
 const BATCH_SSH_COMMAND = "ssh -o BatchMode=yes";
 
+// The repo-local git variables. The list is the output of `git rev-parse --local-env-vars`
+// (git 2.47.3), plus GIT_NAMESPACE. Each of them can make git use another repo, index,
+// object store or configuration than the one that runGit() names.
+const REPO_LOCAL_GIT_VARS = [
+  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+  "GIT_CONFIG",
+  "GIT_CONFIG_PARAMETERS",
+  "GIT_CONFIG_COUNT",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_IMPLICIT_WORK_TREE",
+  "GIT_GRAFT_FILE",
+  "GIT_INDEX_FILE",
+  "GIT_NO_REPLACE_OBJECTS",
+  "GIT_REPLACE_REF_BASE",
+  "GIT_PREFIX",
+  "GIT_SHALLOW_FILE",
+  "GIT_COMMON_DIR",
+  "GIT_NAMESPACE",
+] as const;
+
+// The pairs that GIT_CONFIG_COUNT counts. They go away with it.
+const CONFIG_PAIR_VAR = /^GIT_CONFIG_(KEY|VALUE)_\d+$/;
+
 // The env of the child: env, plus GIT_TERMINAL_PROMPT=0, which always wins.
+// tasker owns the repo that it uses, so the repo-local git variables of the caller go
+// away in both modes (see "How tasker uses git" in docs/dev/version-control.md).
+// GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM stay: they are not repo-local.
 // Git uses a GIT_SSH_COMMAND that is present, even an empty one. So:
 // a non-empty GIT_SSH_COMMAND of the caller stays. Otherwise GIT_SSH_COMMAND goes away,
 // and a non-empty GIT_SSH of the caller stays. Otherwise GIT_SSH goes away too,
 // and ssh runs in batch mode, so it asks no question and fails instead.
-// In gitDir mode, GIT_WORK_TREE goes away too: it beats --bare, so it would give a
-// bare repo a work tree.
-function childEnv(env: NodeJS.ProcessEnv, gitDirMode: boolean): NodeJS.ProcessEnv {
+function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const result: NodeJS.ProcessEnv = { ...env, GIT_TERMINAL_PROMPT: "0" };
-  if (gitDirMode) {
-    delete result.GIT_WORK_TREE;
+  for (const name of REPO_LOCAL_GIT_VARS) {
+    delete result[name];
+  }
+  for (const name of Object.keys(result)) {
+    if (CONFIG_PAIR_VAR.test(name)) {
+      delete result[name];
+    }
   }
   if (env.GIT_SSH_COMMAND) {
     return result;
@@ -91,13 +124,13 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
     return Promise.reject(folderError(location));
   }
   if (location.kind === "cwd") {
-    return spawnGit([...args], subcommand, location, childEnv(options.env, false));
+    return spawnGit([...args], subcommand, location, childEnv(options.env));
   }
   return spawnGit(
     ["--bare", "--git-dir", location.path, ...args],
     subcommand,
     location,
-    childEnv(options.env, true),
+    childEnv(options.env),
   );
 }
 
