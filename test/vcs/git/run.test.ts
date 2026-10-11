@@ -127,14 +127,17 @@ describe("runGit keeps git from asking questions", () => {
 
   const envScript = [
     'echo "prompt=$GIT_TERMINAL_PROMPT"',
-    'echo "ssh-command=$GIT_SSH_COMMAND"',
-    'echo "ssh=$GIT_SSH"',
+    'if [ "${GIT_SSH_COMMAND+set}" = set ]; then echo "ssh-command=$GIT_SSH_COMMAND"; else echo "ssh-command unset"; fi',
+    'if [ "${GIT_SSH+set}" = set ]; then echo "ssh=$GIT_SSH"; else echo "ssh unset"; fi',
   ].join("\n");
+
+  const batch = "prompt=0\nssh-command=ssh -o BatchMode=yes\nssh unset\n";
+  const ownSsh = "prompt=0\nssh-command unset\nssh=/opt/bin/my-ssh\n";
 
   it("sets GIT_TERMINAL_PROMPT to 0 and runs ssh in batch mode", async () => {
     writeFakeGit(bin, envScript);
     const out = await runGit(["version"], { cwd: dir, env });
-    expect(out).toBe("prompt=0\nssh-command=ssh -o BatchMode=yes\nssh=\n");
+    expect(out).toBe(batch);
   });
 
   it("keeps the GIT_SSH_COMMAND of the caller", async () => {
@@ -143,7 +146,7 @@ describe("runGit keeps git from asking questions", () => {
       cwd: dir,
       env: { ...env, GIT_SSH_COMMAND: "ssh -i /keys/id" },
     });
-    expect(out).toBe("prompt=0\nssh-command=ssh -i /keys/id\nssh=\n");
+    expect(out).toBe("prompt=0\nssh-command=ssh -i /keys/id\nssh unset\n");
   });
 
   it("keeps the GIT_SSH of the caller", async () => {
@@ -152,13 +155,37 @@ describe("runGit keeps git from asking questions", () => {
       cwd: dir,
       env: { ...env, GIT_SSH: "/opt/bin/my-ssh" },
     });
-    expect(out).toBe("prompt=0\nssh-command=\nssh=/opt/bin/my-ssh\n");
+    expect(out).toBe(ownSsh);
   });
 
   it("runs ssh in batch mode when the caller GIT_SSH_COMMAND is empty", async () => {
     writeFakeGit(bin, envScript);
     const out = await runGit(["version"], { cwd: dir, env: { ...env, GIT_SSH_COMMAND: "" } });
-    expect(out).toBe("prompt=0\nssh-command=ssh -o BatchMode=yes\nssh=\n");
+    expect(out).toBe(batch);
+  });
+
+  it("removes an empty GIT_SSH_COMMAND and keeps the GIT_SSH of the caller", async () => {
+    writeFakeGit(bin, envScript);
+    const out = await runGit(["version"], {
+      cwd: dir,
+      env: { ...env, GIT_SSH_COMMAND: "", GIT_SSH: "/opt/bin/my-ssh" },
+    });
+    expect(out).toBe(ownSsh);
+  });
+
+  it("removes an empty GIT_SSH and runs ssh in batch mode", async () => {
+    writeFakeGit(bin, envScript);
+    const out = await runGit(["version"], { cwd: dir, env: { ...env, GIT_SSH: "" } });
+    expect(out).toBe(batch);
+  });
+
+  it("runs ssh in batch mode when both ssh variables are empty", async () => {
+    writeFakeGit(bin, envScript);
+    const out = await runGit(["version"], {
+      cwd: dir,
+      env: { ...env, GIT_SSH_COMMAND: "", GIT_SSH: "" },
+    });
+    expect(out).toBe(batch);
   });
 
   it.runIf(existsSync("/proc/self/stat"))("keeps git in the process group of tasker", async () => {
