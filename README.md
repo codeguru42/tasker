@@ -20,6 +20,12 @@ This repo is a rebuild of tasker. Work is tracked on the [project board](https:/
 
 `tasker --help` lists the options and the commands. `tasker --version` prints the version. An unknown command or option prints an error and exits with a non-zero code.
 
+## Configuration
+
+tasker reads one configuration file. It reads `$TASKER_CONFIG`. If that is not set, it reads `$XDG_CONFIG_HOME/tasker/config.json`. If that is not set, it reads `~/.config/tasker/config.json`.
+
+See the [configuration reference](docs/config.md) for the keys.
+
 ## Run the checks
 
 Run `npm run check` to make sure that the code is correct. The command runs three steps in this order:
