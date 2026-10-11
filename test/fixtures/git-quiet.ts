@@ -1,0 +1,23 @@
+// A child process for the runGit quiet test. It calls runGit and prints nothing itself.
+import { rmSync } from "node:fs";
+import { join } from "node:path";
+import { runGit } from "../../src/vcs/git/run.js";
+import { gitTestEnv, makeTempDir } from "../helpers.js";
+
+const dir = makeTempDir("tasker-git-quiet-");
+try {
+  const env = gitTestEnv(dir);
+  const source = join(dir, "source");
+  await runGit(["init", "--initial-branch=main", source], { cwd: dir, env });
+  await runGit(["commit", "--allow-empty", "-m", "first"], { cwd: source, env });
+  // git clone writes "Cloning into ..." to stderr on success.
+  await runGit(["clone", source, join(dir, "copy")], { cwd: dir, env });
+  // A failing git must not write to the terminal either.
+  await runGit(["rev-parse", "HEAD"], { cwd: join(dir, "copy", "nothing-here"), env }).catch(() => {});
+  await runGit(["checkout", "no-such-branch"], { cwd: source, env }).catch(() => {});
+} catch (error) {
+  console.error(error);
+  process.exitCode = 1;
+} finally {
+  rmSync(dir, { recursive: true, force: true });
+}

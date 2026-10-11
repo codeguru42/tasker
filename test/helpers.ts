@@ -74,3 +74,24 @@ export function writeTempConfig(raw: unknown): { dir: string; path: string } {
   writeFileSync(path, JSON.stringify(raw));
   return { dir, path };
 }
+
+// The fixed author and committer of every commit that a git test makes.
+export const GIT_TEST_IDENTITY = { name: "Tasker Test", email: "tasker-test@example.com" };
+
+// The env for a git child process. home is a temp folder that stands in for $HOME.
+// It reads no git configuration of the host and never asks the terminal.
+export function gitTestEnv(home: string): NodeJS.ProcessEnv {
+  return {
+    PATH: process.env.PATH,
+    HOME: home,
+    XDG_CONFIG_HOME: join(home, ".config"),
+    GIT_CONFIG_GLOBAL: "/dev/null",
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_AUTHOR_NAME: GIT_TEST_IDENTITY.name,
+    GIT_COMMITTER_NAME: GIT_TEST_IDENTITY.name,
+    GIT_AUTHOR_EMAIL: GIT_TEST_IDENTITY.email,
+    GIT_COMMITTER_EMAIL: GIT_TEST_IDENTITY.email,
+    LC_ALL: "C",
+    GIT_TERMINAL_PROMPT: "0",
+  };
+}
