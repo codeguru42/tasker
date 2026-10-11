@@ -37,6 +37,17 @@ describe("loadConfig", () => {
     );
   });
 
+  it("names the real error when the path cannot be read", () => {
+    try {
+      loadConfig({ TASKER_CONFIG: dir }, home);
+    } catch (error) {
+      expect((error as Error).message).toBe(`cannot read config file: ${dir} (EISDIR)`);
+      expect((error as Error).cause).toBeDefined();
+      return;
+    }
+    throw new Error("expected loadConfig to throw");
+  });
+
   it("throws when the file is not valid JSON", () => {
     const path = join(dir, "c.json");
     writeFileSync(path, "{");
