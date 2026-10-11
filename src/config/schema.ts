@@ -11,6 +11,23 @@ const LimitsSchema = z.strictObject({
   executeTimeoutMin: positive.default(90),
 });
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function rejectLanding(raw: unknown, ctx: z.RefinementCtx): unknown {
+  if (!isObject(raw) || !Object.hasOwn(raw, "landing")) return raw;
+  ctx.addIssue({
+    code: "custom",
+    path: ["landing"],
+    message:
+      "is not accepted: there is no landing setting; the command you run picks how a task lands",
+  });
+  const rest = { ...raw };
+  delete rest.landing;
+  return rest;
+}
+
 export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
   const dataRoot = z.string().transform((value, ctx) => {
     let expanded: string;
@@ -30,7 +47,7 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
     return expanded;
   });
 
-  return z.strictObject({
+  const top = z.strictObject({
     dataRoot,
     retentionDays: z.number().default(30),
     dataRootMinFreeBytes: positive.default(1073741824),
@@ -38,6 +55,8 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
     trackers: z.record(z.string(), z.unknown()).default({}),
     repos: z.record(z.string(), z.unknown()),
   });
+
+  return z.preprocess(rejectLanding, top);
 }
 
 export type Config = z.output<ReturnType<typeof buildConfigSchema>>;
