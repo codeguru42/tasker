@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
-import { runGit } from "../../../src/vcs/git/run.js";
+import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { type GitOrigin, makeGitOrigin, makeTempDir } from "../../helpers.js";
 
 describe("provisionClone", () => {
@@ -76,5 +76,65 @@ describe("provisionClone", () => {
   it("removes the marker after success", async () => {
     await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
     expect(existsSync(`${clone}.incomplete`)).toBe(false);
+  });
+
+  // The value of key in the clone, or undefined when git exits with 1 (the key is not set).
+  async function localConfig(key: string): Promise<string | undefined> {
+    try {
+      const out = await runGit(["config", "--local", "--get", key], {
+        gitDir: clone,
+        env: origin.env,
+      });
+      return out.trim();
+    } catch (error) {
+      if (error instanceof GitError && error.exitCode === 1) {
+        return undefined;
+      }
+      throw error;
+    }
+  }
+
+  describe("identity and signing", () => {
+    it("writes authorName and authorEmail as user.name and user.email", async () => {
+      const config = { authorName: "Bot Name", authorEmail: "bot@example.com" };
+      await provisionClone({ remote: origin.path, clone, config, env: origin.env });
+      expect(await localConfig("user.name")).toBe("Bot Name");
+      expect(await localConfig("user.email")).toBe("bot@example.com");
+    });
+
+    it("writes nothing for a field that is not set, and each field is independent", async () => {
+      await provisionClone({
+        remote: origin.path,
+        clone,
+        config: { authorName: "Only Name" },
+        env: origin.env,
+      });
+      expect(await localConfig("user.name")).toBe("Only Name");
+      expect(await localConfig("user.email")).toBeUndefined();
+    });
+
+    it("turns off signing", async () => {
+      await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+      expect(await localConfig("commit.gpgSign")).toBe("false");
+      expect(await localConfig("tag.gpgSign")).toBe("false");
+      expect(await localConfig("tag.forceSignAnnotated")).toBe("false");
+    });
+
+    it("updates a changed field and unsets a removed field on the next provision", async () => {
+      await provisionClone({
+        remote: origin.path,
+        clone,
+        config: { authorName: "Old Name", authorEmail: "old@example.com" },
+        env: origin.env,
+      });
+      await provisionClone({
+        remote: origin.path,
+        clone,
+        config: { authorName: "New Name" },
+        env: origin.env,
+      });
+      expect(await localConfig("user.name")).toBe("New Name");
+      expect(await localConfig("user.email")).toBeUndefined();
+    });
   });
 });
