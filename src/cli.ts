@@ -1,4 +1,5 @@
 import { Command, CommanderError } from "commander";
+import { commands as defaultCommands } from "./commands/index.js";
 import { readVersion } from "./version.js";
 
 export interface Io {
@@ -31,7 +32,7 @@ export function buildProgram(commands: readonly RegisterCommand[], io: Io): Comm
 }
 
 export async function run(argv: readonly string[], options: RunOptions = {}): Promise<number> {
-  const program = buildProgram(options.commands ?? [], options.io ?? defaultIo);
+  const program = buildProgram(options.commands ?? defaultCommands, options.io ?? defaultIo);
   try {
     await program.parseAsync(argv, { from: "user" });
     return 0;
