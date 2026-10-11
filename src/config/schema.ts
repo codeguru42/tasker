@@ -160,11 +160,15 @@ function prepareConfig(raw: unknown): Prepared {
         ),
       );
     }
+    const own: Record<string, unknown> = { ...issueTracker };
+    delete own.provider;
     // A repo that names a missing or bad tracker gets a placeholder provider.
     // The real error is already reported once: under the tracker name for a
     // missing definition, or under trackers.<name> for a bad one. Without the
     // placeholder, the issueTracker schema adds a second error for the provider.
-    const placeholder = { provider: "github", ...issueTracker };
+    // The repo's own provider is removed first, because its error is already
+    // reported above.
+    const placeholder = { provider: "github", ...own };
     if (trackersBroken) {
       repos[key] = { ...repo, issueTracker: placeholder };
       continue;
@@ -181,7 +185,7 @@ function prepareConfig(raw: unknown): Prepared {
     // Merge the raw definition, so the issueTracker schema applies the defaults once.
     const merged =
       definition !== undefined && TrackerDefinitionSchema.safeParse(definition).success
-        ? { ...(definition as Record<string, unknown>), ...issueTracker }
+        ? { ...(definition as Record<string, unknown>), ...own }
         : placeholder;
     repos[key] = { ...repo, issueTracker: merged };
   }
