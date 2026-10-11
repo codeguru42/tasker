@@ -31,11 +31,11 @@ The agent of the ticket runs steps 1 to 10. Each step gives the state of the tas
 2. Run `tasker start <issue>`. The task goes to `workspace_ready`. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
 3. Read the plan with `tasker show-plan` and `tasker show-questions`. Compare the plan with the Requirements and the Docs sections of the issue.
 4. If the plan needs changes, run `tasker refine <issue> "<feedback>"`. The task goes to `awaiting_plan_review` again. Put the answers to the plan questions in the feedback text. `tasker plan` takes no feedback.
-5. Run `tasker approve`. The task goes to `approved`. Run `tasker execute`. The task goes to `executed`. Run `tasker verify`. When the verify commands pass, the task goes to `awaiting_work_review`. Run `tasker review`. When the review has findings, the task goes to `reviewed`. When it has none, the task stays in `awaiting_work_review`.
-6. Read the findings with `tasker show-review`. Refine each real finding with `tasker refine`. From `reviewed`, the task goes to `awaiting_plan_review`, and step 5 starts again with `tasker approve`.
-7. Dismiss a finding only with a reason: `tasker dismiss-review <issue> --finding N "<reason>"`. The task stays in `reviewed` until each finding is refined or dismissed. Then it goes to `awaiting_work_review`.
-8. Do steps 5 to 7 again until the review has no open findings. The "Review findings" section limits the number of loops.
-9. Run `tasker accept`. The task goes to `accepted`. Run `tasker merge`. The task goes to `landed`. Run `tasker finish`. The task goes to `finished`, and the issue closes.
+5. Run `tasker approve`. The task goes to `approved`. Run `tasker execute`. The task goes to `executed`. Run `tasker verify`. When the verify commands pass, the task goes to `awaiting_work_review`. Run `tasker review`. When the review has findings, the task goes to `reviewed`. When it has none, the task stays in `awaiting_work_review`. If the review has no findings, go to step 9.
+6. Read the findings with `tasker show-review`. Decide for each finding if it is real.
+7. Dismiss each finding that is not real, with a reason: `tasker dismiss-review <issue> --finding N "<reason>"`. The task stays in `reviewed` while a finding is still open. If you dismiss all the findings, the task goes to `awaiting_work_review`. Go to step 9.
+8. If real findings are still open, run one `tasker refine <issue> "<feedback>"`. It acts on all the open findings. The task goes to `awaiting_plan_review`. Then do steps 5 to 8 again, starting with `tasker approve`. The "Review findings" section limits the number of loops.
+9. Run `tasker accept`. The task goes to `accepted`. `tasker accept` refuses when the branch does not contain the tip of `origin/main`. In that case, run `tasker update-branch`. The task goes to `executed`. Then run `tasker verify` and `tasker review` again as in step 5. If that review has findings, go to step 6. Otherwise, run `tasker accept` again. Run `tasker merge`. The task goes to `landed`. Run `tasker finish`. The task goes to `finished`, and the issue closes.
 10. After `tasker finish`, post a comment on the issue that starts with `## Decisions made during implementation`. List the choices that the issue did not state, with the reasons. Name each detail that the issue did not give.
 
 If a command fails or the task is in another state, run `tasker show <issue>` and follow the commands that it prints.
@@ -48,16 +48,17 @@ To find the next command, use these:
 
 ## Review findings
 
-- The agent runs 3 review loops at most. On the 3rd loop, the agent dismisses cosmetic findings with a reason.
-- The agent runs a 4th loop only for a small, real correctness bug. After that, the agent stops and reports to the orchestrator. The orchestrator reports to the user.
+- One loop is one `tasker review` and the work on its findings. The agent runs at most 3 review loops. One 4th loop is permitted only to fix a small, real correctness bug.
+- After the last loop, the agent stops and reports to the orchestrator. The orchestrator reports to the user.
+- On the 3rd loop, the agent dismisses cosmetic findings with a reason.
 - A refactor or duplication finding is not cosmetic. The agent refines it in the ticket that added the duplicated code.
 - If such a finding is missed, the orchestrator adds it to a ticket that has not started (it edits the issue). Or the orchestrator tells the agent of a ticket in progress to add it to its next refine. If neither is possible, the orchestrator opens a new issue.
 - When the agent sends a fix in the refine text, it writes "apply everywhere it fits". Otherwise the next review finds the same problem in other places.
 
 ## Land the work
 
-- The agent runs `tasker update-branch`, `tasker verify`, `tasker review`, `tasker accept`, `tasker merge` and `tasker finish`.
-- `tasker accept` refuses when the branch does not contain the tip of `origin/main`. If `main` moved, the agent runs `tasker update-branch`. The task goes to `executed`. The agent then runs `tasker verify` and `tasker review` again, before `tasker accept`.
+The steps to land a ticket are in "Run one ticket". This section gives the rules between tickets.
+
 - After `tasker approve`, each agent sends the orchestrator the list of files that the plan changes. `tasker refine` and `tasker approve` also print a warning when another task in progress changes the same file.
 - If the edit of a shared file is not required, the agent removes it in a refine. If it is required, the orchestrator sets the landing order.
 - If `tasker update-branch` reports a rebase conflict, the agent follows [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent does not copy that procedure.
