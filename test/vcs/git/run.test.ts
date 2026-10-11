@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, GitNotInstalledError, runGit } from "../../../src/vcs/git/run.js";
@@ -21,6 +21,16 @@ describe("runGit", () => {
   it("runs in cwd and resolves with stdout", async () => {
     const out = await runGit(["init", "--initial-branch=main"], { cwd: dir, env });
     expect(out).toContain("Initialized empty Git repository");
+  });
+
+  it("uses the repo of the cwd, not a GIT_DIR of the caller", async () => {
+    await runGit(["init", "--initial-branch=main", "mine"], { cwd: dir, env });
+    await runGit(["init", "--initial-branch=main", "other"], { cwd: dir, env });
+    const out = await runGit(["rev-parse", "--absolute-git-dir"], {
+      cwd: join(dir, "mine"),
+      env: { ...env, GIT_DIR: join(dir, "other", ".git") },
+    });
+    expect(out).toBe(`${realpathSync(join(dir, "mine", ".git"))}\n`);
   });
 
   it("runs against a bare clone and does not trim stdout", async () => {
@@ -189,6 +199,53 @@ describe("runGit keeps git from asking questions", () => {
     'if [ "${GIT_SSH_COMMAND+set}" = set ]; then echo "ssh-command=$GIT_SSH_COMMAND"; else echo "ssh-command unset"; fi',
     'if [ "${GIT_SSH+set}" = set ]; then echo "ssh=$GIT_SSH"; else echo "ssh unset"; fi',
   ].join("\n");
+
+  const repoLocalVars = [
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_CONFIG",
+    "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_COUNT",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_IMPLICIT_WORK_TREE",
+    "GIT_GRAFT_FILE",
+    "GIT_INDEX_FILE",
+    "GIT_NO_REPLACE_OBJECTS",
+    "GIT_REPLACE_REF_BASE",
+    "GIT_PREFIX",
+    "GIT_SHALLOW_FILE",
+    "GIT_COMMON_DIR",
+    "GIT_NAMESPACE",
+    "GIT_CONFIG_KEY_0",
+    "GIT_CONFIG_VALUE_0",
+  ];
+  const keptVars = ["GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"];
+
+  // Prints the name of each variable of names that git sees. Shell builtins only.
+  const seenScript = (names: string[]) =>
+    [
+      `for name in ${names.join(" ")}; do`,
+      '  eval "seen=\\${$name+set}"',
+      '  if [ "$seen" = set ]; then echo "$name"; fi',
+      "done",
+    ].join("\n");
+
+  it.each(["cwd", "gitDir"] as const)(
+    "passes no repo-local git variable of the caller to git in %s mode",
+    async (mode) => {
+      writeFakeGit(bin, seenScript([...repoLocalVars, ...keptVars]));
+      const callerEnv: NodeJS.ProcessEnv = { ...env };
+      for (const name of repoLocalVars) {
+        callerEnv[name] = name === "GIT_CONFIG_COUNT" ? "1" : join(dir, "elsewhere");
+      }
+      const gitDir = join(dir, "bare.git");
+      mkdirSync(gitDir);
+      const location = mode === "cwd" ? { cwd: dir } : { gitDir };
+      const out = await runGit(["version"], { ...location, env: callerEnv });
+      expect(out).toBe("GIT_CONFIG_GLOBAL\nGIT_CONFIG_NOSYSTEM\n");
+    },
+  );
 
   const batch = "prompt=0\nssh-command=ssh -o BatchMode=yes\nssh unset\n";
   const ownSsh = "prompt=0\nssh-command unset\nssh=/opt/bin/my-ssh\n";
