@@ -6,8 +6,8 @@ import { existsSync, statSync } from "node:fs";
 // --bare --git-dir and with the git dir as its cwd, so it has no work tree.
 // tasker never sets core.worktree or core.bare=false in that clone. A non-bare
 // git dir is out of scope: its configuration can give git a work tree.
-// In both modes, the repo-local git variables of the caller do not reach git, so the
-// env cannot pick another repo.
+// In both modes, runGit() removes the repo-local git variables of the caller (see
+// REPO_LOCAL_GIT_VARS). Other variables, such as GIT_CONFIG_GLOBAL, still reach git.
 export type GitLocation = { cwd: string } | { gitDir: string };
 export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv };
 
@@ -43,8 +43,8 @@ export class GitNotInstalledError extends Error {
 const BATCH_SSH_COMMAND = "ssh -o BatchMode=yes";
 
 // The repo-local git variables. The list is the output of `git rev-parse --local-env-vars`
-// (git 2.47.3), plus GIT_NAMESPACE. Each of them can make git use another repo, index,
-// object store or configuration than the one that runGit() names.
+// (git 2.47.3), plus GIT_NAMESPACE. Each of them can change the repo, the index or the
+// object store that git uses, or add configuration for this one run of git.
 const REPO_LOCAL_GIT_VARS = [
   "GIT_ALTERNATE_OBJECT_DIRECTORIES",
   "GIT_CONFIG",
@@ -70,7 +70,8 @@ const CONFIG_PAIR_VAR = /^GIT_CONFIG_(KEY|VALUE)_\d+$/;
 // The env of the child: env, plus GIT_TERMINAL_PROMPT=0, which always wins.
 // tasker owns the repo that it uses, so the repo-local git variables of the caller go
 // away in both modes (see "How tasker uses git" in docs/dev/version-control.md).
-// GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM stay: they are not repo-local.
+// Each other variable passes as it is. For example, GIT_CONFIG_GLOBAL and
+// GIT_CONFIG_SYSTEM name configuration files that git reads. They do not choose the repo.
 // Git uses a GIT_SSH_COMMAND that is present, even an empty one. So:
 // a non-empty GIT_SSH_COMMAND of the caller stays. Otherwise GIT_SSH_COMMAND goes away,
 // and a non-empty GIT_SSH of the caller stays. Otherwise GIT_SSH goes away too,
