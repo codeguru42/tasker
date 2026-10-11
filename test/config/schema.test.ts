@@ -136,3 +136,67 @@ describe("parseConfig top level", () => {
     ]);
   });
 });
+
+describe("parseConfig repos", () => {
+  it("fills in the defaults of a repo", () => {
+    const repo = parseConfig(validConfig(), {}, home).repos.tasker as Record<string, unknown>;
+    expect(repo.bootstrap).toEqual({ commands: [], env: [] });
+    expect((repo.verify as { env: string[] }).env).toEqual([]);
+    expect(repo.overagePolicy).toBe("decline");
+    expect(repo.quotaApprovalThreshold).toBe(0.9);
+    expect(repo.updateBranchStrategy).toBe("rebase");
+  });
+
+  it("defaults the forge merge method", () => {
+    const raw = validConfig();
+    raw.repos.tasker.forge = { provider: "github", account: "me" };
+    const repo = parseConfig(raw, {}, home).repos.tasker as { forge: unknown };
+    expect(repo.forge).toEqual({ provider: "github", account: "me", mergeMethod: "merge" });
+  });
+
+  it("rejects an empty verify.commands", () => {
+    const raw = validConfig();
+    raw.repos.tasker.verify.commands = [];
+    expectIssueAt(issuesOf(raw), "repos.tasker.verify.commands");
+  });
+
+  it("rejects a missing remote", () => {
+    const raw = validConfig();
+    delete raw.repos.tasker.remote;
+    expectIssueAt(issuesOf(raw), "repos.tasker.remote");
+  });
+
+  it("rejects a typo in a nested key", () => {
+    const raw = validConfig();
+    raw.repos.tasker.verify = { comands: ["npm test"] };
+    expect(issuesOf(raw)).toContain("repos.tasker.verify.comands: unrecognized key");
+  });
+
+  it("rejects a git block as an unknown key", () => {
+    const raw = validConfig();
+    raw.repos.tasker.git = {};
+    expect(issuesOf(raw)).toContain("repos.tasker.git: unrecognized key");
+  });
+
+  it("puts a repo key with a slash into the path as it is", () => {
+    const raw = validConfig();
+    raw.repos["codeguru42/tasker"] = raw.repos.tasker;
+    delete raw.repos.tasker;
+    raw.repos["codeguru42/tasker"].verify.commands = [];
+    expectIssueAt(issuesOf(raw), "repos.codeguru42/tasker.verify.commands");
+  });
+
+  it.each([
+    ["overagePolicy", "maybe", "repos.tasker.overagePolicy"],
+    ["quotaApprovalThreshold", 0, "repos.tasker.quotaApprovalThreshold"],
+    ["quotaApprovalThreshold", 1.5, "repos.tasker.quotaApprovalThreshold"],
+    ["updateBranchStrategy", "squash", "repos.tasker.updateBranchStrategy"],
+    ["verify", ["npm test"], "repos.tasker.verify"],
+    ["forge", { provider: "gitlab", account: "me" }, "repos.tasker.forge.provider"],
+    ["forge", { provider: "github" }, "repos.tasker.forge.account"],
+  ])("rejects a bad %s (%j)", (key, value, path) => {
+    const raw = validConfig();
+    raw.repos.tasker[key] = value;
+    expectIssueAt(issuesOf(raw), path);
+  });
+});
