@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, parse } from "node:path";
 import { GitError, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
@@ -23,6 +23,12 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
   const { remote, clone, config, env } = options;
   const marker = `${clone}.incomplete`;
   const root = parse(process.cwd()).root;
+
+  // A complete clone only gets a fetch. Its remote.origin.url stays as it is.
+  if (existsSync(clone) && !existsSync(marker)) {
+    await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
+    return;
+  }
 
   // The error text can hold git output, so the new error sets no cause.
   const failure = await runRemoteGit(
