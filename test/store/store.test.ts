@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
-import { rmSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
@@ -95,6 +95,27 @@ describe("task store", () => {
       expect(schemaVersion(db)).toBe(migrations.length);
     } finally {
       db.close();
+    }
+  });
+
+  it("closes the database when the file has a newer schema version", () => {
+    const newerPath = join(dir, "newer.db");
+    const raw = new DatabaseSync(newerPath);
+    raw.exec(`PRAGMA user_version = ${migrations.length + 1}`);
+    raw.close();
+
+    expect(() => openStore(newerPath, { now })).toThrow(
+      `database schema version ${migrations.length + 1} is newer than this tasker supports (${migrations.length})`,
+    );
+    // SQLite deletes the WAL file when the last connection closes.
+    expect(existsSync(`${newerPath}-wal`)).toBe(false);
+
+    const again = new DatabaseSync(newerPath);
+    try {
+      again.exec("CREATE TABLE after_failure (x)");
+      expect(schemaVersion(again)).toBe(migrations.length + 1);
+    } finally {
+      again.close();
     }
   });
 
