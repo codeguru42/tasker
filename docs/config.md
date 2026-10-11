@@ -19,6 +19,14 @@ A variable that is empty or has only spaces counts as not set.
 - A key marked "required" must be present. A key marked "optional" can be missing and has no default.
 - A non-empty string is a string with at least one character.
 
+## See the configuration with the defaults
+
+Run `tasker show-config` to print the configuration as tasker reads it. The output has every default filled in and `dataRoot` expanded.
+
+Run `tasker show-config --repo <key>` to print one repo.
+
+If the configuration is invalid, the command prints the errors from the "Errors" section and exits with code 1.
+
 ## Top level
 
 | Key | Type | Default | Notes |
