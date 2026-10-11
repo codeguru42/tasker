@@ -83,6 +83,47 @@ describe("runGit", () => {
     await expect(runGit(["ls-files", "--cached"], { cwd: repo, env })).resolves.toBe("");
   });
 
+  function makeOtherFolder(): string {
+    const other = join(dir, "other");
+    mkdirSync(other);
+    writeFileSync(join(other, "b.txt"), "b\n");
+    return other;
+  }
+
+  it("fails a work-tree command for a git dir that sets core.worktree", async () => {
+    const repo = await initRepoWithFile();
+    const other = makeOtherFolder();
+    await runGit(["config", "core.worktree", other], { cwd: repo, env });
+    const error = await runGit(["add", "-A"], { gitDir: join(repo, ".git"), env }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(GitError);
+    expect((error as GitError).message).toContain("must be run in a work tree");
+    expect(existsSync(join(repo, ".git", "index"))).toBe(false);
+    expect(readFileSync(join(other, "b.txt"), "utf8")).toBe("b\n");
+  });
+
+  it("ignores a GIT_WORK_TREE of the caller for a bare git dir", async () => {
+    await runGit(["init", "--bare", "--initial-branch=main", "bare.git"], { cwd: dir, env });
+    const other = makeOtherFolder();
+    const error = await runGit(["add", "-A"], {
+      gitDir: join(dir, "bare.git"),
+      env: { ...env, GIT_WORK_TREE: other },
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(GitError);
+    expect((error as GitError).message).toContain("must be run in a work tree");
+    expect(existsSync(join(dir, "bare.git", "index"))).toBe(false);
+  });
+
+  it("keeps a bare git dir bare", async () => {
+    await runGit(["init", "--bare", "--initial-branch=main", "bare.git"], { cwd: dir, env });
+    const out = await runGit(["rev-parse", "--is-bare-repository"], {
+      gitDir: join(dir, "bare.git"),
+      env,
+    });
+    expect(out).toBe("true\n");
+  });
+
   it("rejects empty args", async () => {
     await expect(runGit([], { cwd: dir, env })).rejects.toThrow("runGit needs a git subcommand");
   });
