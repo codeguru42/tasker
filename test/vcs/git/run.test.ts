@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, GitNotInstalledError, runGit } from "../../../src/vcs/git/run.js";
@@ -55,6 +55,32 @@ describe("runGit", () => {
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(GitError);
     expect((error as Error).message).toBe(`the git dir does not exist: ${missing}`);
+  });
+
+  async function initRepoWithFile(): Promise<string> {
+    const repo = join(dir, "repo");
+    await runGit(["init", "--initial-branch=main", "repo"], { cwd: dir, env });
+    writeFileSync(join(repo, "a.txt"), "a\n");
+    return repo;
+  }
+
+  it("fails a command that needs a work tree when it gets a git dir", async () => {
+    const repo = await initRepoWithFile();
+    const error = await runGit(["status"], { gitDir: join(repo, ".git"), env }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(GitError);
+    expect((error as GitError).message).toContain("must be run in a work tree");
+  });
+
+  it("stages nothing when add gets a git dir", async () => {
+    const repo = await initRepoWithFile();
+    const error = await runGit(["add", "-A"], { gitDir: join(repo, ".git"), env }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(GitError);
+    expect((error as GitError).message).toContain("must be run in a work tree");
+    await expect(runGit(["ls-files", "--cached"], { cwd: repo, env })).resolves.toBe("");
   });
 
   it("rejects empty args", async () => {
