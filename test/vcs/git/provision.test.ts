@@ -121,7 +121,37 @@ describe("provisionClone", () => {
     }
   }
 
+  // Every local line of key in the clone, or [] when git exits with 1 (the key is not set).
+  async function localConfigAll(key: string): Promise<string[]> {
+    try {
+      const out = await runGit(["config", "--local", "--get-all", key], {
+        gitDir: clone,
+        env: origin.env,
+      });
+      return out.split("\n").filter((line) => line !== "");
+    } catch (error) {
+      if (error instanceof GitError && error.exitCode === 1) {
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  // Adds each value as one more local line of key in the clone.
+  async function addLines(key: string, values: string[]): Promise<void> {
+    for (const value of values) {
+      await runGit(["config", "--add", key, value], { gitDir: clone, env: origin.env });
+    }
+  }
+
   describe("identity and signing", () => {
+    it("removes every user.email line when authorEmail is not set", async () => {
+      await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+      await addLines("user.email", ["one@example.com", "two@example.com"]);
+      await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+      expect(await localConfigAll("user.email")).toEqual([]);
+    });
+
     it("writes authorName and authorEmail as user.name and user.email", async () => {
       const config = { authorName: "Bot Name", authorEmail: "bot@example.com" };
       await provisionClone({ remote: origin.path, clone, config, env: origin.env });
