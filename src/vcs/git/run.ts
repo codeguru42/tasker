@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 
 // Where git runs. cwd: a folder in a work tree, for any command.
 // gitDir: a git dir, for a bare repo or a command that needs no work tree. Git runs
@@ -83,14 +83,16 @@ export async function runGit(args: readonly string[], options: RunGitOptions): P
   if (!options.env.PATH) {
     throw new GitNotInstalledError("git is not installed: the env has no PATH");
   }
-  if ("gitDir" in options && !existsSync(options.gitDir)) {
-    throw new Error(`the git dir does not exist: ${options.gitDir}`);
+  const location: Location =
+    "gitDir" in options
+      ? { kind: "gitDir", path: options.gitDir }
+      : { kind: "cwd", path: options.cwd };
+  if (!isFolder(location.path)) {
+    throw folderError(location);
   }
-  if ("cwd" in options) {
-    const location: Location = { kind: "cwd", path: options.cwd };
+  if (location.kind === "cwd") {
     return spawnGit([...args], subcommand, location, childEnv(options.env, false));
   }
-  const location: Location = { kind: "gitDir", path: options.gitDir };
   const env = childEnv(options.env, true);
   // A bare git dir keeps its bare behavior. Any other git dir gets /dev/null as its
   // work tree. That beats core.worktree in its configuration, so a command that needs
@@ -128,13 +130,13 @@ function spawnGit(
     child.stdout.on("data", (chunk: Buffer) => out.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => err.push(chunk));
     child.on("error", (error: NodeJS.ErrnoException) => {
-      if (error.code !== "ENOENT") {
-        reject(error);
-      } else if (!existsSync(location.path)) {
-        // Node also reports a missing cwd as ENOENT.
-        reject(new Error(`the working folder does not exist: ${location.path}`));
-      } else {
+      if ((error.code === "ENOENT" || error.code === "ENOTDIR") && !isFolder(location.path)) {
+        // Node reports a missing cwd as ENOENT and a cwd that is a file as ENOTDIR.
+        reject(folderError(location));
+      } else if (error.code === "ENOENT") {
         reject(new GitNotInstalledError("git is not installed: git was not found on PATH"));
+      } else {
+        reject(error);
       }
     });
     child.on("close", (code, signal) => {
@@ -169,4 +171,14 @@ function spawnGit(
       );
     });
   });
+}
+
+function isFolder(path: string): boolean {
+  return existsSync(path) && statSync(path).isDirectory();
+}
+
+function folderError(location: Location): Error {
+  return location.kind === "gitDir"
+    ? new Error(`the git dir does not exist: ${location.path}`)
+    : new Error(`the working folder does not exist: ${location.path}`);
 }
