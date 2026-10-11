@@ -1,5 +1,4 @@
-import { parse } from "node:path";
-import { runRemoteGit } from "./ssh.js";
+import { remoteCwd, runRemoteGit } from "./ssh.js";
 
 export interface RemoteDefaultBranchOptions {
   remote: string;
@@ -13,7 +12,7 @@ export async function remoteDefaultBranch(options: RemoteDefaultBranchOptions): 
   const { remote, sshKey, env } = options;
   const out = await runRemoteGit(
     ["ls-remote", "--symref", "--", remote, "HEAD"],
-    { cwd: parse(process.cwd()).root, env },
+    { cwd: remoteCwd(), env },
     sshKey,
   );
   for (const line of out.split("\n")) {
