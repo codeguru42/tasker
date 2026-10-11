@@ -142,8 +142,8 @@ For `"git"`, `config` takes these keys:
 
 | Key | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `authorName` | non-empty string | optional | The name of the author of a commit. Provision writes it as `user.name` in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and unsets `user.name` on a complete clone, and git uses the global identity. |
-| `authorEmail` | non-empty string | optional | The email of the author of a commit. Provision writes it as `user.email` in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and unsets `user.email` on a complete clone, and git uses the global identity. |
+| `authorName` | non-empty string | optional | The name of the author of a commit. Provision writes it as exactly one `user.name` line in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and removes every local `user.name` line on a complete clone, and git uses the global identity. |
+| `authorEmail` | non-empty string | optional | The email of the author of a commit. Provision writes it as exactly one `user.email` line in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and removes every local `user.email` line on a complete clone, and git uses the global identity. |
 | `sshKey` | non-empty string | optional | The path of the SSH key that git uses. Provision writes `core.sshCommand` in the clone (through the include file `tasker-ssh.config`) and sets `GIT_SSH_COMMAND` for each call to the remote. The command is `ssh -i '<key>' -o IdentitiesOnly=yes -o BatchMode=yes`. A key with a passphrase fails unless `ssh-agent` holds it. If it is missing, provision sets no ssh command for the clone. |
 
 The key `repos.<key>.git` does not exist. tasker reports it as `repos.<key>.git: unrecognized key`. Put the git configuration under `vcs.config`.
