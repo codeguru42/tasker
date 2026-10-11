@@ -22,6 +22,18 @@ tasker reads one configuration file. It reads `$TASKER_CONFIG`. If that is not s
 
 See `docs/config.md` for the keys.
 
+## Issue keys
+
+An issue key names one issue in an issue tracker. The provider of the repo (`issueTracker.provider`) selects the form of the key. tasker does not guess the provider from the shape of a key.
+
+- GitHub: `owner/repo#N`, for example `codeguru42/tasker#8`.
+- Jira: `PROJ-N`, for example `PROJ-123`.
+- Jira with a site: `<site>/browse/PROJ-N`, for example `example.atlassian.net/browse/PROJ-123`.
+
+N is a positive whole number. The Jira project key (`PROJ`) is in upper case. The site is a bare host name, with no `https://` in front. tasker stores the site in lower case.
+
+A key that does not match the form of its provider is an error. The error names the key.
+
 ## Commands
 
 ### `tasker show-config`
