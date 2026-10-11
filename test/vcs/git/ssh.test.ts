@@ -3,7 +3,14 @@ import { userInfo } from "node:os";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError } from "../../../src/vcs/git/run.js";
-import { hideSshKey, runRemoteGit, sshCommand, sshEnv } from "../../../src/vcs/git/ssh.js";
+import {
+  cloneUrl,
+  hideSshKey,
+  remoteCwd,
+  runRemoteGit,
+  sshCommand,
+  sshEnv,
+} from "../../../src/vcs/git/ssh.js";
 import { gitTestEnv, makeTempDir, readArgLog, writeFakeSsh } from "../../helpers.js";
 
 describe("sshCommand", () => {
@@ -136,5 +143,22 @@ describe("runRemoteGit", () => {
       "-o",
       "BatchMode=yes",
     ]);
+  });
+});
+
+describe("cloneUrl", () => {
+  const root = remoteCwd();
+
+  it.each([
+    ["a/b", `${root}a/b`],
+    ["/abs/repo.git", "/abs/repo.git"],
+    ["host:path", "host:path"],
+    ["git@github.com:o/r.git", "git@github.com:o/r.git"],
+    ["ssh://h/x", "ssh://h/x"],
+    ["file:///x", "file:///x"],
+    ["a/b:c", `${root}a/b:c`],
+    ["tmp/x/../x/src/", `${root}tmp/x/../x/src/`],
+  ])("writes %s as %s", (remote, expected) => {
+    expect(cloneUrl(remote)).toBe(expected);
   });
 });
