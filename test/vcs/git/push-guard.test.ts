@@ -119,4 +119,25 @@ describe("the pre-push hook", () => {
     expect(await origin.branchHead("x")).toBeUndefined();
     expect(existsSync(file)).toBe(true);
   });
+
+  it("keeps the hook active when the global configuration sets core.hooksPath", async () => {
+    const empty = join(tmp, "empty-hooks");
+    mkdirSync(empty);
+    const globalConfig = join(tmp, "global.gitconfig");
+    writeFileSync(globalConfig, `[core]\n\thooksPath = ${empty}\n`);
+    const env = { ...origin.env, GIT_CONFIG_GLOBAL: globalConfig };
+    clone = join(tmp, "data", "clones", "g", "repo.git");
+    await provisionClone({
+      remote: origin.path,
+      clone,
+      config: {},
+      env,
+      publishTokens: tokens,
+    });
+    const other = join(tmp, "data", "worktrees", "g", "wt");
+    await addWorktree("global", other);
+    const error = await failure(runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: other, env }));
+    expect(error.stderr).toContain(NO_TOKEN);
+    expect(await origin.branchHead("x")).toBeUndefined();
+  });
 });

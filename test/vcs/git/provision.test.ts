@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { delimiter, join, parse, relative } from "node:path";
+import { delimiter, join, parse, relative, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { remoteCwd, sshCommand } from "../../../src/vcs/git/ssh.js";
@@ -568,6 +568,18 @@ publishTokens: tokens,
       writeFileSync(`${hook()}.tmp`, "left behind");
       await provision();
       expect(existsSync(`${hook()}.tmp`)).toBe(false);
+    });
+
+    it("sets core.hooksPath to the hooks folder of the clone again", async () => {
+      const env = origin.env;
+      await provision();
+      const get = (...args: string[]): Promise<string> =>
+        runGit(["config", ...args, "core.hooksPath"], { gitDir: clone, env });
+      expect((await get("--get")).trim()).toBe(resolve(clone, "hooks"));
+      await runGit(["config", "core.hooksPath", join(tmp, "other")], { gitDir: clone, env });
+      await provision();
+      expect((await get("--get")).trim()).toBe(resolve(clone, "hooks"));
+      expect((await get("--get-all")).trim().split("\n")).toEqual([resolve(clone, "hooks")]);
     });
   });
 });
