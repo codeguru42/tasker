@@ -1,5 +1,11 @@
-import type { RegisterCommand } from "../cli.js";
+import { CommanderError } from "commander";
+import type { Io, RegisterCommand } from "../cli.js";
 import { loadConfig } from "../config/load.js";
+
+function fail(io: Io, message: string): never {
+  io.stderr(`${message}\n`);
+  throw new CommanderError(1, "tasker.showConfig", message);
+}
 
 export const showConfig: RegisterCommand = (program, io) => {
   program
@@ -12,6 +18,9 @@ export const showConfig: RegisterCommand = (program, io) => {
       if (key === undefined) {
         io.stdout(`${JSON.stringify(config, null, 2)}\n`);
         return;
+      }
+      if (!Object.hasOwn(config.repos, key)) {
+        fail(io, `repo key not found: ${key}`);
       }
       io.stdout(`${JSON.stringify(config.repos[key], null, 2)}\n`);
     });
