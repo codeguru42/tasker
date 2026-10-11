@@ -6,7 +6,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 
 - `src/vcs/git/run.ts` holds `runGit()`.
 - `src/vcs/git/repo-paths.ts` holds `repoSlug()` and `repoPaths()`.
-- `src/vcs/git/ssh.ts` holds `sshCommand()`, `sshEnv()`, `hideSshKey()` and `runRemoteGit()`.
+- `src/vcs/git/ssh.ts` holds `sshCommand()`, `sshEnv()`, `hideSshKey()`, `runRemoteGit()` and `remoteCwd()`.
 - `src/vcs/git/default-branch.ts` holds `remoteDefaultBranch()`.
 - `src/vcs/git/provision.ts` holds `provisionClone()`.
 
@@ -75,9 +75,9 @@ These are the steps:
 
 1. If the marker exists, an earlier clone stopped partway. Provision deletes the whole clone folder, including each file that a person put there. Then it goes on with step 3.
 2. If the clone folder exists and the marker does not, the clone is complete. Provision applies the clone configuration (step 7), runs `git fetch --prune origin` (step 8) and returns. It does not clone again. It does not change `remote.origin.url`.
-3. Provision runs `git ls-remote --exit-code -- <remote>`. The cwd is the root of the file system, so a relative remote path resolves against `/`. No file exists yet at this point.
+3. Provision runs `git ls-remote --exit-code -- <remote>`. The cwd is `remoteCwd()`, the root of the file system, so a relative remote path resolves against `/`. No file exists yet at this point.
 4. Provision makes the parent folder of the clone and writes the empty marker.
-5. Provision runs `git clone --bare -- <remote> <clone>`. The cwd is the parent folder of the clone.
+5. Provision runs `git clone --bare -- <remote> <clone>` with the same cwd, the root of the file system. It passes the clone path as an absolute path (`resolve(clone)`), so the cwd does not move the clone. As a result, a relative remote path names the same repo in `ls-remote` and in `clone`. For a relative local remote path, `git clone` writes its absolute path in `remote.origin.url`. The fetch runs with the clone as cwd and uses that value.
 6. Provision sets `remote.origin.fetch` to `+refs/heads/*:refs/remotes/origin/*`. As a result, a fetch makes `origin/<branch>` refs.
 7. Provision applies the clone configuration: see [The clone configuration](#the-clone-configuration).
 8. Provision runs `git fetch --prune origin`. The `--prune` option removes the remote-tracking refs of branches that the remote deleted.
@@ -139,7 +139,7 @@ When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with
 
 ## `remoteDefaultBranch()`
 
-`remoteDefaultBranch({ remote, sshKey, env })` in `src/vcs/git/default-branch.ts` runs `git ls-remote --symref -- <remote> HEAD` through `runRemoteGit()`. The cwd is the root of the file system, so it needs no clone. It finds the line `ref: refs/heads/<name>` followed by a tab and `HEAD`, and returns `<name>`. If the remote has no such line, it throws `Error`: `the remote has no symbolic HEAD: <remote>`.
+`remoteDefaultBranch({ remote, sshKey, env })` in `src/vcs/git/default-branch.ts` runs `git ls-remote --symref -- <remote> HEAD` through `runRemoteGit()`. The cwd is `remoteCwd()`, the root of the file system. This is the same cwd as in provision, and it needs no clone. It finds the line `ref: refs/heads/<name>` followed by a tab and `HEAD`, and returns `<name>`. If the remote has no such line, it throws `Error`: `the remote has no symbolic HEAD: <remote>`.
 
 ## `repoSlug()` and `repoPaths()`
 
