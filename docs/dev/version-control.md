@@ -15,10 +15,14 @@ The test `test/vcs/git/boundary.test.ts` enforces this rule. It fails when a fil
 - `args[0]` must be the git subcommand, for example `rev-parse`. It must not be an option. For this reason, an error of git always names the real subcommand.
 - `options.cwd` runs git in that folder.
 - `options.gitDir` runs git with `--git-dir <gitDir>` and sets no working folder. A missing git dir gives the git error `not a git repository`.
-- `options.env` is the environment of the child, plus `GIT_TERMINAL_PROMPT=0`. This key always wins over the value of the caller. `runGit()` does not add `process.env`.
+- `options.env` is the environment of the child, with two changes. `GIT_TERMINAL_PROMPT=0` always wins over the value of the caller. If the caller sets neither `GIT_SSH_COMMAND` nor `GIT_SSH`, `runGit()` sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes`. A missing or empty value counts as not set. `runGit()` does not add `process.env`.
 - Git is found on `options.env.PATH`. If the env has no `PATH` or an empty one, `runGit()` rejects before git starts. As a result, Node never uses the `PATH` of tasker.
 
-Git gets no input stream. It gets no controlling terminal, because it starts in a new session. It gets no terminal prompt, because `GIT_TERMINAL_PROMPT=0`. Its stdout and stderr go only to `runGit()`. As a result, git and ssh cannot read from or write to the terminal.
+Git gets no input stream. Its stdout and stderr go to pipes, not to the terminal. Git asks no credential question, because `GIT_TERMINAL_PROMPT=0`. Ssh asks no question (no password and no host key) because of BatchMode, and it fails instead. This holds unless the caller sets its own ssh command. The default `GIT_SSH_COMMAND` wins over `core.sshCommand` in the git configuration. A caller that needs another ssh command must set `GIT_SSH_COMMAND` itself.
+
+Git stays in the process group of tasker. As a result, a Ctrl-C or a hangup stops git too.
+
+Known limit: a program that git starts and that opens `/dev/tty` by itself can still use the terminal. An example is a GPG pinentry for a signed commit.
 
 `runGit()` rejects in these cases:
 
