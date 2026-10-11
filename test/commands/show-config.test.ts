@@ -32,4 +32,27 @@ describe("show-config", () => {
     expect(printed.repos.tasker.vcs).toEqual({ provider: "git", config: {} });
     expect(printed.repos.tasker.issueTracker.assignee).toBe("@me");
   });
+
+  it("prints only the repo that --repo names", async () => {
+    const raw = validConfig();
+    raw.repos["codeguru42/other"] = {
+      ...raw.repos.tasker,
+      remote: "git@github.com:codeguru42/other.git",
+    };
+    const written = writeTempConfig(raw);
+    dir = written.dir;
+    vi.stubEnv("TASKER_CONFIG", written.path);
+    const io = captureIo();
+
+    const code = await run(["show-config", "--repo", "codeguru42/other"], {
+      commands: [showConfig],
+      io,
+    });
+
+    expect(code).toBe(0);
+    const expected = loadConfig({ TASKER_CONFIG: written.path }).repos[
+      "codeguru42/other"
+    ];
+    expect(io.out.join("")).toBe(`${JSON.stringify(expected, null, 2)}\n`);
+  });
 });
