@@ -68,22 +68,23 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     { cwd: remoteCwd(), env },
     config.sshKey,
   );
-  await setConfig(
-    clone,
-    ["--replace-all", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"],
-    env,
-  );
   await applyConfig(clone, config, env);
   await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
   rmSync(marker, { force: true });
 }
 
-// Writes the identity of config and turns off signing. A field that is not set is unset.
+// Writes the fetch refspec and the identity of config, and turns off signing.
+// A field of the identity that is not set is unset.
 async function applyConfig(
   clone: string,
   config: GitVcsConfig,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
+  await setConfig(
+    clone,
+    ["--replace-all", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"],
+    env,
+  );
   await setOrUnset(clone, "user.name", config.authorName, env);
   await setOrUnset(clone, "user.email", config.authorEmail, env);
   await setConfig(clone, ["--replace-all", "commit.gpgSign", "false"], env);
