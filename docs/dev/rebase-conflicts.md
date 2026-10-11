@@ -16,16 +16,18 @@ The operator must not run git commands in the tasker clone. The operator must no
 
 Run each git command in the clone of the operator or in its worktree.
 
-1. Once for each clone of the operator, add a remote named `tasker`. Its URL is the path of the tasker clone under the data root: `git remote add tasker <path of the tasker clone>`.
+1. Once for each clone of the operator, add a remote named `tasker`: `git remote add tasker <path of the tasker clone>`. The installed tasker keeps the tasker clone at `<dataRoot>/repos/<owner>-<repo>/repo.git`, for example `~/.local/share/tasker/repos/codeguru42-tasker/repo.git`. `tasker show <issue>` prints the worktree of the task, under `<dataRoot>/repos/<owner>-<repo>/worktrees/`. The tasker clone is `repo.git` in the same folder. `docs/dev/data-root.md` describes the tasker that this repo builds, not the installed tasker, so its folders do not apply to this procedure.
 2. In the same clone, block each push to this remote: `git remote set-url --push tasker DISABLED-read-only`. As a result, no push can reach the tasker clone.
-3. Run `git fetch --multiple tasker origin`. The fetch reads the task branch from the tasker clone and `main` from `origin`.
-4. Run `git worktree add -b <task branch> <path> tasker/<task branch>`. This makes a worktree with a local task branch.
-5. In the worktree, rebase the task branch onto `origin/main`. Fix the conflicts.
-6. In the worktree, run `npm run check`. The command must pass.
-7. Push the task branch to `origin` with a normal push. Do not force-push.
-8. If `origin` already has the task branch, the normal push fails. In this case, stop and do not force-push. A person decides the next step. If the operator is a person, that person decides. If the operator is an assistant session, it reports the failed push to the person who runs it.
-9. Run `tasker update-branch <issue> --take-remote`. tasker resets its task branch to the task branch on `origin`.
-10. Run `tasker show <issue>`. It prints the state of the task and the next valid commands.
-11. If the task is in `executed`, run `tasker verify` and `tasker review` again. Then land the work as usual.
-12. If the task is in another state, follow the commands that `tasker show` prints.
-13. Keep the worktree and the local task branch until the work lands. After `tasker finish`, remove them.
+3. Run `tasker show <issue>`. It prints the base branch of the task as `base branch:`. For most tasks, the base branch is `main`.
+4. If the base branch is the branch of another task (a stacked task), stop. A person decides the next step, as step 10 describes.
+5. Run `git fetch --multiple tasker origin`. The fetch reads the task branch from the tasker clone. The fetch of `origin` also gets the base branch.
+6. Run `git worktree add -b <task branch> <path> tasker/<task branch>`. This makes a worktree with a local task branch.
+7. In the worktree, rebase the task branch onto `origin/<base branch>`. Fix the conflicts.
+8. In the worktree, run `npm run check`. The command must pass.
+9. Push the task branch to `origin` with a normal push. Do not force-push.
+10. If `origin` already has the task branch, the normal push fails. In this case, stop and do not force-push. A person decides the next step. If the operator is a person, that person decides. If the operator is an assistant session, it reports the failed push to the person who runs it.
+11. Run `tasker update-branch <issue> --take-remote`. tasker resets its task branch to the task branch on `origin`.
+12. Run `tasker show <issue>`. It prints the state of the task and the next valid commands.
+13. If the task is in `executed`, run `tasker verify` and `tasker review` again. Then land the work as usual.
+14. If the task is in another state, follow the commands that `tasker show` prints.
+15. Keep the worktree and the local task branch until the work lands. After `tasker finish`, remove them.
