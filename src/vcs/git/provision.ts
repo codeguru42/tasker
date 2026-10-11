@@ -30,8 +30,8 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     rmSync(clone, { recursive: true, force: true });
   }
 
-  // A complete clone only gets a fetch. Its remote.origin.url stays as it is.
-  if (existsSync(clone) && !existsSync(marker)) {
+  // A complete clone gets the clone configuration and a fetch. Its remote.origin.url stays as it is.
+  if (existsSync(clone)) {
     await applyConfig(clone, config, env);
     await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
     return;
