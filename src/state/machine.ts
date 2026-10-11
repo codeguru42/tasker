@@ -1,3 +1,5 @@
+import type { Task, TaskStore } from "../store/store.js";
+
 export const STATES = [
   "provisioning",
   "workspace_ready",
@@ -166,4 +168,12 @@ const TRANSITIONS = buildTransitions();
 
 export function canTransition(from: TaskState, to: TaskState): boolean {
   return TRANSITIONS[from].has(to);
+}
+
+export function transitionTask(store: TaskStore, id: number, to: TaskState): Task {
+  return store.updateTask(id, { state: to }, (current) => {
+    if (!isTaskState(current.state) || !canTransition(current.state, to)) {
+      throw new Error(`illegal state transition: ${current.state} -> ${to}`);
+    }
+  });
 }
