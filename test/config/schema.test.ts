@@ -128,12 +128,35 @@ describe("parseConfig top level", () => {
     throw new Error("expected parseConfig to throw");
   });
 
-  it("rejects a landing key with one clear issue", () => {
+  it("rejects a landing key with one clear issue and keeps the other errors", () => {
     const raw = validConfig();
     raw.landing = { mergeMethod: "squash" };
-    expect(issuesOf(raw)).toEqual([
+    raw.limits.verifyTimeoutMin = 0;
+    const issues = issuesOf(raw);
+    expect(issues.filter((line) => line.startsWith("landing"))).toEqual([
       "landing: is not accepted: there is no landing setting; the command you run picks how a task lands",
     ]);
+    expectIssueAt(issues, "limits.verifyTimeoutMin");
+  });
+
+  it("reports the errors of the steps before the schema together with the schema errors", () => {
+    const raw = validConfig();
+    raw.landing = {};
+    raw.limits.verifyTimeoutMin = 0;
+    raw.repos.tasker.verify = { commands: ["npm run check"], comands: ["x"] };
+    raw.repos.tasker.issueTracker = { tracker: "nope" };
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(4);
+    expect(issues).toContain(
+      "landing: is not accepted: there is no landing setting; the command you run picks how a task lands",
+    );
+    expect(issues).toContainEqual(
+      expect.stringMatching(
+        /^repos\.tasker\.issueTracker\.tracker: names tracker 'nope', which is not defined under trackers/,
+      ),
+    );
+    expectIssueAt(issues, "limits.verifyTimeoutMin");
+    expect(issues).toContain("repos.tasker.verify.comands: unrecognized key");
   });
 });
 
@@ -401,7 +424,9 @@ describe("parseConfig named trackers", () => {
   });
 
   it("rejects trackers that is not an object", () => {
-    expectIssueAt(issuesOf(withTracker({ provider: "github" }, [])), "trackers");
+    const issues = issuesOf(withTracker({ provider: "github" }, []));
+    expect(issues).toHaveLength(1);
+    expectIssueAt(issues, "trackers");
   });
 
   it("does not change the raw object", () => {
