@@ -14,7 +14,8 @@ The test `test/vcs/git/boundary.test.ts` enforces this rule. It fails when a fil
 
 - `args[0]` must be the git subcommand, for example `rev-parse`. It must not be an option. For this reason, an error of git always names the real subcommand.
 - `options.cwd` runs git in that folder.
-- `options.gitDir` is for a bare repo, or for a command that needs no work tree. Git then runs with `--bare --git-dir <gitDir>`, and its cwd is the git dir. As a result, git has no work tree. A command that needs one fails with a `GitError` (`this operation must be run in a work tree`), and git never uses the folder of tasker. Use `options.cwd` for a command that needs a work tree.
+- `options.gitDir` is for a bare repo, or for a command that needs no work tree. Git runs with the git dir as its cwd and never gets a work tree. `runGit()` first asks git whether the git dir is bare, so git starts twice. A bare git dir runs with `--bare --git-dir <gitDir>`. Any other git dir runs with `--git-dir <gitDir> --work-tree /dev/null`. This beats `core.worktree` in the configuration of the repo. `/dev/null` is not a folder, so a command that needs a work tree fails with a `GitError` (`this operation must be run in a work tree`), and git never uses a folder. `rev-parse --show-toplevel` prints `/dev/null`. `runGit()` also removes `GIT_WORK_TREE` from the env. Use `options.cwd` for a command that needs a work tree.
+- `--bare` alone is not enough for a git dir that is not bare. The configuration of the repo (`core.bare=false` or `core.worktree`) beats `--bare`, and git ignores `-c core.bare=true` here. `/dev/null` is not used for a bare repo, because it makes the repo count as non-bare. That changes `fetch` and `worktree add`.
 - `options.env` is the environment of the child, with two changes. `GIT_TERMINAL_PROMPT=0` always wins over the value of the caller. Git uses a `GIT_SSH_COMMAND` that is present, even an empty one, and then ignores `GIT_SSH`. For this reason, `runGit()` never passes an empty value. A non-empty `GIT_SSH_COMMAND` of the caller stays. Otherwise `runGit()` removes `GIT_SSH_COMMAND`. Then a non-empty `GIT_SSH` of the caller stays. Otherwise `runGit()` removes `GIT_SSH` too and sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes`. `runGit()` does not add `process.env`.
 - Git is found on `options.env.PATH`. If the env has no `PATH` or an empty one, `runGit()` rejects before git starts. As a result, Node never uses the `PATH` of tasker.
 
@@ -32,12 +33,12 @@ Known limit: a program that git starts and that opens `/dev/tty` by itself can s
 | `args[0]` starts with `-`. | `Error`: `runGit needs the git subcommand as the first argument` |
 | Git exits with a code other than 0. | `GitError`: `git <subcommand> failed with exit code <n>: <stderr>` |
 | A signal stops git. | `GitError`: `git <subcommand> was stopped by signal <SIG>` |
-| `gitDir` does not exist. | `Error`: `the git dir does not exist: <gitDir>` |
-| `cwd` does not exist. | `Error`: `the working folder does not exist: <cwd>` |
+| `gitDir` does not exist or is not a folder. | `Error`: `the git dir does not exist: <gitDir>` |
+| `cwd` does not exist or is not a folder. | `Error`: `the working folder does not exist: <cwd>` |
 | The env has no `PATH`, or `PATH` is empty. | `GitNotInstalledError`: `git is not installed: the env has no PATH` |
 | Git is not on `PATH`. | `GitNotInstalledError`: `git is not installed: git was not found on PATH` |
 
-The checks of the first two rows, of the `PATH` row and of the git dir row run before git starts. A `GitError` has the fields `subcommand`, `stdout`, `stderr` and `exitCode`. `exitCode` is `null` when a signal stops git. The message leaves out `: <stderr>` when stderr is empty.
+The checks of the first two rows, of the `PATH` row, of the `gitDir` row and of the `cwd` row run before git starts. A `GitError` has the fields `subcommand`, `stdout`, `stderr` and `exitCode`. `exitCode` is `null` when a signal stops git. The message leaves out `: <stderr>` when stderr is empty.
 
 ## `repoSlug()` and `repoPaths()`
 
