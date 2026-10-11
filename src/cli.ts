@@ -24,7 +24,17 @@ export function buildProgram(commands: readonly RegisterCommand[], io: Io): Comm
     .description("Drive an AI coding assistant through an issue")
     .version(readVersion())
     .configureOutput({ writeOut: io.stdout, writeErr: io.stderr })
-    .exitOverride();
+    .exitOverride()
+    .showHelpAfterError("(run 'tasker --help' for usage)")
+    .allowExcessArguments(true)
+    .argument("[operands...]")
+    .action((operands: string[]) => {
+      const [name] = operands;
+      if (name === undefined) {
+        program.help({ error: true });
+      }
+      program.error(`error: unknown command '${name}'`);
+    });
   for (const register of commands) {
     register(program);
   }
