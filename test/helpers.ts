@@ -1,4 +1,4 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Io, RegisterCommand } from "../src/cli.js";
@@ -57,3 +57,11 @@ export function makeTempDir(prefix: string): string {
 
 // The repo root, for spawn tests that need it as cwd.
 export const repoRoot = new URL("..", import.meta.url);
+
+// Writes raw as JSON to config.json in a new temp dir. The caller removes dir.
+export function writeTempConfig(raw: unknown): { dir: string; path: string } {
+  const dir = makeTempDir("tasker-config-");
+  const path = join(dir, "config.json");
+  writeFileSync(path, JSON.stringify(raw));
+  return { dir, path };
+}
