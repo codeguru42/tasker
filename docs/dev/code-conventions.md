@@ -8,9 +8,11 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/cli.ts` builds the Commander program and exports `run()`, `buildProgram()` and the `Io` and `RegisterCommand` types.
 - `src/version.ts` reads the version from `package.json`.
 - `src/commands/` holds one file for each command. `src/commands/index.ts` lists them.
+- `src/config/` holds the configuration loader. `path.ts` finds the file, `expand.ts` expands paths, `allowed-env-names.ts` holds the default env allowlist, `schema.ts` validates the file, and `load.ts` reads it.
+- `docs/config.md` is the configuration reference.
 - `skills/tasker/SKILL.md` is the skill that tells an agent how to use tasker. It lists each command and its options.
 - `test/` holds the tests.
-- `test/helpers.ts` holds the shared test helpers: `captureIo()` and the `greet` fixture command.
+- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command and `validConfig()`, which returns a new valid configuration object for each call.
 - `dist/` holds the build output. Git ignores it.
 
 ## Add a command
