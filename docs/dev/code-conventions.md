@@ -10,6 +10,7 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/commands/` holds one file for each command. `src/commands/index.ts` lists them.
 - `src/config/` holds the configuration loader. `path.ts` finds the file, `expand.ts` expands paths, `allowed-env-names.ts` holds the default env allowlist, `schema.ts` validates the file, and `load.ts` reads it.
 - `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, `transaction.ts` holds `immediateTransaction()`, the shared helper that runs each write and each migration in one `BEGIN IMMEDIATE` transaction, and `store.ts` opens the database and reads and writes tasks and events.
+- `src/vcs/git/` holds all code that starts git. `run.ts` holds `runGit()`, and `repo-paths.ts` holds `repoSlug()` and `repoPaths()`. Only this folder starts git. The test `test/vcs/git/boundary.test.ts` enforces this.
 - `src/issue-key/` holds the issue key parsers. `ref.ts` holds the `IssueRef` type and `IssueKeyError`, `path-slug.ts` makes a string safe for a file path and a git branch name, `github.ts` parses a GitHub key, and `jira.ts` parses a Jira key. The caller selects the parser and passes the repo key.
 - `src/state/` holds the state machine. `machine.ts` declares the task states and the legal edges, and checks a change of state.
 - `AGENTS.md` is an index that links to the docs. It gives no rules itself. Each assistant session reads it first.
@@ -18,12 +19,13 @@ This page describes how the code of tasker is laid out and how to test it.
 - `docs/dev/data-root.md` describes the folders under `dataRoot` and the tables of the database.
 - `docs/dev/orchestration.md` gives the rules for an orchestrator, an assistant session that runs tickets from the project board through the installed `tasker`.
 - `docs/dev/rebase-conflicts.md` gives the procedure for a rebase conflict that `tasker update-branch` reports.
+- `docs/dev/version-control.md` describes the git code in `src/vcs/git/`, `runGit()` and the folders of a repo.
 - `docs/dev/rules.md` gives the rules for each change to this repo: the check, test first, the commits, the docs, the test helpers, plain English and `AGENTS.md`.
 - `docs/statemachine.md` describes the task states, the edges between them and the diagrams.
 - `skills/tasker/SKILL.md` is the skill that tells an agent how to use tasker. It lists each command and its options.
 - `test/` holds the tests.
 - `test/fixtures/` holds scripts that tests spawn as child processes.
-- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command, `validConfig()`, which returns a new valid configuration object for each call, `makeTempDir()`, which makes a new temporary folder for each call, `repoRoot`, the repo root URL that spawn tests use as `cwd`, `writeTempConfig()`, which writes a configuration to `config.json` in a new temp dir, and `tableNames()`, which lists the table names of a database.
+- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command, `validConfig()`, which returns a new valid configuration object for each call, `makeTempDir()`, which makes a new temporary folder for each call, `repoRoot`, the repo root URL that spawn tests use as `cwd`, `writeTempConfig()`, which writes a configuration to `config.json` in a new temp dir, `tableNames()`, which lists the table names of a database, `GIT_TEST_IDENTITY`, the fixed author of test commits, `gitTestEnv()`, which gives the env of a git child process that reads no git configuration of the host, and `makeGitOrigin()`, which makes a real local bare origin repo. Its `addCommit`, `createBranch` and `branchHead` change and read the origin, and its `remove` deletes the temp folder.
 - `dist/` holds the build output. Git ignores it.
 
 ## Add a command
@@ -43,7 +45,7 @@ Write the `.js` extension in each relative import, for example `import { run } f
 
 ## Tests
 
-- Tests use Vitest. Each test file matches `test/**/*.test.ts`, and its name mirrors the file in `src/` that it tests. The exception is `test/skill.test.ts`. It tests `skills/tasker/SKILL.md`, not a file in `src/`.
+- Tests use Vitest. Each test file matches `test/**/*.test.ts`, and its name mirrors the file in `src/` that it tests. Three tests are exceptions. `test/skill.test.ts` tests `skills/tasker/SKILL.md`, not a file in `src/`. `test/vcs/git/boundary.test.ts` checks the whole source tree. `test/helpers.test.ts` tests the git fixture of `test/helpers.ts`.
 - Unit tests call `run()` with a capturing `Io` and with fixture commands. The `Io` collects output in arrays, so the test reads stdout and stderr and checks the returned exit code. The capturing `Io` and the fixture commands come from `test/helpers.ts`. Put a new shared helper in that file. Do not copy it into a test file.
 - End-to-end tests spawn `src/main.ts` through `tsx`. Write few of them, because they are slow.
 - Write the test first. Run it and watch it fail (red). Then write the code that makes it pass (green).
