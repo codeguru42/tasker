@@ -1,4 +1,3 @@
-import { pathSlug } from "./path-slug.js";
 import { IssueKeyError, type IssueRef } from "./ref.js";
 
 const GITHUB_KEY =
@@ -12,9 +11,5 @@ export function parseGithubKey(rawKey: string, repoKey: string): IssueRef {
       `not a GitHub issue key: ${JSON.stringify(rawKey)} (expected owner/repo#N)`,
     );
   }
-  return {
-    key: rawKey,
-    repoKey,
-    shortRef: pathSlug(`issue-${match[3]}`),
-  };
+  return { key: rawKey, repoKey, shortRef: `issue-${match[3]}` };
 }
