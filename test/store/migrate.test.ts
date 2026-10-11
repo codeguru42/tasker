@@ -1,0 +1,65 @@
+import { DatabaseSync } from "node:sqlite";
+import { rmSync } from "node:fs";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { migrate, schemaVersion } from "../../src/store/migrate.js";
+import { makeTempDir } from "../helpers.js";
+
+function tableNames(db: DatabaseSync): string[] {
+  const rows = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+    .all() as { name: string }[];
+  return rows.map((row) => row.name);
+}
+
+describe("migrate", () => {
+  let dir: string;
+  let db: DatabaseSync;
+
+  beforeEach(() => {
+    dir = makeTempDir("tasker-data-");
+    db = new DatabaseSync(join(dir, "t.db"));
+  });
+
+  afterEach(() => {
+    db.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("takes a new database to the last version", () => {
+    migrate(db, ["CREATE TABLE a (x)", "CREATE TABLE b (x)"]);
+    expect(schemaVersion(db)).toBe(2);
+    expect(tableNames(db)).toEqual(["a", "b"]);
+  });
+
+  it("does nothing on a second run with the same list", () => {
+    const list = ["CREATE TABLE a (x)", "CREATE TABLE b (x)"];
+    migrate(db, list);
+    expect(() => migrate(db, list)).not.toThrow();
+    expect(schemaVersion(db)).toBe(2);
+  });
+
+  it("runs only the pending versions", () => {
+    migrate(db, ["CREATE TABLE a (x)"]);
+    migrate(db, ["CREATE TABLE a (x)", "CREATE TABLE b (x)"]);
+    expect(schemaVersion(db)).toBe(2);
+    expect(tableNames(db)).toEqual(["a", "b"]);
+  });
+
+  it("throws on a file version that is newer than the list", () => {
+    db.exec("PRAGMA user_version = 5");
+    expect(() =>
+      migrate(db, ["CREATE TABLE a (x)", "CREATE TABLE b (x)"]),
+    ).toThrow(
+      "database schema version 5 is newer than this tasker supports (2)",
+    );
+    expect(schemaVersion(db)).toBe(5);
+    expect(tableNames(db)).toEqual([]);
+  });
+
+  it("rolls back to the old version when a migration fails", () => {
+    expect(() => migrate(db, ["CREATE TABLE a (x)", "NOT SQL"])).toThrow();
+    expect(schemaVersion(db)).toBe(0);
+    expect(tableNames(db)).toEqual([]);
+  });
+});
