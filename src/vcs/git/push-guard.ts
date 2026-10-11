@@ -2,12 +2,19 @@ import { chmodSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { shellQuote } from "./ssh.js";
 
-// The pre-push hook. It rejects each push.
+// The pre-push hook. It accepts a push that has a valid token and deletes the token file.
 function hookScript(publishTokens: string): string {
   return [
     "#!/bin/sh",
     "# tasker writes this file on each provision. It rejects each push without a valid publish token.",
     `tokens=${shellQuote(resolve(publishTokens))}`,
+    "token=$TASKER_PUBLISH_TOKEN",
+    "case $token in",
+    "  *[!0-9a-f]*) token= ;;",
+    "esac",
+    'if [ ${#token} -eq 64 ] && rm -- "$tokens/$token" 2>/dev/null; then',
+    "  exit 0",
+    "fi",
     'echo "tasker: the push has no valid publish token" >&2',
     "exit 1",
     "",
