@@ -24,7 +24,7 @@ The table has one row for each task. All times are ISO 8601 text in UTC, for exa
 | `id` | integer | Primary key. |
 | `issue_key` | text | Required. The issue of the task. |
 | `repo_key` | text | Required. The key of the repo in the configuration. |
-| `state` | text | Required. The state of the task. |
+| `state` | text | Required. The state of the task. See [the state machine](../statemachine.md). The store does not check the value. |
 | `branch` | text | Optional. The branch of the task. |
 | `worktree_path` | text | Optional. The worktree of the task. |
 | `created_at` | text | Required. The time that `createTask()` ran. |
@@ -66,4 +66,6 @@ Two tasker processes can use the same database at once. `openStore()` makes this
 2. `PRAGMA journal_mode = WAL`. Readers do not block the writer.
 3. `PRAGMA foreign_keys = ON`.
 
-Each write, and each migration, runs in `BEGIN IMMEDIATE`. The transaction takes the write lock at the start. As a result, `updateTask()` reads and writes a row in one step, and another process cannot change the row in between. Two processes that open a new database at the same time do not both run the same migration.
+Each write, and each migration, runs through `immediateTransaction()` in `src/store/transaction.ts`. The helper starts `BEGIN IMMEDIATE`, so the transaction takes the write lock at the start. If the function in the transaction throws, the helper rolls back and throws the same error. If the rollback itself fails, the caller still gets the first error. As a result, `updateTask()` reads and writes a row in one step, and another process cannot change the row in between. Two processes that open a new database at the same time do not both run the same migration.
+
+`updateTask()` takes an optional third argument, `check`. The store calls `check` with the current row inside the same transaction, before the write. If `check` throws, the transaction rolls back, the row does not change, and `updateTask()` throws the same error. `transitionTask()` in `src/state/machine.ts` uses `check` to test the edge. As a result, the read and the write of the state happen in one step.
