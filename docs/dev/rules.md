@@ -27,6 +27,7 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 - Write the docs in plain English: short sentences, active voice, simple tenses, and "must" for a requirement.
 - Do not use "should", "may", "might" or "could" in the docs.
 - Use one word for one thing in each doc.
+- In the docs, write the home folder as `$HOME`. Do not write `~` or an absolute path such as `/home/<user>`.
 
 ## AGENTS.md
 
