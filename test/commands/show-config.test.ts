@@ -1,4 +1,5 @@
 import { rmSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { run } from "../../src/cli.js";
 import { showConfig } from "../../src/commands/show-config.js";
@@ -74,4 +75,38 @@ describe("show-config", () => {
       expect(io.err.join("")).toBe(`repo key not found: ${key}\n`);
     },
   );
+
+  it("prints the loader errors for an invalid configuration", async () => {
+    const written = writeTempConfig({ ...validConfig(), bogus: 1 });
+    dir = written.dir;
+    vi.stubEnv("TASKER_CONFIG", written.path);
+    let message = "";
+    try {
+      loadConfig({ TASKER_CONFIG: written.path });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    const io = captureIo();
+
+    const code = await run(["show-config"], { commands: [showConfig], io });
+
+    expect(code).toBe(1);
+    expect(io.out).toEqual([]);
+    expect(io.err.join("")).toBe(`${message}\n`);
+    expect(io.err.join("")).toContain("  - bogus: unrecognized key");
+  });
+
+  it("prints the loader error for a missing file", async () => {
+    const written = writeTempConfig(validConfig());
+    dir = written.dir;
+    const missing = join(written.dir, "missing.json");
+    vi.stubEnv("TASKER_CONFIG", missing);
+    const io = captureIo();
+
+    const code = await run(["show-config"], { commands: [showConfig], io });
+
+    expect(code).toBe(1);
+    expect(io.out).toEqual([]);
+    expect(io.err.join("")).toBe(`config file not found: ${missing}\n`);
+  });
 });
