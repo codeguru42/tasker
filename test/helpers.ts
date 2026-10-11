@@ -1,8 +1,9 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import type { Io, RegisterCommand } from "../src/cli.js";
+import { GitError, runGit } from "../src/vcs/git/run.js";
 
 export interface CapturedIo extends Io {
   out: string[];
@@ -93,5 +94,84 @@ export function gitTestEnv(home: string): NodeJS.ProcessEnv {
     GIT_COMMITTER_EMAIL: GIT_TEST_IDENTITY.email,
     LC_ALL: "C",
     GIT_TERMINAL_PROMPT: "0",
+  };
+}
+
+export interface GitOrigin {
+  // The temp folder that holds everything. remove() deletes it.
+  dir: string;
+  // The bare origin repo. Use it as the remote URL.
+  path: string;
+  env: NodeJS.ProcessEnv;
+  // Adds one commit to branch and returns the new commit SHA.
+  addCommit(
+    branch: string,
+    change?: { file?: string; content?: string; message?: string },
+  ): Promise<string>;
+  // Makes branch name at the head of from (default "main").
+  createBranch(name: string, from?: string): Promise<void>;
+  // The head SHA of branch, or undefined when the branch is missing.
+  branchHead(branch: string): Promise<string | undefined>;
+  remove(): void;
+}
+
+// A real local bare origin repo with one commit on main. No test needs the network.
+// A private scratch repo, "work", makes the commits and pushes them by local path.
+export async function makeGitOrigin(): Promise<GitOrigin> {
+  const dir = makeTempDir("tasker-git-");
+  const home = join(dir, "home");
+  mkdirSync(home);
+  const env = gitTestEnv(home);
+  const path = join(dir, "origin.git");
+  const work = join(dir, "work");
+
+  await runGit(["init", "--bare", "--initial-branch=main", "origin.git"], { cwd: dir, env });
+  await runGit(["init", "--initial-branch=main", "work"], { cwd: dir, env });
+  await runGit(["remote", "add", "origin", path], { cwd: work, env });
+  writeFileSync(join(work, "README.md"), "initial commit\n");
+  await runGit(["add", "-A"], { cwd: work, env });
+  await runGit(["commit", "-m", "initial commit"], { cwd: work, env });
+  await runGit(["push", "origin", "main"], { cwd: work, env });
+
+  let counter = 0;
+
+  return {
+    dir,
+    path,
+    env,
+    async addCommit(branch, change = {}) {
+      counter += 1;
+      const message = change.message ?? `commit ${counter}`;
+      const file = change.file ?? `file-${counter}.txt`;
+      await runGit(["fetch", "origin"], { cwd: work, env });
+      await runGit(["checkout", "-B", branch, `origin/${branch}`], { cwd: work, env });
+      const target = join(work, file);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, change.content ?? message);
+      await runGit(["add", "-A"], { cwd: work, env });
+      await runGit(["commit", "--allow-empty", "-m", message], { cwd: work, env });
+      await runGit(["push", "origin", `HEAD:refs/heads/${branch}`], { cwd: work, env });
+      return (await runGit(["rev-parse", "HEAD"], { cwd: work, env })).trim();
+    },
+    async createBranch(name, from = "main") {
+      await runGit(["branch", name, from], { gitDir: path, env });
+    },
+    async branchHead(branch) {
+      try {
+        const out = await runGit(
+          ["rev-parse", "--verify", "--quiet", `refs/heads/${branch}^{commit}`],
+          { gitDir: path, env },
+        );
+        return out.trim();
+      } catch (error) {
+        if (error instanceof GitError && error.exitCode === 1 && error.stdout === "") {
+          return undefined;
+        }
+        throw error;
+      }
+    },
+    remove() {
+      rmSync(dir, { recursive: true, force: true });
+    },
   };
 }
