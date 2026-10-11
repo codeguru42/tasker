@@ -42,9 +42,8 @@ export function isTaskState(value: string): value is TaskState {
   return (STATES as readonly string[]).includes(value);
 }
 
-// The specific edges. They come from the spec's statemachine.md, and
-// docs/statemachine.md describes them. The rule edges (to failed and to
-// cancelled) are added in buildTransitions.
+// The specific edges. The rule edges (to failed and to cancelled) are added
+// in buildTransitions.
 const EDGES: Record<TaskState, readonly TaskState[]> = {
   // The main path: each state moves to the next one.
   provisioning: ["workspace_ready"],
