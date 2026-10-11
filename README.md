@@ -8,6 +8,7 @@ This repo is a rebuild of tasker. Work is tracked on the [project board](https:/
 
 - Node.js 22.13 or later
 - npm
+- git (the tests run git)
 
 ## Install from source
 
