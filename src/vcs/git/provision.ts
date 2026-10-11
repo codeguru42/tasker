@@ -38,6 +38,9 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
       throw error;
     },
   );
+  if (failure?.exitCode === 2) {
+    throw new Error(`the remote has no refs: ${remote}`);
+  }
   if (failure !== undefined) {
     const detail = failure.stderr.trim();
     throw new Error(`the remote does not answer: ${remote}${detail === "" ? "" : `: ${detail}`}`);
