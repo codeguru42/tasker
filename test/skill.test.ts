@@ -10,7 +10,7 @@ function readSkill(): string {
 
 async function helpText(commands?: readonly RegisterCommand[]): Promise<string> {
   const io = captureIo();
-  const code = await run(["--help"], commands ? { commands, io } : { io });
+  const code = await run(["--help"], { commands, io });
   expect(code).toBe(0);
   return io.out.join("");
 }
