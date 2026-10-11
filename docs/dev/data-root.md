@@ -11,7 +11,7 @@ tasker keeps all of its data under one folder, the `dataRoot` of the configurati
 | `<dataRoot>/clones/` | Clones of the repos. |
 | `<dataRoot>/worktrees/` | The worktrees of the tasks. |
 | `<dataRoot>/clones/<slug>/repo.git` | The bare clone of one repo. |
-| `<dataRoot>/clones/<slug>/repo.git.incomplete` | The marker of a clone that is not complete. Provision writes it before `git clone` and removes it after the first fetch. |
+| `<dataRoot>/clones/<slug>/repo.git.incomplete` | The marker of a clone that is not complete. Provision writes it before `git clone` and removes it after the first fetch of a fresh clone. If a later step fails, the marker stays, and the next provision deletes the clone folder and clones again. |
 | `<dataRoot>/clones/<slug>/repo.git/tasker-ssh.config` | The include file with the ssh command (`core.sshCommand`). Provision writes it, and `include.path` links it. See [docs/dev/version-control.md](version-control.md#provision). |
 | `<dataRoot>/clones/<slug>/publish-tokens/` | The publish tokens of one repo. |
 | `<dataRoot>/worktrees/<slug>/` | The worktrees of the tasks of one repo. |
