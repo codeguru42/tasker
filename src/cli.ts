@@ -7,7 +7,7 @@ export interface Io {
   stderr(text: string): void;
 }
 
-export type RegisterCommand = (program: Command) => void;
+export type RegisterCommand = (program: Command, io: Io) => void;
 
 export interface RunOptions {
   commands?: readonly RegisterCommand[];
@@ -27,7 +27,7 @@ export function buildProgram(commands: readonly RegisterCommand[], io: Io): Comm
     .exitOverride()
     .showHelpAfterError("(run 'tasker --help' for usage)");
   for (const register of commands) {
-    register(program);
+    register(program, io);
   }
   return program;
 }
