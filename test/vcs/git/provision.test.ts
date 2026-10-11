@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { delimiter, join, parse, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { sshCommand } from "../../../src/vcs/git/ssh.js";
@@ -60,6 +60,17 @@ describe("provisionClone", () => {
     await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
     expect(await revParse("origin/main")).toBe(await origin.branchHead("main"));
     expect(await revParse("origin/feature")).toBe(await origin.branchHead("feature"));
+  });
+
+  it("clones the same repo that ls-remote checks when the remote path is relative", async () => {
+    // A relative path that names the origin from the root of the file system.
+    const remote = relative(parse(origin.path).root, origin.path);
+    await provisionClone({ remote, clone, config: {}, env: origin.env });
+    expect(await revParse("origin/main")).toBe(await origin.branchHead("main"));
+    // The fetch of a complete clone runs in the clone and must reach the same repo.
+    const head = await origin.addCommit("main");
+    await provisionClone({ remote, clone, config: {}, env: origin.env });
+    expect(await revParse("origin/main")).toBe(head);
   });
 
   it("fetches and keeps the clone when it is complete", async () => {
