@@ -4,9 +4,14 @@ import { GitError, runGit, type RunGitOptions } from "./run.js";
 
 const HIDDEN = "<sshKey>";
 
+// A text in single quotes for a shell script. Each ' in the text becomes '\''.
+export function shellQuote(text: string): string {
+  return `'${text.replaceAll("'", "'\\''")}'`;
+}
+
 // The ssh command for a key: the path in single quotes, each ' written as '\''.
 export function sshCommand(sshKey: string): string {
-  return `ssh -i '${sshKey.replaceAll("'", "'\\''")}' -o IdentitiesOnly=yes -o BatchMode=yes`;
+  return `ssh -i ${shellQuote(sshKey)} -o IdentitiesOnly=yes -o BatchMode=yes`;
 }
 
 // env plus GIT_SSH_COMMAND=sshCommand(sshKey) when sshKey is set. Without a key, env as it is.

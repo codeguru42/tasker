@@ -13,6 +13,7 @@ import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "no
 import type { DatabaseSync } from "node:sqlite";
 import type { Io, RegisterCommand } from "../src/cli.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
+import { shellQuote } from "../src/vcs/git/ssh.js";
 
 export interface CapturedIo extends Io {
   out: string[];
@@ -217,11 +218,6 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
 export function writeFakeGit(binDir: string, body: string): void {
   mkdirSync(binDir, { recursive: true });
   writeFileSync(join(binDir, "git"), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
-}
-
-// A path in single quotes for a shell script. Each ' in the path becomes '\''.
-function shellQuote(text: string): string {
-  return `'${text.replaceAll("'", "'\\''")}'`;
 }
 
 // The shell line that appends one call to the log: the argument count, then each argument.
