@@ -120,9 +120,9 @@ async function setOrUnset(
     return;
   }
   try {
-    await setConfig(clone, ["--unset", key], env);
+    await setConfig(clone, ["--unset-all", key], env);
   } catch (error) {
-    // Exit code 5 means that the key is not set.
+    // Exit code 5 of --unset-all means that the key is missing.
     if (!(error instanceof GitError && error.exitCode === 5)) {
       throw error;
     }
