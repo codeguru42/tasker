@@ -10,6 +10,7 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/commands/` holds one file for each command. `src/commands/index.ts` lists them.
 - `src/config/` holds the configuration loader. `path.ts` finds the file, `expand.ts` expands paths, `allowed-env-names.ts` holds the default env allowlist, `schema.ts` validates the file, and `load.ts` reads it.
 - `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, and `store.ts` opens the database and reads and writes tasks and events.
+- `src/issue-key/` holds the issue key parsers. `ref.ts` holds the `IssueRef` type and `IssueKeyError`, `path-slug.ts` makes a string safe for a file path and a git branch name, `github.ts` parses a GitHub key, and `jira.ts` parses a Jira key. The caller selects the parser and passes the repo key.
 - `docs/config.md` is the configuration reference.
 - `docs/dev/data-root.md` describes the folders under `dataRoot` and the tables of the database.
 - `skills/tasker/SKILL.md` is the skill that tells an agent how to use tasker. It lists each command and its options.
