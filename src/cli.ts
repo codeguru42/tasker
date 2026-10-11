@@ -35,6 +35,9 @@ export function buildProgram(commands: readonly RegisterCommand[], io: Io): Comm
 export async function run(argv: readonly string[], options: RunOptions = {}): Promise<number> {
   const program = buildProgram(options.commands ?? defaultCommands, options.io ?? defaultIo);
   try {
+    if (argv.length === 0) {
+      program.help({ error: true });
+    }
     await program.parseAsync(argv, { from: "user" });
     return 0;
   } catch (err) {
