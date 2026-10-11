@@ -73,6 +73,14 @@ describe("provisionClone", () => {
     expect(existsSync(`${clone}.incomplete`)).toBe(false);
   });
 
+  it("names the clone when its configuration is locked", async () => {
+    await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+    writeFileSync(join(clone, "config.lock"), "");
+    await expect(
+      provisionClone({ remote: origin.path, clone, config: {}, env: origin.env }),
+    ).rejects.toThrow(`the clone configuration is locked: ${clone}`);
+  });
+
   it("removes the marker after success", async () => {
     await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
     expect(existsSync(`${clone}.incomplete`)).toBe(false);
