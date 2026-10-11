@@ -104,4 +104,20 @@ describe("run", () => {
     expect(code).toBe(1);
     expect(io.err.join("")).toContain("Usage: tasker");
   });
+
+  it("does not show the internal operands placeholder in the usage line", async () => {
+    const helpIo = captureIo();
+
+    const helpCode = await run(["--help"], { commands: [greet], io: helpIo });
+
+    expect(helpCode).toBe(0);
+    expect(helpIo.out.join("")).toContain("Usage: tasker [options] [command]");
+    expect(helpIo.out.join("")).not.toContain("operands");
+
+    const bareIo = captureIo();
+
+    await run([], { commands: [greet], io: bareIo });
+
+    expect(bareIo.err.join("")).not.toContain("operands");
+  });
 });
