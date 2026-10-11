@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process";
-import { mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, GitNotInstalledError, runGit } from "../../../src/vcs/git/run.js";
-import { gitTestEnv, makeTempDir, repoRoot } from "../../helpers.js";
+import { gitTestEnv, makeTempDir, repoRoot, writeFakeGit } from "../../helpers.js";
 
 describe("runGit", () => {
   let dir: string;
@@ -89,5 +89,45 @@ describe("runGit", () => {
       },
     );
     expect(result).toEqual({ code: 0, stdout: "", stderr: "" });
+  });
+});
+
+describe("runGit keeps git away from the terminal", () => {
+  let dir: string;
+  let bin: string;
+  let env: NodeJS.ProcessEnv;
+
+  beforeEach(() => {
+    dir = makeTempDir("tasker-run-git-tty-");
+    bin = join(dir, "bin");
+    env = { ...gitTestEnv(dir), PATH: bin, GIT_TERMINAL_PROMPT: "1" };
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("sets GIT_TERMINAL_PROMPT to 0 and gives git no controlling terminal", async () => {
+    writeFakeGit(
+      bin,
+      [
+        'echo "prompt=$GIT_TERMINAL_PROMPT"',
+        'if [ -e /dev/tty ] && (: < /dev/tty) 2>/dev/null; then echo tty; else echo no-tty; fi',
+      ].join("\n"),
+    );
+    const out = await runGit(["version"], { cwd: dir, env });
+    expect(out).toBe("prompt=0\nno-tty\n");
+  });
+
+  it.runIf(existsSync("/proc/self/stat"))("starts git in its own session", async () => {
+    writeFakeGit(
+      bin,
+      [
+        "read -r pid comm state ppid pgrp session rest < /proc/$$/stat",
+        'if [ "$session" = "$$" ]; then echo own-session; else echo shared-session; fi',
+      ].join("\n"),
+    );
+    const out = await runGit(["version"], { cwd: dir, env });
+    expect(out).toBe("own-session\n");
   });
 });

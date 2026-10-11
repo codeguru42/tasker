@@ -202,3 +202,10 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
     },
   };
 }
+
+// Writes an executable shell script named git into binDir. body is the script after "#!/bin/sh".
+// Use binDir as the only PATH folder, so runGit() starts this script, not the real git.
+export function writeFakeGit(binDir: string, body: string): void {
+  mkdirSync(binDir, { recursive: true });
+  writeFileSync(join(binDir, "git"), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
+}
