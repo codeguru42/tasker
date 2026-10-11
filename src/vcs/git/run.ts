@@ -1,11 +1,11 @@
 import { spawn } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 
-// Where git runs. cwd: a folder in a work tree, for any command.
-// gitDir: a git dir, for a bare repo or a command that needs no work tree. Git runs
-// with the git dir as its cwd and never gets a work tree: a bare git dir runs with
-// --bare, and any other git dir runs with --work-tree /dev/null, which beats
-// core.worktree. A command that needs a work tree then fails.
+// Where git runs. cwd: a folder in a work tree, for any command that needs one.
+// gitDir: the bare clone that tasker made, and nothing else. Git runs with
+// --bare --git-dir and with the git dir as its cwd, so it has no work tree.
+// tasker never sets core.worktree or core.bare=false in that clone. A non-bare
+// git dir is out of scope: its configuration can give git a work tree.
 export type GitLocation = { cwd: string } | { gitDir: string };
 export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv };
 
@@ -67,49 +67,38 @@ function childEnv(env: NodeJS.ProcessEnv, gitDirMode: boolean): NodeJS.ProcessEn
 type Location = { kind: "cwd" | "gitDir"; path: string };
 
 // Runs git with args (the subcommand first) and resolves with its stdout.
+// Git starts one time for each call.
 // Git gets no input stream, and its stdout and stderr go to pipes, not to the terminal.
 // Git asks no credential question (GIT_TERMINAL_PROMPT=0), and ssh asks no question
 // (BatchMode), unless the caller sets its own ssh command.
 // Git stays in the process group of tasker, so a Ctrl-C stops git too.
-// With gitDir, git starts twice: first to ask whether the git dir is bare.
-export async function runGit(args: readonly string[], options: RunGitOptions): Promise<string> {
+export function runGit(args: readonly string[], options: RunGitOptions): Promise<string> {
   if (args.length === 0) {
-    throw new Error("runGit needs a git subcommand");
+    return Promise.reject(new Error("runGit needs a git subcommand"));
   }
   const subcommand = args[0];
   if (subcommand.startsWith("-")) {
-    throw new Error("runGit needs the git subcommand as the first argument");
+    return Promise.reject(new Error("runGit needs the git subcommand as the first argument"));
   }
   if (!options.env.PATH) {
-    throw new GitNotInstalledError("git is not installed: the env has no PATH");
+    return Promise.reject(new GitNotInstalledError("git is not installed: the env has no PATH"));
   }
   const location: Location =
     "gitDir" in options
       ? { kind: "gitDir", path: options.gitDir }
       : { kind: "cwd", path: options.cwd };
   if (!isFolder(location.path)) {
-    throw folderError(location);
+    return Promise.reject(folderError(location));
   }
   if (location.kind === "cwd") {
     return spawnGit([...args], subcommand, location, childEnv(options.env, false));
   }
-  const env = childEnv(options.env, true);
-  // A bare git dir keeps its bare behavior. Any other git dir gets /dev/null as its
-  // work tree. That beats core.worktree in its configuration, so a command that needs
-  // a work tree fails and never touches a folder.
-  const bare = await spawnGit(
-    ["--bare", "--git-dir", location.path, "rev-parse", "--is-bare-repository"],
-    "rev-parse",
+  return spawnGit(
+    ["--bare", "--git-dir", location.path, ...args],
+    subcommand,
     location,
-    env,
-  ).then(
-    (stdout) => stdout === "true\n",
-    () => false,
+    childEnv(options.env, true),
   );
-  const prefix = bare
-    ? ["--bare", "--git-dir", location.path]
-    : ["--git-dir", location.path, "--work-tree", "/dev/null"];
-  return spawnGit([...prefix, ...args], subcommand, location, env);
 }
 
 // Starts git once and resolves with its stdout. It rejects as runGit() describes.
