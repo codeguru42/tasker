@@ -70,7 +70,7 @@ The steps to land a ticket are in "Run one ticket". This section gives the rules
 - If a refine, or the `tasker review <issue> "<feedback>"` of the add-work rule, must change a file that another ticket changed and landed after this task started, the agent runs `tasker update-branch` first. Otherwise the new work uses the old text of the file, and the rebase at landing can conflict.
 - If the task is in `reviewed` (a refine of step 8) or in `awaiting_work_review` (work for the add-work rule), `tasker update-branch` moves the task to `executed`. Then the agent runs `tasker verify`, and the task goes to `awaiting_work_review`. Then the agent runs `tasker review`.
 - The new review is a full review pass. It reports the open findings again as still open, and it can also report new findings.
-- If the new review has findings, the task goes to `reviewed`, and the agent runs the refine of step 8. That refine acts on all the open findings.
+- If the new review has findings, the task goes to `reviewed`, and the agent goes to step 6. Steps 6 to 8 then read, dismiss and refine all the open findings.
 - If the new review has no findings, the task stays in `awaiting_work_review`, and `tasker refine` refuses to run. In that case, if the agent still must make the change, it follows the add-work rule of "Run one ticket". Otherwise, the agent goes to step 9.
 - If the task was in `reviewed`, the review before `tasker update-branch` and the review after it count as one loop of "Review findings".
 - If the task is in `awaiting_plan_review` (a refine of step 4), `tasker update-branch` keeps the task in `awaiting_plan_review`. Then the agent runs the refine of step 4.
