@@ -91,15 +91,41 @@ function rowToTask(row: TaskRow): Task {
   };
 }
 
+function setUp(db: DatabaseSync) {
+  // The busy timeout comes first because the switch to WAL takes a lock.
+  db.exec("PRAGMA busy_timeout = 5000");
+  db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA foreign_keys = ON");
+  migrate(db, migrations);
+  // The tables exist now, so the statements can be prepared.
+  return {
+    insertTask: db.prepare(
+      `INSERT INTO tasks
+         (issue_key, repo_key, state, branch, worktree_path, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       RETURNING *`,
+    ),
+    selectTask: db.prepare("SELECT * FROM tasks WHERE id = ?"),
+    updateTask: db.prepare(
+      `UPDATE tasks
+       SET state = ?, branch = ?, worktree_path = ?, updated_at = ?
+       WHERE id = ?`,
+    ),
+    insertEvent: db.prepare(
+      "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *",
+    ),
+    selectEvents: db.prepare(
+      "SELECT * FROM events WHERE task_id = ? ORDER BY id",
+    ),
+  };
+}
+
 export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   const now = options.now ?? (() => new Date());
   const db = new DatabaseSync(path);
+  let statements: ReturnType<typeof setUp>;
   try {
-    // The busy timeout comes first because the switch to WAL takes a lock.
-    db.exec("PRAGMA busy_timeout = 5000");
-    db.exec("PRAGMA journal_mode = WAL");
-    db.exec("PRAGMA foreign_keys = ON");
-    migrate(db, migrations);
+    statements = setUp(db);
   } catch (error) {
     db.close();
     throw error;
@@ -118,9 +144,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   }
 
   function readTask(id: number): Task | undefined {
-    const row = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as
-      | TaskRow
-      | undefined;
+    const row = statements.selectTask.get(id) as TaskRow | undefined;
     return row === undefined ? undefined : rowToTask(row);
   }
 
@@ -128,22 +152,15 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     createTask(task) {
       return write(() => {
         const at = now().toISOString();
-        const row = db
-          .prepare(
-            `INSERT INTO tasks
-               (issue_key, repo_key, state, branch, worktree_path, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)
-             RETURNING *`,
-          )
-          .get(
-            task.issueKey,
-            task.repoKey,
-            task.state,
-            task.branch ?? null,
-            task.worktreePath ?? null,
-            at,
-            at,
-          ) as unknown as TaskRow;
+        const row = statements.insertTask.get(
+          task.issueKey,
+          task.repoKey,
+          task.state,
+          task.branch ?? null,
+          task.worktreePath ?? null,
+          at,
+          at,
+        ) as unknown as TaskRow;
         return rowToTask(row);
       });
     },
@@ -162,11 +179,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (changes.worktreePath !== undefined) {
           next.worktreePath = changes.worktreePath;
         }
-        db.prepare(
-          `UPDATE tasks
-           SET state = ?, branch = ?, worktree_path = ?, updated_at = ?
-           WHERE id = ?`,
-        ).run(next.state, next.branch, next.worktreePath, now().toISOString(), id);
+        statements.updateTask.run(
+          next.state,
+          next.branch,
+          next.worktreePath,
+          now().toISOString(),
+          id,
+        );
         return readTask(id) as Task;
       });
     },
@@ -174,24 +193,18 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     appendEvent(taskId, type, data) {
       return write(() => {
         const at = now().toISOString();
-        const row = db
-          .prepare(
-            "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *",
-          )
-          .get(
-            taskId,
-            at,
-            type,
-            data === undefined ? null : JSON.stringify(data),
-          ) as unknown as EventRow;
+        const row = statements.insertEvent.get(
+          taskId,
+          at,
+          type,
+          data === undefined ? null : JSON.stringify(data),
+        ) as unknown as EventRow;
         return rowToEvent(row);
       });
     },
 
     listEvents(taskId) {
-      const rows = db
-        .prepare("SELECT * FROM events WHERE task_id = ? ORDER BY id")
-        .all(taskId) as unknown as EventRow[];
+      const rows = statements.selectEvents.all(taskId) as unknown as EventRow[];
       return rows.map(rowToEvent);
     },
 
