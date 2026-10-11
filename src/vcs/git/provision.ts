@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { installPushHook } from "./push-guard.js";
 import { GitError, runGit } from "./run.js";
 import { cloneUrl, remoteCwd, runRemoteGit, sshCommand } from "./ssh.js";
 
@@ -17,13 +18,15 @@ export interface ProvisionOptions {
   clone: string;
   config: GitVcsConfig;
   env: NodeJS.ProcessEnv;
+  // The folder of the publish tokens. The hook reads it, so it must name the same folder on each run.
+  publishTokens: string;
 }
 
 // Makes the bare clone of the remote at options.clone and fetches all branches as origin/*.
 // The marker file <clone>.incomplete exists from before git clone until the first fetch succeeds.
 // If a step fails, the marker stays.
 export async function provisionClone(options: ProvisionOptions): Promise<void> {
-  const { remote, clone, config, env } = options;
+  const { remote, clone, config, env, publishTokens } = options;
   const marker = `${clone}.incomplete`;
 
   // An earlier clone stopped partway. Delete the clone folder and clone again.
@@ -34,7 +37,7 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
 
   // A complete clone gets the clone configuration, including remote.origin.url from remote, and a fetch.
   if (existsSync(clone)) {
-    await applyConfig(clone, remote, config, env);
+    await applyConfig(clone, remote, config, env, publishTokens);
     await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
     return;
   }
@@ -70,18 +73,20 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     { cwd: remoteCwd(), env },
     config.sshKey,
   );
-  await applyConfig(clone, remote, config, env);
+  await applyConfig(clone, remote, config, env, publishTokens);
   await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
   rmSync(marker, { force: true });
 }
 
-// Writes the url and the fetch refspec of origin and the identity of config, and turns off signing.
+// Writes the url and the fetch refspec of origin and the identity of config, turns off signing,
+// and installs the pre-push hook.
 // A field of the identity that is not set is unset.
 async function applyConfig(
   clone: string,
   remote: string,
   config: GitVcsConfig,
   env: NodeJS.ProcessEnv,
+  publishTokens: string,
 ): Promise<void> {
   await setConfig(clone, ["--replace-all", "remote.origin.url", cloneUrl(remote)], env);
   await setConfig(
@@ -97,6 +102,7 @@ async function applyConfig(
   await setConfig(clone, ["--replace-all", "include.path", INCLUDE_FILE], env);
   // The include file goes last, so a failed git config call leaves it as it was.
   writeIncludeFile(clone, config.sshKey);
+  installPushHook(clone, publishTokens);
 }
 
 // Writes the include file through a temp file and a rename. The value is in double quotes:

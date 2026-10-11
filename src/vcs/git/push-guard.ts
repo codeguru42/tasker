@@ -1,0 +1,26 @@
+import { chmodSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { shellQuote } from "./ssh.js";
+
+// The pre-push hook. It rejects each push.
+function hookScript(publishTokens: string): string {
+  return [
+    "#!/bin/sh",
+    "# tasker writes this file on each provision. It rejects each push without a valid publish token.",
+    `tokens=${shellQuote(resolve(publishTokens))}`,
+    'echo "tasker: the push has no valid publish token" >&2',
+    "exit 1",
+    "",
+  ].join("\n");
+}
+
+// Writes <clone>/hooks/pre-push through a temp file and a rename, with mode 0755.
+export function installPushHook(clone: string, publishTokens: string): void {
+  const hooks = join(clone, "hooks");
+  const temp = join(hooks, "pre-push.tmp");
+  mkdirSync(hooks, { recursive: true });
+  writeFileSync(temp, hookScript(publishTokens), { mode: 0o755 });
+  // The umask can remove bits from the mode of writeFileSync.
+  chmodSync(temp, 0o755);
+  renameSync(temp, join(hooks, "pre-push"));
+}
