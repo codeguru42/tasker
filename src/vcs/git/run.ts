@@ -55,8 +55,6 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
       cwd,
       env: { ...options.env, GIT_TERMINAL_PROMPT: "0" },
       stdio: ["ignore", "pipe", "pipe"],
-      // A new session: git and ssh have no controlling terminal and cannot open /dev/tty.
-      detached: true,
     });
     const out: Buffer[] = [];
     const err: Buffer[] = [];
