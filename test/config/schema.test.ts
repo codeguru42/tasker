@@ -200,3 +200,106 @@ describe("parseConfig repos", () => {
     expectIssueAt(issuesOf(raw), path);
   });
 });
+
+type Repo = { issueTracker: Record<string, unknown>; assistant: Record<string, unknown> };
+
+function parsedRepo(raw: unknown): Repo {
+  return parseConfig(raw, {}, home).repos.tasker as unknown as Repo;
+}
+
+describe("parseConfig issueTracker", () => {
+  it("fills in the defaults", () => {
+    const tracker = parsedRepo(validConfig()).issueTracker;
+    expect(tracker.updateOnStart).toBe(false);
+    expect(tracker.updateOnFinish).toBe(false);
+    expect(tracker.assignee).toBe("@me");
+  });
+
+  it("stores site in lower case", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", site: "ACME.atlassian.net" };
+    expect(parsedRepo(raw).issueTracker.site).toBe("acme.atlassian.net");
+  });
+
+  it("rejects a missing provider", () => {
+    const raw = validConfig();
+    delete raw.repos.tasker.issueTracker.provider;
+    expectIssueAt(issuesOf(raw), "repos.tasker.issueTracker.provider");
+  });
+
+  it("rejects an unknown provider", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker.provider = "gitlab";
+    expectIssueAt(issuesOf(raw), "repos.tasker.issueTracker.provider");
+  });
+
+  it("rejects an unknown key", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker.bogus = 1;
+    expect(issuesOf(raw)).toContain("repos.tasker.issueTracker.bogus: unrecognized key");
+  });
+
+  it("rejects an empty match", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker.match = {};
+    expect(issuesOf(raw)).toContain(
+      "repos.tasker.issueTracker.match: must name labels or components",
+    );
+  });
+
+  it("rejects empty match labels", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker.match = { labels: [] };
+    expectIssueAt(issuesOf(raw), "repos.tasker.issueTracker.match.labels");
+  });
+});
+
+describe("parseConfig assistant", () => {
+  it("fills in the defaults", () => {
+    const assistant = parsedRepo(validConfig()).assistant;
+    expect(assistant.trustedExtensions).toEqual([]);
+    expect(assistant.correctiveTurns).toBe(1);
+  });
+
+  it("rejects an unknown provider", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.provider = "gpt";
+    expectIssueAt(issuesOf(raw), "repos.tasker.assistant.provider");
+  });
+
+  it("rejects a missing review model", () => {
+    const raw = validConfig();
+    delete raw.repos.tasker.assistant.models.review;
+    expectIssueAt(issuesOf(raw), "repos.tasker.assistant.models.review");
+  });
+
+  it("rejects a model given as a bare string", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.models.plan = "opus";
+    expectIssueAt(issuesOf(raw), "repos.tasker.assistant.models.plan");
+  });
+
+  it("rejects an unknown effort", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.models.plan.effort = "max";
+    expectIssueAt(issuesOf(raw), "repos.tasker.assistant.models.plan.effort");
+  });
+
+  it.each([-1, 1.5])("rejects correctiveTurns %j", (value) => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.correctiveTurns = value;
+    expectIssueAt(issuesOf(raw), "repos.tasker.assistant.correctiveTurns");
+  });
+
+  it("rejects an assistant given as a bare string", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant = "claude-code";
+    expectIssueAt(issuesOf(raw), "repos.tasker.assistant");
+  });
+
+  it("rejects an unknown key", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.model = "opus";
+    expect(issuesOf(raw)).toContain("repos.tasker.assistant.model: unrecognized key");
+  });
+});
