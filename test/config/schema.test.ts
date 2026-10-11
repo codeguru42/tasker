@@ -429,6 +429,15 @@ describe("parseConfig named trackers", () => {
     expectIssueAt(issues, "trackers");
   });
 
+  it("rejects provider next to tracker when trackers is not an object", () => {
+    const issues = issuesOf(withTracker({ tracker: "acme", provider: "github" }, []));
+    expect(issues).toHaveLength(2);
+    expectIssueAt(issues, "trackers");
+    expect(issues).toContain(
+      "repos.tasker.issueTracker.provider: must not be set next to tracker; provider comes from tracker 'acme'",
+    );
+  });
+
   it("does not change the raw object", () => {
     const raw = withTracker({ tracker: "acme", project: "CIR" });
     const copy = structuredClone(raw);
