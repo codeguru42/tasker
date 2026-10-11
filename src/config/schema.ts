@@ -1,5 +1,6 @@
 import { isAbsolute } from "node:path";
 import { z } from "zod";
+import { ALLOWED_ENV_NAMES } from "./allowed-env-names.js";
 import { expandPath } from "./expand.js";
 
 const positive = z.number().positive();
@@ -13,14 +14,26 @@ const LimitsSchema = z.strictObject({
 
 const nonEmpty = z.string().min(1);
 
+const EnvNameSchema = z
+  .string()
+  .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, "must be an environment variable name")
+  .refine((name) => !name.startsWith("TASKER_"), {
+    message:
+      "must not start with TASKER_: a TASKER_ variable is tasker's own and is never handed to a phase",
+  })
+  .refine((name) => !ALLOWED_ENV_NAMES.includes(name), {
+    message:
+      "must not be a name every phase already receives (such as HOME); remove it from env",
+  });
+
 const VerifySchema = z.strictObject({
   commands: z.array(nonEmpty).min(1),
-  env: z.array(z.string()).default([]),
+  env: z.array(EnvNameSchema).default([]),
 });
 
 const BootstrapSchema = z.strictObject({
   commands: z.array(z.string()).default([]),
-  env: z.array(z.string()).default([]),
+  env: z.array(EnvNameSchema).default([]),
 });
 
 const ForgeSchema = z.strictObject({
