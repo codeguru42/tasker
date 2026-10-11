@@ -55,7 +55,7 @@ The key names the repo. It can contain `/`, for example `codeguru42/tasker`. An 
 
 | Key | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `remote` | non-empty string | required | The remote address of the repo. |
+| `remote` | non-empty string | required | The remote address of the repo. Provision writes it as `remote.origin.url` of the bare clone on each run. For a relative local path, it writes the root of the file system followed by the path. |
 | `issueTracker` | object | required | See [`issueTracker`](#issuetracker). |
 | `assistant` | object | required | See [`assistant`](#assistant). |
 | `verify` | object | required | `commands`: list of non-empty strings with at least one item (required). `env`: list of names (default `[]`). |
