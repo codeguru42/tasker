@@ -44,6 +44,13 @@ describe("skills/tasker/SKILL.md", () => {
     expect(commandsInHelp(help)).toEqual(["greet"]);
   });
 
+  it("reads the main name of a command that has an alias", async () => {
+    const greetWithAlias: RegisterCommand = (program) => {
+      program.command("greet").alias("g").description("Say hello");
+    };
+    expect(commandsInHelp(await helpText([greetWithAlias]))).toEqual(["greet"]);
+  });
+
   it("lists each command in tasker --help", async () => {
     expect(commandsMissingFromSkill(await helpText(), readSkill())).toEqual([]);
   });
