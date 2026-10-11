@@ -5,7 +5,7 @@ This page describes how the code of tasker is laid out and how to test it.
 ## Layout
 
 - `src/main.ts` is the entry point of the `tasker` command. It calls `run()` and sets the exit code.
-- `src/cli.ts` builds the Commander program and exports `run()`, `buildProgram()` and the `Io` and `RegisterCommand` types.
+- `src/cli.ts` builds the Commander program and exports `run()`, `buildProgram()` and the `Io` and `RegisterCommand` types. A `RegisterCommand` receives the program and the `Io`.
 - `src/version.ts` reads the version from `package.json`.
 - `src/commands/` holds one file for each command. `src/commands/index.ts` lists them.
 - `src/config/` holds the configuration loader. `path.ts` finds the file, `expand.ts` expands paths, `allowed-env-names.ts` holds the default env allowlist, `schema.ts` validates the file, and `load.ts` reads it.
@@ -15,16 +15,16 @@ This page describes how the code of tasker is laid out and how to test it.
 - `skills/tasker/SKILL.md` is the skill that tells an agent how to use tasker. It lists each command and its options.
 - `test/` holds the tests.
 - `test/fixtures/` holds scripts that tests spawn as child processes.
-- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command, `validConfig()`, which returns a new valid configuration object for each call, `makeTempDir()`, which makes a new temporary folder for each call, and `repoRoot`, the repo root URL that spawn tests use as `cwd`.
+- `test/helpers.ts` holds the shared test helpers: `captureIo()`, the `greet` fixture command, `validConfig()`, which returns a new valid configuration object for each call, `makeTempDir()`, which makes a new temporary folder for each call, `repoRoot`, the repo root URL that spawn tests use as `cwd`, and `writeTempConfig()`, which writes a configuration to `config.json` in a new temp dir.
 - `dist/` holds the build output. Git ignores it.
 
 ## Add a command
 
 1. Create `src/commands/<name>.ts`.
-2. Export a `RegisterCommand` from that file. A `RegisterCommand` is a function that adds one command to the Commander program.
+2. Export a `RegisterCommand` from that file. A `RegisterCommand` is a function that adds one command to the Commander program. It receives the program and the `Io`. The command writes its output through that `Io`, not to `process.stdout`.
 3. Add the function to the `commands` array in `src/commands/index.ts`.
 4. Give the command a description. Give each option a description. Then `tasker --help` shows them.
-5. Add the command to the Commands section of `skills/tasker/SKILL.md`. Use a heading of this form: `` ### `tasker <name>` ``. If the command has an alias, use the main name in the heading, not the alias. Under the heading, write the description and the list of options. If this is the first command, also remove the line `tasker has no commands yet.` from the skill.
+5. Add the command to the Commands section of `skills/tasker/SKILL.md`. Use a heading of this form: `` ### `tasker <name>` ``. If the command has an alias, use the main name in the heading, not the alias. Under the heading, write the description and the list of options.
 6. Write the tests first (see "Tests").
 
 Each new command must be in the skill and in the `--help` output. The test `test/skill.test.ts` fails when `tasker --help` lists a command that the skill does not list. The test does not check options, so list them in the skill yourself.
