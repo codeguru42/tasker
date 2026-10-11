@@ -68,10 +68,11 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     { cwd: remoteCwd(), env },
     config.sshKey,
   );
-  await runGit(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"], {
-    gitDir: clone,
+  await setConfig(
+    clone,
+    ["--replace-all", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"],
     env,
-  });
+  );
   await applyConfig(clone, config, env);
   await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
   rmSync(marker, { force: true });
@@ -85,10 +86,10 @@ async function applyConfig(
 ): Promise<void> {
   await setOrUnset(clone, "user.name", config.authorName, env);
   await setOrUnset(clone, "user.email", config.authorEmail, env);
-  await setConfig(clone, ["commit.gpgSign", "false"], env);
-  await setConfig(clone, ["tag.gpgSign", "false"], env);
-  await setConfig(clone, ["tag.forceSignAnnotated", "false"], env);
-  await setConfig(clone, ["include.path", INCLUDE_FILE], env);
+  await setConfig(clone, ["--replace-all", "commit.gpgSign", "false"], env);
+  await setConfig(clone, ["--replace-all", "tag.gpgSign", "false"], env);
+  await setConfig(clone, ["--replace-all", "tag.forceSignAnnotated", "false"], env);
+  await setConfig(clone, ["--replace-all", "include.path", INCLUDE_FILE], env);
   // The include file goes last, so a failed git config call leaves it as it was.
   writeIncludeFile(clone, config.sshKey);
 }
@@ -116,7 +117,7 @@ async function setOrUnset(
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
   if (value !== undefined) {
-    await setConfig(clone, [key, value], env);
+    await setConfig(clone, ["--replace-all", key, value], env);
     return;
   }
   try {
