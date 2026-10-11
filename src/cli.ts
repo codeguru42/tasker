@@ -25,16 +25,7 @@ export function buildProgram(commands: readonly RegisterCommand[], io: Io): Comm
     .version(readVersion())
     .configureOutput({ writeOut: io.stdout, writeErr: io.stderr })
     .exitOverride()
-    .showHelpAfterError("(run 'tasker --help' for usage)")
-    .usage("[options] [command]")
-    .argument("[operands...]")
-    .action((operands: string[]) => {
-      if (operands.length === 0) {
-        program.help({ error: true });
-      }
-      // Commander's own unknown-command error adds the "Did you mean ...?" hint.
-      (program as Command & { unknownCommand(): never }).unknownCommand();
-    });
+    .showHelpAfterError("(run 'tasker --help' for usage)");
   for (const register of commands) {
     register(program);
   }
