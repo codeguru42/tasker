@@ -27,3 +27,10 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 - Write the docs in plain English: short sentences, active voice, simple tenses, and "must" for a requirement.
 - Do not use "should", "may", "might" or "could" in the docs.
 - Use one word for one thing in each doc.
+
+## AGENTS.md
+
+- `AGENTS.md` is an index. Each line is a one-line description plus a link to the file that has the details.
+- Do not put rule text in `AGENTS.md`.
+- To add a topic, put its details in its own file under `docs/`. Then add one line to `AGENTS.md`.
+- `CLAUDE.md` has one line, `@AGENTS.md`, and nothing else.
