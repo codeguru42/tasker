@@ -14,11 +14,11 @@ The test `test/vcs/git/boundary.test.ts` enforces this rule. It fails when a fil
 
 - `args[0]` must be the git subcommand, for example `rev-parse`. It must not be an option. For this reason, an error of git always names the real subcommand.
 - `options.cwd` runs git in that folder.
-- `options.gitDir` runs git with `--git-dir <gitDir>` and sets no working folder. A missing git dir gives the git error `not a git repository`.
-- `options.env` is the environment of the child, with two changes. `GIT_TERMINAL_PROMPT=0` always wins over the value of the caller. If the caller sets neither `GIT_SSH_COMMAND` nor `GIT_SSH`, `runGit()` sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes`. A missing or empty value counts as not set. `runGit()` does not add `process.env`.
+- `options.gitDir` is for a bare repo, or for a command that needs no work tree. Git then runs with `--bare --git-dir <gitDir>`, and its cwd is the git dir. As a result, git has no work tree. A command that needs one fails with a `GitError` (`this operation must be run in a work tree`), and git never uses the folder of tasker. Use `options.cwd` for a command that needs a work tree.
+- `options.env` is the environment of the child, with two changes. `GIT_TERMINAL_PROMPT=0` always wins over the value of the caller. Git uses a `GIT_SSH_COMMAND` that is present, even an empty one, and then ignores `GIT_SSH`. For this reason, `runGit()` never passes an empty value. A non-empty `GIT_SSH_COMMAND` of the caller stays. Otherwise `runGit()` removes `GIT_SSH_COMMAND`. Then a non-empty `GIT_SSH` of the caller stays. Otherwise `runGit()` removes `GIT_SSH` too and sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes`. `runGit()` does not add `process.env`.
 - Git is found on `options.env.PATH`. If the env has no `PATH` or an empty one, `runGit()` rejects before git starts. As a result, Node never uses the `PATH` of tasker.
 
-Git gets no input stream. Its stdout and stderr go to pipes, not to the terminal. Git asks no credential question, because `GIT_TERMINAL_PROMPT=0`. Ssh asks no question (no password and no host key) because of BatchMode, and it fails instead. This holds unless the caller sets its own ssh command. The default `GIT_SSH_COMMAND` wins over `core.sshCommand` in the git configuration. A caller that needs another ssh command must set `GIT_SSH_COMMAND` itself.
+Git gets no input stream. Its stdout and stderr go to pipes, not to the terminal. Git asks no credential question, because `GIT_TERMINAL_PROMPT=0`. Ssh asks no question (no password and no host key) because of BatchMode, and it fails instead. This holds unless the caller sets its own ssh command (a non-empty `GIT_SSH_COMMAND` or `GIT_SSH`). The default `GIT_SSH_COMMAND` wins over `core.sshCommand` in the git configuration. A caller that needs another ssh command must set `GIT_SSH_COMMAND` itself.
 
 Git stays in the process group of tasker. As a result, a Ctrl-C or a hangup stops git too.
 
@@ -32,11 +32,12 @@ Known limit: a program that git starts and that opens `/dev/tty` by itself can s
 | `args[0]` starts with `-`. | `Error`: `runGit needs the git subcommand as the first argument` |
 | Git exits with a code other than 0. | `GitError`: `git <subcommand> failed with exit code <n>: <stderr>` |
 | A signal stops git. | `GitError`: `git <subcommand> was stopped by signal <SIG>` |
+| `gitDir` does not exist. | `Error`: `the git dir does not exist: <gitDir>` |
 | `cwd` does not exist. | `Error`: `the working folder does not exist: <cwd>` |
 | The env has no `PATH`, or `PATH` is empty. | `GitNotInstalledError`: `git is not installed: the env has no PATH` |
 | Git is not on `PATH`. | `GitNotInstalledError`: `git is not installed: git was not found on PATH` |
 
-The checks of the first two rows and of the `PATH` row run before git starts. A `GitError` has the fields `subcommand`, `stdout`, `stderr` and `exitCode`. `exitCode` is `null` when a signal stops git. The message leaves out `: <stderr>` when stderr is empty.
+The checks of the first two rows, of the `PATH` row and of the git dir row run before git starts. A `GitError` has the fields `subcommand`, `stdout`, `stderr` and `exitCode`. `exitCode` is `null` when a signal stops git. The message leaves out `: <stderr>` when stderr is empty.
 
 ## `repoSlug()` and `repoPaths()`
 
