@@ -99,6 +99,9 @@ async function applyConfig(
   await setConfig(clone, ["--replace-all", "commit.gpgSign", "false"], env);
   await setConfig(clone, ["--replace-all", "tag.gpgSign", "false"], env);
   await setConfig(clone, ["--replace-all", "tag.forceSignAnnotated", "false"], env);
+  // A local value beats a global or system value. It must be absolute: a relative value
+  // resolves against the worktree.
+  await setConfig(clone, ["--replace-all", "core.hooksPath", resolve(clone, "hooks")], env);
   await setConfig(clone, ["--replace-all", "include.path", INCLUDE_FILE], env);
   // The include file goes last, so a failed git config call leaves it as it was.
   writeIncludeFile(clone, config.sshKey);
