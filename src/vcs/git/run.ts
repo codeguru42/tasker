@@ -34,7 +34,8 @@ export class GitNotInstalledError extends Error {
 }
 
 // Runs git with args (the subcommand first) and resolves with its stdout.
-// The child gets exactly options.env and no stream of this process.
+// The child gets options.env plus GIT_TERMINAL_PROMPT=0, which always wins over the value of the caller.
+// It gets no input stream and no controlling terminal, and its output goes only to runGit().
 export function runGit(args: readonly string[], options: RunGitOptions): Promise<string> {
   if (args.length === 0) {
     return Promise.reject(new Error("runGit needs a git subcommand"));
@@ -49,8 +50,10 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
   return new Promise((resolve, reject) => {
     const child = spawn("git", fullArgs, {
       cwd,
-      env: options.env,
+      env: { ...options.env, GIT_TERMINAL_PROMPT: "0" },
       stdio: ["ignore", "pipe", "pipe"],
+      // A new session: git and ssh have no controlling terminal and cannot open /dev/tty.
+      detached: true,
     });
     const out: Buffer[] = [];
     const err: Buffer[] = [];
