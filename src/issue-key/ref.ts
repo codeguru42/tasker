@@ -6,3 +6,13 @@ export interface IssueRef {
   // One segment that is safe in a file path and in a git branch name.
   shortRef: string;
 }
+
+export class IssueKeyError extends Error {
+  readonly key: string;
+
+  constructor(key: string, message: string) {
+    super(message);
+    this.name = "IssueKeyError";
+    this.key = key;
+  }
+}
