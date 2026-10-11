@@ -337,3 +337,81 @@ describe.each(["verify", "bootstrap"])("parseConfig %s.env", (phase) => {
     expect(issuesOf(withEnv([name]))).toContain(`${at}: must be an environment variable name`);
   });
 });
+
+describe("parseConfig named trackers", () => {
+  const acme = { provider: "jira", updateOnStart: true, inProgressStatus: "In Progress" };
+
+  function withTracker(
+    issueTracker: Record<string, unknown>,
+    trackers: unknown = { acme },
+  ): Record<string, unknown> {
+    const raw = validConfig();
+    raw.trackers = trackers;
+    raw.repos.tasker.issueTracker = issueTracker;
+    return raw;
+  }
+
+  it("merges the definition into the repo", () => {
+    const raw = withTracker({ tracker: "acme", project: "CIR" });
+    expect(parsedRepo(raw).issueTracker).toMatchObject({
+      provider: "jira",
+      updateOnStart: true,
+      inProgressStatus: "In Progress",
+      project: "CIR",
+      tracker: "acme",
+      assignee: "@me",
+    });
+  });
+
+  it("lets a key of the repo win over the definition", () => {
+    const raw = withTracker({ tracker: "acme", updateOnStart: false });
+    expect(parsedRepo(raw).issueTracker.updateOnStart).toBe(false);
+  });
+
+  it("reports an undefined tracker name once", () => {
+    const issues = issuesOf(withTracker({ tracker: "nope" }));
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatch(
+      /^repos\.tasker\.issueTracker\.tracker: names tracker 'nope', which is not defined under trackers/,
+    );
+  });
+
+  it("rejects provider next to tracker", () => {
+    const issues = issuesOf(withTracker({ tracker: "acme", provider: "github" }));
+    expect(issues).toContain(
+      "repos.tasker.issueTracker.provider: must not be set next to tracker; provider comes from tracker 'acme'",
+    );
+  });
+
+  it.each(["project", "match", "tracker"])("rejects %s in a definition", (key) => {
+    const value = key === "match" ? { labels: ["a"] } : "x";
+    const raw = withTracker({ provider: "github" }, { acme: { ...acme, [key]: value } });
+    expect(issuesOf(raw)).toContain(`trackers.acme.${key}: unrecognized key`);
+  });
+
+  it("reports a bad definition once, even when two repos use it", () => {
+    const raw = withTracker({ tracker: "acme" }, { acme: { provider: "gitlab" } });
+    raw.repos = {
+      tasker: { ...(raw.repos as Record<string, object>).tasker },
+      other: { ...(raw.repos as Record<string, object>).tasker },
+    };
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(1);
+    expectIssueAt(issues, "trackers.acme.provider");
+  });
+
+  it("rejects trackers that is not an object", () => {
+    expectIssueAt(issuesOf(withTracker({ provider: "github" }, [])), "trackers");
+  });
+
+  it("does not change the raw object", () => {
+    const raw = withTracker({ tracker: "acme", project: "CIR" });
+    const copy = structuredClone(raw);
+    parseConfig(raw, {}, home);
+    expect(raw).toEqual(copy);
+    raw.landing = {};
+    const withLanding = structuredClone(raw);
+    issuesOf(raw);
+    expect(raw).toEqual(withLanding);
+  });
+});
