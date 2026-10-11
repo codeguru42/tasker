@@ -22,12 +22,17 @@ function hookScript(publishTokens: string): string {
 }
 
 // Writes <clone>/hooks/pre-push through a temp file and a rename, with mode 0755.
+// A failed write throws an error with the fs error as its cause.
 export function installPushHook(clone: string, publishTokens: string): void {
   const hooks = join(clone, "hooks");
   const temp = join(hooks, "pre-push.tmp");
-  mkdirSync(hooks, { recursive: true });
-  writeFileSync(temp, hookScript(publishTokens), { mode: 0o755 });
-  // The umask can remove bits from the mode of writeFileSync.
-  chmodSync(temp, 0o755);
-  renameSync(temp, join(hooks, "pre-push"));
+  try {
+    mkdirSync(hooks, { recursive: true });
+    writeFileSync(temp, hookScript(publishTokens), { mode: 0o755 });
+    // The umask can remove bits from the mode of writeFileSync.
+    chmodSync(temp, 0o755);
+    renameSync(temp, join(hooks, "pre-push"));
+  } catch (error) {
+    throw new Error(`cannot install the pre-push hook in the clone: ${clone}`, { cause: error });
+  }
 }
