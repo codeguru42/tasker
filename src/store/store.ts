@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
-import { migrate, rollbackQuietly } from "./migrate.js";
+import { migrate } from "./migrate.js";
 import { migrations } from "./migrations.js";
+import { rollbackQuietly } from "./transaction.js";
 
 export interface Task {
   id: number;
