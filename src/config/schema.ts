@@ -152,6 +152,14 @@ function prepareConfig(raw: unknown): Prepared {
     }
     const name = issueTracker.tracker;
     const at = ["repos", key, "issueTracker"];
+    if (Object.hasOwn(issueTracker, "provider")) {
+      issues.push(
+        issueLine(
+          [...at, "provider"],
+          `must not be set next to tracker; provider comes from tracker '${name}'`,
+        ),
+      );
+    }
     // A repo that names a missing or bad tracker gets a placeholder provider.
     // The real error is already reported once: under the tracker name for a
     // missing definition, or under trackers.<name> for a bad one. Without the
@@ -167,14 +175,6 @@ function prepareConfig(raw: unknown): Prepared {
         issueLine(
           [...at, "tracker"],
           `names tracker '${name}', which is not defined under trackers`,
-        ),
-      );
-    }
-    if (Object.hasOwn(issueTracker, "provider")) {
-      issues.push(
-        issueLine(
-          [...at, "provider"],
-          `must not be set next to tracker; provider comes from tracker '${name}'`,
         ),
       );
     }
