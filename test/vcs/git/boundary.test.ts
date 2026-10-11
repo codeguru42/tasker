@@ -5,17 +5,26 @@ import { describe, expect, it } from "vitest";
 
 const srcDir = fileURLToPath(new URL("../../../src/", import.meta.url));
 
-const importsChildProcess = /from\s+["'](?:node:)?child_process["']|require\(\s*["'](?:node:)?child_process["']\s*\)/;
+const childProcessName = String.raw`["'\`](?:node:)?child_process["'\`]`;
+const loadsChildProcessPattern = new RegExp(
+  [
+    String.raw`\bfrom\s*${childProcessName}`, // import ... from, export ... from
+    String.raw`\bimport\s*${childProcessName}`, // import "child_process"
+    String.raw`\bimport\s*\(\s*${childProcessName}`, // import("child_process")
+    String.raw`\brequire\s*\(\s*${childProcessName}`, // require("child_process")
+  ].join("|"),
+);
 
-// True when text loads the child process module.
+// True when text loads the child process module in any of these forms.
 function loadsChildProcess(text: string): boolean {
-  return importsChildProcess.test(text);
+  return loadsChildProcessPattern.test(text);
 }
 
 const gitLiteral = /(["'`])git(?: [^"'`]*)?\1/;
 
 // The files under src/ (paths with "/") that start git.
-// The scan finds a literal "git". It cannot find a name that is built at run time.
+// The scan finds a literal "git" and a literal module name.
+// It cannot find a module name or a git name that is built at run time.
 function filesThatStartGit(): string[] {
   const files = readdirSync(srcDir, { recursive: true, encoding: "utf8" })
     .map((file) => file.split("\\").join("/"))
