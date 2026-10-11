@@ -38,6 +38,8 @@ The agent of the ticket runs steps 1 to 10. Each step gives the state of the tas
 9. Run `tasker accept`. The task goes to `accepted`. `tasker accept` refuses when the branch does not contain the tip of `origin/main`. In that case, run `tasker update-branch`. The task goes to `executed`. Then run `tasker verify` and `tasker review` again as in step 5. If that review has findings, go to step 6. Otherwise, run `tasker accept` again. Run `tasker merge`. The task goes to `landed`. Run `tasker finish`. The task goes to `finished`, and the issue closes.
 10. After `tasker finish`, post a comment on the issue that starts with `## Decisions made during implementation`. List the choices that the issue did not state, with the reasons. Name each detail that the issue did not give.
 
+This rule applies after step 5 or after a review in step 9. If a review has no findings and the agent must add work, the task is in `awaiting_work_review`, and `tasker refine` refuses to run in that state. The work can come from the orchestrator, for example. To add the work, the agent runs `tasker review <issue> "<feedback>"`. The task goes to `refining`, and tasker makes a new plan revision. Then the task goes to `awaiting_plan_review`. Then the agent does steps 3 and 4 for the new plan, and steps 5 to 8 again, starting with `tasker approve`.
+
 If a command fails or the task is in another state, run `tasker show <issue>` and follow the commands that it prints.
 
 To find the next command, use these:
