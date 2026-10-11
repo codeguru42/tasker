@@ -12,7 +12,11 @@ export function loadConfig(
   try {
     text = readFileSync(path, "utf8");
   } catch (cause) {
-    throw new Error(`config file not found: ${path}`, { cause });
+    const code = (cause as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      throw new Error(`config file not found: ${path}`, { cause });
+    }
+    throw new Error(`cannot read config file: ${path} (${code ?? "unknown error"})`, { cause });
   }
   let raw: unknown;
   try {
