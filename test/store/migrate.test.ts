@@ -2,7 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { migrate, schemaVersion } from "../../src/store/migrate.js";
+import { migrate, rollbackQuietly, schemaVersion } from "../../src/store/migrate.js";
 import { makeTempDir } from "../helpers.js";
 
 function tableNames(db: DatabaseSync): string[] {
@@ -61,5 +61,16 @@ describe("migrate", () => {
     expect(() => migrate(db, ["CREATE TABLE a (x)", "NOT SQL"])).toThrow();
     expect(schemaVersion(db)).toBe(0);
     expect(tableNames(db)).toEqual([]);
+  });
+
+  it("throws the first error when the transaction is already gone", () => {
+    // The second string ends the transaction itself, then fails.
+    expect(() =>
+      migrate(db, ["CREATE TABLE a (x)", "COMMIT; NOT SQL"]),
+    ).toThrow(/syntax error/);
+  });
+
+  it("does not throw from rollbackQuietly when no transaction is open", () => {
+    expect(() => rollbackQuietly(db)).not.toThrow();
   });
 });
