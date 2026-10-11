@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { delimiter, join, parse, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
-import { sshCommand } from "../../../src/vcs/git/ssh.js";
+import { remoteCwd, sshCommand } from "../../../src/vcs/git/ssh.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   type GitOrigin,
@@ -150,13 +150,19 @@ describe("provisionClone", () => {
     }
   });
 
-  it("writes the same url for a relative remote as git clone does", async () => {
+  it("writes the same url for a relative remote as a plain git clone does", async () => {
     const remote = relative(parse(origin.path).root, origin.path);
+    // A separate plain clone that provision never touches, so its url is what git clone wrote.
+    const plain = join(tmp, "plain.git");
+    await runGit(["clone", "--bare", "--", remote, plain], { cwd: remoteCwd(), env: origin.env });
+    const written = await runGit(["config", "--get", "remote.origin.url"], {
+      gitDir: plain,
+      env: origin.env,
+    });
     await provisionClone({ remote, clone, config: {}, env: origin.env });
-    const first = await localConfigAll("remote.origin.url");
+    expect(await localConfigAll("remote.origin.url")).toEqual([written.trim()]);
     await provisionClone({ remote, clone, config: {}, env: origin.env });
-    expect(await localConfigAll("remote.origin.url")).toEqual(first);
-    expect(first).toEqual([parse(origin.path).root + remote]);
+    expect(await localConfigAll("remote.origin.url")).toEqual([written.trim()]);
   });
 
   // Adds each value as one more local line of key in the clone.
