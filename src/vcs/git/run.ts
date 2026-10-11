@@ -44,6 +44,9 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
   if (subcommand.startsWith("-")) {
     return Promise.reject(new Error("runGit needs the git subcommand as the first argument"));
   }
+  if (!options.env.PATH) {
+    return Promise.reject(new GitNotInstalledError("git is not installed: the env has no PATH"));
+  }
   const fullArgs = "gitDir" in options ? ["--git-dir", options.gitDir, ...args] : [...args];
   const cwd = "cwd" in options ? options.cwd : undefined;
 
