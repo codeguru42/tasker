@@ -8,7 +8,7 @@ tasker looks for the file in this order and uses the first match:
 
 1. The path in `$TASKER_CONFIG`.
 2. `$XDG_CONFIG_HOME/tasker/config.json`.
-3. `~/.config/tasker/config.json`. This is the XDG default.
+3. `$HOME/.config/tasker/config.json`. This is the XDG default.
 
 A variable that is empty or has only spaces counts as not set.
 
@@ -164,7 +164,7 @@ The message of a built-in check can differ from this example. The path always na
 
 ```json
 {
-  "dataRoot": "~/.local/share/tasker",
+  "dataRoot": "$HOME/.local/share/tasker",
   "limits": { "bootstrapTimeoutMin": 10, "verifyTimeoutMin": 20 },
   "repos": {
     "tasker": {

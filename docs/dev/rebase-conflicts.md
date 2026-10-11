@@ -16,7 +16,7 @@ The operator must not run git commands in the tasker clone. The operator must no
 
 Run each git command in the clone of the operator or in its worktree.
 
-1. Once for each clone of the operator, add a remote named `tasker`: `git remote add tasker <path of the tasker clone>`. The installed tasker keeps the tasker clone at `<dataRoot>/repos/<owner>-<repo>/repo.git`, for example `~/.local/share/tasker/repos/codeguru42-tasker/repo.git`. `tasker show <issue>` prints the worktree of the task, under `<dataRoot>/repos/<owner>-<repo>/worktrees/`. The tasker clone is `repo.git` in the same folder. `docs/dev/data-root.md` describes the tasker that this repo builds, not the installed tasker, so its folders do not apply to this procedure.
+1. Once for each clone of the operator, add a remote named `tasker`: `git remote add tasker <path of the tasker clone>`. The installed tasker keeps the tasker clone at `<dataRoot>/repos/<owner>-<repo>/repo.git`, for example `$HOME/.local/share/tasker/repos/codeguru42-tasker/repo.git`. `tasker show <issue>` prints the worktree of the task, under `<dataRoot>/repos/<owner>-<repo>/worktrees/`. The tasker clone is `repo.git` in the same folder. `docs/dev/data-root.md` describes the tasker that this repo builds, not the installed tasker, so its folders do not apply to this procedure.
 2. In the same clone, block each push to this remote: `git remote set-url --push tasker DISABLED-read-only`. As a result, no push can reach the tasker clone.
 3. Run `tasker show <issue>`. It prints the base branch of the task as `base branch:`. For most tasks, the base branch is `main`.
 4. If the base branch is the branch of another task (a stacked task), stop. A person decides the next step, as step 10 describes.
