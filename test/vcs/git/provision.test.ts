@@ -1,9 +1,17 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
+import { sshCommand } from "../../../src/vcs/git/ssh.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
-import { type GitOrigin, makeGitOrigin, makeTempDir } from "../../helpers.js";
+import {
+  type GitOrigin,
+  makeGitOrigin,
+  makeTempDir,
+  readArgLog,
+  writeFakeSsh,
+  writeGitRecorder,
+} from "../../helpers.js";
 
 describe("provisionClone", () => {
   let origin: GitOrigin;
@@ -143,6 +151,142 @@ describe("provisionClone", () => {
       });
       expect(await localConfig("user.name")).toBe("New Name");
       expect(await localConfig("user.email")).toBeUndefined();
+    });
+  });
+
+  describe("ssh key", () => {
+    // A key path with every character that the include file or a shell can trip on.
+    const hardKey = (): string => join(tmp, "k it's \" \\ $ ; # \t \n \r \u0001 key");
+    let binDir: string;
+    let sshLog: string;
+    let remote: string;
+    let sshEnv: NodeJS.ProcessEnv;
+
+    beforeEach(() => {
+      binDir = join(tmp, "bin");
+      sshLog = join(tmp, "ssh.log");
+      remote = `ssh://tasker.invalid${origin.path}`;
+      sshEnv = { ...origin.env, PATH: `${binDir}${delimiter}${process.env.PATH}` };
+    });
+
+    async function coreSshCommand(): Promise<string> {
+      const out = await runGit(["config", "--get", "core.sshCommand"], {
+        gitDir: clone,
+        env: origin.env,
+      });
+      return out.replace(/\n$/, "");
+    }
+
+    async function failureOf(promise: Promise<void>): Promise<Error> {
+      const error: unknown = await promise.then(
+        () => undefined,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+      return error as Error;
+    }
+
+    it("writes the ssh command of the key to core.sshCommand through the include file", async () => {
+      writeFakeSsh(binDir, sshLog, "serve");
+      const key = hardKey();
+      await provisionClone({ remote, clone, config: { sshKey: key }, env: sshEnv });
+      expect(await coreSshCommand()).toBe(sshCommand(key));
+    });
+
+    it("keeps one include.path line after two provisions", async () => {
+      writeFakeSsh(binDir, sshLog, "serve");
+      const config = { sshKey: "/keys/a" };
+      await provisionClone({ remote, clone, config, env: sshEnv });
+      await provisionClone({ remote, clone, config, env: sshEnv });
+      const out = await runGit(["config", "--get-all", "include.path"], {
+        gitDir: clone,
+        env: origin.env,
+      });
+      expect(out).toBe("tasker-ssh.config\n");
+    });
+
+    it("passes the key to ssh for ls-remote, clone and fetch", async () => {
+      writeFakeSsh(binDir, sshLog, "serve");
+      const key = hardKey();
+      await provisionClone({ remote, clone, config: { sshKey: key }, env: sshEnv });
+      const calls = readArgLog(sshLog);
+      expect(calls.length).toBeGreaterThanOrEqual(3);
+      for (const call of calls) {
+        expect(call.slice(0, 6)).toEqual([
+          "-i",
+          key,
+          "-o",
+          "IdentitiesOnly=yes",
+          "-o",
+          "BatchMode=yes",
+        ]);
+      }
+    });
+
+    it("puts no key path or ssh command in any git argument", async () => {
+      writeFakeSsh(binDir, sshLog, "serve");
+      const gitLog = join(tmp, "git.log");
+      const gitBin = join(tmp, "gitbin");
+      writeGitRecorder(gitBin, gitLog);
+      const key = hardKey();
+      const env = { ...sshEnv, PATH: `${gitBin}${delimiter}${sshEnv.PATH}` };
+      await provisionClone({ remote, clone, config: { sshKey: key }, env });
+      const calls = readArgLog(gitLog);
+      const args = calls.flat();
+      for (const subcommand of ["ls-remote", "clone", "fetch", "config"]) {
+        expect(args).toContain(subcommand);
+      }
+      for (const arg of calls.flat()) {
+        expect(arg).not.toContain(key);
+        expect(arg).not.toContain(sshCommand(key));
+        expect(arg).not.toContain("IdentitiesOnly");
+      }
+    });
+
+    it("lets the GIT_SSH_COMMAND of the user reach ssh when no key is set", async () => {
+      writeFakeSsh(binDir, sshLog, "serve");
+      const env = { ...sshEnv, GIT_SSH_COMMAND: "ssh -o User=fromuser" };
+      await provisionClone({ remote, clone, config: {}, env });
+      const calls = readArgLog(sshLog);
+      expect(calls.length).toBeGreaterThanOrEqual(3);
+      for (const call of calls) {
+        expect(call).toContain("User=fromuser");
+        expect(call).not.toContain("-i");
+      }
+    });
+
+    it("hides the key in the error when ssh refuses", async () => {
+      writeFakeSsh(binDir, sshLog, "refuse");
+      const key = join(tmp, "no such it's key");
+      const error = await failureOf(
+        provisionClone({ remote, clone, config: { sshKey: key }, env: sshEnv }),
+      );
+      expect(error.message).toContain(remote);
+      expect(error.message).not.toContain(key);
+      expect(error.message).toContain("<sshKey>");
+    });
+
+    it("hides the key in the error when the fetch of a complete clone fails", async () => {
+      writeFakeSsh(binDir, sshLog, "serve");
+      const key = join(tmp, "no such it's key");
+      const config = { sshKey: key };
+      await provisionClone({ remote, clone, config, env: sshEnv });
+      writeFakeSsh(binDir, sshLog, "refuse");
+      const error = await failureOf(provisionClone({ remote, clone, config, env: sshEnv }));
+      expect(error.message).not.toContain(key);
+      expect(error.message).toContain("<sshKey>");
+    });
+
+    it("leaves the include file as it was when the configuration is locked", async () => {
+      writeFakeSsh(binDir, sshLog, "serve");
+      await provisionClone({ remote, clone, config: { sshKey: "/keys/a" }, env: sshEnv });
+      writeFileSync(join(clone, "config.lock"), "");
+      await expect(
+        provisionClone({ remote, clone, config: { sshKey: "/keys/b" }, env: sshEnv }),
+      ).rejects.toThrow(`the clone configuration is locked: ${clone}`);
+      const file = readFileSync(join(clone, "tasker-ssh.config"), "utf8");
+      expect(file).toContain(sshCommand("/keys/a"));
+      expect(file).not.toContain("/keys/b");
     });
   });
 });
