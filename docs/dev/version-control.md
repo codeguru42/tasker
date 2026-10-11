@@ -69,18 +69,20 @@ The checks of the first two rows, of the `PATH` row, of the `gitDir` row and of 
 
 `provisionClone({ remote, clone, config, env })` in `src/vcs/git/provision.ts` makes the bare clone of a remote and fetches it. `clone` is the `clone` path of `repoPaths()`. `config` is the `vcs.config` of the repo (`authorName`, `authorEmail` and `sshKey`, see [docs/config.md](../config.md)). No command calls it yet.
 
-The marker is the file `<clone>.incomplete`, that is `<dataRoot>/clones/<slug>/repo.git.incomplete`, next to `repo.git`. It exists while a fresh clone is not complete.
+The marker is the file `<clone>.incomplete`, that is `<dataRoot>/clones/<slug>/repo.git.incomplete`, next to `repo.git`. Provision writes it before `git clone` (step 4) and removes it after the first fetch of a fresh clone (step 8). If a step from 5 to 8 fails, the marker stays. If `git ls-remote` fails on the path from step 1, the marker also stays. While the marker exists, each provision takes the path of step 1.
 
 These are the steps:
 
-1. If the marker exists, an earlier clone stopped partway. Provision deletes the whole clone folder, including each file that a person put there. Then it goes on with step 3.
+1. If the marker exists, an earlier clone stopped partway. Provision deletes only the clone folder `repo.git`, including each file that a person put there. The marker and the parent folder `<dataRoot>/clones/<slug>/` stay. Then it goes on with step 3.
 2. If the clone folder exists and the marker does not, the clone is complete. Provision applies the clone configuration (step 6), which includes the fetch refspec. Then it runs `git fetch --prune origin` (step 7) and returns. It does not clone again. It does not change `remote.origin.url`.
-3. Provision runs `git ls-remote --exit-code -- <remote>`. The cwd is `remoteCwd()`, the root of the file system, so a relative remote path resolves against `/`. No file exists yet at this point.
-4. Provision makes the parent folder of the clone and writes the empty marker.
+3. Provision runs `git ls-remote --exit-code -- <remote>`. The cwd is `remoteCwd()`, the root of the file system, so a relative remote path resolves against `/`. On the fresh path, provision has made no file and no folder yet, so a failed `ls-remote` leaves nothing on disk. On the path from step 1, the marker and the parent folder still exist, because step 1 removes only the clone folder. If `ls-remote` fails on that path, the marker stays, and the next provision takes the path of step 1 again.
+4. Provision makes the parent folder of the clone when it is missing. It writes an empty marker, or overwrites the marker that step 1 left with an empty file.
 5. Provision runs `git clone --bare -- <remote> <clone>` with the same cwd, the root of the file system. It passes the clone path as an absolute path (`resolve(clone)`), so the cwd does not move the clone. As a result, a relative remote path names the same repo in `ls-remote` and in `clone`. For a relative local remote path, `git clone` writes its absolute path in `remote.origin.url`. The fetch runs with the clone as cwd and uses that value.
 6. Provision applies the clone configuration: see [The clone configuration](#the-clone-configuration).
 7. Provision runs `git fetch --prune origin`. The `--prune` option removes the remote-tracking refs of branches that the remote deleted.
 8. On the fresh-clone path, provision removes the marker.
+
+If a step from 5 to 7 fails, provision rejects. The parent folder, the marker and the clone folder stay on disk, with the clone folder in the state that the failed step left it. A failed `git clone` can leave a partial clone folder. If step 8 fails, the clone is complete, but the marker stays. In both cases the next provision sees the marker, deletes the clone folder and clones again.
 
 A second provision on a complete clone applies the clone configuration again and fetches with `--prune`. It writes `remote.origin.fetch` again with `--replace-all`. It writes `user.name` or `user.email` again with `--replace-all`. It removes every local line of one of them with `--unset-all` when the field is gone from `vcs.config`. It writes the signing keys and `include.path` again with `--replace-all`, and it writes the include file again. A change to `vcs.config` takes effect at the next provision. A changed `remote` has no effect on a complete clone, because provision does not change `remote.origin.url` of a complete clone.
 
