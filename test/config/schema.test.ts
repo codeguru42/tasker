@@ -127,4 +127,12 @@ describe("parseConfig top level", () => {
     }
     throw new Error("expected parseConfig to throw");
   });
+
+  it("rejects a landing key with one clear issue", () => {
+    const raw = validConfig();
+    raw.landing = { mergeMethod: "squash" };
+    expect(issuesOf(raw)).toEqual([
+      "landing: is not accepted: there is no landing setting; the command you run picks how a task lands",
+    ]);
+  });
 });
