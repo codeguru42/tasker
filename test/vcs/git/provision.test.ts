@@ -35,6 +35,18 @@ describe("provisionClone", () => {
     expect(existsSync(join(tmp, "data"))).toBe(false);
   });
 
+  it("rejects when the remote has no refs and creates no folder", async () => {
+    const remote = join(tmp, "empty.git");
+    await runGit(["init", "--bare", "--initial-branch=main", remote], {
+      cwd: tmp,
+      env: origin.env,
+    });
+    await expect(provisionClone({ remote, clone, config: {}, env: origin.env })).rejects.toThrow(
+      `the remote has no refs: ${remote}`,
+    );
+    expect(existsSync(join(tmp, "data"))).toBe(false);
+  });
+
   it("clones the remote and fetches its branches as origin/*", async () => {
     await origin.createBranch("feature");
     await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
