@@ -109,7 +109,8 @@ function setUp(db: DatabaseSync) {
     updateTask: db.prepare(
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, updated_at = ?
-       WHERE id = ?`,
+       WHERE id = ?
+       RETURNING *`,
     ),
     insertEvent: db.prepare(
       "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *",
@@ -179,14 +180,14 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (changes.worktreePath !== undefined) {
           next.worktreePath = changes.worktreePath;
         }
-        statements.updateTask.run(
+        const row = statements.updateTask.get(
           next.state,
           next.branch,
           next.worktreePath,
           now().toISOString(),
           id,
-        );
-        return readTask(id) as Task;
+        ) as unknown as TaskRow;
+        return rowToTask(row);
       });
     },
 
