@@ -42,6 +42,17 @@ const ForgeSchema = z.strictObject({
   mergeMethod: z.enum(["merge", "squash", "rebase"]).default("merge"),
 });
 
+const GitConfigSchema = z.strictObject({
+  authorName: nonEmpty.optional(),
+  authorEmail: nonEmpty.optional(),
+  sshKey: nonEmpty.optional(),
+});
+
+const VcsSchema = z.strictObject({
+  provider: z.literal("git").default("git"),
+  config: GitConfigSchema.default({}),
+});
+
 const nonEmptyList = z.array(nonEmpty).min(1);
 
 const MatchSchema = z
@@ -103,6 +114,7 @@ const RepoSchema = z.strictObject({
   quotaApprovalThreshold: z.number().gt(0).max(1).default(0.9),
   updateBranchStrategy: z.enum(["rebase", "merge"]).default("rebase"),
   forge: ForgeSchema.optional(),
+  vcs: VcsSchema.default({ provider: "git", config: {} }),
 });
 
 function isObject(value: unknown): value is Record<string, unknown> {
