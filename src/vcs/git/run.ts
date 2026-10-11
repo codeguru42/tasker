@@ -36,13 +36,21 @@ export class GitNotInstalledError extends Error {
 const BATCH_SSH_COMMAND = "ssh -o BatchMode=yes";
 
 // The env of the child: env, plus GIT_TERMINAL_PROMPT=0, which always wins.
-// If the caller sets no ssh command (GIT_SSH_COMMAND and GIT_SSH missing or empty),
-// ssh runs in batch mode, so it asks no question and fails instead.
+// Git uses a GIT_SSH_COMMAND that is present, even an empty one. So:
+// a non-empty GIT_SSH_COMMAND of the caller stays. Otherwise GIT_SSH_COMMAND goes away,
+// and a non-empty GIT_SSH of the caller stays. Otherwise GIT_SSH goes away too,
+// and ssh runs in batch mode, so it asks no question and fails instead.
 function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const result: NodeJS.ProcessEnv = { ...env, GIT_TERMINAL_PROMPT: "0" };
-  if (!env.GIT_SSH_COMMAND && !env.GIT_SSH) {
-    result.GIT_SSH_COMMAND = BATCH_SSH_COMMAND;
+  if (env.GIT_SSH_COMMAND) {
+    return result;
   }
+  delete result.GIT_SSH_COMMAND;
+  if (env.GIT_SSH) {
+    return result;
+  }
+  delete result.GIT_SSH;
+  result.GIT_SSH_COMMAND = BATCH_SSH_COMMAND;
   return result;
 }
 
