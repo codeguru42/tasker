@@ -8,3 +8,4 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/data-root.md](docs/dev/data-root.md): the folders and the database.
 - [skills/tasker/SKILL.md](skills/tasker/SKILL.md): the commands.
 - [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a rebase conflict.
+- [docs/dev/orchestration.md](docs/dev/orchestration.md): the rules for an orchestrator that runs tickets from the project board through the installed tasker.
