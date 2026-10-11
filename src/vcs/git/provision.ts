@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, parse } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { GitError, runGit } from "./run.js";
-import { runRemoteGit, sshCommand } from "./ssh.js";
+import { remoteCwd, runRemoteGit, sshCommand } from "./ssh.js";
 
 const INCLUDE_FILE = "tasker-ssh.config";
 
@@ -24,7 +24,6 @@ export interface ProvisionOptions {
 export async function provisionClone(options: ProvisionOptions): Promise<void> {
   const { remote, clone, config, env } = options;
   const marker = `${clone}.incomplete`;
-  const root = parse(process.cwd()).root;
 
   // An earlier clone stopped partway. Delete what it left and clone again.
   if (existsSync(marker)) {
@@ -41,7 +40,7 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
   // The error text can hold git output, so the new error sets no cause.
   const failure = await runRemoteGit(
     ["ls-remote", "--exit-code", "--", remote],
-    { cwd: root, env },
+    { cwd: remoteCwd(), env },
     config.sshKey,
   ).then(
     () => undefined,
@@ -60,11 +59,13 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     throw new Error(`the remote does not answer: ${remote}${detail === "" ? "" : `: ${detail}`}`);
   }
 
-  mkdirSync(dirname(clone), { recursive: true });
+  // The clone runs from the same cwd as ls-remote, so it needs an absolute destination.
+  const target = resolve(clone);
+  mkdirSync(dirname(target), { recursive: true });
   writeFileSync(marker, "");
   await runRemoteGit(
-    ["clone", "--bare", "--", remote, clone],
-    { cwd: dirname(clone), env },
+    ["clone", "--bare", "--", remote, target],
+    { cwd: remoteCwd(), env },
     config.sshKey,
   );
   await runGit(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"], {

@@ -1,4 +1,5 @@
 import { userInfo } from "node:os";
+import { parse } from "node:path";
 import { GitError, runGit, type RunGitOptions } from "./run.js";
 
 const HIDDEN = "<sshKey>";
@@ -63,4 +64,10 @@ export async function runRemoteGit(
       error.exitCode,
     );
   }
+}
+
+// The cwd of each git call that names the remote: the root of the file system.
+// One cwd for all of them, so a relative remote path names the same repo in each call.
+export function remoteCwd(): string {
+  return parse(process.cwd()).root;
 }
