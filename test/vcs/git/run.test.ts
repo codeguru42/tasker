@@ -125,16 +125,40 @@ describe("runGit keeps git from asking questions", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("sets GIT_TERMINAL_PROMPT to 0 and gives git no controlling terminal", async () => {
-    writeFakeGit(
-      bin,
-      [
-        'echo "prompt=$GIT_TERMINAL_PROMPT"',
-        'if [ -e /dev/tty ] && (: < /dev/tty) 2>/dev/null; then echo tty; else echo no-tty; fi',
-      ].join("\n"),
-    );
+  const envScript = [
+    'echo "prompt=$GIT_TERMINAL_PROMPT"',
+    'echo "ssh-command=$GIT_SSH_COMMAND"',
+    'echo "ssh=$GIT_SSH"',
+  ].join("\n");
+
+  it("sets GIT_TERMINAL_PROMPT to 0 and runs ssh in batch mode", async () => {
+    writeFakeGit(bin, envScript);
     const out = await runGit(["version"], { cwd: dir, env });
-    expect(out).toBe("prompt=0\nno-tty\n");
+    expect(out).toBe("prompt=0\nssh-command=ssh -o BatchMode=yes\nssh=\n");
+  });
+
+  it("keeps the GIT_SSH_COMMAND of the caller", async () => {
+    writeFakeGit(bin, envScript);
+    const out = await runGit(["version"], {
+      cwd: dir,
+      env: { ...env, GIT_SSH_COMMAND: "ssh -i /keys/id" },
+    });
+    expect(out).toBe("prompt=0\nssh-command=ssh -i /keys/id\nssh=\n");
+  });
+
+  it("keeps the GIT_SSH of the caller", async () => {
+    writeFakeGit(bin, envScript);
+    const out = await runGit(["version"], {
+      cwd: dir,
+      env: { ...env, GIT_SSH: "/opt/bin/my-ssh" },
+    });
+    expect(out).toBe("prompt=0\nssh-command=\nssh=/opt/bin/my-ssh\n");
+  });
+
+  it("runs ssh in batch mode when the caller GIT_SSH_COMMAND is empty", async () => {
+    writeFakeGit(bin, envScript);
+    const out = await runGit(["version"], { cwd: dir, env: { ...env, GIT_SSH_COMMAND: "" } });
+    expect(out).toBe("prompt=0\nssh-command=ssh -o BatchMode=yes\nssh=\n");
   });
 
   it.runIf(existsSync("/proc/self/stat"))("keeps git in the process group of tasker", async () => {
