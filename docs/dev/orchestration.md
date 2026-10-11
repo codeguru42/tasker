@@ -68,7 +68,11 @@ The steps to land a ticket are in "Run one ticket". This section gives the rules
 - To wait, the agent reads the state of the issue of the earlier ticket one time: `gh issue view <number> --json state -q .state`. If the state is `OPEN`, the agent reads it again every 30 seconds until it is `CLOSED`.
 - When the issue of the earlier ticket is closed, the agent runs `tasker update-branch`. The task goes from `awaiting_work_review` to `executed`. Then the agent continues step 9 of "Run one ticket" from its `tasker verify`.
 - If a refine must change a file that another ticket changed and landed after this task started, the agent runs `tasker update-branch` before the refine. Otherwise the refine works on the old text of the file, and the rebase at landing can conflict.
-- If the task is in `reviewed` (a refine of step 8), `tasker update-branch` moves the task to `executed`. Then the agent runs `tasker verify`, and the task goes to `awaiting_work_review`. Then the agent runs `tasker review`. The review reports the open findings again as still open, and the task goes to `reviewed`. Then the agent runs the refine of step 8.
+- If the task is in `reviewed` (a refine of step 8), `tasker update-branch` moves the task to `executed`. Then the agent runs `tasker verify`, and the task goes to `awaiting_work_review`. Then the agent runs `tasker review`.
+- The new review is a full review pass. It reports the open findings again as still open, and it can also report new findings.
+- If the new review has findings, the task goes to `reviewed`, and the agent runs the refine of step 8. That refine acts on all the open findings.
+- If the new review has no findings, the task stays in `awaiting_work_review`, and `tasker refine` refuses to run. In that case, if the agent still must make the change, it follows the add-work rule of "Run one ticket". Otherwise, the agent goes to step 9.
+- The review before `tasker update-branch` and the review after it count as one loop of "Review findings", because the agent works on their findings in one refine.
 - If the task is in `awaiting_plan_review` (a refine of step 4), `tasker update-branch` keeps the task in `awaiting_plan_review`. Then the agent runs the refine of step 4.
 - If `tasker update-branch` reports a rebase conflict, the agent follows [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent does not copy that procedure.
 
