@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { run } from "../src/cli.js";
+import { type RegisterCommand, run } from "../src/cli.js";
 import { captureIo, greet } from "./helpers.js";
 
 const packageVersion: string = JSON.parse(
@@ -15,6 +15,18 @@ describe("run", () => {
 
     expect(code).toBe(0);
     expect(io.out.join("")).toBe(`${packageVersion}\n`);
+  });
+
+  it("hands the Io to each command", async () => {
+    const say: RegisterCommand = (program, io) => {
+      program.command("say").action(() => io.stdout("hi\n"));
+    };
+    const io = captureIo();
+
+    const code = await run(["say"], { commands: [say], io });
+
+    expect(code).toBe(0);
+    expect(io.out.join("")).toBe("hi\n");
   });
 
   it("lists commands in --help", async () => {
