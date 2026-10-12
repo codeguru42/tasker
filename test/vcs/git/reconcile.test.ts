@@ -8,6 +8,7 @@ import {
   rebaseOnto,
   reconcileWorktree,
   restoreCommands,
+  resyncWorktree,
   restoreWorktree,
   type StartState,
   worktreeState,
@@ -68,6 +69,10 @@ describe("git reconcile", () => {
   };
   const onto = (extra: Partial<Parameters<typeof rebaseOnto>[0]> = {}) =>
     rebaseOnto({ clone, env, path, upstream: "", onto: BASE, ...extra });
+  const resync = (
+    strategy: ReconcileStrategy,
+    extra: Partial<Parameters<typeof resyncWorktree>[0]> = {},
+  ) => resyncWorktree({ clone, env, path, baseRevision: BASE, strategy, ...extra });
   const restore = (
     start: StartState,
     extra: Partial<Parameters<typeof restoreWorktree>[0]> = {},
@@ -291,6 +296,47 @@ describe("git reconcile", () => {
       expect(error.message).toBe(
         `the rebase onto ${tip} stopped on conflicts: ${target}: "shared.txt"`,
       );
+      await expectAsBefore(start);
+    });
+  });
+
+  describe("resyncWorktree", () => {
+    it("does nothing when the base did not move", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      const start = await state();
+      expect(await resync("rebase")).toEqual({ moved: false, how: "none", head: start.head });
+    });
+
+    it("does nothing when the task already holds the base", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      const tip = await moveBase({ file: "b.txt" });
+      await git("merge", "--no-edit", tip);
+      const start = await state();
+      expect(await resync("rebase")).toEqual({ moved: false, how: "none", head: start.head });
+      expect(await git("rev-parse", "HEAD")).toBe(start.head);
+    });
+
+    it("fast-forwards a task with no own commits", async () => {
+      const tip = await moveBase({ file: "b.txt" });
+      expect(await resync("rebase")).toEqual({ moved: true, how: "fast-forward", head: tip });
+      expect(await git("rev-parse", `refs/heads/${BRANCH}`)).toBe(tip);
+    });
+
+    it.each(["rebase", "merge"] as const)("brings a diverged task onto the base with a %s", async (strategy) => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      await moveBase({ file: "b.txt" });
+      const result = await resync(strategy);
+      expect(result).toEqual({
+        moved: true,
+        how: strategy,
+        head: await git("rev-parse", "HEAD"),
+      });
+    });
+
+    it("aborts and restores when a diverged task conflicts", async () => {
+      await conflictSetup();
+      const start = await state();
+      await failureOf(resync("rebase"), ReconcileConflictError);
       await expectAsBefore(start);
     });
   });
