@@ -10,6 +10,7 @@ import {
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import {
+  type FakeSsh,
   fakeSsh,
   type GitOrigin,
   makeGitOrigin,
@@ -63,6 +64,7 @@ describe("resolveBaseBranch", () => {
   let tmp: string;
   let clone: string;
   let env: NodeJS.ProcessEnv;
+  let ssh: FakeSsh;
   let store: TaskStore;
   let askCalls: number;
   let answer: string;
@@ -71,8 +73,9 @@ describe("resolveBaseBranch", () => {
 
   interface Setup {
     branches: readonly string[];
-    remote?: (origin: GitOrigin) => string;
-    makeEnv?: (origin: GitOrigin) => NodeJS.ProcessEnv;
+    // With ssh, start() writes a fake ssh into the origin folder and keeps it in ssh.
+    // The clone then uses its env and its ssh remote.
+    ssh?: boolean;
   }
 
   // Makes the origin with the given branches, then the bare clone and the store.
@@ -81,11 +84,17 @@ describe("resolveBaseBranch", () => {
     for (const name of setup.branches) {
       await origin.createBranch(name);
     }
-    env = setup.makeEnv?.(origin) ?? origin.env;
+    let remote = origin.path;
+    env = origin.env;
+    if (setup.ssh) {
+      ssh = fakeSsh(origin.dir, origin.env, "serve");
+      remote = ssh.remote(origin.path);
+      env = ssh.env;
+    }
     tmp = makeTempDir("tasker-base-");
     clone = join(tmp, "repo.git");
     await provisionClone({
-      remote: setup.remote?.(origin) ?? origin.path,
+      remote,
       clone,
       config: {},
       env,
@@ -163,20 +172,13 @@ describe("resolveBaseBranch", () => {
     });
 
     describe("with an ssh origin", () => {
-      beforeEach(() =>
-        start({
-          branches: ["gone"],
-          remote: (o) => `ssh://tasker.invalid${o.path}`,
-          makeEnv: (o) => fakeSsh(o.dir, o.env, "serve").env,
-        }),
-      );
+      beforeEach(() => start({ branches: ["gone"], ssh: true }));
 
       it("fetches with the ssh key of the repo", async () => {
-        const logPath = join(origin.dir, "ssh.log");
-        rmSync(logPath, { force: true });
+        rmSync(ssh.logPath, { force: true });
         const key = join(origin.dir, "id key");
         await resolve({ sshKey: key, explicit: "main" });
-        const calls = readArgLog(logPath);
+        const calls = readArgLog(ssh.logPath);
         expect(calls.length).toBeGreaterThan(0);
         for (const call of calls) {
           expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
