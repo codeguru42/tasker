@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -7,14 +8,17 @@ import {
   addCloneCommit,
   commitInWorktree,
   failureOf,
+  fakeGh,
   fakeSsh,
   GIT_TEST_IDENTITY,
+  ghTokenAnswer,
   gitTestEnv,
   localBranches,
   makeGitClone,
   makeGitOrigin,
   makeTempDir,
   sshKeyArgs,
+  writeFakeGh,
   type GitOrigin,
 } from "./helpers.js";
 
@@ -280,6 +284,133 @@ describe("fakeSsh", () => {
   it("writes the fake ssh into the bin folder", () => {
     fakeSsh(dir, gitTestEnv(dir), "refuse");
     expect(existsSync(join(dir, "bin", "ssh"))).toBe(true);
+  });
+});
+
+describe("fakeGh", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir("tasker-fake-gh-");
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  const run = (env: NodeJS.ProcessEnv, ...args: string[]) =>
+    spawnSync("gh", args, { env, encoding: "utf8" });
+
+  it("answers a listed call with the stdout, stderr and exit code of its answer", () => {
+    const gh = fakeGh(dir, {}, [
+      { args: ["issue", "view", "7"], stdout: "out\n", stderr: "err\n", exitCode: 3 },
+    ]);
+    const result = run(gh.env, "issue", "view", "7");
+    expect(result.stdout).toBe("out\n");
+    expect(result.stderr).toBe("err\n");
+    expect(result.status).toBe(3);
+  });
+
+  it("matches an argument with spaces, quotes and a newline", () => {
+    const odd = "a b 'c' \"d\"\ne";
+    const gh = fakeGh(dir, {}, [{ args: ["api", odd], stdout: "ok" }]);
+    expect(run(gh.env, "api", odd).stdout).toBe("ok");
+  });
+
+  it("does not match a call with one more argument or another order", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["a", "b"], stdout: "ok" }]);
+    expect(run(gh.env, "a", "b", "c").status).toBe(99);
+    expect(run(gh.env, "b", "a").status).toBe(99);
+    expect(run(gh.env, "a").status).toBe(99);
+    expect(gh.unanswered()).toEqual([["a", "b", "c"], ["b", "a"], ["a"]]);
+  });
+
+  it("answers a call with no arguments", () => {
+    const gh = fakeGh(dir, {}, [{ args: [], stdout: "none" }]);
+    expect(run(gh.env).stdout).toBe("none");
+  });
+
+  it("uses the first answer when two answers have the same arguments", () => {
+    const gh = fakeGh(dir, {}, [
+      { args: ["x"], stdout: "first" },
+      { args: ["x"], stdout: "second" },
+    ]);
+    expect(run(gh.env, "x").stdout).toBe("first");
+  });
+
+  it("logs the arguments of each call and the GH_TOKEN value", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["x"] }, { args: ["y", "z"] }]);
+    run(gh.env, "x");
+    run({ ...gh.env, GH_TOKEN: "tok" }, "y", "z");
+    expect(gh.calls()).toEqual([
+      { args: ["x"], ghToken: undefined, env: {} },
+      { args: ["y", "z"], ghToken: "tok", env: {} },
+    ]);
+  });
+
+  it("logs each logEnv name: a value, an empty value and a name that is not set", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["x"] }], { logEnv: ["A_ONE", "B_TWO", "C_THREE"] });
+    run({ ...gh.env, A_ONE: "1", B_TWO: "" }, "x");
+    expect(gh.calls()).toEqual([
+      {
+        args: ["x"],
+        ghToken: undefined,
+        env: { A_ONE: "1", B_TWO: "", C_THREE: undefined },
+      },
+    ]);
+  });
+
+  it("gives ghTokenAnswer() the arguments of the token call", () => {
+    const gh = fakeGh(dir, {}, [ghTokenAnswer("octo", "tok")]);
+    const result = run(gh.env, "auth", "token", "--hostname", "github.com", "--user", "octo");
+    expect(result.stdout).toBe("tok\n");
+    expect(result.status).toBe(0);
+  });
+
+  it("stops by a signal after it prints, with killWith", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["x"], stdout: "partial", killWith: "TERM" }]);
+    const result = run(gh.env, "x");
+    expect(result.stdout).toBe("partial");
+    expect(result.signal).toBe("SIGTERM");
+    expect(result.status).toBeNull();
+  });
+
+  it("exits with 99 on a call with no answer and lists the call", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["x"] }]);
+    const result = run(gh.env, "nope", "1");
+    expect(result.status).toBe(99);
+    expect(result.stderr).toContain("fake gh: no answer for: nope 1");
+    expect(gh.unanswered()).toEqual([["nope", "1"]]);
+    expect(() => gh.assertAnswered()).toThrow();
+    // Clear the log, so that the check of fakeGh() at the end of the test passes.
+    rmSync(`${gh.logPath}.unanswered`);
+  });
+
+  it("does not throw from assertAnswered() when every call has an answer", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["x"] }]);
+    run(gh.env, "x");
+    expect(() => gh.assertAnswered()).not.toThrow();
+  });
+
+  it.fails("fails the test on a call with no answer", () => {
+    const gh = fakeGh(dir, {}, []);
+    run(gh.env, "nope");
+  });
+
+  it("puts only its own bin folder on the PATH", () => {
+    const gh = fakeGh(dir, { HOME: dir }, []);
+    expect(gh.env.PATH).toBe(join(dir, "bin"));
+    expect(gh.env.HOME).toBe(dir);
+  });
+
+  it("throws for a logEnv name that is not a name", () => {
+    expect(() => writeFakeGh(join(dir, "bin"), join(dir, "gh.log"), [], ["A B"])).toThrow();
+  });
+
+  it("throws for a killWith value that is not a signal name", () => {
+    expect(() =>
+      writeFakeGh(join(dir, "bin"), join(dir, "gh.log"), [{ args: [], killWith: "TERM; rm" }]),
+    ).toThrow();
   });
 });
 
