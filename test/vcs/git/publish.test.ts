@@ -501,6 +501,52 @@ describe("publish, land and delete", () => {
       expectNoTokenFile();
     });
 
+    describe("errors", () => {
+      const named = "cannot delete the task branch on origin: issue-1-task";
+
+      it("names the branch when origin refuses the push", async () => {
+        const published = await addCloneCommit(clone, env, "issue-1-task");
+        await publish();
+        refusePushesOnOrigin();
+
+        const error = await failureOf(remove({ published }), Error);
+
+        expect(error.message.startsWith(named)).toBe(true);
+        expect(await origin.branchHead("issue-1-task")).toBe(published);
+        expectNoTokenFile();
+      });
+
+      it("names the branch when the remote does not answer", async () => {
+        const published = await addCloneCommit(clone, env, "issue-1-task");
+
+        const error = await failureOf(
+          remove({ published, remote: join(origin.dir, "missing.git") }),
+          Error,
+        );
+
+        expect(error.message.startsWith(named)).toBe(true);
+        expectNoTokenFile();
+      });
+
+      it("refuses the name HEAD before any git call", async () => {
+        const error = await failureOf(remove({ branch: "HEAD" }), Error);
+        expect(error.message).toBe('not a task branch name: "HEAD"');
+        expect(gitCalls()).toEqual([]);
+      });
+
+      it("refuses a short published revision before any git call", async () => {
+        const error = await failureOf(remove({ published: "abc" }), Error);
+        expect(error.message).toBe('the published revision is not a full revision: "abc"');
+        expect(gitCalls()).toEqual([]);
+      });
+
+      it.each(NOT_TASK_BRANCHES)("refuses the name %j before any git call", async (branch) => {
+        const error = await failureOf(remove({ branch }), Error);
+        expect(error.message).toBe(`not a task branch: ${JSON.stringify(branch)}`);
+        expect(gitCalls()).toEqual([]);
+      });
+    });
+
     it("passes the ssh key to each ssh call", async () => {
       const ssh = await sshClone();
       const published = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
