@@ -485,6 +485,8 @@ export interface FakeGhAnswer {
   exitCode?: number; // default 0
   // A signal name such as "TERM": the fake prints its output, then stops itself with this signal.
   killWith?: string;
+  // The fake runs the real sleep for this many seconds before it prints its output.
+  delaySeconds?: number;
 }
 
 // One call that the fake gh logged.
@@ -507,8 +509,9 @@ export function ghTokenAnswer(account: string, token: string): FakeGhAnswer {
 const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const signalNamePattern = /^[A-Z0-9]+$/;
 
-// Writes an executable gh into binDir. It uses shell builtins only, so it works with binDir as the
-// only PATH folder, and the real gh can never run. Each call goes in the log at logPath (see readArgLog()).
+// Writes an executable gh into binDir. It uses shell builtins, so it works with binDir as the
+// only PATH folder. Only for a delay, it runs the real sleep by its absolute path. As a result, the
+// real gh can never run. Each call goes in the log at logPath (see readArgLog()).
 // The log of a call holds "${GH_TOKEN+set:$GH_TOKEN}", then the same for each name of logEnv, then the arguments.
 // An empty item means that the name was not set. "set:<value>" means that it was set to <value>.
 // A call that no answer matches goes in the log <logPath>.unanswered, prints an error and exits with 99.
@@ -528,11 +531,17 @@ export function writeFakeGh(
       `[ $# -eq ${answer.args.length} ]`,
       ...answer.args.map((arg, index) => `[ "\${${index + 1}}" = ${shellQuote(arg)} ]`),
     ];
-    const lines = [
-      `if ${conditions.join(" && ")}; then`,
+    const lines = [`if ${conditions.join(" && ")}; then`];
+    if (answer.delaySeconds !== undefined) {
+      if (!/^\d+(\.\d+)?$/.test(String(answer.delaySeconds))) {
+        throw new Error(`bad delay for the fake gh: ${answer.delaySeconds}`);
+      }
+      lines.push(`  ${shellQuote(realCommandPath("sleep"))} ${answer.delaySeconds}`);
+    }
+    lines.push(
       `  printf '%s' ${shellQuote(answer.stdout ?? "")}`,
       `  printf '%s' ${shellQuote(answer.stderr ?? "")} >&2`,
-    ];
+    );
     if (answer.killWith !== undefined) {
       if (!signalNamePattern.test(answer.killWith)) {
         throw new Error(`bad signal name for the fake gh: ${answer.killWith}`);
