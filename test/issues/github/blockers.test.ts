@@ -148,6 +148,19 @@ describe("readGithubBlockers", () => {
     expect(error.message).toContain("gh api graphql gave bad output for octo/repo#7:");
   });
 
+  it("stops a cursor that comes again after more than one page", async () => {
+    const more = (endCursor: string) => pageJson([], { hasNextPage: true, endCursor });
+    const fake = fakeWith(
+      { args: graphqlArgs("octo", "repo", "7"), stdout: more("A") },
+      { args: graphqlArgs("octo", "repo", "7", "A"), stdout: more("B") },
+      { args: graphqlArgs("octo", "repo", "7", "B"), stdout: more("A") },
+    );
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toMatch(/^gh api graphql gave bad output for octo\/repo#7:/);
+    expect(fake.calls().filter((call) => call.args[0] === "api")).toHaveLength(3);
+  });
+
   it.each([
     ["output that is not JSON", "not json"],
     ["an answer with no data", "{}"],
