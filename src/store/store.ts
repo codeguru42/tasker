@@ -229,6 +229,23 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     return toTask(statements.selectTask.get(id) as TaskRow | undefined);
   }
 
+  // Inserts one event. It starts no transaction, because immediateTransaction() is not reentrant.
+  // The caller runs it inside its own transaction.
+  function writeEvent(
+    taskId: number,
+    at: string,
+    type: string,
+    data: unknown,
+  ): TaskEvent {
+    const row = statements.insertEvent.get(
+      taskId,
+      at,
+      type,
+      data === undefined ? null : JSON.stringify(data),
+    ) as unknown as EventRow;
+    return rowToEvent(row);
+  }
+
   return {
     createTask(task) {
       return immediateTransaction(db, () => {
@@ -263,13 +280,8 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           at,
           at,
         ) as unknown as TaskRow;
-        // The helper is not reentrant, so this uses the statement and not appendEvent().
-        statements.insertEvent.get(
-          row.id,
-          at,
-          "created",
-          JSON.stringify({ state: task.state }),
-        );
+        // The transaction helper is not reentrant, so this uses writeEvent() and not appendEvent().
+        writeEvent(row.id, at, "created", { state: task.state });
         return rowToTask(row);
       });
     },
@@ -346,29 +358,15 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           at,
           id,
         ) as unknown as TaskRow;
-        if (event !== undefined) {
-          statements.insertEvent.get(
-            id,
-            at,
-            event.type,
-            event.data === undefined ? null : JSON.stringify(event.data),
-          );
-        }
+        if (event !== undefined) writeEvent(id, at, event.type, event.data);
         return rowToTask(row);
       });
     },
 
     appendEvent(taskId, type, data) {
-      return immediateTransaction(db, () => {
-        const at = now().toISOString();
-        const row = statements.insertEvent.get(
-          taskId,
-          at,
-          type,
-          data === undefined ? null : JSON.stringify(data),
-        ) as unknown as EventRow;
-        return rowToEvent(row);
-      });
+      return immediateTransaction(db, () =>
+        writeEvent(taskId, now().toISOString(), type, data),
+      );
     },
 
     listEvents(taskId) {
