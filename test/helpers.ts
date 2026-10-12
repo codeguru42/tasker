@@ -19,6 +19,8 @@ import { fileURLToPath } from "node:url";
 import { expect, onTestFinished } from "vitest";
 import type { Io, RegisterCommand } from "../src/cli.js";
 import { type Config, parseConfig } from "../src/config/schema.js";
+import { createDataRoot } from "../src/store/layout.js";
+import { openStore, type Task } from "../src/store/store.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
@@ -112,6 +114,41 @@ export function writeTempConfig(raw: unknown): { dir: string; path: string } {
   const path = join(dir, "config.json");
   writeFileSync(path, JSON.stringify(raw));
   return { dir, path };
+}
+
+// Writes raw as config.json in a new temp dir, with dataRoot set to <dir>/data. The caller removes dir.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function writeDataRootConfig(raw: Record<string, any> = validConfig()): {
+  dir: string;
+  path: string;
+  dataRoot: string;
+} {
+  const dir = makeTempDir("tasker-config-");
+  const dataRoot = join(dir, "data");
+  const path = join(dir, "config.json");
+  writeFileSync(path, JSON.stringify({ ...raw, dataRoot }));
+  return { dir, path, dataRoot };
+}
+
+export interface SeedTask {
+  issueKey: string;
+  repoKey: string;
+  state: string;
+  at: string;
+}
+
+// Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
+export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] {
+  let at = new Date(0);
+  const store = openStore(createDataRoot(dataRoot).database, { now: () => at });
+  try {
+    return tasks.map((task) => {
+      at = new Date(task.at);
+      return store.createTask({ issueKey: task.issueKey, repoKey: task.repoKey, state: task.state });
+    });
+  } finally {
+    store.close();
+  }
 }
 
 // The fixed author and committer of every commit that a git test makes.
