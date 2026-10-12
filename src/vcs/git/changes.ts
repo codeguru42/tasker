@@ -4,7 +4,7 @@ import { runRemoteGit } from "./ssh.js";
 import { assertTaskWorktree, taskBranchRevision } from "./worktree.js";
 
 // The fields of NUL-ended output: split on "\0" and drop the empty item after the last NUL.
-function nulFields(text: string): string[] {
+export function nulFields(text: string): string[] {
   const fields = text.split("\0");
   if (fields[fields.length - 1] === "") fields.pop();
   return fields;
@@ -123,6 +123,15 @@ export async function uncommittedChanges(o: {
 }): Promise<UncommittedChange[]> {
   const { clone, env, path } = o;
   const target = await assertTaskWorktree({ clone, env, path });
+  return worktreeChanges(target, env);
+}
+
+// The status read of uncommittedChanges() without the guard. The target must be the real path
+// that assertTaskWorktree() returns.
+export async function worktreeChanges(
+  target: string,
+  env: NodeJS.ProcessEnv,
+): Promise<UncommittedChange[]> {
   const output = await runGit(
     ["status", "--porcelain", "--untracked-files=normal", "--no-renames", "-z"],
     { cwd: target, env: { ...env, GIT_OPTIONAL_LOCKS: "0" } },
@@ -133,10 +142,21 @@ export async function uncommittedChanges(o: {
   }));
 }
 
-// The message that refuses a worktree with uncommitted changes. Each path is JSON text, so a
-// path with a comma or a newline stays readable and exact.
+// The paths as JSON text, joined with ", ", so a path with a comma or a newline stays readable
+// and exact.
+export function jsonPathList(paths: readonly string[]): string {
+  return paths.map((p) => JSON.stringify(p)).join(", ");
+}
+
+// The message that refuses a worktree with uncommitted changes.
 export function uncommittedRefusal(path: string, changes: readonly UncommittedChange[]): string {
-  return `the worktree has uncommitted changes: ${path}: ${changes.map((c) => JSON.stringify(c.path)).join(", ")}`;
+  return `the worktree has uncommitted changes: ${path}: ${jsonPathList(changes.map((c) => c.path))}`;
+}
+
+// The full revision of HEAD in the task worktree. The target must be the real path that
+// assertTaskWorktree() returns.
+export async function worktreeHead(target: string, env: NodeJS.ProcessEnv): Promise<string> {
+  return (await runGit(["rev-parse", "--verify", "HEAD^{commit}"], { cwd: target, env })).trim();
 }
 
 // True when ancestor is the same commit as descendant or reaches it through its parents.
@@ -178,9 +198,7 @@ export async function fetchTips(o: {
   assertRevisionInput(baseRevision);
   const target = await assertTaskWorktree({ clone, env, path });
   await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, sshKey);
-  const head = (
-    await runGit(["rev-parse", "--verify", "HEAD^{commit}"], { cwd: target, env })
-  ).trim();
+  const head = await worktreeHead(target, env);
   const base = await resolveRevision({ clone, env, value: baseRevision });
   return { head, base };
 }
