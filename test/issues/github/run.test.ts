@@ -165,6 +165,30 @@ describe("runGh", () => {
     expect(result).toEqual({ code: 0, stdout: "", stderr: "" });
   });
 
+  describe("signal", () => {
+    it("stops the main call when the signal aborts", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: ["api", "user"], stdout: "{}", delaySeconds: 5 },
+      ]);
+      const start = Date.now();
+      const error = await failureOf(
+        gh.runGh(["api", "user"], {
+          account: "octo",
+          env: fake.env,
+          signal: AbortSignal.timeout(100),
+        }),
+        Error,
+      );
+      expect(error.name).toBe("AbortError");
+      expect(Date.now() - start).toBeLessThan(2000);
+      expect(fake.calls()).toEqual([
+        { args: tokenArgs("octo"), ghToken: undefined, env: {} },
+        { args: ["api", "user"], ghToken: "gho_test", env: {} },
+      ]);
+    });
+  });
+
   describe("errors", () => {
     const token = "gho_secret";
     const apiUser = ["api", "user"];
