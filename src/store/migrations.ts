@@ -28,4 +28,10 @@ BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;`,
   branch TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );`,
+  `ALTER TABLE tasks ADD COLUMN title TEXT;
+ALTER TABLE tasks ADD COLUMN short_ref TEXT;
+ALTER TABLE tasks ADD COLUMN base TEXT;
+ALTER TABLE tasks ADD COLUMN attempt INTEGER NOT NULL DEFAULT 1;
+CREATE UNIQUE INDEX tasks_active_repo_issue ON tasks (repo_key, issue_key)
+  WHERE state NOT IN ('finished', 'cancelled');`,
 ];

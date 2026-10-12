@@ -10,6 +10,10 @@ export interface Task {
   state: string;
   branch: string | null;
   worktreePath: string | null;
+  title: string | null;
+  shortRef: string | null;
+  base: string | null;
+  attempt: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,12 +24,18 @@ export interface NewTask {
   state: string;
   branch?: string;
   worktreePath?: string;
+  title?: string;
+  shortRef?: string;
+  base?: string;
 }
 
 export interface TaskChanges {
   state?: string;
   branch?: string | null;
   worktreePath?: string | null;
+  title?: string | null;
+  shortRef?: string | null;
+  base?: string | null;
 }
 
 export interface TaskEvent {
@@ -61,6 +71,10 @@ interface TaskRow {
   state: string;
   branch: string | null;
   worktree_path: string | null;
+  title: string | null;
+  short_ref: string | null;
+  base: string | null;
+  attempt: number;
   created_at: string;
   updated_at: string;
 }
@@ -91,6 +105,10 @@ function rowToTask(row: TaskRow): Task {
     state: row.state,
     branch: row.branch,
     worktreePath: row.worktree_path,
+    title: row.title,
+    shortRef: row.short_ref,
+    base: row.base,
+    attempt: row.attempt,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -106,14 +124,16 @@ function setUp(db: DatabaseSync) {
   return {
     insertTask: db.prepare(
       `INSERT INTO tasks
-         (issue_key, repo_key, state, branch, worktree_path, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+         (issue_key, repo_key, state, branch, worktree_path, title, short_ref, base,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`,
     ),
     selectTask: db.prepare("SELECT * FROM tasks WHERE id = ?"),
     updateTask: db.prepare(
       `UPDATE tasks
-       SET state = ?, branch = ?, worktree_path = ?, updated_at = ?
+       SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
+           updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -164,6 +184,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           task.state,
           task.branch ?? null,
           task.worktreePath ?? null,
+          task.title ?? null,
+          task.shortRef ?? null,
+          task.base ?? null,
           at,
           at,
         ) as unknown as TaskRow;
@@ -186,10 +209,16 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (changes.worktreePath !== undefined) {
           next.worktreePath = changes.worktreePath;
         }
+        if (changes.title !== undefined) next.title = changes.title;
+        if (changes.shortRef !== undefined) next.shortRef = changes.shortRef;
+        if (changes.base !== undefined) next.base = changes.base;
         const row = statements.updateTask.get(
           next.state,
           next.branch,
           next.worktreePath,
+          next.title,
+          next.shortRef,
+          next.base,
           now().toISOString(),
           id,
         ) as unknown as TaskRow;

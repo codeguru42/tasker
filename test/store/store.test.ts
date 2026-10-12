@@ -121,10 +121,10 @@ describe("task store", () => {
 
   describe("active task index", () => {
     it("rejects a second active row for one repo and issue", () => {
-      store.createTask(newTask);
       const before = eventCount();
       const db = rawDb();
       try {
+        insertRawTask(db, "tasker", "new");
         expect(() => insertRawTask(db, "tasker", "planning")).toThrow(
           /UNIQUE constraint failed/,
         );
