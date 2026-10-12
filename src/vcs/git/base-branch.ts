@@ -84,12 +84,19 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
   }
   await runRemoteGit(["fetch", "origin", "--prune"], { gitDir: clone, env }, options.sshKey);
 
+  const notes: string[] = [];
   const found = (base: string, source: ResolvedBase["source"]): ResolvedBase => ({
     base,
     revision: baseRevision(base),
     source,
-    notes: [],
+    notes,
   });
+  // Saves a value that exists in the clone as the learned default of the repo.
+  const learn = (base: string, source: "config" | "ask"): ResolvedBase => {
+    memory.setDefaultBaseBranch(repoKey, base);
+    notes.push(`tasker saved ${base} as the default base branch of ${repoKey}.`);
+    return found(base, source);
+  };
 
   if (hint !== undefined) {
     if (!(await exists(clone, env, hint))) {
@@ -109,6 +116,10 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
   if (learned !== undefined && (await exists(clone, env, learned))) {
     return found(learned, "learned");
   }
+  if (learned !== undefined) {
+    memory.forgetDefaultBaseBranch(repoKey, learned);
+    notes.push(`the learned base branch ${learned} no longer exists on origin. tasker forgot it.`);
+  }
 
   const configured = options.defaultBaseBranch;
   if (learned === undefined && configured !== undefined) {
@@ -117,7 +128,7 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
         `the base branch does not exist on origin: ${configured} (from defaultBaseBranch)`,
       );
     }
-    return found(configured, "config");
+    return learn(configured, "config");
   }
 
   const answer = await options.ask();
@@ -128,5 +139,5 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
   if (!(await exists(clone, env, asked))) {
     throw new Error(`the base branch does not exist on origin: ${asked} (from the answer)`);
   }
-  return found(asked, "ask");
+  return learn(asked, "ask");
 }
