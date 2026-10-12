@@ -179,7 +179,11 @@ When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with
 
 - `EXECUTE_COMMIT_TEXT` is the commit text of the execute prompt. It holds the placeholder `{{BASE_REF}}`. The caller replaces it with the base revision.
 - `DENY_RULES` is the list of deny rules for the shell of the assistant, in the rule syntax of Claude Code. It holds `Bash(git push:*)`.
-- `readDenyPaths(config)` gives the files that the sandbox must not read. With no `sshKey`, it gives an empty list. A key that starts with `~/` gives the home folder plus the rest of the key (see [The ssh key](#the-ssh-key)). An absolute key gives itself. Every other key throws `cannot resolve the ssh key path for the sandbox: <key>`, because a deny path that tasker cannot resolve leaves the key open. Examples are a `~name/` key, the key `~` and a relative key such as `keys/id_tasker`.
+- `readDenyPaths(config)` gives the files that the sandbox must not read. With no `sshKey`, it gives an empty list. A key that starts with `~/` resolves to the home folder plus the rest of the key (see [The ssh key](#the-ssh-key)). A key that is not a `~/` key and not absolute throws `cannot resolve the ssh key path for the sandbox: <key>`, because a deny path that tasker cannot resolve leaves the key open. Examples are a `~name/` key, the key `~` and a relative key such as `keys/id_tasker`. For an absolute path, the function reads the real path of the key file:
+  - If the key file is missing, it gives the path alone. ssh cannot open the key either.
+  - If the real path is the same as the path, it gives the path alone.
+  - If the key file or a folder on its path is a symlink, it gives the path and then the real path, because ssh opens the real file.
+  - Any other error of the file system passes through.
 
 ### `sandboxWritePaths()`
 
