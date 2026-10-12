@@ -209,11 +209,14 @@ describe("parseConfig repos", () => {
     expectIssueAt(issuesOf(raw), "repos.codeguru42/tasker.verify.commands");
   });
 
+  const BAD_DEFAULT_BASE_BRANCH =
+    "repos.tasker.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>";
+
   it("rejects a defaultBaseBranch in the form refs/heads/<x>", () => {
     const raw = validConfig();
     raw.repos.tasker.defaultBaseBranch = "refs/heads/main";
     expect(issuesOf(raw)).toContain(
-      "repos.tasker.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>",
+      BAD_DEFAULT_BASE_BRANCH,
     );
   });
 
@@ -225,7 +228,7 @@ describe("parseConfig repos", () => {
     raw.repos.other.verify.commands = [];
     const issues = issuesOf(raw);
     expect(issues).toContain(
-      "repos.tasker.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>",
+      BAD_DEFAULT_BASE_BRANCH,
     );
     expectIssueAt(issues, "repos.other.verify.commands");
   });

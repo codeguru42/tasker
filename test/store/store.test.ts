@@ -9,6 +9,17 @@ import { openStore, type Task, type TaskStore } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { makeTempDir, repoRoot, tableNames } from "../helpers.js";
 
+// Makes a database that has only the first migrations, as an old version of tasker left it.
+function makeOldDatabase(path: string, version: number): void {
+  const db = new DatabaseSync(path);
+  try {
+    migrate(db, migrations.slice(0, version));
+    expect(schemaVersion(db)).toBe(version);
+  } finally {
+    db.close();
+  }
+}
+
 describe("task store", () => {
   let dir: string;
   let dbPath: string;
@@ -203,13 +214,7 @@ describe("task store", () => {
 
     it("upgrades a version-1 database when it opens", () => {
       const oldPath = join(dir, "old.db");
-      const db = new DatabaseSync(oldPath);
-      try {
-        migrate(db, migrations.slice(0, 1));
-        expect(schemaVersion(db)).toBe(1);
-      } finally {
-        db.close();
-      }
+      makeOldDatabase(oldPath, 1);
       const upgraded = openStore(oldPath, { now });
       try {
         const task = upgraded.createTask(newTask);
@@ -276,13 +281,7 @@ describe("task store", () => {
 
     it("upgrades a version-2 database when it opens", () => {
       const oldPath = join(dir, "old2.db");
-      const db = new DatabaseSync(oldPath);
-      try {
-        migrate(db, migrations.slice(0, 2));
-        expect(schemaVersion(db)).toBe(2);
-      } finally {
-        db.close();
-      }
+      makeOldDatabase(oldPath, 2);
       const upgraded = openStore(oldPath, { now });
       try {
         upgraded.setDefaultBaseBranch("tasker", "main");
