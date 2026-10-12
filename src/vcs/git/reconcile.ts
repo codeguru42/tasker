@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { ReconcileConflictError } from "../errors.js";
 import {
   type UncommittedChange,
   isAncestor,
@@ -12,17 +13,6 @@ import {
 import { assertRevisionInput, isFullRevision, resolveRevision } from "./refs.js";
 import { GitError, runGit } from "./run.js";
 import { assertTaskBranch, assertTaskBranchShape, assertTaskWorktree } from "./worktree.js";
-
-// The error of a rebase or a merge that stopped on conflicts. The worktree is back at the start.
-export class ReconcileConflictError extends Error {
-  readonly paths: string[];
-
-  constructor(message: string, paths: string[]) {
-    super(message);
-    this.name = "ReconcileConflictError";
-    this.paths = paths;
-  }
-}
 
 export type ReconcileStrategy = "rebase" | "merge";
 

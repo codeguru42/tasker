@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   type FoundState,
   type ReconcileStrategy,
-  ReconcileConflictError,
   rebaseOnto,
   reconcileWorktree,
   restoreCommands,
@@ -13,6 +12,7 @@ import {
   type StartState,
   worktreeState,
 } from "../../../src/vcs/git/reconcile.js";
+import { ReconcileConflictError } from "../../../src/vcs/errors.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {
