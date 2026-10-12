@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   createTaskWorktree,
+  deleteTaskBranch,
   listWorktrees,
   removeTaskWorktree,
   taskBranchName,
@@ -386,6 +387,41 @@ describe("git fixture", () => {
       writeFileSync(join(path(), "file"), "file\n");
       await expectConflict(`something else is at the worktree path: ${path()}`);
     });
+  });
+
+  describe("deleteTaskBranch", () => {
+    const deleteBranch = (extra: Partial<Parameters<typeof deleteTaskBranch>[0]> = {}) =>
+      deleteTaskBranch({ clone, env, branch: "issue-1-x", ...extra });
+    const localBranches = () =>
+      runGit(["for-each-ref", "--format=%(refname)", "refs/heads"], { gitDir: clone, env });
+
+    it("deletes the local branch and leaves the origin alone", async () => {
+      await origin.createBranch("issue-1-x");
+      const remoteHead = await origin.branchHead("issue-1-x");
+      await create();
+      await removeTaskWorktree({ clone, env, path: taskWorktreePath(worktrees, "issue-1") });
+      await deleteBranch();
+      expect(await localBranches()).not.toContain("refs/heads/issue-1-x");
+      expect(await origin.branchHead("issue-1-x")).toBe(remoteHead);
+    });
+
+    it("refuses a missing branch", async () => {
+      await failureOf(deleteBranch({ branch: "nosuch" }), GitError);
+    });
+
+    it("refuses a branch that a worktree holds", async () => {
+      await create();
+      await failureOf(deleteBranch(), GitError);
+      expect(await localBranches()).toContain("refs/heads/issue-1-x");
+    });
+
+    it.each(["", "-x", "a..b", "HEAD"])(
+      "refuses the branch name %j before any git call",
+      async (branch) => {
+        const error = await failureOf(deleteBranch({ branch, env: {} }), Error);
+        expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
+      },
+    );
   });
 
   describe("taskBranchName for any title", () => {
