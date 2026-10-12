@@ -168,4 +168,39 @@ describe("createGitProvider", () => {
       );
     });
   });
+
+  describe("publish, land and delete", () => {
+    // A workspace with one commit, published to the origin.
+    async function published() {
+      const made = await workspace();
+      await commitInWorktree(made.path, fixture.context.env, { file: "a.txt" });
+      const result = await made.git.publish(fixture.context, {
+        taskRef: made.taskRef,
+        published: undefined,
+      });
+      return { ...made, result };
+    }
+
+    it("publishes the task ref to the origin", async () => {
+      const { taskRef, result } = await published();
+      expect(result.taskRef).toBe(taskRef);
+      expect(result.revision).toBe(await fixture.origin.branchHead(taskRef));
+    });
+
+    it("lands the revision on the base", async () => {
+      const { git, result } = await published();
+      await git.land(fixture.context, { base: "main", revision: result.revision });
+      expect(await fixture.origin.branchHead("main")).toBe(result.revision);
+    });
+
+    it("deletes the task ref from the origin", async () => {
+      const { git, taskRef, result } = await published();
+      const deletion = await git.deleteRemoteTaskRef(fixture.context, {
+        taskRef,
+        published: result.revision,
+      });
+      expect(deletion).toEqual({ state: "deleted" });
+      expect(await fixture.origin.branchHead(taskRef)).toBeUndefined();
+    });
+  });
 });
