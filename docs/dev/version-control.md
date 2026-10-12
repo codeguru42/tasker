@@ -9,6 +9,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/ssh.ts` holds `sshCommand()`, `sshEnv()`, `hideSshKey()`, `runRemoteGit()`, `remoteCwd()` and `cloneUrl()`.
 - `src/vcs/git/default-branch.ts` holds `remoteDefaultBranch()`.
 - `src/vcs/git/provision.ts` holds `provisionClone()`.
+- `src/vcs/git/base-branch.ts` holds `parseBaseInput()`, `baseRevision()` and `resolveBaseBranch()`.
 
 No other folder in `src/` starts git.
 
@@ -154,6 +155,10 @@ When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with
 ## `remoteDefaultBranch()`
 
 `remoteDefaultBranch({ remote, sshKey, env })` in `src/vcs/git/default-branch.ts` runs `git ls-remote --symref -- <remote> HEAD` through `runRemoteGit()`. The cwd is `remoteCwd()`, the root of the file system. This is the same cwd as in provision, and it needs no clone. It finds the line `ref: refs/heads/<name>` followed by a tab and `HEAD`, and returns `<name>`. If the remote has no such line, it throws `Error`: `the remote has no symbolic HEAD: <remote>`.
+
+## `resolveBaseBranch()`
+
+`resolveBaseBranch()` in `src/vcs/git/base-branch.ts` runs `git fetch origin --prune` through `runRemoteGit()` with the ssh key of the repo. No command calls it yet. [workspaces.md](workspaces.md#base-branch) gives the rules.
 
 ## `repoSlug()` and `repoPaths()`
 
