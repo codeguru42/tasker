@@ -55,3 +55,11 @@ export function baseBranchHint(issue: Issue): string | undefined {
   }
   return hint;
 }
+
+// True when label is set and the issue has it. The compare uses toLowerCase() of both names,
+// because GitHub label names are unique without regard to case.
+export function inProgressMarker(issue: Issue, label: string | undefined): boolean {
+  if (label === undefined) return false;
+  const wanted = label.toLowerCase();
+  return issue.labels.some((name) => name.toLowerCase() === wanted);
+}
