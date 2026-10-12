@@ -82,7 +82,7 @@ Push guard rule: a provider that cannot guard a push refuses to provision. Its `
 
 `doctorChecks()` calls `gitDoctorChecks()` for one repo. As a result, each git provider gives its own version check, and its lock-file check reads `/proc` in its own `gitDoctorChecks()` call. A doctor run over two git repos has two version checks and can read `/proc` two times.
 
-The test `test/vcs/git/boundary.test.ts` also fails when a `.ts` file under `src/` outside `src/vcs/` imports from `src/vcs/git/`. It finds `import ... from`, `import "..."`, `import("...")`, `require("...")` and `export ... from` with a relative path. Files under `test/` are not in scope, because the tests of the git code import it. The test cannot find a module name that the code builds at run time.
+The test `test/vcs/git/boundary.test.ts` also fails when a `.ts` file under `src/` outside `src/vcs/` imports from `src/vcs/git/`. It finds `import ... from`, `import "..."`, `import("...")`, `require("...")` and `export ... from` with a relative path. Files under `test/` are not in scope, because the tests of the git code import it. The test cannot find a module name that the code builds at run time. The test uses `breaksBoundary()` and `filesThatBreakBoundary()` of `test/helpers.ts`. The boundary test of `src/issues/github/` uses the same helpers.
 
 ## How tasker uses git
 
