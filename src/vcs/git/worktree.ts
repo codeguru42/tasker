@@ -244,3 +244,11 @@ export async function discardWorktreeChanges(options: {
   await runGit(["reset", "--hard"], { cwd: path, env });
   await runGit(["clean", "-ffd"], { cwd: path, env });
 }
+
+export async function taskBranchRevision(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  branch: string;
+}): Promise<string> {
+  throw new Error(`not implemented: ${options.branch}`);
+}

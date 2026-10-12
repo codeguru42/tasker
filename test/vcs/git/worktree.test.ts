@@ -17,6 +17,7 @@ import {
   listWorktrees,
   removeTaskWorktree,
   taskBranchName,
+  taskBranchRevision,
   taskWorktreePath,
 } from "../../../src/vcs/git/worktree.js";
 import { failureOf, makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers.js";
@@ -462,6 +463,39 @@ describe("git fixture", () => {
       expect(error.message).toBe(`not a worktree of the clone: ${path()}`);
       expect(existsSync(join(path(), "file.txt"))).toBe(true);
     });
+  });
+
+  describe("taskBranchRevision", () => {
+    const revision = (extra: Partial<Parameters<typeof taskBranchRevision>[0]> = {}) =>
+      taskBranchRevision({ clone, env, branch: "issue-1-x", ...extra });
+
+    it("gives the SHA of a created branch", async () => {
+      await create();
+      expect(await revision()).toBe(await origin.branchHead("main"));
+    });
+
+    it("refuses a missing branch", async () => {
+      const error = await failureOf(revision(), Error);
+      expect(error.message).toBe("cannot resolve the task branch: issue-1-x");
+    });
+
+    it("does not read another ref through the git name rules", async () => {
+      const sha = (await origin.branchHead("main")) as string;
+      await runGit(["update-ref", "refs/heads/refs/heads/issue-1-x", sha], {
+        gitDir: clone,
+        env,
+      });
+      const error = await failureOf(revision(), Error);
+      expect(error.message).toBe("cannot resolve the task branch: issue-1-x");
+    });
+
+    it.each(["", "a..b", "x~1", "x^{commit}", "-x"])(
+      "refuses the branch name %j",
+      async (branch) => {
+        const error = await failureOf(revision({ branch }), Error);
+        expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
+      },
+    );
   });
 
   describe("taskBranchName for any title", () => {
