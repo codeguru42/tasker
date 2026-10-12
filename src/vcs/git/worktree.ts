@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, realpathSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { GitError, runGit } from "./run.js";
@@ -124,6 +124,15 @@ async function branchExists(
   }
 }
 
+function isFile(path: string): boolean {
+  try {
+    return statSync(path).isFile();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
+}
+
 // Makes the worktree of a task on a new branch. The new branch has no upstream.
 export async function createTaskWorktree(options: {
   clone: string;
@@ -138,11 +147,24 @@ export async function createTaskWorktree(options: {
   const target = canonicalPath(path);
   const entries = await listWorktrees({ clone, env });
   const entry = entries.find((candidate) => candidate.path === target);
-  if (entry?.branch === branch && entry.lockReason === undefined) {
+  if (entry?.lockReason !== undefined) {
+    const gitFile = join(target, ".git");
+    // A stopped "git worktree add" locks the worktree with this reason (state 23d: the
+    // checkout is partial). The folder holds no work of the task, so reset it and unlock it.
+    if (entry.lockReason === "initializing" && entry.branch === branch && isFile(gitFile)) {
+      await runGit(["reset", "--hard"], { cwd: target, env });
+      await runGit(["worktree", "unlock", "--", target], { gitDir: clone, env });
+      return "reused-worktree";
+    }
+    throw new Error(`the worktree is locked: ${target} (${entry.lockReason})`);
+  }
+  if (entry?.branch === branch) {
     if (existsSync(join(target, ".git"))) return "reused-worktree";
     if (!existsSync(target)) {
       // The folder is gone. Git drops only this entry, and the branch stays.
       await runGit(["worktree", "remove", "--", target], { gitDir: clone, env });
+    } else {
+      throw new Error(`the worktree has no .git file: ${target}`);
     }
   }
   if (await branchExists(clone, env, branch)) {
