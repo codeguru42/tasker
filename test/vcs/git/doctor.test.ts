@@ -1,8 +1,17 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { gitVersionCheck } from "../../../src/vcs/git/doctor.js";
-import { gitTestEnv, makeTempDir, writeFakeGit } from "../../helpers.js";
+import { type GitDoctorRepo, gitVersionCheck, identityCheck } from "../../../src/vcs/git/doctor.js";
+import type { GitVcsConfig } from "../../../src/vcs/git/provision.js";
+import { runGit } from "../../../src/vcs/git/run.js";
+import {
+  type GitOrigin,
+  gitTestEnv,
+  makeGitClone,
+  makeGitOrigin,
+  makeTempDir,
+  writeFakeGit,
+} from "../../helpers.js";
 
 describe("gitVersionCheck", () => {
   let dir: string;
@@ -77,5 +86,110 @@ describe("gitVersionCheck", () => {
     const result = await gitVersionCheck(200).run({ ...env, PATH: `${binDir}:${env.PATH}` });
     expect(result).toEqual({ status: "error", detail: "the check did not finish in 200 ms" });
     expect(Date.now() - started).toBeLessThan(2000);
+  });
+});
+
+describe("identityCheck", () => {
+  let origin: GitOrigin;
+  let clone: string;
+  let env: NodeJS.ProcessEnv;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    clone = await makeGitClone(origin);
+    env = origin.env;
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  function repo(config: GitVcsConfig, cloneDir = clone): GitDoctorRepo {
+    return { key: "o/r", remote: origin.path, clone: cloneDir, config };
+  }
+
+  function setLocal(key: string, value: string): Promise<string> {
+    return runGit(["config", key, value], { gitDir: clone, env });
+  }
+
+  it("has the name, the required flag and the time limit", () => {
+    const check = identityCheck(repo({}));
+    expect(check.name).toBe("git identity: o/r");
+    expect(check.required).toBe(false);
+    expect(check.timeoutMs).toBe(5000);
+  });
+
+  it("gives ok when the identity of the clone matches vcs.config", async () => {
+    await setLocal("user.name", "Ann");
+    await setLocal("user.email", "ann@example.com");
+    const result = await identityCheck(repo({ authorName: "Ann", authorEmail: "ann@example.com" })).run(env);
+    expect(result).toEqual({ status: "ok", detail: "a commit in the clone gets Ann <ann@example.com>" });
+  });
+
+  it("gives warn when the name differs from vcs.config", async () => {
+    await setLocal("user.name", "Bob");
+    await setLocal("user.email", "ann@example.com");
+    const result = await identityCheck(repo({ authorName: "Ann" })).run(env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).toBe('vcs.config.authorName is "Ann", but a commit in the clone gets "Bob"');
+    expect(result.remediation).toBe(
+      "Provision the clone again. Provision writes vcs.config.authorName and vcs.config.authorEmail to the clone configuration.",
+    );
+  });
+
+  it("does not compare a field that vcs.config leaves unset", async () => {
+    await setLocal("user.name", "Bob");
+    await setLocal("user.email", "ann@example.com");
+    const result = await identityCheck(repo({ authorEmail: "ann@example.com" })).run(env);
+    expect(result).toEqual({ status: "ok", detail: "a commit in the clone gets Bob <ann@example.com>" });
+  });
+
+  it("counts a global identity", async () => {
+    const globalFile = join(origin.dir, "global.gitconfig");
+    writeFileSync(globalFile, "[user]\n\tname = Glob\n\temail = glob@example.com\n");
+    const result = await identityCheck(repo({ authorName: "Glob" })).run({
+      ...env,
+      GIT_CONFIG_GLOBAL: globalFile,
+    });
+    expect(result).toEqual({ status: "ok", detail: "a commit in the clone gets Glob <glob@example.com>" });
+  });
+
+  it("counts a local empty user.name as not set", async () => {
+    await setLocal("user.name", "");
+    await setLocal("user.email", "ann@example.com");
+    const result = await identityCheck(repo({})).run(env);
+    expect(result.status).toBe("warn");
+    expect(result.remediation).toBe(
+      "Set vcs.config.authorName and vcs.config.authorEmail, or set a global git identity.",
+    );
+  });
+
+  it("gives warn when the clone gets no identity at all", async () => {
+    const result = await identityCheck(repo({})).run(env);
+    expect(result.status).toBe("warn");
+    expect(result.remediation).toBe(
+      "Set vcs.config.authorName and vcs.config.authorEmail, or set a global git identity.",
+    );
+  });
+
+  it("says that a commit gets no user.name when the clone has none", async () => {
+    const result = await identityCheck(repo({ authorName: "Ann" })).run(env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).toBe('vcs.config.authorName is "Ann", but a commit in the clone gets no user.name');
+  });
+
+  it("gives ok with no clone yet when the clone is missing", async () => {
+    const missing = join(origin.dir, "missing.git");
+    const result = await identityCheck(repo({ authorName: "Ann" }, missing)).run({
+      ...env,
+      GIT_CONFIG_GLOBAL: (() => {
+        const file = join(origin.dir, "other.gitconfig");
+        writeFileSync(file, "[user]\n\tname = Other\n");
+        return file;
+      })(),
+    });
+    expect(result.status).toBe("ok");
+    expect(result.detail).toBe("no clone yet");
+    expect(result.remediation).toBeUndefined();
   });
 });
