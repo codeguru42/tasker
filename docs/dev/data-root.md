@@ -16,6 +16,7 @@ tasker keeps all of its data under one folder, the `dataRoot` of the configurati
 | `<dataRoot>/clones/<slug>/worktrees/` | The worktrees of the tasks of one repo. |
 | `<dataRoot>/clones/<slug>/worktrees/<shortRef>/` | The worktree of one task. |
 | `<dataRoot>/artifacts/` | The files that tasks produce. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/` | The files of one attempt of a task. `taskArtifactsDir()` gives the path and makes no folder. The issue slug is `pathSlug()` of the issue key. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
 
 `<slug>` comes from the repo key. `repoPaths()` gives these paths, and [version-control.md](version-control.md) describes the slug. `createDataRoot()` does not make the folders of a repo.
@@ -34,10 +35,28 @@ The table has one row for each task. All times are ISO 8601 text in UTC, for exa
 | `state` | text | Required. The state of the task. See [the state machine](../statemachine.md). The store does not check the value. |
 | `branch` | text | Optional. The branch of the task. |
 | `worktree_path` | text | Optional. The worktree of the task. |
+| `title` | text | Optional. The title of the task. |
+| `short_ref` | text | Optional. The short name of the task. |
+| `base` | text | Optional. The base branch of the task. |
+| `attempt` | integer | Required. The number of the attempt of the issue. The first attempt is 1. Schema version 4 gives 1 to each older row. |
 | `created_at` | text | Required. The time that `createTask()` ran. |
 | `updated_at` | text | Required. The time of the last change. |
 
-The pair of `repo_key` and `issue_key` is not unique. A user can start the same issue again after a task ends, so one issue can have more than one row. The index `tasks_repo_issue` on these two columns speeds up lookups. It does not enforce a rule.
+A task is active when its state is not in `TERMINAL_STATES` (`finished` and `cancelled`). The store allows one active task for each pair of `repo_key` and `issue_key`. These parts keep this rule:
+
+- The partial unique index `tasks_active_repo_issue` covers only the active rows. It holds for raw SQL too.
+- `createTask()` throws `ActiveTaskError` when the pair already has an active task. The error has the field `taskId` of that task. A task that starts in a terminal state is not active, so the check does not apply to it.
+- The plain index `tasks_repo_issue` on the same two columns stays. It speeds up lookups and enforces no rule.
+
+An issue can have many tasks over time, one for each attempt. `createTask()` sets `attempt` to the highest attempt of the same `issue_key` plus one. The count covers all repos. `updateTask()` cannot change `attempt`.
+
+If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at version 3.
+
+The store has three functions that read tasks:
+
+- `findActiveTask(repoKey, issueKey)` returns the active task, or `undefined`.
+- `findLatestTask(repoKey, issueKey)` returns the active task when one exists. Otherwise it returns the task with the highest `id`, or `undefined` when the issue has no task.
+- `listTasks(filter)` returns the tasks that match `repoKey`, `issueKey` and `states`. With no `states`, it returns only the active tasks. An empty `states` array returns no task. The newest `updated_at` comes first, and the higher `id` comes first when the times are equal.
 
 ## `events` table
 
@@ -50,6 +69,11 @@ The table is an append-only log. Each event belongs to one task.
 | `at` | text | Required. The time of the event, in ISO 8601 UTC. |
 | `type` | text | Required. The kind of event. |
 | `data` | text | Optional. JSON text. The value is `NULL` when the event has no data. |
+
+The store writes two kinds of event:
+
+- `created` has the data `{ state }`. `createTask()` writes it in the same transaction as the row.
+- `transition` has the data `{ from, to }` and the optional fields of the caller. `transitionTask()` writes it in the same transaction as the state change. See [the code of the state machine](../statemachine.md#code).
 
 The index `events_task_id` on `task_id` and `id` serves `listEvents()`.
 
@@ -93,4 +117,4 @@ Two tasker processes can use the same database at once. `openStore()` makes this
 
 Each write, and each migration, runs through `immediateTransaction()` in `src/store/transaction.ts`. The helper starts `BEGIN IMMEDIATE`, so the transaction takes the write lock at the start. If the function in the transaction throws, the helper rolls back and throws the same error. If the rollback itself fails, the caller still gets the first error. As a result, `updateTask()` reads and writes a row in one step, and another process cannot change the row in between. Two processes that open a new database at the same time do not both run the same migration.
 
-`updateTask()` takes an optional third argument, `check`. The store calls `check` with the current row inside the same transaction, before the write. If `check` throws, the transaction rolls back, the row does not change, and `updateTask()` throws the same error. `transitionTask()` in `src/state/machine.ts` uses `check` to test the edge. As a result, the read and the write of the state happen in one step.
+`updateTask()` takes an optional third argument, `check`. The store calls `check` with the current row inside the same transaction, before the write. If `check` throws, the transaction rolls back, the row does not change, no event is written, and `updateTask()` throws the same error. `check` can return an event `{ type, data }`. The store appends it in the same transaction as the row write, with the time of `updated_at`. `transitionTask()` in `src/state/machine.ts` uses `check` to test the edge and to return the `transition` event. As a result, the read, the write of the state and the event happen in one step.
