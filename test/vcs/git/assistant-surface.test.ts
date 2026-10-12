@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -98,16 +99,6 @@ describe("assistant surface values", () => {
     expect(DENY_RULES).toEqual(["Bash(git push:*)"]);
   });
 
-  it("gives an absolute ssh key as it is", () => {
-    expect(readDenyPaths({ sshKey: "/keys/id_tasker" })).toEqual(["/keys/id_tasker"]);
-  });
-
-  it("expands a ~/ ssh key with the home folder", () => {
-    expect(readDenyPaths({ sshKey: "~/.ssh/id_tasker" })).toEqual([
-      `${userInfo().homedir}/.ssh/id_tasker`,
-    ]);
-  });
-
   it.each(["~alice/.ssh/id", "~", "keys/id_tasker", "./id_tasker"])("throws for the ssh key %s", (key) => {
     expect(() => readDenyPaths({ sshKey: key })).toThrow(
       `cannot resolve the ssh key path for the sandbox: ${key}`,
@@ -152,6 +143,19 @@ describe("assistant surface values", () => {
       expect(readDenyPaths({ sshKey: join(dir, "ssh", "id_tasker") })).toEqual([
         join(dir, "ssh", "id_tasker"),
         realpathSync(join(realFolder, "id_tasker")),
+      ]);
+    });
+
+    it("gives a missing absolute ssh key as it is", () => {
+      const key = join(dir, "missing", "id_tasker");
+      expect(readDenyPaths({ sshKey: key })).toEqual([key]);
+    });
+
+    it("expands a ~/ ssh key with the home folder", () => {
+      // A folder name that no home folder has, so the test does not depend on the host.
+      const folder = `.tasker-test-missing-${randomUUID()}`;
+      expect(readDenyPaths({ sshKey: `~/${folder}/id_tasker` })).toEqual([
+        `${userInfo().homedir}/${folder}/id_tasker`,
       ]);
     });
 
