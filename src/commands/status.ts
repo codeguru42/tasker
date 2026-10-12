@@ -1,5 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
-import { loadConfigOrFail, withStore } from "./shared.js";
+import type { TaskFilter } from "../store/store.js";
+import { fail, loadConfigOrFail, withStore } from "./shared.js";
 
 const HEADERS = ["ISSUE", "REPO", "STATE", "UPDATED"];
 
@@ -16,9 +17,17 @@ export const status: RegisterCommand = (program, io) => {
   program
     .command("status")
     .description("List the tasks by issue key and state")
-    .action(() => {
+    .option("--repo <key>", "List only the tasks of the repo with this key")
+    .action((options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
-      const tasks = withStore(config, (store) => store.listTasks({}));
+      const filter: TaskFilter = {};
+      if (options.repo !== undefined) {
+        if (!Object.hasOwn(config.repos, options.repo)) {
+          fail(io, `repo key not found: ${options.repo}`);
+        }
+        filter.repoKey = options.repo;
+      }
+      const tasks = withStore(config, (store) => store.listTasks(filter));
       io.stdout(
         tasks.length === 0
           ? "no tasks\n"
