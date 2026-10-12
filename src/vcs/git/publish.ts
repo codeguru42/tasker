@@ -161,7 +161,9 @@ export async function deleteRemoteTaskBranch(
     );
   } catch (error) {
     // Someone can have moved or deleted the branch since the first read.
-    if (compareTip(branch, published, await readTip()) === "absent") {
+    // A failed second read must not hide the push error.
+    const after = await readTip().catch(() => undefined);
+    if (after !== undefined && compareTip(branch, published, after) === "absent") {
       return { state: "already-gone" };
     }
     throw failed(summary, error);
