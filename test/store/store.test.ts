@@ -5,7 +5,12 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
 import { migrations } from "../../src/store/migrations.js";
-import { openStore, type Task, type TaskStore } from "../../src/store/store.js";
+import {
+  ActiveTaskError,
+  openStore,
+  type Task,
+  type TaskStore,
+} from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
 import { makeTempDir, repoRoot, tableNames } from "../helpers.js";
@@ -152,6 +157,59 @@ describe("task store", () => {
       store.updateTask(task.id, { attempt: 5 });
       expect(store.getTask(task.id)?.attempt).toBe(1);
     });
+  });
+
+  describe("one active task for each issue", () => {
+    const rowCount = (): number => {
+      const db = rawDb();
+      try {
+        const row = db.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
+          n: number;
+        };
+        return row.n;
+      } finally {
+        db.close();
+      }
+    };
+
+    it("refuses a second active task for the same repo and issue", () => {
+      const first = store.createTask(newTask);
+      const events = eventCount();
+      let caught: unknown;
+      try {
+        store.createTask(newTask);
+      } catch (e) {
+        caught = e;
+      }
+      expect(caught).toBeInstanceOf(ActiveTaskError);
+      expect((caught as ActiveTaskError).taskId).toBe(first.id);
+      const message = (caught as ActiveTaskError).message;
+      expect(message).toContain(newTask.issueKey);
+      expect(message).toContain(newTask.repoKey);
+      expect(message).toContain("new");
+      expect(rowCount()).toBe(1);
+      expect(store.getTask(first.id)).toEqual(first);
+      expect(eventCount()).toBe(events);
+    });
+
+    it("permits the same issue in another repo", () => {
+      store.createTask(newTask);
+      const other = store.createTask({ ...newTask, repoKey: "other" });
+      expect(other.repoKey).toBe("other");
+      expect(rowCount()).toBe(2);
+    });
+
+    it.each(["cancelled", "finished"])(
+      "creates a new active task after the first task is %s",
+      (state) => {
+        const first = store.createTask(newTask);
+        store.updateTask(first.id, { state });
+        const second = store.createTask(newTask);
+        expect(second.id).not.toBe(first.id);
+        expect(second.state).toBe("new");
+        expect(rowCount()).toBe(2);
+      },
+    );
   });
 
   describe("active task index", () => {
