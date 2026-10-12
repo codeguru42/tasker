@@ -43,3 +43,7 @@ Prints the configuration as JSON, with the defaults filled in.
 - `--repo <key>`: prints only the repo with this key.
 
 If the key does not exist, or the configuration is missing or invalid, the command prints an error and exits with code 1.
+
+### `tasker status`
+
+Lists the tasks by issue key and state.
