@@ -226,7 +226,7 @@ Calls on the clone use `gitDir`. Calls in a worktree use `cwd` with the real pat
 | --- | --- | --- | --- |
 | `worktreeDiff({ clone, env, path, baseRevision })` | `git diff --no-renames --no-color --no-ext-diff --no-textconv <base>...HEAD --` | worktree | The text as git prints it. |
 | `changedPaths({ clone, env, branch, baseRevision })` | `git diff --no-renames -z --name-only <base>...<branch> --` | clone | The list of raw paths. |
-| `ownCommitsText({ clone, env, branch, baseRevision })` | `git log --reverse --no-renames --no-color --no-ext-diff --no-textconv --patch "--format=commit %H%n%n%B" <base>..<branch> --` | clone | The own commits, oldest first, each with its diff. |
+| `ownCommitsText({ clone, env, branch, baseRevision })` | `git log --reverse --no-renames --no-color --no-ext-diff --no-textconv --no-show-signature --patch "--format=commit %H%n%n%B" <base>..<branch> --` | clone | The own commits, oldest first, each with its diff. |
 | `hasCommitsNotIn({ clone, env, head, others })` | `git rev-list --count <head> --not <others...> --` | clone | `true` when the count is more than 0. |
 | `uncommittedChanges({ clone, env, path })` | `git status --porcelain --untracked-files=normal --no-renames -z` | worktree | The list of `{ status, path }`. |
 | `isAncestor({ clone, env, ancestor, descendant })` | `git merge-base --is-ancestor <ancestor> <descendant>` | clone | `true` or `false`. |
@@ -244,6 +244,7 @@ Calls on the clone use `gitDir`. Calls in a worktree use `cwd` with the real pat
 - The status call of `uncommittedChanges()` runs with `GIT_OPTIONAL_LOCKS=0` in its environment. Without it, `git status` takes `index.lock` and can rewrite the index of the worktree. A git command of the assistant in the same worktree then fails on the lock.
 - `--no-color`, `--no-ext-diff` and `--no-textconv` stop colors, `diff.external` and textconv filters of the user configuration from changing the text. `diff.noprefix` still changes the `a/` and `b/` prefixes of the diff text.
 - The explicit `--format` stops `format.pretty` and `log.decorate` of the user from changing the text.
+- `--no-show-signature` stops `log.showSignature` of the user configuration. Git then starts no gpg and adds no signature lines to the text.
 
 ### Results and errors
 
