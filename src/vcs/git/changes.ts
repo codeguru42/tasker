@@ -53,7 +53,8 @@ export async function changedPaths(o: {
 export const NO_OWN_COMMITS = "This branch has no commits of its own since its base yet.";
 
 // The own commits of the task branch, oldest first, each with its diff. The range is
-// <base>..<branch>. The explicit format keeps the user configuration out of the text.
+// <base>..<branch>. The explicit format stops format.pretty and log.decorate.
+// --no-show-signature stops log.showSignature, so git starts no gpg.
 // A merge commit shows no diff, as git does by default.
 export async function ownCommitsText(o: {
   clone: string;
@@ -73,6 +74,7 @@ export async function ownCommitsText(o: {
       "--no-color",
       "--no-ext-diff",
       "--no-textconv",
+      "--no-show-signature",
       "--patch",
       "--format=commit %H%n%n%B",
       `${base}..${head}`,
