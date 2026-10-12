@@ -18,6 +18,9 @@ const editArgs = (flag: string, value: string, number = "7", project = "octo/rep
 const editFailure = (detail: string) =>
   `failed to update https://github.com/octo/repo/issues/7: ${detail}\nfailed to update 1 issue\n`;
 
+// The call of an issue close.
+const closeArgs = ["issue", "close", "7", "-R", "octo/repo", "--reason", "completed"];
+
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
 const token = ghTokenAnswer("octo", "gho_test");
 
@@ -124,5 +127,27 @@ describe("markGithubInProgress", () => {
     const fake = fakeGh(dir, {}, [{ ...token, stdout: "", stderr, exitCode: 1 }]);
     await failureOf(write.markGithubInProgress(ref, "wip", "octo", fake.env), gh.GhLoginError);
     expect(fake.calls()).toHaveLength(1);
+  });
+});
+
+describe("markGithubDone without a done label", () => {
+  it("closes the issue as completed with one close call", async () => {
+    const fake = fakeGh(dir, {}, [token, { args: closeArgs }]);
+    await write.markGithubDone(ref, undefined, "octo", fake.env);
+    expect(fake.calls().map((call) => call.args)).toEqual([token.args, closeArgs]);
+  });
+
+  it("resolves for an issue that is already closed", async () => {
+    const stderr = "! Issue octo/repo#7 (T) is already closed\n";
+    const fake = fakeGh(dir, {}, [token, { args: closeArgs, stderr }]);
+    await expect(write.markGithubDone(ref, undefined, "octo", fake.env)).resolves.toBeUndefined();
+    expect(fake.calls().map((call) => call.args)).toEqual([token.args, closeArgs]);
+  });
+
+  it("rejects with the GhError of a failed close", async () => {
+    const fake = fakeGh(dir, {}, [token, { args: closeArgs, exitCode: 1, stderr: "HTTP 502" }]);
+    const error = await failureOf(write.markGithubDone(ref, undefined, "octo", fake.env), gh.GhError);
+    expect(error.message).toBe("gh issue close failed with exit code 1: HTTP 502");
+    expect(fake.calls()).toHaveLength(2);
   });
 });
