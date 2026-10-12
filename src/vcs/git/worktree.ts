@@ -163,10 +163,9 @@ export async function createTaskWorktree(options: {
   const entries = await listWorktrees({ clone, env });
   const entry = entries.find((candidate) => candidate.path === target);
   if (entry?.lockReason !== undefined) {
-    const gitFile = join(target, ".git");
     // A stopped "git worktree add" locks the worktree with this reason (state 23d: the
     // checkout is partial). The folder holds no work of the task, so reset it and unlock it.
-    if (entry.lockReason === "initializing" && entry.branch === branch && isFile(gitFile)) {
+    if (entry.lockReason === "initializing" && entry.branch === branch && hasGitFile(target)) {
       await runGit(["reset", "--hard"], { cwd: target, env });
       await runGit(["worktree", "unlock", "--", target], { gitDir: clone, env });
       return "reused-worktree";
@@ -179,7 +178,7 @@ export async function createTaskWorktree(options: {
     );
   }
   if (entry !== undefined) {
-    if (existsSync(join(target, ".git"))) return "reused-worktree";
+    if (hasGitFile(target)) return "reused-worktree";
     if (!existsSync(target)) {
       // The folder is gone. Git drops only this entry, and the branch stays.
       await runGit(["worktree", "remove", "--", target], { gitDir: clone, env });
