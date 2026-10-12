@@ -18,7 +18,8 @@ export interface ProvisionOptions {
   clone: string;
   config: GitVcsConfig;
   env: NodeJS.ProcessEnv;
-  // The folder of the publish tokens. The hook reads it, so it must name the same folder on each run.
+  // The folder of the publish tokens. The hook reads it,
+  // so it must name the same folder on each run.
   publishTokens: string;
 }
 

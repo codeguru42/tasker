@@ -91,7 +91,8 @@ export function cloneUrl(remote: string): string {
   return remote;
 }
 
-// The error for a remote that does not answer. It sets no cause, because the text of git can hold secrets.
+// The error for a remote that does not answer.
+// It sets no cause, because the text of git can hold secrets.
 export function remoteNotAnswering(remote: string, failure: GitError): Error {
   const detail = failure.stderr.trim();
   return new Error(`the remote does not answer: ${remote}${detail === "" ? "" : `: ${detail}`}`);

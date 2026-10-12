@@ -1,4 +1,12 @@
-import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
@@ -143,7 +151,9 @@ describe("the pre-push hook", () => {
     });
     const other = join(tmp, "data", "worktrees", "g", "wt");
     await addWorktree("global", other);
-    const error = await failure(runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: other, env }));
+    const error = await failure(
+      runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: other, env }),
+    );
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("x")).toBeUndefined();
   });

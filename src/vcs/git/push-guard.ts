@@ -39,7 +39,8 @@ export function installPushHook(clone: string, publishTokens: string): void {
   }
 }
 
-// Runs `git push <args>` with a new one-time token. It deletes the token if the push did not use it.
+// Runs `git push <args>` with a new one-time token.
+// It deletes the token if the push did not use it.
 export async function pushWithToken(
   args: readonly string[],
   options: {

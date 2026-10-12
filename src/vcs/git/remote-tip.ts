@@ -3,8 +3,8 @@ import { remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
 
 export type RemoteTip = { state: "present"; revision: string } | { state: "absent" };
 
-// The tip of one branch on the remote. The ls-remote pattern matches the tail of a ref and is a glob,
-// so only the line whose ref is exactly refs/heads/<branch> counts. A failed read throws.
+// The tip of one branch on the remote. The ls-remote pattern matches the tail of a ref and is a
+// glob, so only the line whose ref is exactly refs/heads/<branch> counts. A failed read throws.
 export async function remoteTip(options: {
   remote: string;
   branch: string;
@@ -18,7 +18,11 @@ export async function remoteTip(options: {
   const ref = `refs/heads/${branch}`;
   let output: string;
   try {
-    output = await runRemoteGit(["ls-remote", "--", remote, ref], { cwd: remoteCwd(), env }, sshKey);
+    output = await runRemoteGit(
+      ["ls-remote", "--", remote, ref],
+      { cwd: remoteCwd(), env },
+      sshKey,
+    );
   } catch (error) {
     if (!(error instanceof GitError)) {
       throw error;
@@ -34,7 +38,8 @@ export async function remoteTip(options: {
   return { state: "absent" };
 }
 
-// A message when the tip of the branch on the remote moved from before to after. Otherwise undefined.
+// A message when the tip of the branch on the remote moved from before to after.
+// Otherwise undefined.
 export function tipMoved(before: RemoteTip, after: RemoteTip): string | undefined {
   const name = (tip: RemoteTip): string => (tip.state === "present" ? tip.revision : "absent");
   if (name(before) === name(after)) {
