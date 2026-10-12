@@ -12,6 +12,9 @@ export async function remoteTip(options: {
   env: NodeJS.ProcessEnv;
 }): Promise<RemoteTip> {
   const { remote, branch, sshKey, env } = options;
+  if (branch === "") {
+    throw new Error("the branch name is empty");
+  }
   const ref = `refs/heads/${branch}`;
   let output: string;
   try {
