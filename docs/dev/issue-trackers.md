@@ -9,6 +9,8 @@ All code that starts `gh` is in `src/issues/github/`. The test `test/issues/gith
 ## The files of src/issues/
 
 - `src/issues/github/run.ts` holds `runGh()`, `RunGhOptions`, `GhError`, `GhNotInstalledError` and `GhLoginError`.
+- `src/issues/issue.ts` holds `Issue`, `IssueReadError`, `BaseHintError`, `baseBranchHint()` and `inProgressMarker()`.
+- `src/issues/github/issue.ts` holds `readGithubIssue()`.
 
 Later issues add their files to this list.
 
@@ -51,6 +53,45 @@ The subcommand of a `GhError` is `args[0]`, plus `args[1]` when `args[1]` exists
 - `api -X PATCH repos/a/b` gives `api`.
 - `api user` gives `api user`.
 
+## Read an issue
+
+`readGithubIssue(ref, account, env)` reads one issue and resolves with an `Issue`. `ref` is the `IssueRef` of the issue. `account` is the account of the tracker.
+
+An `Issue` has these fields:
+
+- `ref` is the `IssueRef` that the caller gave.
+- `title` is the title.
+- `body` is the body. It is `""` for a missing body.
+- `url` is the url of the issue.
+- `labels` holds the label names that GitHub gives.
+- `state` is `"open"` or `"closed"`.
+
+The read runs `gh issue view <N> -R <project> --json number,title,body,url,labels,state` through `runGh()`, with the account of the tracker.
+
+The project and the number come from the stored key. `resolveIssueKey()` stores the key as `<project>#<N>`, so the project is `issueTracker.project`, or the repo key when it is not set. See [Issue keys](issue-keys.md). A key that does not split gives the `IssueKeyError` of `splitGithubKey()` before `gh` starts.
+
+The read gives these errors:
+
+- `IssueReadError` has the field `key`. Its message is `the issue <key> does not exist: <stderr>` when `gh` says that it cannot resolve the issue. A missing repo and the other `gh` failures stay a `GhError`.
+- gh 2.101.0 gives a pull request with exit code 0, and in any state. The read finds a pull request from its `url`: the path of an issue is `/<owner>/<repo>/issues/<N>`, and the path of a pull request is `/<owner>/<repo>/pull/<N>`. The message is `<key> is a pull request, not an issue`.
+- The message is `gh issue view gave bad output for <key>: <reason>` for output that is not JSON, the wrong fields, a `url` of another form, the wrong number, or a state that is not `OPEN` or `CLOSED`.
+
+### The base branch hint
+
+`baseBranchHint(issue)` reads only the `Issue`, so the read makes no second `gh` call.
+
+- A label that starts with `base:` gives the hint. The match uses case, so `BASE:x` gives no hint.
+- The hint is the text after `base:`, without the white space that JavaScript `String.prototype.trim()` removes at the start and the end, for example spaces, tabs and line ends.
+- An issue with no such label gives `undefined`.
+- One such label with empty text gives a `BaseHintError` that names the label.
+- Two or more such labels give a `BaseHintError` that names each label.
+
+The `BaseHintError` has the field `labels`. Its message names each label as JSON text, and names the key of the issue. The function does not check the hint as a branch name. The base branch resolve in `src/vcs/git/` checks the hint.
+
+### The in-progress marker
+
+`inProgressMarker(issue, label)` gives `false` when `label` is `undefined`. Else it gives `true` when the issue has a label equal to `label` after `toLowerCase()` of both names. It does not trim the names.
+
 ## Tests
 
 The fake `gh` is in `test/helpers.ts`. It uses shell builtins only, so the real `gh` can never run.
@@ -64,3 +105,5 @@ Each answer names the whole argument list. It must match exactly, in order. The 
 A call with no answer exits with 99 and goes into `unanswered()`. It fails the test, also when the code under test catches the error.
 
 `test/issues/github/run.test.ts` calls `vi.resetModules()` and imports `run.ts` again before each test, so each test starts with an empty token cache.
+
+`test/issues/issue.test.ts` and `test/issues/github/issue.test.ts` test the new files.
