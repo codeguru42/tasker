@@ -1,5 +1,5 @@
 import { asciiFold } from "../../issue-key/github.js";
-import { runGh } from "./run.js";
+import { GhError, GhLoginError, GhNotInstalledError, runGh } from "./run.js";
 
 // The result of authStatus(). login is the login that the token of the account belongs to.
 export interface AuthStatus {
@@ -16,12 +16,28 @@ export async function authStatus(
   env: NodeJS.ProcessEnv,
   options: { signal?: AbortSignal } = {},
 ): Promise<AuthStatus> {
-  const stdout = await runGh(["api", "user", "--jq", ".login"], {
-    account,
-    env,
-    signal: options.signal,
-  });
+  let stdout: string;
+  try {
+    stdout = await runGh(["api", "user", "--jq", ".login"], {
+      account,
+      env,
+      signal: options.signal,
+    });
+  } catch (error) {
+    // These messages never hold the token. A GhError has *** in place of it.
+    if (
+      error instanceof GhLoginError ||
+      error instanceof GhError ||
+      error instanceof GhNotInstalledError
+    ) {
+      return { ok: false, detail: error.message };
+    }
+    throw error;
+  }
   const login = stdout.trim();
+  if (login === "") {
+    return { ok: false, detail: `gh api user gave no login for the account ${account}` };
+  }
   if (asciiFold(login) === asciiFold(account)) {
     return { ok: true, login, detail: `gh is logged in as ${login}` };
   }
