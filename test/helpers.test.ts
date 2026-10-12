@@ -2,8 +2,10 @@ import { existsSync, rmSync } from "node:fs";
 import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, runGit } from "../src/vcs/git/run.js";
+import { createTaskWorktree } from "../src/vcs/git/worktree.js";
 import {
   addCloneCommit,
+  commitInWorktree,
   failureOf,
   fakeSsh,
   GIT_TEST_IDENTITY,
@@ -193,6 +195,43 @@ describe("addCloneCommit", () => {
     expect(branchError.message).toContain('"-x"');
     const parentError = await failureOf(addCloneCommit(clone, origin.env, "issue-1-x", "-p"), Error);
     expect(parentError.message).toContain('"-p"');
+  });
+});
+
+describe("commitInWorktree", () => {
+  let origin: GitOrigin;
+  let worktree: string;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    const clone = await makeGitClone(origin);
+    worktree = join(origin.dir, "worktrees", "issue-15");
+    await createTaskWorktree({
+      clone,
+      env: origin.env,
+      path: worktree,
+      branch: "issue-15-x",
+      baseRevision: "refs/remotes/origin/main",
+    });
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  const git = (...args: string[]) =>
+    runGit(args, { cwd: worktree, env: origin.env }).then((out) => out.trim());
+
+  it("commits the file and returns the new head", async () => {
+    const sha = await commitInWorktree(worktree, origin.env, { file: "a/b.txt", content: "x" });
+    expect(await git("rev-parse", "HEAD")).toBe(sha);
+    expect(await git("show", "HEAD:a/b.txt")).toBe("x");
+  });
+
+  it("throws for a file outside the worktree", async () => {
+    await expect(
+      commitInWorktree(worktree, origin.env, { file: "../x" }),
+    ).rejects.toThrow("addCommit needs a file inside the work repo: ../x");
   });
 });
 
