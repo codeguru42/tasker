@@ -243,8 +243,10 @@ export async function addCloneCommit(
   branch: string,
   parent?: string,
 ): Promise<string> {
-  if (branch.startsWith("-") || parent?.startsWith("-")) {
-    throw new Error(`a name must not start with "-": ${JSON.stringify(parent ?? branch)}`);
+  for (const name of [branch, parent]) {
+    if (name?.startsWith("-")) {
+      throw new Error(`a name must not start with "-": ${JSON.stringify(name)}`);
+    }
   }
   const git = (...args: string[]) =>
     runGit(args, { gitDir: clone, env }).then((out) => out.trim());
