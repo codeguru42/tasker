@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { isInside } from "../../helpers.js";
 
 const srcDir = fileURLToPath(new URL("../../../src/", import.meta.url));
 
@@ -22,17 +23,44 @@ function loadsChildProcess(text: string): boolean {
 
 const gitLiteral = /(["'`])git(?: [^"'`]*)?\1/;
 
+interface SourceFile {
+  file: string;
+  text: string;
+}
+
+// Each .ts file under src/ (a path with "/") and its text.
+function sourceFiles(): SourceFile[] {
+  return readdirSync(srcDir, { recursive: true, encoding: "utf8" })
+    .map((file) => file.split("\\").join("/"))
+    .filter((file) => file.endsWith(".ts"))
+    .map((file) => ({ file, text: readFileSync(join(srcDir, file), "utf8") }));
+}
+
 // The files under src/ (paths with "/") that start git.
 // The scan finds a literal "git" and a literal module name.
 // It cannot find a module name or a git name that is built at run time.
 function filesThatStartGit(): string[] {
-  const files = readdirSync(srcDir, { recursive: true, encoding: "utf8" })
-    .map((file) => file.split("\\").join("/"))
-    .filter((file) => file.endsWith(".ts"));
-  return files.filter((file) => {
-    const text = readFileSync(join(srcDir, file), "utf8");
-    return loadsChildProcess(text) && gitLiteral.test(text);
+  return sourceFiles()
+    .filter(({ text }) => loadsChildProcess(text) && gitLiteral.test(text))
+    .map(({ file }) => file);
+}
+
+const moduleSpecifierPattern = /\b(?:from|import|require)\s*\(?\s*(["'`])([^"'`]+)\1/g;
+
+// True when the text of file (a path under src/, with "/") loads or re-exports a module in src/vcs/git/.
+// The test cannot find a module name that the code builds at run time.
+function importsVcsGit(file: string, text: string): boolean {
+  const fileDir = join(srcDir, dirname(file));
+  const gitDir = join(srcDir, "vcs", "git");
+  return [...text.matchAll(moduleSpecifierPattern)].some((match) => {
+    const specifier = match[2];
+    return specifier.startsWith(".") && isInside(resolve(fileDir, specifier), gitDir);
   });
+}
+
+// True when file is outside src/vcs/ and importsVcsGit() is true.
+function breaksProviderBoundary(file: string, text: string): boolean {
+  return !file.startsWith("vcs/") && importsVcsGit(file, text);
 }
 
 describe("the git boundary", () => {
