@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { parseConfig } from "../src/config/schema.js";
 import { openStore } from "../src/store/store.js";
 import { createDataRoot } from "../src/store/layout.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -21,6 +22,7 @@ import {
   makeTempDir,
   seedTasks,
   sshKeyArgs,
+  threeRepoConfig,
   validConfig,
   writeDataRootConfig,
   writeFakeGh,
@@ -499,6 +501,71 @@ describe("seedTasks", () => {
       expect(store.listTasks({ states: ["planning", "finished"] }).map((t) => t.id)).toEqual(
         tasks.map((t) => t.id),
       );
+    } finally {
+      store.close();
+    }
+  });
+});
+
+describe("threeRepoConfig", () => {
+  it("passes parseConfig with the repos tasker, other and fork", () => {
+    const config = parseConfig(threeRepoConfig(), {}, "/home/me");
+
+    expect(Object.keys(config.repos).sort()).toEqual(["codeguru42/other", "codeguru42/tasker", "fork"]);
+    expect(config.repos.fork.issueTracker.project).toBe("codeguru42/tasker");
+  });
+});
+
+describe("seedTasks with more fields", () => {
+  let dir: string;
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("stores the title, base, branch and worktreePath when given", () => {
+    dir = makeTempDir("tasker-seed-");
+
+    const [task] = seedTasks(join(dir, "data"), [
+      {
+        issueKey: "a/b#1",
+        repoKey: "a/b",
+        state: "workspace_ready",
+        at: "2026-01-02T00:00:00.000Z",
+        title: "A title",
+        base: "main",
+        branch: "issue-1-a-title",
+        worktreePath: "/tmp/wt/issue-1",
+      },
+    ]);
+
+    expect(task).toMatchObject({
+      title: "A title",
+      base: "main",
+      branch: "issue-1-a-title",
+      worktreePath: "/tmp/wt/issue-1",
+    });
+  });
+
+  it("fails the task at its time with failWith", () => {
+    dir = makeTempDir("tasker-seed-");
+    const dataRoot = join(dir, "data");
+    const at = "2026-01-04T00:00:00.000Z";
+
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: "a/b#1", repoKey: "a/b", state: "executing", at, failWith: "git push failed" },
+    ]);
+
+    expect(task.state).toBe("failed");
+    expect(task.updatedAt).toBe(at);
+    const store = openStore(createDataRoot(dataRoot).database);
+    try {
+      const last = store.listEvents(task.id).at(-1);
+      expect(last).toMatchObject({
+        at,
+        type: "transition",
+        data: { error: "git push failed", from: "executing", to: "failed" },
+      });
     } finally {
       store.close();
     }
