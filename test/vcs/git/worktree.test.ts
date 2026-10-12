@@ -248,6 +248,49 @@ describe("git fixture", () => {
     });
   });
 
+  describe("createTaskWorktree, reused branch", () => {
+    const path = () => taskWorktreePath(worktrees, "issue-1");
+    const head = (branch: string) =>
+      runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {
+        gitDir: clone,
+        env,
+      }).then((out) => out.trim());
+
+    // Makes the branch with one own commit and no worktree. Returns the commit SHA.
+    const branchWithOwnCommit = async () => {
+      await create();
+      await gitIn(path(), "commit", "--allow-empty", "-m", "own");
+      const own = await head("issue-1-x");
+      await removeTaskWorktree({ clone, env, path: path() });
+      return own;
+    };
+
+    it("adds a worktree for a branch that no worktree holds", async () => {
+      const own = await branchWithOwnCommit();
+      expect(own).not.toBe(await origin.branchHead("main"));
+      expect(await create()).toBe("reused-branch");
+      expect(await gitIn(path(), "rev-parse", "HEAD")).toBe(own);
+      expect(await head("issue-1-x")).toBe(own);
+    });
+
+    it("accepts an empty folder at the path", async () => {
+      const own = await branchWithOwnCommit();
+      mkdirSync(path());
+      expect(await create()).toBe("reused-branch");
+      expect(await gitIn(path(), "rev-parse", "HEAD")).toBe(own);
+    });
+
+    it("replaces an unlocked entry whose folder is gone", async () => {
+      await create();
+      rmSync(path(), { recursive: true });
+      expect(await create()).toBe("reused-branch");
+      const entries = await listWorktrees({ clone, env });
+      expect(entries).toHaveLength(1);
+      expect(entries[0]?.path).toBe(path());
+      expect(existsSync(path())).toBe(true);
+    });
+  });
+
   describe("taskBranchName for any title", () => {
     // The room for the slug after "issue-7-" is 100 - 7 - 1 = 92 characters.
     it.each([
