@@ -60,7 +60,7 @@ The key names the repo. It can contain `/`, for example `codeguru42/tasker`. An 
 | `assistant` | object | required | See [`assistant`](#assistant). |
 | `verify` | object | required | `commands`: list of non-empty strings with at least one item (required). `env`: list of names (default `[]`). |
 | `bootstrap` | object | `{ "commands": [], "env": [] }` | `commands`: list of strings (default `[]`). `env`: list of names (default `[]`). |
-| `defaultBaseBranch` | non-empty string | optional | The branch that tasks start from. |
+| `defaultBaseBranch` | non-empty string | optional | The name of a branch on `origin` that tasks start from. tasker uses the value as it is and does not strip `origin/`. The form `refs/heads/<x>` fails with `repos.<key>.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>`. tasker uses the value only when no default is learned for the repo. If the branch exists, tasker saves it as the learned default. If not, the resolve fails. See [workspaces.md](dev/workspaces.md#base-branch). |
 | `overagePolicy` | `"decline"` or `"ask"` | `"decline"` | What to do when a task goes over the quota. |
 | `quotaApprovalThreshold` | number above 0 and at most 1 | `0.9` | The share of the quota at which approval is needed. |
 | `updateBranchStrategy` | `"rebase"` or `"merge"` | `"rebase"` | How to bring a branch up to date. |
