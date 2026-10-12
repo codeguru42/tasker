@@ -311,6 +311,21 @@ describe("fakeGh", () => {
     expect(result.status).toBe(3);
   });
 
+  it("waits delaySeconds before it prints the stdout", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["slow"], stdout: "late\n", delaySeconds: 0.3 }]);
+    const start = Date.now();
+    const result = run(gh.env, "slow");
+    expect(Date.now() - start).toBeGreaterThanOrEqual(250);
+    expect(result.stdout).toBe("late\n");
+    expect(result.status).toBe(0);
+  });
+
+  it("throws for a delay that is not a plain number of seconds", () => {
+    expect(() => fakeGh(dir, {}, [{ args: ["slow"], delaySeconds: -1 }])).toThrow(
+      "bad delay for the fake gh: -1",
+    );
+  });
+
   it("matches an argument with spaces, quotes and a newline", () => {
     const odd = "a b 'c' \"d\"\ne";
     const gh = fakeGh(dir, {}, [{ args: ["api", odd], stdout: "ok" }]);
