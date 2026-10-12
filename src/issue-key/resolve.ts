@@ -40,20 +40,47 @@ function projectOf(repoKey: string, repo: RepoConfig): string {
 export function resolveIssueKey(
   rawKey: string,
   config: Config,
-  // The next change reads the options.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   options: ResolveOptions = {},
 ): IssueRef {
+  const { repo } = options;
+  if (repo !== undefined && !Object.hasOwn(config.repos, repo)) {
+    throw new IssueKeyError(
+      rawKey,
+      `unknown repo ${JSON.stringify(repo)}: no repo with this key is in the configuration`,
+    );
+  }
+  const matches: IssueRef[] = [];
   for (const [repoKey, repoConfig] of Object.entries(config.repos)) {
     const ref = MATCHERS[repoConfig.issueTracker.provider](
       rawKey,
       repoKey,
       projectOf(repoKey, repoConfig),
     );
-    if (ref !== undefined) return ref;
+    if (ref !== undefined) matches.push(ref);
   }
-  throw new IssueKeyError(
-    rawKey,
-    `no configured repo has the project of issue key ${JSON.stringify(rawKey)}`,
-  );
+  if (repo !== undefined) {
+    const chosen = matches.find((ref) => ref.repoKey === repo);
+    if (chosen === undefined) {
+      throw new IssueKeyError(
+        rawKey,
+        `repo ${JSON.stringify(repo)} does not have the project of issue key ${JSON.stringify(rawKey)}`,
+      );
+    }
+    return chosen;
+  }
+  const [only, ...others] = matches;
+  if (only === undefined) {
+    throw new IssueKeyError(
+      rawKey,
+      `no configured repo has the project of issue key ${JSON.stringify(rawKey)}`,
+    );
+  }
+  if (others.length > 0) {
+    const keys = matches.map((ref) => JSON.stringify(ref.repoKey)).join(", ");
+    throw new IssueKeyError(
+      rawKey,
+      `issue key ${JSON.stringify(rawKey)} matches more than one repo (${keys}): pass --repo <key> to pick one`,
+    );
+  }
+  return only;
 }
