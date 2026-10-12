@@ -7,23 +7,14 @@ import { loadConfig } from "../../src/config/load.js";
 import { resolveIssueKey } from "../../src/issue-key/resolve.js";
 import { status } from "../../src/commands/status.js";
 import { STATES } from "../../src/state/machine.js";
-import { captureIo, seedTasks, validConfig, writeDataRootConfig, writeTempConfig } from "../helpers.js";
-
-// The repos codeguru42/tasker and codeguru42/other, and the repo fork. The project of fork
-// is the same as the project of codeguru42/tasker, so one issue key matches two repos.
-function threeRepoConfig() {
-  const raw = validConfig();
-  const base = raw.repos.tasker;
-  raw.repos["codeguru42/tasker"] = base;
-  raw.repos["codeguru42/other"] = { ...base, remote: "git@github.com:codeguru42/other.git" };
-  raw.repos.fork = {
-    ...base,
-    remote: "git@github.com:someone/tasker.git",
-    issueTracker: { ...base.issueTracker, project: "codeguru42/tasker" },
-  };
-  delete raw.repos.tasker;
-  return raw;
-}
+import {
+  captureIo,
+  seedTasks,
+  threeRepoConfig,
+  validConfig,
+  writeDataRootConfig,
+  writeTempConfig,
+} from "../helpers.js";
 
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";

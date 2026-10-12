@@ -19,6 +19,7 @@ import { fileURLToPath } from "node:url";
 import { expect, onTestFinished } from "vitest";
 import type { Io, RegisterCommand } from "../src/cli.js";
 import { type Config, parseConfig } from "../src/config/schema.js";
+import { failTask } from "../src/state/machine.js";
 import { createDataRoot } from "../src/store/layout.js";
 import { openStore, type Task } from "../src/store/store.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
@@ -138,6 +139,28 @@ export interface SeedTask {
   repoKey: string;
   state: string;
   at: string;
+  title?: string;
+  base?: string;
+  branch?: string;
+  worktreePath?: string;
+  // Fails the task at its at, with this message.
+  failWith?: string;
+}
+
+// The repos codeguru42/tasker and codeguru42/other, and the repo fork. The project of fork
+// is the same as the project of codeguru42/tasker, so one issue key matches two repos.
+export function threeRepoConfig() {
+  const raw = validConfig();
+  const base = raw.repos.tasker;
+  raw.repos["codeguru42/tasker"] = base;
+  raw.repos["codeguru42/other"] = { ...base, remote: "git@github.com:codeguru42/other.git" };
+  raw.repos.fork = {
+    ...base,
+    remote: "git@github.com:someone/tasker.git",
+    issueTracker: { ...base.issueTracker, project: "codeguru42/tasker" },
+  };
+  delete raw.repos.tasker;
+  return raw;
 }
 
 // Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
@@ -147,7 +170,16 @@ export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] 
   try {
     return tasks.map((task) => {
       at = new Date(task.at);
-      return store.createTask({ issueKey: task.issueKey, repoKey: task.repoKey, state: task.state });
+      const created = store.createTask({
+        issueKey: task.issueKey,
+        repoKey: task.repoKey,
+        state: task.state,
+        title: task.title,
+        base: task.base,
+        branch: task.branch,
+        worktreePath: task.worktreePath,
+      });
+      return task.failWith === undefined ? created : failTask(store, created.id, task.failWith);
     });
   } finally {
     store.close();
