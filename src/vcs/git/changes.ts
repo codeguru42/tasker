@@ -113,6 +113,7 @@ export interface UncommittedChange {
 // The uncommitted changes of the task worktree. An empty list means a clean worktree.
 // -z gives raw paths, and --no-renames gives one path for each record.
 // --untracked-files=normal shows untracked files, also when the configuration hides them.
+// GIT_OPTIONAL_LOCKS=0 stops git from taking index.lock and from writing the index.
 export async function uncommittedChanges(o: {
   clone: string;
   env: NodeJS.ProcessEnv;
@@ -122,7 +123,7 @@ export async function uncommittedChanges(o: {
   const target = await assertTaskWorktree({ clone, env, path });
   const output = await runGit(
     ["status", "--porcelain", "--untracked-files=normal", "--no-renames", "-z"],
-    { cwd: target, env },
+    { cwd: target, env: { ...env, GIT_OPTIONAL_LOCKS: "0" } },
   );
   return nulFields(output).map((field) => ({
     status: field.slice(0, 2),
