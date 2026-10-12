@@ -173,6 +173,17 @@ describe("git reconcile", () => {
       expect(error.message).toBe('not a task branch name: "HEAD"');
     });
 
+    it("refuses a start branch that is not a task branch before any git call", async () => {
+      const start = await state();
+      const plain = join(origin.dir, "plain");
+      mkdirSync(plain);
+      const error = await failureOf(
+        restore({ head: start.head, branch: "main" }, { path: plain }),
+        Error,
+      );
+      expect(error.message).toBe('not a task branch: "main"');
+    });
+
     it("names the state and the commands when the restore cannot move the branch", async () => {
       await commitInWorktree(path, env, { file: "a.txt" });
       const start = await state();
@@ -193,6 +204,16 @@ describe("git reconcile", () => {
   });
 
   describe("reconcileWorktree", () => {
+    it("refuses a worktree on a branch that is not a task branch and changes nothing", async () => {
+      await git("checkout", "-b", "feature-x");
+      const start = await state();
+      const branchHead = await git("rev-parse", "refs/heads/feature-x");
+      const error = await failureOf(reconcile("rebase"), Error);
+      expect(error.message).toBe('not a task branch: "feature-x"');
+      expect(await state()).toEqual(start);
+      expect(await git("rev-parse", "refs/heads/feature-x")).toBe(branchHead);
+    });
+
     it("rebases the task commits onto the base tip", async () => {
       await commitInWorktree(path, env, { file: "a.txt" });
       const tip = await moveBase({ file: "b.txt" });
