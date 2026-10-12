@@ -29,7 +29,7 @@ This section describes the design. No command uses this code yet.
 
 tasker makes one bare clone for each repo that it owns. The clone is at the `clone` path of `repoPaths()`: `<dataRoot>/clones/<slug>/repo.git`. A bare clone has no work tree.
 
-tasker starts each task in its own worktree. tasker makes the worktree from the bare clone. The worktree is under the `worktrees` path of `repoPaths()`: `<dataRoot>/worktrees/<slug>/`. Each task worktree is at `<worktrees>/<shortRef>`, on its task branch (see [workspaces.md](workspaces.md#workspaces)).
+tasker starts each task in its own worktree. tasker makes the worktree from the bare clone. The worktree is under the `worktrees` path of `repoPaths()`: `<dataRoot>/clones/<slug>/worktrees/`. Each task worktree is at `<worktrees>/<shortRef>`, on its task branch (see [workspaces.md](workspaces.md#workspaces)).
 
 tasker never works directly in the bare clone. Task work happens only in the worktree of the task.
 
@@ -382,7 +382,7 @@ If the push fails, the function reads the tip again with the rules of step 3. An
 | --- | --- |
 | `clone` | `<dataRoot>/clones/<slug>/repo.git` |
 | `publishTokens` | `<dataRoot>/clones/<slug>/publish-tokens/` |
-| `worktrees` | `<dataRoot>/worktrees/<slug>/` |
+| `worktrees` | `<dataRoot>/clones/<slug>/worktrees/` |
 
 `repoSlug()` turns the repo key into one safe folder name. It encodes the key as UTF-8 bytes. It keeps each byte that is `a-z`, `0-9` or `-`. It writes each other byte as `_` and two lower-case hex digits. For example, `a/b-c` gives `a_2fb-c`, `a-b/c` gives `a-b_2fc` and `Tasker` gives `_54asker`.
 

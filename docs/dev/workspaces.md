@@ -122,7 +122,7 @@ The shape check runs after the name check. A name has the task branch shape when
 
 ### The worktree path
 
-`taskWorktreePath(worktrees, shortRef)` gives `<worktrees>/<shortRef>`, for example `<dataRoot>/worktrees/<slug>/issue-14`. The folder name does not change when the title changes.
+`taskWorktreePath(worktrees, shortRef)` gives `<worktrees>/<shortRef>`, for example `<dataRoot>/clones/<slug>/worktrees/issue-14`. The folder name does not change when the title changes.
 
 ### List
 
