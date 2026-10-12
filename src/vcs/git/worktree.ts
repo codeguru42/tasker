@@ -133,6 +133,11 @@ function isFile(path: string): boolean {
   }
 }
 
+// True when <folder>/.git is a file, as in a linked worktree. A .git folder is a separate repo.
+function hasGitFile(folder: string): boolean {
+  return isFile(join(folder, ".git"));
+}
+
 // True when nothing is at path, or an empty folder (not a symlink) is. Git accepts both.
 function isMissingOrEmptyFolder(path: string): boolean {
   try {
@@ -229,7 +234,8 @@ export async function deleteTaskBranch(options: {
 }
 
 // Resets tracked files, then deletes untracked files and nested git repos. Ignored files stay.
-// Git with a wrong cwd changes another repo, so the path must be a worktree of the clone.
+// Git with a wrong cwd changes another repo, so the folder must be a listed worktree of the
+// clone with a .git file. Without that file, git would use a repo around the folder.
 // Reset runs first, so a deleted .gitignore comes back before clean reads it.
 export async function discardWorktreeChanges(options: {
   clone: string;
@@ -237,12 +243,16 @@ export async function discardWorktreeChanges(options: {
   path: string;
 }): Promise<void> {
   const { clone, env, path } = options;
+  const target = canonicalPath(path);
   const entries = await listWorktrees({ clone, env });
-  if (!entries.some((entry) => entry.path === canonicalPath(path))) {
+  if (!entries.some((entry) => entry.path === target)) {
     throw new Error(`not a worktree of the clone: ${path}`);
   }
-  await runGit(["reset", "--hard"], { cwd: path, env });
-  await runGit(["clean", "-ffd"], { cwd: path, env });
+  if (!hasGitFile(target)) {
+    throw new Error(`the worktree has no .git file: ${target}`);
+  }
+  await runGit(["reset", "--hard"], { cwd: target, env });
+  await runGit(["clean", "-ffd"], { cwd: target, env });
 }
 
 // The commit SHA of the local task branch. It reads the exact ref only, so git does not try
