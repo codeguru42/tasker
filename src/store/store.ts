@@ -56,6 +56,12 @@ export interface TaskChanges {
   base?: string | null;
 }
 
+export interface TaskFilter {
+  repoKey?: string;
+  issueKey?: string;
+  states?: readonly string[];
+}
+
 export interface TaskEvent {
   id: number;
   taskId: number;
@@ -72,6 +78,9 @@ export interface StoreOptions {
 export interface TaskStore {
   createTask(task: NewTask): Task;
   getTask(id: number): Task | undefined;
+  // With no `states`, only the active tasks. An empty `states` array matches no task.
+  // The newest change comes first, and the higher id comes first on a tie.
+  listTasks(filter?: TaskFilter): Task[];
   findActiveTask(repoKey: string, issueKey: string): Task | undefined;
   // The active task when one exists, else the task with the highest id.
   findLatestTask(repoKey: string, issueKey: string): Task | undefined;
@@ -245,6 +254,33 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     getTask: readTask,
+
+    listTasks(filter = {}) {
+      const conditions: string[] = [];
+      const params: string[] = [];
+      if (filter.repoKey !== undefined) {
+        conditions.push("repo_key = ?");
+        params.push(filter.repoKey);
+      }
+      if (filter.issueKey !== undefined) {
+        conditions.push("issue_key = ?");
+        params.push(filter.issueKey);
+      }
+      if (filter.states === undefined) {
+        conditions.push(ACTIVE);
+      } else {
+        // SQLite reads `IN ()` as false, so an empty list matches no row.
+        conditions.push(`state IN (${filter.states.map(() => "?").join(", ")})`);
+        params.push(...filter.states);
+      }
+      const rows = db
+        .prepare(
+          `SELECT * FROM tasks WHERE ${conditions.join(" AND ")}
+           ORDER BY updated_at DESC, id DESC`,
+        )
+        .all(...params) as unknown as TaskRow[];
+      return rows.map(rowToTask);
+    },
 
     findActiveTask(repoKey, issueKey) {
       const row = statements.selectActiveTask.get(repoKey, issueKey) as
