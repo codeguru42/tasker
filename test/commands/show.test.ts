@@ -153,6 +153,74 @@ describe("show", () => {
     });
   });
 
+  it("prints the failure of a failed task", async () => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      {
+        issueKey: `${TASKER}#5`,
+        repoKey: TASKER,
+        state: "executing",
+        at: at(4),
+        failWith: "git push failed",
+      },
+    ]);
+
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "issue: codeguru42/tasker#5\n" +
+        "repo: codeguru42/tasker\n" +
+        "title: -\n" +
+        "state: failed\n" +
+        "attempt: 1\n" +
+        "base: -\n" +
+        "branch: -\n" +
+        "worktree: -\n" +
+        "created: 2026-01-04T00:00:00.000Z\n" +
+        "updated: 2026-01-04T00:00:00.000Z\n" +
+        'last event: 2026-01-04T00:00:00.000Z transition {"error":"git push failed","from":"executing","to":"failed"}\n' +
+        "failed in: executing\n" +
+        "error: git push failed\n",
+    });
+  });
+
+  it("prints each line end in a value as the two characters \\n", async () => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      {
+        issueKey: `${TASKER}#5`,
+        repoKey: TASKER,
+        state: "executing",
+        at: at(4),
+        failWith: "git push failed\r\nexit 128\rdone\nend",
+      },
+    ]);
+
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "issue: codeguru42/tasker#5\n" +
+        "repo: codeguru42/tasker\n" +
+        "title: -\n" +
+        "state: failed\n" +
+        "attempt: 1\n" +
+        "base: -\n" +
+        "branch: -\n" +
+        "worktree: -\n" +
+        "created: 2026-01-04T00:00:00.000Z\n" +
+        "updated: 2026-01-04T00:00:00.000Z\n" +
+        'last event: 2026-01-04T00:00:00.000Z transition {"error":"git push failed\\r\\nexit 128\\rdone\\nend","from":"executing","to":"failed"}\n' +
+        "failed in: executing\n" +
+        "error: git push failed\\nexit 128\\ndone\\nend\n",
+    });
+  });
+
   it("prints the description of the command and of --repo for --help", async () => {
     const io = captureIo();
 
