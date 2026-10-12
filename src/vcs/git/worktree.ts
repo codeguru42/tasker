@@ -9,7 +9,10 @@ const MAX_BRANCH_LENGTH = 100;
 
 const SITE = `${SITE_LABEL}(?:\\.${SITE_LABEL})*`;
 const SHORT_REF = `(?:issue-${ISSUE_NUMBER}|(?:(?<site>${SITE})-browse-)?${JIRA_PROJECT}-${ISSUE_NUMBER})`;
+// The title slug: lower case, as taskBranchName() makes it. pathSlug() strips "-" and "." at the ends.
+const TITLE_SLUG = "[a-z0-9_](?:[a-z0-9._-]*[a-z0-9_])?";
 const SHORT_REF_PATTERN = new RegExp(`^${SHORT_REF}$`);
+const TASK_BRANCH_PATTERN = new RegExp(`^${SHORT_REF}(?:-${TITLE_SLUG})?$`);
 
 // True when match is a full match and its site, when present, is lower case,
 // because the Jira parser writes the site in lower case.
@@ -41,6 +44,14 @@ function isTaskBranch(name: string): boolean {
 // True when value is a short ref that the issue key parsers make.
 export function isShortRef(value: string): boolean {
   return isTaskBranch(value) && lowerSiteMatch(SHORT_REF_PATTERN.exec(value));
+}
+
+// Throws unless name has the shape that taskBranchName() makes: a short ref alone,
+// or a short ref, "-" and a lower-case title slug. Run it after assertTaskBranch().
+export function assertTaskBranchShape(name: string): void {
+  if (!(isTaskBranch(name) && lowerSiteMatch(TASK_BRANCH_PATTERN.exec(name)))) {
+    throw new Error(`not a task branch: ${JSON.stringify(name)}`);
+  }
 }
 
 // Throws unless name passes isTaskBranch(). Run it before any git call that takes a branch.
@@ -244,6 +255,7 @@ export async function deleteTaskBranch(options: {
   branch: string;
 }): Promise<void> {
   assertTaskBranch(options.branch);
+  assertTaskBranchShape(options.branch);
   await runGit(["branch", "-D", "--", options.branch], {
     gitDir: options.clone,
     env: options.env,
