@@ -1,8 +1,10 @@
+import { existsSync } from "node:fs";
 import { userInfo } from "node:os";
 import type { Check, CheckResult } from "../../doctor/check.js";
 import type { GitVcsConfig } from "./provision.js";
-import { GitNotInstalledError, runGit } from "./run.js";
+import { GitError, GitNotInstalledError, runGit } from "./run.js";
 import { hideSshKey, remoteCwd } from "./ssh.js";
+import { withoutLineEnd } from "./worktree.js";
 
 const MINIMUM_GIT = { major: 2, minor: 20 };
 const MINIMUM_TEXT = `${MINIMUM_GIT.major}.${MINIMUM_GIT.minor}`;
@@ -14,6 +16,10 @@ export interface GitDoctorRepo {
   clone: string;
   config: GitVcsConfig;
 }
+
+// The result of the identity check and the lock-file check when the clone does not exist yet.
+// Provision makes the clone and writes the identity at the first start, so this is not a problem.
+const NO_CLONE: CheckResult = { status: "ok", detail: "no clone yet" };
 
 function timedOut(timeoutMs: number): CheckResult {
   return { status: "error", detail: `the check did not finish in ${timeoutMs} ms` };
@@ -97,6 +103,76 @@ export function gitVersionCheck(timeoutMs = 5000): Check {
         };
       }
       return { status: "ok", detail: `git ${found} (minimum ${MINIMUM_TEXT})` };
+    },
+  );
+}
+
+// The value of a git configuration key in the clone, as a commit reads it (the clone, then the
+// global files). An empty value and a missing value both give "".
+async function configValue(
+  clone: string,
+  key: string,
+  env: NodeJS.ProcessEnv,
+  signal: AbortSignal,
+): Promise<string> {
+  try {
+    return withoutLineEnd(await runGit(["config", "--get", key], { gitDir: clone, env, signal }));
+  } catch (error) {
+    if (error instanceof GitError && error.exitCode === 1) {
+      return "";
+    }
+    throw error;
+  }
+}
+
+// Compares user.name and user.email that a commit in the clone gets with vcs.config.
+// The check reads the git configuration only. A GIT_AUTHOR_NAME variable at commit time wins.
+export function identityCheck(repo: GitDoctorRepo, timeoutMs = 5000): Check {
+  return makeCheck(
+    {
+      name: `git identity: ${repo.key}`,
+      required: false,
+      timeoutMs,
+      sshKey: repo.config.sshKey,
+    },
+    async (env, { signal }) => {
+      // This test comes first, because git --git-dir <missing> reads the global value.
+      if (!existsSync(repo.clone)) {
+        return NO_CLONE;
+      }
+      const name = await configValue(repo.clone, "user.name", env, signal);
+      const email = await configValue(repo.clone, "user.email", env, signal);
+      const fields = [
+        { option: "authorName", key: "user.name", want: repo.config.authorName, found: name },
+        { option: "authorEmail", key: "user.email", want: repo.config.authorEmail, found: email },
+      ];
+      const mismatches = fields
+        .filter((field) => field.want !== undefined && field.want !== field.found)
+        .map((field) =>
+          field.found === ""
+            ? `vcs.config.${field.option} is "${field.want}", but a commit in the clone gets no ${field.key}`
+            : `vcs.config.${field.option} is "${field.want}", but a commit in the clone gets "${field.found}"`,
+        );
+      if (mismatches.length > 0) {
+        return {
+          status: "warn",
+          detail: mismatches.join("\n"),
+          remediation:
+            "Provision the clone again. Provision writes vcs.config.authorName and vcs.config.authorEmail to the clone configuration.",
+        };
+      }
+      if (name === "" || email === "") {
+        const missing = [name === "" ? "user.name" : "", email === "" ? "user.email" : ""]
+          .filter((key) => key !== "")
+          .join(" and ");
+        return {
+          status: "warn",
+          detail: `a commit in the clone gets no ${missing}`,
+          remediation:
+            "Set vcs.config.authorName and vcs.config.authorEmail, or set a global git identity.",
+        };
+      }
+      return { status: "ok", detail: `a commit in the clone gets ${name} <${email}>` };
     },
   );
 }
