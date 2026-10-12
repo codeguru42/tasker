@@ -1,6 +1,6 @@
 # Issue trackers
 
-`src/issues/` holds the issue tracker code. No command uses this code yet. `tasker start` uses it in M4. `tasker start` uses the assign and the in-progress write in M10, and `tasker finish` uses the done write in M10.
+`src/issues/` holds the issue tracker code. No command uses this code yet. `tasker start` uses it in M4. `tasker start` uses the assign and the in-progress write in M10, and `tasker finish` uses the done write in M10. `tasker doctor` runs the doctor checks of the GitHub tracker in M19.
 
 ## The GitHub folder
 
@@ -8,11 +8,13 @@ All code that starts `gh` is in `src/issues/github/`. The test `test/issues/gith
 
 ## The files of src/issues/
 
-- `src/issues/github/run.ts` holds `runGh()`, `RunGhOptions`, `GhError`, `GhNotInstalledError` and `GhLoginError`.
+- `src/issues/github/run.ts` holds `runGh()`, `readGhVersion()`, `RunGhOptions`, `GhError`, `GhNotInstalledError` and `GhLoginError`.
 - `src/issues/issue.ts` holds `Issue`, `Blocker`, `IssueReadError`, `IssueWriteError`, `BaseHintError`, `baseBranchHint()` and `inProgressMarker()`.
 - `src/issues/github/issue.ts` holds `readGithubIssue()` and `issueState()`.
 - `src/issues/github/blockers.ts` holds `readGithubBlockers()`.
 - `src/issues/github/write.ts` holds `assignGithubIssue()`, `markGithubInProgress()` and `markGithubDone()`.
+- `src/issues/github/auth.ts` holds `authStatus()` and `AuthStatus`.
+- `src/issues/github/doctor.ts` holds `githubDoctorChecks()`, `ghVersionCheck()`, `ghAuthCheck()`, `ghProjectCheck()`, `ghLabelsCheck()` and `GithubDoctorRepo`.
 
 Later issues add their files to this list.
 
@@ -24,13 +26,22 @@ Later issues add their files to this list.
 
 `gh` gets no input stream. Its output goes to pipes, never to the terminal. `runGh()` writes nothing to the console or a log. `gh` runs in the cwd of tasker. Each call that acts on a repo must name the repo (`--repo <project>`, `-R <project>`, or the full path in `gh api repos/<owner>/<repo>/...`), because `runGh()` removes `GH_REPO`, and without a repo gh reads the repo from the git folder of its cwd.
 
-`runGh()` has no `signal` option and no `cwd` option.
+`options.signal` stops `gh` with SIGTERM, and `runGh()` rejects with an `AbortError`. A signal that already aborted rejects before any `gh` starts. The signal stops the main call, and it also stops the token call under the rule in [The token](#the-token). `runGh()` has no `cwd` option.
+
+`readGhVersion(env, { signal })` runs `gh --version` with the environment of `runGh()` and no token. It makes no token call, because the version needs no login. It resolves with the stdout.
 
 A `gh api` call sends a string value with `-f` and only a number with `-F`. `-F` turns digits, `true`, `false` and `null` into JSON types. A string such as a name of only digits, or `true`, then has the wrong type, and GitHub refuses the variable. `-f` always sends a string.
 
 ## The token
 
 Before the first call of an account, `runGh()` reads its token with `gh auth token --hostname github.com --user <account>`. With `--user`, gh 2.101.0 ignores `GH_TOKEN`. tasker reads the token one time for each account in one process. Two calls at the same time for one account start one token call. A failed read is not kept, so the next call reads the token again. The environment of the token call is in [The environment](#the-environment).
+
+A caller that waits for the token read counts as a waiter. A caller with no signal never leaves the count until the read ends, so it never stops the read. The rules for a call with a signal are:
+
+- A caller joins the count when it starts to wait. It leaves once: when the read ends, or when its signal aborts.
+- A caller whose signal aborts rejects at once with an `AbortError`. The other callers keep waiting.
+- When the last waiter leaves by an abort while the read is pending, `runGh()` stops the token call. In the same step, it deletes the read from the cache, if the cache still holds it for the account. As a result, a later caller starts a new read and never joins the stopped one.
+- The stopped read rejects. A read that fails by itself leaves the cache in the same way.
 
 ## The environment
 
@@ -159,18 +170,79 @@ could not add the label "wip" of issueTracker.inProgressLabel to octo/repo#7: gh
 failed to update 1 issue
 ```
 
+## Auth status
+
+`authStatus(account, env, { signal })` in `src/issues/github/auth.ts` tells whether `gh` is logged in as the account. It resolves with `{ ok, login?, detail }`. It runs `gh api user --jq .login` through `runGh()`, so it reads the token as every call does.
+
+- The login is the trimmed stdout. When the login is not empty and equals the account, the result is `ok`. The compare uses `asciiFold()` from `src/issue-key/github.ts` on both sides, the ASCII-only fold of GitHub names. The detail is `gh is logged in as <login>`.
+- An empty login gives `ok: false` with the detail `gh api user gave no login for the account <account>`.
+- Another login gives `ok: false`, the login, and the detail `the token of the account <account> is for the login <login>`.
+- A `GhLoginError`, a `GhError` or a `GhNotInstalledError` gives `ok: false`. The detail is the message of the error. These messages never hold the token.
+- An `AbortError` and every other error are thrown again.
+
+## Doctor checks
+
+`src/issues/github/doctor.ts` holds the doctor checks of the GitHub tracker. No command runs them yet. The `tasker doctor` command gets them from `githubDoctorChecks(repos)`. A repo is a `GithubDoctorRepo`: `{ key, issueTracker }`, where `issueTracker` is the merged configuration. The project is `issueTracker.project`, or the repo key when it is not set. The account is `issueTracker.account`.
+
+Each check uses the shared wrapper `timedCheck()`. [The doctor checks](doctor.md) give its timeout rules. Each check passes its own signal to every `gh` call that it makes, the token call included.
+
+| Check | `name` | `required` | `timeoutMs` | Runs |
+| --- | --- | --- | --- | --- |
+| Version | `gh version` | true | 5000 | once, first |
+| Auth | `gh auth: <account>` | true | 15000 | once for each distinct account |
+| Project | `gh project: <key>` | true | 15000 | once for each github repo |
+| Labels | `gh labels: <key>` | true | 15000 | once for each github repo |
+
+`githubDoctorChecks()` gives the checks in this order. The version check runs once, first, and only when at least one repo uses the github tracker. A list with no github repo gives `[]`. Then there is one auth check for each distinct account, in the order of first use. The match is exact, the same as the token cache. Then, for each github repo in the order of the configuration, there is the project check and then the labels check.
+
+### Version
+
+The check runs `readGhVersion()` and reads the first line, without a `\r` at its end. The line must match `gh version <major>.<minor>.<patch>`. The check compares the three numbers as numbers with 2.40.0. It ignores a suffix right after the patch number, for example `-rc.1` or `-12-gabc`, so `2.40.0-rc.1` counts as 2.40.0. The version in the detail is the whole word after `gh version `.
+
+- `gh` is not installed: `error`, with the remediation `Install gh 2.40.0 or newer.`
+- A line that does not match: `error`, with the detail `cannot read the gh version from: <line>`.
+- A version older than 2.40.0: `error`, with the same remediation.
+- Otherwise: `ok`, with the detail `gh <version> (minimum 2.40.0)`.
+
+The minimum is 2.40.0 because `gh auth token` has the `--user` flag from that version. The source file `pkg/cmd/auth/token/token.go` has the flag at the tag `v2.40.0`, and has no flag at `v2.39.2`. The release notes of 2.40.0 add multi-account support.
+
+### Auth
+
+The check runs `authStatus()`. A status that is `ok` gives `ok`. Any other status gives `error` with the detail of the status and the remediation ``Run `gh auth login --hostname github.com` and log in as <account>.``
+
+### Project
+
+The check runs `gh repo view <project> --json nameWithOwner` through `runGh()`. Success gives `ok`. Any error that is not an `AbortError` gives `error`, with the message of the error in the detail and a remediation that names `issueTracker.project` of the repo.
+
+### Labels
+
+The check reads only the labels that tasker writes:
+
+1. `issueTracker.inProgressLabel`, when `updateOnStart` is true and the label is set. A missing label gives `error`, because `tasker start` fails.
+2. `issueTracker.doneLabel`, when `updateOnFinish` is true and the label is set. A missing label gives `warn`, because `tasker finish` only warns.
+
+When no label applies, the check gives `ok` with the detail `<key>: no label to check`, and makes no `gh` call. Else it reads each label, one after the other, with `gh api repos/<project>/labels/<name>`. This is a GET with no fields. The name goes through `encodeURIComponent()`, so a space becomes `%20` and `/` becomes `%2F`. A `+` is not a space in a path. The encode also changes `{` and `}`, so a label name never hits a placeholder that `gh api` fills, such as `{owner}`.
+
+A label that exists gives the line `the label "<name>" of <configKey> exists`. A missing label gives exit code 1 and `(HTTP 404)` in stderr. GitHub gives the same 404 for a repo that does not exist, so the project check of the same repo names the real cause. A missing label gives the line `the label "<name>" of <configKey> does not exist in <project>: <reason>`. Any other error is thrown again, so it becomes the `error` of the check, with its message.
+
+The status is the worst status of the labels. The detail is `<key>:` and then one line for each label, joined with line ends. When a label is missing, the remediation is `Create each missing label in <project> on GitHub, or change <configKey>.` It names both keys when both labels are missing.
+
+### Read-only
+
+The checks never change GitHub. They make only these `gh` calls: `gh --version`, `gh auth token`, `gh api user`, `gh repo view` and a GET of `gh api repos/<project>/labels/<name>`. The check never creates a label.
+
 ## Tests
 
-The fake `gh` is in `test/helpers.ts`. It uses shell builtins only, so the real `gh` can never run.
+The fake `gh` is in `test/helpers.ts`. It uses shell builtins, and the real `sleep` only for a delay, so the real `gh` can never run.
 
 - `fakeGh(dir, baseEnv, answers, { logEnv })` writes the fake into `<dir>/bin` and returns an env with that folder as the only `PATH` folder. It also returns `calls()`, `unanswered()` and `assertAnswered()`.
 - `writeFakeGh()` writes the fake without vitest hooks, so a child process can use it.
 - `ghTokenAnswer(account, token)` is the answer of the token call.
 
-Each answer names the whole argument list. It must match exactly, in order. The first matching answer wins. An answer can set `stdout`, `stderr`, `exitCode` and `killWith` (a signal name: the fake prints its output, then stops itself with that signal).
+Each answer names the whole argument list. It must match exactly, in order. The first matching answer wins. An answer can set `stdout`, `stderr`, `exitCode`, `killWith` and `delaySeconds`. `killWith` is a signal name: the fake prints its output, then stops itself with that signal. `delaySeconds` makes the fake run the real `sleep` by its absolute path for that many seconds before it prints.
 
 A call with no answer exits with 99 and goes into `unanswered()`. It fails the test, also when the code under test catches the error.
 
-`test/issues/github/run.test.ts` calls `vi.resetModules()` and imports `run.ts` again before each test, so each test starts with an empty token cache. `test/issues/github/write.test.ts` does the same.
+`test/issues/github/run.test.ts` calls `vi.resetModules()` and imports `run.ts` again before each test, so each test starts with an empty token cache. `test/issues/github/write.test.ts`, `test/issues/github/auth.test.ts` and `test/issues/github/doctor.test.ts` do the same. `auth.test.ts` tests `auth.ts`, and `doctor.test.ts` tests `doctor.ts`. `test/doctor/timed-check.test.ts` tests the shared wrapper.
 
 `test/issues/issue.test.ts`, `test/issues/github/issue.test.ts` and `test/issues/github/blockers.test.ts` test the new files. `test/issues/github/write.test.ts` tests `write.ts`.
