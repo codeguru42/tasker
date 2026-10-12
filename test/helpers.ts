@@ -12,6 +12,7 @@ import { tmpdir, userInfo } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import type { Io, RegisterCommand } from "../src/cli.js";
+import { provisionClone } from "../src/vcs/git/provision.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
 
@@ -230,6 +231,19 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
       rmSync(dir, { recursive: true, force: true });
     },
   };
+}
+
+// A bare clone of origin, made by provisionClone(). origin.remove() deletes it.
+export async function makeGitClone(origin: GitOrigin): Promise<string> {
+  const clone = join(origin.dir, "clone", "repo.git");
+  await provisionClone({
+    remote: origin.path,
+    clone,
+    config: {},
+    env: origin.env,
+    publishTokens: join(origin.dir, "clone", "publish-tokens"),
+  });
+  return clone;
 }
 
 // Writes an executable shell script named git into binDir. body is the script after "#!/bin/sh".
