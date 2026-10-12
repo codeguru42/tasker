@@ -136,11 +136,11 @@ The table shows each state and what create does. A stop inside `git worktree add
 | --- | --- | --- |
 | No branch, no worktree, the path is missing or an empty folder | Adds a new branch from the base, and the worktree | `created` |
 | The branch exists, no worktree, the path is missing or an empty folder (stopped: git made the branch, or only an admin folder, and then stopped) | Adds a worktree for the branch | `reused-branch` |
-| An unlocked worktree on the branch, with the folder and `.git` | Changes nothing | `reused-worktree` |
+| An unlocked worktree on the branch, with the folder and a `.git` file | Changes nothing | `reused-worktree` |
 | An unlocked worktree on the branch, with the folder gone | Removes that worktree entry, then adds a worktree for the branch | `reused-branch` |
 | A worktree on the branch locked with the reason `initializing`, with a `.git` file (stopped: the checkout is missing or partial) | Runs `git reset --hard` in the folder, then unlocks the worktree | `reused-worktree` |
 | Any other locked worktree, for example locked `initializing` with no `.git` file or with a detached head (stopped), another reason, or no reason | Throws `the worktree is locked: <target> (<reason>)` | none |
-| An unlocked worktree on the branch, with the folder but no `.git` | Throws `the worktree has no .git file: <target>` | none |
+| An unlocked worktree on the branch, with the folder but no `.git` file (no `.git`, or a `.git` folder) | Throws `the worktree has no .git file: <target>` | none |
 | An unlocked worktree on another branch, or a detached one | Throws `the worktree path has another branch: <target> (<branch or detached>)` | none |
 | The branch is in a worktree at another path | Throws `the branch <branch> is in another worktree: <path>` | none |
 | A file, a symlink or a folder with content at the path | Throws `something else is at the worktree path: <target>` | none |
@@ -167,7 +167,7 @@ The function deletes any local branch that passes the name check. This includes 
 
 ### Discard
 
-`discardWorktreeChanges({ clone, env, path })` throws `not a worktree of the clone: <path>` when `path` is not a worktree of the clone. Git with a wrong working folder changes another repo, so the function checks first. Then it runs these commands in the worktree, in this order:
+`discardWorktreeChanges({ clone, env, path })` throws `not a worktree of the clone: <path>` when `path` is not a worktree of the clone. When the folder has no `.git` file, it throws `the worktree has no .git file: <target>`. Git with a wrong working folder changes another repo, so both checks run before any git command. Then the function runs these commands in the real path of the worktree, in this order:
 
 1. `git reset --hard`. A deleted `.gitignore` comes back before the next command reads it.
 2. `git clean -ffd`. This deletes untracked files and untracked folders, also a nested git repo.
