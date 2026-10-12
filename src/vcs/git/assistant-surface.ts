@@ -1,6 +1,10 @@
+import { mkdirSync } from "node:fs";
 import { userInfo } from "node:os";
+import { join, resolve } from "node:path";
 import type { GitVcsConfig } from "./provision.js";
+import { runGit } from "./run.js";
 import { homeKeyPath } from "./ssh.js";
+import { assertTaskWorktree, withoutLineEnd } from "./worktree.js";
 
 // The commit rules of the execute prompt. The caller replaces {{BASE_REF}} with the base revision.
 export const EXECUTE_COMMIT_TEXT = [
@@ -25,11 +29,29 @@ export function readDenyPaths(config: GitVcsConfig): string[] {
   return [key];
 }
 
-// The folders that a git commit in the task worktree writes to, as absolute paths.
+// The folders that a git commit in the task worktree writes to, as absolute paths:
+// objects/, refs/ and logs/ of the clone, and the admin dir of the worktree.
+// Not the whole clone, and not hooks/ or config, because tasker's later git calls run them.
+// It creates logs/ when it is missing, because a sandbox cannot bind a missing path.
 export async function sandboxWritePaths(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
   path: string;
 }): Promise<string[]> {
-  return options.clone === "" ? [] : [];
+  const { env } = options;
+  // The guard also makes sure that the worktree uses its own git dir in the clone.
+  const target = await assertTaskWorktree(options);
+  // Two calls, not one: one call prints two paths on two lines, and a path can hold a newline.
+  // --path-format=absolute needs git 2.31, so resolve each path against the worktree.
+  const common = resolve(
+    target,
+    withoutLineEnd(await runGit(["rev-parse", "--git-common-dir"], { cwd: target, env })),
+  );
+  const admin = resolve(
+    target,
+    withoutLineEnd(await runGit(["rev-parse", "--git-dir"], { cwd: target, env })),
+  );
+  const logs = join(common, "logs");
+  mkdirSync(logs, { recursive: true });
+  return [join(common, "objects"), join(common, "refs"), logs, admin];
 }

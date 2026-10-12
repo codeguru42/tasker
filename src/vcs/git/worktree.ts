@@ -230,6 +230,11 @@ export async function deleteTaskBranch(options: {
   });
 }
 
+// text without one "\n" or "\r\n" at its end. A path can end with a space, so do not trim().
+export function withoutLineEnd(text: string): string {
+  return text.replace(/\r?\n$/, "");
+}
+
 // Throws unless path is a listed worktree of the clone with a .git file. Gives the real path.
 // Git with a wrong cwd changes another repo. Without a .git file, git would use a repo around
 // the folder. The guard only reads.
