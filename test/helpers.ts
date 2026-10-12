@@ -16,9 +16,12 @@ import { tmpdir, userInfo } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
-import { expect, onTestFinished } from "vitest";
-import type { Io, RegisterCommand } from "../src/cli.js";
+import { expect, onTestFinished, vi } from "vitest";
+import { type Io, type RegisterCommand, run } from "../src/cli.js";
+import { loadConfig } from "../src/config/load.js";
 import { type Config, parseConfig } from "../src/config/schema.js";
+import { IssueKeyError } from "../src/issue-key/ref.js";
+import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { failTask } from "../src/state/machine.js";
 import { createDataRoot } from "../src/store/layout.js";
 import { openStore, type Task } from "../src/store/store.js";
@@ -49,6 +52,16 @@ export const greet: RegisterCommand = (program) => {
     .description("Say hello")
     .option("--name <name>", "Who to greet");
 };
+
+// Runs argv with only this command and gives the exit code and the whole stdout and stderr.
+export async function runCommand(
+  command: RegisterCommand,
+  ...argv: string[]
+): Promise<{ code: number; out: string; err: string }> {
+  const io = captureIo();
+  const code = await run(argv, { commands: [command], io });
+  return { code, out: io.out.join(""), err: io.err.join("") };
+}
 
 // A new object for each call, so a test can change it freely.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -161,6 +174,35 @@ export function threeRepoConfig() {
   };
   delete raw.repos.tasker;
   return raw;
+}
+
+// The time 00:00 UTC of a day in January 2026, for example dayAt(2) is 2026-01-02T00:00:00.000Z.
+export function dayAt(day: number): string {
+  return `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
+}
+
+// Writes threeRepoConfig() with writeDataRootConfig() and points TASKER_CONFIG at it.
+// Call it inside a test. After the test, it restores the env and removes the folder.
+export function useThreeRepoDataRoot(): { dir: string; path: string; dataRoot: string } {
+  const written = writeDataRootConfig(threeRepoConfig());
+  vi.stubEnv("TASKER_CONFIG", written.path);
+  onTestFinished(() => {
+    vi.unstubAllEnvs();
+    rmSync(written.dir, { recursive: true, force: true });
+  });
+  return written;
+}
+
+// The message of the IssueKeyError that resolveIssueKey() throws for key with the
+// configuration at configPath. It fails the test when the key resolves.
+export function issueKeyErrorMessage(key: string, configPath: string): string {
+  try {
+    resolveIssueKey(key, loadConfig({ TASKER_CONFIG: configPath }));
+  } catch (error) {
+    if (!(error instanceof IssueKeyError)) throw error;
+    return error.message;
+  }
+  return expect.fail(`the issue key ${key} resolves`);
 }
 
 // Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
