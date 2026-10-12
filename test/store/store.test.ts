@@ -7,6 +7,7 @@ import { migrate, schemaVersion } from "../../src/store/migrate.js";
 import { migrations } from "../../src/store/migrations.js";
 import { openStore, type Task, type TaskStore } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
+import { TERMINAL_STATES } from "../../src/state/machine.js";
 import { makeTempDir, repoRoot, tableNames } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
@@ -45,6 +46,27 @@ describe("task store", () => {
     state: "new",
   };
 
+  const rawDb = () => new DatabaseSync(dbPath);
+
+  const eventCount = (): number => {
+    const db = rawDb();
+    try {
+      const row = db.prepare("SELECT COUNT(*) AS n FROM events").get() as {
+        n: number;
+      };
+      return row.n;
+    } finally {
+      db.close();
+    }
+  };
+
+  const insertRawTask = (db: DatabaseSync, repoKey: string, state: string) =>
+    db
+      .prepare(
+        "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES ('a/b#1', ?, ?, 't', 't')",
+      )
+      .run(repoKey, state);
+
   it("creates a task with equal timestamps and no branch", () => {
     const task = store.createTask(newTask);
     expect(typeof task.id).toBe("number");
@@ -53,8 +75,158 @@ describe("task store", () => {
       ...newTask,
       branch: null,
       worktreePath: null,
+      title: null,
+      shortRef: null,
+      base: null,
+      attempt: 1,
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+  });
+
+  it("stores the title, short ref and base of a new task", () => {
+    const task = store.createTask({
+      ...newTask,
+      title: "Add a store",
+      shortRef: "t6",
+      base: "main",
+    });
+    expect(task).toMatchObject({ title: "Add a store", shortRef: "t6", base: "main" });
+    expect(store.getTask(task.id)).toEqual(task);
+  });
+
+  it("sets the title, short ref and base, and clears each with null", () => {
+    const task = store.createTask({ ...newTask, branch: "issue-6" });
+    const set = store.updateTask(task.id, {
+      title: "T",
+      shortRef: "r",
+      base: "main",
+    });
+    expect(set).toMatchObject({ title: "T", shortRef: "r", base: "main", branch: "issue-6" });
+    const kept = store.updateTask(task.id, { state: "planned" });
+    expect(kept).toMatchObject({ title: "T", shortRef: "r", base: "main" });
+    const cleared = store.updateTask(task.id, {
+      title: null,
+      shortRef: null,
+      base: null,
+    });
+    expect(cleared).toMatchObject({
+      title: null,
+      shortRef: null,
+      base: null,
+      branch: "issue-6",
+    });
+    expect(store.getTask(task.id)).toEqual(cleared);
+  });
+
+  describe("active task index", () => {
+    it("rejects a second active row for one repo and issue", () => {
+      store.createTask(newTask);
+      const before = eventCount();
+      const db = rawDb();
+      try {
+        expect(() => insertRawTask(db, "tasker", "planning")).toThrow(
+          /UNIQUE constraint failed/,
+        );
+        const row = db
+          .prepare("SELECT COUNT(*) AS n FROM tasks WHERE repo_key = 'tasker'")
+          .get() as { n: number };
+        expect(row.n).toBe(1);
+      } finally {
+        db.close();
+      }
+      expect(eventCount()).toBe(before);
+    });
+
+    it("permits one active row in each of two repos", () => {
+      const db = rawDb();
+      try {
+        insertRawTask(db, "tasker", "planning");
+        expect(() => insertRawTask(db, "other", "planning")).not.toThrow();
+      } finally {
+        db.close();
+      }
+    });
+
+    it.each(["cancelled", "finished"])(
+      "permits an active row after a %s row of the same repo and issue",
+      (state) => {
+        const db = rawDb();
+        try {
+          insertRawTask(db, "tasker", state);
+          expect(() => insertRawTask(db, "tasker", "planning")).not.toThrow();
+          const row = db.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
+            n: number;
+          };
+          expect(row.n).toBe(2);
+        } finally {
+          db.close();
+        }
+      },
+    );
+
+    it("lists in the migration the same states as TERMINAL_STATES", () => {
+      const list = /NOT IN \(([^)]*)\)/.exec(migrations[3])?.[1] ?? "";
+      const states = list
+        .split(",")
+        .map((s) => s.trim().replace(/^'|'$/g, ""))
+        .sort();
+      expect(states).toEqual([...TERMINAL_STATES].sort());
+    });
+  });
+
+  describe("upgrade from version 3", () => {
+    it("gives old rows attempt 1 and null fields", () => {
+      const oldPath = join(dir, "old3.db");
+      makeOldDatabase(oldPath, 3);
+      const raw = new DatabaseSync(oldPath);
+      try {
+        raw.exec(
+          "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES ('a/b#1', 'tasker', 'planning', 't', 't')",
+        );
+      } finally {
+        raw.close();
+      }
+      const upgraded = openStore(oldPath, { now });
+      try {
+        expect(upgraded.getTask(1)).toMatchObject({
+          attempt: 1,
+          title: null,
+          shortRef: null,
+          base: null,
+        });
+      } finally {
+        upgraded.close();
+      }
+      const check = new DatabaseSync(oldPath);
+      try {
+        expect(schemaVersion(check)).toBe(migrations.length);
+      } finally {
+        check.close();
+      }
+    });
+
+    it("fails and keeps version 3 when two active rows share a repo and issue", () => {
+      const oldPath = join(dir, "dup3.db");
+      makeOldDatabase(oldPath, 3);
+      const raw = new DatabaseSync(oldPath);
+      try {
+        insertRawTask(raw, "tasker", "planning");
+        insertRawTask(raw, "tasker", "new");
+      } finally {
+        raw.close();
+      }
+      expect(() => openStore(oldPath, { now })).toThrow(/UNIQUE constraint failed/);
+      const check = new DatabaseSync(oldPath);
+      try {
+        expect(schemaVersion(check)).toBe(3);
+        const row = check.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
+          n: number;
+        };
+        expect(row.n).toBe(2);
+      } finally {
+        check.close();
+      }
     });
   });
 
@@ -111,14 +283,6 @@ describe("task store", () => {
     }
     expect(caught).toBe(error);
     expect(store.getTask(task.id)).toEqual(task);
-  });
-
-  it("allows two tasks for the same repo and issue", () => {
-    const first = store.createTask(newTask);
-    const second = store.createTask(newTask);
-    expect(second.id).not.toBe(first.id);
-    expect(store.getTask(first.id)).toEqual(first);
-    expect(store.getTask(second.id)).toEqual(second);
   });
 
   it("reads the task again after a reopen", () => {
@@ -180,7 +344,7 @@ describe("task store", () => {
 
     it("lists the events of one task in the order they were added", () => {
       const a = store.createTask(newTask);
-      const b = store.createTask(newTask);
+      const b = store.createTask({ ...newTask, issueKey: "codeguru42/tasker#99" });
       store.appendEvent(a.id, "one");
       store.appendEvent(b.id, "other");
       store.appendEvent(a.id, "two", { n: 2 });
@@ -225,7 +389,7 @@ describe("task store", () => {
       const check = new DatabaseSync(oldPath);
       try {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(3);
+        expect(migrations.length).toBe(4);
       } finally {
         check.close();
       }
@@ -291,7 +455,7 @@ describe("task store", () => {
       }
       const check = new DatabaseSync(oldPath);
       try {
-        expect(schemaVersion(check)).toBe(3);
+        expect(schemaVersion(check)).toBe(migrations.length);
       } finally {
         check.close();
       }
