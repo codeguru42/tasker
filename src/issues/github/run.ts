@@ -77,7 +77,21 @@ const REMOVED_GH_VARS = [
 ] as const;
 
 // One read of the token for each account in this process. A failed read is not kept.
-const tokens = new Map<string, Promise<string>>();
+// waiters counts the callers of runGh() that wait for the read. stop stops the token call.
+// settled is true when the read has resolved or rejected.
+interface TokenRead {
+  read: Promise<string>;
+  stop: AbortController;
+  waiters: number;
+  settled: boolean;
+}
+
+const tokens = new Map<string, TokenRead>();
+
+// The same error that runChild() gives when a signal aborts.
+function abortError(): Error {
+  return Object.assign(new Error("The operation was aborted"), { name: "AbortError" });
+}
 
 // Runs gh with args (the subcommand first) as options.account, and resolves with its stdout.
 // The stdout is as gh printed it, not trimmed.
@@ -95,7 +109,18 @@ const tokens = new Map<string, Promise<string>>();
 // runGh() does not add process.env. gh is found on the PATH of env. An env with no PATH
 // or an empty one rejects before gh starts, through runChild().
 // gh gets no input stream. Its stdout and stderr go to pipes, never to the terminal.
-// options.signal stops the main call of gh with SIGTERM. Then runGh() rejects with an AbortError.
+// options.signal stops gh with SIGTERM and rejects with an AbortError. These rules hold:
+// 1. A signal that already aborted rejects before any gh starts and before the token cache is read.
+// 2. A caller that waits for the token read counts as a waiter. It joins when it starts to wait.
+//    It leaves once: when the read settles, or when its signal aborts. A caller with no signal
+//    leaves only when the read settles, so it never stops the read.
+// 3. When the signal of a caller aborts, that caller rejects at once with an AbortError.
+//    The other callers keep waiting.
+// 4. When the last waiter leaves by an abort while the read is pending, runGh() stops the token
+//    call. In the same step, it deletes the read from the cache, if it is still the read of the
+//    account. As a result, a later caller starts a new read and never joins the stopped one.
+// 5. When the read settles first, the caller gets the token or the error.
+// 6. Then the main call runs with the signal of the caller.
 // gh runs in the cwd of tasker. A call that acts on a repo must name the repo. runGh() has no cwd option.
 // runGh() writes nothing to the console or a log.
 export function runGh(args: readonly string[], options: RunGhOptions): Promise<string> {
@@ -105,8 +130,11 @@ export function runGh(args: readonly string[], options: RunGhOptions): Promise<s
   if (args[0].startsWith("-")) {
     return Promise.reject(new Error("runGh needs the gh subcommand as the first argument"));
   }
+  if (options.signal?.aborted) {
+    return Promise.reject(abortError());
+  }
   const env = ghEnv(options.env);
-  return accountToken(options.account, env).then((token) =>
+  return accountToken(options.account, env, options.signal).then((token) =>
     spawnGh([...args], { ...env, GH_TOKEN: token }, { token, signal: options.signal }),
   );
 }
@@ -125,29 +153,77 @@ function ghEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   };
 }
 
-// The token of account: the promise of the first read, or a new read.
+// The token of account: the read of another call, or a new read. The caller waits for the read
+// until it settles or until signal aborts. See the doc comment of runGh() for the rules.
 // Two calls at the same time for one account start one token call.
-function accountToken(account: string, env: NodeJS.ProcessEnv): Promise<string> {
-  const known = tokens.get(account);
-  if (known !== undefined) {
-    return known;
-  }
-  const read = readToken(account, env);
-  tokens.set(account, read);
+function accountToken(
+  account: string,
+  env: NodeJS.ProcessEnv,
+  signal: AbortSignal | undefined,
+): Promise<string> {
+  const entry = tokens.get(account) ?? startRead(account, env);
+  entry.waiters += 1;
+  return new Promise<string>((resolve, reject) => {
+    let left = false;
+    const leave = () => {
+      left = true;
+      entry.waiters -= 1;
+      signal?.removeEventListener("abort", onAbort);
+    };
+    const onAbort = () => {
+      if (left) return;
+      leave();
+      if (entry.waiters === 0 && !entry.settled) {
+        entry.stop.abort();
+        if (tokens.get(account) === entry) {
+          tokens.delete(account);
+        }
+      }
+      reject(abortError());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+    entry.read.then(
+      (token) => {
+        if (left) return;
+        leave();
+        resolve(token);
+      },
+      (error: unknown) => {
+        if (left) return;
+        leave();
+        reject(error);
+      },
+    );
+  });
+}
+
+function startRead(account: string, env: NodeJS.ProcessEnv): TokenRead {
+  const stop = new AbortController();
+  const read = readToken(account, env, stop.signal);
+  const entry: TokenRead = { read, stop, waiters: 0, settled: false };
+  tokens.set(account, entry);
+  const settle = () => {
+    entry.settled = true;
+  };
+  read.then(settle, settle);
   read.catch(() => {
-    if (tokens.get(account) === read) {
+    if (tokens.get(account) === entry) {
       tokens.delete(account);
     }
   });
-  return read;
+  return entry;
 }
 
 // Reads the token of account. The token call never puts its stdout into an error.
-async function readToken(account: string, env: NodeJS.ProcessEnv): Promise<string> {
+async function readToken(
+  account: string,
+  env: NodeJS.ProcessEnv,
+  signal: AbortSignal,
+): Promise<string> {
   const args = ["auth", "token", "--hostname", GITHUB_HOST, "--user", account];
   let stdout: string;
   try {
-    stdout = await spawnGh(args, env, { dropStdout: true });
+    stdout = await spawnGh(args, env, { dropStdout: true, signal });
   } catch (error) {
     if (error instanceof GhError && error.exitCode !== null) {
       throw new GhLoginError(account, error.stderr);
