@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { run } from "../../src/cli.js";
 import { showConfig } from "../../src/commands/show-config.js";
 import { status } from "../../src/commands/status.js";
+import { STATES } from "../../src/state/machine.js";
 import { captureIo, seedTasks, validConfig, writeDataRootConfig, writeTempConfig } from "../helpers.js";
 
 // The repos codeguru42/tasker and codeguru42/other, and the repo fork. The project of fork
@@ -156,6 +157,61 @@ describe("status", () => {
 
     expect(result).toEqual({ code: 1, out: "", err: `repo key not found: ${key}\n` });
     expect(existsSync(join(dataRoot, "tasker.db"))).toBe(false);
+  });
+
+  it.each([
+    [
+      "finished",
+      "ISSUE                REPO               STATE     UPDATED\n" +
+        "codeguru42/tasker#1  codeguru42/tasker  finished  2026-01-04T00:00:00.000Z\n",
+    ],
+    [
+      "cancelled",
+      "ISSUE               REPO               STATE      UPDATED\n" +
+        "codeguru42/other#2  codeguru42/other  cancelled  2026-01-05T00:00:00.000Z\n",
+    ],
+  ])("lists only the %s tasks for --state", async (state, out) => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#3`, repoKey: TASKER, state: "planning", at: at(3) },
+      { issueKey: `${TASKER}#1`, repoKey: TASKER, state: "finished", at: at(4) },
+      { issueKey: `${OTHER}#2`, repoKey: OTHER, state: "cancelled", at: at(5) },
+    ]);
+
+    const result = await runStatus("--state", state);
+
+    expect(result).toEqual({ code: 0, err: "", out });
+  });
+
+  it("rejects an unknown state and lists the states", async () => {
+    setup();
+
+    const result = await runStatus("--state", "bogus");
+
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err: `unknown state: bogus (the states are: ${STATES.join(", ")})\n`,
+    });
+  });
+
+  it("lists only the tasks that match both --repo and --state", async () => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
+      { issueKey: `${TASKER}#6`, repoKey: TASKER, state: "executing", at: at(3) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "planning", at: at(4) },
+    ]);
+
+    const result = await runStatus("--repo", TASKER, "--state", "planning");
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "ISSUE                REPO               STATE     UPDATED\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  planning  2026-01-02T00:00:00.000Z\n",
+    });
   });
 
   describe("with a configuration error", () => {
