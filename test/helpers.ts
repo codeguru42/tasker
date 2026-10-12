@@ -265,6 +265,25 @@ export async function addCloneCommit(
   return sha;
 }
 
+let worktreeCommitCount = 0;
+
+// Writes content to file in the worktree, then commits all changes there with message.
+// It returns the new SHA. It throws for a file outside the worktree.
+export async function commitInWorktree(
+  worktree: string,
+  env: NodeJS.ProcessEnv,
+  change: { file: string; content?: string; message?: string },
+): Promise<string> {
+  const target = resolveInside(worktree, change.file);
+  worktreeCommitCount += 1;
+  const message = change.message ?? `worktree commit ${worktreeCommitCount}`;
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, change.content ?? message);
+  await runGit(["add", "-A"], { cwd: worktree, env });
+  await runGit(["commit", "-m", message], { cwd: worktree, env });
+  return (await runGit(["rev-parse", "HEAD"], { cwd: worktree, env })).trim();
+}
+
 // Names that pass the syntax check of a task branch but not the shape check.
 export const NOT_TASK_BRANCHES = [
   "main",
