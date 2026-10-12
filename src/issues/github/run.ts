@@ -5,7 +5,64 @@ export interface RunGhOptions {
   env: NodeJS.ProcessEnv;
 }
 
+export class GhError extends Error {
+  readonly subcommand: string;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly exitCode: number | null;
+
+  constructor(
+    message: string,
+    subcommand: string,
+    stdout: string,
+    stderr: string,
+    exitCode: number | null,
+  ) {
+    super(message);
+    this.name = "GhError";
+    this.subcommand = subcommand;
+    this.stdout = stdout;
+    this.stderr = stderr;
+    this.exitCode = exitCode;
+  }
+}
+
+export class GhNotInstalledError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GhNotInstalledError";
+  }
+}
+
+// The account has no token on github.com. The error holds no stdout, because the stdout of
+// the token call can hold a token.
+export class GhLoginError extends Error {
+  readonly account: string;
+
+  constructor(account: string, stderr: string) {
+    const detail = stderr.trim();
+    super(
+      `gh has no login for the account ${account} on github.com: run \`gh auth login --hostname github.com\` and log in as ${account}` +
+        (detail === "" ? "" : `. gh said: ${detail}`),
+    );
+    this.name = "GhLoginError";
+    this.account = account;
+  }
+}
+
 const GITHUB_HOST = "github.com";
+const REDACTED = "***";
+
+// The subcommand of a gh call: args[0], plus args[1] when args[1] exists and does not start
+// with "-", joined with one space. Examples:
+// - issue view 7 gives "issue view".
+// - api graphql -f query=... gives "api graphql".
+// - api -X PATCH repos/a/b gives "api".
+// - api user gives "api user".
+function subcommandOf(args: readonly string[]): string {
+  const second = args[1];
+  return second !== undefined && !second.startsWith("-") ? `${args[0]} ${second}` : args[0];
+}
 
 // See the doc comment of runGh().
 const REMOVED_GH_VARS = [
@@ -46,11 +103,11 @@ export function runGh(args: readonly string[], options: RunGhOptions): Promise<s
     return Promise.reject(new Error("runGh needs the gh subcommand as the first argument"));
   }
   if (!options.env.PATH) {
-    return Promise.reject(new Error("gh is not installed: the env has no PATH"));
+    return Promise.reject(new GhNotInstalledError("gh is not installed: the env has no PATH"));
   }
   const env = ghEnv(options.env);
   return accountToken(options.account, env).then((token) =>
-    spawnGh([...args], { ...env, GH_TOKEN: token }),
+    spawnGh([...args], { ...env, GH_TOKEN: token }, { token }),
   );
 }
 
@@ -85,31 +142,80 @@ function accountToken(account: string, env: NodeJS.ProcessEnv): Promise<string> 
   return read;
 }
 
+// Reads the token of account. The token call never puts its stdout into an error.
 async function readToken(account: string, env: NodeJS.ProcessEnv): Promise<string> {
-  const stdout = await spawnGh(
-    ["auth", "token", "--hostname", GITHUB_HOST, "--user", account],
-    env,
-  );
-  return stdout.trim();
+  const args = ["auth", "token", "--hostname", GITHUB_HOST, "--user", account];
+  let stdout: string;
+  try {
+    stdout = await spawnGh(args, env, { dropStdout: true });
+  } catch (error) {
+    if (error instanceof GhError && error.exitCode !== null) {
+      throw new GhLoginError(account, error.stderr);
+    }
+    throw error;
+  }
+  const token = stdout.trim();
+  if (token === "") {
+    throw new GhLoginError(account, "");
+  }
+  return token;
 }
 
 // Starts gh once and resolves with its stdout when the exit code is 0.
-function spawnGh(args: readonly string[], env: NodeJS.ProcessEnv): Promise<string> {
+// dropStdout: each error has an empty stdout (the token call). token: each error has
+// *** in place of the token, in stdout, stderr and message (a main call).
+function spawnGh(
+  args: readonly string[],
+  env: NodeJS.ProcessEnv,
+  mode: { dropStdout?: boolean; token?: string } = {},
+): Promise<string> {
+  const hide = (text: string) =>
+    mode.token === undefined ? text : text.split(mode.token).join(REDACTED);
   return new Promise((resolve, reject) => {
     const child = spawn("gh", args, { env, stdio: ["ignore", "pipe", "pipe"] });
     const out: Buffer[] = [];
     const err: Buffer[] = [];
     child.stdout.on("data", (chunk: Buffer) => out.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => err.push(chunk));
-    child.on("error", reject);
+    child.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") {
+        reject(new GhNotInstalledError("gh is not installed: gh was not found on PATH"));
+      } else {
+        reject(error);
+      }
+    });
     child.on("close", (code, signal) => {
+      const stdout = Buffer.concat(out).toString("utf8");
       if (code === 0) {
-        resolve(Buffer.concat(out).toString("utf8"));
+        resolve(stdout);
         return;
       }
-      const stderr = Buffer.concat(err).toString("utf8").trim();
-      const reason = code === null ? `was stopped by signal ${signal}` : `failed with exit code ${code}`;
-      reject(new Error(`gh ${args[0]} ${reason}${stderr === "" ? "" : `: ${stderr}`}`));
+      const subcommand = subcommandOf(args);
+      const shownStdout = mode.dropStdout ? "" : hide(stdout);
+      const stderr = hide(Buffer.concat(err).toString("utf8"));
+      if (code === null) {
+        reject(
+          new GhError(
+            `gh ${subcommand} was stopped by signal ${signal}`,
+            subcommand,
+            shownStdout,
+            stderr,
+            null,
+          ),
+        );
+        return;
+      }
+      const detail = stderr.trim();
+      const reason = detail === "" ? "" : `: ${detail}`;
+      reject(
+        new GhError(
+          `gh ${subcommand} failed with exit code ${code}${reason}`,
+          subcommand,
+          shownStdout,
+          stderr,
+          code,
+        ),
+      );
     });
   });
 }
