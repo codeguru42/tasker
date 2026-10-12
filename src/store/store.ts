@@ -1,7 +1,25 @@
 import { DatabaseSync } from "node:sqlite";
+import { TERMINAL_STATES } from "../state/machine.js";
 import { migrate } from "./migrate.js";
 import { migrations } from "./migrations.js";
 import { immediateTransaction } from "./transaction.js";
+
+// A task is active when its state is not terminal. The state names are fixed words with no quote.
+const ACTIVE = `state NOT IN (${[...TERMINAL_STATES].map((s) => `'${s}'`).join(", ")})`;
+
+export class ActiveTaskError extends Error {
+  constructor(
+    readonly taskId: number,
+    issueKey: string,
+    repoKey: string,
+    state: string,
+  ) {
+    super(
+      `the issue ${issueKey} already has an active task in the repo ${repoKey}: task ${taskId} is in ${state}`,
+    );
+    this.name = "ActiveTaskError";
+  }
+}
 
 export interface Task {
   id: number;
@@ -130,6 +148,9 @@ function setUp(db: DatabaseSync) {
        RETURNING *`,
     ),
     selectTask: db.prepare("SELECT * FROM tasks WHERE id = ?"),
+    selectActiveTask: db.prepare(
+      `SELECT * FROM tasks WHERE repo_key = ? AND issue_key = ? AND ${ACTIVE}`,
+    ),
     // The count covers all repos, because the issue key is the same in each of them.
     selectNextAttempt: db.prepare(
       "SELECT COALESCE(MAX(attempt), 0) + 1 AS next FROM tasks WHERE issue_key = ?",
@@ -181,6 +202,18 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   return {
     createTask(task) {
       return immediateTransaction(db, () => {
+        const active = statements.selectActiveTask.get(
+          task.repoKey,
+          task.issueKey,
+        ) as TaskRow | undefined;
+        if (active !== undefined) {
+          throw new ActiveTaskError(
+            active.id,
+            task.issueKey,
+            task.repoKey,
+            active.state,
+          );
+        }
         const at = now().toISOString();
         const { next } = statements.selectNextAttempt.get(task.issueKey) as {
           next: number;
