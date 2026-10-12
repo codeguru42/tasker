@@ -1,7 +1,13 @@
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { restoreWorktree, type StartState, worktreeState } from "../../../src/vcs/git/reconcile.js";
+import {
+  type FoundState,
+  restoreCommands,
+  restoreWorktree,
+  type StartState,
+  worktreeState,
+} from "../../../src/vcs/git/reconcile.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {
@@ -145,5 +151,81 @@ describe("git reconcile", () => {
       const error = await failureOf(restore({ head: start.head, branch: "HEAD" }), Error);
       expect(error.message).toBe('not a task branch name: "HEAD"');
     });
+
+    it("names the state and the commands when the restore cannot move the branch", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      const start = await state();
+      const base = await moveBase({});
+      writeFileSync(join(clone, "refs", "heads", `${BRANCH}.lock`), "");
+      await failureOf(git("rebase", base), GitError);
+      const detachedHead = await git("rev-parse", "HEAD");
+      const error = await failureOf(restore(start), Error);
+      expect(error.message.startsWith(
+        `cannot restore the worktree: ${target}: HEAD is at ${detachedHead}, detached. ` +
+          `Run these git commands in the worktree, in this order: ` +
+          `git checkout --force -B ${BRANCH} ${start.head}: `,
+      )).toBe(true);
+      expect(error.message).toContain(`${BRANCH}.lock`);
+      expect(error.message).not.toContain("git rebase --abort");
+    });
+  });
+});
+
+describe("restoreCommands", () => {
+  const A = "a".repeat(40);
+  const B = "b".repeat(40);
+  const onBranch: StartState = { head: A, branch: "issue-16-x" };
+  const right: FoundState = { ...onBranch, changes: [], rebase: false, merge: false };
+  const tracked = { status: " M", path: "a.txt" };
+  const untracked = { status: "??", path: "n.txt" };
+
+  it("gives no command for the right state", () => {
+    expect(restoreCommands(onBranch, right)).toEqual([]);
+  });
+
+  it("aborts a rebase in progress", () => {
+    expect(restoreCommands(onBranch, { ...right, rebase: true })).toEqual(["git rebase --abort"]);
+  });
+
+  it("aborts a merge in progress", () => {
+    expect(restoreCommands(onBranch, { ...right, merge: true })).toEqual(["git merge --abort"]);
+  });
+
+  it("checks out the branch again when the head is wrong", () => {
+    expect(restoreCommands(onBranch, { ...right, head: B })).toEqual([
+      `git checkout --force -B issue-16-x ${A}`,
+    ]);
+  });
+
+  it("checks out the branch again when HEAD is detached", () => {
+    expect(restoreCommands(onBranch, { ...right, branch: undefined })).toEqual([
+      `git checkout --force -B issue-16-x ${A}`,
+    ]);
+  });
+
+  it("detaches again when a detached start finds a branch", () => {
+    const detached: StartState = { head: A, branch: undefined };
+    expect(restoreCommands(detached, { ...right, branch: "issue-16-x" })).toEqual([
+      `git checkout --force --detach ${A}`,
+    ]);
+  });
+
+  it("cleans untracked files", () => {
+    expect(restoreCommands(onBranch, { ...right, changes: [untracked] })).toEqual([
+      "git clean -fd",
+    ]);
+  });
+
+  it("resets tracked changes", () => {
+    expect(restoreCommands(onBranch, { ...right, changes: [tracked] })).toEqual([
+      "git reset --hard",
+    ]);
+  });
+
+  it("gives no reset when a checkout is in the list", () => {
+    expect(restoreCommands(onBranch, { ...right, head: B, changes: [tracked, untracked] })).toEqual([
+      `git checkout --force -B issue-16-x ${A}`,
+      "git clean -fd",
+    ]);
   });
 });
