@@ -2,10 +2,6 @@
 
 Each task is in one state. An edge is a permitted change from one state to another.
 
-The module declares 28 states. It does not declare `awaiting_input`.
-
-The code is in `src/state/machine.ts`. No command uses the module yet. Later commands will use it to check their starting state.
-
 ## States
 
 | State | Meaning |
@@ -76,7 +72,7 @@ Two things that the diagrams do not show:
 - `failed` and `cancelled` can be reached from every non-terminal state. `tasker abort` goes to `cancelled`, and an operation that fails goes to `failed`. See "Failure and retry".
 - `tasker update-branch` can run from 11 states. See "Update branch".
 
-The module does not declare `awaiting_input`. `tasker start` asks about an ambiguous base branch while it runs.
+There is no `awaiting_input` state, because `tasker start` asks about an ambiguous base branch while it runs.
 
 ## Plan
 
@@ -209,7 +205,7 @@ flowchart LR
   class Q,QA,X pause;
 ```
 
-- `verifying`, `pushing`, `opening_pr`, `merging`, `finishing` and `updating_branch` spawn no assistant. As a result, only `interrupted` can come from them in practice. The two quota edges from these states are in the table, but no run can reach them.
+- `verifying`, `pushing`, `opening_pr`, `merging`, `finishing` and `updating_branch` spawn no assistant. As a result, only `interrupted` can come from them in practice. No run can reach the two quota pauses from these states.
 - `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there. Under `ask`, the threshold pause into `awaiting_quota_approval` applies.
 - A resume moves the task to the state before the spawn, then runs the same command again. So the task goes straight back into a spawning state.
 
@@ -243,7 +239,7 @@ flowchart LR
   class C terminal;
 ```
 
-`tasker retry` picks the target from the state that the task failed in, then runs the command again. `failTask()` records that state (see [Code](#code)).
+`tasker retry` picks the target from the state that the task failed in, then runs the command again. The failure event records that state (see [Code](#code)).
 
 | Failed in | Retries to | Then runs |
 | --- | --- | --- |
@@ -291,45 +287,8 @@ flowchart LR
 | `failed`, from a failed `push`, `merge`, `open-pr` or `review` | `executed` | The same reason. A retry would push, merge, open a PR or review the moved tree with no verify. |
 | any other | its origin | Nothing to demote. |
 
-## All edges
-
-| From | To (specific edges) |
-| --- | --- |
-| `provisioning` | `workspace_ready` |
-| `workspace_ready` | `planning`, `updating_branch` |
-| `planning` | `awaiting_plan_review`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `awaiting_plan_review` | `refining`, `approved`, `updating_branch` |
-| `refining` | `awaiting_plan_review`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `approved` | `awaiting_plan_review`, `executing`, `updating_branch` |
-| `executing` | `executed`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `executed` | `verifying`, `updating_branch` |
-| `verifying` | `awaiting_work_review`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `awaiting_work_review` | `reviewing`, `refining`, `accepted`, `updating_branch` |
-| `reviewing` | `awaiting_work_review`, `reviewed`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `reviewed` | `refining`, `awaiting_work_review`, `updating_branch` |
-| `accepted` | `landed`, `merging`, `pushing`, `refining`, `updating_branch` |
-| `pushing` | `pushed`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `pushed` | `landed`, `opening_pr`, `refining`, `updating_branch` |
-| `opening_pr` | `in_peer_review`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `in_peer_review` | `landed`, `merging`, `updating_branch` |
-| `merging` | `landed`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `landed` | `finishing` |
-| `finishing` | `finished`, `cleanup_failed`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `cleanup_failed` | `finishing`, `updating_branch` |
-| `finished` | none (terminal) |
-| `updating_branch` | `workspace_ready`, `awaiting_plan_review`, `approved`, `executed`, `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`, `failed`, `cleanup_failed`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` |
-| `quota_blocked` | `workspace_ready`, `awaiting_plan_review`, `approved`, `awaiting_work_review`, `accepted`, `reviewed` |
-| `awaiting_quota_approval` | `workspace_ready`, `awaiting_plan_review`, `approved`, `awaiting_work_review`, `accepted`, `reviewed` |
-| `interrupted` | `workspace_ready`, `awaiting_plan_review`, `approved`, `awaiting_work_review`, `accepted`, `reviewed`, `executed`, `in_peer_review`, `pushed`, `cleanup_failed`, `landed` |
-| `failed` | `provisioning`, `workspace_ready`, `awaiting_plan_review`, `approved`, `executed`, `accepted`, `awaiting_work_review`, `reviewed`, `in_peer_review`, `refining`, `pushed`, `updating_branch` |
-| `cancelled` | none (terminal) |
-
-Each non-terminal state also has an edge to `failed` (except `failed` itself) and to `cancelled`. As a result, the legal set has 170 edges.
-
 ## Code
 
-- `src/state/machine.ts` declares `STATES`, `TERMINAL_STATES` and the edge table.
-- `canTransition(from, to)` returns `true` when the edge is legal.
-- `transitionTask(store, id, to, detail?)` changes the state of a task. It writes the new state and one `transition` event `{ ...detail, from, to }` in one database transaction, through the `check` argument of `updateTask()` (see `docs/dev/data-root.md`). `detail` cannot set `from` or `to`: the type rejects them, and the values of the machine win at run time. If the edge is illegal, it throws `illegal state transition: <from> -> <to>`, and it writes nothing: no state change and no event.
-- `failTask(store, id, message)` moves a task to `failed` through `transitionTask()`. The event holds the error `message`, so it records the state that the task failed in.
-- `failedFrom(store, id)` returns the `from` of the last `transition` event into `failed`. It returns `undefined` when the task is not in `failed`, when it has no such event, or when that `from` is not a task state. It reads no older event.
+A change of state and its `transition` event are written in one database transaction. If the edge is illegal, nothing is written. [data-root.md](dev/data-root.md#writes-from-more-than-one-process) explains the transaction rule.
+
+The event of a failure records the state that the task failed in. `tasker retry` reads that state to pick its target.
