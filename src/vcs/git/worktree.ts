@@ -245,10 +245,21 @@ export async function discardWorktreeChanges(options: {
   await runGit(["clean", "-ffd"], { cwd: path, env });
 }
 
+// The commit SHA of the local task branch. It reads the exact ref only, so git does not try
+// other ref names.
 export async function taskBranchRevision(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
   branch: string;
 }): Promise<string> {
-  throw new Error(`not implemented: ${options.branch}`);
+  const { clone, env, branch } = options;
+  assertTaskBranch(branch);
+  if (!(await branchExists(clone, env, branch))) {
+    throw new Error(`cannot resolve the task branch: ${branch}`);
+  }
+  const out = await runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {
+    gitDir: clone,
+    env,
+  });
+  return out.trim();
 }
