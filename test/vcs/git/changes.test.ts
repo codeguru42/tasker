@@ -1,5 +1,5 @@
-import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, renameSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   changedPaths,
@@ -213,6 +213,15 @@ describe("git changes", () => {
   describe("uncommittedChanges", () => {
     it("gives an empty list for a clean worktree", async () => {
       expect(await changes()).toEqual([]);
+    });
+
+    it("does not write the index of the worktree", async () => {
+      const indexPath = resolve(path, await git("rev-parse", "--git-path", "index"));
+      const later = new Date(Date.now() + 60_000);
+      utimesSync(join(path, "README.md"), later, later);
+      const before = readFileSync(indexPath);
+      await changes();
+      expect(readFileSync(indexPath).equals(before)).toBe(true);
     });
 
     it("lists a changed file and a new file", async () => {
