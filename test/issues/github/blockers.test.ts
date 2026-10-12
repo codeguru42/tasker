@@ -4,50 +4,7 @@ import { IssueKeyError, type IssueRef } from "../../../src/issue-key/ref.js";
 import { readGithubBlockers } from "../../../src/issues/github/blockers.js";
 import { GhError } from "../../../src/issues/github/run.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
-import { failureOf, fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
-
-// The query of readGithubBlockers(). It is a literal, so that the test checks the query on its own.
-const QUERY = `query($owner: String!, $name: String!, $number: Int!, $cursor: String) {
-  repository(owner: $owner, name: $name) {
-    issue(number: $number) {
-      blockedBy(first: 100, after: $cursor) {
-        pageInfo { hasNextPage endCursor }
-        nodes { number state repository { nameWithOwner } }
-      }
-    }
-  }
-}`;
-
-// The call of readGithubBlockers(). Owner, name and cursor go as strings (-f), the number as an Int (-F).
-// The first page has no cursor argument.
-const graphqlArgs = (owner: string, name: string, number: string, cursor?: string) => [
-  "api",
-  "graphql",
-  "-f",
-  `query=${QUERY}`,
-  "-f",
-  `owner=${owner}`,
-  "-f",
-  `name=${name}`,
-  "-F",
-  `number=${number}`,
-  ...(cursor === undefined ? [] : ["-f", `cursor=${cursor}`]),
-];
-
-// One blocker node, as GitHub gives it.
-const node = (number: number, state: string, nameWithOwner: string) => ({
-  number,
-  state,
-  repository: { nameWithOwner },
-});
-
-// The JSON that gh prints for one page of blockers.
-function pageJson(
-  nodes: unknown[],
-  pageInfo: { hasNextPage: boolean; endCursor: string | null } = { hasNextPage: false, endCursor: null },
-): string {
-  return JSON.stringify({ data: { repository: { issue: { blockedBy: { pageInfo, nodes } } } } });
-}
+import { blockersGraphqlArgs as graphqlArgs, blockersNode as node, blockersPageJson as pageJson, failureOf, fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
 
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
 

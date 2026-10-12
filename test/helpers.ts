@@ -822,3 +822,46 @@ export function filesThatBreakBoundary(owner: string, target: string): string[] 
     .filter(({ file, text }) => breaksBoundary(file, text, owner, target))
     .map(({ file }) => file);
 }
+
+// The query of readGithubBlockers(). It is a literal, so that the test checks the query on its own.
+const BLOCKERS_QUERY = `query($owner: String!, $name: String!, $number: Int!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    issue(number: $number) {
+      blockedBy(first: 100, after: $cursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes { number state repository { nameWithOwner } }
+      }
+    }
+  }
+}`;
+
+// The call of readGithubBlockers(). Owner, name and cursor go as strings (-f), the number as an Int (-F).
+// The first page has no cursor argument.
+export const blockersGraphqlArgs = (owner: string, name: string, number: string, cursor?: string) => [
+  "api",
+  "graphql",
+  "-f",
+  `query=${BLOCKERS_QUERY}`,
+  "-f",
+  `owner=${owner}`,
+  "-f",
+  `name=${name}`,
+  "-F",
+  `number=${number}`,
+  ...(cursor === undefined ? [] : ["-f", `cursor=${cursor}`]),
+];
+
+// One blocker node, as GitHub gives it.
+export const blockersNode = (number: number, state: string, nameWithOwner: string) => ({
+  number,
+  state,
+  repository: { nameWithOwner },
+});
+
+// The JSON that gh prints for one page of blockers.
+export function blockersPageJson(
+  nodes: unknown[],
+  pageInfo: { hasNextPage: boolean; endCursor: string | null } = { hasNextPage: false, endCursor: null },
+): string {
+  return JSON.stringify({ data: { repository: { issue: { blockedBy: { pageInfo, nodes } } } } });
+}
