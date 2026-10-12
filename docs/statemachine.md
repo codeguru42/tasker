@@ -243,7 +243,7 @@ flowchart LR
   class C terminal;
 ```
 
-`tasker retry` picks the target from the state that the task failed in, then runs the command again.
+`tasker retry` picks the target from the state that the task failed in, then runs the command again. `failTask()` records that state (see [Code](#code)).
 
 | Failed in | Retries to | Then runs |
 | --- | --- | --- |
@@ -330,4 +330,6 @@ Each non-terminal state also has an edge to `failed` (except `failed` itself) an
 
 - `src/state/machine.ts` declares `STATES`, `TERMINAL_STATES` and the edge table.
 - `canTransition(from, to)` returns `true` when the edge is legal.
-- `transitionTask(store, id, to)` changes the state of a task. If the edge is illegal, it throws `illegal state transition: <from> -> <to>` and the task does not change. It reads and writes the state in one database transaction, through the `check` argument of `updateTask()` (see `docs/dev/data-root.md`).
+- `transitionTask(store, id, to, detail?)` changes the state of a task. It writes the new state and one `transition` event `{ ...detail, from, to }` in one database transaction, through the `check` argument of `updateTask()` (see `docs/dev/data-root.md`). `detail` cannot set `from` or `to`: the type rejects them, and the values of the machine win at run time. If the edge is illegal, it throws `illegal state transition: <from> -> <to>`, and it writes nothing: no state change and no event.
+- `failTask(store, id, message)` moves a task to `failed` through `transitionTask()`. The event holds the error `message`, so it records the state that the task failed in.
+- `failedFrom(store, id)` returns the `from` of the last `transition` event into `failed`. It returns `undefined` when the task is not in `failed`, when it has no such event, or when that `from` is not a task state. It reads no older event.
