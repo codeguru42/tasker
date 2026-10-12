@@ -1,5 +1,6 @@
 import type { Check } from "../../doctor/check.js";
 import { timedCheck } from "../../doctor/timed-check.js";
+import { authStatus } from "./auth.js";
 import { GhNotInstalledError, readGhVersion } from "./run.js";
 
 // Before this version, gh auth token has no --user flag.
@@ -44,4 +45,21 @@ export function ghVersionCheck(timeoutMs = 5000): Check {
     }
     return { status: "ok", detail: `gh ${found} (minimum ${MINIMUM_TEXT})` };
   });
+}
+
+export function ghAuthCheck(account: string, timeoutMs = 15000): Check {
+  return timedCheck(
+    { name: `gh auth: ${account}`, required: true, timeoutMs },
+    async (env, { signal }) => {
+      const status = await authStatus(account, env, { signal });
+      if (status.ok) {
+        return { status: "ok", detail: status.detail };
+      }
+      return {
+        status: "error",
+        detail: status.detail,
+        remediation: `Run \`gh auth login --hostname github.com\` and log in as ${account}.`,
+      };
+    },
+  );
 }
