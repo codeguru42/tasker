@@ -182,6 +182,17 @@ export async function isAncestor(o: {
   }
 }
 
+// Fetches origin into the clone with the ssh key of the repo. It uses runRemoteGit(). The fetch
+// moves and prunes refs/remotes/origin/* in the clone. It changes no worktree.
+export async function fetchOrigin(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  sshKey: string | undefined;
+}): Promise<void> {
+  const { clone, env, sshKey } = o;
+  await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, sshKey);
+}
+
 // Fetches origin, then reads the head of the task worktree and the tip of the base.
 // This is the one function of this file that talks to the remote. It uses runRemoteGit(), so
 // the fetch uses the ssh key. The fetch moves and prunes refs/remotes/origin/* in the clone, also
@@ -197,7 +208,7 @@ export async function fetchTips(o: {
   const { clone, env, sshKey, path, baseRevision } = o;
   assertRevisionInput(baseRevision);
   const target = await assertTaskWorktree({ clone, env, path });
-  await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, sshKey);
+  await fetchOrigin({ clone, env, sshKey });
   const head = await worktreeHead(target, env);
   const base = await resolveRevision({ clone, env, value: baseRevision });
   return { head, base };
