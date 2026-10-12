@@ -21,7 +21,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
 - `src/vcs/git/publish.ts` holds `publishTaskBranch()`, `landOnBase()` and `deleteRemoteTaskBranch()`.
 - `src/vcs/git/doctor.ts` holds `gitDoctorChecks()`, `gitVersionCheck()`, `identityCheck()`, `connectionCheck()`, `staleLockCheck()` and the type `GitDoctorRepo`. [Doctor checks](#doctor-checks) gives the rules.
-- `src/vcs/git/stale-locks.ts` holds `findStaleLocks()`, `readProcView()`, `onceProcView()`, `isInside()`.
+- `src/vcs/git/stale-locks.ts` holds `findStaleLocks()`, `readProcView()`, `onceProcView()` and `isInside()`.
 - `src/vcs/git/ssh-account.ts` holds `sshTarget()` and `sshAccount()`.
 
 No other folder in `src/` starts git.
