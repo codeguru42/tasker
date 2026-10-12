@@ -1,7 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { openStore } from "../src/store/store.js";
+import { createDataRoot } from "../src/store/layout.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { createTaskWorktree } from "../src/vcs/git/worktree.js";
 import {
@@ -17,7 +19,10 @@ import {
   makeGitClone,
   makeGitOrigin,
   makeTempDir,
+  seedTasks,
   sshKeyArgs,
+  validConfig,
+  writeDataRootConfig,
   writeFakeGh,
   type GitOrigin,
 } from "./helpers.js";
@@ -434,5 +439,68 @@ describe("sshKeyArgs", () => {
       "-o",
       "BatchMode=yes",
     ]);
+  });
+});
+
+describe("writeDataRootConfig", () => {
+  let dir: string;
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("writes config.json with dataRoot set to the data folder of the dir", () => {
+    const raw = validConfig();
+    const written = writeDataRootConfig(raw);
+    dir = written.dir;
+
+    expect(written.path).toBe(join(dir, "config.json"));
+    expect(written.dataRoot).toBe(join(dir, "data"));
+    expect(JSON.parse(readFileSync(written.path, "utf8"))).toEqual({
+      ...validConfig(),
+      dataRoot: join(dir, "data"),
+    });
+  });
+
+  it("does not change its input", () => {
+    const raw = validConfig();
+    dir = writeDataRootConfig(raw).dir;
+
+    expect(raw).toEqual(validConfig());
+  });
+});
+
+describe("seedTasks", () => {
+  let dir: string;
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("returns the tasks in input order with their times", () => {
+    dir = makeTempDir("tasker-seed-");
+    const dataRoot = join(dir, "data");
+
+    const tasks = seedTasks(dataRoot, [
+      { issueKey: "a/b#2", repoKey: "a/b", state: "planning", at: "2026-01-02T00:00:00.000Z" },
+      { issueKey: "a/b#1", repoKey: "a/c", state: "finished", at: "2026-01-01T00:00:00.000Z" },
+    ]);
+
+    expect(tasks.map((t) => [t.issueKey, t.repoKey, t.state])).toEqual([
+      ["a/b#2", "a/b", "planning"],
+      ["a/b#1", "a/c", "finished"],
+    ]);
+    expect(tasks.map((t) => [t.createdAt, t.updatedAt])).toEqual([
+      ["2026-01-02T00:00:00.000Z", "2026-01-02T00:00:00.000Z"],
+      ["2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.000Z"],
+    ]);
+    const store = openStore(createDataRoot(dataRoot).database);
+    try {
+      expect(store.listTasks({ states: ["planning", "finished"] }).map((t) => t.id)).toEqual(
+        tasks.map((t) => t.id),
+      );
+    } finally {
+      store.close();
+    }
   });
 });
