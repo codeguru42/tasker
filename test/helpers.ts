@@ -295,7 +295,11 @@ export async function commitInWorktree(
   env: NodeJS.ProcessEnv,
   change: { file: string; content?: string; message?: string },
 ): Promise<string> {
-  const target = resolveInside(worktree, change.file, "addCommit needs a file inside the work repo");
+  const target = resolveInside(
+    worktree,
+    change.file,
+    "commitInWorktree needs a file inside the worktree",
+  );
   worktreeCommitCount += 1;
   const message = change.message ?? `worktree commit ${worktreeCommitCount}`;
   return writeAndCommit(worktree, env, target, change.content ?? message, message, []);
