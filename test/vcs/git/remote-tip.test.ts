@@ -98,4 +98,9 @@ describe("remoteTip", () => {
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message.startsWith(`the remote does not answer: ${remote}`)).toBe(true);
   });
+
+  it("refuses an empty branch name before it reads the remote", async () => {
+    const remote = join(origin.dir, "missing.git");
+    await expect(tip("", remote)).rejects.toThrow(/^the branch name is empty$/);
+  });
 });
