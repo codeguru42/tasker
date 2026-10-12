@@ -96,3 +96,16 @@ export async function publishTaskBranch(
   }
   return { state: "published", branch, revision, lease: true };
 }
+
+// Lands revision on the base branch of origin by fast-forward.
+export async function landOnBase(
+  options: RemoteOptions & { base: string; revision: string },
+): Promise<void> {
+  const { clone, publishTokens, sshKey, env, base, revision } = options;
+  await pushWithToken(["origin", `${revision}:refs/heads/${base}`], {
+    location: { gitDir: clone },
+    publishTokens,
+    sshKey,
+    env,
+  });
+}
