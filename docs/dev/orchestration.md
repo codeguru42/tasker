@@ -115,6 +115,7 @@ Each running agent has a slot and a delay. The delay is the number of minutes be
 - There are 3 slots, one for each agent that can run at the same time. Slot 1 has a delay of 0 minutes. Slot 2 has a delay of 1 minute. Slot 3 has a delay of 2 minutes.
 - If the reset time falls on :00 or :30, the delay of each slot is 1 minute longer: 1, 2 and 3 minutes. The cron scheduler can fire a one-shot job on :00 or :30 up to 90 seconds early. That fire is before the reset, so it has no tokens, and the job is then gone.
 - The job time is the reset time plus the delay of the agent. The reset time falls on a full 10 minutes, for example 11:30. So the job time is a full minute.
+- If the reset time is not a full minute, the orchestrator must round the job time up to the next full minute.
 - When the orchestrator starts an agent, the orchestrator must give the agent the free slot with the lowest number.
 - When the orchestrator schedules the next job for an agent, the agent keeps the same slot.
 - The agent keeps its slot until the orchestrator frees it, as "Delete the job" says. Then the next agent that starts takes the slot.
