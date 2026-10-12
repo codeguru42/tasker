@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { ReconcileConflictError } from "../errors.js";
+import type { ReconcileStrategy, UncommittedChange } from "../provider.js";
 import {
-  type UncommittedChange,
   isAncestor,
   jsonPathList,
   nulFields,
@@ -13,8 +13,6 @@ import {
 import { assertRevisionInput, isFullRevision, resolveRevision } from "./refs.js";
 import { GitError, runGit } from "./run.js";
 import { assertTaskBranch, assertTaskBranchShape, assertTaskWorktree } from "./worktree.js";
-
-export type ReconcileStrategy = "rebase" | "merge";
 
 // The options of every rebase. They stop the configuration of the user from changing the rebase.
 // --merge forces rebase-merge/, --no-autostash and --no-update-refs stop rebase.autoStash and

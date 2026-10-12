@@ -3,7 +3,6 @@ import { delimiter, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   type FoundState,
-  type ReconcileStrategy,
   rebaseOnto,
   reconcileWorktree,
   restoreCommands,
@@ -13,6 +12,7 @@ import {
   worktreeState,
 } from "../../../src/vcs/git/reconcile.js";
 import { ReconcileConflictError } from "../../../src/vcs/errors.js";
+import type { ReconcileStrategy } from "../../../src/vcs/provider.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {

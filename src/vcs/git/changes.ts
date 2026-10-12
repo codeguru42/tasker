@@ -1,3 +1,4 @@
+import type { UncommittedChange } from "../provider.js";
 import { assertRevisionInput, resolveRevision } from "./refs.js";
 import { GitError, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
@@ -103,13 +104,6 @@ export async function hasCommitsNotIn(o: {
     env,
   });
   return Number(output.trim()) > 0;
-}
-
-export interface UncommittedChange {
-  // The two status characters of git, for example " M", "??", "D " or "A ".
-  status: string;
-  // The raw path, relative to the root of the worktree.
-  path: string;
 }
 
 // The uncommitted changes of the task worktree. An empty list means a clean worktree.

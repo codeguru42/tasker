@@ -11,6 +11,31 @@ export interface Workspace {
   state: "created" | "reused-task-ref" | "reused-workspace";
 }
 
+// The store functions that the resolve needs. TaskStore has them.
+export interface BaseBranchMemory {
+  getDefaultBaseBranch(repoKey: string): string | undefined;
+  setDefaultBaseBranch(repoKey: string, branch: string): void;
+  forgetDefaultBaseBranch(repoKey: string, branch: string): void;
+}
+
+export interface ResolvedBase {
+  // The stored form: an origin branch name, or refs/heads/<x>.
+  base: string;
+  // baseRevision(base)
+  revision: string;
+  source: "hint" | "explicit" | "learned" | "config" | "ask";
+  notes: string[];
+}
+
+export interface UncommittedChange {
+  // The two status characters of git, for example " M", "??", "D " or "A ".
+  status: string;
+  // The raw path, relative to the root of the worktree.
+  path: string;
+}
+
+export type ReconcileStrategy = "rebase" | "merge";
+
 /**
  * The version control operations of tasker. A command gets a provider from createVcsProvider()
  * and never imports from src/vcs/git/. Each operation has the errors and the side effects of its

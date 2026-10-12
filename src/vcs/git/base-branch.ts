@@ -1,3 +1,4 @@
+import type { BaseBranchMemory, ResolvedBase } from "../provider.js";
 import { refExists } from "./refs.js";
 import { runRemoteGit } from "./ssh.js";
 
@@ -24,13 +25,6 @@ export function baseRevision(base: string): string {
   return base.startsWith(LOCAL_PREFIX) ? base : `refs/remotes/origin/${base}`;
 }
 
-// The store functions that the resolve needs. TaskStore has them.
-interface BaseBranchMemory {
-  getDefaultBaseBranch(repoKey: string): string | undefined;
-  setDefaultBaseBranch(repoKey: string, branch: string): void;
-  forgetDefaultBaseBranch(repoKey: string, branch: string): void;
-}
-
 interface ResolveBaseOptions {
   repoKey: string;
   // The bare clone that provisionClone() made.
@@ -46,15 +40,6 @@ interface ResolveBaseOptions {
   // repo.defaultBaseBranch, used as it is.
   defaultBaseBranch?: string;
   ask: () => Promise<string>;
-}
-
-interface ResolvedBase {
-  // The stored form: an origin branch name, or refs/heads/<x>.
-  base: string;
-  // baseRevision(base)
-  revision: string;
-  source: "hint" | "explicit" | "learned" | "config" | "ask";
-  notes: string[];
 }
 
 // True when the ref of base exists in the clone.
