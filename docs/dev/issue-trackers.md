@@ -16,7 +16,7 @@ All code that starts `gh` is in `src/issues/github/`. The test `test/issues/gith
 - `src/issues/github/blockers.ts` holds `readGithubBlockers()`.
 - `src/issues/github/write.ts` holds `assignGithubIssue()`, `markGithubInProgress()` and `markGithubDone()`.
 - `src/issues/github/auth.ts` holds `authStatus()`.
-- `src/issues/github/doctor.ts` holds `accountOf()`, `githubDoctorChecks()`, `ghVersionCheck()`, `ghAuthCheck()`, `ghProjectCheck()`, `ghLabelsCheck()`.
+- `src/issues/github/doctor.ts` holds `accountOf()`, `githubDoctorChecks()`, `ghVersionCheck()`, `ghAuthCheck()`, `ghProjectCheck()` and `ghLabelsCheck()`.
 
 Later issues add their files to this list.
 
