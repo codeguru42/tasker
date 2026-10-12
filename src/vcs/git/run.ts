@@ -76,9 +76,10 @@ const CONFIG_PAIR_VAR = /^GIT_CONFIG_(KEY|VALUE)_\d+$/;
 // For example, GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM name configuration files
 // that git reads. They do not choose the repo.
 // Git uses a GIT_SSH_COMMAND that is present, even an empty one. So:
-// a non-empty GIT_SSH_COMMAND of the caller stays. Otherwise GIT_SSH_COMMAND goes away,
-// and a non-empty GIT_SSH of the caller stays. Otherwise GIT_SSH goes away too,
-// and ssh runs in batch mode, so it asks no question and fails instead.
+// the ssh command is gitSshCommand(env). When it is undefined, the GIT_SSH_COMMAND
+// (an empty value) goes away, and the GIT_SSH of the caller stays. Otherwise GIT_SSH
+// goes away, and GIT_SSH_COMMAND is set to the command. The command is the one of the
+// caller, or ssh in batch mode, which asks no question and fails instead.
 function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const result: NodeJS.ProcessEnv = { ...env, GIT_TERMINAL_PROMPT: "0" };
   for (const name of REPO_LOCAL_GIT_VARS) {
@@ -90,11 +91,8 @@ function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     }
   }
   const command = gitSshCommand(env);
-  if (env.GIT_SSH_COMMAND) {
-    return result;
-  }
-  delete result.GIT_SSH_COMMAND;
   if (command === undefined) {
+    delete result.GIT_SSH_COMMAND; // an empty value; the GIT_SSH of the caller stays
     return result;
   }
   delete result.GIT_SSH;
