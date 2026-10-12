@@ -519,6 +519,26 @@ describe("task store", () => {
   });
 
   describe("events", () => {
+    it("writes one created event when a task is created", () => {
+      const task = store.createTask(newTask);
+      expect(store.listEvents(task.id)).toEqual([
+        {
+          id: expect.any(Number),
+          taskId: task.id,
+          at: "2026-01-01T00:00:00.000Z",
+          type: "created",
+          data: { state: "new" },
+        },
+      ]);
+    });
+
+    it("writes no event when a create is refused", () => {
+      store.createTask(newTask);
+      const before = eventCount();
+      expect(() => store.createTask(newTask)).toThrow(ActiveTaskError);
+      expect(eventCount()).toBe(before);
+    });
+
     it("appends an event with the time and the JSON data", () => {
       const task = store.createTask(newTask);
       const event = store.appendEvent(task.id, "state-changed", {
@@ -538,7 +558,7 @@ describe("task store", () => {
       const task = store.createTask(newTask);
       const event = store.appendEvent(task.id, "note");
       expect(event.data).toBeNull();
-      expect(store.listEvents(task.id)[0].data).toBeNull();
+      expect(store.listEvents(task.id).at(-1)?.data).toBeNull();
     });
 
     it("lists the events of one task in the order they were added", () => {
@@ -548,9 +568,13 @@ describe("task store", () => {
       store.appendEvent(b.id, "other");
       store.appendEvent(a.id, "two", { n: 2 });
       const events = store.listEvents(a.id);
-      expect(events.map((event) => event.type)).toEqual(["one", "two"]);
-      expect(events[1].id).toBeGreaterThan(events[0].id);
-      expect(events[1].data).toEqual({ n: 2 });
+      expect(events.map((event) => event.type)).toEqual([
+        "created",
+        "one",
+        "two",
+      ]);
+      expect(events[2].id).toBeGreaterThan(events[1].id);
+      expect(events[2].data).toEqual({ n: 2 });
     });
 
     it("throws when the task of the event does not exist", () => {
@@ -698,7 +722,7 @@ describe("task store", () => {
         const tasks = db.prepare("SELECT id FROM tasks").all() as { id: number }[];
         expect(tasks).toHaveLength(2);
         for (const { id } of tasks) {
-          expect(reader.listEvents(id)).toHaveLength(count);
+          expect(reader.listEvents(id)).toHaveLength(count + 1);
           expect(reader.getTask(id)?.state).toBe(String(count - 1));
         }
         expect(schemaVersion(db)).toBe(migrations.length);
