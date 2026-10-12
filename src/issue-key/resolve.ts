@@ -13,10 +13,10 @@ type Provider = RepoConfig["issueTracker"]["provider"];
 
 // The IssueRef of rawKey in a repo with this project, or undefined when the repo does
 // not own the key. The parser of the provider throws an IssueKeyError when it rejects the key.
-type Matcher = (rawKey: string, repoKey: string, project: string) => IssueRef | undefined;
+export type KeyParser = (rawKey: string, repoKey: string, project: string) => IssueRef | undefined;
 
-// One matcher for each provider. A new provider in the schema fails to compile until it has one.
-const MATCHERS: Record<Provider, Matcher> = {
+// One key parser for each provider. A new provider in the schema fails to compile until it has one.
+export const KEY_PARSERS: Record<Provider, KeyParser> = {
   github: (rawKey, repoKey, project) => {
     const parts = splitGithubKey(rawKey);
     if (asciiFold(parts.project) !== asciiFold(project)) return undefined;
@@ -53,7 +53,7 @@ export function resolveIssueKey(
   for (const [repoKey, repoConfig] of Object.entries(config.repos)) {
     let ref: IssueRef | undefined;
     try {
-      ref = MATCHERS[repoConfig.issueTracker.provider](
+      ref = KEY_PARSERS[repoConfig.issueTracker.provider](
         rawKey,
         repoKey,
         projectOf(repoKey, repoConfig),
