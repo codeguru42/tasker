@@ -1,11 +1,19 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { userInfo } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { connectionCheck, type GitDoctorRepo, gitVersionCheck, identityCheck } from "../../../src/vcs/git/doctor.js";
+import {
+  connectionCheck,
+  type GitDoctorRepo,
+  gitVersionCheck,
+  identityCheck,
+  staleLockCheck,
+} from "../../../src/vcs/git/doctor.js";
 import type { GitVcsConfig } from "../../../src/vcs/git/provision.js";
 import { runGit } from "../../../src/vcs/git/run.js";
+import { type ProcView, readProcView } from "../../../src/vcs/git/stale-locks.js";
 import {
+  ageFile,
   type GitOrigin,
   fakeSsh,
   gitTestEnv,
@@ -280,5 +288,120 @@ describe("connectionCheck", () => {
     const result = await connectionCheck(repo(ssh.remote(origin.path)), 300).run(ssh.env);
     expect(result).toEqual({ status: "error", detail: "the check did not finish in 300 ms" });
     expect(Date.now() - started).toBeLessThan(3000);
+  });
+});
+
+describe("staleLockCheck", () => {
+  let origin: GitOrigin;
+  let clone: string;
+  let root: string;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    clone = await makeGitClone(origin);
+    root = realpathSync(clone);
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  function repo(cloneDir = clone): GitDoctorRepo {
+    return { key: "o/r", remote: origin.path, clone: cloneDir, config: {} };
+  }
+
+  function makeLock(relative: string, ageMs = 90_000): void {
+    const path = join(clone, relative);
+    writeFileSync(path, "");
+    ageFile(path, ageMs);
+  }
+
+  function view(openFiles: string[] = [], gitCwds: string[] = []): () => ProcView {
+    return () => ({ readable: true, openFiles: new Set(openFiles), gitCwds });
+  }
+
+  it("has the name, the required flag and the time limit", () => {
+    const check = staleLockCheck(repo(), view());
+    expect(check.name).toBe("git lock files: o/r");
+    expect(check.required).toBe(false);
+    expect(check.timeoutMs).toBe(10000);
+  });
+
+  it("gives warn for an aged lock, with the path, the age and the remediation", async () => {
+    makeLock("a.lock");
+    const result = await staleLockCheck(repo(), view()).run(origin.env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).toMatch(/^a\.lock \(9[01] s old\)$/);
+    expect(result.remediation).toBe(
+      "Doctor deletes nothing. Make sure that no tasker or git process uses the clone. Then delete each file by hand.",
+    );
+  });
+
+  it("skips and names a lock that a process has open", async () => {
+    makeLock("a.lock");
+    const result = await staleLockCheck(repo(), view([join(root, "a.lock")])).run(origin.env);
+    expect(result.status).toBe("ok");
+    expect(result.detail).toBe("skipped a.lock: a process has it open");
+  });
+
+  it("skips and names a lock under the folder of a git process", async () => {
+    makeLock("refs/heads/x.lock");
+    const cwd = join(root, "refs");
+    const result = await staleLockCheck(repo(), view([], [cwd])).run(origin.env);
+    expect(result.status).toBe("ok");
+    expect(result.detail).toBe(`skipped refs/heads/x.lock: a git process runs in ${cwd}`);
+  });
+
+  it("lists the locks that are left and the skipped locks", async () => {
+    makeLock("a.lock");
+    makeLock("b.lock");
+    const result = await staleLockCheck(repo(), view([join(root, "a.lock")])).run(origin.env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).toMatch(/^b\.lock \(9[01] s old\)\nskipped a\.lock: a process has it open$/);
+  });
+
+  it("adds a note when it cannot read /proc", async () => {
+    makeLock("a.lock");
+    const missing = join(origin.dir, "no-proc");
+    const result = await staleLockCheck(repo(), () => readProcView(missing)).run(origin.env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).toContain(
+      "tasker cannot read /proc (ENOENT), so it cannot tell whether a process uses these files.",
+    );
+  });
+
+  it("adds a note on a platform that is not Linux", async () => {
+    makeLock("a.lock");
+    const result = await staleLockCheck(repo(), () => undefined).run(origin.env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).toContain(
+      "tasker reads open files only on Linux, so it cannot tell whether a process uses these files.",
+    );
+  });
+
+  it("gives ok and does not read /proc when there is no stale lock", async () => {
+    makeLock("fresh.lock", 1000);
+    let calls = 0;
+    const result = await staleLockCheck(repo(), () => {
+      calls += 1;
+      return undefined;
+    }).run(origin.env);
+    expect(result).toEqual({ status: "ok", detail: "no stale lock files" });
+    expect(calls).toBe(0);
+  });
+
+  it("gives ok with no clone yet when the clone is missing", async () => {
+    const result = await staleLockCheck(repo(join(origin.dir, "missing.git")), view()).run(
+      origin.env,
+    );
+    expect(result.status).toBe("ok");
+    expect(result.detail).toBe("no clone yet");
+    expect(result.remediation).toBeUndefined();
+  });
+
+  it("gives the timeout result when the time limit is 0", async () => {
+    makeLock("a.lock");
+    const result = await staleLockCheck(repo(), view(), 0).run(origin.env);
+    expect(result).toEqual({ status: "error", detail: "the check did not finish in 0 ms" });
   });
 });
