@@ -233,6 +233,11 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
   };
 }
 
+// The folder of the publish tokens of the clone that makeGitClone() makes.
+export function gitCloneTokens(origin: GitOrigin): string {
+  return join(origin.dir, "clone", "publish-tokens");
+}
+
 // A bare clone of origin, made by provisionClone(). origin.remove() deletes it.
 export async function makeGitClone(origin: GitOrigin): Promise<string> {
   const clone = join(origin.dir, "clone", "repo.git");
@@ -241,7 +246,7 @@ export async function makeGitClone(origin: GitOrigin): Promise<string> {
     clone,
     config: {},
     env: origin.env,
-    publishTokens: join(origin.dir, "clone", "publish-tokens"),
+    publishTokens: gitCloneTokens(origin),
   });
   return clone;
 }
