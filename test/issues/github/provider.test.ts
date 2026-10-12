@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssueRef } from "../../../src/issue-key/ref.js";
 import {
   blockersGraphqlArgs,
+  blockersNode,
   blockersPageJson,
   failureOf,
   fakeGh,
@@ -114,7 +115,7 @@ describe("createGithubProvider", () => {
   });
 
   it("reads the blockers as readGithubBlockers does", async () => {
-    const node = { number: 3, state: "OPEN", repository: { nameWithOwner: "octo/repo" } };
+    const node = blockersNode(3, "OPEN", "octo/repo");
     const fake = fakeGh(dir, {}, [
       token,
       { args: blockersGraphqlArgs("octo", "repo", "7"), stdout: blockersPageJson([node]) },
