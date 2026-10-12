@@ -1,5 +1,5 @@
 import type { Config, RepoConfig } from "../config/schema.js";
-import { splitGithubKey } from "./github.js";
+import { asciiFold, splitGithubKey } from "./github.js";
 import { parseJiraKey } from "./jira.js";
 import { IssueKeyError, type IssueRef } from "./ref.js";
 import { githubShortRef } from "./short-ref.js";
@@ -14,13 +14,6 @@ type Provider = RepoConfig["issueTracker"]["provider"];
 // The IssueRef of rawKey in a repo with this project, or undefined when the repo does
 // not own the key. The parser of the provider throws an IssueKeyError when it rejects the key.
 type Matcher = (rawKey: string, repoKey: string, project: string) => IssueRef | undefined;
-
-// GitHub names are ASCII and have no case. The fold changes only A to Z, so a match
-// means that the project has the same ASCII characters as the key, and the stored key
-// is a GitHub key. toLowerCase() is not safe: the Kelvin sign U+212A lowers to "k".
-function asciiFold(text: string): string {
-  return text.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
-}
 
 // One matcher for each provider. A new provider in the schema fails to compile until it has one.
 const MATCHERS: Record<Provider, Matcher> = {
