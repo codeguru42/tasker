@@ -152,8 +152,26 @@ function assertBranchName(name: string): void {
   }
 }
 
-// The absolute path of file in work. It throws when the path is not inside work.
-function resolveInside(work: string, file: string): string {
+// Writes content to target, then commits all changes in folder with message and the extra
+// commit arguments. It returns the new SHA.
+async function writeAndCommit(
+  folder: string,
+  env: NodeJS.ProcessEnv,
+  target: string,
+  content: string,
+  message: string,
+  commitArgs: readonly string[],
+): Promise<string> {
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, content);
+  await runGit(["add", "-A"], { cwd: folder, env });
+  await runGit(["commit", ...commitArgs, "-m", message], { cwd: folder, env });
+  return (await runGit(["rev-parse", "HEAD"], { cwd: folder, env })).trim();
+}
+
+// The absolute path of file in work. It throws with refusal as the text before the file
+// when the path is not inside work.
+function resolveInside(work: string, file: string, refusal: string): string {
   const target = resolve(work, file);
   const rel = relative(work, target);
   if (
@@ -164,7 +182,7 @@ function resolveInside(work: string, file: string): string {
     isAbsolute(rel) ||
     rel.split(sep)[0] === ".git"
   ) {
-    throw new Error(`addCommit needs a file inside the work repo: ${file}`);
+    throw new Error(`${refusal}: ${file}`);
   }
   return target;
 }
@@ -197,15 +215,18 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
       assertBranchName(branch);
       counter += 1;
       const message = change.message ?? `commit ${counter}`;
-      const target = resolveInside(work, change.file ?? `file-${counter}.txt`);
+      const target = resolveInside(
+        work,
+        change.file ?? `file-${counter}.txt`,
+        "addCommit needs a file inside the work repo",
+      );
       await runGit(["fetch", "origin"], { cwd: work, env });
       await runGit(["checkout", "-B", branch, `origin/${branch}`], { cwd: work, env });
-      mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, change.content ?? message);
-      await runGit(["add", "-A"], { cwd: work, env });
-      await runGit(["commit", "--allow-empty", "-m", message], { cwd: work, env });
+      const sha = await writeAndCommit(work, env, target, change.content ?? message, message, [
+        "--allow-empty",
+      ]);
       await runGit(["push", "origin", `HEAD:refs/heads/${branch}`], { cwd: work, env });
-      return (await runGit(["rev-parse", "HEAD"], { cwd: work, env })).trim();
+      return sha;
     },
     async createBranch(name, from = "main") {
       assertBranchName(name);
@@ -274,14 +295,10 @@ export async function commitInWorktree(
   env: NodeJS.ProcessEnv,
   change: { file: string; content?: string; message?: string },
 ): Promise<string> {
-  const target = resolveInside(worktree, change.file);
+  const target = resolveInside(worktree, change.file, "addCommit needs a file inside the work repo");
   worktreeCommitCount += 1;
   const message = change.message ?? `worktree commit ${worktreeCommitCount}`;
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, change.content ?? message);
-  await runGit(["add", "-A"], { cwd: worktree, env });
-  await runGit(["commit", "-m", message], { cwd: worktree, env });
-  return (await runGit(["rev-parse", "HEAD"], { cwd: worktree, env })).trim();
+  return writeAndCommit(worktree, env, target, change.content ?? message, message, []);
 }
 
 // Names that pass the syntax check of a task branch but not the shape check.
