@@ -231,7 +231,7 @@ describe("commitInWorktree", () => {
   it("throws for a file outside the worktree", async () => {
     await expect(
       commitInWorktree(worktree, origin.env, { file: "../x" }),
-    ).rejects.toThrow("addCommit needs a file inside the work repo: ../x");
+    ).rejects.toThrow("commitInWorktree needs a file inside the worktree: ../x");
   });
 });
 
