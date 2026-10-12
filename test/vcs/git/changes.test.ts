@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   changedPaths,
+  fetchOrigin,
   fetchTips,
   hasCommitsNotIn,
   isAncestor,
@@ -338,6 +339,41 @@ describe("git changes", () => {
     it("refuses a missing ref", async () => {
       const error = await failureOf(ancestor("refs/heads/missing", BASE), Error);
       expect(error.message).toBe("cannot resolve the revision: refs/heads/missing");
+    });
+  });
+
+  describe("fetchOrigin", () => {
+    it("moves the base ref and leaves the worktree as it is", async () => {
+      const head = await git("rev-parse", "HEAD");
+      const status = await git("status", "--porcelain");
+      const tip = await origin.addCommit("main");
+      await fetchOrigin({ clone, env, sshKey: undefined });
+      expect(await baseTip()).toBe(tip);
+      expect(tip).toBe(await origin.branchHead("main"));
+      expect(await git("rev-parse", "HEAD")).toBe(head);
+      expect(await git("status", "--porcelain")).toBe(status);
+    });
+
+    it("fetches with the ssh key of the repo", async () => {
+      const ssh = fakeSsh(origin.dir, env, "serve");
+      const sshClone = join(origin.dir, "ssh-clone", "repo.git");
+      await provisionClone({
+        remote: ssh.remote(origin.path),
+        clone: sshClone,
+        config: {},
+        env: ssh.env,
+        publishTokens: join(origin.dir, "ssh-clone", "publish-tokens"),
+      });
+      rmSync(ssh.logPath, { force: true });
+      const key = join(origin.dir, "id key");
+
+      await fetchOrigin({ clone: sshClone, env: ssh.env, sshKey: key });
+
+      const calls = readArgLog(ssh.logPath);
+      expect(calls.length).toBeGreaterThan(0);
+      for (const call of calls) {
+        expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
+      }
     });
   });
 
