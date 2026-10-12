@@ -409,4 +409,84 @@ describe("gh doctor checks", () => {
       expect(argLists(fake)).toEqual([tokenArgs, labelArgs(encoded)]);
     });
   });
+
+  describe("githubDoctorChecks", () => {
+    const jiraRepo = () => {
+      const { issueTracker } = githubRepo("j/jira");
+      return { key: "j/jira", issueTracker: { ...issueTracker, provider: "jira" } as Tracker };
+    };
+    const summary = (checks: { name: string; required: boolean; timeoutMs: number }[]) =>
+      checks.map(({ name, required, timeoutMs }) => ({ name, required, timeoutMs }));
+
+    it("gives no check when no repo uses the github tracker", () => {
+      expect(doctor.githubDoctorChecks([])).toEqual([]);
+      expect(doctor.githubDoctorChecks([jiraRepo()])).toEqual([]);
+    });
+
+    it("gives the version check, one auth check for each account, then two checks for each repo", () => {
+      const checks = doctor.githubDoctorChecks([
+        githubRepo("a/one"),
+        jiraRepo(),
+        githubRepo("a/two"),
+        githubRepo("b/three", { account: "hubot" }),
+      ]);
+      expect(summary(checks)).toEqual([
+        { name: "gh version", required: true, timeoutMs: 5000 },
+        { name: "gh auth: octo", required: true, timeoutMs: 15000 },
+        { name: "gh auth: hubot", required: true, timeoutMs: 15000 },
+        { name: "gh project: a/one", required: true, timeoutMs: 15000 },
+        { name: "gh labels: a/one", required: true, timeoutMs: 15000 },
+        { name: "gh project: a/two", required: true, timeoutMs: 15000 },
+        { name: "gh labels: a/two", required: true, timeoutMs: 15000 },
+        { name: "gh project: b/three", required: true, timeoutMs: 15000 },
+        { name: "gh labels: b/three", required: true, timeoutMs: 15000 },
+      ]);
+    });
+
+    it("makes only read-only gh calls", async () => {
+      const labels = { updateOnStart: true, inProgressLabel: "wip", updateOnFinish: true, doneLabel: "done" };
+      const repos = [
+        githubRepo("a/one", { ...labels, project: "octo/one" }),
+        githubRepo("a/two", { ...labels, project: "octo/two" }),
+      ];
+      const fake = fakeGh(dir, {}, [
+        { args: ["--version"], stdout: "gh version 2.101.0 (2026-09-15)\n" },
+        ghTokenAnswer("octo", "gho_test"),
+        { args: ["api", "user", "--jq", ".login"], stdout: "octo\n" },
+        ...["one", "two"].flatMap((name) => [
+          { args: ["repo", "view", `octo/${name}`, "--json", "nameWithOwner"], stdout: "{}" },
+          { args: ["api", `repos/octo/${name}/labels/wip`], stdout: "{}" },
+          { args: ["api", `repos/octo/${name}/labels/done`], stdout: "{}" },
+        ]),
+      ]);
+      for (const check of doctor.githubDoctorChecks(repos)) {
+        const result = await check.run(fake.env);
+        expect({ name: check.name, status: result.status }).toEqual({
+          name: check.name,
+          status: "ok",
+        });
+      }
+      expect(fake.unanswered()).toEqual([]);
+      const lists = fake.calls().map((call) => call.args);
+      const readOnly = [
+        ["--version"],
+        ["auth", "token", "--hostname", "github.com", "--user", "octo"],
+        ["api", "user", "--jq", ".login"],
+        ...["one", "two"].flatMap((name) => [
+          ["repo", "view", `octo/${name}`, "--json", "nameWithOwner"],
+          ["api", `repos/octo/${name}/labels/wip`],
+          ["api", `repos/octo/${name}/labels/done`],
+        ]),
+      ];
+      for (const args of lists) {
+        expect(readOnly).toContainEqual(args);
+      }
+      const forbidden = ["-X", "--method", "-f", "-F", "--field", "--raw-field"];
+      for (const args of lists) {
+        expect(args.filter((arg) => forbidden.includes(arg))).toEqual([]);
+        expect(args.slice(0, 2)).not.toEqual(["issue", "edit"]);
+        expect(args.slice(0, 2)).not.toEqual(["label", "create"]);
+      }
+    });
+  });
 });
