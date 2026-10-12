@@ -212,7 +212,7 @@ The check runs `authStatus()`. A status that is `ok` gives `ok`. Any other statu
 
 ### Project
 
-The check runs `gh repo view <project> --json nameWithOwner` through `runGh()`. Success gives `ok`. Any error that is not an `AbortError` gives `error`, with the message of the error in the detail and a remediation that names `issueTracker.project` of the repo.
+The check runs `gh repo view <project> --json nameWithOwner` through `runGh()`. Success gives `ok`. Only a `GhError` of the `gh repo view` call itself, with an exit code, gives `error` with the project detail and a remediation that names `issueTracker.project` of the repo. Every other error gives `error` with its message and no remediation, or the timeout result after an abort. Examples are a failed token call, `gh` not installed, and a stop by a signal.
 
 ### Labels
 
