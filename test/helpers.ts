@@ -6,6 +6,8 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir, userInfo } from "node:os";
@@ -503,4 +505,39 @@ export function readArgLog(logPath: string): string[][] {
     index += 1 + count;
   }
   return calls;
+}
+
+// Sets the mtime of file to ageMs milliseconds in the past.
+export function ageFile(path: string, ageMs: number): void {
+  const when = new Date(Date.now() - ageMs);
+  utimesSync(path, when, when);
+}
+
+export interface FakeProcess {
+  pid: number;
+  // The name of the process. The file comm ends with a newline, as in /proc.
+  comm: string;
+  // The folder of the process. Without it, the process has no cwd link.
+  cwd?: string;
+  // The paths of the open files. Without it, the process has no fd folder.
+  openFiles?: readonly string[];
+}
+
+// Makes a fake /proc folder in root: <pid>/comm, <pid>/cwd and <pid>/fd/<n> as links.
+export function writeFakeProc(root: string, processes: readonly FakeProcess[]): void {
+  mkdirSync(root, { recursive: true });
+  for (const process of processes) {
+    const folder = join(root, String(process.pid));
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(join(folder, "comm"), `${process.comm}\n`);
+    if (process.cwd !== undefined) {
+      symlinkSync(process.cwd, join(folder, "cwd"));
+    }
+    if (process.openFiles !== undefined) {
+      mkdirSync(join(folder, "fd"));
+      process.openFiles.forEach((file, index) => {
+        symlinkSync(file, join(folder, "fd", String(index)));
+      });
+    }
+  }
 }
