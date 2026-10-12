@@ -233,6 +233,9 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
   };
 }
 
+// The text that the pre-push hook prints for a push with no valid publish token.
+export const NO_TOKEN = "tasker: the push has no valid publish token";
+
 // The folder of the publish tokens of the clone that makeGitClone() makes.
 export function gitCloneTokens(origin: GitOrigin): string {
   return join(origin.dir, "clone", "publish-tokens");

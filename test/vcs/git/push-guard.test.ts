@@ -18,12 +18,12 @@ import {
   type GitOrigin,
   makeGitOrigin,
   makeTempDir,
+  NO_TOKEN,
   readArgLog,
   sshKeyArgs,
 } from "../../helpers.js";
 
 const HEX = "0123456789abcdef";
-const NO_TOKEN = "tasker: the push has no valid publish token";
 
 describe("the pre-push hook", () => {
   let origin: GitOrigin;
