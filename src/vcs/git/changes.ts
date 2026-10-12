@@ -128,3 +128,9 @@ export async function uncommittedChanges(o: {
     path: field.slice(3),
   }));
 }
+
+// The message that refuses a worktree with uncommitted changes. Each path is JSON text, so a
+// path with a comma or a newline stays readable and exact.
+export function uncommittedRefusal(path: string, changes: readonly UncommittedChange[]): string {
+  return `the worktree has uncommitted changes: ${path}: ${changes.map((c) => JSON.stringify(c.path)).join(", ")}`;
+}
