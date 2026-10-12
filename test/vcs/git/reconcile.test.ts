@@ -316,6 +316,20 @@ describe("git reconcile", () => {
       expect(await git("rev-parse", "HEAD")).toBe(start.head);
     });
 
+    it("does nothing when the base fast-forwarded to the task head outside tasker", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      const start = await state();
+      // Origin main takes the task commit by a fast-forward, as a landing outside tasker does.
+      await runGit(["fetch", clone, `refs/heads/${BRANCH}:refs/heads/main`], {
+        gitDir: origin.path,
+        env,
+      });
+      await runGit(["fetch", "origin"], { gitDir: clone, env });
+      expect(await git("rev-parse", BASE)).toBe(start.head);
+      expect(await resync("rebase")).toEqual({ moved: false, how: "none", head: start.head });
+      expect(await git("rev-parse", "HEAD")).toBe(start.head);
+    });
+
     it("fast-forwards a task with no own commits", async () => {
       const tip = await moveBase({ file: "b.txt" });
       expect(await resync("rebase")).toEqual({ moved: true, how: "fast-forward", head: tip });
