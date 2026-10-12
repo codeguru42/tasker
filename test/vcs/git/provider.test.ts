@@ -1,10 +1,18 @@
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { BaseBranchMemory } from "../../../src/vcs/provider.js";
+import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
+import { ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
+import { runGit } from "../../../src/vcs/git/run.js";
 import { taskBranchName, taskWorktreePath } from "../../../src/vcs/git/worktree.js";
-import { localBranches, makeProviderFixture, type ProviderFixture } from "../../helpers.js";
+import {
+  commitInWorktree,
+  localBranches,
+  makeProviderFixture, type ProviderFixture,
+} from "../../helpers.js";
 
 describe("createGitProvider", () => {
   let fixture: ProviderFixture;
@@ -69,6 +77,95 @@ describe("createGitProvider", () => {
       git.installPushGuard(fixture.context);
       expect(existsSync(hook)).toBe(true);
       expect(readFileSync(hook, "utf8")).toContain(resolve(paths().publishTokens));
+    });
+  });
+
+  function memory(): BaseBranchMemory {
+    const stored = new Map<string, string>();
+    return {
+      getDefaultBaseBranch: (repoKey) => stored.get(repoKey),
+      setDefaultBaseBranch: (repoKey, branch) => void stored.set(repoKey, branch),
+      forgetDefaultBaseBranch: (repoKey) => void stored.delete(repoKey),
+    };
+  }
+
+  const ask = () => Promise.reject(new Error("ask must not run"));
+
+  // A provisioned repo with one workspace.
+  async function workspace() {
+    const git = provider();
+    await git.provision(fixture.context);
+    const created = await git.createWorkspace(fixture.context, {
+      shortRef: "issue-1",
+      title: "Add the thing",
+      baseRevision: base,
+    });
+    return { git, ...created };
+  }
+
+  describe("base, changes and reconcile", () => {
+    it("resolves the base like resolveBaseBranch", async () => {
+      const git = provider();
+      await git.provision(fixture.context);
+      const direct = await resolveBaseBranch({
+        repoKey: fixture.context.repoKey,
+        clone: paths().clone,
+        sshKey: undefined,
+        env: fixture.context.env,
+        memory: memory(),
+        explicit: "main",
+        ask,
+      });
+      const mapped = await git.resolveBase(fixture.context, {
+        memory: memory(),
+        explicit: "main",
+        ask,
+      });
+      expect(mapped).toEqual(direct);
+    });
+
+    it("gives the diff and the own commits like the git functions", async () => {
+      const { git, path, taskRef } = await workspace();
+      await commitInWorktree(path, fixture.context.env, { file: "a.txt" });
+      const { clone } = paths();
+      const env = fixture.context.env;
+      expect(await git.diffAgainstBase(fixture.context, { path, baseRevision: base })).toBe(
+        await worktreeDiff({ clone, env, path, baseRevision: base }),
+      );
+      expect(await git.ownCommits(fixture.context, { taskRef, baseRevision: base })).toBe(
+        await ownCommitsText({ clone, env, branch: taskRef, baseRevision: base }),
+      );
+    });
+
+    it("lists the uncommitted changes like uncommittedChanges", async () => {
+      const { git, path } = await workspace();
+      writeFileSync(join(path, "new.txt"), "new\n");
+      const direct = await uncommittedChanges({
+        clone: paths().clone,
+        env: fixture.context.env,
+        path,
+      });
+      expect(direct.length).toBeGreaterThan(0);
+      expect(await git.uncommittedChanges(fixture.context, { path })).toEqual(direct);
+    });
+
+    it("reconciles the workspace onto the new base and gives its head", async () => {
+      const { git, path } = await workspace();
+      await commitInWorktree(path, fixture.context.env, { file: "a.txt" });
+      await fixture.origin.addCommit("main", { file: "other.txt" });
+      const resolved = await git.resolveBase(fixture.context, {
+        memory: memory(),
+        explicit: "main",
+        ask,
+      });
+      const head = await git.reconcile(fixture.context, {
+        path,
+        baseRevision: resolved.revision,
+        strategy: "rebase",
+      });
+      expect(head).toBe(
+        (await runGit(["rev-parse", "HEAD"], { cwd: path, env: fixture.context.env })).trim(),
+      );
     });
   });
 });
