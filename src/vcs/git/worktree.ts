@@ -1,24 +1,14 @@
 import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
-import { ISSUE_NUMBER, JIRA_PROJECT, SITE_LABEL } from "../../issue-key/short-ref.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
+import { isShortRef, SHORT_REF } from "../../issue-key/short-ref.js";
 import { GitError, runGit } from "./run.js";
 
 const MAX_BRANCH_LENGTH = 100;
 
-const SITE = `${SITE_LABEL}(?:\\.${SITE_LABEL})*`;
-const SHORT_REF = `(?:issue-${ISSUE_NUMBER}|(?:(?<site>${SITE})-browse-)?${JIRA_PROJECT}-${ISSUE_NUMBER})`;
 // The title slug: lower case, as taskBranchName() makes it. pathSlug() strips "-" and "." at the ends.
 const TITLE_SLUG = "[a-z0-9_](?:[a-z0-9._-]*[a-z0-9_])?";
-const SHORT_REF_PATTERN = new RegExp(`^${SHORT_REF}$`);
 const TASK_BRANCH_PATTERN = new RegExp(`^${SHORT_REF}(?:-${TITLE_SLUG})?$`);
-
-// True when match is a full match and its site, when present, is lower case,
-// because the Jira parser writes the site in lower case.
-function lowerSiteMatch(match: RegExpExecArray | null): boolean {
-  const site = match?.groups?.site;
-  return match !== null && (site === undefined || site === site.toLowerCase());
-}
 
 // pathSlug(), but undefined when no character is left. Any other error passes through.
 function slugOrUndefined(value: string): string | undefined {
@@ -40,15 +30,10 @@ function isTaskBranch(name: string): boolean {
   );
 }
 
-// True when value is a short ref that the issue key parsers make.
-export function isShortRef(value: string): boolean {
-  return isTaskBranch(value) && lowerSiteMatch(SHORT_REF_PATTERN.exec(value));
-}
-
 // Throws unless name has the shape that taskBranchName() makes: a short ref alone,
 // or a short ref, "-" and a lower-case title slug. Run it after assertTaskBranch().
 export function assertTaskBranchShape(name: string): void {
-  if (!(isTaskBranch(name) && lowerSiteMatch(TASK_BRANCH_PATTERN.exec(name)))) {
+  if (!(isTaskBranch(name) && TASK_BRANCH_PATTERN.test(name))) {
     throw new Error(`not a task branch: ${JSON.stringify(name)}`);
   }
 }
@@ -68,7 +53,7 @@ export function assertTaskBranch(name: string): void {
 // - A result with a slug has a "-", so it is never "HEAD".
 // - The length is at most MAX_BRANCH_LENGTH.
 export function taskBranchName(shortRef: string, title: string): string {
-  if (!isShortRef(shortRef)) {
+  if (!(isTaskBranch(shortRef) && isShortRef(shortRef))) {
     throw new Error(`not a safe short ref: ${JSON.stringify(shortRef)}`);
   }
   const room = MAX_BRANCH_LENGTH - shortRef.length - 1;
