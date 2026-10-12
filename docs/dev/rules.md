@@ -25,6 +25,8 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 
 ## Docs
 
+- The code is the source of truth. The docs do not describe anything that a reader can learn from the code directly. Examples are the names of functions, files, helpers, types and table columns, and the signatures, arguments, flags, return values and steps of a function.
+- The docs give only what the code cannot show. They give the purpose of a part, the reasons for a design and the rules that apply across files. They also give the limits and the facts about outside tools. An example of a fact about an outside tool is a git behavior that a flag guards against. A user does not read the code. As a result, the user docs (`docs/config.md` and `skills/tasker/SKILL.md`) describe the behavior that a user sees, for example the commands, the flags and the configuration.
 - Update the docs in the same change as the code.
 - Put a new command in `skills/tasker/SKILL.md` and in the `--help` output.
 - Write the docs in plain English: short sentences, active voice, simple tenses, and "must" for a requirement.
