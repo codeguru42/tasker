@@ -70,3 +70,44 @@ describe("loadsChildProcess", () => {
     expect(loadsChildProcess(sample)).toBe(false);
   });
 });
+
+describe("the provider boundary", () => {
+  it("finds no file outside src/vcs that imports from src/vcs/git", () => {
+    const broken = sourceFiles().filter(({ file, text }) => breaksProviderBoundary(file, text));
+    expect(broken.map(({ file }) => file)).toEqual([]);
+  });
+});
+
+describe("breaksProviderBoundary", () => {
+  it.each([
+    ["commands/x.ts", 'import { runGit } from "../vcs/git/run.js";'],
+    ["commands/x.ts", 'import type { GitError } from "../vcs/git/run.js";'],
+    ["commands/x.ts", 'import "../vcs/git/run.js";'],
+    ["commands/x.ts", 'const m = await import("../vcs/git/run.js");'],
+    ["commands/x.ts", "const m = await import('../vcs/git/run.js');"],
+    ["commands/x.ts", "const m = await import(`../vcs/git/run.js`);"],
+    ["commands/x.ts", 'const m = require("../vcs/git/run.js");'],
+    ["commands/x.ts", 'export { runGit } from "../vcs/git/run.js";'],
+    ["commands/x.ts", 'export * from "../vcs/git/run.js";'],
+    ["commands/x.ts", 'export type { GitLocation } from "../vcs/git/run.js";'],
+    ["main.ts", 'import "./vcs/git/run.js";'],
+  ])("finds %s with %s", (file, sample) => {
+    expect(breaksProviderBoundary(file, sample)).toBe(true);
+  });
+
+  it.each([
+    ["commands/x.ts", 'import { createVcsProvider } from "../vcs/provider.js";'],
+    ["commands/x.ts", 'import { ReconcileConflictError } from "../vcs/errors.js";'],
+    ["commands/x.ts", 'import { x } from "./git/run.js";'],
+    ["commands/x.ts", 'import { x } from "../vcs/gitlab/run.js";'],
+    ["commands/x.ts", 'import { z } from "zod";'],
+    ["vcs/provider.ts", 'import { createGitProvider } from "./git/provider.js";'],
+  ])("ignores %s with %s", (file, sample) => {
+    expect(breaksProviderBoundary(file, sample)).toBe(false);
+  });
+
+  it("skips a file in src/vcs by its path, not by its pattern", () => {
+    const sample = 'import { createGitProvider } from "./git/provider.js";';
+    expect(importsVcsGit("vcs/provider.ts", sample)).toBe(true);
+  });
+});
