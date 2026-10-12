@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EXECUTE_COMMIT_TEXT } from "../../../src/vcs/git/assistant-surface.js";
+import { DENY_RULES, EXECUTE_COMMIT_TEXT } from "../../../src/vcs/git/assistant-surface.js";
 
 const EXPECTED = [
   "Commit each red/green pair, or each completed todo, as its own commit. Never collect the whole plan into one commit at the end. If a run stops partway (a quota limit, a timeout), the work that it finished must stay committed.",
@@ -9,5 +9,9 @@ const EXPECTED = [
 describe("assistant surface values", () => {
   it("gives the commit rules of the execute prompt", () => {
     expect(EXECUTE_COMMIT_TEXT).toBe(EXPECTED);
+  });
+
+  it("denies git push in the shell of the assistant", () => {
+    expect(DENY_RULES).toEqual(["Bash(git push:*)"]);
   });
 });
