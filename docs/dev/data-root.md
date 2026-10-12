@@ -35,9 +35,9 @@ The table has one row for each task. All times are ISO 8601 text in UTC, for exa
 | `state` | text | Required. The state of the task. See [the state machine](../statemachine.md). The store does not check the value. |
 | `branch` | text | Optional. The branch of the task. |
 | `worktree_path` | text | Optional. The worktree of the task. |
-| `title` | text | Optional. The title of the task. |
-| `short_ref` | text | Optional. The short name of the task. |
-| `base` | text | Optional. The base branch of the task. |
+| `title` | text | Optional. The title of the issue when the task started. |
+| `short_ref` | text | Optional. The short ref of the issue key, for example `issue-5`. |
+| `base` | text | Optional. The stored form of the base: an origin branch name, or `refs/heads/<x>`. |
 | `attempt` | integer | Required. The number of the attempt of the issue. The first attempt is 1. Schema version 4 gives 1 to each older row. |
 | `created_at` | text | Required. The time that `createTask()` ran. |
 | `updated_at` | text | Required. The time of the last change. |
