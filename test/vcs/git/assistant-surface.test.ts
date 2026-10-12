@@ -106,7 +106,7 @@ describe("assistant surface values", () => {
     ]);
   });
 
-  it.each(["~alice/.ssh/id", "~"])("throws for the ssh key %s", (key) => {
+  it.each(["~alice/.ssh/id", "~", "keys/id_tasker", "./id_tasker"])("throws for the ssh key %s", (key) => {
     expect(() => readDenyPaths({ sshKey: key })).toThrow(
       `cannot resolve the ssh key path for the sandbox: ${key}`,
     );
