@@ -5,4 +5,4 @@ export const EXECUTE_COMMIT_TEXT = [
 ].join("\n\n");
 
 // The deny rules for the shell of the assistant, in the rule syntax of Claude Code.
-export const DENY_RULES: readonly string[] = [];
+export const DENY_RULES: readonly string[] = ["Bash(git push:*)"];
