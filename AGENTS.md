@@ -11,3 +11,4 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a rebase conflict.
 - [docs/dev/orchestration.md](docs/dev/orchestration.md): the rules for an orchestrator that runs tickets from the project board through the installed tasker.
 - [docs/dev/workspaces.md](docs/dev/workspaces.md): the base branch and the workspace of a task: the forms, the order of the resolve, the learned default, the worktree functions, the diff and changes functions, and the reconcile and restore functions.
+- [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code in `src/issues/`, `runGh()`, the token of the account, the environment and the errors of `gh`.
