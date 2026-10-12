@@ -3,6 +3,8 @@ import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   type FoundState,
+  type ReconcileStrategy,
+  reconcileWorktree,
   restoreCommands,
   restoreWorktree,
   type StartState,
@@ -52,6 +54,10 @@ describe("git reconcile", () => {
   const state = (extra: Partial<Parameters<typeof worktreeState>[0]> = {}) =>
     worktreeState({ clone, env, path, ...extra });
 
+  const reconcile = (
+    strategy: ReconcileStrategy,
+    extra: Partial<Parameters<typeof reconcileWorktree>[0]> = {},
+  ) => reconcileWorktree({ clone, env, path, baseRevision: BASE, strategy, ...extra });
   const restore = (
     start: StartState,
     extra: Partial<Parameters<typeof restoreWorktree>[0]> = {},
@@ -168,6 +174,49 @@ describe("git reconcile", () => {
       )).toBe(true);
       expect(error.message).toContain(`${BRANCH}.lock`);
       expect(error.message).not.toContain("git rebase --abort");
+    });
+  });
+
+  describe("reconcileWorktree", () => {
+    it("rebases the task commits onto the base tip", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      const tip = await moveBase({ file: "b.txt" });
+      const result = await reconcile("rebase");
+      expect(await git("rev-parse", "HEAD^")).toBe(tip);
+      expect((await state()).branch).toBe(BRANCH);
+      expect(result).toBe(await git("rev-parse", "HEAD"));
+    });
+
+    it("merges the base tip into the task branch", async () => {
+      const old = await commitInWorktree(path, env, { file: "a.txt" });
+      const tip = await moveBase({ file: "b.txt" });
+      const result = await reconcile("merge");
+      expect(await git("rev-parse", "HEAD^1", "HEAD^2")).toBe(`${old}\n${tip}`);
+      expect(result).toBe(await git("rev-parse", "HEAD"));
+    });
+
+    it("brings the base file with a merge although the configuration says pull.twohead=ours", async () => {
+      const config = join(origin.dir, "gitconfig");
+      writeFileSync(config, "[pull]\n\ttwohead = ours\n");
+      await commitInWorktree(path, env, { file: "a.txt" });
+      await moveBase({ file: "b.txt", content: "from the base" });
+      await reconcile("merge", { env: { ...env, GIT_CONFIG_GLOBAL: config } });
+      expect(await git("show", "HEAD:b.txt")).toBe("from the base");
+    });
+
+    it("refuses a dirty worktree and changes nothing", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      await moveBase({ file: "b.txt" });
+      writeFileSync(join(target, "note.txt"), "x");
+      const start = await state();
+      const error = await failureOf(reconcile("rebase"), Error);
+      expect(error.message).toBe(`the worktree has uncommitted changes: ${target}: "note.txt"`);
+      expect(await state()).toEqual(start);
+    });
+
+    it("refuses a base that is not a full revision or ref", async () => {
+      const error = await failureOf(reconcile("rebase", { baseRevision: "main" }), Error);
+      expect(error.message).toContain("not a full revision or ref");
     });
   });
 });
