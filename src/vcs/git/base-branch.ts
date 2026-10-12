@@ -71,16 +71,62 @@ async function exists(clone: string, env: NodeJS.ProcessEnv, base: string): Prom
   }
 }
 
-// Fetches origin, then picks the base branch of a task.
+// Fetches origin, then picks the base branch of a task. The sources come in this order:
+// the hint, --base, the learned default, defaultBaseBranch and the answer of ask.
 export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<ResolvedBase> {
-  const { clone, env } = options;
+  const { repoKey, clone, env, hint, memory } = options;
   const explicit = options.explicit === undefined ? undefined : parseBaseInput(options.explicit);
+  if (hint === "") {
+    throw new Error("the base branch of the issue is empty");
+  }
+  if (hint?.startsWith(LOCAL_PREFIX)) {
+    throw new Error(`the base branch of the issue must name a remote branch: ${hint}`);
+  }
   await runRemoteGit(["fetch", "origin", "--prune"], { gitDir: clone, env }, options.sshKey);
-  if (explicit === undefined) {
-    throw new Error("the base branch has no source yet");
+
+  const found = (base: string, source: ResolvedBase["source"]): ResolvedBase => ({
+    base,
+    revision: baseRevision(base),
+    source,
+    notes: [],
+  });
+
+  if (hint !== undefined) {
+    if (!(await exists(clone, env, hint))) {
+      throw new Error(`the base branch does not exist on origin: ${hint} (from the issue)`);
+    }
+    return found(hint, "hint");
   }
-  if (!(await exists(clone, env, explicit))) {
-    throw new Error(`the base branch does not exist: ${explicit} (from --base)`);
+
+  if (explicit !== undefined) {
+    if (!(await exists(clone, env, explicit))) {
+      throw new Error(`the base branch does not exist: ${explicit} (from --base)`);
+    }
+    return found(explicit, "explicit");
   }
-  return { base: explicit, revision: baseRevision(explicit), source: "explicit", notes: [] };
+
+  const learned = memory.getDefaultBaseBranch(repoKey);
+  if (learned !== undefined && (await exists(clone, env, learned))) {
+    return found(learned, "learned");
+  }
+
+  const configured = options.defaultBaseBranch;
+  if (learned === undefined && configured !== undefined) {
+    if (!(await exists(clone, env, configured))) {
+      throw new Error(
+        `the base branch does not exist on origin: ${configured} (from defaultBaseBranch)`,
+      );
+    }
+    return found(configured, "config");
+  }
+
+  const answer = await options.ask();
+  const asked = parseBaseInput(answer);
+  if (asked.startsWith(LOCAL_PREFIX)) {
+    throw new Error(`the base branch must name a remote branch: ${answer}`);
+  }
+  if (!(await exists(clone, env, asked))) {
+    throw new Error(`the base branch does not exist on origin: ${asked} (from the answer)`);
+  }
+  return found(asked, "ask");
 }
