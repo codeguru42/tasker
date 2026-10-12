@@ -67,6 +67,25 @@ export function makeTempDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix));
 }
 
+// The error that promise rejects with. It throws, so the test fails, when promise resolves
+// or when the error is not an instance of type.
+export async function failureOf<E extends Error>(
+  promise: Promise<unknown>,
+  type: abstract new (...args: never[]) => E,
+): Promise<E> {
+  const outcome = await promise.then(
+    () => ({ rejected: false as const }),
+    (error: unknown) => ({ rejected: true as const, error }),
+  );
+  if (!outcome.rejected) {
+    throw new Error("the promise resolved, but the test needs a rejection");
+  }
+  if (!(outcome.error instanceof type)) {
+    throw new Error(`the promise rejected with ${String(outcome.error)}, not a ${type.name}`);
+  }
+  return outcome.error;
+}
+
 // The names of the tables in db, in alphabetical order.
 export function tableNames(db: DatabaseSync): string[] {
   const rows = db
@@ -247,6 +266,37 @@ export function writeFakeSsh(binDir: string, logPath: string, mode: "serve" | "r
           "exit 255",
         ];
   writeFileSync(join(binDir, "ssh"), `#!/bin/sh\n${body.join("\n")}\n`, { mode: 0o755 });
+}
+
+export interface FakeSsh {
+  // baseEnv with PATH=<dir>/bin<delimiter><process.env.PATH>, so git starts the fake ssh.
+  env: NodeJS.ProcessEnv;
+  // The log of the fake ssh. readArgLog() reads it.
+  logPath: string;
+  // The ssh remote for a repo path: ssh://tasker.invalid<path>.
+  remote(path: string): string;
+}
+
+// Writes a fake ssh into <dir>/bin with writeFakeSsh(), with the log <dir>/ssh.log.
+// A second call with the same dir replaces the script and keeps the log.
+export function fakeSsh(
+  dir: string,
+  baseEnv: NodeJS.ProcessEnv,
+  mode: "serve" | "refuse",
+): FakeSsh {
+  const binDir = join(dir, "bin");
+  const logPath = join(dir, "ssh.log");
+  writeFakeSsh(binDir, logPath, mode);
+  return {
+    env: { ...baseEnv, PATH: `${binDir}${delimiter}${process.env.PATH}` },
+    logPath,
+    remote: (path) => `ssh://tasker.invalid${path}`,
+  };
+}
+
+// The first six arguments that git passes to ssh for sshCommand(key).
+export function sshKeyArgs(key: string): string[] {
+  return ["-i", key, "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes"];
 }
 
 // Writes a git wrapper into binDir. It logs each call (see readArgLog()), then runs the real git.
