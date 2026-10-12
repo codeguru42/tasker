@@ -125,11 +125,15 @@ function setUp(db: DatabaseSync) {
     insertTask: db.prepare(
       `INSERT INTO tasks
          (issue_key, repo_key, state, branch, worktree_path, title, short_ref, base,
-          created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          attempt, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`,
     ),
     selectTask: db.prepare("SELECT * FROM tasks WHERE id = ?"),
+    // The count covers all repos, because the issue key is the same in each of them.
+    selectNextAttempt: db.prepare(
+      "SELECT COALESCE(MAX(attempt), 0) + 1 AS next FROM tasks WHERE issue_key = ?",
+    ),
     updateTask: db.prepare(
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
@@ -178,6 +182,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     createTask(task) {
       return immediateTransaction(db, () => {
         const at = now().toISOString();
+        const { next } = statements.selectNextAttempt.get(task.issueKey) as {
+          next: number;
+        };
         const row = statements.insertTask.get(
           task.issueKey,
           task.repoKey,
@@ -187,6 +194,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           task.title ?? null,
           task.shortRef ?? null,
           task.base ?? null,
+          next,
           at,
           at,
         ) as unknown as TaskRow;
