@@ -326,10 +326,11 @@ async function resyncResult(
 }
 
 // Brings the task worktree onto the base tip that the caller fetched. It does not fetch.
-// If the worktree holds the base already (for example someone merged the task into the base
-// outside tasker), nothing moves. If the base is ahead and the task has no other commits, it
-// fast-forwards. Else it runs the strategy, with the restore and the conflict rule of
-// reconcileWorktree().
+// If the base tip is HEAD or an ancestor of HEAD, nothing moves ("none"). A task that the base
+// got by a fast-forward outside tasker gives this case. A task that the base got with a merge
+// commit outside tasker gives "fast-forward", because the merge commit is ahead of HEAD.
+// If HEAD is an ancestor of the base tip, it fast-forwards. Else it runs the strategy, with the
+// restore and the conflict rule of reconcileWorktree().
 export async function resyncWorktree(o: {
   clone: string;
   env: NodeJS.ProcessEnv;

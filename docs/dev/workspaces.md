@@ -372,7 +372,7 @@ The message of `ReconcileConflictError` is `the <rebase|merge> onto <base> stopp
 
 `resyncWorktree()` gives `{ moved, how, head }`. It does not fetch, and it does not call `reconcileWorktree()`. The cases are:
 
-- The worktree holds the base already. Then `how` is `none`. This covers a task that someone merged into the base outside tasker.
+- The base tip is HEAD or an ancestor of HEAD. Then `how` is `none`, and nothing moves. A task that the base got by a fast-forward outside tasker gives this case. A task that the base got with a merge commit outside tasker gives `fast-forward`, because the merge commit is ahead of HEAD.
 - The head is an ancestor of the base. Then it runs the fast-forward, and `how` is `fast-forward`. A fast-forward has no conflicts.
 - Any other case runs the strategy, and `how` is `rebase` or `merge`.
 
