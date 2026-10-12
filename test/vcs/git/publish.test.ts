@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
@@ -13,6 +13,7 @@ import {
   makeGitClone,
   makeGitOrigin,
   NO_TOKEN,
+  NOT_TASK_BRANCHES,
   readArgLog,
   sshKeyArgs,
   writeGitRecorder,
@@ -108,6 +109,13 @@ describe("publish, land and delete", () => {
         env: fake.env,
       },
     };
+  }
+
+  // Makes origin refuse each push.
+  function refusePushesOnOrigin(): void {
+    const hooks = join(origin.path, "hooks");
+    mkdirSync(hooks, { recursive: true });
+    writeFileSync(join(hooks, "pre-receive"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
   }
 
   describe("publishTaskBranch", () => {
@@ -242,6 +250,47 @@ describe("publish, land and delete", () => {
           `${moved}: tasker never published it, origin has ${main}`,
           main,
         );
+      });
+    });
+
+    describe("errors", () => {
+      const named = "cannot publish the task branch: issue-1-task";
+
+      it("names the branch when origin refuses the push", async () => {
+        await addCloneCommit(clone, env, "issue-1-task");
+        refusePushesOnOrigin();
+
+        const error = await failureOf(publish(), Error);
+
+        expect(error.message.startsWith(named)).toBe(true);
+        expect(await origin.branchHead("issue-1-task")).toBeUndefined();
+        expectNoTokenFile();
+      });
+
+      it("names the branch when the remote does not answer", async () => {
+        await addCloneCommit(clone, env, "issue-1-task");
+
+        const error = await failureOf(
+          publish({ remote: join(origin.dir, "missing.git") }),
+          Error,
+        );
+
+        expect(error.message.startsWith(named)).toBe(true);
+        expectNoTokenFile();
+      });
+
+      it.each(["abc", "main"])("refuses the published revision %j before any git call", async (published) => {
+        const error = await failureOf(publish({ published }), Error);
+        expect(error.message).toBe(
+          `the published revision is not a full revision: ${JSON.stringify(published)}`,
+        );
+        expect(gitCalls()).toEqual([]);
+      });
+
+      it.each(NOT_TASK_BRANCHES)("refuses the name %j before any git call", async (branch) => {
+        const error = await failureOf(publish({ branch }), Error);
+        expect(error.message).toBe(`not a task branch: ${JSON.stringify(branch)}`);
+        expect(gitCalls()).toEqual([]);
       });
     });
 
