@@ -230,15 +230,14 @@ export async function deleteTaskBranch(options: {
   });
 }
 
-// Resets tracked files, then deletes untracked files and nested git repos. Ignored files stay.
-// Git with a wrong cwd changes another repo, so the folder must be a listed worktree of the
-// clone with a .git file. Without that file, git would use a repo around the folder.
-// Reset runs first, so a deleted .gitignore comes back before clean reads it.
-export async function discardWorktreeChanges(options: {
+// Throws unless path is a listed worktree of the clone with a .git file. Gives the real path.
+// Git with a wrong cwd changes another repo. Without a .git file, git would use a repo around
+// the folder. The guard only reads.
+export async function assertTaskWorktree(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
   path: string;
-}): Promise<void> {
+}): Promise<string> {
   const { clone, env, path } = options;
   const target = canonicalPath(path);
   const entries = await listWorktrees({ clone, env });
@@ -248,6 +247,19 @@ export async function discardWorktreeChanges(options: {
   if (!hasGitFile(target)) {
     throw new Error(`the worktree has no .git file: ${target}`);
   }
+  return target;
+}
+
+// Resets tracked files, then deletes untracked files and nested git repos. Ignored files stay.
+// The folder must pass assertTaskWorktree().
+// Reset runs first, so a deleted .gitignore comes back before clean reads it.
+export async function discardWorktreeChanges(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+}): Promise<void> {
+  const { env } = options;
+  const target = await assertTaskWorktree(options);
   await runGit(["reset", "--hard"], { cwd: target, env });
   await runGit(["clean", "-ffd"], { cwd: target, env });
 }
