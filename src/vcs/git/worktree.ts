@@ -92,3 +92,13 @@ export async function listWorktrees(options: {
   }
   return entries;
 }
+
+export async function createTaskWorktree(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+  branch: string;
+  baseRevision: string;
+}): Promise<"created" | "reused-branch" | "reused-worktree"> {
+  throw new Error(`not implemented: ${options.branch}`);
+}

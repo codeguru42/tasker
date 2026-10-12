@@ -1,9 +1,14 @@
-import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runGit } from "../../../src/vcs/git/run.js";
-import { listWorktrees, taskBranchName, taskWorktreePath } from "../../../src/vcs/git/worktree.js";
-import { makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers.js";
+import { GitError, runGit } from "../../../src/vcs/git/run.js";
+import {
+  createTaskWorktree,
+  listWorktrees,
+  taskBranchName,
+  taskWorktreePath,
+} from "../../../src/vcs/git/worktree.js";
+import { failureOf, makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers.js";
 
 describe("taskBranchName", () => {
   it.each([
@@ -41,12 +46,14 @@ describe("taskWorktreePath", () => {
 describe("git fixture", () => {
   let origin: GitOrigin;
   let clone: string;
+  let worktrees: string;
   let env: NodeJS.ProcessEnv;
 
   beforeEach(async () => {
     origin = await makeGitOrigin();
     await origin.addCommit("main", { file: ".gitignore", content: "ign\n" });
     clone = await makeGitClone(origin);
+    worktrees = join(origin.dir, "worktrees");
     env = origin.env;
   });
 
@@ -97,6 +104,49 @@ describe("git fixture", () => {
       await add("-b", "b1", "--", join(link, "w1"), base);
       expect(await list()).toEqual([{ path: join(real, "w1"), branch: "b1" }]);
     });
+  });
+
+  describe("createTaskWorktree, new branch", () => {
+    const create = (extra: Partial<Parameters<typeof createTaskWorktree>[0]> = {}) =>
+      createTaskWorktree({
+        clone,
+        env,
+        path: taskWorktreePath(worktrees, "issue-1"),
+        branch: "issue-1-x",
+        baseRevision: "refs/remotes/origin/main",
+        ...extra,
+      });
+    const gitIn = (cwd: string, ...args: string[]) =>
+      runGit(args, { cwd, env }).then((out) => out.trim());
+
+    it("makes a new branch and a worktree at the base", async () => {
+      const path = taskWorktreePath(worktrees, "issue-1");
+      expect(existsSync(worktrees)).toBe(false);
+      expect(await create()).toBe("created");
+      expect(await gitIn(path, "rev-parse", "HEAD")).toBe(await origin.branchHead("main"));
+      expect(await gitIn(path, "symbolic-ref", "HEAD")).toBe("refs/heads/issue-1-x");
+      await runGit(["show-ref", "--verify", "--quiet", "--", "refs/heads/issue-1-x"], {
+        gitDir: clone,
+        env,
+      });
+    });
+
+    it("gives the new branch no upstream", async () => {
+      await create();
+      const error = await failureOf(
+        runGit(["config", "--get", "branch.issue-1-x.remote"], { gitDir: clone, env }),
+        GitError,
+      );
+      expect(error.exitCode).toBe(1);
+    });
+
+    it.each(["", "-x", "a..b", "HEAD", "a/b", "x.lock", "a".repeat(101)])(
+      "refuses the branch name %j before any git call",
+      async (branch) => {
+        const error = await failureOf(create({ branch, env: {} }), Error);
+        expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
+      },
+    );
   });
 
   describe("taskBranchName for any title", () => {
