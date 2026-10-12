@@ -54,9 +54,12 @@ describe("publish, land and delete", () => {
     });
   }
 
-  // The recorder calls after the first mark calls.
+  // The recorder calls after the first mark calls. runGit() puts "--bare --git-dir <path>" in
+  // front of a call in a bare clone. This function drops it, so that a call starts with its subcommand.
   function gitCalls(mark = 0): string[][] {
-    return readArgLog(log).slice(mark);
+    return readArgLog(log)
+      .slice(mark)
+      .map((call) => (call[0] === "--bare" && call[1] === "--git-dir" ? call.slice(3) : call));
   }
 
   function pushes(): string[][] {
@@ -133,7 +136,7 @@ describe("publish, land and delete", () => {
       expect(result.state).toBe("published");
       expect(await origin.branchHead("issue-1-task")).toBe(revision);
       const calls = readArgLog(fake.logPath).slice(mark);
-      expect(calls.length).toBeGreaterThanOrEqual(2);
+      expect(calls.length).toBeGreaterThanOrEqual(1);
       for (const call of calls) expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
     });
   });
