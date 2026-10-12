@@ -600,11 +600,11 @@ export function sshKeyArgs(key: string): string[] {
   return ["-i", key, "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes"];
 }
 
-// The first git file on process.env.PATH.
-function realGitPath(): string {
+// The first file with this name on process.env.PATH.
+function realCommandPath(name: string): string {
   for (const folder of (process.env.PATH ?? "").split(delimiter)) {
     if (folder === "") continue;
-    const candidate = join(folder, "git");
+    const candidate = join(folder, name);
     try {
       if (statSync(candidate).isFile()) {
         accessSync(candidate, constants.X_OK);
@@ -614,13 +614,13 @@ function realGitPath(): string {
       // Not here. Try the next folder.
     }
   }
-  throw new Error("no git found on PATH");
+  throw new Error(`no ${name} found on PATH`);
 }
 
 // Writes a git wrapper into binDir. It logs each call (see readArgLog()), then runs the real git.
 // The real git is the first git file on process.env.PATH.
 export function writeGitRecorder(binDir: string, logPath: string): void {
-  writeFakeGit(binDir, `${logLine(logPath)}\nexec ${shellQuote(realGitPath())} "$@"`);
+  writeFakeGit(binDir, `${logLine(logPath)}\nexec ${shellQuote(realCommandPath("git"))} "$@"`);
 }
 
 // Writes a git wrapper into binDir. It runs the real git with the same arguments. Then it exits
@@ -629,7 +629,7 @@ export function writeGitRecorder(binDir: string, logPath: string): void {
 export function writeGitFailAfter(binDir: string, subcommand: string): void {
   writeFakeGit(
     binDir,
-    `${shellQuote(realGitPath())} "$@"\ncode=$?\nif [ "$1" = ${shellQuote(subcommand)} ]; then exit 1; fi\nexit $code`,
+    `${shellQuote(realCommandPath("git"))} "$@"\ncode=$?\nif [ "$1" = ${shellQuote(subcommand)} ]; then exit 1; fi\nexit $code`,
   );
 }
 
