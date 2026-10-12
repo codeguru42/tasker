@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ALLOWED_ENV_NAMES } from "./allowed-env-names.js";
 import { vcsConfigSchema } from "../vcs/config-schema.js";
 import { expandPath } from "./expand.js";
+import { isObject } from "../object.js";
 
 const positive = z.number().positive();
 
@@ -133,10 +134,6 @@ function githubAccountIssues(key: string, issueTracker: Record<string, unknown>)
   return issueTracker.provider === "github" && issueTracker.account === undefined
     ? [issueLine(["repos", key, "issueTracker", "account"], "is required for the github tracker")]
     : [];
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 interface Prepared {
