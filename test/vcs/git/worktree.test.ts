@@ -463,6 +463,26 @@ describe("git fixture", () => {
       expect(error.message).toBe(`not a worktree of the clone: ${path()}`);
       expect(existsSync(join(path(), "file.txt"))).toBe(true);
     });
+
+    it("refuses a listed worktree with no .git file and leaves the outer repo alone", async () => {
+      const outer = join(origin.dir, "outer");
+      await runGit(["init", "--initial-branch=main", "--", outer], { cwd: origin.dir, env });
+      writeFileSync(join(outer, "tracked.txt"), "committed\n");
+      await gitIn(outer, "add", "tracked.txt");
+      await gitIn(outer, "commit", "-m", "outer");
+      writeFileSync(join(outer, "tracked.txt"), "changed\n");
+      writeFileSync(join(outer, "untracked.txt"), "untracked\n");
+      const wt = taskWorktreePath(join(outer, "worktrees"), "issue-1");
+      await create({ path: wt });
+      rmSync(join(wt, ".git"));
+
+      const error = await failureOf(discard({ path: wt }), Error);
+
+      expect(error.message).toBe(`the worktree has no .git file: ${wt}`);
+      expect(readFileSync(join(outer, "tracked.txt"), "utf8")).toBe("changed\n");
+      expect(existsSync(join(outer, "untracked.txt"))).toBe(true);
+      expect(existsSync(join(wt, "README.md"))).toBe(true);
+    });
   });
 
   describe("taskBranchRevision", () => {
