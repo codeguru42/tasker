@@ -46,7 +46,36 @@ If the key does not exist, or the configuration is missing or invalid, the comma
 
 ### `tasker show`
 
-Prints the details of the task of an issue: the active task, else the newest task.
+Prints the details of the task of an issue: `tasker show <issue>`. The command shows the active task. If the issue has no active task, it shows the newest task.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+The command prints one line for each field, as `<field>: <value>`, in this order:
+
+- `issue`
+- `repo`
+- `title`
+- `state`
+- `attempt`
+- `base`
+- `branch`
+- `worktree`
+- `created`
+- `updated`
+- `last event`
+
+A field with no value prints `-`. The `last event` line holds the time, the type and the data of the last event of the task, as one line of JSON text: `last event: <time> <type> <data>`. An event with no data prints `null`.
+
+If the task is in the state `failed`, the command prints two more lines. `failed in` gives the state that the task left when it failed. `error` gives the error of the failure.
+
+Each field stays on one line. A line end in a value prints as the two characters `\n`.
+
+The command prints an error and exits with code 1 in these cases:
+
+- The issue key does not resolve.
+- The issue has no task. The error names the issue and the repo.
+- The configuration is missing or invalid.
 
 ### `tasker status`
 
