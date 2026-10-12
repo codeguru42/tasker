@@ -6,6 +6,7 @@ import { GitError } from "../../../src/vcs/git/run.js";
 import {
   cloneUrl,
   hideSshKey,
+  isLocalRemote,
   remoteCwd,
   runRemoteGit,
   sshCommand,
@@ -157,4 +158,17 @@ describe("cloneUrl", () => {
   ])("writes %s as %s", (remote, expected) => {
     expect(cloneUrl(remote)).toBe(expected);
   });
+});
+
+describe("isLocalRemote", () => {
+  it.each(["/a", "a", "./x:y", "a/b:c"])("says that %s is a local path", (remote) => {
+    expect(isLocalRemote(remote)).toBe(true);
+  });
+
+  it.each(["host:path", "git@h:o/r", "ssh://h/x", "https://h/x"])(
+    "says that %s is not a local path",
+    (remote) => {
+      expect(isLocalRemote(remote)).toBe(false);
+    },
+  );
 });
