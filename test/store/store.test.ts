@@ -259,6 +259,65 @@ describe("task store", () => {
     });
   });
 
+  describe("list tasks", () => {
+    const issueA = "codeguru42/tasker#6";
+    const issueB = "codeguru42/tasker#99";
+    const ids = (tasks: Task[]) => tasks.map((t) => t.id);
+
+    it("lists only the active tasks when there is no filter", () => {
+      const done = store.createTask(newTask);
+      store.updateTask(done.id, { state: "cancelled" });
+      const active = store.createTask(newTask);
+      store.createTask({ ...newTask, state: "finished" });
+      expect(ids(store.listTasks())).toEqual([active.id]);
+    });
+
+    it("filters by repo key, by issue key and by both", () => {
+      const a = store.createTask(newTask);
+      const b = store.createTask({ ...newTask, issueKey: issueB });
+      const c = store.createTask({ ...newTask, repoKey: "other" });
+      expect(ids(store.listTasks({ repoKey: "other" }))).toEqual([c.id]);
+      expect(ids(store.listTasks({ issueKey: issueB }))).toEqual([b.id]);
+      expect(ids(store.listTasks({ issueKey: issueA }))).toEqual([c.id, a.id]);
+      expect(
+        ids(store.listTasks({ repoKey: "tasker", issueKey: issueA })),
+      ).toEqual([a.id]);
+    });
+
+    it("lists the tasks in the given states", () => {
+      const cancelled = store.createTask(newTask);
+      store.updateTask(cancelled.id, { state: "cancelled" });
+      const active = store.createTask(newTask);
+      const finished = store.createTask({ ...newTask, state: "finished" });
+      expect(ids(store.listTasks({ states: ["cancelled"] }))).toEqual([
+        cancelled.id,
+      ]);
+      expect(ids(store.listTasks({ states: ["new", "finished"] }))).toEqual([
+        finished.id,
+        active.id,
+      ]);
+    });
+
+    it("lists no task when states is an empty array", () => {
+      store.createTask(newTask);
+      expect(store.listTasks({ states: [] })).toEqual([]);
+    });
+
+    it("puts the task that changed last first, even with a lower id", () => {
+      const a = store.createTask(newTask);
+      const b = store.createTask({ ...newTask, issueKey: issueB });
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      store.updateTask(a.id, { state: "planned" });
+      expect(ids(store.listTasks())).toEqual([a.id, b.id]);
+    });
+
+    it("puts the higher id first when the update times are equal", () => {
+      const a = store.createTask(newTask);
+      const b = store.createTask({ ...newTask, issueKey: issueB });
+      expect(ids(store.listTasks())).toEqual([b.id, a.id]);
+    });
+  });
+
   describe("active task index", () => {
     it("rejects a second active row for one repo and issue", () => {
       const before = eventCount();
