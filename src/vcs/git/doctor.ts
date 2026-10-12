@@ -5,7 +5,13 @@ import type { Check, CheckResult } from "../../doctor/check.js";
 import type { GitVcsConfig } from "./provision.js";
 import { GitError, GitNotInstalledError, runGit } from "./run.js";
 import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
-import { DeadlineError, findStaleLocks, isInside, type ProcView } from "./stale-locks.js";
+import {
+  DeadlineError,
+  findStaleLocks,
+  isInside,
+  onceProcView,
+  type ProcView,
+} from "./stale-locks.js";
 import { type SshAccount, sshAccount, sshTarget } from "./ssh-account.js";
 import { withoutLineEnd } from "./worktree.js";
 
@@ -301,4 +307,23 @@ export function staleLockCheck(
       };
     },
   );
+}
+
+// All git checks: the version check, then the identity, connection and lock-file checks of each
+// repo. The lock-file checks share one read of procRoot, made at the first stale lock.
+// The caller passes procRoot "/proc" and platform process.platform.
+export function gitDoctorChecks(options: {
+  repos: readonly GitDoctorRepo[];
+  procRoot: string;
+  platform: NodeJS.Platform;
+}): Check[] {
+  const procView = onceProcView(options.procRoot, options.platform);
+  return [
+    gitVersionCheck(),
+    ...options.repos.flatMap((repo) => [
+      identityCheck(repo),
+      connectionCheck(repo),
+      staleLockCheck(repo, procView),
+    ]),
+  ];
 }
