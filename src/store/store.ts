@@ -72,6 +72,9 @@ export interface StoreOptions {
 export interface TaskStore {
   createTask(task: NewTask): Task;
   getTask(id: number): Task | undefined;
+  findActiveTask(repoKey: string, issueKey: string): Task | undefined;
+  // The active task when one exists, else the task with the highest id.
+  findLatestTask(repoKey: string, issueKey: string): Task | undefined;
   updateTask(id: number, changes: TaskChanges, check?: (current: Task) => void): Task;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
   listEvents(taskId: number): TaskEvent[];
@@ -151,6 +154,10 @@ function setUp(db: DatabaseSync) {
     selectActiveTask: db.prepare(
       `SELECT * FROM tasks WHERE repo_key = ? AND issue_key = ? AND ${ACTIVE}`,
     ),
+    selectLatestTask: db.prepare(
+      `SELECT * FROM tasks WHERE repo_key = ? AND issue_key = ?
+       ORDER BY (${ACTIVE}) DESC, id DESC LIMIT 1`,
+    ),
     // The count covers all repos, because the issue key is the same in each of them.
     selectNextAttempt: db.prepare(
       "SELECT COALESCE(MAX(attempt), 0) + 1 AS next FROM tasks WHERE issue_key = ?",
@@ -202,10 +209,12 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   return {
     createTask(task) {
       return immediateTransaction(db, () => {
-        const active = statements.selectActiveTask.get(
-          task.repoKey,
-          task.issueKey,
-        ) as TaskRow | undefined;
+        // A task that starts in a terminal state is not active, so it cannot clash.
+        const active = (TERMINAL_STATES as ReadonlySet<string>).has(task.state)
+          ? undefined
+          : (statements.selectActiveTask.get(task.repoKey, task.issueKey) as
+              | TaskRow
+              | undefined);
         if (active !== undefined) {
           throw new ActiveTaskError(
             active.id,
@@ -236,6 +245,20 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     getTask: readTask,
+
+    findActiveTask(repoKey, issueKey) {
+      const row = statements.selectActiveTask.get(repoKey, issueKey) as
+        | TaskRow
+        | undefined;
+      return row === undefined ? undefined : rowToTask(row);
+    },
+
+    findLatestTask(repoKey, issueKey) {
+      const row = statements.selectLatestTask.get(repoKey, issueKey) as
+        | TaskRow
+        | undefined;
+      return row === undefined ? undefined : rowToTask(row);
+    },
 
     updateTask(id, changes, check) {
       return immediateTransaction(db, () => {
