@@ -101,19 +101,20 @@ The `BaseHintError` has the field `labels`. Its message names each label as JSON
 
 The read runs `gh api graphql` through `runGh()`, with the account of the tracker. The arguments are `-f query=<query>`, `-f owner=<owner>`, `-f name=<repo>`, `-F number=<N>`, and from the second page on `-f cursor=<cursor>`. The first page has no cursor argument. `-f` always sends a string. `-F` sends `123` as a number and `true` as a Boolean, and GitHub then refuses the variable. A name of only digits, or `true`, is a valid GitHub name, so owner, name and cursor use `-f`. Only `number` uses `-F`, because the query needs an `Int`.
 
-The query asks for `blockedBy(first: 100, after: $cursor)`. For each blocker it asks for `number`, `state` and `repository { nameWithOwner }`. It also asks for `pageInfo { hasNextPage endCursor }`. The code reads every page, one call after the other. A page with `hasNextPage` set to true must have a new `endCursor`.
+The query asks for `blockedBy(first: 100, after: $cursor)`. For each blocker it asks for `number`, `state` and `repository { nameWithOwner }`. It also asks for `pageInfo { hasNextPage endCursor }`. The code reads every page, one call after the other. A page with `hasNextPage` set to true must have an `endCursor` that no earlier page of the read gave. A cursor that comes again is bad output, so a cycle stops.
 
 The key of a blocker is `<owner>/<repo>#<N>`. When `nameWithOwner` equals the project of the key of the issue, the blocker gets the project spelling of that key, which is the spelling of the configuration. Else it gets the `nameWithOwner` that GitHub gives. The compare uses the same ASCII fold as the issue key resolve. See [Issue keys](issue-keys.md). Each key goes through `splitGithubKey()`.
 
 `issueState()` gives the state of each blocker. The list keeps the order that GitHub gives, page after page. An issue with no blockers gives `[]`. A null `endCursor` with `hasNextPage` set to false is normal.
 
-`gh` exits with code 1 for a GraphQL error and prints the JSON answer on stdout. The read uses that JSON when the exit code is a number and stdout is JSON. Any other `gh` failure stays a `GhError`: output that is not JSON, a signal, a login error, or an HTTP error such as 502.
+`gh` exits 1 for a GraphQL error and prints the JSON answer on stdout. After a failed call, the read uses stdout only when it is a JSON object with a `data` key or an `errors` key. Any other failed call stays the `GhError`. Examples are an HTTP 401 with a JSON body such as `Bad credentials`, output that is not JSON, a signal, a login error, and an HTTP error such as 502.
 
 The read checks the answer in this order, and gives an `IssueReadError` with the field `key`:
 
-- The repo or the issue is null. The message is `the issue <key> does not exist`, plus `: <messages>` when the answer has errors. `<messages>` are the messages of `errors`, joined with `; `. A pull request number gives this error too, because GitHub answers `issue: null` for it.
-- `errors` is not empty. The message is `gh api graphql gave errors for <key>: <messages>`. This holds also when the answer has data.
-- The message is `gh api graphql gave bad output for <key>: <reason>` for output that is not JSON, the wrong fields, a missing `data`, a blocker whose key does not form a GitHub key, an unknown state, or a page that has no new cursor.
+1. The output is not JSON, is not an object, or has `errors` that is not a list of messages. The message is `gh api graphql gave bad output for <key>: <reason>`.
+2. The repo or the issue is null. The message is `the issue <key> does not exist`, plus `: <messages>` when the answer has errors. `<messages>` are the messages of `errors`, joined with `; `. A pull request number gives this error too, because GitHub answers `issue: null` for it.
+3. `errors` is not empty. The message is `gh api graphql gave errors for <key>: <messages>`. This holds also when `data` has the wrong shape, for example a null `blockedBy` or a null blocker for a private repo.
+4. The shape of `data`, each blocker (a key that does not form a GitHub key, an unknown state) and the cursor. A failure gives the bad output message.
 
 A missing repo gives an `IssueReadError` here, but a `GhError` in `readGithubIssue()`. The GraphQL answer says which part is null. `gh issue view` gives only stderr.
 
