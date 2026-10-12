@@ -113,10 +113,15 @@ export async function createTaskWorktree(options: {
   return "created";
 }
 
+// Removes the worktree folder, without --force. Git refuses a worktree with changes.
+// The branch stays.
 export async function removeTaskWorktree(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
   path: string;
 }): Promise<void> {
-  throw new Error(`not implemented: ${options.path}`);
+  await runGit(["worktree", "remove", "--", resolve(options.path)], {
+    gitDir: options.clone,
+    env: options.env,
+  });
 }
