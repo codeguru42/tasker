@@ -249,6 +249,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           at,
           at,
         ) as unknown as TaskRow;
+        // The helper is not reentrant, so this uses the statement and not appendEvent().
+        statements.insertEvent.get(
+          row.id,
+          at,
+          "created",
+          JSON.stringify({ state: task.state }),
+        );
         return rowToTask(row);
       });
     },
