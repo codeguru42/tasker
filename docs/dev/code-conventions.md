@@ -7,6 +7,7 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/main.ts` is the entry point of the `tasker` command. It calls `run()` and sets the exit code.
 - `src/cli.ts` builds the Commander program and exports `run()`, `buildProgram()` and the `Io` and `RegisterCommand` types. A `RegisterCommand` receives the program and the `Io`.
 - `src/version.ts` reads the version from `package.json`.
+- `src/object.ts` holds `isObject()`, the shared check that a value is an object that is not null and not an array.
 - `src/commands/` holds one file for each command. `src/commands/index.ts` lists them.
 - `src/config/` holds the configuration loader. `path.ts` finds the file, `expand.ts` expands paths, `allowed-env-names.ts` holds the default env allowlist, `schema.ts` validates the file, and `load.ts` reads it. The schema of `vcs.config` comes from `vcsConfigSchema()`.
 - `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, `transaction.ts` holds `immediateTransaction()`, the shared helper that runs each write and each migration in one `BEGIN IMMEDIATE` transaction, and `store.ts` opens the database, reads and writes tasks and events, and reads, saves and forgets the learned default base branch of each repo.
