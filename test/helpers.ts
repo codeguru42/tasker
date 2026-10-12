@@ -16,6 +16,7 @@ import { tmpdir, userInfo } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
+import { expect, onTestFinished } from "vitest";
 import type { Io, RegisterCommand } from "../src/cli.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -380,14 +381,21 @@ export async function makeGitClone(origin: GitOrigin): Promise<string> {
 // Writes an executable shell script named git into binDir. body is the script after "#!/bin/sh".
 // Use binDir as the only PATH folder, so runGit() starts this script, not the real git.
 export function writeFakeGit(binDir: string, body: string): void {
+  writeFakeCommand(binDir, "git", body);
+}
+
+// Writes an executable shell script named name into binDir. body is the script after "#!/bin/sh".
+function writeFakeCommand(binDir: string, name: string, body: string): void {
   mkdirSync(binDir, { recursive: true });
-  writeFileSync(join(binDir, "git"), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
+  writeFileSync(join(binDir, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
 }
 
 // The shell line that appends one call to the log: the argument count, then each argument.
 // Each item ends with a NUL, so an argument can hold a newline.
-function logLine(logPath: string): string {
-  return `printf '%s\\0' "$#" "$@" >> ${shellQuote(logPath)}`;
+// Each item of extra (a piece of shell code) goes in the log before the arguments and counts in the argument count.
+function logLine(logPath: string, extra: readonly string[] = []): string {
+  const count = extra.length === 0 ? '"$#"' : `"$(($# + ${extra.length}))"`;
+  return `printf '%s\\0' ${[count, ...extra].join(" ")} "$@" >> ${shellQuote(logPath)}`;
 }
 
 // How a fake ssh behaves (see writeFakeSsh()).
@@ -406,7 +414,6 @@ export type FakeSshMode =
 // Else it prints the greeting for the account greet to stderr and exits with 1.
 // Use the remote ssh://tasker.invalid<origin.path> and PATH=<binDir>:<process.env.PATH>.
 export function writeFakeSsh(binDir: string, logPath: string, mode: FakeSshMode): void {
-  mkdirSync(binDir, { recursive: true });
   let body: string[];
   if (mode === "serve") {
     body = [logLine(logPath), "for last; do :; done", 'exec sh -c "$last"'];
@@ -440,7 +447,7 @@ export function writeFakeSsh(binDir: string, logPath: string, mode: FakeSshMode)
       "esac",
     ];
   }
-  writeFileSync(join(binDir, "ssh"), `#!/bin/sh\n${body.join("\n")}\n`, { mode: 0o755 });
+  writeFakeCommand(binDir, "ssh", body.join("\n"));
 }
 
 export interface FakeSsh {
@@ -467,6 +474,125 @@ export function fakeSsh(
     logPath,
     remote: (path) => `ssh://tasker.invalid${path}`,
   };
+}
+
+// One canned answer of the fake gh. args is the whole argument list. It must match exactly, in order.
+// When two answers have the same args, the first one wins.
+export interface FakeGhAnswer {
+  args: readonly string[];
+  stdout?: string; // default ""
+  stderr?: string; // default ""
+  exitCode?: number; // default 0
+  // A signal name such as "TERM": the fake prints its output, then stops itself with this signal.
+  killWith?: string;
+}
+
+// One call that the fake gh logged.
+export interface FakeGhCall {
+  args: string[];
+  // undefined when GH_TOKEN was not set.
+  ghToken: string | undefined;
+  // Each name of logEnv. undefined when the name was not set.
+  env: Record<string, string | undefined>;
+}
+
+// The answer of gh auth token for account.
+export function ghTokenAnswer(account: string, token: string): FakeGhAnswer {
+  return {
+    args: ["auth", "token", "--hostname", "github.com", "--user", account],
+    stdout: `${token}\n`,
+  };
+}
+
+const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const signalNamePattern = /^[A-Z0-9]+$/;
+
+// Writes an executable gh into binDir. It uses shell builtins only, so it works with binDir as the
+// only PATH folder, and the real gh can never run. Each call goes in the log at logPath (see readArgLog()).
+// The log of a call holds "${GH_TOKEN+set:$GH_TOKEN}", then the same for each name of logEnv, then the arguments.
+// An empty item means that the name was not set. "set:<value>" means that it was set to <value>.
+// A call that no answer matches goes in the log <logPath>.unanswered, prints an error and exits with 99.
+export function writeFakeGh(
+  binDir: string,
+  logPath: string,
+  answers: readonly FakeGhAnswer[],
+  logEnv: readonly string[] = [],
+): void {
+  for (const name of logEnv) {
+    if (!envNamePattern.test(name)) throw new Error(`bad env name for the fake gh: ${name}`);
+  }
+  const extra = ["GH_TOKEN", ...logEnv].map((name) => `"\${${name}+set:$${name}}"`);
+  const body = [logLine(logPath, extra)];
+  for (const answer of answers) {
+    const conditions = [
+      `[ $# -eq ${answer.args.length} ]`,
+      ...answer.args.map((arg, index) => `[ "$${index + 1}" = ${shellQuote(arg)} ]`),
+    ];
+    const lines = [
+      `if ${conditions.join(" && ")}; then`,
+      `  printf '%s' ${shellQuote(answer.stdout ?? "")}`,
+      `  printf '%s' ${shellQuote(answer.stderr ?? "")} >&2`,
+    ];
+    if (answer.killWith !== undefined) {
+      if (!signalNamePattern.test(answer.killWith)) {
+        throw new Error(`bad signal name for the fake gh: ${answer.killWith}`);
+      }
+      lines.push(`  kill -${answer.killWith} $$`);
+    }
+    lines.push(`  exit ${answer.exitCode ?? 0}`, "fi");
+    body.push(...lines);
+  }
+  body.push(
+    logLine(`${logPath}.unanswered`),
+    "printf 'fake gh: no answer for: %s\\n' \"$*\" >&2",
+    "exit 99",
+  );
+  writeFakeCommand(binDir, "gh", body.join("\n"));
+}
+
+export interface FakeGh {
+  // baseEnv with PATH=<dir>/bin and nothing else on PATH.
+  env: NodeJS.ProcessEnv;
+  // <dir>/gh.log. readArgLog() reads it.
+  logPath: string;
+  calls(): FakeGhCall[];
+  // The argument lists that had no answer.
+  unanswered(): string[][];
+  // Throws when unanswered() is not empty. fakeGh() registers it with onTestFinished.
+  assertAnswered(): void;
+}
+
+// Writes a fake gh into <dir>/bin with writeFakeGh(), with the log <dir>/gh.log.
+// A call with no answer fails the test, also when the code under test catches the error.
+// Call it in a test or in beforeEach. A second call with the same dir replaces the script and keeps the log.
+export function fakeGh(
+  dir: string,
+  baseEnv: NodeJS.ProcessEnv,
+  answers: readonly FakeGhAnswer[],
+  options: { logEnv?: readonly string[] } = {},
+): FakeGh {
+  const binDir = join(dir, "bin");
+  const logPath = join(dir, "gh.log");
+  const logEnv = options.logEnv ?? [];
+  writeFakeGh(binDir, logPath, answers, logEnv);
+  const unanswered = () => readArgLog(`${logPath}.unanswered`);
+  const fake: FakeGh = {
+    env: { ...baseEnv, PATH: binDir },
+    logPath,
+    calls: () =>
+      readArgLog(logPath).map((items) => {
+        const fromLog = (item: string) => (item === "" ? undefined : item.slice("set:".length));
+        return {
+          args: items.slice(1 + logEnv.length),
+          ghToken: fromLog(items[0]),
+          env: Object.fromEntries(logEnv.map((name, index) => [name, fromLog(items[1 + index])])),
+        };
+      }),
+    unanswered,
+    assertAnswered: () => expect(unanswered(), "gh calls with no answer").toEqual([]),
+  };
+  onTestFinished(() => fake.assertAnswered());
+  return fake;
 }
 
 // The first six arguments that git passes to ssh for sshCommand(key).
@@ -507,7 +633,7 @@ export function writeGitFailAfter(binDir: string, subcommand: string): void {
   );
 }
 
-// Reads a log of writeFakeSsh() or writeGitRecorder(). It returns one argument list for each call.
+// Reads a log of writeFakeSsh(), writeGitRecorder() or writeFakeGh(). It returns one argument list for each call.
 // A missing log gives no calls.
 export function readArgLog(logPath: string): string[][] {
   let text: string;

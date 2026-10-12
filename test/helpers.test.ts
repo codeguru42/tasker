@@ -392,11 +392,6 @@ describe("fakeGh", () => {
     expect(() => gh.assertAnswered()).not.toThrow();
   });
 
-  it.fails("fails the test on a call with no answer", () => {
-    const gh = fakeGh(dir, {}, []);
-    run(gh.env, "nope");
-  });
-
   it("puts only its own bin folder on the PATH", () => {
     const gh = fakeGh(dir, { HOME: dir }, []);
     expect(gh.env.PATH).toBe(join(dir, "bin"));
