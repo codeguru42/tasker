@@ -9,7 +9,10 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 ## Tests
 
 - Write the test first. Commit the failing test, then the code that makes it pass.
-- Put shared test helpers in `test/helpers.ts`. Do not copy a helper into a test file.
+- Put shared test helpers in `test/helpers.ts`. Any change can add a helper there. Do not copy a helper into a test file.
+- A change can edit an existing helper to fix a bug or to make the helper useful in more places. The change must not break the code that uses the helper.
+- Tests cover the behavior of each helper that other code uses. As a result, a change to a helper that breaks that code makes a test fail.
+- The code in `src/` can have its own helpers. These helpers stay separate from the test helpers. `src/` does not import from `test/`, and `test/helpers.ts` holds no code that `src/` uses.
 
 ## Commits
 
