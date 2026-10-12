@@ -1,14 +1,25 @@
 import type { RegisterCommand } from "../cli.js";
-import type { Task, TaskStore } from "../store/store.js";
+import { failedFrom } from "../state/machine.js";
+import type { Task, TaskEvent, TaskStore } from "../store/store.js";
 import { loadConfigOrFail, withIssueTask } from "./shared.js";
 
-// The text of a field value, or - when the field has no value.
+// The text of a field value on one line: each line end is written as the two characters \n.
+// A field with no value is -.
 function fieldValue(value: string | number | null | undefined): string {
-  return value === null || value === undefined ? "-" : String(value);
+  return value === null || value === undefined ? "-" : String(value).replace(/\r\n|\r|\n/g, "\\n");
+}
+
+// The error of the last transition event, when it is a string.
+function lastError(events: TaskEvent[]): string | undefined {
+  const transition = events.filter((event) => event.type === "transition").at(-1);
+  const data = transition?.data;
+  if (typeof data !== "object" || data === null || !("error" in data)) return undefined;
+  return typeof data.error === "string" ? data.error : undefined;
 }
 
 function formatTask(store: TaskStore, task: Task): string {
-  const last = store.listEvents(task.id).at(-1);
+  const events = store.listEvents(task.id);
+  const last = events.at(-1);
   const fields: [string, string | number | null | undefined][] = [
     ["issue", task.issueKey],
     ["repo", task.repoKey],
@@ -22,6 +33,9 @@ function formatTask(store: TaskStore, task: Task): string {
     ["updated", task.updatedAt],
     ["last event", last && `${last.at} ${last.type} ${JSON.stringify(last.data)}`],
   ];
+  if (task.state === "failed") {
+    fields.push(["failed in", failedFrom(store, task.id)], ["error", lastError(events)]);
+  }
   return fields.map(([field, value]) => `${field}: ${fieldValue(value)}\n`).join("");
 }
 
