@@ -1,6 +1,8 @@
-import { chmodSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { join, resolve } from "node:path";
-import { shellQuote } from "./ssh.js";
+import type { GitLocation } from "./run.js";
+import { runRemoteGit, shellQuote } from "./ssh.js";
 
 // The pre-push hook. It accepts a push that has a valid token and deletes the token file.
 function hookScript(publishTokens: string): string {
@@ -34,5 +36,30 @@ export function installPushHook(clone: string, publishTokens: string): void {
     renameSync(temp, join(hooks, "pre-push"));
   } catch (error) {
     throw new Error(`cannot install the pre-push hook in the clone: ${clone}`, { cause: error });
+  }
+}
+
+// Runs `git push <args>` with a new one-time token. It deletes the token if the push did not use it.
+export async function pushWithToken(
+  args: readonly string[],
+  options: {
+    location: GitLocation;
+    publishTokens: string;
+    sshKey: string | undefined;
+    env: NodeJS.ProcessEnv;
+  },
+): Promise<void> {
+  const token = randomBytes(32).toString("hex");
+  const file = join(resolve(options.publishTokens), token);
+  mkdirSync(options.publishTokens, { recursive: true, mode: 0o700 });
+  writeFileSync(file, "", { flag: "wx", mode: 0o600 });
+  try {
+    await runRemoteGit(
+      ["push", ...args],
+      { ...options.location, env: { ...options.env, TASKER_PUBLISH_TOKEN: token } },
+      options.sshKey,
+    );
+  } finally {
+    rmSync(file, { force: true });
   }
 }
