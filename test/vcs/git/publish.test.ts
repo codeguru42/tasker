@@ -139,11 +139,20 @@ describe("publish, land and delete", () => {
     };
   }
 
-  // Makes origin refuse each push.
-  function refusePushesOnOrigin(): void {
+  // The message of the pre-receive hook that refusePushesOnOrigin() writes.
+  const ORIGIN_REFUSES = "tasker-test: origin refuses the push";
+
+  // Makes origin refuse each push. With hideOrigin, the hook also moves the origin repo away,
+  // so that the next read of origin fails.
+  function refusePushesOnOrigin(options: { hideOrigin?: boolean } = {}): void {
     const hooks = join(origin.path, "hooks");
     mkdirSync(hooks, { recursive: true });
-    writeFileSync(join(hooks, "pre-receive"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+    const hide = options.hideOrigin === true ? ['mv -- "$(pwd)" "$(pwd).gone"'] : [];
+    writeFileSync(
+      join(hooks, "pre-receive"),
+      ["#!/bin/sh", `echo '${ORIGIN_REFUSES}' >&2`, ...hide, "exit 1", ""].join("\n"),
+      { mode: 0o755 },
+    );
   }
 
   describe("publishTaskBranch", () => {
@@ -513,6 +522,19 @@ describe("publish, land and delete", () => {
 
         expect(error.message.startsWith(named)).toBe(true);
         expect(await origin.branchHead("issue-1-task")).toBe(published);
+        expectNoTokenFile();
+      });
+
+      it("keeps the push error when the second read of the tip fails", async () => {
+        const published = await addCloneCommit(clone, env, "issue-1-task");
+        await publish();
+        refusePushesOnOrigin({ hideOrigin: true });
+
+        const error = await failureOf(remove({ published }), Error);
+
+        expect(error.message.startsWith(named)).toBe(true);
+        expect(error.message).toContain(ORIGIN_REFUSES);
+        expect(error.message).not.toContain("does not appear to be a git repository");
         expectNoTokenFile();
       });
 
