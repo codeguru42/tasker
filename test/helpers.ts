@@ -795,3 +795,30 @@ export function filesThatStart(command: string): string[] {
     .filter(({ file, text }) => startsCommand(file, text, command))
     .map(({ file }) => file);
 }
+
+// The folder under src/ of target, a path written with "/" (for example "vcs/git").
+function sourcePath(target: string): string {
+  return join(sourceDir, ...target.split("/"));
+}
+
+// The files under src/ (paths with "/") that load or re-export a module in target, a folder
+// under src/ written with "/" (for example "vcs/git"). It cannot find a module name that the
+// code builds at run time.
+export function filesThatImport(target: string): string[] {
+  return sourceFiles()
+    .filter(({ file, text }) => importsPath(file, text, sourcePath(target)))
+    .map(({ file }) => file);
+}
+
+// True when file (a path under src/ with "/") does not start with owner (for example "vcs/")
+// and loads or re-exports a module in target (for example "vcs/git").
+export function breaksBoundary(file: string, text: string, owner: string, target: string): boolean {
+  return !file.startsWith(owner) && importsPath(file, text, sourcePath(target));
+}
+
+// The files under src/ that break the boundary of breaksBoundary().
+export function filesThatBreakBoundary(owner: string, target: string): string[] {
+  return sourceFiles()
+    .filter(({ file, text }) => breaksBoundary(file, text, owner, target))
+    .map(({ file }) => file);
+}

@@ -1,16 +1,14 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { filesThatStart, importsPath, loadsChildProcess, sourceDir, sourceFiles, startsCommand } from "../../helpers.js";
-
-// True when the text of file (a path under src/, with "/") loads or re-exports a module in src/vcs/git/.
-function importsVcsGit(file: string, text: string): boolean {
-  return importsPath(file, text, join(sourceDir, "vcs", "git"));
-}
-
-// True when file is outside src/vcs/ and importsVcsGit() is true.
-function breaksProviderBoundary(file: string, text: string): boolean {
-  return !file.startsWith("vcs/") && importsVcsGit(file, text);
-}
+import {
+  breaksBoundary,
+  filesThatBreakBoundary,
+  filesThatStart,
+  importsPath,
+  loadsChildProcess,
+  sourceDir,
+  startsCommand,
+} from "../../helpers.js";
 
 describe("the git boundary", () => {
   it("finds the runner in src/vcs/git", () => {
@@ -74,12 +72,11 @@ describe("startsCommand", () => {
 
 describe("the provider boundary", () => {
   it("finds no file outside src/vcs that imports from src/vcs/git", () => {
-    const broken = sourceFiles().filter(({ file, text }) => breaksProviderBoundary(file, text));
-    expect(broken.map(({ file }) => file)).toEqual([]);
+    expect(filesThatBreakBoundary("vcs/", "vcs/git")).toEqual([]);
   });
 });
 
-describe("breaksProviderBoundary", () => {
+describe("breaksBoundary", () => {
   it.each([
     ["commands/x.ts", 'import { runGit } from "../vcs/git/run.js";'],
     ["commands/x.ts", 'import type { GitError } from "../vcs/git/run.js";'],
@@ -93,7 +90,7 @@ describe("breaksProviderBoundary", () => {
     ["commands/x.ts", 'export type { GitLocation } from "../vcs/git/run.js";'],
     ["main.ts", 'import "./vcs/git/run.js";'],
   ])("finds %s with %s", (file, sample) => {
-    expect(breaksProviderBoundary(file, sample)).toBe(true);
+    expect(breaksBoundary(file, sample, "vcs/", "vcs/git")).toBe(true);
   });
 
   it.each([
@@ -104,11 +101,11 @@ describe("breaksProviderBoundary", () => {
     ["commands/x.ts", 'import { z } from "zod";'],
     ["vcs/provider.ts", 'import { createGitProvider } from "./git/provider.js";'],
   ])("ignores %s with %s", (file, sample) => {
-    expect(breaksProviderBoundary(file, sample)).toBe(false);
+    expect(breaksBoundary(file, sample, "vcs/", "vcs/git")).toBe(false);
   });
 
   it("skips a file in src/vcs by its path, not by its pattern", () => {
     const sample = 'import { createGitProvider } from "./git/provider.js";';
-    expect(importsVcsGit("vcs/provider.ts", sample)).toBe(true);
+    expect(importsPath("vcs/provider.ts", sample, join(sourceDir, "vcs", "git"))).toBe(true);
   });
 });
