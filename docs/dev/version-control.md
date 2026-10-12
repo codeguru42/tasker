@@ -6,10 +6,12 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 
 - `src/vcs/git/run.ts` holds `runGit()`.
 - `src/vcs/git/repo-paths.ts` holds `repoSlug()` and `repoPaths()`.
-- `src/vcs/git/ssh.ts` holds `sshCommand()`, `sshEnv()`, `hideSshKey()`, `runRemoteGit()`, `remoteCwd()` and `cloneUrl()`.
+- `src/vcs/git/ssh.ts` holds `shellQuote()`, `sshCommand()`, `sshEnv()`, `hideSshKey()`, `runRemoteGit()`, `remoteNotAnswering()`, `remoteCwd()` and `cloneUrl()`.
 - `src/vcs/git/default-branch.ts` holds `remoteDefaultBranch()`.
 - `src/vcs/git/provision.ts` holds `provisionClone()`.
 - `src/vcs/git/base-branch.ts` holds `parseBaseInput()`, `baseRevision()` and `resolveBaseBranch()`.
+- `src/vcs/git/push-guard.ts` holds `installPushHook()` and `pushWithToken()`.
+- `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
 
 No other folder in `src/` starts git.
 
@@ -68,7 +70,7 @@ The checks of the first two rows, of the `PATH` row, of the `gitDir` row and of 
 
 ## Provision
 
-`provisionClone({ remote, clone, config, env })` in `src/vcs/git/provision.ts` makes the bare clone of a remote and fetches it. `clone` is the `clone` path of `repoPaths()`. `config` is the `vcs.config` of the repo (`authorName`, `authorEmail` and `sshKey`, see [docs/config.md](../config.md)). No command calls it yet.
+`provisionClone({ remote, clone, config, env, publishTokens })` in `src/vcs/git/provision.ts` makes the bare clone of a remote and fetches it. `clone` is the `clone` path of `repoPaths()`. `config` is the `vcs.config` of the repo (`authorName`, `authorEmail` and `sshKey`, see [docs/config.md](../config.md)). `publishTokens` is the `publishTokens` path of `repoPaths()`. The pre-push hook holds it (see [Push guard](#push-guard)). Provision does not make that folder. No command calls `provisionClone()` yet.
 
 The marker is the file `<clone>.incomplete`, that is `<dataRoot>/clones/<slug>/repo.git.incomplete`, next to `repo.git`. Provision writes it before `git clone` (step 4) and removes it after the first fetch of a fresh clone (step 8). While the marker exists, each provision takes the path of step 1.
 
@@ -86,10 +88,13 @@ These are the steps:
 A step can fail in these ways:
 
 - If `ls-remote` fails on the path from step 1, the marker and the parent folder stay.
+- If the hook write of step 6 fails on the fresh path, provision rejects and the marker stays.
 - If a step from 5 to 7 fails, provision rejects. The parent folder, the marker and the clone folder stay, with the clone folder in the state that the failed step left it. A failed `git clone` can leave a partial clone folder.
 - If step 8 fails, the clone is complete, but the marker stays.
 
 In each case, the next provision takes the path of step 1.
+
+If the hook write of step 6 fails on the path of step 2, provision rejects before the fetch. That path has no marker, so the next provision takes step 2 again. The git config writes and the include file of that run are already done.
 
 A second provision on a complete clone takes step 2. A change to `vcs.config` or to `remote` takes effect at the next provision.
 
@@ -107,8 +112,9 @@ Provision rejects with these errors:
 | `git ls-remote` exits with code 2: the remote answers and has no refs. | `Error`: `the remote has no refs: <remote>` |
 | `git ls-remote` fails in another way. | `Error`: `the remote does not answer: <remote>`, plus `: <stderr>` when stderr is not empty |
 | A git config write fails and `<clone>/config.lock` exists. | `Error`: `the clone configuration is locked: <clone>` |
+| An fs call of the hook write fails. | `Error`: `cannot install the pre-push hook in the clone: <clone>`, with the fs error as `cause` |
 
-Provision reads no text of git to find a lock. The errors above have no `cause`. Any other `GitError` of a git call passes through. Its text has gone through `hideSshKey()`, see [The ssh key](#the-ssh-key).
+Provision reads no text of git to find a lock. The errors above, except the hook error, have no `cause`. Any other `GitError` of a git call passes through. Its text has gone through `hideSshKey()`, see [The ssh key](#the-ssh-key).
 
 ### The clone configuration
 
@@ -119,8 +125,10 @@ Each git config write is one `git config` call with `gitDir` set to the clone. E
 - Sets `user.name` to `authorName`. If `authorName` is not set, provision runs `git config --unset-all user.name`. This removes every local line of the key. Provision reads exit code 5 of `--unset-all` as "the key is missing" and treats it as success. Every other failure passes through. On a fresh clone this writes nothing, so git uses the global identity.
 - Does the same for `user.email` and `authorEmail`.
 - Sets `commit.gpgSign`, `tag.gpgSign` and `tag.forceSignAnnotated` to `false`.
+- Sets `core.hooksPath` to `resolve(clone, "hooks")`. A local value beats a global or system value, so a global `core.hooksPath` does not make git skip the hook. The value must be absolute, because git resolves a relative value against the worktree. This replaces a value that a person set in the clone.
 - Sets `include.path` to `tasker-ssh.config`.
 - After all git config calls succeed, writes the include file.
+- Then writes the pre-push hook (see [Push guard](#push-guard)).
 
 The include file is `<clone>/tasker-ssh.config`, that is `<dataRoot>/clones/<slug>/repo.git/tasker-ssh.config`. A relative `include.path` in the config of a bare clone resolves against the clone folder. Provision writes `<clone>/tasker-ssh.config.tmp` first and renames it to `tasker-ssh.config`. A crash between the write and the rename leaves the `.tmp` file in the clone. The next provision overwrites it. A held `config.lock` makes a git config call fail first, so the include file stays as it was.
 
@@ -141,7 +149,7 @@ Use `git config --get core.sshCommand` to read the value. `git config --local --
 
 `sshCommand(sshKey)` gives `ssh -i '<key>' -o IdentitiesOnly=yes -o BatchMode=yes`, with each `'` in the key path written as `'\''`. The command and the key path never go on the git command line. They go in the include file and in the env.
 
-`sshEnv(env, sshKey)` returns `env` with `GIT_SSH_COMMAND` set to `sshCommand(sshKey)`. If `sshKey` is not set, it returns `env` as it is. `runRemoteGit(args, options, sshKey)` runs `runGit()` with that env. Provision runs `ls-remote`, `clone` and `fetch` through it. As a result, `GIT_SSH_COMMAND` reaches ssh in the env of git. A `GIT_SSH_COMMAND` that the user exported is replaced when `sshKey` is set and stays when it is not.
+`sshEnv(env, sshKey)` returns `env` with `GIT_SSH_COMMAND` set to `sshCommand(sshKey)`. If `sshKey` is not set, it returns `env` as it is. `runRemoteGit(args, options, sshKey)` runs `runGit()` with that env. Provision runs `ls-remote`, `clone` and `fetch` through it. `pushWithToken()` runs `push` through it, and `remoteTip()` runs `ls-remote` through it. As a result, `GIT_SSH_COMMAND` reaches ssh in the env of git. A `GIT_SSH_COMMAND` that the user exported is replaced when `sshKey` is set and stays when it is not.
 Each git call that reaches the remote must pass the env from `sshEnv()`. The reason is that `runGit()` sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes` when the caller sets no ssh command, and an env `GIT_SSH_COMMAND` wins over `core.sshCommand`. So the `core.sshCommand` of the clone takes effect only when git runs with no `GIT_SSH_COMMAND` and no `GIT_SSH` in its env.
 
 When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with no `cause`. The message, `stdout` and `stderr` went through `hideSshKey(text, sshKey, homeDir)`. It replaces each occurrence of these forms with `<sshKey>`, in this order:
@@ -160,6 +168,72 @@ When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with
 ## `resolveBaseBranch()`
 
 `resolveBaseBranch()` in `src/vcs/git/base-branch.ts` runs `git fetch origin --prune` through `runRemoteGit()` with the ssh key of the repo. No command calls it yet. [workspaces.md](workspaces.md#base-branch) gives the rules.
+
+## Push guard
+
+The push guard has three layers:
+
+1. Layer 1 is a deny rule in the shell of the assistant. Another issue builds it. It is not in this repo.
+2. Layer 2 is the `pre-push` hook of the clone. `provisionClone()` writes it. See below.
+3. Layer 3 is the tip of a branch on the remote. `remoteTip()` reads it and `tipMoved()` compares two tips. No code reads the tip before and after a run yet.
+
+No command calls `installPushHook()`, `pushWithToken()`, `remoteTip()` or `tipMoved()` yet. Provision calls `installPushHook()`.
+
+### The hook
+
+On each run, provision writes `<clone>/hooks/pre-push` with mode 0755. It writes `hooks/pre-push.tmp` first and renames it. It makes the `hooks/` folder when the folder is missing, and it overwrites a `pre-push.tmp` that a crash left. A deleted or edited hook comes back at the next provision. On a fresh clone, `git clone --bare` makes `hooks/` with the `.sample` files first. The hook is a `/bin/sh` script that needs `rm`. It holds `resolve(publishTokens)` in single quotes, quoted with `shellQuote()`.
+
+The hook reads `TASKER_PUBLISH_TOKEN`. It accepts the push when the value is 64 characters of `0-9a-f` and `rm -- <publishTokens>/<token>` succeeds. Then it exits with 0. `rm` has no `-f`, so it fails on a missing file. As a result, one push at most uses a token file. The hex and length checks run before `rm`, so a refused value deletes nothing. In every other case, the hook prints `tasker: the push has no valid publish token` to stderr and exits with 1. Git then prints `error: failed to push some refs to '<url>'` and exits with 1. The hook does not read stdin.
+
+The hook deletes the token file before git sends anything. When the remote then rejects the push, the token stays used up.
+
+The hook runs for `git push` in each worktree of the clone and in the bare clone. It runs when the push names the remote by name or by URL. It also runs for `git push --dry-run`, for a delete and for a push with nothing to send.
+
+These cases skip the hook:
+
+- `git push --no-verify`.
+- A `core.hooksPath` from `git -c` on the command line.
+- `git send-pack`, which runs no hook.
+- A missing hook, a missing `hooks/` folder, or a hook file without the executable bit.
+- A write by the assistant to the clone. It can edit the hook or the configuration. The next provision writes the hook and `core.hooksPath` again.
+
+Layer 1 and layer 3 cover these cases.
+
+The token files are in `repoPaths().publishTokens`. That folder is outside the bare clone and outside each worktree. The sandbox of the assistant must not have a write path that covers it. This doc makes no other promise about a sandbox.
+
+### `pushWithToken()`
+
+`pushWithToken(args, { location, publishTokens, sshKey, env })` in `src/vcs/git/push-guard.ts` resolves with no value. It runs `git push <args>` through `runRemoteGit()` (see [The ssh key](#the-ssh-key)). `location` is `{ cwd: <worktree> }` or `{ gitDir: <bare clone> }`.
+
+The function does these steps:
+
+1. It makes the `publishTokens` folder with mode 0700 when the folder is missing. An existing folder keeps its mode.
+2. It writes an empty token file `<publishTokens>/<token>` with mode 0600. The token is `randomBytes(32)` as 64 lower-case hex characters. The file flag is `wx`.
+3. It runs the push with `TASKER_PUBLISH_TOKEN=<token>`.
+4. It deletes the token file with `rmSync(file, { force: true })`, also when the push fails.
+
+`TASKER_PUBLISH_TOKEN` reaches the hook through `runGit()`, because `runGit()` removes only the variables that this doc lists (see [`runGit()`](#rungit)). `pushWithToken()` replaces a `TASKER_PUBLISH_TOKEN` of the caller.
+
+After each call that reaches step 4, the token file is gone. When the hook accepts the token, the hook deletes the file. In every other case, step 4 deletes it. These are the cases: the hook rejects, the push skips the hook, git fails before the hook, and the push throws. A `GitError` of the push passes through. An fs error of step 1 or 2 passes through. A successful push changes the remote.
+
+Crash limit: when the tasker process stops between step 2 and step 4, a valid token file stays. A later push that names that token passes the hook.
+
+### `remoteTip()` and `tipMoved()`
+
+`remoteTip({ remote, branch, sshKey, env })` in `src/vcs/git/remote-tip.ts` reads the tip of one branch on the remote. It runs `git ls-remote -- <remote> refs/heads/<branch>` through `runRemoteGit()` with `remoteCwd()` as cwd. It changes nothing on disk and nothing on the remote.
+
+The result is `{ state: "present", revision }` or `{ state: "absent" }`. The `ls-remote` pattern matches the tail of a ref and is a glob. For this reason, `remoteTip()` takes only the output line whose ref is exactly `refs/heads/<branch>`. A tag, a branch such as `a/refs/heads/<branch>` and revision text give `absent`. An empty remote gives `absent`.
+
+`remoteTip()` throws these errors:
+
+| Case | Error |
+| --- | --- |
+| `branch` is empty. This check runs before any git call. | `Error`: `the branch name is empty` |
+| `git ls-remote` fails with a `GitError`. | `Error`: `the remote does not answer: <remote>`, plus `: <stderr>` when stderr is not empty. The error has no `cause`. |
+
+Any other error passes through. A failed read never gives `absent`.
+
+`tipMoved(before, after)` returns `undefined` when both tips are absent, or when both are present with the same revision. Otherwise it returns `the tip of the branch on the remote moved from <a> to <b>`. Each of `<a>` and `<b>` is the revision, or `absent` for an absent tip.
 
 ## `repoSlug()` and `repoPaths()`
 
