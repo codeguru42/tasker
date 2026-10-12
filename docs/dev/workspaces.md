@@ -1,6 +1,6 @@
 # Workspaces
 
-This page describes the base branch of a task. The code is in `src/vcs/git/base-branch.ts`.
+This page describes the base branch and the workspace of a task. The code is in `src/vcs/git/base-branch.ts` and `src/vcs/git/worktree.ts`.
 
 ## Base branch
 
@@ -77,3 +77,116 @@ The resolve returns an object with these fields:
 | `revision` | `baseRevision(base)`. |
 | `source` | `hint`, `explicit`, `learned`, `config` or `ask`. |
 | `notes` | The notes of the resolve, in the order they were added. The list is empty when nothing happened. |
+
+## Workspaces
+
+The workspace of a task is a git worktree on a task branch. The worktree comes from the bare clone of the repo. No command calls these functions yet. No function in `worktree.ts` talks to the remote, so no call needs `sshEnv()`.
+
+Every function that runs git takes one options object. Calls on the clone use `gitDir`. Calls in a worktree use `cwd`.
+
+### The branch name
+
+`taskBranchName(shortRef, title)` gives the name of the task branch. The name is the short ref, a `-` and a slug of the title. For example, `issue-14` and `Git provider: task workspaces` give `issue-14-git-provider-task-workspaces`.
+
+- The short ref keeps its case. The code makes the title lower case before it makes the slug.
+- The name has at most 100 characters. The code cuts the slug to fit, and it removes a `-`, a `.` or a `.lock` that the cut leaves at the end.
+- If the short ref leaves no room, or the title has no usable character, the name is the short ref alone.
+- If the short ref is not a path slug, is longer than 100 characters, or is `HEAD`, the function throws `not a safe short ref: <JSON text of the short ref>`.
+
+Every other function that takes a branch runs the same name check first, before any git call. A branch must be a path slug of at most 100 characters, and it must not be `HEAD`. If it is not, the function throws `not a task branch name: <JSON text of the name>`. As a result, git never gets a name with a leading `-`, `..`, `/`, `~`, `^`, `@{` or a space.
+
+### The worktree path
+
+`taskWorktreePath(worktrees, shortRef)` gives `<worktrees>/<shortRef>`, for example `<dataRoot>/worktrees/<slug>/issue-14`. The folder name does not change when the title changes.
+
+### List
+
+`listWorktrees({ clone, env })` gives one entry for each worktree of the clone. It leaves out the bare clone itself. An entry has these fields:
+
+| Field | Content |
+| --- | --- |
+| `path` | The real path that git lists. |
+| `branch` | The task branch. A detached worktree has no `branch`. |
+| `lockReason` | Set when the worktree is locked: the reason, or the empty text for a lock with no reason. |
+
+Git lists the real path. For a path through a symlink, git lists the real parent folder.
+
+### Create
+
+`createTaskWorktree({ clone, env, path, branch, baseRevision })` is idempotent (safe to run again), so that `tasker start` can continue a failed attempt. It resolves with one of three values:
+
+- `created`: a new branch and a new worktree.
+- `reused-branch`: the existing branch, in a new worktree.
+- `reused-worktree`: the existing worktree, used again or repaired.
+
+It runs these steps in order:
+
+1. Run the name check on `branch`.
+2. Make the parent folder of `path`.
+3. Find the real path of `path`, the target. List the worktrees.
+4. If a worktree is at the target, handle it as the table below shows.
+5. If another worktree has the branch, throw.
+6. If something other than an empty folder is at the target, throw. This check runs before any `git worktree add`, because git makes the new branch before it reads the path.
+7. If the branch exists, run `git worktree add -- <target> <branch>`. The branch keeps its commits and does not move. Git writes no upstream.
+8. Otherwise, run `git worktree add --no-track -b <branch> -- <target> <baseRevision>`. The new branch has no upstream.
+
+The table shows each state and what create does. A stop inside `git worktree add` leaves one of the states in the rows marked "stopped".
+
+| State at the path | What create does | Result |
+| --- | --- | --- |
+| No branch, no worktree, the path is missing or an empty folder | Adds a new branch from the base, and the worktree | `created` |
+| The branch exists, no worktree, the path is missing or an empty folder (stopped: git made the branch, or only an admin folder, and then stopped) | Adds a worktree for the branch | `reused-branch` |
+| An unlocked worktree on the branch, with the folder and `.git` | Changes nothing | `reused-worktree` |
+| An unlocked worktree on the branch, with the folder gone | Removes that worktree entry, then adds a worktree for the branch | `reused-branch` |
+| A worktree on the branch locked with the reason `initializing`, with a `.git` file (stopped: the checkout is missing or partial) | Runs `git reset --hard` in the folder, then unlocks the worktree | `reused-worktree` |
+| Any other locked worktree, for example locked `initializing` with no `.git` file or with a detached head (stopped), another reason, or no reason | Throws `the worktree is locked: <target> (<reason>)` | none |
+| An unlocked worktree on the branch, with the folder but no `.git` | Throws `the worktree has no .git file: <target>` | none |
+| An unlocked worktree on another branch, or a detached one | Throws `the worktree path has another branch: <target> (<branch or detached>)` | none |
+| The branch is in a worktree at another path | Throws `the branch <branch> is in another worktree: <path>` | none |
+| A file, a symlink or a folder with content at the path | Throws `something else is at the worktree path: <target>` | none |
+
+Create does not repair a locked worktree that has no `.git` file or a detached head. No git command repairs one worktree without `--force`: `git worktree remove` refuses a locked worktree, `git worktree repair` changes every broken worktree of the clone, and `git worktree prune` acts on every entry that it can prune. The error names the lock and the reason, so a person can decide.
+
+The repair of the `initializing` lock trusts the lock. Git sets this lock while `git worktree add` runs, so the folder holds no work of the task. A person who locks a worktree with the reason `initializing` by hand also gets the `git reset --hard`.
+
+### Remove
+
+`removeTaskWorktree({ clone, env, path })` runs `git worktree remove -- <path>`. It never uses `--force`.
+
+- Git refuses a worktree with a changed tracked file or an untracked file. The `GitError` of git passes through, and its message says `contains modified or untracked files, use --force to delete it`.
+- Ignored files do not block the remove. Git deletes them with the folder.
+- Git refuses a locked worktree and a folder that is not a worktree. The `GitError` passes through.
+- A registered worktree with no folder is removed.
+- The branch stays.
+
+### Delete branch
+
+`deleteTaskBranch({ clone, env, branch })` runs the name check, then `git branch -D -- <branch>`. It uses `-D`, because a task branch is usually not merged in the clone. The `GitError` of git passes through for a branch that a worktree holds and for a missing branch.
+
+The function deletes any local branch that passes the name check. This includes the default branch of the clone. The caller passes the task branch.
+
+### Discard
+
+`discardWorktreeChanges({ clone, env, path })` throws `not a worktree of the clone: <path>` when `path` is not a worktree of the clone. Git with a wrong working folder changes another repo, so the function checks first. Then it runs these commands in the worktree, in this order:
+
+1. `git reset --hard`. A deleted `.gitignore` comes back before the next command reads it.
+2. `git clean -ffd`. This deletes untracked files and untracked folders, also a nested git repo.
+
+Ignored files stay, because the command has no `-x`. They do not block a later remove.
+
+### Revision
+
+`taskBranchRevision({ clone, env, branch })` gives the commit SHA of the local task branch. It runs the name check, then reads the exact ref `refs/heads/<branch>` with `git show-ref`. It does not use `git rev-parse`, because git can then read another ref, for example `refs/heads/refs/heads/<branch>`. If the branch is missing, it throws `cannot resolve the task branch: <branch>`.
+
+### Side effects
+
+- A failed create leaves the parent folder of the worktree.
+- A new task branch has no upstream. A reused branch also has none.
+- On reuse, the branch keeps its commits and does not move to the base.
+- The repair of the `initializing` lock runs `git reset --hard`. It writes the committed files over a partial checkout.
+- A stopped `git worktree add` can leave an admin folder in the clone with only a `locked` file. Git does not list it, and the next create uses a new admin name.
+- A failed `git worktree add` can leave the new branch. The next create reuses it.
+- For an unlocked worktree whose folder is gone, create removes that worktree entry.
+- Remove deletes ignored files with the worktree folder.
+- Discard deletes a nested git repo in an untracked folder, and keeps ignored files.
+- Delete removes any local branch that passes the name check.
