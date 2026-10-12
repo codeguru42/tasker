@@ -334,6 +334,19 @@ describe("publish, land and delete", () => {
       await expectPushNeedsToken();
     });
 
+    it.each(["nope", "HEAD"])("refuses a base that origin does not have: %s", async (base) => {
+      const revision = await addCloneCommit(clone, env, "issue-1-task");
+
+      const error = await failureOf(land({ base, revision }), Error);
+
+      expect(error.message).toBe(
+        `cannot land ${revision} on the base branch: ${base}: the base branch does not exist on origin`,
+      );
+      expect(pushes()).toEqual([]);
+      expect(await origin.branchHead(base)).toBeUndefined();
+      expectNoTokenFile();
+    });
+
     it("passes the ssh key to each ssh call", async () => {
       const ssh = await sshClone();
       const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
