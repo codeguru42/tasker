@@ -86,7 +86,7 @@ describe("the pre-push hook", () => {
 
   it("rejects a push from the bare clone without a token", async () => {
     const error = await failureOf(
-      runGit(["push", "origin", "main:refs/heads/y"], { gitDir: clone, env: origin.env }),
+      runGit(["push", "origin", "refs/remotes/origin/main:refs/heads/y"], { gitDir: clone, env: origin.env }),
       GitError,
     );
     expect(error.stderr).toContain(NO_TOKEN);
@@ -204,7 +204,7 @@ describe("the pre-push hook", () => {
     });
 
     it("pushes from the bare clone", async () => {
-      await push(["origin", "main:refs/heads/y"], { gitDir: clone });
+      await push(["origin", "refs/remotes/origin/main:refs/heads/y"], { gitDir: clone });
       expect(await origin.branchHead("y")).toBe(await origin.branchHead("main"));
     });
 

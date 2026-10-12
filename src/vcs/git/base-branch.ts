@@ -18,8 +18,8 @@ export function parseBaseInput(input: string): string {
   return name;
 }
 
-// Gives the full ref of a stored base. The short name origin/<x> can name a stale
-// local branch in the bare clone, so a remote base uses refs/remotes/origin/<x>.
+// Gives the full ref of a stored base. The short name origin/<x> can name a tag
+// or a local branch first, so a remote base uses refs/remotes/origin/<x>.
 export function baseRevision(base: string): string {
   return base.startsWith(LOCAL_PREFIX) ? base : `refs/remotes/origin/${base}`;
 }

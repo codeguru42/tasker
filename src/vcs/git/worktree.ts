@@ -224,7 +224,7 @@ export async function removeTaskWorktree(options: {
 }
 
 // Deletes the local branch, also when it is not merged. It makes no remote call.
-// It deletes any local branch with a task branch name, also the default branch of the clone.
+// It deletes any local branch with a task branch name, also a branch that HEAD of the clone names.
 export async function deleteTaskBranch(options: {
   clone: string;
   env: NodeJS.ProcessEnv;

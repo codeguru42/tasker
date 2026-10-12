@@ -23,8 +23,9 @@ export interface ProvisionOptions {
   publishTokens: string;
 }
 
-// Makes the bare clone of the remote at options.clone and fetches all branches as origin/*.
-// The marker file <clone>.incomplete exists from before git clone until the first fetch succeeds.
+// Makes the bare clone of the remote at options.clone, with no local branch, and fetches all
+// branches as origin/*. The marker file <clone>.incomplete exists from before git init until the
+// first fetch succeeds.
 // If a step fails, the marker stays.
 export async function provisionClone(options: ProvisionOptions): Promise<void> {
   const { remote, clone, config, env, publishTokens } = options;
@@ -64,15 +65,16 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     throw remoteNotAnswering(remote, failure);
   }
 
-  // The clone runs from the same cwd as ls-remote, so it needs an absolute destination.
+  // The target is absolute, so the cwd of git init does not move the clone. A relative remote
+  // names the same repo as in ls-remote, because remote add writes cloneUrl(remote).
   const target = resolve(clone);
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(marker, "");
-  await runRemoteGit(
-    ["clone", "--bare", "--", remote, target],
-    { cwd: remoteCwd(), env },
-    config.sshKey,
-  );
+  // git init and remote add make no local branch. git clone --bare copies each remote branch to
+  // refs/heads/*, and these copies do not move on fetch. sha1, because tasker reads only 40-hex
+  // revisions, and a sha256 default of the user makes the fetch from a sha1 remote fail.
+  await runGit(["init", "--bare", "--object-format=sha1", "--", target], { cwd: remoteCwd(), env });
+  await runGit(["remote", "add", "--", "origin", cloneUrl(remote)], { gitDir: clone, env });
   await applyConfig(clone, remote, config, env, publishTokens);
   await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
   rmSync(marker, { force: true });
