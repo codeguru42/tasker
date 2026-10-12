@@ -5,6 +5,7 @@ import {
   type FoundState,
   type ReconcileStrategy,
   ReconcileConflictError,
+  rebaseOnto,
   reconcileWorktree,
   restoreCommands,
   restoreWorktree,
@@ -65,6 +66,8 @@ describe("git reconcile", () => {
     await commitInWorktree(path, env, { file: "shared.txt", content: "task" });
     return moveBase({ file: "shared.txt", content: "base" });
   };
+  const onto = (extra: Partial<Parameters<typeof rebaseOnto>[0]> = {}) =>
+    rebaseOnto({ clone, env, path, upstream: "", onto: BASE, ...extra });
   const restore = (
     start: StartState,
     extra: Partial<Parameters<typeof restoreWorktree>[0]> = {},
@@ -257,6 +260,36 @@ describe("git reconcile", () => {
       expect(error.paths).toEqual(["shared.txt"]);
       expect(error.message).toBe(
         `the ${strategy} onto ${base} stopped on conflicts: ${target}: "shared.txt"`,
+      );
+      await expectAsBefore(start);
+    });
+  });
+
+  describe("rebaseOnto", () => {
+    it("rebases only the commits after the upstream", async () => {
+      const upstream = await commitInWorktree(path, env, { file: "p.txt" });
+      await commitInWorktree(path, env, { file: "g.txt" });
+      const h = await commitInWorktree(path, env, { file: "h.txt" });
+      const tip = await moveBase({ file: "b.txt" });
+      const result = await onto({ upstream, onto: tip });
+      expect(result).toBe(await git("rev-parse", "HEAD"));
+      expect(result).not.toBe(h);
+      expect(await git("rev-parse", "HEAD~2")).toBe(tip);
+      expect(await git("ls-files")).toContain("g.txt");
+      expect(await git("ls-files")).toContain("h.txt");
+      expect(await git("ls-files")).not.toContain("p.txt");
+      expect((await state()).branch).toBe(BRANCH);
+    });
+
+    it("aborts and restores when a commit conflicts", async () => {
+      const upstream = await commitInWorktree(path, env, { file: "p.txt" });
+      await commitInWorktree(path, env, { file: "shared.txt", content: "task" });
+      const tip = await moveBase({ file: "shared.txt", content: "base" });
+      const start = await state();
+      const error = await failureOf(onto({ upstream, onto: tip }), ReconcileConflictError);
+      expect(error.paths).toEqual(["shared.txt"]);
+      expect(error.message).toBe(
+        `the rebase onto ${tip} stopped on conflicts: ${target}: "shared.txt"`,
       );
       await expectAsBefore(start);
     });
