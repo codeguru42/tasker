@@ -1,4 +1,12 @@
-import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, statSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+} from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { isShortRef, SHORT_REF } from "../../issue-key/short-ref.js";
@@ -235,9 +243,35 @@ export function withoutLineEnd(text: string): string {
   return text.replace(/\r?\n$/, "");
 }
 
+// The text of file without its line end, or undefined when the file is missing.
+function readGuardFile(file: string): string | undefined {
+  try {
+    return withoutLineEnd(readFileSync(file, "utf8"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+// True when the worktree at target uses its own admin dir in the clone. It reads the files that
+// git follows and runs no git. The assistant can write the .git file and the admin dir.
+function usesOwnGitDir(clone: string, target: string): boolean {
+  const realClone = realpathSync(clone);
+  const dotGit = readGuardFile(join(target, ".git"));
+  if (dotGit === undefined || !dotGit.startsWith("gitdir: ")) return false;
+  const admin = resolve(target, dotGit.slice("gitdir: ".length));
+  if (dirname(admin) !== join(realClone, "worktrees")) return false;
+  const common = readGuardFile(join(admin, "commondir"));
+  if (common === undefined || resolve(admin, common) !== realClone) return false;
+  // Only this fact catches a .git file that names the admin dir of another task worktree.
+  const gitdir = readGuardFile(join(admin, "gitdir"));
+  return gitdir !== undefined && resolve(admin, gitdir) === join(target, ".git");
+}
+
 // Throws unless path is a listed worktree of the clone with a .git file. Gives the real path.
 // Git with a wrong cwd changes another repo. Without a .git file, git would use a repo around
-// the folder. The guard only reads.
+// the folder. The .git file and the admin dir must also name each other and the clone, because
+// git follows them. The guard only reads.
 export async function assertTaskWorktree(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
@@ -251,6 +285,9 @@ export async function assertTaskWorktree(options: {
   }
   if (!hasGitFile(target)) {
     throw new Error(`the worktree has no .git file: ${target}`);
+  }
+  if (!usesOwnGitDir(clone, target)) {
+    throw new Error(`the worktree does not use its own git dir in the clone: ${target}`);
   }
   return target;
 }
