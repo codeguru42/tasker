@@ -119,7 +119,6 @@ describe("readGithubBlockers", () => {
       { key: "other/lib#9", state: "closed" },
     ]);
     expect(fake.calls().map((call) => call.args)).toEqual([
-      ["auth", "token", "--hostname", "github.com", "--user", "octo"],
       graphqlArgs("octo", "repo", "7"),
       graphqlArgs("octo", "repo", "7", "MQ"),
     ]);

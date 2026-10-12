@@ -54,7 +54,7 @@ export async function readGithubBlockers(
   const bad = (reason: string) =>
     new IssueReadError(ref.key, `gh api graphql gave bad output for ${ref.key}: ${reason}`);
 
-  const args = [
+  const baseArgs = [
     "api",
     "graphql",
     "-f",
@@ -66,35 +66,45 @@ export async function readGithubBlockers(
     "-F",
     `number=${parts.number}`,
   ];
-  const stdout = await runGh(args, { account, env });
-
-  let json: unknown;
-  try {
-    json = JSON.parse(stdout);
-  } catch {
-    throw bad("the output is not JSON");
-  }
-  const parsed = AnswerSchema.safeParse(json);
-  if (!parsed.success) throw bad("the fields do not match");
-  const blockedBy = parsed.data.data?.repository?.issue?.blockedBy;
-  if (blockedBy === undefined) throw bad("the fields do not match");
 
   const blockers: Blocker[] = [];
-  for (const item of blockedBy.nodes) {
-    const nameWithOwner = item.repository.nameWithOwner;
-    const key =
-      asciiFold(nameWithOwner) === asciiFold(parts.project)
-        ? `${parts.project}#${item.number}`
-        : `${nameWithOwner}#${item.number}`;
+  let cursor: string | undefined;
+  for (;;) {
+    const args = cursor === undefined ? baseArgs : [...baseArgs, "-f", `cursor=${cursor}`];
+    const stdout = await runGh(args, { account, env });
+
+    let json: unknown;
     try {
-      splitGithubKey(key);
-    } catch (error) {
-      if (error instanceof IssueKeyError) throw bad(`not a GitHub issue key: ${JSON.stringify(key)}`);
-      throw error;
+      json = JSON.parse(stdout);
+    } catch {
+      throw bad("the output is not JSON");
     }
-    const state = issueState(item.state);
-    if (state === undefined) throw bad(`unknown state ${JSON.stringify(item.state)}`);
-    blockers.push({ key, state });
+    const parsed = AnswerSchema.safeParse(json);
+    if (!parsed.success) throw bad("the fields do not match");
+    const blockedBy = parsed.data.data?.repository?.issue?.blockedBy;
+    if (blockedBy === undefined) throw bad("the fields do not match");
+
+    for (const item of blockedBy.nodes) {
+      const nameWithOwner = item.repository.nameWithOwner;
+      const key =
+        asciiFold(nameWithOwner) === asciiFold(parts.project)
+          ? `${parts.project}#${item.number}`
+          : `${nameWithOwner}#${item.number}`;
+      try {
+        splitGithubKey(key);
+      } catch (error) {
+        if (error instanceof IssueKeyError) throw bad(`not a GitHub issue key: ${JSON.stringify(key)}`);
+        throw error;
+      }
+      const state = issueState(item.state);
+      if (state === undefined) throw bad(`unknown state ${JSON.stringify(item.state)}`);
+      blockers.push({ key, state });
+    }
+
+    const { hasNextPage, endCursor } = blockedBy.pageInfo;
+    if (!hasNextPage) return blockers;
+    if (endCursor === null) throw bad("the page has a next page but no cursor");
+    if (endCursor === cursor) throw bad(`the cursor ${JSON.stringify(endCursor)} came again`);
+    cursor = endCursor;
   }
-  return blockers;
 }
