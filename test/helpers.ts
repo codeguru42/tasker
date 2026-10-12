@@ -406,27 +406,37 @@ export function sshKeyArgs(key: string): string[] {
   return ["-i", key, "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes"];
 }
 
-// Writes a git wrapper into binDir. It logs each call (see readArgLog()), then runs the real git.
-// The real git is the first git file on process.env.PATH.
-export function writeGitRecorder(binDir: string, logPath: string): void {
-  let realGit: string | undefined;
+// The first git file on process.env.PATH.
+function realGitPath(): string {
   for (const folder of (process.env.PATH ?? "").split(delimiter)) {
     if (folder === "") continue;
     const candidate = join(folder, "git");
     try {
       if (statSync(candidate).isFile()) {
         accessSync(candidate, constants.X_OK);
-        realGit = candidate;
-        break;
+        return candidate;
       }
     } catch {
       // Not here. Try the next folder.
     }
   }
-  if (realGit === undefined) {
-    throw new Error("no git found on PATH");
-  }
-  writeFakeGit(binDir, `${logLine(logPath)}\nexec ${shellQuote(realGit)} "$@"`);
+  throw new Error("no git found on PATH");
+}
+
+// Writes a git wrapper into binDir. It logs each call (see readArgLog()), then runs the real git.
+// The real git is the first git file on process.env.PATH.
+export function writeGitRecorder(binDir: string, logPath: string): void {
+  writeFakeGit(binDir, `${logLine(logPath)}\nexec ${shellQuote(realGitPath())} "$@"`);
+}
+
+// Writes a git wrapper into binDir. It runs the real git with the same arguments. Then it exits
+// with 1 when the first argument is subcommand, and else with the exit code of the real git.
+// The real step finishes first, so a test sees a step that fails after it changed the worktree.
+export function writeGitFailAfter(binDir: string, subcommand: string): void {
+  writeFakeGit(
+    binDir,
+    `${shellQuote(realGitPath())} "$@"\ncode=$?\nif [ "$1" = ${shellQuote(subcommand)} ]; then exit 1; fi\nexit $code`,
+  );
 }
 
 // Reads a log of writeFakeSsh() or writeGitRecorder(). It returns one argument list for each call.

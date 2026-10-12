@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   type FoundState,
@@ -18,6 +18,7 @@ import {
   type GitOrigin,
   makeGitClone,
   makeGitOrigin,
+  writeGitFailAfter,
 } from "../../helpers.js";
 
 describe("git reconcile", () => {
@@ -217,6 +218,30 @@ describe("git reconcile", () => {
     it("refuses a base that is not a full revision or ref", async () => {
       const error = await failureOf(reconcile("rebase", { baseRevision: "main" }), Error);
       expect(error.message).toContain("not a full revision or ref");
+    });
+
+    it("restores the worktree and rethrows when the step fails after it moved the branch", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      await moveBase({ file: "b.txt" });
+      const start = await state();
+      const bin = join(origin.dir, "bin");
+      writeGitFailAfter(bin, "rebase");
+      const error = await failureOf(
+        reconcile("rebase", { env: { ...env, PATH: `${bin}${delimiter}${process.env.PATH}` } }),
+        GitError,
+      );
+      expect(error.subcommand).toBe("rebase");
+      await expectAsBefore(start);
+    });
+
+    it("throws the error of the restore when the restore fails too", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      await moveBase({ file: "b.txt" });
+      writeFileSync(join(clone, "refs", "heads", `${BRANCH}.lock`), "");
+      const error = await failureOf(reconcile("rebase"), Error);
+      expect(error).not.toBeInstanceOf(GitError);
+      expect(error.message).toContain("cannot restore the worktree");
+      expect(error.message).toContain(`${BRANCH}.lock`);
     });
   });
 });
