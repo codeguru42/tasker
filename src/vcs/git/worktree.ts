@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, realpathSync, statSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { GitError, runGit } from "./run.js";
@@ -133,6 +133,16 @@ function isFile(path: string): boolean {
   }
 }
 
+// True when nothing is at path, or an empty folder (not a symlink) is. Git accepts both.
+function isMissingOrEmptyFolder(path: string): boolean {
+  try {
+    return lstatSync(path).isDirectory() && readdirSync(path).length === 0;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return true;
+    throw error;
+  }
+}
+
 // Makes the worktree of a task on a new branch. The new branch has no upstream.
 export async function createTaskWorktree(options: {
   clone: string;
@@ -158,7 +168,12 @@ export async function createTaskWorktree(options: {
     }
     throw new Error(`the worktree is locked: ${target} (${entry.lockReason})`);
   }
-  if (entry?.branch === branch) {
+  if (entry !== undefined && entry.branch !== branch) {
+    throw new Error(
+      `the worktree path has another branch: ${target} (${entry.branch ?? "detached"})`,
+    );
+  }
+  if (entry !== undefined) {
     if (existsSync(join(target, ".git"))) return "reused-worktree";
     if (!existsSync(target)) {
       // The folder is gone. Git drops only this entry, and the branch stays.
@@ -166,6 +181,14 @@ export async function createTaskWorktree(options: {
     } else {
       throw new Error(`the worktree has no .git file: ${target}`);
     }
+  }
+  const holder = entries.find((other) => other.path !== target && other.branch === branch);
+  if (holder !== undefined) {
+    throw new Error(`the branch ${branch} is in another worktree: ${holder.path}`);
+  }
+  // Git makes the new branch before it reads the path, so check the path first.
+  if (!isMissingOrEmptyFolder(target)) {
+    throw new Error(`something else is at the worktree path: ${target}`);
   }
   if (await branchExists(clone, env, branch)) {
     await runGit(["worktree", "add", "--", target, branch], { gitDir: clone, env });
