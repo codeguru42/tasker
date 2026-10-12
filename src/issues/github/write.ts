@@ -48,13 +48,15 @@ export function markGithubInProgress(
   return addLabel(ref, label, "issueTracker.inProgressLabel", account, env);
 }
 
-// Closes the issue of ref as completed with one gh call. gh issue close exits 0 for an issue that is already closed.
+// With doneLabel, adds the label and the issue stays open. Else closes the issue as completed.
+// gh issue close exits 0 for an issue that is already closed.
 export async function markGithubDone(
   ref: IssueRef,
   doneLabel: string | undefined,
   account: string,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
+  if (doneLabel !== undefined) return addLabel(ref, doneLabel, "issueTracker.doneLabel", account, env);
   const parts = splitGithubKey(ref.key);
   await runGh(["issue", "close", parts.number, "-R", parts.project, "--reason", "completed"], { account, env });
 }
