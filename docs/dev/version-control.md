@@ -26,7 +26,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 
 No other folder in `src/` starts git.
 
-The test `test/vcs/git/boundary.test.ts` enforces this rule. It fails when a file outside `src/vcs/git/` loads `child_process` and has a string literal that is `git` or starts with `git `. The test finds each way to load the module: `import ... from`, `import "..."`, `import("...")`, `require("...")` and `export ... from`. It does this for `child_process` and `node:child_process`. The test has two known gaps. It cannot find a module name that the code builds at run time. It cannot find a git name that the code builds at run time.
+The test `test/vcs/git/boundary.test.ts` enforces this rule. It fails when a file outside `src/vcs/git/` loads `child_process` or imports `src/process/run-child.ts`, and has a string literal that is `git` or starts with `git `. The test finds each way to load a module: `import ... from`, `import "..."`, `import("...")`, `require("...")` and `export ... from`. It does this for `child_process`, `node:child_process` and `src/process/run-child.ts`. The test has two known gaps. It cannot find a module name that the code builds at run time. It cannot find a git name that the code builds at run time.
 
 ## The provider interface
 
@@ -101,6 +101,8 @@ As a result, `options.gitDir` is only for the bare clone, and task commands use 
 ## `runGit()`
 
 `runGit(args, options)` runs one git command. It resolves with the stdout of git as UTF-8 text. It does not trim the text.
+
+`runGit()` starts git through `runChild()` in `src/process/run-child.ts`. `runChild()` holds the `PATH` check, the pipes of the child and the mapping of a missing command. `runGit()` maps its errors to `GitNotInstalledError`.
 
 - `args[0]` must be the git subcommand, for example `rev-parse`. It must not be an option. For this reason, an error of git always names the real subcommand.
 - `options.cwd` runs git in that folder.
@@ -496,7 +498,7 @@ The remediation of a failure depends on the probe. With an account, it tells the
 
 ### The probe
 
-`sshAccount()` in `src/vcs/git/ssh-account.ts` is the one place that starts ssh directly, because git has no command that shows the greeting. It runs `sh -c '<ssh command> "$@"' ... -T [-p <port>] -- <destination>`. The ssh command comes from `gitSshCommand()` and `sshEnv()`, so it uses the key of the repo. The probe returns only the account name and never returns ssh text.
+`sshAccount()` in `src/vcs/git/ssh-account.ts` is the one place that starts ssh directly, because git has no command that shows the greeting. It runs `sh -c '<ssh command> "$@"' ... -T [-p <port>] -- <destination>` through `runChild()`. An env with no `PATH`, a missing `sh` and any other start error give no account. An abort rejects with the abort error. The ssh command comes from `gitSshCommand()` and `sshEnv()`, so it uses the key of the repo. The probe returns only the account name and never returns ssh text.
 
 - `sshTarget()` gives no target for a local path, for a URL that is not ssh, and for a destination, a user or a port that ssh reads as an option.
 - When `GIT_SSH` is set, the probe starts nothing.

@@ -4,7 +4,7 @@
 
 ## The GitHub folder
 
-All code that starts `gh` is in `src/issues/github/`. The test `test/issues/github/boundary.test.ts` enforces this rule with the source scan of `test/helpers.ts`. The test fails when a file outside `src/issues/github/` loads `child_process` and has a string literal that is `gh` or starts with `gh `. The scan has two known gaps. It cannot find a module name that the code builds at run time. It cannot find a command name that the code builds at run time.
+All code that starts `gh` is in `src/issues/github/`. The test `test/issues/github/boundary.test.ts` enforces this rule with the source scan of `test/helpers.ts`. The test fails when a file outside `src/issues/github/` loads `child_process` or imports `src/process/run-child.ts`, and has a string literal that is `gh` or starts with `gh `. The scan has two known gaps. It cannot find a module name that the code builds at run time. It cannot find a command name that the code builds at run time.
 
 ## The files of src/issues/
 
@@ -15,6 +15,8 @@ Later issues add their files to this list.
 ## runGh()
 
 `runGh(args, { account, env })` takes the arguments of `gh` (the subcommand first) and resolves with the stdout of `gh`. The stdout is as `gh` printed it, not trimmed. `args` must not be empty, and `args[0]` must not start with `-`.
+
+`runGh()` starts `gh` through `runChild()` in `src/process/run-child.ts`.
 
 `gh` gets no input stream. Its output goes to pipes, never to the terminal. `runGh()` writes nothing to the console or a log. `gh` runs in the cwd of tasker. Each call that acts on a repo must name the repo (`--repo <project>`, `-R <project>`, or the full path in `gh api repos/<owner>/<repo>/...`), because `runGh()` removes `GH_REPO`, and without a repo gh reads the repo from the git folder of its cwd.
 
