@@ -5,11 +5,11 @@ import {
   blockersGraphqlArgs,
   blockersNode,
   blockersPageJson,
+  configWithTrackers,
   failureOf,
   fakeGh,
   ghTokenAnswer,
   makeTempDir,
-  validConfig,
 } from "../../helpers.js";
 
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
@@ -29,7 +29,6 @@ let authModule: typeof import("../../../src/issues/github/auth.js");
 let doctorModule: typeof import("../../../src/issues/github/doctor.js");
 let issue: typeof import("../../../src/issues/issue.js");
 let resolve: typeof import("../../../src/issue-key/resolve.js");
-let schema: typeof import("../../../src/config/schema.js");
 let dir: string;
 
 beforeEach(async () => {
@@ -43,7 +42,6 @@ beforeEach(async () => {
   doctorModule = await import("../../../src/issues/github/doctor.js");
   issue = await import("../../../src/issues/issue.js");
   resolve = await import("../../../src/issue-key/resolve.js");
-  schema = await import("../../../src/config/schema.js");
 });
 
 afterEach(() => {
@@ -51,12 +49,10 @@ afterEach(() => {
 });
 
 describe("createGithubProvider", () => {
-  // The repos of the pair, with the defaults of the configuration.
+  // The repos in the list of doctorChecks(), with the defaults of the configuration.
   function repos() {
-    const raw = validConfig();
-    raw.repos = { "octo/repo": { ...raw.repos.tasker, issueTracker: { provider: "github", account: "octo" } } };
-    const config = schema.parseConfig(raw, {}, "/home/test");
-    return [{ key: "octo/repo", issueTracker: config.repos["octo/repo"].issueTracker }];
+    const config = configWithTrackers({ "octo/repo": { provider: "github", account: "octo" } });
+    return Object.entries(config.repos).map(([key, repo]) => ({ key, issueTracker: repo.issueTracker }));
   }
 
   const provider = () => providerModule.createGithubProvider({ account: "octo" });
@@ -186,7 +182,7 @@ describe("createGithubProvider", () => {
     fake.assertAnswered();
   });
 
-  it("gives the doctor checks of the repos of the pair", () => {
+  it("gives the doctor checks of the repos in the list",() => {
     const names = provider().doctorChecks(repos()).map((check) => check.name);
     expect(names).toEqual(doctorModule.githubDoctorChecks(repos()).map((check) => check.name));
     expect(names).toEqual(["gh version", "gh auth: octo", "gh project: octo/repo", "gh labels: octo/repo"]);
