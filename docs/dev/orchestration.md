@@ -124,14 +124,14 @@ Each running agent has a slot and a delay. The delay is the number of minutes be
 
 1. When the orchestrator starts an agent, the orchestrator must run `tasker show-quota` and read the reset time, as "Terms" says.
 2. If there is a reset time, the orchestrator must schedule a one-shot job for the job time of that agent.
-3. If there is no reset time yet, the orchestrator starts the agent without a job. For example, there is no reset time before the first run in the project. "When there is no reset time yet" gives the next steps.
+3. If there is no reset time yet, the orchestrator starts the agent without a job and tells the agent that it has no job. For example, there is no reset time before the first run in the project. "When there is no reset time yet" gives the next steps.
 
 - When the orchestrator schedules a job, the prompt of the job must name the issue and the agent. The prompt must tell the orchestrator to do the steps of "When the job fires".
 - The orchestrator must keep the job id for each ticket.
 
 ### When there is no reset time yet
 
-- If an agent has no job, the agent must tell the orchestrator when its first tasker run starts: `tasker plan`, `tasker refine`, `tasker execute` or `tasker review`.
+- If an agent has no job, the agent must tell the orchestrator each time a tasker run starts: `tasker plan`, `tasker refine`, `tasker execute`, `tasker review` or `tasker resume`.
 - When the orchestrator gets this report, the orchestrator runs `tasker show-quota` again. If there is a reset time, the orchestrator schedules the job of that agent.
 - If there is still no reset time, the orchestrator runs `tasker show-quota` again each time an agent without a job reports a new tasker run. The orchestrator also runs it again each time an agent reports that a run ended.
 - If the quota runs out before the orchestrator schedules a job, no job resumes the agent. In that case, the orchestrator tells the user when the orchestrator has tokens again.
@@ -140,13 +140,15 @@ Each running agent has a slot and a delay. The delay is the number of minutes be
 
 When the job of a ticket fires, the orchestrator runs `tasker status --issue <issue>` and `tasker show <issue>`. Then exactly one of these cases applies:
 
-- If the task is in `quota_blocked` and the `resets at:` line is missing or in the past, the orchestrator sends the agent a resume message with SendMessage. A message to an agent that ended starts the agent again, and the agent keeps its context. The task stays in `quota_blocked` until the agent runs `tasker resume`.
+- If the task is in `quota_blocked` and the `resets at:` line is missing or in the past, the orchestrator sends the agent a resume message with SendMessage. A message to an agent that ended starts the agent again, and the agent keeps its context. Then the orchestrator schedules the next job, as the paragraph after this list says. The task stays in `quota_blocked` until the agent runs `tasker resume`.
 - If the task is in `quota_blocked` and its `resets at:` time is in the future, the stop is in a longer window, for example `seven_day`. The orchestrator does not resume the agent. The orchestrator tells the user. Then the orchestrator schedules a job for the job time of that `resets at:` time. The task stays in `quota_blocked`.
-- If the task is in `interrupted`, the orchestrator sends the agent a resume message, as in the first case. The task stays in `interrupted` until the agent runs `tasker resume`.
+- If the task is in `interrupted`, the orchestrator sends the agent a resume message, as in the first case. Then the orchestrator schedules the next job, as the paragraph after this list says. The task stays in `interrupted` until the agent runs `tasker resume`.
 - If the task is in `awaiting_quota_approval`, the quota use passed the approval threshold. The orchestrator tells the user and does not resume the task. The orchestrator does not run `tasker approve-credits` (see "Limits"). The orchestrator does not schedule another job for that task. The task stays in `awaiting_quota_approval` until the user decides.
 - If the task is in `failed`, the orchestrator schedules no new job. The orchestrator asks the agent for its report. The orchestrator frees the slot only in a case of "Delete the job".
 - If the task is in `landed`, `finishing`, `cleanup_failed`, `finished` or `cancelled`, or `tasker status --issue <issue>` lists no task, the orchestrator schedules no new job. The orchestrator frees the slot of the agent, as "Delete the job" says. By default, `tasker status` lists only the tasks in flight, so it does not list a `finished` or `cancelled` task.
-- If the task is in a state that no other case names, the task did not stop for the quota. For example, the task is in `planning`, `executing`, `awaiting_plan_review` or `reviewed`. The orchestrator runs `tasker show-quota` again and schedules the next job for the new reset time. The agent keeps its slot.
+- If the task is in a state that no other case names, the task did not stop for the quota. For example, the task is in `planning`, `executing`, `awaiting_plan_review` or `reviewed`. The orchestrator schedules the next job, as the paragraph after this list says. The agent keeps its slot.
+
+If a case says that the orchestrator schedules the next job, the orchestrator runs `tasker show-quota` and reads the reset time, as "Terms" says. If there is a reset time, the orchestrator schedules the next job for the job time of that agent. If there is no reset time yet, the orchestrator tells the agent that it has no job. Then "When there is no reset time yet" applies to that agent.
 
 ### What the agent does
 
