@@ -1,5 +1,5 @@
 import { existsSync, rmSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import {
@@ -7,6 +7,7 @@ import {
   fakeSsh,
   GIT_TEST_IDENTITY,
   gitTestEnv,
+  makeGitClone,
   makeGitOrigin,
   makeTempDir,
   sshKeyArgs,
@@ -112,6 +113,30 @@ describe("makeGitOrigin", () => {
       "the branch name must not start with -",
     );
     await expect(origin.addCommit("-x")).rejects.toThrow("the branch name must not start with -");
+  });
+});
+
+describe("makeGitClone", () => {
+  let origin: GitOrigin;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  it("makes a bare clone inside the origin folder with the remote branches fetched", async () => {
+    const clone = await makeGitClone(origin);
+    const git = (...args: string[]) =>
+      runGit(args, { gitDir: clone, env: origin.env }).then((out) => out.trim());
+
+    expect(clone.startsWith(`${origin.dir}${sep}`)).toBe(true);
+    expect(await git("rev-parse", "--is-bare-repository")).toBe("true");
+    expect(await git("rev-parse", "refs/remotes/origin/main")).toBe(
+      await origin.branchHead("main"),
+    );
   });
 });
 
