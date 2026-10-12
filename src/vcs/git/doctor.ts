@@ -274,9 +274,10 @@ export function staleLockCheck(
       const skipped: string[] = [];
       for (const lock of found) {
         const rel = relative(root, lock.path);
+        // Only a git process that works in the clone counts.
         const cwd =
           view?.readable === true
-            ? view.gitCwds.find((folder) => isInside(lock.path, folder))
+            ? view.gitCwds.find((folder) => isInside(folder, root) && isInside(lock.path, folder))
             : undefined;
         if (view?.readable === true && view.openFiles.has(lock.path)) {
           skipped.push(`skipped ${rel}: a process has it open`);
