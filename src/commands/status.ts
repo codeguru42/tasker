@@ -1,4 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
+import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
+import { resolveIssueKey } from "../issue-key/resolve.js";
 import { isTaskState, STATES } from "../state/machine.js";
 import type { TaskFilter } from "../store/store.js";
 import { fail, loadConfigOrFail, withStore } from "./shared.js";
@@ -20,7 +22,8 @@ export const status: RegisterCommand = (program, io) => {
     .description("List the tasks by issue key and state")
     .option("--repo <key>", "List only the tasks of the repo with this key")
     .option("--state <state>", "List only the tasks in this state, also finished or cancelled")
-    .action((options: { repo?: string; state?: string }) => {
+    .option("--issue <issue>", "List only the tasks of this issue key")
+    .action((options: { repo?: string; issue?: string; state?: string }) => {
       const config = loadConfigOrFail(io);
       const filter: TaskFilter = {};
       if (options.repo !== undefined) {
@@ -34,6 +37,17 @@ export const status: RegisterCommand = (program, io) => {
           fail(io, `unknown state: ${options.state} (the states are: ${STATES.join(", ")})`);
         }
         filter.states = [options.state];
+      }
+      if (options.issue !== undefined) {
+        let ref: IssueRef;
+        try {
+          ref = resolveIssueKey(options.issue, config, { repo: options.repo });
+        } catch (error) {
+          if (!(error instanceof IssueKeyError)) throw error;
+          fail(io, error.message);
+        }
+        filter.issueKey = ref.key;
+        filter.repoKey = ref.repoKey;
       }
       const tasks = withStore(config, (store) => store.listTasks(filter));
       io.stdout(
