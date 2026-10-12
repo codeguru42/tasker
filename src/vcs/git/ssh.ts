@@ -22,6 +22,11 @@ export function sshEnv(env: NodeJS.ProcessEnv, sshKey: string | undefined): Node
   return { ...env, GIT_SSH_COMMAND: sshCommand(sshKey) };
 }
 
+// The key path with "~/" replaced by homeDir, or undefined when the key does not start with "~/".
+export function homeKeyPath(sshKey: string, homeDir: string): string | undefined {
+  return sshKey.startsWith("~/") ? homeDir + sshKey.slice(1) : undefined;
+}
+
 // text with each hidden form replaced by "<sshKey>". Without a key, text as it is.
 // The forms, in this order: the ssh command, the key, the "~/" expansion with homeDir,
 // and, for "~name/...", the part of the key from its first "/".
@@ -30,8 +35,9 @@ export function hideSshKey(text: string, sshKey: string | undefined, homeDir: st
     return text;
   }
   const forms = [sshCommand(sshKey), sshKey];
-  if (sshKey.startsWith("~/")) {
-    forms.push(homeDir + sshKey.slice(1));
+  const home = homeKeyPath(sshKey, homeDir);
+  if (home !== undefined) {
+    forms.push(home);
   } else if (sshKey.startsWith("~")) {
     const slash = sshKey.indexOf("/");
     if (slash !== -1 && slash < sshKey.length - 1) {
