@@ -83,15 +83,19 @@ export function remoteCwd(): string {
   return parse(process.cwd()).root;
 }
 
-// The remote.origin.url that git clone writes for remote, with remoteCwd() as cwd.
-// A remote is a local path when it has no "://" and either no ":" or a "/" before its first ":"
-// (the rule of git, url_is_local_not_ssh). A relative local path becomes remoteCwd() plus the
-// path, with no normalizing. Any other remote stays as it is.
-export function cloneUrl(remote: string): string {
+// True when remote is a local path. A remote is a local path when it has no "://" and either
+// no ":" or a "/" before its first ":" (the rule of git, url_is_local_not_ssh).
+export function isLocalRemote(remote: string): boolean {
   const colon = remote.indexOf(":");
   const slash = remote.indexOf("/");
-  const local = !remote.includes("://") && (colon === -1 || (slash !== -1 && slash < colon));
-  if (local && !isAbsolute(remote)) {
+  return !remote.includes("://") && (colon === -1 || (slash !== -1 && slash < colon));
+}
+
+// The remote.origin.url that git clone writes for remote, with remoteCwd() as cwd.
+// A relative local path (see isLocalRemote()) becomes remoteCwd() plus the path, with no
+// normalizing. Any other remote stays as it is.
+export function cloneUrl(remote: string): string {
+  if (isLocalRemote(remote) && !isAbsolute(remote)) {
     return remoteCwd() + remote;
   }
   return remote;
