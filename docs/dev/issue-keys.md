@@ -26,7 +26,9 @@ The short ref is the one that the issue key parsers make. `src/issue-key/short-r
 
 The project of a repo is its `issueTracker.project`. The [`project` row of the configuration](../config.md#issuetracker) gives the default.
 
-tasker does not guess the provider from the shape of a key. It tries the key against each repo, with the matcher of the provider of that repo.
+tasker does not guess the provider from the shape of a key. It tries the key against each repo, with the matcher of the provider of that repo. The matcher is the key parser of the provider in `KEY_PARSERS`. The `parse` of the issue provider is the same function. It takes the project, because one provider object serves many repos. The resolve uses `KEY_PARSERS`, not the registry `issueProviderFor()`. As a result, a jira repo still gives the parser error, and not the error of the registry.
+
+No file in `src/issue-key/` imports from `src/issues/`. The test `test/issue-key/boundary.test.ts` enforces this rule. An import of `src/issues/provider.ts` from the key resolve pulls in the registry and the gh code.
 
 - A github repo matches when `splitGithubKey()` accepts the key and the `owner/repo` part equals the project. The compare folds only the ASCII letters `A` to `Z` to lower case. `toLowerCase()` is not safe, because the Kelvin sign U+212A lowers to `k`. With the ASCII fold, a match means that the project has the same ASCII characters as the key. As a result, the stored key is always a GitHub key.
 - A jira repo never matches until M14 adds the Jira project match. Its parser runs only to give the parser error.
@@ -59,5 +61,5 @@ Each error is an `IssueKeyError`. `<JSON text of the key>` is the raw key, and `
 
 ## Files
 
-- `src/issue-key/resolve.ts` holds `resolveIssueKey()`, `ResolveOptions` and `MATCHERS`, the matcher of each provider. A new provider must add its entry to `MATCHERS`, and the compiler makes sure of it.
+- `src/issue-key/resolve.ts` holds `resolveIssueKey()`, `ResolveOptions`, `KeyParser` and `KEY_PARSERS`, the key parser of each provider. A new provider must add its entry to `KEY_PARSERS`, and the compiler makes sure of it.
 - `src/issue-key/github.ts` holds `splitGithubKey()`, `GithubKeyParts` and `parseGithubKey()`.
