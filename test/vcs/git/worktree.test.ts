@@ -1,7 +1,8 @@
+import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runGit } from "../../../src/vcs/git/run.js";
-import { taskBranchName, taskWorktreePath } from "../../../src/vcs/git/worktree.js";
+import { listWorktrees, taskBranchName, taskWorktreePath } from "../../../src/vcs/git/worktree.js";
 import { makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers.js";
 
 describe("taskBranchName", () => {
@@ -40,14 +41,12 @@ describe("taskWorktreePath", () => {
 describe("git fixture", () => {
   let origin: GitOrigin;
   let clone: string;
-  let worktrees: string;
   let env: NodeJS.ProcessEnv;
 
   beforeEach(async () => {
     origin = await makeGitOrigin();
     await origin.addCommit("main", { file: ".gitignore", content: "ign\n" });
     clone = await makeGitClone(origin);
-    worktrees = join(origin.dir, "worktrees");
     env = origin.env;
   });
 
@@ -55,9 +54,49 @@ describe("git fixture", () => {
     origin.remove();
   });
 
-  it("makes the fixture", () => {
-    expect(clone).toContain(origin.dir);
-    expect(worktrees).toContain(origin.dir);
+  describe("listWorktrees", () => {
+    const base = "refs/remotes/origin/main";
+    const list = () => listWorktrees({ clone, env });
+    const add = (...args: string[]) => runGit(["worktree", "add", ...args], { gitDir: clone, env });
+
+    it("gives no entry for a new clone", async () => {
+      expect(await list()).toEqual([]);
+    });
+
+    it("lists a worktree on a branch", async () => {
+      const path = join(realpathSync(origin.dir), "w1");
+      await add("-b", "b1", "--", path, base);
+      expect(await list()).toEqual([{ path, branch: "b1" }]);
+    });
+
+    it("lists a detached worktree without a branch", async () => {
+      const path = join(realpathSync(origin.dir), "w1");
+      await add("--detach", "--", path, base);
+      expect(await list()).toEqual([{ path }]);
+    });
+
+    it("gives the reason of a locked worktree", async () => {
+      const path = join(realpathSync(origin.dir), "w1");
+      await add("-b", "b1", "--", path, base);
+      await runGit(["worktree", "lock", "--reason", "r", "--", path], { gitDir: clone, env });
+      expect(await list()).toEqual([{ path, branch: "b1", lockReason: "r" }]);
+    });
+
+    it("gives an empty reason for a lock with no reason", async () => {
+      const path = join(realpathSync(origin.dir), "w1");
+      await add("-b", "b1", "--", path, base);
+      await runGit(["worktree", "lock", "--", path], { gitDir: clone, env });
+      expect(await list()).toEqual([{ path, branch: "b1", lockReason: "" }]);
+    });
+
+    it("lists the real path of a worktree added through a symlinked parent", async () => {
+      const real = join(realpathSync(origin.dir), "real");
+      mkdirSync(real);
+      const link = join(origin.dir, "link");
+      symlinkSync(real, link);
+      await add("-b", "b1", "--", join(link, "w1"), base);
+      expect(await list()).toEqual([{ path: join(real, "w1"), branch: "b1" }]);
+    });
   });
 
   describe("taskBranchName for any title", () => {

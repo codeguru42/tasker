@@ -55,3 +55,17 @@ export function taskBranchName(shortRef: string, title: string): string {
 export function taskWorktreePath(worktrees: string, shortRef: string): string {
   return join(worktrees, shortRef);
 }
+
+export interface WorktreeEntry {
+  path: string;
+  branch?: string;
+  // Set when the worktree is locked: "" for a lock with no reason.
+  lockReason?: string;
+}
+
+export async function listWorktrees(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+}): Promise<WorktreeEntry[]> {
+  throw new Error(`not implemented: ${options.clone}`);
+}
