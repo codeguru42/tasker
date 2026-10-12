@@ -83,6 +83,33 @@ describe("publish, land and delete", () => {
     expect(existsSync(tokens) ? readdirSync(tokens) : []).toEqual([]);
   }
 
+  // A second clone of origin that reaches origin through the fake ssh, with its publish options.
+  async function sshClone() {
+    const fake = fakeSsh(join(origin.dir, "ssh"), origin.env, "serve");
+    const key = join(origin.dir, "id key");
+    const sshPath = join(origin.dir, "clone-ssh", "repo.git");
+    const sshTokens = join(origin.dir, "clone-ssh", "publish-tokens");
+    await provisionClone({
+      remote: fake.remote(origin.path),
+      clone: sshPath,
+      config: { sshKey: key },
+      env: fake.env,
+      publishTokens: sshTokens,
+    });
+    return {
+      fake,
+      key,
+      clone: sshPath,
+      overrides: {
+        clone: sshPath,
+        remote: fake.remote(origin.path),
+        publishTokens: sshTokens,
+        sshKey: key,
+        env: fake.env,
+      },
+    };
+  }
+
   describe("publishTaskBranch", () => {
     it("publishes a new branch with the empty lease", async () => {
       const revision = await addCloneCommit(clone, env, "issue-1-task");
@@ -111,33 +138,48 @@ describe("publish, land and delete", () => {
     });
 
     it("passes the ssh key to each ssh call", async () => {
-      const fake = fakeSsh(join(origin.dir, "ssh"), origin.env, "serve");
-      const key = join(origin.dir, "id key");
-      const sshClone = join(origin.dir, "clone-ssh", "repo.git");
-      const sshTokens = join(origin.dir, "clone-ssh", "publish-tokens");
-      await provisionClone({
-        remote: fake.remote(origin.path),
-        clone: sshClone,
-        config: { sshKey: key },
-        env: fake.env,
-        publishTokens: sshTokens,
-      });
-      const revision = await addCloneCommit(sshClone, fake.env, "issue-1-task");
-      const mark = readArgLog(fake.logPath).length;
+      const ssh = await sshClone();
+      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
+      const mark = readArgLog(ssh.fake.logPath).length;
 
-      const result = await publish({
-        clone: sshClone,
-        remote: fake.remote(origin.path),
-        publishTokens: sshTokens,
-        sshKey: key,
-        env: fake.env,
-      });
+      const result = await publish(ssh.overrides);
 
       expect(result.state).toBe("published");
       expect(await origin.branchHead("issue-1-task")).toBe(revision);
-      const calls = readArgLog(fake.logPath).slice(mark);
+      const calls = readArgLog(ssh.fake.logPath).slice(mark);
       expect(calls.length).toBeGreaterThanOrEqual(1);
-      for (const call of calls) expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
+      for (const call of calls) expect(call.slice(0, 6)).toEqual(sshKeyArgs(ssh.key));
+    });
+
+    it("reports a branch that origin already has, with no push and no lease", async () => {
+      const revision = await addCloneCommit(clone, env, "issue-1-task");
+      await publish({ published: undefined });
+      const before = pushes().length;
+
+      const result = await publish({ published: revision });
+
+      expect(result).toEqual({
+        state: "already-published",
+        branch: "issue-1-task",
+        revision,
+        lease: false,
+      });
+      expect(pushes()).toHaveLength(before);
+      expectNoTokenFile();
+    });
+
+    it("passes the ssh key to the ls-remote call of an already published branch", async () => {
+      const ssh = await sshClone();
+      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
+      await publish(ssh.overrides);
+      const mark = readArgLog(ssh.fake.logPath).length;
+
+      const result = await publish({ ...ssh.overrides, published: revision });
+
+      expect(result.state).toBe("already-published");
+      const calls = readArgLog(ssh.fake.logPath).slice(mark);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.slice(0, 6)).toEqual(sshKeyArgs(ssh.key));
     });
   });
 });
