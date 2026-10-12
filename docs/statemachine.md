@@ -239,7 +239,7 @@ flowchart LR
   class C terminal;
 ```
 
-`tasker retry` picks the target from the state that the task failed in, then runs the command again. The failure event records that state (see [Code](#code)).
+`tasker retry` picks the target from the state that the task failed in, then runs the command again. See [Code](#code).
 
 | Failed in | Retries to | Then runs |
 | --- | --- | --- |
@@ -289,6 +289,6 @@ flowchart LR
 
 ## Code
 
-A change of state and its `transition` event are written in one database transaction. If the edge is illegal, nothing is written. [data-root.md](dev/data-root.md#writes-from-more-than-one-process) explains the transaction rule.
+If the edge is illegal, nothing is written: no state change and no event. [data-root.md](dev/data-root.md#writes-from-more-than-one-process) gives the transaction rule.
 
 The event of a failure records the state that the task failed in. `tasker retry` reads that state to pick its target.
