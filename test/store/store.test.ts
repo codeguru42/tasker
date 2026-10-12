@@ -7,7 +7,7 @@ import { migrate, schemaVersion } from "../../src/store/migrate.js";
 import { migrations } from "../../src/store/migrations.js";
 import { openStore, type Task, type TaskStore } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
-import { makeTempDir, repoRoot } from "../helpers.js";
+import { makeTempDir, repoRoot, tableNames } from "../helpers.js";
 
 describe("task store", () => {
   let dir: string;
@@ -220,7 +220,79 @@ describe("task store", () => {
       const check = new DatabaseSync(oldPath);
       try {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(2);
+        expect(migrations.length).toBe(3);
+      } finally {
+        check.close();
+      }
+    });
+  });
+
+  describe("default base branch", () => {
+    it("reads undefined on a new store", () => {
+      expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
+    });
+
+    it("saves a value and replaces it with a second save", () => {
+      store.setDefaultBaseBranch("tasker", "main");
+      expect(store.getDefaultBaseBranch("tasker")).toBe("main");
+      store.setDefaultBaseBranch("tasker", "develop");
+      expect(store.getDefaultBaseBranch("tasker")).toBe("develop");
+    });
+
+    it("keeps one value for each repo key", () => {
+      store.setDefaultBaseBranch("tasker", "main");
+      store.setDefaultBaseBranch("other", "develop");
+      expect(store.getDefaultBaseBranch("tasker")).toBe("main");
+      expect(store.getDefaultBaseBranch("other")).toBe("develop");
+    });
+
+    it("forgets a stored value when the branch matches", () => {
+      store.setDefaultBaseBranch("tasker", "main");
+      store.forgetDefaultBaseBranch("tasker", "main");
+      expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
+    });
+
+    it("keeps a stored value when the branch differs", () => {
+      store.setDefaultBaseBranch("tasker", "main");
+      store.forgetDefaultBaseBranch("tasker", "old");
+      expect(store.getDefaultBaseBranch("tasker")).toBe("main");
+    });
+
+    it("keeps the value after a reopen", () => {
+      store.setDefaultBaseBranch("tasker", "main");
+      store.close();
+      store = openStore(dbPath, { now });
+      expect(store.getDefaultBaseBranch("tasker")).toBe("main");
+    });
+
+    it("has the default_base_branches table", () => {
+      const db = new DatabaseSync(dbPath);
+      try {
+        expect(tableNames(db)).toContain("default_base_branches");
+      } finally {
+        db.close();
+      }
+    });
+
+    it("upgrades a version-2 database when it opens", () => {
+      const oldPath = join(dir, "old2.db");
+      const db = new DatabaseSync(oldPath);
+      try {
+        migrate(db, migrations.slice(0, 2));
+        expect(schemaVersion(db)).toBe(2);
+      } finally {
+        db.close();
+      }
+      const upgraded = openStore(oldPath, { now });
+      try {
+        upgraded.setDefaultBaseBranch("tasker", "main");
+        expect(upgraded.getDefaultBaseBranch("tasker")).toBe("main");
+      } finally {
+        upgraded.close();
+      }
+      const check = new DatabaseSync(oldPath);
+      try {
+        expect(schemaVersion(check)).toBe(3);
       } finally {
         check.close();
       }
