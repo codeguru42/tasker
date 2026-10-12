@@ -17,6 +17,13 @@ const ViewSchema = z.object({
   state: z.string(),
 });
 
+// The state of an issue from the state that GitHub gives, or undefined for another state.
+export function issueState(raw: string): Issue["state"] | undefined {
+  if (raw === "OPEN") return "open";
+  if (raw === "CLOSED") return "closed";
+  return undefined;
+}
+
 // gh gives a pull request with exit code 0, in any state, so the read finds a pull request from the
 // path of the url: /<owner>/<repo>/issues/<N> for an issue, /<owner>/<repo>/pull/<N> for a pull request.
 export async function readGithubIssue(ref: IssueRef, account: string, env: NodeJS.ProcessEnv): Promise<Issue> {
@@ -61,10 +68,8 @@ export async function readGithubIssue(ref: IssueRef, account: string, env: NodeJ
 
   if (view.number !== Number(parts.number)) throw bad(`gh gave the number ${view.number}`);
 
-  let state: Issue["state"];
-  if (view.state === "OPEN") state = "open";
-  else if (view.state === "CLOSED") state = "closed";
-  else throw bad(`unknown state ${JSON.stringify(view.state)}`);
+  const state = issueState(view.state);
+  if (state === undefined) throw bad(`unknown state ${JSON.stringify(view.state)}`);
 
   return {
     ref,
