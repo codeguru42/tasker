@@ -13,6 +13,7 @@ import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   createTaskWorktree,
   deleteTaskBranch,
+  discardWorktreeChanges,
   listWorktrees,
   removeTaskWorktree,
   taskBranchName,
@@ -422,6 +423,45 @@ describe("git fixture", () => {
         expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
       },
     );
+  });
+
+  describe("discardWorktreeChanges", () => {
+    const path = () => taskWorktreePath(worktrees, "issue-1");
+    const discard = (extra: Partial<Parameters<typeof discardWorktreeChanges>[0]> = {}) =>
+      discardWorktreeChanges({ clone, env, path: path(), ...extra });
+
+    it("discards all changes, keeps ignored files and leaves a removable worktree", async () => {
+      await create();
+      writeFileSync(join(path(), "README.md"), "changed\n");
+      writeFileSync(join(path(), "staged.txt"), "staged\n");
+      await gitIn(path(), "add", "staged.txt");
+      rmSync(join(path(), ".gitignore"));
+      writeFileSync(join(path(), "untracked.txt"), "untracked\n");
+      mkdirSync(join(path(), "folder"));
+      writeFileSync(join(path(), "folder", "file.txt"), "file\n");
+      mkdirSync(join(path(), "nested"));
+      await runGit(["init"], { cwd: join(path(), "nested"), env });
+      writeFileSync(join(path(), "nested", "file.txt"), "nested\n");
+      writeFileSync(join(path(), "ign"), "ignored\n");
+
+      await discard();
+
+      expect(await gitIn(path(), "status", "--porcelain")).toBe("");
+      expect(readFileSync(join(path(), "README.md"), "utf8")).toBe("initial commit\n");
+      expect(readFileSync(join(path(), ".gitignore"), "utf8")).toBe("ign\n");
+      expect(existsSync(join(path(), "nested"))).toBe(false);
+      expect(existsSync(join(path(), "ign"))).toBe(true);
+      await removeTaskWorktree({ clone, env, path: path() });
+      expect(existsSync(path())).toBe(false);
+    });
+
+    it("refuses a folder that is not a worktree of the clone", async () => {
+      mkdirSync(path(), { recursive: true });
+      writeFileSync(join(path(), "file.txt"), "file\n");
+      const error = await failureOf(discard(), Error);
+      expect(error.message).toBe(`not a worktree of the clone: ${path()}`);
+      expect(existsSync(join(path(), "file.txt"))).toBe(true);
+    });
   });
 
   describe("taskBranchName for any title", () => {

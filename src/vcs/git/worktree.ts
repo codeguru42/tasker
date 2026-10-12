@@ -227,3 +227,11 @@ export async function deleteTaskBranch(options: {
     env: options.env,
   });
 }
+
+export async function discardWorktreeChanges(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+}): Promise<void> {
+  throw new Error(`not implemented: ${options.path}`);
+}
