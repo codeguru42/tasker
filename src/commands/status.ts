@@ -1,9 +1,7 @@
 import type { RegisterCommand } from "../cli.js";
-import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
-import { resolveIssueKey } from "../issue-key/resolve.js";
 import { isTaskState, STATES } from "../state/machine.js";
 import type { TaskFilter } from "../store/store.js";
-import { fail, loadConfigOrFail, withStore } from "./shared.js";
+import { fail, loadConfigOrFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
 
 const HEADERS = ["ISSUE", "REPO", "STATE", "UPDATED"];
 
@@ -39,13 +37,7 @@ export const status: RegisterCommand = (program, io) => {
         filter.states = [options.state];
       }
       if (options.issue !== undefined) {
-        let ref: IssueRef;
-        try {
-          ref = resolveIssueKey(options.issue, config, { repo: options.repo });
-        } catch (error) {
-          if (!(error instanceof IssueKeyError)) throw error;
-          fail(io, error.message);
-        }
+        const ref = resolveIssueKeyOrFail(io, options.issue, config, { repo: options.repo });
         filter.issueKey = ref.key;
         filter.repoKey = ref.repoKey;
       }

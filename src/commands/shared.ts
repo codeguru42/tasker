@@ -2,6 +2,8 @@ import { CommanderError } from "commander";
 import type { Io } from "../cli.js";
 import { loadConfig } from "../config/load.js";
 import type { Config } from "../config/schema.js";
+import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
+import { resolveIssueKey, type ResolveOptions } from "../issue-key/resolve.js";
 import { createDataRoot } from "../store/layout.js";
 import { openStore, type TaskStore } from "../store/store.js";
 
@@ -17,6 +19,21 @@ export function loadConfigOrFail(io: Io): Config {
     return loadConfig();
   } catch (error) {
     fail(io, (error as Error).message);
+  }
+}
+
+// The issue ref of rawKey. An IssueKeyError stops the command with exit code 1.
+export function resolveIssueKeyOrFail(
+  io: Io,
+  rawKey: string,
+  config: Config,
+  options: ResolveOptions,
+): IssueRef {
+  try {
+    return resolveIssueKey(rawKey, config, options);
+  } catch (error) {
+    if (!(error instanceof IssueKeyError)) throw error;
+    fail(io, error.message);
   }
 }
 
