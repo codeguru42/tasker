@@ -16,32 +16,33 @@ const QUERY = `query($owner: String!, $name: String!, $number: Int!, $cursor: St
   }
 }`;
 
-// Not strict: a new field from GitHub passes.
-const AnswerSchema = z.object({
-  data: z
-    .object({
-      repository: z
-        .object({
-          issue: z
-            .object({
-              blockedBy: z.object({
-                pageInfo: z.object({ hasNextPage: z.boolean(), endCursor: z.string().nullable() }),
-                nodes: z.array(
-                  z.object({
-                    number: z.number(),
-                    state: z.string(),
-                    repository: z.object({ nameWithOwner: z.string() }),
-                  }),
-                ),
-              }),
-            })
-            .nullish(),
-        })
-        .nullish(),
-    })
-    .nullish(),
+// The envelope of a GraphQL answer. data is checked later, after the errors.
+const EnvelopeSchema = z.object({
+  data: z.unknown().optional(),
   errors: z.array(z.object({ message: z.string() })).nullish(),
 });
+
+// The full shape of data. Not strict: a new field from GitHub passes.
+const DataSchema = z.object({
+  repository: z.object({
+    issue: z.object({
+      blockedBy: z.object({
+        pageInfo: z.object({ hasNextPage: z.boolean(), endCursor: z.string().nullable() }),
+        nodes: z.array(
+          z.object({
+            number: z.number(),
+            state: z.string(),
+            repository: z.object({ nameWithOwner: z.string() }),
+          }),
+        ),
+      }),
+    }),
+  }),
+});
+
+// The field of a value that can be anything, or undefined when the value is not an object.
+const field = (value: unknown, name: string): unknown =>
+  typeof value === "object" && value !== null ? (value as Record<string, unknown>)[name] : undefined;
 
 // gh exits 1 for a GraphQL error and prints the JSON answer on stdout. A failed call is a
 // GraphQL answer only when its stdout is a JSON object with an own data key or an own errors key.
@@ -110,19 +111,21 @@ export async function readGithubBlockers(
     } catch {
       throw bad("the output is not JSON");
     }
-    const parsed = AnswerSchema.safeParse(json);
-    if (!parsed.success) throw bad("the fields do not match");
-    const { data, errors } = parsed.data;
+    const envelope = EnvelopeSchema.safeParse(json);
+    if (!envelope.success) throw bad("the fields do not match");
+    const { data, errors } = envelope.data;
     const messages = (errors ?? []).map((error) => error.message).join("; ");
-    if (data?.repository === null || data?.repository?.issue === null) {
+    const repository = field(data, "repository");
+    if (repository === null || field(repository, "issue") === null) {
       const detail = messages === "" ? "" : `: ${messages}`;
       throw new IssueReadError(ref.key, `the issue ${ref.key} does not exist${detail}`);
     }
     if (errors && errors.length > 0) {
       throw new IssueReadError(ref.key, `gh api graphql gave errors for ${ref.key}: ${messages}`);
     }
-    const blockedBy = data?.repository?.issue?.blockedBy;
-    if (blockedBy === undefined) throw bad("the fields do not match");
+    const shape = DataSchema.safeParse(data);
+    if (!shape.success) throw bad("the fields do not match");
+    const { blockedBy } = shape.data.repository.issue;
 
     for (const item of blockedBy.nodes) {
       const nameWithOwner = item.repository.nameWithOwner;
