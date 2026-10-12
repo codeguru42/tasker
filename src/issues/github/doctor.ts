@@ -20,7 +20,7 @@ function projectOf(repo: GithubDoctorRepo): string {
 }
 
 // The configuration schema requires the account for the github tracker.
-function accountOf(repo: GithubDoctorRepo): string {
+export function accountOf(repo: GithubDoctorRepo): string {
   const account = repo.issueTracker.account;
   if (account === undefined) {
     throw new Error(`${repo.key}: issueTracker.account is not set`);

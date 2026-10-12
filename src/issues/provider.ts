@@ -1,6 +1,8 @@
-import type { RepoConfig } from "../config/schema.js";
+import { ConfigError, type Config, type RepoConfig } from "../config/schema.js";
 import type { Check } from "../doctor/check.js";
 import type { IssueRef } from "../issue-key/ref.js";
+import { accountOf } from "./github/doctor.js";
+import { createGithubProvider } from "./github/provider.js";
 import type { Blocker, Issue } from "./issue.js";
 
 // The id of an issue tracker: the value of issueTracker.provider.
@@ -53,4 +55,40 @@ export interface IssueProvider {
   markDone(ref: IssueRef, target: string | undefined, env: NodeJS.ProcessEnv): Promise<void>;
   // The doctor checks of the provider. The checks do not run until the caller runs them.
   readonly doctorChecks: Check[];
+}
+
+const providers = new WeakMap<Config, Map<string, IssueProvider>>();
+
+// The only place that picks an issue provider. It reads issueTracker.provider. One configuration
+// object gives one provider object for each (id, account) pair. Another configuration object gets
+// new providers.
+export function issueProviderFor(config: Config, repoKey: string): IssueProvider {
+  if (!Object.hasOwn(config.repos, repoKey)) {
+    throw new Error(`unknown repo ${JSON.stringify(repoKey)}: no repo with this key is in the configuration`);
+  }
+  const { issueTracker } = config.repos[repoKey];
+  switch (issueTracker.provider) {
+    case "github": {
+      const account = accountOf({ key: repoKey, issueTracker });
+      const cacheKey = JSON.stringify([issueTracker.provider, account]);
+      let cache = providers.get(config);
+      if (cache === undefined) {
+        cache = new Map();
+        providers.set(config, cache);
+      }
+      let provider = cache.get(cacheKey);
+      if (provider === undefined) {
+        const repos = Object.entries(config.repos)
+          .filter(([, repo]) => repo.issueTracker.provider === "github" && repo.issueTracker.account === account)
+          .map(([key, repo]) => ({ key, issueTracker: repo.issueTracker }));
+        provider = createGithubProvider({ account, repos });
+        cache.set(cacheKey, provider);
+      }
+      return provider;
+    }
+    case "jira":
+      throw new ConfigError([
+        `repos.${repoKey}.issueTracker.provider: the jira tracker is not available in this version`,
+      ]);
+  }
 }
