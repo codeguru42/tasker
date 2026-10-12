@@ -11,7 +11,7 @@ import {
 } from "./changes.js";
 import { assertRevisionInput, isFullRevision, resolveRevision } from "./refs.js";
 import { GitError, runGit } from "./run.js";
-import { assertTaskBranch, assertTaskWorktree } from "./worktree.js";
+import { assertTaskBranch, assertTaskBranchShape, assertTaskWorktree } from "./worktree.js";
 
 // The error of a rebase or a merge that stopped on conflicts. The worktree is back at the start.
 export class ReconcileConflictError extends Error {
@@ -186,6 +186,15 @@ export function restoreCommands(start: StartState, found: FoundState): string[] 
   return commands;
 }
 
+// The branch check of the reconcile functions and the restore. They move the branch of the
+// worktree, so they act only on a task branch, as createTaskWorktree() does. The name check runs
+// first, then the shape check. A detached start (no branch) passes.
+function assertStartBranch(branch: string | undefined): void {
+  if (branch === undefined) return;
+  assertTaskBranch(branch);
+  assertTaskBranchShape(branch);
+}
+
 // Puts the task worktree back at the start. The caller must find the worktree clean before the
 // step, because the restore runs "checkout --force" and "clean -fd". Both delete uncommitted work
 // and untracked files. The input checks run before any git call.
@@ -199,13 +208,14 @@ export async function restoreWorktree(o: {
   if (!isFullRevision(start.head)) {
     throw new Error(`the start revision is not a full revision: ${JSON.stringify(start.head)}`);
   }
-  if (start.branch !== undefined) assertTaskBranch(start.branch);
+  assertStartBranch(start.branch);
   const target = await assertTaskWorktree({ clone, env, path });
   await restoreAt(target, env, start);
 }
 
-// The guard, the clean check and the start read. The restore deletes uncommitted work, so a
-// worktree with changes is refused before any step runs.
+// The guard, the start read, the branch check and the clean check. The restore deletes uncommitted
+// work and moves the branch, so a worktree with changes or on a branch that is not a task branch
+// is refused before any step runs.
 async function prepare(o: {
   clone: string;
   env: NodeJS.ProcessEnv;
@@ -214,6 +224,7 @@ async function prepare(o: {
   const { clone, env, path } = o;
   const target = await assertTaskWorktree({ clone, env, path });
   const { changes, ...start } = await stateAt(target, env);
+  assertStartBranch(start.branch);
   if (changes.length > 0) throw new Error(uncommittedRefusal(target, changes));
   return { target, start };
 }
