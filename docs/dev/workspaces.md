@@ -91,9 +91,17 @@ Every function that runs git takes one options object. Calls on the clone use `g
 - The short ref keeps its case. The code makes the title lower case before it makes the slug.
 - The name has at most 100 characters. The code cuts the slug to fit, and it removes a `-`, a `.` or a `.lock` that the cut leaves at the end.
 - If the short ref leaves no room, or the title has no usable character, the name is the short ref alone.
-- If the short ref is not a path slug, is longer than 100 characters, or is `HEAD`, the function throws `not a safe short ref: <JSON text of the short ref>`.
+- If the short ref is not one of the short ref forms below, the function throws `not a safe short ref: <JSON text of the short ref>`.
+
+The short ref is the one that the issue key parsers make:
+
+- `issue-<N>` for a GitHub key. `<N>` is a number with no leading zero.
+- `<PROJ>-<N>` for a Jira key with no site. `<PROJ>` starts with an upper-case letter, then has upper-case letters, digits or `_`.
+- `<site>-browse-<PROJ>-<N>` for a Jira key with a site. The site is in lower case.
 
 Every other function that takes a branch runs the same name check first, before any git call. A branch must be a path slug of at most 100 characters, and it must not be `HEAD`. If it is not, the function throws `not a task branch name: <JSON text of the name>`. As a result, git never gets a name with a leading `-`, `..`, `/`, `~`, `^`, `@{` or a space.
+
+The shape check runs after the name check. A name has the task branch shape when it is a short ref alone, or a short ref, a `-` and a lower-case slug. Each name that `taskBranchName()` gives has this shape. `createTaskWorktree()`, `deleteTaskBranch()`, `publishTaskBranch()` and `deleteRemoteTaskBranch()` run the shape check before any git call and before any write to the disk. If a name has no task branch shape, for example `main`, `master` or `feature-x`, the function throws `not a task branch: <JSON text of the name>`. `taskBranchRevision()` only reads, so it runs the name check only.
 
 ### The worktree path
 
@@ -121,7 +129,7 @@ Git lists the real path. For a path through a symlink, git lists the real parent
 
 It runs these steps in order:
 
-1. Run the name check on `branch`.
+1. Run the name check and the shape check on `branch`.
 2. Make the parent folder of `path`.
 3. Find the real path of `path`, the target. List the worktrees.
 4. If a worktree is at the target, handle it as the table below shows.
@@ -161,9 +169,9 @@ The repair of the `initializing` lock trusts the lock. Git sets this lock while 
 
 ### Delete branch
 
-`deleteTaskBranch({ clone, env, branch })` runs the name check, then `git branch -D -- <branch>`. It uses `-D`, because a task branch is usually not merged in the clone. The `GitError` of git passes through for a branch that a worktree holds and for a missing branch.
+`deleteTaskBranch({ clone, env, branch })` runs the name check and the shape check, then `git branch -D -- <branch>`. It uses `-D`, because a task branch is usually not merged in the clone. The `GitError` of git passes through for a branch that a worktree holds and for a missing branch.
 
-The function deletes any local branch that passes the name check. This includes the default branch of the clone. The caller passes the task branch.
+The function deletes only a local branch with the task branch shape. It refuses `main` and `master`.
 
 ### Discard
 
@@ -189,4 +197,4 @@ Ignored files stay, because the command has no `-x`. They do not block a later r
 - For an unlocked worktree whose folder is gone, create removes that worktree entry.
 - Remove deletes ignored files with the worktree folder.
 - Discard deletes a nested git repo in an untracked folder, and keeps ignored files.
-- Delete removes any local branch that passes the name check.
+- Delete removes only a local branch with the task branch shape.
