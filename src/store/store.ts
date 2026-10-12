@@ -47,6 +47,10 @@ export interface TaskStore {
   updateTask(id: number, changes: TaskChanges, check?: (current: Task) => void): Task;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
   listEvents(taskId: number): TaskEvent[];
+  getDefaultBaseBranch(repoKey: string): string | undefined;
+  setDefaultBaseBranch(repoKey: string, branch: string): void;
+  // Deletes the row only when it holds this branch. A value that another process saved stays.
+  forgetDefaultBaseBranch(repoKey: string, branch: string): void;
   close(): void;
 }
 
@@ -118,6 +122,18 @@ function setUp(db: DatabaseSync) {
     ),
     selectEvents: db.prepare(
       "SELECT * FROM events WHERE task_id = ? ORDER BY id",
+    ),
+    selectDefaultBaseBranch: db.prepare(
+      "SELECT branch FROM default_base_branches WHERE repo_key = ?",
+    ),
+    upsertDefaultBaseBranch: db.prepare(
+      `INSERT INTO default_base_branches (repo_key, branch, updated_at)
+       VALUES (?, ?, ?)
+       ON CONFLICT(repo_key) DO UPDATE SET
+         branch = excluded.branch, updated_at = excluded.updated_at`,
+    ),
+    deleteDefaultBaseBranch: db.prepare(
+      "DELETE FROM default_base_branches WHERE repo_key = ? AND branch = ?",
     ),
   };
 }
@@ -197,6 +213,25 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     listEvents(taskId) {
       const rows = statements.selectEvents.all(taskId) as unknown as EventRow[];
       return rows.map(rowToEvent);
+    },
+
+    getDefaultBaseBranch(repoKey) {
+      const row = statements.selectDefaultBaseBranch.get(repoKey) as
+        | { branch: string }
+        | undefined;
+      return row?.branch;
+    },
+
+    setDefaultBaseBranch(repoKey, branch) {
+      immediateTransaction(db, () => {
+        statements.upsertDefaultBaseBranch.run(repoKey, branch, now().toISOString());
+      });
+    },
+
+    forgetDefaultBaseBranch(repoKey, branch) {
+      immediateTransaction(db, () => {
+        statements.deleteDefaultBaseBranch.run(repoKey, branch);
+      });
     },
 
     close() {

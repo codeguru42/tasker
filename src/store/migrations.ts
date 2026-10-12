@@ -23,4 +23,9 @@ CREATE TRIGGER events_no_update BEFORE UPDATE ON events
 BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
 CREATE TRIGGER events_no_delete BEFORE DELETE ON events
 BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;`,
+  `CREATE TABLE default_base_branches (
+  repo_key TEXT PRIMARY KEY,
+  branch TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);`,
 ];
