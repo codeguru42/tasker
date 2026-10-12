@@ -187,6 +187,7 @@ export async function createTaskWorktree(options: {
 }): Promise<"created" | "reused-branch" | "reused-worktree"> {
   const { clone, env, path, branch, baseRevision } = options;
   assertTaskBranch(branch);
+  assertTaskBranchShape(branch);
   mkdirSync(dirname(resolve(path)), { recursive: true });
   const target = canonicalPath(path);
   const entries = await listWorktrees({ clone, env });
