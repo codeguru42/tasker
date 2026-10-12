@@ -1,5 +1,6 @@
 import { assertRevisionInput, resolveRevision } from "./refs.js";
 import { GitError, runGit } from "./run.js";
+import { runRemoteGit } from "./ssh.js";
 import { assertTaskWorktree, taskBranchRevision } from "./worktree.js";
 
 // The fields of NUL-ended output: split on "\0" and drop the empty item after the last NUL.
@@ -156,4 +157,27 @@ export async function isAncestor(o: {
     if (error instanceof GitError && error.exitCode === 1) return false;
     throw error;
   }
+}
+
+// Fetches origin, then reads the head of the task worktree and the tip of the base.
+// This is the one function of this file that talks to the remote. It uses runRemoteGit(), so
+// the fetch uses the ssh key. The fetch moves and prunes refs/remotes/origin/* in the clone, also
+// when a later read fails. A bad base text or a bad worktree causes no fetch.
+// The base is read after the fetch, because the fetch can make or move its ref.
+export async function fetchTips(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  sshKey: string | undefined;
+  path: string;
+  baseRevision: string;
+}): Promise<{ head: string; base: string }> {
+  const { clone, env, sshKey, path, baseRevision } = o;
+  assertRevisionInput(baseRevision);
+  const target = await assertTaskWorktree({ clone, env, path });
+  await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, sshKey);
+  const head = (
+    await runGit(["rev-parse", "--verify", "HEAD^{commit}"], { cwd: target, env })
+  ).trim();
+  const base = await resolveRevision({ clone, env, value: baseRevision });
+  return { head, base };
 }
