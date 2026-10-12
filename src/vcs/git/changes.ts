@@ -47,3 +47,37 @@ export async function changedPaths(o: {
   );
   return nulFields(output);
 }
+
+// The text for a branch that has no commits of its own.
+export const NO_OWN_COMMITS = "This branch has no commits of its own since its base yet.";
+
+// The own commits of the task branch, oldest first, each with its diff. The range is
+// <base>..<branch>. The explicit format keeps the user configuration out of the text.
+// A merge commit shows no diff, as git does by default.
+export async function ownCommitsText(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  branch: string;
+  baseRevision: string;
+}): Promise<string> {
+  const { clone, env, branch, baseRevision } = o;
+  assertRevisionInput(baseRevision);
+  const head = await taskBranchRevision({ clone, env, branch });
+  const base = await resolveRevision({ clone, env, value: baseRevision });
+  const output = await runGit(
+    [
+      "log",
+      "--reverse",
+      "--no-renames",
+      "--no-color",
+      "--no-ext-diff",
+      "--no-textconv",
+      "--patch",
+      "--format=commit %H%n%n%B",
+      `${base}..${head}`,
+      "--",
+    ],
+    { gitDir: clone, env },
+  );
+  return output === "" ? NO_OWN_COMMITS : output;
+}
