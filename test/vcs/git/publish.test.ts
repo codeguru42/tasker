@@ -168,6 +168,30 @@ describe("publish, land and delete", () => {
       expectNoTokenFile();
     });
 
+    it("publishes a rebased branch with a lease on the published revision", async () => {
+      const first = await addCloneCommit(clone, env, "issue-1-task");
+      await publish({ published: undefined });
+      const rebased = await addCloneCommit(clone, env, "issue-1-task", "refs/remotes/origin/main");
+
+      const result = await publish({ published: first });
+
+      expect(result).toEqual({
+        state: "published",
+        branch: "issue-1-task",
+        revision: rebased,
+        lease: true,
+      });
+      expect(await origin.branchHead("issue-1-task")).toBe(rebased);
+      expect(pushes().at(-1)).toEqual([
+        "push",
+        `--force-with-lease=refs/heads/issue-1-task:${first}`,
+        "origin",
+        "refs/heads/issue-1-task:refs/heads/issue-1-task",
+      ]);
+      expectNoTokenFile();
+      await expectPushNeedsToken();
+    });
+
     it("passes the ssh key to the ls-remote call of an already published branch", async () => {
       const ssh = await sshClone();
       const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
