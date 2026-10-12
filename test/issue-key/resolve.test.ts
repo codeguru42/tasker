@@ -26,12 +26,16 @@ const GITHUB_MESSAGE = (rawKey: string): string =>
 
 describe("resolveIssueKey", () => {
   // A parsed configuration with one repo for each entry of trackers. Each repo copies the
-  // repo of validConfig() and takes the issueTracker of its entry.
+  // repo of validConfig(). Its issueTracker is the issueTracker of validConfig() (which has
+  // the account that a github tracker needs) with the keys of the entry on top.
   function configWith(trackers: Trackers): Config {
     const raw = validConfig();
     const base = raw.repos.tasker;
     raw.repos = Object.fromEntries(
-      Object.entries(trackers).map(([key, issueTracker]) => [key, { ...base, issueTracker }]),
+      Object.entries(trackers).map(([key, issueTracker]) => [
+        key,
+        { ...base, issueTracker: { ...base.issueTracker, ...issueTracker } },
+      ]),
     );
     return parseConfig(raw, {}, "/home/test");
   }
