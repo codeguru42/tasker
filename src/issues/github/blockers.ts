@@ -3,7 +3,7 @@ import { asciiFold, splitGithubKey } from "../../issue-key/github.js";
 import { IssueKeyError, type IssueRef } from "../../issue-key/ref.js";
 import { type Blocker, IssueReadError } from "../issue.js";
 import { issueState } from "./issue.js";
-import { runGh } from "./run.js";
+import { GhError, runGh } from "./run.js";
 
 const QUERY = `query($owner: String!, $name: String!, $number: Int!, $cursor: String) {
   repository(owner: $owner, name: $name) {
@@ -40,7 +40,26 @@ const AnswerSchema = z.object({
         .nullish(),
     })
     .nullish(),
+  errors: z.array(z.object({ message: z.string() })).nullish(),
 });
+
+// gh exits 1 for a GraphQL error and prints the JSON answer on stdout. That answer is the
+// result of the call. Any other failure (no JSON, a signal, a login error) stays a GhError.
+async function runGraphql(args: string[], account: string, env: NodeJS.ProcessEnv): Promise<string> {
+  try {
+    return await runGh(args, { account, env });
+  } catch (error) {
+    if (error instanceof GhError && error.exitCode !== null) {
+      try {
+        JSON.parse(error.stdout);
+        return error.stdout;
+      } catch {
+        // not JSON: fall through
+      }
+    }
+    throw error;
+  }
+}
 
 // Every issue that blocks the issue of ref, with its state, in the order that GitHub gives.
 // Owner, name and cursor go as strings (-f): -F turns 123 or true into a number or a Boolean.
@@ -71,7 +90,7 @@ export async function readGithubBlockers(
   let cursor: string | undefined;
   for (;;) {
     const args = cursor === undefined ? baseArgs : [...baseArgs, "-f", `cursor=${cursor}`];
-    const stdout = await runGh(args, { account, env });
+    const stdout = await runGraphql(args, account, env);
 
     let json: unknown;
     try {
@@ -81,7 +100,16 @@ export async function readGithubBlockers(
     }
     const parsed = AnswerSchema.safeParse(json);
     if (!parsed.success) throw bad("the fields do not match");
-    const blockedBy = parsed.data.data?.repository?.issue?.blockedBy;
+    const { data, errors } = parsed.data;
+    const messages = (errors ?? []).map((error) => error.message).join("; ");
+    if (data?.repository === null || data?.repository?.issue === null) {
+      const detail = messages === "" ? "" : `: ${messages}`;
+      throw new IssueReadError(ref.key, `the issue ${ref.key} does not exist${detail}`);
+    }
+    if (errors && errors.length > 0) {
+      throw new IssueReadError(ref.key, `gh api graphql gave errors for ${ref.key}: ${messages}`);
+    }
+    const blockedBy = data?.repository?.issue?.blockedBy;
     if (blockedBy === undefined) throw bad("the fields do not match");
 
     for (const item of blockedBy.nodes) {

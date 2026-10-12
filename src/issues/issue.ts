@@ -16,7 +16,7 @@ export interface Blocker {
   state: Issue["state"];
 }
 
-// A read of one issue failed: the issue does not exist, it is a pull request, or the tracker gave bad output.
+// A read of one issue failed: the issue does not exist, it is a pull request, the answer of the tracker has errors, or the tracker gave bad output.
 export class IssueReadError extends Error {
   readonly key: string;
 
