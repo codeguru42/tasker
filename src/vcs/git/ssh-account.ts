@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { type ChildResult, runChild } from "../../process/run-child.js";
 import { gitSshCommand } from "./run.js";
 import { isLocalRemote, sshEnv } from "./ssh.js";
 
@@ -66,8 +66,9 @@ const GREETING = /Hi ([^!\s]+)! You've successfully authenticated/;
 
 // The account that the remote sees for the ssh key, read from the greeting that GitHub prints.
 // Git has no command that shows the greeting, so this is the one place that starts ssh directly.
+// It starts ssh through sh with runChild().
 // It gives no ssh text. On abort, it rejects with the abort error.
-export function sshAccount(options: {
+export async function sshAccount(options: {
   remote: string;
   sshKey: string | undefined;
   env: NodeJS.ProcessEnv;
@@ -77,10 +78,10 @@ export function sshAccount(options: {
   const probeEnv = sshEnv(options.env, options.sshKey);
   const command = gitSshCommand(probeEnv);
   if (command === undefined) {
-    return Promise.resolve({ state: "git-ssh" });
+    return { state: "git-ssh" };
   }
-  if (target === undefined || !probeEnv.PATH) {
-    return Promise.resolve({ state: "none" });
+  if (target === undefined) {
+    return { state: "none" };
   }
   const args = [
     "-c",
@@ -91,28 +92,15 @@ export function sshAccount(options: {
     "--",
     target.destination,
   ];
-  return new Promise((resolve, reject) => {
-    const child = spawn("sh", args, {
-      env: probeEnv,
-      stdio: ["ignore", "pipe", "pipe"],
-      signal: options.signal,
-    });
-    const output: Buffer[] = [];
-    child.stdout.on("data", (chunk: Buffer) => output.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => output.push(chunk));
-    child.on("error", (error: Error) => {
-      if (error.name === "AbortError") {
-        // An ssh child that sh left running must not hold the pipes open.
-        child.stdout.destroy();
-        child.stderr.destroy();
-        reject(error);
-      } else {
-        resolve({ state: "none" });
-      }
-    });
-    child.on("close", () => {
-      const match = GREETING.exec(Buffer.concat(output).toString("utf8"));
-      resolve(match === null ? { state: "none" } : { state: "found", account: match[1] });
-    });
-  });
+  let result: ChildResult;
+  try {
+    result = await runChild("sh", args, { env: probeEnv, signal: options.signal });
+  } catch (error) {
+    if ((error as Error).name === "AbortError") {
+      throw error; // runChild() already destroyed the pipes.
+    }
+    return { state: "none" }; // CommandNotFoundError or a spawn error.
+  }
+  const match = GREETING.exec(`${result.stdout}\n${result.stderr}`);
+  return match === null ? { state: "none" } : { state: "found", account: match[1] };
 }
