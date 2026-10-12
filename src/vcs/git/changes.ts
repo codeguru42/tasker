@@ -1,5 +1,5 @@
 import { assertRevisionInput, resolveRevision } from "./refs.js";
-import { runGit } from "./run.js";
+import { GitError, runGit } from "./run.js";
 import { assertTaskWorktree, taskBranchRevision } from "./worktree.js";
 
 // The fields of NUL-ended output: split on "\0" and drop the empty item after the last NUL.
@@ -133,4 +133,27 @@ export async function uncommittedChanges(o: {
 // path with a comma or a newline stays readable and exact.
 export function uncommittedRefusal(path: string, changes: readonly UncommittedChange[]): string {
   return `the worktree has uncommitted changes: ${path}: ${changes.map((c) => JSON.stringify(c.path)).join(", ")}`;
+}
+
+// True when ancestor is the same commit as descendant or reaches it through its parents.
+// Only exit code 1 of git gives false. Every other failure passes through, for example the exit
+// code 128 for a full revision that the clone does not have.
+export async function isAncestor(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  ancestor: string;
+  descendant: string;
+}): Promise<boolean> {
+  const { clone, env } = o;
+  assertRevisionInput(o.ancestor);
+  assertRevisionInput(o.descendant);
+  const ancestor = await resolveRevision({ clone, env, value: o.ancestor });
+  const descendant = await resolveRevision({ clone, env, value: o.descendant });
+  try {
+    await runGit(["merge-base", "--is-ancestor", ancestor, descendant], { gitDir: clone, env });
+    return true;
+  } catch (error) {
+    if (error instanceof GitError && error.exitCode === 1) return false;
+    throw error;
+  }
 }
