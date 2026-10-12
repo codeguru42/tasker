@@ -145,11 +145,7 @@ async function restoreAt(target: string, env: NodeJS.ProcessEnv, start: StartSta
   await attempt(["clean", "-fd"]);
   const found: FoundState = { ...(await stateAt(target, env)), ...(await inProgress(target, env)) };
   const right =
-    found.head === start.head &&
-    found.branch === start.branch &&
-    found.changes.length === 0 &&
-    !found.rebase &&
-    !found.merge;
+    !wrongPlace(start, found) && found.changes.length === 0 && !found.rebase && !found.merge;
   if (right) return;
   const n = found.changes.length;
   const where = found.branch === undefined ? "detached" : `on the branch ${found.branch}`;
@@ -164,6 +160,12 @@ async function restoreAt(target: string, env: NodeJS.ProcessEnv, start: StartSta
   );
 }
 
+// True when HEAD or the branch differs from the start. For a detached start, start.branch is
+// undefined, so a found branch counts as wrong.
+function wrongPlace(start: StartState, found: StartState): boolean {
+  return found.head !== start.head || found.branch !== start.branch;
+}
+
 // The git commands that fit a wrong state, in order. It is exported because the fixture cannot
 // make each state: a rebase or a merge in progress appears only when "rebase --quit" or the
 // checkout fails. A pure test covers each row.
@@ -171,17 +173,15 @@ export function restoreCommands(start: StartState, found: FoundState): string[] 
   const commands: string[] = [];
   if (found.rebase) commands.push("git rebase --abort");
   if (found.merge) commands.push("git merge --abort");
-  const wrongPlace =
-    found.head !== start.head ||
-    (start.branch === undefined ? found.branch !== undefined : found.branch !== start.branch);
-  if (wrongPlace) {
+  const wrong = wrongPlace(start, found);
+  if (wrong) {
     commands.push(
       start.branch === undefined
         ? `git checkout --force --detach ${start.head}`
         : `git checkout --force -B ${start.branch} ${start.head}`,
     );
   }
-  if (!wrongPlace && found.changes.some((c) => c.status !== "??")) commands.push("git reset --hard");
+  if (!wrong && found.changes.some((c) => c.status !== "??")) commands.push("git reset --hard");
   if (found.changes.some((c) => c.status === "??")) commands.push("git clean -fd");
   return commands;
 }
