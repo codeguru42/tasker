@@ -10,7 +10,8 @@ import { existsSync, statSync } from "node:fs";
 // REPO_LOCAL_GIT_VARS). Apart from the ssh and prompt rules of childEnv(), other
 // variables, such as GIT_CONFIG_GLOBAL, reach git unchanged.
 export type GitLocation = { cwd: string } | { gitDir: string };
-export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv };
+// signal stops git with SIGTERM and rejects with an AbortError. An ssh child of git can keep running.
+export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv; signal?: AbortSignal };
 
 export class GitError extends Error {
   readonly subcommand: string;
@@ -127,13 +128,14 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
     return Promise.reject(folderError(location));
   }
   if (location.kind === "cwd") {
-    return spawnGit([...args], subcommand, location, childEnv(options.env));
+    return spawnGit([...args], subcommand, location, childEnv(options.env), options.signal);
   }
   return spawnGit(
     ["--bare", "--git-dir", location.path, ...args],
     subcommand,
     location,
     childEnv(options.env),
+    options.signal,
   );
 }
 
@@ -143,18 +145,27 @@ function spawnGit(
   subcommand: string,
   location: Location,
   env: NodeJS.ProcessEnv,
+  signal: AbortSignal | undefined,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn("git", fullArgs, {
       cwd: location.path,
       env,
       stdio: ["ignore", "pipe", "pipe"],
+      signal,
     });
     const out: Buffer[] = [];
     const err: Buffer[] = [];
     child.stdout.on("data", (chunk: Buffer) => out.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => err.push(chunk));
     child.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.name === "AbortError") {
+        // An ssh child that git left running must not hold the pipes open.
+        child.stdout.destroy();
+        child.stderr.destroy();
+        reject(error);
+        return;
+      }
       if ((error.code === "ENOENT" || error.code === "ENOTDIR") && !isFolder(location.path)) {
         // Node reports a missing cwd as ENOENT and a cwd that is a file as ENOTDIR.
         reject(folderError(location));
