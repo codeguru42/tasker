@@ -4,9 +4,9 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 
 ## The git folder
 
-- `src/vcs/git/run.ts` holds `runGit()`.
+- `src/vcs/git/run.ts` holds `runGit()` and `gitSshCommand()`.
 - `src/vcs/git/repo-paths.ts` holds `repoSlug()` and `repoPaths()`.
-- `src/vcs/git/ssh.ts` holds `shellQuote()`, `sshCommand()`, `sshEnv()`, `hideSshKey()`, `homeKeyPath()`, `runRemoteGit()`, `remoteNotAnswering()`, `remoteCwd()` and `cloneUrl()`.
+- `src/vcs/git/ssh.ts` holds `shellQuote()`, `sshCommand()`, `sshEnv()`, `hideSshKey()`, `homeKeyPath()`, `runRemoteGit()`, `remoteNotAnswering()`, `remoteCwd()`, `isLocalRemote()` and `cloneUrl()`.
 - `src/vcs/git/default-branch.ts` holds `remoteDefaultBranch()`.
 - `src/vcs/git/provision.ts` holds `provisionClone()`.
 - `src/vcs/git/base-branch.ts` holds `parseBaseInput()`, `baseRevision()`, `resolveBaseBranch()` and `LOCAL_PREFIX`.
@@ -18,6 +18,9 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/push-guard.ts` holds `installPushHook()` and `pushWithToken()`.
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
 - `src/vcs/git/publish.ts` holds `publishTaskBranch()`, `landOnBase()` and `deleteRemoteTaskBranch()`.
+- `src/vcs/git/doctor.ts` holds `gitDoctorChecks()`, `gitVersionCheck()`, `identityCheck()`, `connectionCheck()`, `staleLockCheck()` and the type `GitDoctorRepo`. [Doctor checks](#doctor-checks) gives the rules.
+- `src/vcs/git/stale-locks.ts` holds `findStaleLocks()`, `readProcView()`, `onceProcView()`, `isInside()` and `DeadlineError`.
+- `src/vcs/git/ssh-account.ts` holds `sshTarget()` and `sshAccount()`.
 
 No other folder in `src/` starts git.
 
@@ -50,7 +53,9 @@ As a result, `options.gitDir` is only for the bare clone, and task commands use 
   - For example, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_SYSTEM` and `GIT_CONFIG_NOSYSTEM` reach git. `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM` each name a configuration file that git reads. They set the configuration of the user and of the machine. They do not choose the repo, so they do not break the rule that tasker uses only the repo that it owns.
   - `GIT_TERMINAL_PROMPT=0` always wins over the value of the caller.
   - Git uses a `GIT_SSH_COMMAND` that is present, even an empty one, and then ignores `GIT_SSH`. For this reason, `runGit()` never passes an empty value. A non-empty `GIT_SSH_COMMAND` of the caller stays. Otherwise `runGit()` removes `GIT_SSH_COMMAND`. Then a non-empty `GIT_SSH` of the caller stays. Otherwise `runGit()` removes `GIT_SSH` too and sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes`.
+  - `gitSshCommand(env)` holds this ssh rule. It gives a non-empty `GIT_SSH_COMMAND` of `env`. Otherwise it gives `undefined` when `env` has a non-empty `GIT_SSH`. Otherwise it gives `ssh -o BatchMode=yes`.
   - `runGit()` does not add `process.env`.
+- `options.signal` is optional. When it fires, git gets SIGTERM and `runGit()` rejects with the abort error (`name` is `AbortError`). The call also destroys the pipes of git, so an ssh child that git left running does not hold tasker. Known limit: git does not stop that ssh child. It runs until ssh ends. A call with no `signal` works as before.
 - Git is found on `options.env.PATH`. If the env has no `PATH` or an empty one, `runGit()` rejects before git starts. As a result, Node never uses the `PATH` of tasker.
 
 Git gets no input stream. Its stdout and stderr go to pipes, not to the terminal. Git asks no credential question, because `GIT_TERMINAL_PROMPT=0`. Ssh asks no question (no password and no host key) because of BatchMode, and it fails instead. This holds unless the caller sets its own ssh command (a non-empty `GIT_SSH_COMMAND` or `GIT_SSH`). The default `GIT_SSH_COMMAND` wins over `core.sshCommand` in the git configuration. A caller that needs another ssh command must set `GIT_SSH_COMMAND` itself.
@@ -156,7 +161,7 @@ Use `git config --get core.sshCommand` to read the value. `git config --local --
 
 `sshCommand(sshKey)` gives `ssh -i '<key>' -o IdentitiesOnly=yes -o BatchMode=yes`, with each `'` in the key path written as `'\''`. The command and the key path never go on the git command line. They go in the include file and in the env.
 
-`sshEnv(env, sshKey)` returns `env` with `GIT_SSH_COMMAND` set to `sshCommand(sshKey)`. If `sshKey` is not set, it returns `env` as it is. `runRemoteGit(args, options, sshKey)` runs `runGit()` with that env. Provision runs `ls-remote` and `fetch` through it. `pushWithToken()` runs `push` through it, and `remoteTip()` runs `ls-remote` through it, and `fetchOrigin()` runs `fetch` through it. `fetchTips()` uses `fetchOrigin()`. The functions of `publish.ts` use these two functions, so each call of them reaches the remote with this env. As a result, `GIT_SSH_COMMAND` reaches ssh in the env of git. A `GIT_SSH_COMMAND` that the user exported is replaced when `sshKey` is set and stays when it is not.
+`sshEnv(env, sshKey)` returns `env` with `GIT_SSH_COMMAND` set to `sshCommand(sshKey)`. If `sshKey` is not set, it returns `env` as it is. `runRemoteGit(args, options, sshKey)` runs `runGit()` with that env. Provision runs `ls-remote` and `fetch` through it. `pushWithToken()` runs `push` through it, and `remoteTip()` runs `ls-remote` through it, and `connectionCheck()` runs `ls-remote` through it, and `fetchOrigin()` runs `fetch` through it. `fetchTips()` uses `fetchOrigin()`. The functions of `publish.ts` use these two functions, so each call of them reaches the remote with this env. As a result, `GIT_SSH_COMMAND` reaches ssh in the env of git. A `GIT_SSH_COMMAND` that the user exported is replaced when `sshKey` is set and stays when it is not.
 Each git call that reaches the remote must pass the env from `sshEnv()`. The reason is that `runGit()` sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes` when the caller sets no ssh command, and an env `GIT_SSH_COMMAND` wins over `core.sshCommand`. So the `core.sshCommand` of the clone takes effect only when git runs with no `GIT_SSH_COMMAND` and no `GIT_SSH` in its env.
 
 When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with no `cause`. The message, `stdout` and `stderr` went through `hideSshKey(text, sshKey, homeDir)`. It replaces each occurrence of these forms with `<sshKey>`, in this order:
@@ -375,6 +380,89 @@ If the push fails, the function reads the tip again with the rules of step 3. An
 - Each push uses one token, also a push that git then rejects, because the hook deletes the token before git sends anything. `already-published`, `already-gone`, the moved error before a push, a missing base and each input check use no token.
 - A failed push changes nothing on origin.
 - If someone deletes the base between the tip read and the push, a land makes the base again on origin at the revision.
+
+## Doctor checks
+
+The git doctor checks live in `src/vcs/git/doctor.ts`. No command runs them yet. The `tasker doctor` command will call `gitDoctorChecks({ repos, procRoot, platform })`. It must pass `procRoot: "/proc"` and `platform: process.platform`. Each repo is a `GitDoctorRepo`: `{ key, remote, clone, config }`, where `config` has the shape of `vcs.config`.
+
+The check type is in `src/doctor/check.ts`. It does not depend on git. A `Check` has `name`, `required`, `timeoutMs` and `run(env)`. `run()` resolves with `{ status, detail, remediation? }`. The status is `ok`, `warn` or `error`. `run()` never rejects.
+
+`gitDoctorChecks()` gives the version check first. Then, for each repo in order, it gives the identity check, the connection check and the lock-file check.
+
+| Check | `name` | `required` | `timeoutMs` |
+| --- | --- | --- | --- |
+| Version | `git version` | true | 5000 |
+| Identity | `git identity: <key>` | false | 5000 |
+| Connection | `git connection: <key>` | true | 30000 |
+| Lock files | `git lock files: <key>` | false | 10000 |
+
+### The wrapper
+
+One private wrapper makes each check. It makes an `AbortSignal` from `timeoutMs`, and it passes the signal to every git call. These rules hold for every check:
+
+- When the time limit passes, the check gives `error` with the detail `the check did not finish in <n> ms`. It gives no partial result.
+- Any other thrown value gives `error`. The detail is the message of the error.
+- Last, the wrapper sends `detail` and `remediation` through `hideSshKey()`. This is the only call of `hideSshKey()` in `doctor.ts`.
+
+### Git version
+
+The check runs `git version` and reads the first line. It accepts forms such as `2.47.3`, `2.47.3.windows.1`, `2.39.5 (Apple Git-154)` and `2.47.0.rc1`. The minimum version is 2.20.
+
+- Git is not installed: `error`, with the remediation `Install git 2.20 or newer.`
+- A version older than 2.20: `error`, with the same remediation.
+- Output that has no version: `error`.
+- Otherwise: `ok`.
+
+### Commit identity
+
+The check reads `user.name` and `user.email` with `git config --get` in the clone, with no `--local`. As a result, a global identity counts, as it does for a commit. An empty value counts as not set. The check compares only the fields that `vcs.config` sets: `authorName` with `user.name`, and `authorEmail` with `user.email`.
+
+- The clone does not exist: `ok`, the detail `no clone yet` and no remediation. Provision makes the clone and writes the identity at the first start, so this is not a problem. The check tests this first, because `git --git-dir <missing>` reads the global value.
+- A field does not match: `warn`. The detail has one line for each field. The remediation is to provision the clone again.
+- No mismatch, but `user.name` or `user.email` is empty: `warn`. The remediation is to set `vcs.config.authorName` and `vcs.config.authorEmail`, or a global identity.
+- Otherwise: `ok`.
+
+Limit: the check reads the configuration only. The variables `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL` win in a real commit, and the check does not read them.
+
+### Connection
+
+The check runs `git ls-remote -- <remote> HEAD` through `runRemoteGit()` with the ssh key of the repo. The cwd is `remoteCwd()`. A `GitError` gives `error`, with the text of `remoteNotAnswering()`. Otherwise the check gives `ok`.
+
+For an ssh remote, the check also runs the probe, also after a failure. The probe reads the account that the remote sees, so the user can tell a wrong key from a wrong `remote`. The detail then ends with one line:
+
+- `The remote sees the ssh account <account>.`
+- `The remote gives no ssh account name.`
+- `tasker does not read the ssh account when GIT_SSH is set.`
+
+The remediation of a failure depends on the probe. With an account, it tells the user to set `vcs.config.sshKey` to a key of an account that can see the repo, or to make sure that `remote` names the repo. With no account, it tells the user to make sure that `vcs.config.sshKey` names a key that the remote accepts. For a remote that is not ssh, it tells the user to make sure that `remote` names the repo.
+
+### The probe
+
+`sshAccount()` in `src/vcs/git/ssh-account.ts` is the one place that starts ssh directly, because git has no command that shows the greeting. It runs `sh -c '<ssh command> "$@"' ... -T [-p <port>] -- <destination>`. The ssh command comes from `gitSshCommand()` and `sshEnv()`, so it uses the key of the repo. The probe returns only the account name and never returns ssh text.
+
+- `sshTarget()` gives no target for a local path, for a URL that is not ssh, and for a destination, a user or a port that ssh reads as an option.
+- When `GIT_SSH` is set, the probe starts nothing.
+- Only GitHub greets in the form `Hi <account>! You've successfully authenticated`. Another host gives no account name.
+
+### Stale lock files
+
+The check looks for files that end in `.lock` in the clone and are older than 60 seconds. It skips the folder `objects` and it follows no link. The paths in the detail are relative to the real path of the clone.
+
+- The clone does not exist: `ok`, the detail `no clone yet` and no remediation (same as the identity check).
+- No stale lock: `ok`, and the check does not read `/proc`.
+- Otherwise the check reads `/proc`. It skips a lock that a process has open, with the line `skipped <path>: a process has it open`. It skips a lock under the cwd of a git process (`comm` is `git` or starts with `git-`), with the line `skipped <path>: a git process runs in <cwd>`.
+- A lock that is left gives `warn`. The detail has one line for each file with its age in whole seconds. The remediation says that doctor deletes nothing.
+- On a platform that is not Linux, or when `/proc` cannot be read, the detail has a note that tasker cannot tell whether a process uses the files.
+
+The reader skips each part of a process that gives an error, for example `EACCES` for a process of another user. One doctor run reads `/proc` once at most, and only when a lock-file check finds a stale lock.
+
+### Side effects
+
+- The checks write nothing: no file, no git configuration and no ref.
+- `ls-remote` runs with the cwd at the root of the file system. `git config --get` only reads.
+- A timeout sends SIGTERM to git or to `sh`. An ssh child can keep running until ssh ends.
+- The probe makes one ssh connection for each ssh repo. ssh writes `~/.ssh/known_hosts` only when the ssh configuration of the user permits it. BatchMode stops every question.
+- The new `signal` option of `runGit()` changes nothing for a caller that does not pass it.
 
 ## `repoSlug()` and `repoPaths()`
 
