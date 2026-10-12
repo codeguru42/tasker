@@ -131,10 +131,10 @@ Each running agent has a slot and a delay. The delay is the number of minutes be
 
 ### When there is no reset time yet
 
-- If an agent has no job, the agent must tell the orchestrator each time a tasker run starts: `tasker plan`, `tasker refine`, `tasker execute`, `tasker review` or `tasker resume`.
+- If an agent has no job, the agent must tell the orchestrator each time a tasker run starts and each time a tasker run ends. The runs are `tasker plan`, `tasker refine`, `tasker execute`, `tasker review` and `tasker resume`. While any agent has no job, each agent with a job must also tell the orchestrator each time a tasker run ends. The orchestrator tells each agent with a job when this rule starts and when it stops.
 - If the orchestrator gets a run-start report and the ticket already has a job that has not fired, the orchestrator does not schedule another job.
-- If an agent without a job reports that a tasker run starts or ends, the orchestrator runs `tasker show-quota` again. If there is a reset time, the orchestrator schedules the job of that agent. If there is no reset time, nothing else changes.
-- When the orchestrator schedules the job of an agent that had no job, the orchestrator tells the agent that it has a job. If the agent gets this message, the agent stops the run-start reports.
+- If an agent without a job reports that a tasker run starts, or if any agent reports that a tasker run ends, the orchestrator runs `tasker show-quota` again. If there is a reset time, the orchestrator schedules a job for each agent without a job. If there is no reset time, nothing else changes.
+- When the orchestrator schedules the job of an agent that had no job, the orchestrator tells the agent that it has a job. The orchestrator also tells the agent if another agent still has no job. If the agent gets this message, the agent stops the run-start reports. If every other agent has a job, the agent also stops the run-end reports.
 - If the quota runs out before the orchestrator schedules a job, no job resumes the agent. In that case, the orchestrator tells the user when the orchestrator has tokens again.
 
 ### When the job fires
