@@ -59,7 +59,7 @@ describe("createGithubProvider", () => {
     return [{ key: "octo/repo", issueTracker: config.repos["octo/repo"].issueTracker }];
   }
 
-  const provider = () => providerModule.createGithubProvider({ account: "octo", repos: repos() });
+  const provider = () => providerModule.createGithubProvider({ account: "octo" });
 
   // The gh calls without the token call, which only the first run makes.
   const callsWithoutToken = (fake: ReturnType<typeof fakeGh>) =>
@@ -187,7 +187,7 @@ describe("createGithubProvider", () => {
   });
 
   it("gives the doctor checks of the repos of the pair", () => {
-    const names = provider().doctorChecks.map((check) => check.name);
+    const names = provider().doctorChecks(repos()).map((check) => check.name);
     expect(names).toEqual(doctorModule.githubDoctorChecks(repos()).map((check) => check.name));
     expect(names).toEqual(["gh version", "gh auth: octo", "gh project: octo/repo", "gh labels: octo/repo"]);
   });

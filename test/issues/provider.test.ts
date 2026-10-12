@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError } from "../../src/config/schema.js";
-import { issueProviderFor } from "../../src/issues/provider.js";
+import { issueDoctorChecks, issueProviderFor } from "../../src/issues/provider.js";
 import { configWithTrackers } from "../helpers.js";
 
 const github = (account: string) => ({ provider: "github", account });
@@ -38,16 +38,40 @@ describe("issueProviderFor", () => {
     );
   });
 
-  it("gives doctor checks for the repos of the pair only", () => {
+  it("gives doctor checks in the order of #40 for all repos", () => {
     const config = configWithTrackers({ "a/b": github("x"), "c/d": github("y"), "e/f": github("x") });
-    expect(issueProviderFor(config, "a/b").doctorChecks.map((check) => check.name)).toEqual([
+    expect(issueDoctorChecks(config).map((check) => check.name)).toEqual([
       "gh version",
       "gh auth: x",
+      "gh auth: y",
       "gh project: a/b",
       "gh labels: a/b",
+      "gh project: c/d",
+      "gh labels: c/d",
       "gh project: e/f",
       "gh labels: e/f",
     ]);
+  });
+
+  it("gives one gh version check for two accounts", () => {
+    const config = configWithTrackers({ "a/b": github("x"), "c/d": github("y") });
+    expect(issueDoctorChecks(config).filter((check) => check.name === "gh version")).toHaveLength(1);
+  });
+
+  it("throws the ConfigError of the registry for a jira repo in the doctor checks", () => {
+    const config = configWithTrackers({ j: { provider: "jira" } });
+    expect(() => issueDoctorChecks(config)).toThrow(ConfigError);
+    try {
+      issueDoctorChecks(config);
+    } catch (error) {
+      expect((error as ConfigError).issues).toEqual([
+        "repos.j.issueTracker.provider: the jira tracker is not available in this version",
+      ]);
+    }
+  });
+
+  it("gives no doctor checks for a configuration with no repo", () => {
+    expect(issueDoctorChecks({ ...configWithTrackers({ "a/b": github("x") }), repos: {} })).toEqual([]);
   });
 
   it("throws a ConfigError for a jira repo", () => {
