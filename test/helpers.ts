@@ -233,6 +233,36 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
   };
 }
 
+let cloneCommitCount = 0;
+
+// Adds one commit to refs/heads/<branch> of the bare clone and returns the new SHA.
+// The parent is parent, or the tip of the branch, or refs/remotes/origin/main when the branch is new.
+export async function addCloneCommit(
+  clone: string,
+  env: NodeJS.ProcessEnv,
+  branch: string,
+  parent?: string,
+): Promise<string> {
+  if (branch.startsWith("-") || parent?.startsWith("-")) {
+    throw new Error(`a name must not start with "-": ${JSON.stringify(parent ?? branch)}`);
+  }
+  const git = (...args: string[]) =>
+    runGit(args, { gitDir: clone, env }).then((out) => out.trim());
+  const ref = `refs/heads/${branch}`;
+  const base =
+    parent ??
+    (await git("rev-parse", "--verify", "--quiet", ref).then(
+      () => ref,
+      () => "refs/remotes/origin/main",
+    ));
+  const parentSha = await git("rev-parse", "--verify", `${base}^{commit}`);
+  const tree = await git("rev-parse", `${base}^{tree}`);
+  cloneCommitCount += 1;
+  const sha = await git("commit-tree", tree, "-p", parentSha, "-m", `clone commit ${cloneCommitCount}`);
+  await git("update-ref", ref, sha);
+  return sha;
+}
+
 // The text that the pre-push hook prints for a push with no valid publish token.
 export const NO_TOKEN = "tasker: the push has no valid publish token";
 
