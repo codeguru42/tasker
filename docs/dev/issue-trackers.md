@@ -1,6 +1,6 @@
 # Issue trackers
 
-`src/issues/` holds the issue tracker code. No command uses this code yet. `tasker start` uses it in M4.
+`src/issues/` holds the issue tracker code. No command uses this code yet. `tasker start` uses it in M4. `tasker start` uses the assign and the in-progress write in M10, and `tasker finish` uses the done write in M10.
 
 ## The GitHub folder
 
@@ -9,9 +9,10 @@ All code that starts `gh` is in `src/issues/github/`. The test `test/issues/gith
 ## The files of src/issues/
 
 - `src/issues/github/run.ts` holds `runGh()`, `RunGhOptions`, `GhError`, `GhNotInstalledError` and `GhLoginError`.
-- `src/issues/issue.ts` holds `Issue`, `Blocker`, `IssueReadError`, `BaseHintError`, `baseBranchHint()` and `inProgressMarker()`.
+- `src/issues/issue.ts` holds `Issue`, `Blocker`, `IssueReadError`, `IssueWriteError`, `BaseHintError`, `baseBranchHint()` and `inProgressMarker()`.
 - `src/issues/github/issue.ts` holds `readGithubIssue()` and `issueState()`.
 - `src/issues/github/blockers.ts` holds `readGithubBlockers()`.
+- `src/issues/github/write.ts` holds `assignGithubIssue()`, `markGithubInProgress()` and `markGithubDone()`.
 
 Later issues add their files to this list.
 
@@ -24,6 +25,8 @@ Later issues add their files to this list.
 `gh` gets no input stream. Its output goes to pipes, never to the terminal. `runGh()` writes nothing to the console or a log. `gh` runs in the cwd of tasker. Each call that acts on a repo must name the repo (`--repo <project>`, `-R <project>`, or the full path in `gh api repos/<owner>/<repo>/...`), because `runGh()` removes `GH_REPO`, and without a repo gh reads the repo from the git folder of its cwd.
 
 `runGh()` has no `signal` option and no `cwd` option.
+
+A `gh api` call sends a string value with `-f` and only a number with `-F`. `-F` turns digits, `true`, `false` and `null` into JSON types. A string such as a name of only digits, or `true`, then has the wrong type, and GitHub refuses the variable. `-f` always sends a string.
 
 ## The token
 
@@ -99,7 +102,7 @@ The `BaseHintError` has the field `labels`. Its message names each label as JSON
 
 `readGithubBlockers(ref, account, env)` reads every issue that blocks one GitHub issue. It resolves with a list of `Blocker`. A `Blocker` has the fields `key` (`<owner>/<repo>#<N>`) and `state` (`"open"` or `"closed"`, the same type as `Issue.state`). No command uses it yet. M13 uses it to stack a task on the branch of a blocker.
 
-The read runs `gh api graphql` through `runGh()`, with the account of the tracker. The arguments are `-f query=<query>`, `-f owner=<owner>`, `-f name=<repo>`, `-F number=<N>`, and from the second page on `-f cursor=<cursor>`. The first page has no cursor argument. `-f` always sends a string. `-F` sends `123` as a number and `true` as a Boolean, and GitHub then refuses the variable. A name of only digits, or `true`, is a valid GitHub name, so owner, name and cursor use `-f`. Only `number` uses `-F`, because the query needs an `Int`.
+The read runs `gh api graphql` through `runGh()`, with the account of the tracker. The arguments are `-f query=<query>`, `-f owner=<owner>`, `-f name=<repo>`, `-F number=<N>`, and from the second page on `-f cursor=<cursor>`. The first page has no cursor argument. Owner, name and cursor use `-f`. Only `number` uses `-F`, because the query needs an `Int`. See [runGh()](#rungh) for the rule.
 
 The query asks for `blockedBy(first: 100, after: $cursor)`. For each blocker it asks for `number`, `state` and `repository { nameWithOwner }`. It also asks for `pageInfo { hasNextPage endCursor }`. The code reads every page, one call after the other. A page with `hasNextPage` set to true must have an `endCursor` that no earlier page of the read gave. A cursor that comes again is bad output, so a cycle stops.
 
@@ -118,6 +121,44 @@ The read checks the answer in this order, and gives an `IssueReadError` with the
 
 A missing repo gives an `IssueReadError` here, but a `GhError` in `readGithubIssue()`. The GraphQL answer says which part is null. `gh issue view` gives only stderr.
 
+## Writes
+
+`src/issues/github/write.ts` holds three writes to one GitHub issue. Each write makes one `gh` call through `runGh()`, after the token call.
+
+- `assignGithubIssue(ref, assignee, account, env)` runs `gh issue edit <N> -R <project> --add-assignee <assignee>`.
+- `markGithubInProgress(ref, label, account, env)` runs `gh issue edit <N> -R <project> --add-label <label>`.
+- `markGithubDone(ref, doneLabel, account, env)` runs `gh issue edit <N> -R <project> --add-label <doneLabel>` when `doneLabel` is set. The issue stays open. Without `doneLabel`, it runs `gh issue close <N> -R <project> --reason completed`.
+
+The project and the number come from the stored key, as in [Read an issue](#read-an-issue). The functions take plain strings, not the configuration. The caller passes `issueTracker.assignee`, `issueTracker.inProgressLabel` and `issueTracker.doneLabel`.
+
+The assignee `@me` passes to `gh` as it is. `gh` resolves it to the user of the token, which is the account of the tracker.
+
+The writes read nothing before they write. They rely on these facts of the gh 2.101.0 source:
+
+- `pkg/cmd/issue/close/close.go`: for an issue that is already closed, `gh issue close` prints `! Issue <owner>/<repo>#<N> (<title>) is already closed` to stderr and exits 0. It makes this check before any change.
+- `pkg/cmd/pr/shared/editable.go`: `gh issue edit` builds the set of the current assignees. It replaces `@me` with the login of the token user, adds the new login and sends the whole set. An assignee that the issue already has gives the same set, so `gh` exits 0.
+- `pkg/cmd/pr/shared/editable_http.go`: `gh issue edit` sends a label through the `addLabelsToLabelable` mutation. It does not read the labels of the issue first. So `gh` has no separate path for a label that the issue already has.
+- `api/queries_repo.go`: `gh` finds the label id in the labels of the repo with `strings.EqualFold`, so case does not matter. A name with no match fails with `'<label>' not found`.
+- `pkg/cmd/issue/edit/edit.go`: a failed update prints `failed to update <issue url>: <error>` to stderr. Then `gh` prints `failed to update 1 issue` and exits 1.
+
+As a result, exit 0 is success and the code has no special case. The label must exist on GitHub. The writes do not create it. The code passes the label as it is.
+
+The in-progress marker is a label only. GitHub Projects (v2) columns are not supported.
+
+The writes give these errors:
+
+- A label write is `markGithubInProgress()`, and `markGithubDone()` with `doneLabel`. It turns each `GhError` of its `gh issue edit` call into an `IssueWriteError`. This covers any non-zero exit code and a signal.
+- `IssueWriteError` has the fields `key` and `configKey`. `configKey` is `issueTracker.inProgressLabel` or `issueTracker.doneLabel`. The message holds the message of the `GhError`, which holds the stderr of `gh` with the token hidden.
+- A failure of the token call passes as it is. It is a `GhLoginError`, or a `GhError` with the subcommand `auth token` after a signal. `GhNotInstalledError` and the `IssueKeyError` of `splitGithubKey()` also pass as they are.
+- The assign and the close give no `IssueWriteError`. Each failure of them stays a `GhError`, or the error of the token call.
+
+The message of an `IssueWriteError` is `could not add the label "<label>" of <configKey> to <key>: <GhError message>`. `<label>` is JSON text. For the stderr `failed to update https://github.com/octo/repo/issues/7: 'wip' not found` and `failed to update 1 issue`, the message is:
+
+```
+could not add the label "wip" of issueTracker.inProgressLabel to octo/repo#7: gh issue edit failed with exit code 1: failed to update https://github.com/octo/repo/issues/7: 'wip' not found
+failed to update 1 issue
+```
+
 ## Tests
 
 The fake `gh` is in `test/helpers.ts`. It uses shell builtins only, so the real `gh` can never run.
@@ -130,6 +171,6 @@ Each answer names the whole argument list. It must match exactly, in order. The 
 
 A call with no answer exits with 99 and goes into `unanswered()`. It fails the test, also when the code under test catches the error.
 
-`test/issues/github/run.test.ts` calls `vi.resetModules()` and imports `run.ts` again before each test, so each test starts with an empty token cache.
+`test/issues/github/run.test.ts` calls `vi.resetModules()` and imports `run.ts` again before each test, so each test starts with an empty token cache. `test/issues/github/write.test.ts` does the same.
 
-`test/issues/issue.test.ts`, `test/issues/github/issue.test.ts` and `test/issues/github/blockers.test.ts` test the new files.
+`test/issues/issue.test.ts`, `test/issues/github/issue.test.ts` and `test/issues/github/blockers.test.ts` test the new files. `test/issues/github/write.test.ts` tests `write.ts`.
