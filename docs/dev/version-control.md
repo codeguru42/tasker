@@ -67,7 +67,7 @@ A changed `remote` has these effects at the next provision:
 - Provision fetches from the new remote into the same clone.
 - The task branches in `refs/heads/*` and the objects of the old remote stay in the bare clone.
 - `git fetch --prune` removes the remote-tracking refs `refs/remotes/origin/*` that the new remote does not have. It updates the others to the new remote, with force, because the refspec starts with `+`.
-- A URL that a person set by hand in the clone goes back.
+- A URL that a person set by hand in the clone goes back to the URL from the configuration.
 
 Provision finds a held lock from the `config.lock` file and never from the text of git. Every other git error passes through with the ssh key hidden (see [The ssh key](#the-ssh-key)).
 
@@ -111,7 +111,7 @@ A failed remote call throws again with the key hidden and no `cause`.
 
 These are the version-control values for an assistant run.
 
-- The deny rule blocks `git push` in the shell of the assistant (layer 1 of the push guard).
+- The deny rule names `git push` for the shell of the assistant (layer 1 of the push guard).
 - A key path that tasker cannot resolve (`~name/`, `~` or a relative path) throws, because a deny path that tasker cannot resolve leaves the key open.
 - For a symlinked key, the real path is denied too, because ssh opens the real file.
 - A missing key file gives the path alone, because ssh cannot open it either.
@@ -134,9 +134,9 @@ Known limit: the assistant can move any ref of the clone, for example the branch
 
 The push guard has three layers:
 
-1. Layer 1 is a deny rule in the shell of the assistant (see [Assistant surface](#assistant-surface)).
+1. Layer 1 is a deny rule for the shell of the assistant (see [Assistant surface](#assistant-surface)).
 2. Layer 2 is the `pre-push` hook of the clone. Provision writes it. See below.
-3. Layer 3 is the tip of a branch on the remote. tasker reads it before and after a run and compares the two tips.
+3. Layer 3 is the tip of a branch on the remote. A read of the tip before a run and after it shows a push that skipped the hook.
 
 ### The hook
 
@@ -157,6 +157,8 @@ These cases skip the hook:
 - A write by the assistant to the clone. It can edit the hook or the configuration. The next provision writes the hook and `core.hooksPath` again.
 
 Layer 1 and layer 3 cover these cases.
+
+The hook alone does not cover them. A caller that runs an assistant must apply the deny rule of layer 1, and compare the tips of layer 3 before and after the run.
 
 The token files are outside the bare clone and outside each worktree. The sandbox of the assistant must not have a write path that covers them. This doc makes no other promise about a sandbox.
 
