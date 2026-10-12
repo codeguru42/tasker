@@ -529,12 +529,16 @@ describe("publish, land and delete", () => {
         const published = await addCloneCommit(clone, env, "issue-1-task");
         await publish();
         refusePushesOnOrigin({ hideOrigin: true });
+        const mark = gitCalls().length;
 
         const error = await failureOf(remove({ published }), Error);
 
         expect(error.message.startsWith(named)).toBe(true);
         expect(error.message).toContain(ORIGIN_REFUSES);
         expect(error.message).not.toContain("does not appear to be a git repository");
+        expect(existsSync(origin.path)).toBe(false);
+        expect(existsSync(`${origin.path}.gone`)).toBe(true);
+        expect(gitCalls(mark).filter((call) => call[0] === "ls-remote")).toHaveLength(2);
         expectNoTokenFile();
       });
 
