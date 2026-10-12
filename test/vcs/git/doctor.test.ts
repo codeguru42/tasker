@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   connectionCheck,
   type GitDoctorRepo,
+  gitDoctorChecks,
   gitVersionCheck,
   identityCheck,
   staleLockCheck,
@@ -22,7 +23,9 @@ import {
   makeTempDir,
   readArgLog,
   sshKeyArgs,
+  treeSnapshot,
   writeFakeGit,
+  writeFakeProc,
 } from "../../helpers.js";
 
 describe("gitVersionCheck", () => {
@@ -403,5 +406,71 @@ describe("staleLockCheck", () => {
     makeLock("a.lock");
     const result = await staleLockCheck(repo(), view(), 0).run(origin.env);
     expect(result).toEqual({ status: "error", detail: "the check did not finish in 0 ms" });
+  });
+});
+
+describe("gitDoctorChecks", () => {
+  let first: GitOrigin;
+  let second: GitOrigin;
+  let repos: GitDoctorRepo[];
+  let procRoot: string;
+
+  beforeEach(async () => {
+    first = await makeGitOrigin();
+    second = await makeGitOrigin();
+    repos = [
+      { key: "a/one", remote: first.path, clone: await makeGitClone(first), config: {} },
+      { key: "b/two", remote: second.path, clone: await makeGitClone(second), config: {} },
+    ];
+    procRoot = join(first.dir, "proc");
+    writeFakeProc(procRoot, []);
+  });
+
+  afterEach(() => {
+    first.remove();
+    second.remove();
+  });
+
+  function checks() {
+    return gitDoctorChecks({ repos, procRoot, platform: "linux" });
+  }
+
+  function lockIn(repo: GitDoctorRepo): string {
+    const path = join(realpathSync(repo.clone), "a.lock");
+    writeFileSync(path, "");
+    ageFile(path, 90_000);
+    return path;
+  }
+
+  it("gives the version check, then three checks for each repo", () => {
+    expect(checks().map(({ name, required, timeoutMs }) => ({ name, required, timeoutMs }))).toEqual([
+      { name: "git version", required: true, timeoutMs: 5000 },
+      { name: "git identity: a/one", required: false, timeoutMs: 5000 },
+      { name: "git connection: a/one", required: true, timeoutMs: 30000 },
+      { name: "git lock files: a/one", required: false, timeoutMs: 10000 },
+      { name: "git identity: b/two", required: false, timeoutMs: 5000 },
+      { name: "git connection: b/two", required: true, timeoutMs: 30000 },
+      { name: "git lock files: b/two", required: false, timeoutMs: 10000 },
+    ]);
+  });
+
+  it("reads /proc once for all lock-file checks", async () => {
+    lockIn(repos[0]);
+    const secondLock = lockIn(repos[1]);
+    const [, , , lockOne, , , lockTwo] = checks();
+    expect((await lockOne.run(first.env)).status).toBe("warn");
+    writeFakeProc(procRoot, [{ pid: 7, comm: "bash", openFiles: [secondLock] }]);
+    const result = await lockTwo.run(first.env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).not.toContain("skipped");
+  });
+
+  it("writes nothing in the clone", async () => {
+    lockIn(repos[0]);
+    const before = treeSnapshot(repos[0].clone);
+    for (const check of checks()) {
+      await check.run(first.env);
+    }
+    expect(treeSnapshot(repos[0].clone)).toEqual(before);
   });
 });

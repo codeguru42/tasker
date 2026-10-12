@@ -1,8 +1,10 @@
 import {
   accessSync,
   constants,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -540,4 +542,36 @@ export function writeFakeProc(root: string, processes: readonly FakeProcess[]): 
       });
     }
   }
+}
+
+export interface TreeEntry {
+  // The path relative to the folder.
+  path: string;
+  type: "file" | "directory" | "link" | "other";
+  size: number;
+  mtimeMs: number;
+}
+
+// A sorted list of every entry under folder. It uses lstat and follows no link.
+export function treeSnapshot(folder: string): TreeEntry[] {
+  const entries: TreeEntry[] = [];
+  const walk = (current: string): void => {
+    for (const name of readdirSync(current)) {
+      const path = join(current, name);
+      const stat = lstatSync(path);
+      const type = stat.isDirectory()
+        ? "directory"
+        : stat.isFile()
+          ? "file"
+          : stat.isSymbolicLink()
+            ? "link"
+            : "other";
+      entries.push({ path: relative(folder, path), type, size: stat.size, mtimeMs: stat.mtimeMs });
+      if (type === "directory") {
+        walk(path);
+      }
+    }
+  };
+  walk(folder);
+  return entries.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
