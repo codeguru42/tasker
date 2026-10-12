@@ -19,6 +19,7 @@ import type { Io, RegisterCommand } from "../src/cli.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
+import type { VcsContext } from "../src/vcs/provider.js";
 
 export interface CapturedIo extends Io {
   out: string[];
@@ -293,6 +294,24 @@ export async function addCloneCommit(
   const sha = await git("commit-tree", tree, "-p", parentSha, "-m", `clone commit ${cloneCommitCount}`);
   await git("update-ref", ref, sha);
   return sha;
+}
+
+// A local git origin, and the provider context of the repo "tasker" with a data root in origin.dir.
+// remove() deletes everything.
+export interface ProviderFixture {
+  origin: GitOrigin;
+  context: VcsContext;
+  remove(): void;
+}
+
+export async function makeProviderFixture(): Promise<ProviderFixture> {
+  const origin = await makeGitOrigin();
+  const context: VcsContext = {
+    dataRoot: join(origin.dir, "data"),
+    repoKey: "tasker",
+    env: origin.env,
+  };
+  return { origin, context, remove: () => origin.remove() };
 }
 
 // The full names of the local branches of the bare clone, from git for-each-ref refs/heads/.
