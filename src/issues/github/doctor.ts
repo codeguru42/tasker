@@ -76,6 +76,9 @@ export function ghAuthCheck(account: string, timeoutMs = 15000): Check {
       if (status.ok) {
         return { status: "ok", detail: status.detail };
       }
+      if (!status.needsLogin) {
+        return { status: "error", detail: status.detail };
+      }
       return {
         status: "error",
         detail: status.detail,
