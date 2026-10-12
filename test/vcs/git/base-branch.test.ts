@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseBaseInput } from "../../../src/vcs/git/base-branch.js";
+import { baseRevision, parseBaseInput } from "../../../src/vcs/git/base-branch.js";
 
 describe("parseBaseInput", () => {
   it.each([
@@ -29,4 +29,14 @@ describe("parseBaseInput", () => {
       );
     },
   );
+});
+
+describe("baseRevision", () => {
+  it.each([
+    ["main", "refs/remotes/origin/main"],
+    ["feature/x", "refs/remotes/origin/feature/x"],
+    ["refs/heads/task-1", "refs/heads/task-1"],
+  ])("gives the revision of %j as %j", (base, expected) => {
+    expect(baseRevision(base)).toBe(expected);
+  });
 });
