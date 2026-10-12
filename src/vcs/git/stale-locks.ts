@@ -1,11 +1,10 @@
 import { lstatSync, readdirSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
 import { join, sep } from "node:path";
+import { DeadlineError } from "../../doctor/timed-check.js";
 import { withoutLineEnd } from "./worktree.js";
 
 // A lock file is stale when nobody has written it for this long.
 const STALE_AFTER_MS = 60_000;
-
-export class DeadlineError extends Error {}
 
 export interface StaleLock {
   // The absolute real path of the lock file.

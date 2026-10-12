@@ -2,11 +2,11 @@ import { existsSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
 import { relative } from "node:path";
 import type { Check, CheckResult } from "../../doctor/check.js";
+import { timedCheck } from "../../doctor/timed-check.js";
 import type { GitVcsConfig } from "./config.js";
 import { GitError, GitNotInstalledError, runGit } from "./run.js";
 import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
 import {
-  DeadlineError,
   findStaleLocks,
   isInside,
   onceProcView,
@@ -30,10 +30,6 @@ export interface GitDoctorRepo {
 // Provision makes the clone and writes the identity at the first start, so this is not a problem.
 const NO_CLONE: CheckResult = { status: "ok", detail: "no clone yet" };
 
-function timedOut(timeoutMs: number): CheckResult {
-  return { status: "error", detail: `the check did not finish in ${timeoutMs} ms` };
-}
-
 interface CheckSpec {
   name: string;
   required: boolean;
@@ -41,8 +37,8 @@ interface CheckSpec {
   sshKey: string | undefined;
 }
 
-// The one place that makes the signal, catches the errors and hides the ssh key.
-// run() never rejects. A timeout gives the timeout result, with no partial result.
+// The shared wrapper in src/doctor/ makes the signal and the timeout result.
+// This layer only hides the ssh key in the detail and the remediation.
 function makeCheck(
   spec: CheckSpec,
   body: (
@@ -50,25 +46,11 @@ function makeCheck(
     limit: { signal: AbortSignal; deadline: number },
   ) => Promise<CheckResult>,
 ): Check {
+  const check = timedCheck(spec, body);
   return {
-    name: spec.name,
-    required: spec.required,
-    timeoutMs: spec.timeoutMs,
+    ...check,
     async run(env) {
-      const signal = AbortSignal.timeout(spec.timeoutMs);
-      const deadline = Date.now() + spec.timeoutMs;
-      let result: CheckResult;
-      try {
-        result = await body(env, { signal, deadline });
-      } catch (error) {
-        result =
-          signal.aborted || error instanceof DeadlineError
-          ? timedOut(spec.timeoutMs)
-          : { status: "error", detail: error instanceof Error ? error.message : String(error) };
-      }
-      if (signal.aborted && result.status !== "error") {
-        result = timedOut(spec.timeoutMs);
-      }
+      const result = await check.run(env);
       const hide = (text: string) => hideSshKey(text, spec.sshKey, userInfo().homedir);
       return {
         ...result,

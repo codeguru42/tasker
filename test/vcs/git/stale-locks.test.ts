@@ -2,11 +2,11 @@ import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  DeadlineError,
   findStaleLocks,
   onceProcView,
   readProcView,
 } from "../../../src/vcs/git/stale-locks.js";
+import { DeadlineError } from "../../../src/doctor/timed-check.js";
 import { ageFile, makeTempDir, writeFakeProc } from "../../helpers.js";
 
 const HOUR = 3_600_000;
