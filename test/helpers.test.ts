@@ -1,7 +1,17 @@
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, runGit } from "../src/vcs/git/run.js";
-import { GIT_TEST_IDENTITY, makeGitOrigin, type GitOrigin } from "./helpers.js";
+import {
+  failureOf,
+  fakeSsh,
+  GIT_TEST_IDENTITY,
+  gitTestEnv,
+  makeGitOrigin,
+  makeTempDir,
+  sshKeyArgs,
+  type GitOrigin,
+} from "./helpers.js";
 
 describe("makeGitOrigin", () => {
   let origin: GitOrigin;
@@ -102,5 +112,60 @@ describe("makeGitOrigin", () => {
       "the branch name must not start with -",
     );
     await expect(origin.addCommit("-x")).rejects.toThrow("the branch name must not start with -");
+  });
+});
+
+describe("failureOf", () => {
+  it("gives the error of a rejected promise", async () => {
+    const error = new GitError("m", "x", "", "", 1);
+    expect(await failureOf(Promise.reject(error), GitError)).toBe(error);
+  });
+
+  it("rejects when the promise resolves", async () => {
+    await expect(failureOf(Promise.resolve(1), Error)).rejects.toThrow("resolved");
+  });
+
+  it("rejects when the error has another type", async () => {
+    await expect(failureOf(Promise.reject(new Error("m")), GitError)).rejects.toThrow("not a");
+  });
+});
+
+describe("fakeSsh", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir("tasker-fake-ssh-");
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("puts the bin folder first on the PATH", () => {
+    const ssh = fakeSsh(dir, gitTestEnv(dir), "serve");
+    expect(ssh.env.PATH?.startsWith(join(dir, "bin") + delimiter)).toBe(true);
+  });
+
+  it("gives the ssh remote of a repo path", () => {
+    const ssh = fakeSsh(dir, gitTestEnv(dir), "serve");
+    expect(ssh.remote("/x/o.git")).toBe("ssh://tasker.invalid/x/o.git");
+  });
+
+  it("writes the fake ssh into the bin folder", () => {
+    fakeSsh(dir, gitTestEnv(dir), "refuse");
+    expect(existsSync(join(dir, "bin", "ssh"))).toBe(true);
+  });
+});
+
+describe("sshKeyArgs", () => {
+  it("gives the six ssh arguments of a key", () => {
+    expect(sshKeyArgs("/k")).toEqual([
+      "-i",
+      "/k",
+      "-o",
+      "IdentitiesOnly=yes",
+      "-o",
+      "BatchMode=yes",
+    ]);
   });
 });
