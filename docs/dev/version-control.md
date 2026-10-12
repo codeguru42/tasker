@@ -9,10 +9,11 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/ssh.ts` holds `shellQuote()`, `sshCommand()`, `sshEnv()`, `hideSshKey()`, `runRemoteGit()`, `remoteNotAnswering()`, `remoteCwd()` and `cloneUrl()`.
 - `src/vcs/git/default-branch.ts` holds `remoteDefaultBranch()`.
 - `src/vcs/git/provision.ts` holds `provisionClone()`.
-- `src/vcs/git/base-branch.ts` holds `parseBaseInput()`, `baseRevision()` and `resolveBaseBranch()`.
-- `src/vcs/git/worktree.ts` holds `taskBranchName()`, `taskWorktreePath()`, `listWorktrees()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
+- `src/vcs/git/base-branch.ts` holds `parseBaseInput()`, `baseRevision()`, `resolveBaseBranch()` and `LOCAL_PREFIX`.
+- `src/vcs/git/worktree.ts` holds `taskBranchName()`, `isShortRef()`, `assertTaskBranch()`, `assertTaskBranchShape()`, `taskWorktreePath()`, `listWorktrees()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
 - `src/vcs/git/push-guard.ts` holds `installPushHook()` and `pushWithToken()`.
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
+- `src/vcs/git/publish.ts` holds `publishTaskBranch()`, `landOnBase()` and `deleteRemoteTaskBranch()`.
 
 No other folder in `src/` starts git.
 
@@ -149,7 +150,7 @@ Use `git config --get core.sshCommand` to read the value. `git config --local --
 
 `sshCommand(sshKey)` gives `ssh -i '<key>' -o IdentitiesOnly=yes -o BatchMode=yes`, with each `'` in the key path written as `'\''`. The command and the key path never go on the git command line. They go in the include file and in the env.
 
-`sshEnv(env, sshKey)` returns `env` with `GIT_SSH_COMMAND` set to `sshCommand(sshKey)`. If `sshKey` is not set, it returns `env` as it is. `runRemoteGit(args, options, sshKey)` runs `runGit()` with that env. Provision runs `ls-remote`, `clone` and `fetch` through it. `pushWithToken()` runs `push` through it, and `remoteTip()` runs `ls-remote` through it. As a result, `GIT_SSH_COMMAND` reaches ssh in the env of git. A `GIT_SSH_COMMAND` that the user exported is replaced when `sshKey` is set and stays when it is not.
+`sshEnv(env, sshKey)` returns `env` with `GIT_SSH_COMMAND` set to `sshCommand(sshKey)`. If `sshKey` is not set, it returns `env` as it is. `runRemoteGit(args, options, sshKey)` runs `runGit()` with that env. Provision runs `ls-remote`, `clone` and `fetch` through it. `pushWithToken()` runs `push` through it, and `remoteTip()` runs `ls-remote` through it. The functions of `publish.ts` use these two functions, so each call of them reaches the remote with this env. As a result, `GIT_SSH_COMMAND` reaches ssh in the env of git. A `GIT_SSH_COMMAND` that the user exported is replaced when `sshKey` is set and stays when it is not.
 Each git call that reaches the remote must pass the env from `sshEnv()`. The reason is that `runGit()` sets `GIT_SSH_COMMAND=ssh -o BatchMode=yes` when the caller sets no ssh command, and an env `GIT_SSH_COMMAND` wins over `core.sshCommand`. So the `core.sshCommand` of the clone takes effect only when git runs with no `GIT_SSH_COMMAND` and no `GIT_SSH` in its env.
 
 When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with no `cause`. The message, `stdout` and `stderr` went through `hideSshKey(text, sshKey, homeDir)`. It replaces each occurrence of these forms with `<sshKey>`, in this order:
@@ -177,7 +178,7 @@ The push guard has three layers:
 2. Layer 2 is the `pre-push` hook of the clone. `provisionClone()` writes it. See below.
 3. Layer 3 is the tip of a branch on the remote. `remoteTip()` reads it and `tipMoved()` compares two tips. No code reads the tip before and after a run yet.
 
-No command calls `installPushHook()`, `pushWithToken()`, `remoteTip()` or `tipMoved()` yet. Provision calls `installPushHook()`.
+No command calls `installPushHook()`, `pushWithToken()`, `remoteTip()` or `tipMoved()` yet. Provision calls `installPushHook()`. The functions of `publish.ts` call `pushWithToken()` and `remoteTip()` (see [Publish and land](#publish-and-land)).
 
 ### The hook
 
@@ -234,6 +235,113 @@ The result is `{ state: "present", revision }` or `{ state: "absent" }`. The `ls
 Any other error passes through. A failed read never gives `absent`.
 
 `tipMoved(before, after)` returns `undefined` when both tips are absent, or when both are present with the same revision. Otherwise it returns `the tip of the branch on the remote moved from <a> to <b>`. Each of `<a>` and `<b>` is the revision, or `absent` for an absent tip.
+
+## Publish and land
+
+`src/vcs/git/publish.ts` holds three functions: `publishTaskBranch()`, `landOnBase()` and `deleteRemoteTaskBranch()`. No command calls them yet.
+
+Each function takes these options:
+
+- `clone` is the bare clone that `provisionClone()` made.
+- `remote` is the remote of the repo, the same text that `provisionClone()` got. Provision sets `remote.origin.url` from it, so `origin` in the clone and `remote` name the same repo.
+- `publishTokens` is the `publishTokens` path of `repoPaths()`.
+- `sshKey` is the `sshKey` of `vcs.config`, or `undefined`.
+- `env` is the environment of the child (see [`runGit()`](#rungit)).
+
+Each push runs in the bare clone, with `location: { gitDir: clone }`, through `pushWithToken()`. Each read of the remote runs through `remoteTip()`. As a result, each call to the remote uses the ssh key (see [The ssh key](#the-ssh-key)), and each push uses one token. No push has `--force`, a `+` refspec, `--all`, `--mirror`, `--tags` or `--porcelain`. Each refspec uses full ref names.
+
+Each function checks its inputs before any git call and before any token file. `publishTaskBranch()` and `deleteRemoteTaskBranch()` run the first two checks of this table, in this order, and then the third check on `published`. `landOnBase()` runs the third check on `revision`, and then the two base checks (see [`landOnBase()`](#landonbase)). The checks give these errors:
+
+| Case | Error |
+| --- | --- |
+| `branch` is not a safe ref part (see [the branch name](workspaces.md#the-branch-name)). | `Error`: `not a task branch name: <JSON text of the name>` |
+| `branch` has no task branch shape (see [the branch name](workspaces.md#the-branch-name)). | `Error`: `not a task branch: <JSON text of the name>` |
+| `published` or `revision` is not 40 lower-case hex characters. | `Error`: `the published revision is not a full revision: <JSON text>`, or `the revision is not a full revision: <JSON text>` |
+
+Because of the shape check, `publishTaskBranch()` and `deleteRemoteTaskBranch()` never push or delete `main`, `master` or another base.
+
+An error that wraps a failure has no `cause`. The text after the message is `: <detail>`. The detail is the stderr of a `GitError`, or the message of another `Error`. It is left out when it is empty. No code reads the detail. A value that is not an `Error` passes through.
+
+### The published revision
+
+The caller passes `published`, the last revision that tasker published for the branch. No store column, file or git ref holds it in this change. A later milestone stores it. `publishTaskBranch()` returns `revision` for this purpose.
+
+One function decides what the tip on the remote means. The expected tip is `published`, or no branch when `published` is not set. A tip at the expected revision is "expected". No branch while `published` is set is "absent". A tip at any other revision, or a branch while `published` is not set, gives the moved error:
+
+`the task branch moved on origin: <branch>: <before>, <now>`
+
+`<before>` is `tasker published <published>`, or `tasker never published it`. `<now>` is `origin has <revision>`, or `origin does not have it`. Publish and delete use this one function and this one error.
+
+### `publishTaskBranch()`
+
+`publishTaskBranch({ ...options, branch, published })` resolves with `{ state, branch, revision, lease }`. `state` is `published` or `already-published`. `revision` is the local revision of the branch. `lease` is `true` when a push ran with a lease.
+
+These are the steps:
+
+1. Run the input checks. If `published` is set, it must be a full revision.
+2. Read the local revision of `refs/heads/<branch>` with `taskBranchRevision()`.
+3. Read the tip of the branch on the remote with `remoteTip()`.
+4. If the tip is at the local revision, return `already-published` with `lease: false`. No push runs and no token file is made.
+5. Decide on the tip (see [The published revision](#the-published-revision)). If the result is "absent" or the tip is at another revision, throw the moved error. No push runs and no token file is made.
+6. Push with a lease and return `published` with `lease: true`.
+
+Every publish push uses a lease. The push arguments are always:
+
+```
+push --force-with-lease=refs/heads/<branch>:<published or empty> origin refs/heads/<branch>:refs/heads/<branch>
+```
+
+The lease text after the colon is `published`, or empty when `published` is not set. Git acts like this:
+
+- With `published`, and origin at `published`, git updates the branch also when the update is not a fast-forward.
+- With `published`, and origin moved by someone else or without the branch, git refuses the push (`stale info`).
+- Without `published` (the empty lease), git creates the branch when origin has none. It refuses the push when origin has the branch.
+
+Step 5 already refuses these cases. The lease covers a push by someone else between step 3 and step 6.
+
+If the tip read or the push fails, the function throws `cannot publish the task branch: <branch>` and the detail. It does not read the tip again.
+
+| Case | Error |
+| --- | --- |
+| The local branch is missing. | `Error`: `cannot resolve the task branch: <branch>` |
+| The tip is not the expected tip (step 5). | `Error`: the moved error |
+| The tip read or the push fails. | `Error`: `cannot publish the task branch: <branch>`, plus the detail |
+
+### `landOnBase()`
+
+`landOnBase({ ...options, base, revision })` resolves with no value. It lands `revision` on the branch `base` of the remote by fast-forward.
+
+These are the steps:
+
+1. Make sure that `revision` is a full revision.
+2. If `base` is empty, throw `cannot land <revision>: the base branch is empty`. If `base` starts with `refs/heads/` (`LOCAL_PREFIX`), throw `cannot land <revision> on the base branch: <base>: the base is a local branch`.
+3. Read the tip of `base` with `remoteTip()`.
+4. If the tip is absent, throw `cannot land <revision> on the base branch: <base>: the base branch does not exist on origin`. No push runs and no token file is made. Without this step, a base such as `HEAD` makes a new branch on origin.
+5. Push. The arguments are `push origin <revision>:refs/heads/<base>`. The push has no lease, no `--force` and no `+`. As a result, git refuses a push that is not a fast-forward, and origin does not move. A push of the revision that origin already has succeeds and changes nothing. The clone must have the revision, or git refuses the push.
+
+If the tip read or the push fails, the function throws `cannot land <revision> on the base branch: <base>` and the detail.
+
+### `deleteRemoteTaskBranch()`
+
+`deleteRemoteTaskBranch({ ...options, branch, published })` resolves with `{ state }`. `state` is `deleted` or `already-gone`. `published` is always set.
+
+These are the steps:
+
+1. Run the input checks. `published` must be a full revision.
+2. Read the tip with `remoteTip()`. A failure throws `cannot delete the task branch on origin: <branch>` and the detail.
+3. Decide on the tip (see [The published revision](#the-published-revision)). If the branch is absent, return `already-gone`. If the tip is at another revision, throw the moved error. No push runs and no token file is made.
+4. Push. The arguments are `push --force-with-lease=refs/heads/<branch>:<published> origin :refs/heads/<branch>`. The lease is necessary. A plain delete of a branch that origin does not have succeeds with a warning.
+5. Return `deleted`.
+
+If the push fails, the function reads the tip again with the rules of step 3. An absent branch returns `already-gone`. A tip at another revision throws the moved error. A tip that is still at `published` throws `cannot delete the task branch on origin: <branch>` and the detail of the push error.
+
+### Side effects
+
+- A successful publish creates or moves `refs/remotes/origin/<branch>` in the clone.
+- A successful land moves `refs/remotes/origin/<base>` in the clone.
+- A successful delete removes `refs/remotes/origin/<branch>` in the clone.
+- Each push uses one token, also a push that git then rejects, because the hook deletes the token before git sends anything. `already-published`, `already-gone`, the moved error before a push, a missing base and each input check use no token.
+- A failed push changes nothing on origin.
 
 ## `repoSlug()` and `repoPaths()`
 
