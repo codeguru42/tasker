@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { userInfo } from "node:os";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import type { GitVcsConfig } from "./provision.js";
 import { runGit } from "./run.js";
 import { homeKeyPath } from "./ssh.js";
@@ -16,17 +16,16 @@ export const EXECUTE_COMMIT_TEXT = [
 export const DENY_RULES: readonly string[] = ["Bash(git push:*)"];
 
 // The files that the sandbox must not read: the ssh key, when it is set. A "~/" key resolves
-// against the home folder, as ssh does. Another "~" key throws, because an unresolved deny path
-// leaves the key open.
+// against the home folder, as ssh does. Any other key must be absolute. tasker cannot resolve
+// another key, and a deny path that tasker cannot resolve leaves the key open, so it throws.
 export function readDenyPaths(config: GitVcsConfig): string[] {
   const key = config.sshKey;
   if (key === undefined) return [];
-  const home = homeKeyPath(key, userInfo().homedir);
-  if (home !== undefined) return [home];
-  if (key.startsWith("~")) {
+  const path = homeKeyPath(key, userInfo().homedir) ?? key;
+  if (!isAbsolute(path)) {
     throw new Error(`cannot resolve the ssh key path for the sandbox: ${key}`);
   }
-  return [key];
+  return [path];
 }
 
 // The folders that a git commit in the task worktree writes to, as absolute paths:
