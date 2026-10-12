@@ -1,8 +1,8 @@
-import type { Check } from "../../doctor/check.js";
+import type { Check, CheckStatus } from "../../doctor/check.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import type { RepoConfig } from "../../config/schema.js";
 import { authStatus } from "./auth.js";
-import { runGh, readGhVersion, GhNotInstalledError } from "./run.js";
+import { GhError, GhNotInstalledError, readGhVersion, runGh } from "./run.js";
 
 // Before this version, gh auth token has no --user flag.
 const MINIMUM_GH = { major: 2, minor: 40, patch: 0 };
@@ -110,6 +110,91 @@ export function ghProjectCheck(repo: GithubDoctorRepo, timeoutMs = 15000): Check
       return {
         status: "ok",
         detail: `${repo.key}: the account ${account} can see the project ${project}`,
+      };
+    },
+  );
+}
+
+// A label that tasker writes to an issue, and what happens when it is missing.
+interface LabelToRead {
+  configKey: string;
+  name: string;
+  missing: "error" | "warn";
+  reason: string;
+}
+
+const SEVERITY: Record<CheckStatus, number> = { ok: 0, warn: 1, error: 2 };
+
+// The labels that tasker writes with the configuration of the repo, in the order of use.
+function labelsToRead(repo: GithubDoctorRepo): LabelToRead[] {
+  const { updateOnStart, inProgressLabel, updateOnFinish, doneLabel } = repo.issueTracker;
+  const labels: LabelToRead[] = [];
+  if (updateOnStart && inProgressLabel !== undefined) {
+    labels.push({
+      configKey: "issueTracker.inProgressLabel",
+      name: inProgressLabel,
+      missing: "error",
+      reason: "tasker start fails",
+    });
+  }
+  if (updateOnFinish && doneLabel !== undefined) {
+    labels.push({
+      configKey: "issueTracker.doneLabel",
+      name: doneLabel,
+      missing: "warn",
+      reason: "tasker finish only warns",
+    });
+  }
+  return labels;
+}
+
+// GitHub answers a missing label with exit code 1 and (HTTP 404) in stderr.
+function isNotFound(error: unknown): boolean {
+  return error instanceof GhError && error.exitCode === 1 && error.stderr.includes("(HTTP 404)");
+}
+
+// The check only reads. Each label is one GET with no fields. It never creates a label.
+export function ghLabelsCheck(repo: GithubDoctorRepo, timeoutMs = 15000): Check {
+  return timedCheck(
+    { name: `gh labels: ${repo.key}`, required: true, timeoutMs },
+    async (env, { signal }) => {
+      const labels = labelsToRead(repo);
+      if (labels.length === 0) {
+        return { status: "ok", detail: `${repo.key}: no label to check` };
+      }
+      const account = accountOf(repo);
+      const project = projectOf(repo);
+      let status: CheckStatus = "ok";
+      const lines: string[] = [];
+      const missingKeys: string[] = [];
+      for (const label of labels) {
+        const text = `the label ${JSON.stringify(label.name)} of ${label.configKey}`;
+        try {
+          await runGh(["api", `repos/${project}/labels/${encodeURIComponent(label.name)}`], {
+            account,
+            env,
+            signal,
+          });
+          lines.push(`${text} exists`);
+        } catch (error) {
+          if (!isNotFound(error)) {
+            throw error;
+          }
+          lines.push(`${text} does not exist in ${project}: ${label.reason}`);
+          missingKeys.push(label.configKey);
+          if (SEVERITY[label.missing] > SEVERITY[status]) {
+            status = label.missing;
+          }
+        }
+      }
+      const detail = [`${repo.key}:`, ...lines].join("\n");
+      if (missingKeys.length === 0) {
+        return { status, detail };
+      }
+      return {
+        status,
+        detail,
+        remediation: `Create each missing label in ${project} on GitHub, or change ${missingKeys.join(" and ")}.`,
       };
     },
   );
