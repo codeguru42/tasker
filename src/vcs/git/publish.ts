@@ -133,3 +133,15 @@ export async function landOnBase(
     throw failed(summary, error);
   }
 }
+
+// Deletes the task branch on origin, when origin still has it at the published revision.
+export async function deleteRemoteTaskBranch(
+  options: RemoteOptions & { branch: string; published: string },
+): Promise<{ state: "deleted" | "already-gone" }> {
+  const { clone, publishTokens, sshKey, env, branch, published } = options;
+  await pushWithToken(
+    [`--force-with-lease=refs/heads/${branch}:${published}`, "origin", `:refs/heads/${branch}`],
+    { location: { gitDir: clone }, publishTokens, sshKey, env },
+  );
+  return { state: "deleted" };
+}
