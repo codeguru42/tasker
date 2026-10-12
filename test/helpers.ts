@@ -18,6 +18,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, onTestFinished } from "vitest";
 import type { Io, RegisterCommand } from "../src/cli.js";
+import { type Config, parseConfig } from "../src/config/schema.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
@@ -864,4 +865,22 @@ export function blockersPageJson(
   pageInfo: { hasNextPage: boolean; endCursor: string | null } = { hasNextPage: false, endCursor: null },
 ): string {
   return JSON.stringify({ data: { repository: { issue: { blockedBy: { pageInfo, nodes } } } } });
+}
+
+// The issueTracker keys of each repo, by repo key.
+export type Trackers = Record<string, Record<string, unknown>>;
+
+// A parsed configuration with one repo for each entry of trackers. Each repo copies the
+// repo of validConfig(). Its issueTracker is the issueTracker of validConfig() (which has
+// the account that a github tracker needs) with the keys of the entry on top.
+export function configWithTrackers(trackers: Trackers): Config {
+  const raw = validConfig();
+  const base = raw.repos.tasker;
+  raw.repos = Object.fromEntries(
+    Object.entries(trackers).map(([key, issueTracker]) => [
+      key,
+      { ...base, issueTracker: { ...base.issueTracker, ...issueTracker } },
+    ]),
+  );
+  return parseConfig(raw, {}, "/home/test");
 }

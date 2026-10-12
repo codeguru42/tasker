@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseConfig, type Config } from "../../src/config/schema.js";
 import { parseGithubKey } from "../../src/issue-key/github.js";
 import { IssueKeyError, type IssueRef } from "../../src/issue-key/ref.js";
 import { resolveIssueKey, type ResolveOptions } from "../../src/issue-key/resolve.js";
-import { failureOf, validConfig } from "../helpers.js";
+import { configWithTrackers, failureOf, type Trackers } from "../helpers.js";
 
-type Trackers = Record<string, Record<string, unknown>>;
 type RefRow = [
   label: string,
   trackers: Trackers,
@@ -25,23 +23,8 @@ const GITHUB_MESSAGE = (rawKey: string): string =>
   `not a GitHub issue key: ${JSON.stringify(rawKey)} (expected owner/repo#N)`;
 
 describe("resolveIssueKey", () => {
-  // A parsed configuration with one repo for each entry of trackers. Each repo copies the
-  // repo of validConfig(). Its issueTracker is the issueTracker of validConfig() (which has
-  // the account that a github tracker needs) with the keys of the entry on top.
-  function configWith(trackers: Trackers): Config {
-    const raw = validConfig();
-    const base = raw.repos.tasker;
-    raw.repos = Object.fromEntries(
-      Object.entries(trackers).map(([key, issueTracker]) => [
-        key,
-        { ...base, issueTracker: { ...base.issueTracker, ...issueTracker } },
-      ]),
-    );
-    return parseConfig(raw, {}, "/home/test");
-  }
-
   function resolveWith(rawKey: string, trackers: Trackers, options: ResolveOptions): IssueRef {
-    return resolveIssueKey(rawKey, configWith(trackers), options);
+    return resolveIssueKey(rawKey, configWithTrackers(trackers), options);
   }
 
   // The IssueKeyError of the resolve. It fails the test when the resolve gives a ref.
