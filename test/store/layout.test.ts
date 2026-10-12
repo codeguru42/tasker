@@ -1,7 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createDataRoot, dataRootLayout } from "../../src/store/layout.js";
+import {
+  createDataRoot,
+  dataRootLayout,
+  taskArtifactsDir,
+} from "../../src/store/layout.js";
 import { makeTempDir } from "../helpers.js";
 
 describe("dataRootLayout", () => {
@@ -12,6 +16,31 @@ describe("dataRootLayout", () => {
       artifacts: "/d/artifacts",
       database: "/d/tasker.db",
     });
+  });
+});
+
+describe("taskArtifactsDir", () => {
+  it("puts the files of an attempt under the slug of the issue key", () => {
+    expect(
+      taskArtifactsDir("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 }),
+    ).toBe("/d/artifacts/codeguru42-tasker-10/attempt-2");
+  });
+
+  it("keeps an issue key that has no unsafe character", () => {
+    expect(taskArtifactsDir("/d", { issueKey: "PROJ-7", attempt: 1 })).toBe(
+      "/d/artifacts/PROJ-7/attempt-1",
+    );
+  });
+
+  it("makes no folder", () => {
+    const root = makeTempDir("tasker-data-");
+    try {
+      const path = taskArtifactsDir(root, { issueKey: "PROJ-7", attempt: 1 });
+      expect(existsSync(path)).toBe(false);
+      expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 
