@@ -1,4 +1,6 @@
+import type { RepoConfig } from "../config/schema.js";
 import type { Check } from "../doctor/check.js";
+import { createGitProvider } from "./git/provider.js";
 
 // The local state of one repo, and the env of each child process.
 export interface VcsContext {
@@ -116,4 +118,12 @@ export interface VcsProvider {
   doctorChecks(ctx: VcsContext, o: { procRoot: string; platform: NodeJS.Platform }): Check[];
   // Writes the push guard again.
   installPushGuard(ctx: VcsContext): void;
+}
+
+// The only place that picks a provider. It reads vcs.provider and passes remote and vcs.config.
+export function createVcsProvider(repo: Pick<RepoConfig, "remote" | "vcs">): VcsProvider {
+  switch (repo.vcs.provider) {
+    case "git":
+      return createGitProvider({ remote: repo.remote, config: repo.vcs.config });
+  }
 }
