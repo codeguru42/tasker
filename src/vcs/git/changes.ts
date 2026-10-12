@@ -81,3 +81,23 @@ export async function ownCommitsText(o: {
   );
   return output === "" ? NO_OWN_COMMITS : output;
 }
+
+// True when head reaches a commit that none of the others reaches. An empty others gives true
+// for each existing head, because git then counts every commit that head reaches.
+export async function hasCommitsNotIn(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  head: string;
+  others: readonly string[];
+}): Promise<boolean> {
+  const { clone, env, head, others } = o;
+  for (const value of [head, ...others]) assertRevisionInput(value);
+  const headSha = await resolveRevision({ clone, env, value: head });
+  const otherShas: string[] = [];
+  for (const value of others) otherShas.push(await resolveRevision({ clone, env, value }));
+  const output = await runGit(["rev-list", "--count", headSha, "--not", ...otherShas, "--"], {
+    gitDir: clone,
+    env,
+  });
+  return Number(output.trim()) > 0;
+}
