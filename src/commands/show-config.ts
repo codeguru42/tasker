@@ -1,12 +1,5 @@
-import { CommanderError } from "commander";
-import type { Io, RegisterCommand } from "../cli.js";
-import { loadConfig } from "../config/load.js";
-import type { Config } from "../config/schema.js";
-
-function fail(io: Io, message: string): never {
-  io.stderr(`${message}\n`);
-  throw new CommanderError(1, "tasker.showConfig", message);
-}
+import type { RegisterCommand } from "../cli.js";
+import { fail, loadConfigOrFail } from "./shared.js";
 
 export const showConfig: RegisterCommand = (program, io) => {
   program
@@ -14,12 +7,7 @@ export const showConfig: RegisterCommand = (program, io) => {
     .description("Print the configuration as JSON, with the defaults filled in")
     .option("--repo <key>", "Print only the repo with this key")
     .action((options: { repo?: string }) => {
-      let config: Config;
-      try {
-        config = loadConfig();
-      } catch (error) {
-        fail(io, (error as Error).message);
-      }
+      const config = loadConfigOrFail(io);
       const key = options.repo;
       if (key === undefined) {
         io.stdout(`${JSON.stringify(config, null, 2)}\n`);
