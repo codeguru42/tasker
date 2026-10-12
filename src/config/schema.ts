@@ -109,7 +109,11 @@ const RepoSchema = z.strictObject({
   assistant: AssistantSchema,
   verify: VerifySchema,
   bootstrap: BootstrapSchema.default({ commands: [], env: [] }),
-  defaultBaseBranch: nonEmpty.optional(),
+  defaultBaseBranch: nonEmpty
+    .refine((name) => !name.startsWith("refs/heads/"), {
+      message: "must name a remote branch, not a local branch in the form refs/heads/<x>",
+    })
+    .optional(),
   overagePolicy: z.enum(["decline", "ask"]).default("decline"),
   quotaApprovalThreshold: z.number().gt(0).max(1).default(0.9),
   updateBranchStrategy: z.enum(["rebase", "merge"]).default("rebase"),
