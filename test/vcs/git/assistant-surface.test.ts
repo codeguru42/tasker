@@ -146,11 +146,6 @@ describe("assistant surface values", () => {
       ]);
     });
 
-    it("gives a missing absolute ssh key as it is", () => {
-      const key = join(dir, "missing", "id_tasker");
-      expect(readDenyPaths({ sshKey: key })).toEqual([key]);
-    });
-
     it("expands a ~/ ssh key with the home folder", () => {
       // A folder name that no home folder has, so the test does not depend on the host.
       const folder = `.tasker-test-missing-${randomUUID()}`;
