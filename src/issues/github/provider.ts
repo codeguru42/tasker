@@ -3,19 +3,12 @@ import { baseBranchHint, inProgressMarker } from "../issue.js";
 import type { IssueProvider } from "../provider.js";
 import { authStatus } from "./auth.js";
 import { readGithubBlockers } from "./blockers.js";
-import { type GithubDoctorRepo, githubDoctorChecks } from "./doctor.js";
+import { githubDoctorChecks } from "./doctor.js";
 import { readGithubIssue } from "./issue.js";
 import { assignGithubIssue, markGithubDone, markGithubInProgress } from "./write.js";
 
 // Maps the neutral names of IssueProvider to the GitHub functions. It adds no behavior.
-// repos are the repos of the (id, account) pair. Only doctorChecks uses them.
-export function createGithubProvider({
-  account,
-  repos,
-}: {
-  account: string;
-  repos: readonly GithubDoctorRepo[];
-}): IssueProvider {
+export function createGithubProvider({ account }: { account: string }): IssueProvider {
   return {
     id: "github",
     account,
@@ -28,6 +21,6 @@ export function createGithubProvider({
     transitionStatus: (ref, target, env) => markGithubInProgress(ref, target, account, env),
     inProgressMarker,
     markDone: (ref, target, env) => markGithubDone(ref, target, account, env),
-    doctorChecks: githubDoctorChecks(repos),
+    doctorChecks: githubDoctorChecks,
   };
 }

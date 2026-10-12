@@ -1,6 +1,6 @@
 import type { Check, CheckStatus } from "../../doctor/check.js";
 import { timedCheck } from "../../doctor/timed-check.js";
-import type { RepoConfig } from "../../config/schema.js";
+import type { IssueDoctorRepo } from "../provider.js";
 import { authStatus } from "./auth.js";
 import { GhError, GhNotInstalledError, readGhVersion, runGh } from "./run.js";
 
@@ -8,19 +8,13 @@ import { GhError, GhNotInstalledError, readGhVersion, runGh } from "./run.js";
 const MINIMUM_GH = { major: 2, minor: 40, patch: 0 };
 const MINIMUM_TEXT = `${MINIMUM_GH.major}.${MINIMUM_GH.minor}.${MINIMUM_GH.patch}`;
 
-// A repo that the gh doctor checks: its repo key and its merged issueTracker.
-export interface GithubDoctorRepo {
-  key: string;
-  issueTracker: RepoConfig["issueTracker"];
-}
-
 // The project is issueTracker.project, or the repo key when it is not set.
-function projectOf(repo: GithubDoctorRepo): string {
+function projectOf(repo: IssueDoctorRepo): string {
   return repo.issueTracker.project ?? repo.key;
 }
 
 // The configuration schema requires the account for the github tracker.
-export function accountOf(repo: GithubDoctorRepo): string {
+export function accountOf(repo: IssueDoctorRepo): string {
   const account = repo.issueTracker.account;
   if (account === undefined) {
     throw new Error(`${repo.key}: issueTracker.account is not set`);
@@ -88,7 +82,7 @@ export function ghAuthCheck(account: string, timeoutMs = 15000): Check {
   );
 }
 
-export function ghProjectCheck(repo: GithubDoctorRepo, timeoutMs = 15000): Check {
+export function ghProjectCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
   return timedCheck(
     { name: `gh project: ${repo.key}`, required: true, timeoutMs },
     async (env, { signal }) => {
@@ -132,7 +126,7 @@ interface LabelToRead {
 const SEVERITY: Record<CheckStatus, number> = { ok: 0, warn: 1, error: 2 };
 
 // The labels that tasker writes with the configuration of the repo, in the order of use.
-function labelsToRead(repo: GithubDoctorRepo): LabelToRead[] {
+function labelsToRead(repo: IssueDoctorRepo): LabelToRead[] {
   const { updateOnStart, inProgressLabel, updateOnFinish, doneLabel } = repo.issueTracker;
   const labels: LabelToRead[] = [];
   if (updateOnStart && inProgressLabel !== undefined) {
@@ -160,7 +154,7 @@ function isNotFound(error: unknown): boolean {
 }
 
 // The check only reads. Each label is one GET with no fields. It never creates a label.
-export function ghLabelsCheck(repo: GithubDoctorRepo, timeoutMs = 15000): Check {
+export function ghLabelsCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
   return timedCheck(
     { name: `gh labels: ${repo.key}`, required: true, timeoutMs },
     async (env, { signal }) => {
@@ -214,7 +208,7 @@ export function ghLabelsCheck(repo: GithubDoctorRepo, timeoutMs = 15000): Check 
 // 3. For each github repo, in the order of the configuration, the project check and then the
 //    labels check.
 // The checks never change GitHub. They make only read-only gh calls.
-export function githubDoctorChecks(repos: readonly GithubDoctorRepo[]): Check[] {
+export function githubDoctorChecks(repos: readonly IssueDoctorRepo[]): Check[] {
   const github = repos.filter((repo) => repo.issueTracker.provider === "github");
   if (github.length === 0) {
     return [];

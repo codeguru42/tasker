@@ -8,6 +8,12 @@ import type { Blocker, Issue } from "./issue.js";
 // The id of an issue tracker: the value of issueTracker.provider.
 export type IssueTrackerId = RepoConfig["issueTracker"]["provider"];
 
+// A repo that the doctor checks of a provider check: its repo key and its merged issueTracker.
+export interface IssueDoctorRepo {
+  key: string;
+  issueTracker: RepoConfig["issueTracker"];
+}
+
 // The result of authStatus(). login is the login that the token of the account belongs to.
 // needsLogin is true only when a new login is the fix: a failed token call, an empty login,
 // another login, or a 401 of gh api user.
@@ -53,8 +59,10 @@ export interface IssueProvider {
   // the issue stays open. With undefined, the issue closes as completed. The caller reads
   // issueTracker.updateOnFinish to decide if it calls this write at all.
   markDone(ref: IssueRef, target: string | undefined, env: NodeJS.ProcessEnv): Promise<void>;
-  // The doctor checks of the provider. The checks do not run until the caller runs them.
-  readonly doctorChecks: Check[];
+  // The doctor checks of the provider for the repos in the list. Each repo names its own
+  // account. issueDoctorChecks() calls it once with all the repos of the id, so a check
+  // that runs once runs once. The checks do not run until the caller runs them.
+  doctorChecks(repos: readonly IssueDoctorRepo[]): Check[];
 }
 
 const providers = new WeakMap<Config, Map<string, IssueProvider>>();
@@ -78,10 +86,7 @@ export function issueProviderFor(config: Config, repoKey: string): IssueProvider
       }
       let provider = cache.get(cacheKey);
       if (provider === undefined) {
-        const repos = Object.entries(config.repos)
-          .filter(([, repo]) => repo.issueTracker.provider === "github" && repo.issueTracker.account === account)
-          .map(([key, repo]) => ({ key, issueTracker: repo.issueTracker }));
-        provider = createGithubProvider({ account, repos });
+        provider = createGithubProvider({ account });
         cache.set(cacheKey, provider);
       }
       return provider;
@@ -91,4 +96,20 @@ export function issueProviderFor(config: Config, repoKey: string): IssueProvider
         `repos.${repoKey}.issueTracker.provider: the jira tracker is not available in this version`,
       ]);
   }
+}
+
+// The doctor checks of every repo of the configuration. It groups the repos by
+// issueTracker.provider, in the order of first use, and calls doctorChecks() once for each id
+// with all the repos of that id, in the order of the configuration. As a result, a check that
+// a provider gives once, such as gh version, runs once. A jira repo gives the ConfigError of
+// issueProviderFor(). A configuration with no repo gives [].
+export function issueDoctorChecks(config: Config): Check[] {
+  const groups = new Map<IssueTrackerId, IssueDoctorRepo[]>();
+  for (const [key, repo] of Object.entries(config.repos)) {
+    const id = repo.issueTracker.provider;
+    const group = groups.get(id) ?? [];
+    group.push({ key, issueTracker: repo.issueTracker });
+    groups.set(id, group);
+  }
+  return [...groups.values()].flatMap((repos) => issueProviderFor(config, repos[0].key).doctorChecks(repos));
 }
