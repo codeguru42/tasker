@@ -1,5 +1,6 @@
 import type { Config, RepoConfig } from "../config/schema.js";
 import { splitGithubKey } from "./github.js";
+import { parseJiraKey } from "./jira.js";
 import { IssueKeyError, type IssueRef } from "./ref.js";
 import { githubShortRef } from "./short-ref.js";
 
@@ -28,8 +29,12 @@ const MATCHERS: Record<Provider, Matcher> = {
     if (asciiFold(parts.project) !== asciiFold(project)) return undefined;
     return { key: `${project}#${parts.number}`, repoKey, shortRef: githubShortRef(parts.number) };
   },
-  // M14 adds the Jira project match.
-  jira: () => undefined,
+  jira: (rawKey, repoKey) => {
+    // A jira repo never matches until M14 adds the Jira project match. The parser runs
+    // so that a key that no parser accepts gives the parser error.
+    parseJiraKey(rawKey, repoKey);
+    return undefined;
+  },
 };
 
 // The project of a repo: issueTracker.project, or the repo key when it is not set.
@@ -50,14 +55,25 @@ export function resolveIssueKey(
     );
   }
   const matches: IssueRef[] = [];
+  let accepted = false;
+  let rejection: IssueKeyError | undefined;
   for (const [repoKey, repoConfig] of Object.entries(config.repos)) {
-    const ref = MATCHERS[repoConfig.issueTracker.provider](
-      rawKey,
-      repoKey,
-      projectOf(repoKey, repoConfig),
-    );
+    let ref: IssueRef | undefined;
+    try {
+      ref = MATCHERS[repoConfig.issueTracker.provider](
+        rawKey,
+        repoKey,
+        projectOf(repoKey, repoConfig),
+      );
+    } catch (error) {
+      if (!(error instanceof IssueKeyError)) throw error;
+      rejection ??= error;
+      continue;
+    }
+    accepted = true;
     if (ref !== undefined) matches.push(ref);
   }
+  if (!accepted && rejection !== undefined) throw rejection;
   if (repo !== undefined) {
     const chosen = matches.find((ref) => ref.repoKey === repo);
     if (chosen === undefined) {
