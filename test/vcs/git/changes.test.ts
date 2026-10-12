@@ -1,9 +1,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { worktreeDiff } from "../../../src/vcs/git/changes.js";
+import { changedPaths, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { runGit } from "../../../src/vcs/git/run.js";
-import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
+import { createTaskWorktree, removeTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {
   commitInWorktree,
   failureOf,
@@ -37,6 +37,8 @@ describe("git changes", () => {
   const git = (...args: string[]) => runGit(args, { cwd: path, env }).then((out) => out.trim());
   const diff = (extra: Partial<Parameters<typeof worktreeDiff>[0]> = {}) =>
     worktreeDiff({ clone, env, path, baseRevision: BASE, ...extra });
+  const paths = (extra: Partial<Parameters<typeof changedPaths>[0]> = {}) =>
+    changedPaths({ clone, env, branch: BRANCH, baseRevision: BASE, ...extra });
   // Adds a commit to the base on origin and fetches it into the clone.
   const moveBase = async () => {
     await origin.addCommit("main", { file: "base-only.txt" });
@@ -74,6 +76,55 @@ describe("git changes", () => {
       mkdirSync(plain);
       const error = await failureOf(diff({ path: plain }), Error);
       expect(error.message).toBe(`not a worktree of the clone: ${plain}`);
+    });
+  });
+
+  describe("changedPaths", () => {
+    it.each(["with space.txt", 'quo"te.txt', "new\nline.txt", "tab\tt.txt", "é.txt", "-dash.txt"])(
+      "gives the raw path %j",
+      async (file) => {
+        await commitInWorktree(path, env, { file });
+        expect(await paths()).toEqual([file]);
+      },
+    );
+
+    it("lists a deleted file", async () => {
+      await commitInWorktree(path, env, { file: "gone.txt" });
+      await git("rm", "gone.txt");
+      await git("commit", "-m", "remove gone.txt");
+      expect(await paths()).toEqual(["gone.txt"]);
+    });
+
+    it("lists a binary file", async () => {
+      await commitInWorktree(path, env, { file: "data.bin", content: "a\0b" });
+      expect(await paths()).toEqual(["data.bin"]);
+    });
+
+    it("lists the old and the new path of a rename", async () => {
+      await git("mv", "README.md", "moved.md");
+      await git("commit", "-m", "rename README.md");
+      expect((await paths()).sort()).toEqual(["README.md", "moved.md"]);
+    });
+
+    it("does not list a file that the base got after the fork", async () => {
+      await commitInWorktree(path, env, { file: "feature.txt" });
+      await moveBase();
+      expect(await paths()).toEqual(["feature.txt"]);
+    });
+
+    it("gives an empty list for a fresh branch", async () => {
+      expect(await paths()).toEqual([]);
+    });
+
+    it("works after the worktree is removed", async () => {
+      await commitInWorktree(path, env, { file: "feature.txt" });
+      await removeTaskWorktree({ clone, env, path });
+      expect(await paths()).toEqual(["feature.txt"]);
+    });
+
+    it("refuses a missing task branch", async () => {
+      const error = await failureOf(paths({ branch: "issue-99" }), Error);
+      expect(error.message).toBe("cannot resolve the task branch: issue-99");
     });
   });
 });
