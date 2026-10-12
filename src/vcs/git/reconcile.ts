@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   type UncommittedChange,
+  jsonPathList,
+  nulFields,
   uncommittedRefusal,
   worktreeChanges,
   worktreeHead,
@@ -9,6 +11,17 @@ import {
 import { assertRevisionInput, isFullRevision, resolveRevision } from "./refs.js";
 import { GitError, runGit } from "./run.js";
 import { assertTaskBranch, assertTaskWorktree } from "./worktree.js";
+
+// The error of a rebase or a merge that stopped on conflicts. The worktree is back at the start.
+export class ReconcileConflictError extends Error {
+  readonly paths: string[];
+
+  constructor(message: string, paths: string[]) {
+    super(message);
+    this.name = "ReconcileConflictError";
+    this.paths = paths;
+  }
+}
 
 export type ReconcileStrategy = "rebase" | "merge";
 
@@ -201,21 +214,51 @@ async function prepare(o: {
   return { target, start };
 }
 
-// Runs one git step in the worktree. When the step fails with a GitError, it restores the
-// worktree to the start. An error of the restore wins. Else it throws the GitError again.
+// Runs one git step in the worktree. When the step fails with a GitError, it reads the list of
+// unmerged paths. The exit code of git does not tell a conflict from other failures, so only a
+// non-empty list means a conflict. With a conflict it aborts the step. Then it restores the
+// worktree to the start, and an error of the restore wins. Then it throws a
+// ReconcileConflictError for a conflict, or else the GitError again.
 // Any other error passes through with no restore.
 async function runStep(o: {
   target: string;
   env: NodeJS.ProcessEnv;
   start: StartState;
   args: string[];
+  kind: ReconcileStrategy;
+  base: string;
 }): Promise<void> {
-  const { target, env, start, args } = o;
+  const { target, env, start, args, kind, base } = o;
   try {
     await runGit(args, { cwd: target, env });
   } catch (error) {
     if (!(error instanceof GitError)) throw error;
+    const paths = await unmergedPaths(target, env);
+    if (paths.length > 0) {
+      // The restore runs next and makes sure that the state is right, so a failed abort is dropped.
+      await runGit([kind, "--abort"], { cwd: target, env }).catch((abortError: unknown) => {
+        if (!(abortError instanceof GitError)) throw abortError;
+      });
+    }
     await restoreAt(target, env, start);
+    if (paths.length === 0) throw error;
+    throw new ReconcileConflictError(
+      `the ${kind} onto ${base} stopped on conflicts: ${target}: ${jsonPathList(paths)}`,
+      paths,
+    );
+  }
+}
+
+// The paths that a step left unmerged, raw, one time each.
+async function unmergedPaths(target: string, env: NodeJS.ProcessEnv): Promise<string[]> {
+  try {
+    const output = await runGit(["diff", "--name-only", "--diff-filter=U", "-z"], {
+      cwd: target,
+      env,
+    });
+    return nulFields(output);
+  } catch (error) {
+    if (error instanceof GitError) return [];
     throw error;
   }
 }
@@ -235,6 +278,6 @@ export async function reconcileWorktree(o: {
   const base = await resolveRevision({ clone, env, value: baseRevision });
   const args =
     strategy === "rebase" ? ["rebase", ...REBASE_OPTIONS, base] : ["merge", ...MERGE_OPTIONS, base];
-  await runStep({ target, env, start, args });
+  await runStep({ target, env, start, args, kind: strategy, base });
   return worktreeHead(target, env);
 }
