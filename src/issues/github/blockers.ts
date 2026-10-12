@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { asciiFold, splitGithubKey } from "../../issue-key/github.js";
 import { IssueKeyError, type IssueRef } from "../../issue-key/ref.js";
+import { isObject } from "../../object.js";
 import { type Blocker, IssueReadError } from "../issue.js";
 import { issueState } from "./issue.js";
 import { GhError, runGh } from "./run.js";
@@ -41,37 +42,36 @@ const DataSchema = z.object({
 });
 
 // The field of a value that can be anything, or undefined when the value is not an object.
-const field = (value: unknown, name: string): unknown =>
-  typeof value === "object" && value !== null ? (value as Record<string, unknown>)[name] : undefined;
+const field = (value: unknown, name: string): unknown => (isObject(value) ? value[name] : undefined);
 
-// gh exits 1 for a GraphQL error and prints the JSON answer on stdout. A failed call is a
-// GraphQL answer only when its stdout is a JSON object with an own data key or an own errors key.
-// Any other failure stays the GhError, for example an HTTP 401 with a JSON body, a signal or a login error.
-async function runGraphql(args: string[], account: string, env: NodeJS.ProcessEnv): Promise<string> {
+// Runs one graphql call and resolves with its GraphQL answer: a JSON object with an own data key or
+// an own errors key. This is the one place that decides what a GraphQL answer is. gh exits 1 for a
+// GraphQL error and prints the answer on stdout. After a failed call, any other stdout keeps the
+// GhError, for example an HTTP 401 with a JSON body, a signal or a login error. After a successful
+// call, any other stdout is bad output.
+async function runGraphql(
+  args: string[],
+  account: string,
+  env: NodeJS.ProcessEnv,
+  bad: (reason: string) => IssueReadError,
+): Promise<Record<string, unknown>> {
+  let stdout: string;
+  let failure: GhError | undefined;
   try {
-    return await runGh(args, { account, env });
+    stdout = await runGh(args, { account, env });
   } catch (error) {
-    if (error instanceof GhError && error.exitCode !== null && isGraphqlAnswer(error.stdout)) {
-      return error.stdout;
-    }
-    throw error;
+    if (!(error instanceof GhError) || error.exitCode === null) throw error;
+    stdout = error.stdout;
+    failure = error;
   }
-}
-
-// True when text is a JSON object with an own data key or an own errors key.
-function isGraphqlAnswer(text: string): boolean {
   let json: unknown;
   try {
-    json = JSON.parse(text);
+    json = JSON.parse(stdout);
   } catch {
-    return false;
+    throw failure ?? bad("the output is not JSON");
   }
-  return (
-    typeof json === "object" &&
-    json !== null &&
-    !Array.isArray(json) &&
-    (Object.hasOwn(json, "data") || Object.hasOwn(json, "errors"))
-  );
+  if (isObject(json) && (Object.hasOwn(json, "data") || Object.hasOwn(json, "errors"))) return json;
+  throw failure ?? bad("the fields do not match");
 }
 
 // Every issue that blocks the issue of ref, with its state, in the order that GitHub gives.
@@ -104,15 +104,8 @@ export async function readGithubBlockers(
   let cursor: string | undefined;
   for (;;) {
     const args = cursor === undefined ? baseArgs : [...baseArgs, "-f", `cursor=${cursor}`];
-    const stdout = await runGraphql(args, account, env);
-
-    let json: unknown;
-    try {
-      json = JSON.parse(stdout);
-    } catch {
-      throw bad("the output is not JSON");
-    }
-    const envelope = EnvelopeSchema.safeParse(json);
+    const answer = await runGraphql(args, account, env, bad);
+    const envelope = EnvelopeSchema.safeParse(answer);
     if (!envelope.success) throw bad("the fields do not match");
     const { data, errors } = envelope.data;
     const messages = (errors ?? []).map((error) => error.message).join("; ");
