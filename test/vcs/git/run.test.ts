@@ -113,6 +113,27 @@ describe("runGit", () => {
     expect(error.message).toBe(`the working folder does not exist: ${file}`);
   });
 
+  it("rejects with an AbortError when the signal fires", async () => {
+    const binDir = join(dir, "bin");
+    writeFakeGit(binDir, "exec sleep 5");
+    const started = Date.now();
+    const error = await failureOf(
+      runGit(["version"], {
+        cwd: dir,
+        env: { ...env, PATH: `${binDir}:${env.PATH}` },
+        signal: AbortSignal.timeout(100),
+      }),
+      Error,
+    );
+    expect(error.name).toBe("AbortError");
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it("runs as before when the call has no signal", async () => {
+    const out = await runGit(["version"], { cwd: dir, env });
+    expect(out).toContain("git version");
+  });
+
   it("rejects empty args", async () => {
     await expect(runGit([], { cwd: dir, env })).rejects.toThrow("runGit needs a git subcommand");
   });
