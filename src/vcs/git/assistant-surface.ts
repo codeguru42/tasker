@@ -1,4 +1,6 @@
+import { userInfo } from "node:os";
 import type { GitVcsConfig } from "./provision.js";
+import { homeKeyPath } from "./ssh.js";
 
 // The commit rules of the execute prompt. The caller replaces {{BASE_REF}} with the base revision.
 export const EXECUTE_COMMIT_TEXT = [
@@ -9,7 +11,16 @@ export const EXECUTE_COMMIT_TEXT = [
 // The deny rules for the shell of the assistant, in the rule syntax of Claude Code.
 export const DENY_RULES: readonly string[] = ["Bash(git push:*)"];
 
-// The files that the sandbox must not read: the ssh key, when it is set.
+// The files that the sandbox must not read: the ssh key, when it is set. A "~/" key resolves
+// against the home folder, as ssh does. Another "~" key throws, because an unresolved deny path
+// leaves the key open.
 export function readDenyPaths(config: GitVcsConfig): string[] {
-  return config.sshKey === undefined ? [] : [];
+  const key = config.sshKey;
+  if (key === undefined) return [];
+  const home = homeKeyPath(key, userInfo().homedir);
+  if (home !== undefined) return [home];
+  if (key.startsWith("~")) {
+    throw new Error(`cannot resolve the ssh key path for the sandbox: ${key}`);
+  }
+  return [key];
 }
