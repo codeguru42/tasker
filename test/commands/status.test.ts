@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { run } from "../../src/cli.js";
@@ -118,6 +118,44 @@ describe("status", () => {
     const result = await runStatus();
 
     expect(result).toEqual({ code: 0, err: "", out: "no tasks\n" });
+  });
+
+  it("prints no tasks when --repo names a repo without active tasks", async () => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
+    ]);
+
+    const result = await runStatus("--repo", OTHER);
+
+    expect(result).toEqual({ code: 0, err: "", out: "no tasks\n" });
+  });
+
+  it("lists only the tasks of the repo that --repo names", async () => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: at(3) },
+    ]);
+
+    const result = await runStatus("--repo", TASKER);
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "ISSUE                REPO               STATE     UPDATED\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  planning  2026-01-02T00:00:00.000Z\n",
+    });
+  });
+
+  it.each(["missing", "toString"])("rejects the unknown repo %s", async (key) => {
+    const { dataRoot } = setup();
+
+    const result = await runStatus("--repo", key);
+
+    expect(result).toEqual({ code: 1, out: "", err: `repo key not found: ${key}\n` });
+    expect(existsSync(join(dataRoot, "tasker.db"))).toBe(false);
   });
 
   describe("with a configuration error", () => {
