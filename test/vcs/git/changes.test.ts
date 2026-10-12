@@ -7,6 +7,7 @@ import {
   NO_OWN_COMMITS,
   ownCommitsText,
   uncommittedChanges,
+  uncommittedRefusal,
   worktreeDiff,
 } from "../../../src/vcs/git/changes.js";
 import { runGit } from "../../../src/vcs/git/run.js";
@@ -240,5 +241,17 @@ describe("git changes", () => {
       const error = await failureOf(changes({ path: plain }), Error);
       expect(error.message).toBe(`not a worktree of the clone: ${plain}`);
     });
+  });
+});
+
+describe("uncommittedRefusal", () => {
+  it("names each path as JSON text", () => {
+    const text = uncommittedRefusal("/w", [
+      { status: " M", path: "README.md" },
+      { status: "??", path: "a, b\n.txt" },
+    ]);
+    expect(text).toBe(
+      `the worktree has uncommitted changes: /w: ${JSON.stringify("README.md")}, ${JSON.stringify("a, b\n.txt")}`,
+    );
   });
 });
