@@ -44,6 +44,13 @@ export interface UncommittedChange {
 
 export type ReconcileStrategy = "rebase" | "merge";
 
+export interface PublishResult {
+  state: "published" | "already-published";
+  taskRef: string;
+  revision: string;
+  lease: boolean;
+}
+
 // The result of deleteRemoteTaskRef, and of deleteRemoteTaskBranch() in src/vcs/git/publish.ts.
 export interface RemoteTaskRefDeletion {
   state: "deleted" | "already-gone";
@@ -82,6 +89,18 @@ export interface VcsProvider {
     ctx: VcsContext,
     o: { path: string; baseRevision: string; strategy: ReconcileStrategy },
   ): Promise<string>;
+  // Pushes taskRef to the remote. published is the revision that the last publish gave.
+  publish(
+    ctx: VcsContext,
+    o: { taskRef: string; published: string | undefined },
+  ): Promise<PublishResult>;
+  // Moves base on the remote to revision. It is a fast-forward.
+  land(ctx: VcsContext, o: { base: string; revision: string }): Promise<void>;
+  // Deletes taskRef on the remote when it is still at the published revision.
+  deleteRemoteTaskRef(
+    ctx: VcsContext,
+    o: { taskRef: string; published: string },
+  ): Promise<RemoteTaskRefDeletion>;
   // Writes the push guard again.
   installPushGuard(ctx: VcsContext): void;
 }

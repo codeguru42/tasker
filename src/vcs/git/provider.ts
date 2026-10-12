@@ -2,6 +2,7 @@ import type { VcsProvider } from "../provider.js";
 import type { GitVcsConfig } from "./config.js";
 import { resolveBaseBranch } from "./base-branch.js";
 import { ownCommitsText, uncommittedChanges, worktreeDiff } from "./changes.js";
+import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "./publish.js";
 import { installPushHook } from "./push-guard.js";
 import { provisionClone } from "./provision.js";
 import { reconcileWorktree } from "./reconcile.js";
@@ -78,6 +79,43 @@ export function createGitProvider({
     async reconcile(ctx, { path, baseRevision, strategy }) {
       const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
       return reconcileWorktree({ clone, env: ctx.env, path, baseRevision, strategy });
+    },
+    async publish(ctx, { taskRef, published }) {
+      const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const result = await publishTaskBranch({
+        clone,
+        remote,
+        publishTokens,
+        sshKey: config.sshKey,
+        env: ctx.env,
+        branch: taskRef,
+        published,
+      });
+      return { state: result.state, taskRef: result.branch, revision: result.revision, lease: result.lease };
+    },
+    async land(ctx, { base, revision }) {
+      const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      await landOnBase({
+        clone,
+        remote,
+        publishTokens,
+        sshKey: config.sshKey,
+        env: ctx.env,
+        base,
+        revision,
+      });
+    },
+    async deleteRemoteTaskRef(ctx, { taskRef, published }) {
+      const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      return deleteRemoteTaskBranch({
+        clone,
+        remote,
+        publishTokens,
+        sshKey: config.sshKey,
+        env: ctx.env,
+        branch: taskRef,
+        published,
+      });
     },
     installPushGuard(ctx) {
       const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
