@@ -108,13 +108,9 @@ The guard returns the real path, and the caller runs git with `cwd` set to it. T
 - The short ref keeps its case. The code makes the title lower case before it makes the slug.
 - The name has at most 100 characters. The code cuts the slug to fit, and it removes a `-`, a `.` or a `.lock` that the cut leaves at the end.
 - If the short ref leaves no room, or the title has no usable character, the name is the short ref alone.
-- If the short ref is not one of the short ref forms below, or if it fails the name check (see below), the function throws `not a safe short ref: <JSON text of the short ref>`. For example, a short ref of more than 100 characters fails the name check.
+- If the short ref is not one of the short ref forms (see [issue-keys.md](issue-keys.md#short-refs)), or if it fails the name check (see below), the function throws `not a safe short ref: <JSON text of the short ref>`. For example, a short ref of more than 100 characters fails the name check.
 
-The short ref is the one that the issue key parsers make. `src/issue-key/short-ref.ts` holds these forms:
-
-- `issue-<N>` for a GitHub key. `<N>` is a number with no leading zero.
-- `<PROJ>-<N>` for a Jira key with no site. `<PROJ>` starts with an upper-case letter, then has upper-case letters, digits or `_`.
-- `<site>-browse-<PROJ>-<N>` for a Jira key with a site. The site is in lower case.
+The short ref is the one that the issue key parsers make. [issue-keys.md](issue-keys.md#short-refs) gives the short ref forms.
 
 Every other function that takes a branch runs the same name check first, before any git call. A branch must be a path slug of at most 100 characters, and it must not be `HEAD`. If it is not, the function throws `not a task branch name: <JSON text of the name>`. As a result, git never gets a name with a leading `-`, `..`, `/`, `~`, `^`, `@{` or a space.
 
