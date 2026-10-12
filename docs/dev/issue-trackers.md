@@ -172,12 +172,13 @@ failed to update 1 issue
 
 ## Auth status
 
-`authStatus(account, env, { signal })` in `src/issues/github/auth.ts` tells whether `gh` is logged in as the account. It resolves with `{ ok, login?, detail }`. It runs `gh api user --jq .login` through `runGh()`, so it reads the token as every call does.
+`authStatus(account, env, { signal })` in `src/issues/github/auth.ts` tells whether `gh` is logged in as the account. It resolves with `{ ok, login?, detail, needsLogin }`. It runs `gh api user --jq .login` through `runGh()`, so it reads the token as every call does.
 
 - The login is the trimmed stdout. When the login is not empty and equals the account, the result is `ok`. The compare uses `asciiFold()` from `src/issue-key/github.ts` on both sides, the ASCII-only fold of GitHub names. The detail is `gh is logged in as <login>`.
-- An empty login gives `ok: false` with the detail `gh api user gave no login for the account <account>`.
-- Another login gives `ok: false`, the login, and the detail `the token of the account <account> is for the login <login>`.
+- An empty login gives `ok: false` and `needsLogin: true`, with the detail `gh api user gave no login for the account <account>`.
+- Another login gives `ok: false` and `needsLogin: true`, with the login and the detail `the token of the account <account> is for the login <login>`.
 - A `GhLoginError`, a `GhError` or a `GhNotInstalledError` gives `ok: false`. The detail is the message of the error. These messages never hold the token.
+- `needsLogin` is true only when a new login is the fix. It is true for a `GhLoginError`, an empty login, another login, and a `GhError` of the `gh api user` call with exit code 1 and `(HTTP 401)` in its stderr. It is false for every other result: `ok`, a `GhNotInstalledError`, a `GhError` after a signal, and any other `GhError`, for example an HTTP 502.
 - An `AbortError` and every other error are thrown again.
 
 ## Doctor checks
@@ -208,7 +209,7 @@ The minimum is 2.40.0 because `gh auth token` has the `--user` flag from that ve
 
 ### Auth
 
-The check runs `authStatus()`. A status that is `ok` gives `ok`. Any other status gives `error` with the detail of the status and the remediation ``Run `gh auth login --hostname github.com` and log in as <account>.``
+The check runs `authStatus()`. A status that is `ok` gives `ok`. A status that is not `ok` gives `error` with the detail of the status. Only a status with `needsLogin` also gets the remediation ``Run `gh auth login --hostname github.com` and log in as <account>.`` [Auth status](#auth-status) gives the rule for `needsLogin`.
 
 ### Project
 
