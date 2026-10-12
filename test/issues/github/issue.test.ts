@@ -120,6 +120,25 @@ describe("readGithubIssue", () => {
     expect(error.stderr).toBe(stderr);
   });
 
+  it("names the key of an issue that does not exist", async () => {
+    const stderr =
+      "GraphQL: Could not resolve to an issue or pull request with the number of 7. (repository.issue)\n";
+    const fake = fakeGh(dir, {}, [
+      ghTokenAnswer("octo", "gho_test"),
+      { args: viewArgs("7", "octo/repo"), stderr, exitCode: 1 },
+    ]);
+    const error = await failureOf(readGithubIssue(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toMatch(/^the issue octo\/repo#7 does not exist: GraphQL: Could not resolve/);
+  });
+
+  it.each(["OPEN", "CLOSED", "MERGED"])("refuses a pull request in the state %s", async (state) => {
+    const fake = fakeWith(issueJson({ state, url: "https://github.com/octo/repo/pull/7" }));
+    const error = await failureOf(readGithubIssue(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toBe("octo/repo#7 is a pull request, not an issue");
+  });
+
   it.each([
     ["pull/repo#7", "https://github.com/pull/repo/issues/7"],
     ["octo/pull#7", "https://github.com/octo/pull/issues/7"],
