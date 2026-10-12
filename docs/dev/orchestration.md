@@ -174,6 +174,6 @@ These limits apply to the orchestrator and to the agents, except where a bullet 
 
 - Do not change the repo or the worktrees of tasker by hand. Only `tasker` commands change them.
 - If the issue does not give a detail that the work needs, the agent asks the user through the orchestrator.
-- If tasker stops for a quota, the agent runs `tasker resume` later. Never run `tasker approve-credits`.
+- If tasker stops for a quota, follow "Quota". Never run `tasker approve-credits`.
 - Do not run `npm link` or a global install from a task worktree. The global `tasker` runs the tickets, and the install replaces it.
 - Only the orchestrator writes memory, so that two agents do not write the same file. Agents report what they learn to the orchestrator in their final report.
