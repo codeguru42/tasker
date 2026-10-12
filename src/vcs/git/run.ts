@@ -89,16 +89,26 @@ function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
       delete result[name];
     }
   }
+  const command = gitSshCommand(env);
   if (env.GIT_SSH_COMMAND) {
     return result;
   }
   delete result.GIT_SSH_COMMAND;
-  if (env.GIT_SSH) {
+  if (command === undefined) {
     return result;
   }
   delete result.GIT_SSH;
-  result.GIT_SSH_COMMAND = BATCH_SSH_COMMAND;
+  result.GIT_SSH_COMMAND = command;
   return result;
+}
+
+// The ssh command that git runs for env: a non-empty GIT_SSH_COMMAND of the caller,
+// else undefined when a non-empty GIT_SSH of the caller stays, else the batch ssh command.
+export function gitSshCommand(env: NodeJS.ProcessEnv): string | undefined {
+  if (env.GIT_SSH_COMMAND) {
+    return env.GIT_SSH_COMMAND;
+  }
+  return env.GIT_SSH ? undefined : BATCH_SSH_COMMAND;
 }
 
 type Location = { kind: "cwd" | "gitDir"; path: string };
