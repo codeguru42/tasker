@@ -187,3 +187,23 @@ export function transitionTask(
     return { type: "transition", data: { ...detail, from: current.state, to } };
   });
 }
+
+export function failTask(store: TaskStore, id: number, message: string): Task {
+  return transitionTask(store, id, "failed", { error: message });
+}
+
+// The from of the last transition into failed, or undefined when the task is not in failed.
+// It reads no older event, so an invalid from in the last event gives undefined.
+export function failedFrom(store: TaskStore, id: number): TaskState | undefined {
+  if (store.getTask(id)?.state !== "failed") return undefined;
+  const events = store.listEvents(id);
+  let from: unknown;
+  for (let i = events.length - 1; i >= 0; i--) {
+    const data = events[i].data as { from?: unknown; to?: unknown } | null;
+    if (events[i].type === "transition" && data?.to === "failed") {
+      from = data.from;
+      break;
+    }
+  }
+  return typeof from === "string" && isTaskState(from) ? from : undefined;
+}
