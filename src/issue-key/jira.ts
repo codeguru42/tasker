@@ -1,8 +1,14 @@
+import { ISSUE_NUMBER } from "./github.js";
 import { pathSlug } from "./path-slug.js";
 import { IssueKeyError, type IssueRef } from "./ref.js";
 
-const JIRA_KEY =
-  /^(?:([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*)\/browse\/)?([A-Z][A-Z0-9_]*-[1-9][0-9]*)$/;
+// The project of a Jira issue and one label of a Jira site, as pattern sources.
+export const JIRA_PROJECT = "[A-Z][A-Z0-9_]*";
+export const SITE_LABEL = "[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?";
+
+const JIRA_KEY = new RegExp(
+  `^(?:(${SITE_LABEL}(?:\\.${SITE_LABEL})*)\\/browse\\/)?(${JIRA_PROJECT}-${ISSUE_NUMBER})$`,
+);
 
 export function parseJiraKey(rawKey: string, repoKey: string): IssueRef {
   const match = JIRA_KEY.exec(rawKey);

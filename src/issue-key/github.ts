@@ -1,7 +1,11 @@
 import { IssueKeyError, type IssueRef } from "./ref.js";
 
-const GITHUB_KEY =
-  /^([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)\/([A-Za-z0-9._-]+)#([1-9][0-9]*)$/;
+// The number of an issue, as a pattern source.
+export const ISSUE_NUMBER = "[1-9][0-9]*";
+
+const GITHUB_KEY = new RegExp(
+  `^([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)\\/([A-Za-z0-9._-]+)#(${ISSUE_NUMBER})$`,
+);
 
 export function parseGithubKey(rawKey: string, repoKey: string): IssueRef {
   const match = GITHUB_KEY.exec(rawKey);
