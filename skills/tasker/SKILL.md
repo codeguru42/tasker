@@ -46,4 +46,21 @@ If the key does not exist, or the configuration is missing or invalid, the comma
 
 ### `tasker status`
 
-Lists the tasks by issue key and state.
+Lists the tasks by issue key and state. With no option, it lists the active tasks of all repos. A task is active when its state is not `finished` and not `cancelled`.
+
+- `--repo <key>`: lists only the tasks of the repo with this key.
+- `--issue <issue>`: lists only the tasks of this issue key.
+- `--state <state>`: lists only the tasks in this state. If you name `finished` or `cancelled`, the command lists those tasks too.
+
+If you give more than one option, a task must match all of them.
+
+The command prints one table with the columns `ISSUE`, `REPO`, `STATE` and `UPDATED`. `UPDATED` is the time of the last change of the task. The task with the newest change comes first.
+
+If no task matches, the command prints `no tasks` and exits with code 0.
+
+The command prints an error and exits with code 1 in these cases:
+
+- The repo key does not exist. The error names the key.
+- The state does not exist. The error lists the states.
+- The issue key does not resolve.
+- The configuration is missing or invalid.
