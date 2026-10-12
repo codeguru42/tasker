@@ -5,6 +5,8 @@ import {
   STATES,
   TERMINAL_STATES,
   canTransition,
+  failTask,
+  failedFrom,
   isTaskState,
   transitionTask,
   type TaskState,
@@ -292,6 +294,74 @@ describe("task transitions", () => {
       );
       expect(store.getTask(task.id)!.state).toBe("planning");
       expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("failTask", () => {
+    it("moves a task to failed and records the error", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      expect(store.getTask(task.id)!.state).toBe("failed");
+      expect(store.listEvents(task.id).at(-1)?.data).toEqual({
+        from: "planning",
+        to: "failed",
+        error: "boom",
+      });
+    });
+
+    it("refuses a task that is already failed", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      const before = store.listEvents(task.id);
+      expect(() => failTask(store, task.id, "again")).toThrow(
+        "illegal state transition: failed -> failed",
+      );
+      expect(store.getTask(task.id)!.state).toBe("failed");
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("failedFrom", () => {
+    it("gives the state that the task failed in", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      expect(failedFrom(store, task.id)).toBe("planning");
+    });
+
+    it("gives the state of the last failure", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      transitionTask(store, task.id, "refining");
+      failTask(store, task.id, "boom again");
+      expect(failedFrom(store, task.id)).toBe("refining");
+    });
+
+    it("gives undefined for a task in another state", () => {
+      const task = store.createTask(newTask("planning"));
+      expect(failedFrom(store, task.id)).toBeUndefined();
+    });
+
+    it("gives undefined for a missing task", () => {
+      expect(failedFrom(store, 999)).toBeUndefined();
+    });
+
+    it("gives undefined for a task that left failed", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      transitionTask(store, task.id, "workspace_ready");
+      expect(failedFrom(store, task.id)).toBeUndefined();
+    });
+
+    it("gives undefined for a task created in failed", () => {
+      const task = store.createTask(newTask("failed"));
+      expect(failedFrom(store, task.id)).toBeUndefined();
+    });
+
+    it("gives undefined when the last failure event has an invalid from", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      store.appendEvent(task.id, "transition", { from: "bogus", to: "failed" });
+      expect(failedFrom(store, task.id)).toBeUndefined();
     });
   });
 });
