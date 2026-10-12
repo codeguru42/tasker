@@ -316,7 +316,7 @@ These are the steps:
 1. Make sure that `revision` is a full revision.
 2. If `base` is empty, throw `cannot land <revision>: the base branch is empty`. If `base` starts with `refs/heads/` (`LOCAL_PREFIX`), throw `cannot land <revision> on the base branch: <base>: the base is a local branch`.
 3. Read the tip of `base` with `remoteTip()`.
-4. If the tip is absent, throw `cannot land <revision> on the base branch: <base>: the base branch does not exist on origin`. No push runs and no token file is made. Without this step, a base such as `HEAD` makes a new branch on origin.
+4. If the tip is absent, throw `cannot land <revision> on the base branch: <base>: the base branch does not exist on origin`. No push runs and no token file is made. The tip check refuses a base that origin does not have at the time of the read. For example, it refuses `HEAD`, which a plain push makes as a new branch on origin. If someone deletes the base between the read and the push, the push makes the base again on origin at `<revision>`.
 5. Push. The arguments are `push origin <revision>:refs/heads/<base>`. The push has no lease, no `--force` and no `+`. As a result, git refuses a push that is not a fast-forward, and origin does not move. A push of the revision that origin already has succeeds and changes nothing. The clone must have the revision, or git refuses the push.
 
 If the tip read or the push fails, the function throws `cannot land <revision> on the base branch: <base>` and the detail.
@@ -342,6 +342,7 @@ If the push fails, the function reads the tip again with the rules of step 3. An
 - A successful delete removes `refs/remotes/origin/<branch>` in the clone.
 - Each push uses one token, also a push that git then rejects, because the hook deletes the token before git sends anything. `already-published`, `already-gone`, the moved error before a push, a missing base and each input check use no token.
 - A failed push changes nothing on origin.
+- If someone deletes the base between the tip read and the push, a land makes the base again on origin at the revision.
 
 ## `repoSlug()` and `repoPaths()`
 

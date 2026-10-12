@@ -114,6 +114,7 @@ export async function landOnBase(
   }
   const summary = `cannot land ${revision} on the base branch: ${base}`;
   let tip: RemoteTip;
+  // The read refuses a base that origin does not have now. A base that someone deletes before the push is made again at revision.
   try {
     tip = await remoteTip({ remote, branch: base, sshKey, env });
   } catch (error) {
