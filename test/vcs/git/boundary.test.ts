@@ -1,6 +1,6 @@
 import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { filesThatStart, isInside, loadsChildProcess, sourceDir, sourceFiles } from "../../helpers.js";
+import { filesThatStart, isInside, loadsChildProcess, sourceDir, sourceFiles, startsCommand } from "../../helpers.js";
 
 const moduleSpecifierPattern = /\b(?:from|import|require)\s*\(?\s*(["'`])([^"'`]+)\1/g;
 
@@ -53,6 +53,30 @@ describe("loadsChildProcess", () => {
     'const name = "child_processes";',
   ])("ignores %s", (sample) => {
     expect(loadsChildProcess(sample)).toBe(false);
+  });
+});
+
+describe("startsCommand", () => {
+  const runChildImport = 'import { runChild } from "../process/run-child.js";';
+
+  it.each([
+    ["commands/x.ts", `${runChildImport}\nrunChild("git", ["status"], options);`, "git"],
+    ["commands/x.ts", `${runChildImport}\nrunChild("gh status", [], options);`, "gh"],
+    ["commands/x.ts", 'export { runChild } from "../process/run-child.js";\nconst c = "git";', "git"],
+    ["commands/x.ts", 'const m = await import("../process/run-child.js");\nconst c = "git";', "git"],
+    ["commands/x.ts", 'const m = require("../process/run-child.js");\nconst c = "git";', "git"],
+    ["main.ts", 'import "./process/run-child.js";\nconst c = "git";', "git"],
+    ["commands/x.ts", 'import { spawn } from "node:child_process";\nspawn("git log");', "git"],
+  ])("finds %s with %s", (file, text, command) => {
+    expect(startsCommand(file, text, command)).toBe(true);
+  });
+
+  it.each([
+    ["commands/x.ts", 'import { runChild } from "../process/run-child-other.js";\nconst c = "git";', "git"],
+    ["commands/x.ts", `${runChildImport}\nrunChild(tool, [], options);`, "git"],
+    ["commands/x.ts", `${runChildImport}\nconst c = "github";`, "gh"],
+  ])("ignores %s with %s", (file, text, command) => {
+    expect(startsCommand(file, text, command)).toBe(false);
   });
 });
 
