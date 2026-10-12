@@ -6,13 +6,14 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 
 - `src/vcs/git/run.ts` holds `runGit()`.
 - `src/vcs/git/repo-paths.ts` holds `repoSlug()` and `repoPaths()`.
-- `src/vcs/git/ssh.ts` holds `shellQuote()`, `sshCommand()`, `sshEnv()`, `hideSshKey()`, `runRemoteGit()`, `remoteNotAnswering()`, `remoteCwd()` and `cloneUrl()`.
+- `src/vcs/git/ssh.ts` holds `shellQuote()`, `sshCommand()`, `sshEnv()`, `hideSshKey()`, `homeKeyPath()`, `runRemoteGit()`, `remoteNotAnswering()`, `remoteCwd()` and `cloneUrl()`.
 - `src/vcs/git/default-branch.ts` holds `remoteDefaultBranch()`.
 - `src/vcs/git/provision.ts` holds `provisionClone()`.
 - `src/vcs/git/base-branch.ts` holds `parseBaseInput()`, `baseRevision()`, `resolveBaseBranch()` and `LOCAL_PREFIX`.
-- `src/vcs/git/worktree.ts` holds `taskBranchName()`, `assertTaskBranch()`, `assertTaskBranchShape()`, `taskWorktreePath()`, `listWorktrees()`, `assertTaskWorktree()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
+- `src/vcs/git/worktree.ts` holds `taskBranchName()`, `assertTaskBranch()`, `assertTaskBranchShape()`, `taskWorktreePath()`, `withoutLineEnd()`, `listWorktrees()`, `assertTaskWorktree()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
 - `src/vcs/git/refs.ts` holds `isFullRevision()`, `refExists()`, `refRevision()`, `assertRevisionInput()` and `resolveRevision()`.
 - `src/vcs/git/changes.ts` holds `worktreeDiff()`, `changedPaths()`, `ownCommitsText()`, `hasCommitsNotIn()`, `uncommittedChanges()`, `uncommittedRefusal()`, `isAncestor()`, `fetchTips()` and `NO_OWN_COMMITS`.
+- `src/vcs/git/assistant-surface.ts` holds `EXECUTE_COMMIT_TEXT`, `DENY_RULES`, `readDenyPaths()` and `sandboxWritePaths()`.
 - `src/vcs/git/push-guard.ts` holds `installPushHook()` and `pushWithToken()`.
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
 - `src/vcs/git/publish.ts` holds `publishTaskBranch()`, `landOnBase()` and `deleteRemoteTaskBranch()`.
@@ -159,7 +160,7 @@ When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with
 
 1. `sshCommand(sshKey)`.
 2. The key as it is.
-3. If the key starts with `~/`, the home folder plus the rest of the key. The home folder is `os.userInfo().homedir`, the folder from the password database that ssh uses, not `$HOME`.
+3. If the key starts with `~/`, the home folder plus the rest of the key. `homeKeyPath()` gives this form. The home folder is `os.userInfo().homedir`, the folder from the password database that ssh uses, not `$HOME`.
 4. If the key starts with `~` and a user name (`~name/...`), and the part from the first `/` to the end is not empty: For a `~name/` key, tasker cannot find the home folder of that user. It hides only the part of the key from the first `/` to the end. The home folder of that user can still appear in the error.
 
 `hideSshKey()` hides no other form. If the key path is short, or the part after the first `/` of a `~name/` key is short, other text of the message also becomes `<sshKey>`. If no key is set, the text stays as it is.
@@ -172,11 +173,33 @@ When `runGit()` fails inside `runRemoteGit()`, it rethrows a new `GitError` with
 
 `resolveBaseBranch()` in `src/vcs/git/base-branch.ts` runs `git fetch origin --prune` through `runRemoteGit()` with the ssh key of the repo. No command calls it yet. [workspaces.md](workspaces.md#base-branch) gives the rules.
 
+## Assistant surface
+
+`src/vcs/git/assistant-surface.ts` gives the version-control values for an assistant run. No command uses them yet. A later milestone (M5) connects them to the assistant.
+
+- `EXECUTE_COMMIT_TEXT` is the commit text of the execute prompt. It holds the placeholder `{{BASE_REF}}`. The caller replaces it with the base revision.
+- `DENY_RULES` is the list of deny rules for the shell of the assistant, in the rule syntax of Claude Code. It holds `Bash(git push:*)`.
+- `readDenyPaths(config)` gives the files that the sandbox must not read. With no `sshKey`, it gives an empty list. A key that starts with `~/` gives the home folder plus the rest of the key (see [The ssh key](#the-ssh-key)). Another key that starts with `~` throws `cannot resolve the ssh key path for the sandbox: <key>`, because a deny path that tasker cannot resolve leaves the key open. Any other key goes back as the configuration gives it.
+
+### `sandboxWritePaths()`
+
+`sandboxWritePaths({ clone, env, path })` gives four absolute paths, in this order: `objects/`, `refs/` and `logs/` of the clone, and the admin dir of the worktree. One `git commit` in the worktree writes new objects in `objects/`, the branch ref in `refs/`, the reflog in `logs/`, and `index`, `logs/HEAD` and `COMMIT_EDITMSG` in the admin dir. It does not write `packed-refs`, `config`, `hooks/` or `HEAD` of the clone.
+
+- The paths do not cover all of `repo.git`, and not `hooks/` or `config`, because tasker's later git calls run them.
+- The paths are inside the clone. They do not cover the `publishTokens` folder (see [Push guard](#push-guard)).
+- The function calls `assertTaskWorktree()` first. See the guard paragraph in [workspaces.md](workspaces.md#workspaces-1).
+- It reads the clone folder and the admin dir with two `git rev-parse` calls, because one call prints two paths on two lines and a path can hold a newline. It does not use `--path-format=absolute`, because that option needs git 2.31. It resolves each path against the worktree.
+- It creates `logs/` when it is missing. A fresh bare clone has no `logs/`, and a sandbox cannot bind a missing path. This is the only write of the function.
+- A sandboxed commit with these paths exits with 0. It prints `Unable to create '<clone>/packed-refs.lock': Read-only file system` to stderr, because `packed-refs` is not writable.
+- The function does not give the worktree folder. The assistant layer writes there already.
+
+Known limit: the assistant can move any ref of the clone, for example the branch of another task or `refs/remotes/origin/main`. A narrower path does not work, because a commit writes `refs/heads/<branch>.lock` in the `refs/heads/` folder, and every task branch is a file in that folder. M5 closes this gap: tasker records each ref except the task branch before a run and compares it after the run.
+
 ## Push guard
 
 The push guard has three layers:
 
-1. Layer 1 is a deny rule in the shell of the assistant. Another issue builds it. It is not in this repo.
+1. Layer 1 is a deny rule in the shell of the assistant. `DENY_RULES` holds it (see [Assistant surface](#assistant-surface)). No command applies the rule yet.
 2. Layer 2 is the `pre-push` hook of the clone. `provisionClone()` writes it. See below.
 3. Layer 3 is the tip of a branch on the remote. `remoteTip()` reads it and `tipMoved()` compares two tips. No code reads the tip before and after a run yet.
 
