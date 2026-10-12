@@ -21,7 +21,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
 - `src/vcs/git/publish.ts` holds `publishTaskBranch()`, `landOnBase()` and `deleteRemoteTaskBranch()`.
 - `src/vcs/git/doctor.ts` holds `gitDoctorChecks()`, `gitVersionCheck()`, `identityCheck()`, `connectionCheck()`, `staleLockCheck()` and the type `GitDoctorRepo`. [Doctor checks](#doctor-checks) gives the rules.
-- `src/vcs/git/stale-locks.ts` holds `findStaleLocks()`, `readProcView()`, `onceProcView()`, `isInside()` and `DeadlineError`.
+- `src/vcs/git/stale-locks.ts` holds `findStaleLocks()`, `readProcView()`, `onceProcView()`, `isInside()`.
 - `src/vcs/git/ssh-account.ts` holds `sshTarget()` and `sshAccount()`.
 
 No other folder in `src/` starts git.
@@ -445,7 +445,7 @@ If the push fails, the function reads the tip again with the rules of step 3. An
 
 The git doctor checks live in `src/vcs/git/doctor.ts`. No command runs them yet. The `tasker doctor` command will get the checks from `doctorChecks()` of each provider (see [The provider interface](#the-provider-interface)). It must pass `procRoot: "/proc"` and `platform: process.platform`. Each repo is a `GitDoctorRepo`: `{ key, remote, clone, config }`, where `config` has the shape of `vcs.config`.
 
-The check type is in `src/doctor/check.ts`. It does not depend on git. A `Check` has `name`, `required`, `timeoutMs` and `run(env)`. `run()` resolves with `{ status, detail, remediation? }`. The status is `ok`, `warn` or `error`. `run()` never rejects.
+The check type and the timeout rules are in [doctor.md](doctor.md).
 
 `gitDoctorChecks()` gives the version check first. Then, for each repo in order, it gives the identity check, the connection check and the lock-file check.
 
@@ -458,11 +458,7 @@ The check type is in `src/doctor/check.ts`. It does not depend on git. A `Check`
 
 ### The wrapper
 
-One private wrapper makes each check. It makes an `AbortSignal` from `timeoutMs`, and it passes the signal to every git call. These rules hold for every check:
-
-- When the time limit passes, the check gives `error` with the detail `the check did not finish in <n> ms`. It gives no partial result.
-- Any other thrown value gives `error`. The detail is the message of the error.
-- Last, the wrapper sends `detail` and `remediation` through `hideSshKey()`. This is the only call of `hideSshKey()` in `doctor.ts`.
+The shared wrapper in `src/doctor/` makes the signal and the timeout result. See [doctor.md](doctor.md#the-shared-wrapper). The private `makeCheck()` of `doctor.ts` calls it, and it adds only one step. Last, it sends `detail` and `remediation` through `hideSshKey()`. This is the only call of `hideSshKey()` in `doctor.ts`. Each check passes the signal to every git call.
 
 ### Git version
 
