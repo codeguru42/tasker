@@ -84,7 +84,22 @@ The workspace of a task is a git worktree on a task branch. The worktree comes f
 
 Every function that runs git takes one options object. Calls on the clone use `gitDir`. Calls in a worktree use `cwd`.
 
-`assertTaskWorktree({ clone, env, path })` guards each function that runs git in a worktree, because git with a wrong working folder changes another repo. It makes two checks. If `path` is not a worktree of the clone, it throws `not a worktree of the clone: <path>`. If the real path of the worktree has no `.git` file, it throws `the worktree has no .git file: <target>`. Without that file, git would use a repo around the folder. It returns the real path, and the caller runs git with `cwd` set to it. The guard only reads.
+`assertTaskWorktree({ clone, env, path })` guards each function that runs git in a worktree, because git with a wrong working folder changes another repo. It makes three checks, in this order:
+
+1. If `path` is not a worktree of the clone, it throws `not a worktree of the clone: <path>`.
+2. If the real path of the worktree has no `.git` file, it throws `the worktree has no .git file: <target>`. Without that file, git would use a repo around the folder.
+3. If the worktree does not use its own git dir in the clone, it throws `the worktree does not use its own git dir in the clone: <target>`.
+
+The third check exists because the assistant can write the `.git` file and the admin dir (`<clone>/worktrees/<name>`), and git follows both. A git call in a changed worktree can read a config that the assistant chose. The check reads three files with `readFileSync()` and runs no git. A missing file (`ENOENT`) gives the error of the third check. Any other fs error passes through. The check has four facts, and each one must be true:
+
+1. The `.git` file holds `gitdir: <admin dir>`. The admin dir is the rest of the text, resolved against the worktree.
+2. The admin dir is a direct child of `worktrees/` in the real path of the clone.
+3. The `commondir` file of the admin dir, resolved against the admin dir, is the real path of the clone.
+4. The `gitdir` file of the admin dir, resolved against the admin dir, is the `.git` file of the worktree.
+
+Each file loses one line end (`\n` or `\r\n`) and nothing else. Fact 4 is the only fact that catches a `.git` file that names the admin dir of another task worktree of the same clone. A rewritten `gitdir` file never reaches the third check, because the list of the first check then shows another path.
+
+The guard returns the real path, and the caller runs git with `cwd` set to it. The guard only reads. `createTaskWorktree()` does not call the guard, and it does not make the third check.
 
 ### The branch name
 
@@ -254,7 +269,7 @@ Calls on the clone use `gitDir`. Calls in a worktree use `cwd` with the real pat
 - `hasCommitsNotIn()` runs the input check on `head` and on each other revision first. An empty `others` gives `true` for each head that exists, because git then counts every commit that the head reaches.
 - `uncommittedChanges()` gives one record for each path. `status` is the two status characters, for example ` M`, `??`, `D ` or `A `. An empty list means a clean worktree. A staged rename gives a `D ` record and an `A ` record.
 - `isAncestor()` gives `true` for the same commit. Only a `GitError` with exit code 1 gives `false`. Every other failure passes through, for example exit code 128 for a full revision that the clone does not have.
-- A function that takes `path` throws `not a worktree of the clone: <path>` or `the worktree has no .git file: <target>` from the guard.
+- A function that takes `path` throws the errors of the guard. [The guard paragraph](#workspaces-1) lists them.
 
 ### The remote
 
