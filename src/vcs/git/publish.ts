@@ -97,11 +97,19 @@ export async function publishTaskBranch(
   return { state: "published", branch, revision, lease: true };
 }
 
+function landError(revision: string, base: string, reason: string): Error {
+  return new Error(`cannot land ${revision} on the base branch: ${base}: ${reason}`);
+}
+
 // Lands revision on the base branch of origin by fast-forward.
 export async function landOnBase(
   options: RemoteOptions & { base: string; revision: string },
 ): Promise<void> {
-  const { clone, publishTokens, sshKey, env, base, revision } = options;
+  const { clone, remote, publishTokens, sshKey, env, base, revision } = options;
+  const tip = await remoteTip({ remote, branch: base, sshKey, env });
+  if (tip.state === "absent") {
+    throw landError(revision, base, "the base branch does not exist on origin");
+  }
   await pushWithToken(["origin", `${revision}:refs/heads/${base}`], {
     location: { gitDir: clone },
     publishTokens,
