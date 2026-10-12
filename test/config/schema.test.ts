@@ -305,6 +305,41 @@ describe("parseConfig issueTracker", () => {
     raw.repos.tasker.issueTracker.match = { labels: [] };
     expectIssueAt(issuesOf(raw), "repos.tasker.issueTracker.match.labels");
   });
+
+  it("rejects a github tracker with no account", () => {
+    const raw = validConfig();
+    delete raw.repos.tasker.issueTracker.account;
+    expect(issuesOf(raw)).toEqual(["repos.tasker.issueTracker.account: is required for the github tracker"]);
+  });
+
+  it("accepts a jira tracker with no account", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira" };
+    expect(parsedRepo(raw).issueTracker.account).toBeUndefined();
+  });
+
+  it("reports the missing account with other errors", () => {
+    const raw = validConfig();
+    delete raw.repos.tasker.issueTracker.account;
+    raw.repos.tasker.verify.commands = [];
+    raw.bogus = 1;
+    const issues = issuesOf(raw);
+    expect(issues).toContain("repos.tasker.issueTracker.account: is required for the github tracker");
+    expectIssueAt(issues, "repos.tasker.verify.commands");
+    expect(issues).toContain("bogus: unrecognized key");
+  });
+
+  it("reports the account, an empty verify.commands and an unknown key of one repo together", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "github" };
+    raw.repos.tasker.verify.commands = [];
+    raw.repos.tasker.bogus = 1;
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(3);
+    expect(issues).toContain("repos.tasker.issueTracker.account: is required for the github tracker");
+    expectIssueAt(issues, "repos.tasker.verify.commands");
+    expect(issues).toContain("repos.tasker.bogus: unrecognized key");
+  });
 });
 
 describe("parseConfig assistant", () => {
@@ -546,7 +581,7 @@ describe("parseConfig named trackers", () => {
   });
 
   it("rejects trackers that is not an object", () => {
-    const issues = issuesOf(withTracker({ provider: "github" }, []));
+    const issues = issuesOf(withTracker({ provider: "github", account: "codeguru42" }, []));
     expect(issues).toHaveLength(1);
     expectIssueAt(issues, "trackers");
   });
@@ -573,6 +608,29 @@ describe("parseConfig named trackers", () => {
     expectIssueAt(issues, "repos.tasker.issueTracker.tracker");
     expect(issues.filter((line) => line.startsWith("repos.tasker.issueTracker.provider"))).toEqual([
       "repos.tasker.issueTracker.provider: must not be set next to tracker; provider comes from tracker 'nope'",
+    ]);
+  });
+
+  it("accepts a github definition with no account when the repo sets it", () => {
+    const raw = withTracker({ tracker: "hub", account: "codeguru42" }, { hub: { provider: "github" } });
+    expect(parsedRepo(raw).issueTracker.account).toBe("codeguru42");
+  });
+
+  it("rejects a github definition when neither the definition nor the repo sets the account", () => {
+    const raw = withTracker({ tracker: "hub" }, { hub: { provider: "github" } });
+    const issues = issuesOf(raw);
+    expect(issues).toEqual(["repos.tasker.issueTracker.account: is required for the github tracker"]);
+  });
+
+  it("reports the missing account for each repo that uses the definition", () => {
+    const raw = withTracker({ tracker: "hub" }, { hub: { provider: "github" } });
+    raw.repos = {
+      tasker: { ...(raw.repos as Record<string, object>).tasker },
+      other: { ...(raw.repos as Record<string, object>).tasker },
+    };
+    expect(issuesOf(raw).sort()).toEqual([
+      "repos.tasker.issueTracker.account: is required for the github tracker",
+      "repos.other.issueTracker.account: is required for the github tracker",
     ]);
   });
 
