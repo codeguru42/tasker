@@ -88,7 +88,6 @@ These are the steps:
 A step can fail in these ways:
 
 - If `ls-remote` fails on the path from step 1, the marker and the parent folder stay.
-- If the hook write of step 6 fails on the fresh path, provision rejects and the marker stays.
 - If a step from 5 to 7 fails, provision rejects. The parent folder, the marker and the clone folder stay, with the clone folder in the state that the failed step left it. A failed `git clone` can leave a partial clone folder.
 - If step 8 fails, the clone is complete, but the marker stays.
 
