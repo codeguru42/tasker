@@ -10,11 +10,12 @@ import {
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import {
+  fakeSsh,
   type GitOrigin,
   makeGitOrigin,
   makeTempDir,
   readArgLog,
-  writeFakeSsh,
+  sshKeyArgs,
 } from "../../helpers.js";
 
 describe("parseBaseInput", () => {
@@ -83,7 +84,13 @@ describe("resolveBaseBranch", () => {
     env = setup.makeEnv?.(origin) ?? origin.env;
     tmp = makeTempDir("tasker-base-");
     clone = join(tmp, "repo.git");
-    await provisionClone({ remote: setup.remote?.(origin) ?? origin.path, clone, config: {}, env });
+    await provisionClone({
+      remote: setup.remote?.(origin) ?? origin.path,
+      clone,
+      config: {},
+      env,
+      publishTokens: join(tmp, "publish-tokens"),
+    });
     store = openStore(join(tmp, "tasker.db"));
     askCalls = 0;
     answer = "asked";
@@ -160,11 +167,7 @@ describe("resolveBaseBranch", () => {
         start({
           branches: ["gone"],
           remote: (o) => `ssh://tasker.invalid${o.path}`,
-          makeEnv: (o) => {
-            const binDir = join(o.dir, "bin");
-            writeFakeSsh(binDir, join(o.dir, "ssh.log"), "serve");
-            return { ...o.env, PATH: `${binDir}:${process.env.PATH}` };
-          },
+          makeEnv: (o) => fakeSsh(o.dir, o.env, "serve").env,
         }),
       );
 
@@ -176,14 +179,7 @@ describe("resolveBaseBranch", () => {
         const calls = readArgLog(logPath);
         expect(calls.length).toBeGreaterThan(0);
         for (const call of calls) {
-          expect(call.slice(0, 6)).toEqual([
-            "-i",
-            key,
-            "-o",
-            "IdentitiesOnly=yes",
-            "-o",
-            "BatchMode=yes",
-          ]);
+          expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
         }
       });
     });
