@@ -291,6 +291,56 @@ describe("git fixture", () => {
     });
   });
 
+  describe("createTaskWorktree, stopped create", () => {
+    const path = () => taskWorktreePath(worktrees, "issue-1");
+    const lock = (...reason: string[]) =>
+      runGit(["worktree", "lock", ...reason, "--", path()], { gitDir: clone, env });
+
+    it("repairs a worktree that a stopped checkout left, then unlocks it", async () => {
+      await create();
+      await lock("--reason", "initializing");
+      rmSync(join(path(), ".gitignore"));
+      writeFileSync(join(path(), "README.md"), "partial\n");
+      expect(await create()).toBe("reused-worktree");
+      expect(await gitIn(path(), "status", "--porcelain")).toBe("");
+      expect(readFileSync(join(path(), ".gitignore"), "utf8")).toBe("ign\n");
+      expect(readFileSync(join(path(), "README.md"), "utf8")).toBe("initial commit\n");
+      const entries = await listWorktrees({ clone, env });
+      expect(entries).toHaveLength(1);
+      expect(entries[0]?.lockReason).toBeUndefined();
+    });
+
+    it("refuses a worktree locked initializing with an empty folder", async () => {
+      await create();
+      await lock("--reason", "initializing");
+      rmSync(path(), { recursive: true });
+      mkdirSync(path());
+      const error = await failureOf(create(), Error);
+      expect(error.message).toBe(`the worktree is locked: ${path()} (initializing)`);
+    });
+
+    it("refuses a worktree locked for another reason", async () => {
+      await create();
+      await lock("--reason", "r");
+      const error = await failureOf(create(), Error);
+      expect(error.message).toBe(`the worktree is locked: ${path()} (r)`);
+    });
+
+    it("refuses a worktree locked with no reason", async () => {
+      await create();
+      await lock();
+      const error = await failureOf(create(), Error);
+      expect(error.message).toBe(`the worktree is locked: ${path()} ()`);
+    });
+
+    it("refuses an unlocked worktree with no .git file", async () => {
+      await create();
+      rmSync(join(path(), ".git"));
+      const error = await failureOf(create(), Error);
+      expect(error.message).toBe(`the worktree has no .git file: ${path()}`);
+    });
+  });
+
   describe("taskBranchName for any title", () => {
     // The room for the slug after "issue-7-" is 100 - 7 - 1 = 92 characters.
     it.each([
