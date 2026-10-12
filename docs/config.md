@@ -82,7 +82,7 @@ This table describes the object after tasker merges a named tracker into it.
 
 | Key | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `provider` | `"github"` or `"jira"` | required | The kind of tracker. When `tracker` is set, the provider comes from the named tracker. |
+| `provider` | `"github"` or `"jira"` | required | The kind of tracker. When `tracker` is set, the provider comes from the named tracker. The `jira` tracker is not available in this version. The loader still accepts the value. When tasker picks the provider of a repo with `jira`, it reports `repos.<key>.issueTracker.provider: the jira tracker is not available in this version`. |
 | `project` | non-empty string | optional | The project of the tracker. If it is missing, tasker uses the repo key. |
 | `match` | object | optional | `labels`: list of non-empty strings with at least one item. `components`: list of non-empty strings with at least one item. The object must name `labels` or `components`. |
 | `site` | non-empty string | optional | The site of the tracker. tasker stores it in lower case. |
