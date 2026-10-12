@@ -26,13 +26,35 @@ describe("taskBranchName", () => {
   it.each([
     ["issue-14", "Git provider: task workspaces", "issue-14-git-provider-task-workspaces"],
     ["PROJ-3", "Fix it", "PROJ-3-fix-it"],
+    ["issue-17", "Fix it", "issue-17-fix-it"],
+    ["PROJ-12", "Fix it", "PROJ-12-fix-it"],
+    ["A_B9-3", "Fix it", "A_B9-3-fix-it"],
+    [
+      "acme.atlassian.net-browse-PROJ-12",
+      "Fix it",
+      "acme.atlassian.net-browse-PROJ-12-fix-it",
+    ],
+    ["x-y.example.com-browse-Q-1", "Fix it", "x-y.example.com-browse-Q-1-fix-it"],
   ])("joins %s and the title %j into %s", (shortRef, title, expected) => {
     expect(taskBranchName(shortRef, title)).toBe(expected);
   });
 });
 
 describe("taskBranchName with a bad short ref", () => {
-  it.each(["", "-x", "a..b", "a/b", "x.lock", "HEAD", "a".repeat(101)])(
+  it.each([
+    "",
+    "-x",
+    "a..b",
+    "a/b",
+    "x.lock",
+    "HEAD",
+    "a".repeat(101),
+    "main",
+    "master",
+    "issue-0",
+    "feature",
+    "proj-12",
+  ])(
     "refuses the short ref %j",
     (shortRef) => {
       expect(() => taskBranchName(shortRef, "Fix it")).toThrow(
@@ -42,7 +64,8 @@ describe("taskBranchName with a bad short ref", () => {
   );
 
   it("gives a short ref of exactly 100 characters alone", () => {
-    const shortRef = "a".repeat(100);
+    const shortRef = `${"a".repeat(86)}-browse-PROJ-1`;
+    expect(shortRef).toHaveLength(100);
     expect(taskBranchName(shortRef, "Fix it")).toBe(shortRef);
   });
 });
