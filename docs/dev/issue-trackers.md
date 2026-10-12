@@ -8,7 +8,7 @@ All code that starts `gh` is in `src/issues/github/`. The test `test/issues/gith
 
 ## The files of src/issues/
 
-- `src/issues/provider.ts` holds `IssueTrackerId`, `AuthStatus`, `IssueProvider` and `issueProviderFor()`.
+- `src/issues/provider.ts` holds `IssueTrackerId`, `AuthStatus`, `IssueDoctorRepo`, `IssueProvider`, `issueProviderFor()` and `issueDoctorChecks()`.
 - `src/issues/github/provider.ts` holds `createGithubProvider()`.
 - `src/issues/github/run.ts` holds `runGh()`, `readGhVersion()`, `RunGhOptions`, `GhError`, `GhNotInstalledError` and `GhLoginError`.
 - `src/issues/issue.ts` holds `Issue`, `Blocker`, `IssueReadError`, `IssueWriteError`, `BaseHintError`, `baseBranchHint()` and `inProgressMarker()`.
@@ -16,13 +16,13 @@ All code that starts `gh` is in `src/issues/github/`. The test `test/issues/gith
 - `src/issues/github/blockers.ts` holds `readGithubBlockers()`.
 - `src/issues/github/write.ts` holds `assignGithubIssue()`, `markGithubInProgress()` and `markGithubDone()`.
 - `src/issues/github/auth.ts` holds `authStatus()`.
-- `src/issues/github/doctor.ts` holds `accountOf()`, `githubDoctorChecks()`, `ghVersionCheck()`, `ghAuthCheck()`, `ghProjectCheck()`, `ghLabelsCheck()` and `GithubDoctorRepo`.
+- `src/issues/github/doctor.ts` holds `accountOf()`, `githubDoctorChecks()`, `ghVersionCheck()`, `ghAuthCheck()`, `ghProjectCheck()`, `ghLabelsCheck()`.
 
 Later issues add their files to this list.
 
 ## The issue provider
 
-A command gets an `IssueProvider` from `issueProviderFor(config, repoKey)` in `src/issues/provider.ts`. A command never imports from `src/issues/github/`. Each member maps to one GitHub function and adds no behavior. `createGithubProvider({ account, repos })` in `src/issues/github/provider.ts` builds the GitHub provider. It takes `repos` only for `doctorChecks`.
+A command gets an `IssueProvider` from `issueProviderFor(config, repoKey)` in `src/issues/provider.ts`. A command never imports from `src/issues/github/`. Each member maps to one GitHub function and adds no behavior. `createGithubProvider({ account })` in `src/issues/github/provider.ts` builds the GitHub provider.
 
 | Member | Calls |
 | --- | --- |
@@ -37,7 +37,7 @@ A command gets an `IssueProvider` from `issueProviderFor(config, repoKey)` in `s
 | `transitionStatus(ref, target, env): Promise<void>` | `markGithubInProgress(ref, target, account, env)` |
 | `inProgressMarker(issue, target): boolean` | `inProgressMarker(issue, target)` of `src/issues/issue.ts` |
 | `markDone(ref, target, env): Promise<void>` | `markGithubDone(ref, target, account, env)` |
-| `doctorChecks: Check[]` | `githubDoctorChecks(repos)` for the repos of the pair |
+| `doctorChecks(repos): Check[]` | `githubDoctorChecks(repos)` |
 
 `target` is the value of the configuration that the caller passes:
 
@@ -50,7 +50,7 @@ A command gets an `IssueProvider` from `issueProviderFor(config, repoKey)` in `s
 
 `parse` takes the project, because one provider object serves many repos. It is the entry of `KEY_PARSERS` in `src/issue-key/resolve.ts`, not a wrapper. It gives the `IssueKeyError` of the parser for a key of the wrong form, `undefined` for a key of another project, and the ref with the stored spelling `<project>#<N>` for a key of the project. [Issue keys](issue-keys.md) gives the rules.
 
-`doctorChecks` is `githubDoctorChecks()` of the repos of the pair. As a result, each github provider gives its own version check. A doctor run over two GitHub accounts has two version checks.
+`doctorChecks(repos)` gives the checks of the provider for the repos in the list. The github provider gives `githubDoctorChecks(repos)`. `issueDoctorChecks(config)` calls `doctorChecks()` once for each tracker id, with all the repos of that id. As a result, the `gh version` check runs once, and the order of [Doctor checks](#doctor-checks) holds.
 
 ### The registry
 
@@ -59,6 +59,8 @@ A command gets an `IssueProvider` from `issueProviderFor(config, repoKey)` in `s
 - The account comes from `accountOf()` in `src/issues/github/doctor.ts`. It throws `<key>: issueTracker.account is not set` when the account is not set.
 - A repo key that is not in the configuration gives `unknown repo "<key>": no repo with this key is in the configuration`. The check uses `Object.hasOwn`, so `constructor` and `__proto__` also give this error.
 - A jira repo gives a `ConfigError` with the issue `repos.<key>.issueTracker.provider: the jira tracker is not available in this version`.
+
+`issueDoctorChecks(config)` in `src/issues/provider.ts` gives the doctor checks of every repo of the configuration. It groups the repos by `issueTracker.provider`, in the order of first use. For each id, it gets the provider of the first repo of the id and calls `doctorChecks()` once with all the repos of the id, in the order of the configuration. A jira repo gives the `ConfigError` above. A configuration with no repo gives `[]`.
 
 ## runGh()
 
@@ -225,7 +227,7 @@ failed to update 1 issue
 
 ## Doctor checks
 
-`src/issues/github/doctor.ts` holds the doctor checks of the GitHub tracker. No command runs them yet. The `tasker doctor` command gets them from `githubDoctorChecks(repos)`. A repo is a `GithubDoctorRepo`: `{ key, issueTracker }`, where `issueTracker` is the merged configuration. The project is `issueTracker.project`, or the repo key when it is not set. The account is `issueTracker.account`.
+`src/issues/github/doctor.ts` holds the doctor checks of the GitHub tracker. No command runs them yet. The `tasker doctor` command gets them from `issueDoctorChecks(config)`, which calls `githubDoctorChecks(repos)` through the provider. A repo is an `IssueDoctorRepo` (in `src/issues/provider.ts`): `{ key, issueTracker }`, where `issueTracker` is the merged configuration. The project is `issueTracker.project`, or the repo key when it is not set. The account is `issueTracker.account`.
 
 Each check uses the shared wrapper `timedCheck()`. [The doctor checks](doctor.md) give its timeout rules. Each check passes its own signal to every `gh` call that it makes, the token call included.
 
@@ -290,4 +292,4 @@ A call with no answer exits with 99 and goes into `unanswered()`. It fails the t
 
 `test/issues/issue.test.ts`, `test/issues/github/issue.test.ts` and `test/issues/github/blockers.test.ts` test the new files. `test/issues/github/write.test.ts` tests `write.ts`.
 
-`test/issues/github/provider.test.ts` tests `createGithubProvider()`. It compares each member with a direct call of its GitHub function. `test/issues/provider.test.ts` tests `issueProviderFor()`. It needs no reset hook, because each test builds its own configuration object with `parseConfig()`, so no provider leaks between tests.
+`test/issues/github/provider.test.ts` tests `createGithubProvider()`. It compares each member with a direct call of its GitHub function. `test/issues/provider.test.ts` tests `issueProviderFor()` and `issueDoctorChecks()`. It needs no reset hook, because each test builds its own configuration object with `parseConfig()`, so no provider leaks between tests.
