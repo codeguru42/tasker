@@ -43,22 +43,34 @@ const AnswerSchema = z.object({
   errors: z.array(z.object({ message: z.string() })).nullish(),
 });
 
-// gh exits 1 for a GraphQL error and prints the JSON answer on stdout. That answer is the
-// result of the call. Any other failure (no JSON, a signal, a login error) stays a GhError.
+// gh exits 1 for a GraphQL error and prints the JSON answer on stdout. A failed call is a
+// GraphQL answer only when its stdout is a JSON object with an own data key or an own errors key.
+// Any other failure stays the GhError, for example an HTTP 401 with a JSON body, a signal or a login error.
 async function runGraphql(args: string[], account: string, env: NodeJS.ProcessEnv): Promise<string> {
   try {
     return await runGh(args, { account, env });
   } catch (error) {
-    if (error instanceof GhError && error.exitCode !== null) {
-      try {
-        JSON.parse(error.stdout);
-        return error.stdout;
-      } catch {
-        // not JSON: fall through
-      }
+    if (error instanceof GhError && error.exitCode !== null && isGraphqlAnswer(error.stdout)) {
+      return error.stdout;
     }
     throw error;
   }
+}
+
+// True when text is a JSON object with an own data key or an own errors key.
+function isGraphqlAnswer(text: string): boolean {
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    return false;
+  }
+  return (
+    typeof json === "object" &&
+    json !== null &&
+    !Array.isArray(json) &&
+    (Object.hasOwn(json, "data") || Object.hasOwn(json, "errors"))
+  );
 }
 
 // Every issue that blocks the issue of ref, with its state, in the order that GitHub gives.
