@@ -35,6 +35,6 @@ export function repoPaths(dataRoot: string, repoKey: string): RepoPaths {
   return {
     clone: join(layout.clones, slug, "repo.git"),
     publishTokens: join(layout.clones, slug, "publish-tokens"),
-    worktrees: join(layout.worktrees, slug),
+    worktrees: join(layout.clones, slug, "worktrees"),
   };
 }
