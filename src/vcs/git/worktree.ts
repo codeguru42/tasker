@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
 
 const MAX_BRANCH_LENGTH = 100;
@@ -50,6 +51,7 @@ export function taskBranchName(shortRef: string, title: string): string {
   return `${shortRef}-${slug}`;
 }
 
+// The folder of one task worktree: <worktrees>/<shortRef>.
 export function taskWorktreePath(worktrees: string, shortRef: string): string {
-  throw new Error(`not implemented: ${worktrees} ${shortRef}`);
+  return join(worktrees, shortRef);
 }
