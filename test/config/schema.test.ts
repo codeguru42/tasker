@@ -629,8 +629,8 @@ describe("parseConfig named trackers", () => {
       other: { ...(raw.repos as Record<string, object>).tasker },
     };
     expect(issuesOf(raw).sort()).toEqual([
-      "repos.tasker.issueTracker.account: is required for the github tracker",
       "repos.other.issueTracker.account: is required for the github tracker",
+      "repos.tasker.issueTracker.account: is required for the github tracker",
     ]);
   });
 

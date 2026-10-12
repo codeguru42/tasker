@@ -127,6 +127,14 @@ const RepoSchema = z.strictObject({
   vcs: VcsSchema.default({ provider: "git", config: {} }),
 });
 
+// A github tracker needs the account that runs gh. tasker checks the merged issueTracker,
+// so a definition under trackers can leave account out.
+function githubAccountIssues(key: string, issueTracker: Record<string, unknown>): string[] {
+  return issueTracker.provider === "github" && issueTracker.account === undefined
+    ? [issueLine(["repos", key, "issueTracker", "account"], "is required for the github tracker")]
+    : [];
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -169,6 +177,9 @@ function prepareConfig(raw: unknown): Prepared {
   for (const [key, repo] of Object.entries(copy.repos)) {
     const issueTracker = isObject(repo) ? repo.issueTracker : undefined;
     if (!isObject(repo) || !isObject(issueTracker) || typeof issueTracker.tracker !== "string") {
+      if (isObject(repo) && isObject(issueTracker)) {
+        issues.push(...githubAccountIssues(key, issueTracker));
+      }
       repos[key] = repo;
       continue;
     }
@@ -205,10 +216,15 @@ function prepareConfig(raw: unknown): Prepared {
       );
     }
     // Merge the raw definition, so the issueTracker schema applies the defaults once.
-    const merged =
-      definition !== undefined && TrackerDefinitionSchema.safeParse(definition).success
-        ? { ...(definition as Record<string, unknown>), ...own }
-        : placeholder;
+    const validDefinition =
+      definition !== undefined && TrackerDefinitionSchema.safeParse(definition).success;
+    const merged = validDefinition
+      ? { ...(definition as Record<string, unknown>), ...own }
+      : placeholder;
+    if (validDefinition) {
+      // Never on the placeholder: the real error is already reported.
+      issues.push(...githubAccountIssues(key, merged));
+    }
     repos[key] = { ...repo, issueTracker: merged };
   }
   return { input: { ...copy, repos }, issues };
