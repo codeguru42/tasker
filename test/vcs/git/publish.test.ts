@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
-import { publishTaskBranch } from "../../../src/vcs/git/publish.js";
+import { landOnBase, publishTaskBranch } from "../../../src/vcs/git/publish.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   addCloneCommit,
@@ -51,6 +51,19 @@ describe("publish, land and delete", () => {
       env,
       branch: "issue-1-task",
       published: undefined,
+      ...overrides,
+    });
+  }
+
+  function land(overrides: Partial<Parameters<typeof landOnBase>[0]> = {}): Promise<void> {
+    return landOnBase({
+      clone,
+      remote: origin.path,
+      publishTokens: tokens,
+      sshKey: undefined,
+      env,
+      base: "main",
+      revision: "0".repeat(40),
       ...overrides,
     });
   }
@@ -306,6 +319,32 @@ describe("publish, land and delete", () => {
       const calls = readArgLog(ssh.fake.logPath).slice(mark);
       expect(calls).toHaveLength(1);
       expect(calls[0]?.slice(0, 6)).toEqual(sshKeyArgs(ssh.key));
+    });
+  });
+
+  describe("landOnBase", () => {
+    it("lands a child of the base by fast-forward", async () => {
+      const revision = await addCloneCommit(clone, env, "issue-1-task");
+
+      await land({ revision });
+
+      expect(await origin.branchHead("main")).toBe(revision);
+      expect(pushes()).toEqual([["push", "origin", `${revision}:refs/heads/main`]]);
+      expectNoTokenFile();
+      await expectPushNeedsToken();
+    });
+
+    it("passes the ssh key to each ssh call", async () => {
+      const ssh = await sshClone();
+      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
+      const mark = readArgLog(ssh.fake.logPath).length;
+
+      await land({ ...ssh.overrides, revision });
+
+      expect(await origin.branchHead("main")).toBe(revision);
+      const calls = readArgLog(ssh.fake.logPath).slice(mark);
+      expect(calls.length).toBeGreaterThanOrEqual(1);
+      for (const call of calls) expect(call.slice(0, 6)).toEqual(sshKeyArgs(ssh.key));
     });
   });
 });
