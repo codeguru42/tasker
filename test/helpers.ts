@@ -385,7 +385,7 @@ export function writeFakeGit(binDir: string, body: string): void {
 }
 
 // Writes an executable shell script named name into binDir. body is the script after "#!/bin/sh".
-function writeFakeCommand(binDir: string, name: string, body: string): void {
+export function writeFakeCommand(binDir: string, name: string, body: string): void {
   mkdirSync(binDir, { recursive: true });
   writeFileSync(join(binDir, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
 }
