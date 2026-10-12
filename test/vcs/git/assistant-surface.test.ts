@@ -7,6 +7,7 @@ import {
   realpathSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { userInfo } from "node:os";
@@ -26,6 +27,7 @@ import {
   gitCloneTokens,
   makeGitClone,
   makeGitOrigin,
+  makeTempDir,
   type GitOrigin,
 } from "../../helpers.js";
 
@@ -114,6 +116,49 @@ describe("assistant surface values", () => {
 
   it("gives no path when no ssh key is set", () => {
     expect(readDenyPaths({})).toEqual([]);
+  });
+
+  describe("readDenyPaths with key files", () => {
+    let dir: string;
+
+    beforeEach(() => {
+      // The real path, so the expected paths hold also when the temp folder is under a symlink.
+      dir = realpathSync(makeTempDir("tasker-key-"));
+    });
+
+    afterEach(() => {
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    it("gives one path for a key file with no symlink", () => {
+      const key = join(dir, "id_tasker");
+      writeFileSync(key, "key");
+      expect(readDenyPaths({ sshKey: key })).toEqual([key]);
+    });
+
+    it("gives the link and the real file for a symlinked key file", () => {
+      const realFile = join(dir, "real_id");
+      const link = join(dir, "id_tasker");
+      writeFileSync(realFile, "key");
+      symlinkSync(realFile, link);
+      expect(readDenyPaths({ sshKey: link })).toEqual([link, realpathSync(realFile)]);
+    });
+
+    it("gives the path and the real path for a key under a symlinked folder", () => {
+      const realFolder = join(dir, "dotfiles", "ssh");
+      mkdirSync(realFolder, { recursive: true });
+      writeFileSync(join(realFolder, "id_tasker"), "key");
+      symlinkSync(realFolder, join(dir, "ssh"));
+      expect(readDenyPaths({ sshKey: join(dir, "ssh", "id_tasker") })).toEqual([
+        join(dir, "ssh", "id_tasker"),
+        realpathSync(join(realFolder, "id_tasker")),
+      ]);
+    });
+
+    it("gives the path alone for a missing key file", () => {
+      const key = join(dir, "missing");
+      expect(readDenyPaths({ sshKey: key })).toEqual([key]);
+    });
   });
 });
 
