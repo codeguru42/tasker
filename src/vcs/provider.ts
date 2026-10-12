@@ -18,6 +18,14 @@ export interface BaseBranchMemory {
   forgetDefaultBaseBranch(repoKey: string, branch: string): void;
 }
 
+export interface ResolveBaseRequest {
+  memory: BaseBranchMemory;
+  hint?: string;
+  explicit?: string;
+  defaultBase?: string;
+  ask: () => Promise<string>;
+}
+
 export interface ResolvedBase {
   // The stored form: an origin branch name, or refs/heads/<x>.
   base: string;
@@ -54,6 +62,21 @@ export interface VcsProvider {
   ): Promise<Workspace>;
   // Removes the folder of a task. The task ref stays.
   removeWorkspace(ctx: VcsContext, o: { path: string }): Promise<void>;
+  // Picks the base of a task, fetches the remote and gives the base with its revision.
+  resolveBase(ctx: VcsContext, o: ResolveBaseRequest): Promise<ResolvedBase>;
+  // The diff of the workspace against baseRevision, as text.
+  diffAgainstBase(ctx: VcsContext, o: { path: string; baseRevision: string }): Promise<string>;
+  // The commits of taskRef that baseRevision does not hold, as text.
+  ownCommits(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<string>;
+  // The uncommitted changes of the workspace. An empty list means a clean workspace.
+  uncommittedChanges(ctx: VcsContext, o: { path: string }): Promise<UncommittedChange[]>;
+  // Moves the workspace onto baseRevision and gives its new head revision.
+  // It does not fetch. Run resolveBase first, which fetches.
+  // A conflict rejects with ReconcileConflictError (src/vcs/errors.ts).
+  reconcile(
+    ctx: VcsContext,
+    o: { path: string; baseRevision: string; strategy: ReconcileStrategy },
+  ): Promise<string>;
   // Writes the push guard again.
   installPushGuard(ctx: VcsContext): void;
 }
