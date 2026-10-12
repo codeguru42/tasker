@@ -333,7 +333,7 @@ These are the steps:
 4. Push. The arguments are `push --force-with-lease=refs/heads/<branch>:<published> origin :refs/heads/<branch>`. The lease is necessary. A plain delete of a branch that origin does not have succeeds with a warning.
 5. Return `deleted`.
 
-If the push fails, the function reads the tip again with the rules of step 3. An absent branch returns `already-gone`. A tip at another revision throws the moved error. A tip that is still at `published` throws `cannot delete the task branch on origin: <branch>` and the detail of the push error.
+If the push fails, the function reads the tip again with the rules of step 3. An absent branch returns `already-gone`. A tip at another revision throws the moved error. If the tip is still at `published`, or if this read fails, the function throws `cannot delete the task branch on origin: <branch>` and the detail of the push error.
 
 ### Side effects
 
