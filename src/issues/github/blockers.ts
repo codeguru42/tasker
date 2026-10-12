@@ -100,6 +100,7 @@ export async function readGithubBlockers(
   ];
 
   const blockers: Blocker[] = [];
+  const seen = new Set<string>();
   let cursor: string | undefined;
   for (;;) {
     const args = cursor === undefined ? baseArgs : [...baseArgs, "-f", `cursor=${cursor}`];
@@ -147,7 +148,8 @@ export async function readGithubBlockers(
     const { hasNextPage, endCursor } = blockedBy.pageInfo;
     if (!hasNextPage) return blockers;
     if (endCursor === null) throw bad("the page has a next page but no cursor");
-    if (endCursor === cursor) throw bad(`the cursor ${JSON.stringify(endCursor)} came again`);
+    if (seen.has(endCursor)) throw bad(`the cursor ${JSON.stringify(endCursor)} came again`);
+    seen.add(endCursor);
     cursor = endCursor;
   }
 }
