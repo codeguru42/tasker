@@ -46,6 +46,8 @@ describe("git changes", () => {
     changedPaths({ clone, env, branch: BRANCH, baseRevision: BASE, ...extra });
   const ownCommits = (extra: Partial<Parameters<typeof ownCommitsText>[0]> = {}) =>
     ownCommitsText({ clone, env, branch: BRANCH, baseRevision: BASE, ...extra });
+  const changes = (extra: Partial<Parameters<typeof uncommittedChanges>[0]> = {}) =>
+    uncommittedChanges({ clone, env, path, ...extra });
   // Adds a commit to the base on origin and fetches it into the clone.
   const moveBase = async () => {
     await origin.addCommit("main", { file: "base-only.txt" });
@@ -191,6 +193,50 @@ describe("git changes", () => {
     it("refuses a head that is not a full revision or a ref", async () => {
       const error = await failureOf(has("main", [BASE]), Error);
       expect(error.message).toBe('not a full revision or ref: "main"');
+    });
+  });
+
+  describe("uncommittedChanges", () => {
+    it("gives an empty list for a clean worktree", async () => {
+      expect(await changes()).toEqual([]);
+    });
+
+    it("lists a changed file and a new file", async () => {
+      writeFileSync(join(path, "README.md"), "changed\n");
+      writeFileSync(join(path, "new.txt"), "new\n");
+      expect(await changes()).toEqual([
+        { status: " M", path: "README.md" },
+        { status: "??", path: "new.txt" },
+      ]);
+    });
+
+    it("lists a new file when the configuration hides untracked files", async () => {
+      await git("config", "status.showUntrackedFiles", "no");
+      writeFileSync(join(path, "new.txt"), "new\n");
+      expect(await changes()).toEqual([{ status: "??", path: "new.txt" }]);
+    });
+
+    it.each(["with space.txt", 'quo"te.txt', "new\nline.txt", "tab\tt.txt", "é.txt", "-dash.txt"])(
+      "gives the raw path %j",
+      async (file) => {
+        writeFileSync(join(path, file), "text\n");
+        expect(await changes()).toEqual([{ status: "??", path: file }]);
+      },
+    );
+
+    it("gives two records for a staged rename", async () => {
+      await git("mv", "README.md", "moved.md");
+      expect(await changes()).toEqual([
+        { status: "D ", path: "README.md" },
+        { status: "A ", path: "moved.md" },
+      ]);
+    });
+
+    it("refuses a folder that is not a worktree of the clone", async () => {
+      const plain = join(origin.dir, "plain");
+      mkdirSync(plain);
+      const error = await failureOf(changes({ path: plain }), Error);
+      expect(error.message).toBe(`not a worktree of the clone: ${plain}`);
     });
   });
 });
