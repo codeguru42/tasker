@@ -2,6 +2,21 @@ import { mkdirSync, rmSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
 
+type Tracker = import("../../../src/config/schema.js").RepoConfig["issueTracker"];
+
+// A github repo for the doctor checks. The overrides replace fields of its issueTracker.
+function githubRepo(key: string, overrides: Partial<Tracker> = {}) {
+  const issueTracker = {
+    provider: "github",
+    account: "octo",
+    project: "octo/repo",
+    updateOnStart: false,
+    updateOnFinish: false,
+    ...overrides,
+  } as Tracker;
+  return { key, issueTracker };
+}
+
 describe("gh doctor checks", () => {
   // The module loads again before each test, so that each test starts with an empty token cache.
   // Never import doctor.ts or run.ts at the top of this file: a second copy would have other error classes.
@@ -170,6 +185,81 @@ describe("gh doctor checks", () => {
       });
       expect(Date.now() - start).toBeLessThan(2000);
       expect(argLists(fake)).toEqual([tokenArgs, loginArgs]);
+    });
+  });
+
+  describe("ghProjectCheck", () => {
+    const tokenArgs = ["auth", "token", "--hostname", "github.com", "--user", "octo"];
+    const viewArgs = (project: string) => ["repo", "view", project, "--json", "nameWithOwner"];
+    const remediation = (key: string) =>
+      `Make sure that issueTracker.project of ${key} names the repo on GitHub, and that the account octo can see it.`;
+    const argLists = (fake: ReturnType<typeof fakeGh>) => fake.calls().map((call) => call.args);
+
+    it("has the name, required and timeoutMs of the project check", () => {
+      const check = doctor.ghProjectCheck(githubRepo("octo/repo"));
+      expect({ name: check.name, required: check.required, timeoutMs: check.timeoutMs }).toEqual({
+        name: "gh project: octo/repo",
+        required: true,
+        timeoutMs: 15000,
+      });
+    });
+
+    it("is ok when the account can see the project", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: viewArgs("octo/repo"), stdout: '{"nameWithOwner":"octo/repo"}\n' },
+      ]);
+      const check = doctor.ghProjectCheck(githubRepo("main-repo"));
+      expect(await check.run(fake.env)).toEqual({
+        status: "ok",
+        detail: "main-repo: the account octo can see the project octo/repo",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, viewArgs("octo/repo")]);
+    });
+
+    it("uses the repo key as the project when issueTracker.project is not set", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: viewArgs("octo/keyed"), stdout: "{}" },
+      ]);
+      const check = doctor.ghProjectCheck(githubRepo("octo/keyed", { project: undefined }));
+      expect(await check.run(fake.env)).toEqual({
+        status: "ok",
+        detail: "octo/keyed: the account octo can see the project octo/keyed",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, viewArgs("octo/keyed")]);
+    });
+
+    it("gives error and a remediation when the project cannot be seen", async () => {
+      const stderr =
+        "GraphQL: Could not resolve to a Repository with the name 'octo/nope'. (repository)\n";
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: viewArgs("octo/nope"), stderr, exitCode: 1 },
+      ]);
+      const check = doctor.ghProjectCheck(githubRepo("nope", { project: "octo/nope" }));
+      expect(await check.run(fake.env)).toEqual({
+        status: "error",
+        detail:
+          "nope: the account octo cannot see the project octo/nope: gh repo view failed with exit code 1: GraphQL: Could not resolve to a Repository with the name 'octo/nope'. (repository)",
+        remediation: remediation("nope"),
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, viewArgs("octo/nope")]);
+    });
+
+    it("gives the timeout result when gh is slow", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: viewArgs("octo/repo"), stdout: "{}", delaySeconds: 5 },
+      ]);
+      const start = Date.now();
+      const check = doctor.ghProjectCheck(githubRepo("octo/repo"), 200);
+      expect(await check.run(fake.env)).toEqual({
+        status: "error",
+        detail: "the check did not finish in 200 ms",
+      });
+      expect(Date.now() - start).toBeLessThan(2000);
+      expect(argLists(fake)).toEqual([tokenArgs, viewArgs("octo/repo")]);
     });
   });
 });
