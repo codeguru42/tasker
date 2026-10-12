@@ -468,6 +468,42 @@ describe("task store", () => {
     expect(seen).toEqual(task);
   });
 
+  it("appends the event that the check returns, with the update time", () => {
+    const task = store.createTask(newTask);
+    clock = new Date("2026-01-02T00:00:00.000Z");
+    store.updateTask(task.id, { state: "planned" }, () => ({
+      type: "x",
+      data: { n: 1 },
+    }));
+    expect(store.listEvents(task.id).at(-1)).toEqual({
+      id: expect.any(Number),
+      taskId: task.id,
+      at: "2026-01-02T00:00:00.000Z",
+      type: "x",
+      data: { n: 1 },
+    });
+  });
+
+  it("appends no event when the check returns nothing", () => {
+    const task = store.createTask(newTask);
+    const before = eventCount();
+    store.updateTask(task.id, { state: "planned" }, () => {});
+    expect(eventCount()).toBe(before);
+  });
+
+  it("writes no row and no event when the check throws", () => {
+    const task = store.createTask(newTask);
+    const before = eventCount();
+    const error = new Error("no");
+    expect(() =>
+      store.updateTask(task.id, { state: "planned" }, () => {
+        throw error;
+      }),
+    ).toThrow(error);
+    expect(store.getTask(task.id)).toEqual(task);
+    expect(eventCount()).toBe(before);
+  });
+
   it("keeps the row and rethrows when the check throws", () => {
     const task = store.createTask(newTask);
     clock = new Date("2026-01-02T00:00:00.000Z");

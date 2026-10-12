@@ -8,6 +8,7 @@ import {
   isTaskState,
   transitionTask,
   type TaskState,
+  type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
 import { makeTempDir } from "../helpers.js";
@@ -186,7 +187,7 @@ describe("table edges", () => {
   });
 });
 
-describe("transitionTask", () => {
+describe("task transitions", () => {
   let dir: string;
   let store: TaskStore;
 
@@ -206,38 +207,91 @@ describe("transitionTask", () => {
     state,
   });
 
-  it("moves a task along a legal edge", () => {
-    const task = store.createTask(newTask("planning"));
-    const moved = transitionTask(store, task.id, "awaiting_plan_review");
-    expect(moved.state).toBe("awaiting_plan_review");
-    expect(store.getTask(task.id)!.state).toBe("awaiting_plan_review");
-  });
+  describe("transitionTask", () => {
+    it("moves a task along a legal edge", () => {
+      const task = store.createTask(newTask("planning"));
+      const moved = transitionTask(store, task.id, "awaiting_plan_review");
+      expect(moved.state).toBe("awaiting_plan_review");
+      expect(store.getTask(task.id)!.state).toBe("awaiting_plan_review");
+    });
 
-  it("refuses an illegal edge and keeps the state", () => {
-    const task = store.createTask(newTask("planning"));
-    expect(() => transitionTask(store, task.id, "finished")).toThrow(
-      "illegal state transition: planning -> finished",
-    );
-    expect(store.getTask(task.id)!.state).toBe("planning");
-  });
+    it("refuses an illegal edge and keeps the state", () => {
+      const task = store.createTask(newTask("planning"));
+      expect(() => transitionTask(store, task.id, "finished")).toThrow(
+        "illegal state transition: planning -> finished",
+      );
+      expect(store.getTask(task.id)!.state).toBe("planning");
+    });
 
-  it("names both states when a terminal task moves", () => {
-    const task = store.createTask(newTask("finished"));
-    expect(() => transitionTask(store, task.id, "cancelled")).toThrow(
-      /finished.*cancelled/,
-    );
-  });
+    it("names both states when a terminal task moves", () => {
+      const task = store.createTask(newTask("finished"));
+      expect(() => transitionTask(store, task.id, "cancelled")).toThrow(
+        /finished.*cancelled/,
+      );
+    });
 
-  it("refuses a stored state that is not a known state", () => {
-    const task = store.createTask(newTask("awaiting_input"));
-    expect(() => transitionTask(store, task.id, "workspace_ready")).toThrow(
-      "illegal state transition: awaiting_input -> workspace_ready",
-    );
-  });
+    it("refuses a stored state that is not a known state", () => {
+      const task = store.createTask(newTask("awaiting_input"));
+      expect(() => transitionTask(store, task.id, "workspace_ready")).toThrow(
+        "illegal state transition: awaiting_input -> workspace_ready",
+      );
+    });
 
-  it("keeps the store error for a missing task", () => {
-    expect(() => transitionTask(store, 999, "planning")).toThrow(
-      "task not found: 999",
-    );
+    it("keeps the store error for a missing task", () => {
+      expect(() => transitionTask(store, 999, "planning")).toThrow(
+        "task not found: 999",
+      );
+    });
+
+    it("writes one transition event after the created event", () => {
+      const task = store.createTask(newTask("planning"));
+      transitionTask(store, task.id, "awaiting_plan_review");
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "transition"]);
+      expect(events[1].data).toEqual({
+        from: "planning",
+        to: "awaiting_plan_review",
+      });
+    });
+
+    it("merges the fields of detail into the event data", () => {
+      const task = store.createTask(newTask("planning"));
+      transitionTask(store, task.id, "failed", { error: "boom" });
+      expect(store.listEvents(task.id).at(-1)?.data).toEqual({
+        error: "boom",
+        from: "planning",
+        to: "failed",
+      });
+    });
+
+    it("keeps the real from and to when detail names them", () => {
+      const task = store.createTask(newTask("planning"));
+      transitionTask(store, task.id, "failed", {
+        from: "x",
+        to: "y",
+        note: 1,
+      } as unknown as TransitionDetail);
+      expect(store.listEvents(task.id).at(-1)?.data).toEqual({
+        from: "planning",
+        to: "failed",
+        note: 1,
+      });
+    });
+
+    it("rejects a detail that names from", () => {
+      const task = store.createTask(newTask("planning"));
+      // @ts-expect-error detail cannot set from
+      transitionTask(store, task.id, "failed", { from: "x" });
+    });
+
+    it("writes no event for an illegal edge", () => {
+      const task = store.createTask(newTask("planning"));
+      const before = store.listEvents(task.id);
+      expect(() => transitionTask(store, task.id, "finished")).toThrow(
+        "illegal state transition: planning -> finished",
+      );
+      expect(store.getTask(task.id)!.state).toBe("planning");
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
   });
 });
