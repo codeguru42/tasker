@@ -1,4 +1,5 @@
-import { join } from "node:path";
+import { mkdirSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { runGit } from "./run.js";
 
@@ -25,7 +26,7 @@ function isTaskBranch(name: string): boolean {
 }
 
 // Throws unless name passes isTaskBranch(). Run it before any git call that takes a branch.
-export function assertTaskBranch(name: string): void {
+function assertTaskBranch(name: string): void {
   if (!isTaskBranch(name)) {
     throw new Error(`not a task branch name: ${JSON.stringify(name)}`);
   }
@@ -93,6 +94,7 @@ export async function listWorktrees(options: {
   return entries;
 }
 
+// Makes the worktree of a task on a new branch. The new branch has no upstream.
 export async function createTaskWorktree(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
@@ -100,5 +102,13 @@ export async function createTaskWorktree(options: {
   branch: string;
   baseRevision: string;
 }): Promise<"created" | "reused-branch" | "reused-worktree"> {
-  throw new Error(`not implemented: ${options.branch}`);
+  const { clone, env, path, branch, baseRevision } = options;
+  assertTaskBranch(branch);
+  const target = resolve(path);
+  mkdirSync(dirname(target), { recursive: true });
+  await runGit(["worktree", "add", "--no-track", "-b", branch, "--", target, baseRevision], {
+    gitDir: clone,
+    env,
+  });
+  return "created";
 }
