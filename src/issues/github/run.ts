@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { type ChildResult, CommandNotFoundError, runChild } from "../../process/run-child.js";
 
 export interface RunGhOptions {
   account: string;
@@ -91,7 +91,7 @@ const tokens = new Map<string, Promise<string>>();
 // gh 2.101.0 ignores GH_TOKEN. tasker reads the token one time for each account in one
 // process. A failed read is not kept.
 // runGh() does not add process.env. gh is found on the PATH of env. An env with no PATH
-// or an empty one rejects before gh starts.
+// or an empty one rejects before gh starts, through runChild().
 // gh gets no input stream. Its stdout and stderr go to pipes, never to the terminal.
 // gh runs in the cwd of tasker. A call that acts on a repo must name the repo.
 // runGh() writes nothing to the console or a log.
@@ -101,9 +101,6 @@ export function runGh(args: readonly string[], options: RunGhOptions): Promise<s
   }
   if (args[0].startsWith("-")) {
     return Promise.reject(new Error("runGh needs the gh subcommand as the first argument"));
-  }
-  if (!options.env.PATH) {
-    return Promise.reject(new GhNotInstalledError("gh is not installed: the env has no PATH"));
   }
   const env = ghEnv(options.env);
   return accountToken(options.account, env).then((token) =>
@@ -164,58 +161,45 @@ async function readToken(account: string, env: NodeJS.ProcessEnv): Promise<strin
 // Starts gh once and resolves with its stdout when the exit code is 0.
 // dropStdout: each error has an empty stdout (the token call). token: each error has
 // *** in place of the token, in stdout, stderr and message (a main call).
-function spawnGh(
+async function spawnGh(
   args: readonly string[],
   env: NodeJS.ProcessEnv,
   mode: { dropStdout?: boolean; token?: string } = {},
 ): Promise<string> {
   const hide = (text: string) =>
     mode.token === undefined ? text : text.split(mode.token).join(REDACTED);
-  return new Promise((resolve, reject) => {
-    const child = spawn("gh", args, { env, stdio: ["ignore", "pipe", "pipe"] });
-    const out: Buffer[] = [];
-    const err: Buffer[] = [];
-    child.stdout.on("data", (chunk: Buffer) => out.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => err.push(chunk));
-    child.on("error", (error: NodeJS.ErrnoException) => {
-      if (error.code === "ENOENT") {
-        reject(new GhNotInstalledError("gh is not installed: gh was not found on PATH"));
-      } else {
-        reject(error);
-      }
-    });
-    child.on("close", (code, signal) => {
-      const stdout = Buffer.concat(out).toString("utf8");
-      if (code === 0) {
-        resolve(stdout);
-        return;
-      }
-      const subcommand = subcommandOf(args);
-      const shownStdout = mode.dropStdout ? "" : hide(stdout);
-      const stderr = hide(Buffer.concat(err).toString("utf8"));
-      if (code === null) {
-        reject(
-          new GhError(
-            `gh ${subcommand} was stopped by signal ${signal}`,
-            subcommand,
-            shownStdout,
-            stderr,
-            null,
-          ),
-        );
-        return;
-      }
-      const detail = stderr.trim();
-      const reason = detail === "" ? "" : `: ${detail}`;
-      reject(
-        new GhError(
-          `gh ${subcommand} failed with exit code ${code}${reason}`,
-          subcommand,
-          shownStdout,
-          stderr,
-          code,
-        ),
-      );
-    });
-  });
+  let result: ChildResult;
+  try {
+    result = await runChild("gh", args, { env });
+  } catch (error) {
+    if (error instanceof CommandNotFoundError) {
+      throw new GhNotInstalledError(error.message);
+    }
+    throw error;
+  }
+  const { code, signal, stdout } = result;
+  if (code === 0) {
+    return stdout;
+  }
+  const subcommand = subcommandOf(args);
+  const shownStdout = mode.dropStdout ? "" : hide(stdout);
+  const stderr = hide(result.stderr);
+  if (code === null) {
+    throw new GhError(
+      `gh ${subcommand} was stopped by signal ${signal}`,
+      subcommand,
+      shownStdout,
+      stderr,
+      null,
+    );
+  }
+  const detail = stderr.trim();
+  const reason = detail === "" ? "" : `: ${detail}`;
+  throw new GhError(
+    `gh ${subcommand} failed with exit code ${code}${reason}`,
+    subcommand,
+    shownStdout,
+    stderr,
+    code,
+  );
 }
