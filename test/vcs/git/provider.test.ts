@@ -2,6 +2,12 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { BaseBranchMemory } from "../../../src/vcs/provider.js";
+import {
+  DENY_RULES,
+  EXECUTE_COMMIT_TEXT,
+  readDenyPaths,
+  sandboxWritePaths,
+} from "../../../src/vcs/git/assistant-surface.js";
 import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
 import { ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
@@ -201,6 +207,40 @@ describe("createGitProvider", () => {
       });
       expect(deletion).toEqual({ state: "deleted" });
       expect(await fixture.origin.branchHead(taskRef)).toBeUndefined();
+    });
+  });
+
+  describe("assistant surface and doctor checks", () => {
+    const keyed = () => ({ sshKey: join(fixture.origin.dir, "keys", "id") });
+    const keyedProvider = () =>
+      createGitProvider({ remote: fixture.origin.path, config: keyed() });
+
+    it("gives the text, the rules and the deny paths of the git code", () => {
+      const surface = keyedProvider().assistantSurface(fixture.context);
+      expect(surface.executeCommitText).toBe(EXECUTE_COMMIT_TEXT);
+      expect(surface.denyRules).toEqual(DENY_RULES);
+      expect(surface.denyReadPaths).toEqual(readDenyPaths(keyed()));
+    });
+
+    it("gives the write paths of a workspace like sandboxWritePaths", async () => {
+      const { path } = await workspace();
+      const surface = keyedProvider().assistantSurface(fixture.context);
+      expect(await surface.sandboxWritePaths(path)).toEqual(
+        await sandboxWritePaths({ clone: paths().clone, env: fixture.context.env, path }),
+      );
+    });
+
+    it("names the four checks of the repo", () => {
+      const checks = keyedProvider().doctorChecks(fixture.context, {
+        procRoot: "/proc",
+        platform: "linux",
+      });
+      expect(checks.map((check) => check.name)).toEqual([
+        "git version",
+        "git identity: tasker",
+        "git connection: tasker",
+        "git lock files: tasker",
+      ]);
     });
   });
 });
