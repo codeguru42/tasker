@@ -5,6 +5,7 @@ import { type ProvisionOptions, provisionClone } from "../../../src/vcs/git/prov
 import { remoteCwd, sshCommand } from "../../../src/vcs/git/ssh.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
+  failureOf,
   type GitOrigin,
   makeGitOrigin,
   makeTempDir,
@@ -255,15 +256,6 @@ describe("provisionClone", () => {
       return out.replace(/\n$/, "");
     }
 
-    async function failureOf(promise: Promise<void>): Promise<Error> {
-      const error: unknown = await promise.then(
-        () => undefined,
-        (e: unknown) => e,
-      );
-      expect(error).toBeInstanceOf(Error);
-      return error as Error;
-    }
-
     it("writes the ssh command of the key to core.sshCommand through the include file", async () => {
       writeFakeSsh(binDir, sshLog, "serve");
       const key = hardKey();
@@ -336,7 +328,10 @@ describe("provisionClone", () => {
     it("hides the key in the error when ssh refuses", async () => {
       writeFakeSsh(binDir, sshLog, "refuse");
       const key = join(tmp, "no such it's key");
-      const error = await failureOf(provision({ remote, config: { sshKey: key }, env: sshEnv }));
+      const error = await failureOf(
+        provision({ remote, config: { sshKey: key }, env: sshEnv }),
+        Error,
+      );
       expect(error.message).toContain(remote);
       expect(error.message).not.toContain(key);
       expect(error.message).toContain("<sshKey>");
@@ -348,7 +343,7 @@ describe("provisionClone", () => {
       const config = { sshKey: key };
       await provision({ remote, config, env: sshEnv });
       writeFakeSsh(binDir, sshLog, "refuse");
-      const error = await failureOf(provision({ remote, config, env: sshEnv }));
+      const error = await failureOf(provision({ remote, config, env: sshEnv }), Error);
       expect(error.message).not.toContain(key);
       expect(error.message).toContain("<sshKey>");
     });

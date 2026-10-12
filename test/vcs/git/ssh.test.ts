@@ -11,7 +11,7 @@ import {
   sshCommand,
   sshEnv,
 } from "../../../src/vcs/git/ssh.js";
-import { gitTestEnv, makeTempDir, readArgLog, writeFakeSsh } from "../../helpers.js";
+import { failureOf, gitTestEnv, makeTempDir, readArgLog, writeFakeSsh } from "../../helpers.js";
 
 describe("sshCommand", () => {
   it("quotes the key path and writes each ' as '\\''", () => {
@@ -97,16 +97,10 @@ describe("runRemoteGit", () => {
   });
 
   async function failure(sshKey: string): Promise<GitError> {
-    const error: unknown = await runRemoteGit(
-      ["ls-remote", "--", "ssh://tasker.invalid/repo.git"],
-      { cwd: dir, env },
-      sshKey,
-    ).then(
-      () => undefined,
-      (e: unknown) => e,
+    return failureOf(
+      runRemoteGit(["ls-remote", "--", "ssh://tasker.invalid/repo.git"], { cwd: dir, env }, sshKey),
+      GitError,
     );
-    expect(error).toBeInstanceOf(GitError);
-    return error as GitError;
   }
 
   it("hides a key path with a space and a ' in the error", async () => {

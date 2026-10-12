@@ -13,6 +13,7 @@ import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { pushWithToken } from "../../../src/vcs/git/push-guard.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
+  failureOf,
   type GitOrigin,
   makeGitOrigin,
   makeTempDir,
@@ -62,34 +63,28 @@ describe("the pre-push hook", () => {
     rmSync(tmp, { recursive: true, force: true });
   });
 
-  async function failure(promise: Promise<string>): Promise<GitError> {
-    const error = await promise.then(
-      () => undefined,
-      (caught: unknown) => caught,
-    );
-    expect(error).toBeInstanceOf(GitError);
-    return error as GitError;
-  }
-
   it("rejects a push from a worktree without a token", async () => {
-    const error = await failure(
+    const error = await failureOf(
       runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: wt, env: origin.env }),
+      GitError,
     );
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("x")).toBeUndefined();
   });
 
   it("rejects a push that names the remote by its url", async () => {
-    const error = await failure(
+    const error = await failureOf(
       runGit(["push", origin.path, "HEAD:refs/heads/x"], { cwd: wt, env: origin.env }),
+      GitError,
     );
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("x")).toBeUndefined();
   });
 
   it("rejects a push from the bare clone without a token", async () => {
-    const error = await failure(
+    const error = await failureOf(
       runGit(["push", "origin", "main:refs/heads/y"], { gitDir: clone, env: origin.env }),
+      GitError,
     );
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("y")).toBeUndefined();
@@ -111,7 +106,7 @@ describe("the pre-push hook", () => {
     const head = (await runGit(["rev-parse", "HEAD"], { cwd: wt, env: origin.env })).trim();
     expect(await origin.branchHead("x")).toBe(head);
     expect(existsSync(join(tokens, token))).toBe(false);
-    const error = await failure(pushWith(token));
+    const error = await failureOf(pushWith(token), GitError);
     expect(error.stderr).toContain(NO_TOKEN);
   });
 
@@ -129,7 +124,7 @@ describe("the pre-push hook", () => {
     if (token !== "") {
       writeFileSync(file, "");
     }
-    const error = await failure(pushWith(token));
+    const error = await failureOf(pushWith(token), GitError);
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("x")).toBeUndefined();
     expect(existsSync(file)).toBe(true);
@@ -151,8 +146,9 @@ describe("the pre-push hook", () => {
     });
     const other = join(tmp, "data", "worktrees", "g", "wt");
     await addWorktree("global", other);
-    const error = await failure(
+    const error = await failureOf(
       runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: other, env }),
+      GitError,
     );
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("x")).toBeUndefined();

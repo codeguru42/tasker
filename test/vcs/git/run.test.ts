@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSyn
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, GitNotInstalledError, runGit } from "../../../src/vcs/git/run.js";
-import { gitTestEnv, makeTempDir, repoRoot, writeFakeGit } from "../../helpers.js";
+import { failureOf, gitTestEnv, makeTempDir, repoRoot, writeFakeGit } from "../../helpers.js";
 
 describe("runGit", () => {
   let dir: string;
@@ -44,12 +44,11 @@ describe("runGit", () => {
 
   it("rejects with a GitError that names the subcommand and holds the output", async () => {
     await runGit(["init", "--bare", "--initial-branch=main", "bare.git"], { cwd: dir, env });
-    const error = await runGit(["rev-parse", "--verify", "no-such-ref"], {
-      gitDir: join(dir, "bare.git"),
-      env,
-    }).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(GitError);
-    const gitError = error as GitError;
+    const gitError = await failureOf(
+      runGit(["rev-parse", "--verify", "no-such-ref"], { gitDir: join(dir, "bare.git"), env }),
+      GitError,
+    );
+    expect(gitError).toBeInstanceOf(GitError);
     expect(gitError.message).toContain("git rev-parse failed with exit code");
     expect(gitError.message).toContain("Needed a single revision");
     expect(gitError.subcommand).toBe("rev-parse");
@@ -59,12 +58,10 @@ describe("runGit", () => {
 
   it("rejects a git dir that does not exist", async () => {
     const missing = join(dir, "missing.git");
-    const error = await runGit(["rev-parse", "HEAD"], { gitDir: missing, env }).catch(
-      (e: unknown) => e,
-    );
+    const error = await failureOf(runGit(["rev-parse", "HEAD"], { gitDir: missing, env }), Error);
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(GitError);
-    expect((error as Error).message).toBe(`the git dir does not exist: ${missing}`);
+    expect(error.message).toBe(`the git dir does not exist: ${missing}`);
   });
 
   function makeOtherFolder(): string {
@@ -77,12 +74,15 @@ describe("runGit", () => {
   it("ignores a GIT_WORK_TREE of the caller for a bare git dir", async () => {
     await runGit(["init", "--bare", "--initial-branch=main", "bare.git"], { cwd: dir, env });
     const other = makeOtherFolder();
-    const error = await runGit(["add", "-A"], {
-      gitDir: join(dir, "bare.git"),
-      env: { ...env, GIT_WORK_TREE: other },
-    }).catch((e: unknown) => e);
+    const error = await failureOf(
+      runGit(["add", "-A"], {
+        gitDir: join(dir, "bare.git"),
+        env: { ...env, GIT_WORK_TREE: other },
+      }),
+      GitError,
+    );
     expect(error).toBeInstanceOf(GitError);
-    expect((error as GitError).message).toContain("must be run in a work tree");
+    expect(error.message).toContain("must be run in a work tree");
     expect(existsSync(join(dir, "bare.git", "index"))).toBe(false);
   });
 
@@ -98,21 +98,19 @@ describe("runGit", () => {
   it("rejects a git dir that is a file", async () => {
     const file = join(dir, "file");
     writeFileSync(file, "x\n");
-    const error = await runGit(["rev-parse", "HEAD"], { gitDir: file, env }).catch(
-      (e: unknown) => e,
-    );
+    const error = await failureOf(runGit(["rev-parse", "HEAD"], { gitDir: file, env }), Error);
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(GitError);
-    expect((error as Error).message).toBe(`the git dir does not exist: ${file}`);
+    expect(error.message).toBe(`the git dir does not exist: ${file}`);
   });
 
   it("rejects a working folder that is a file", async () => {
     const file = join(dir, "file");
     writeFileSync(file, "x\n");
-    const error = await runGit(["status"], { cwd: file, env }).catch((e: unknown) => e);
+    const error = await failureOf(runGit(["status"], { cwd: file, env }), Error);
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(GitError);
-    expect((error as Error).message).toBe(`the working folder does not exist: ${file}`);
+    expect(error.message).toBe(`the working folder does not exist: ${file}`);
   });
 
   it("rejects empty args", async () => {
@@ -128,37 +126,39 @@ describe("runGit", () => {
   it("reports that git is not installed when git is not on PATH", async () => {
     const emptyPath = join(dir, "empty-bin");
     mkdirSync(emptyPath);
-    const error = await runGit(["version"], {
-      cwd: dir,
-      env: { ...env, PATH: emptyPath },
-    }).catch((e: unknown) => e);
+    const error = await failureOf(
+      runGit(["version"], { cwd: dir, env: { ...env, PATH: emptyPath } }),
+      GitNotInstalledError,
+    );
     expect(error).toBeInstanceOf(GitNotInstalledError);
-    expect((error as Error).message).toBe("git is not installed: git was not found on PATH");
+    expect(error.message).toBe("git is not installed: git was not found on PATH");
   });
 
   it("reports that git is not installed when the env has no PATH", async () => {
     const withoutPath = { ...env };
     delete withoutPath.PATH;
-    const error = await runGit(["version"], { cwd: dir, env: withoutPath }).catch(
-      (e: unknown) => e,
+    const error = await failureOf(
+      runGit(["version"], { cwd: dir, env: withoutPath }),
+      GitNotInstalledError,
     );
     expect(error).toBeInstanceOf(GitNotInstalledError);
-    expect((error as Error).message).toBe("git is not installed: the env has no PATH");
+    expect(error.message).toBe("git is not installed: the env has no PATH");
   });
 
   it("reports that git is not installed when PATH is empty", async () => {
-    const error = await runGit(["version"], { cwd: dir, env: { ...env, PATH: "" } }).catch(
-      (e: unknown) => e,
+    const error = await failureOf(
+      runGit(["version"], { cwd: dir, env: { ...env, PATH: "" } }),
+      GitNotInstalledError,
     );
     expect(error).toBeInstanceOf(GitNotInstalledError);
-    expect((error as Error).message).toBe("git is not installed: the env has no PATH");
+    expect(error.message).toBe("git is not installed: the env has no PATH");
   });
 
   it("reports a missing working folder, not a missing git", async () => {
     const missing = join(dir, "no-such-folder");
-    const error = await runGit(["status"], { cwd: missing, env }).catch((e: unknown) => e);
+    const error = await failureOf(runGit(["status"], { cwd: missing, env }), Error);
     expect(error).not.toBeInstanceOf(GitNotInstalledError);
-    expect((error as Error).message).toBe(`the working folder does not exist: ${missing}`);
+    expect(error.message).toBe(`the working folder does not exist: ${missing}`);
   });
 
   it("writes nothing to the terminal, also when git fails", async () => {

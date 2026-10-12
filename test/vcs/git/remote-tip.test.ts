@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type RemoteTip, remoteTip, tipMoved } from "../../../src/vcs/git/remote-tip.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import {
+  failureOf,
   type GitOrigin,
   makeGitOrigin,
   makeTempDir,
@@ -91,12 +92,8 @@ describe("remoteTip", () => {
 
   it("rejects with the remote name when the remote does not answer", async () => {
     const remote = join(origin.dir, "missing.git");
-    const error = await tip("main", remote).then(
-      () => undefined,
-      (caught: unknown) => caught,
-    );
-    expect(error).toBeInstanceOf(Error);
-    expect((error as Error).message.startsWith(`the remote does not answer: ${remote}`)).toBe(true);
+    const error = await failureOf(tip("main", remote), Error);
+    expect(error.message.startsWith(`the remote does not answer: ${remote}`)).toBe(true);
   });
 
   it("refuses an empty branch name before it reads the remote", async () => {
