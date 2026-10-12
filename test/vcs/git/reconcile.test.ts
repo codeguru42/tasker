@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   type FoundState,
   type ReconcileStrategy,
+  ReconcileConflictError,
   reconcileWorktree,
   restoreCommands,
   restoreWorktree,
@@ -59,6 +60,11 @@ describe("git reconcile", () => {
     strategy: ReconcileStrategy,
     extra: Partial<Parameters<typeof reconcileWorktree>[0]> = {},
   ) => reconcileWorktree({ clone, env, path, baseRevision: BASE, strategy, ...extra });
+  // A task commit and a base commit that change the same file. It gives the base tip.
+  const conflictSetup = async () => {
+    await commitInWorktree(path, env, { file: "shared.txt", content: "task" });
+    return moveBase({ file: "shared.txt", content: "base" });
+  };
   const restore = (
     start: StartState,
     extra: Partial<Parameters<typeof restoreWorktree>[0]> = {},
@@ -242,6 +248,17 @@ describe("git reconcile", () => {
       expect(error).not.toBeInstanceOf(GitError);
       expect(error.message).toContain("cannot restore the worktree");
       expect(error.message).toContain(`${BRANCH}.lock`);
+    });
+
+    it.each(["rebase", "merge"] as const)("aborts a %s that stops on a conflict", async (strategy) => {
+      const base = await conflictSetup();
+      const start = await state();
+      const error = await failureOf(reconcile(strategy), ReconcileConflictError);
+      expect(error.paths).toEqual(["shared.txt"]);
+      expect(error.message).toBe(
+        `the ${strategy} onto ${base} stopped on conflicts: ${target}: "shared.txt"`,
+      );
+      await expectAsBefore(start);
     });
   });
 });
