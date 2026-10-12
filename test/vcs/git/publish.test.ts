@@ -192,6 +192,59 @@ describe("publish, land and delete", () => {
       await expectPushNeedsToken();
     });
 
+    describe("when someone else moved the branch", () => {
+      const moved = "the task branch moved on origin: issue-1-task";
+
+      async function expectRefusedWithNoPush(
+        run: () => Promise<unknown>,
+        message: string,
+        originHead: string | undefined,
+      ): Promise<void> {
+        const before = pushes().length;
+        const error = await failureOf(run(), Error);
+        expect(error.message).toBe(message);
+        expect(pushes()).toHaveLength(before);
+        expect(await origin.branchHead("issue-1-task")).toBe(originHead);
+        expectNoTokenFile();
+      }
+
+      it("refuses when origin has a revision that tasker did not publish", async () => {
+        const first = await addCloneCommit(clone, env, "issue-1-task");
+        await publish({ published: undefined });
+        const other = await origin.addCommit("issue-1-task");
+        await addCloneCommit(clone, env, "issue-1-task", "refs/remotes/origin/main");
+
+        await expectRefusedWithNoPush(
+          () => publish({ published: first }),
+          `${moved}: tasker published ${first}, origin has ${other}`,
+          other,
+        );
+      });
+
+      it("refuses when origin no longer has the branch", async () => {
+        const revision = await addCloneCommit(clone, env, "issue-1-task");
+
+        await expectRefusedWithNoPush(
+          () => publish({ published: revision }),
+          `${moved}: tasker published ${revision}, origin does not have it`,
+          undefined,
+        );
+      });
+
+      it("refuses a first publish over a branch that someone else made", async () => {
+        const main = await origin.branchHead("main");
+        await origin.createBranch("issue-1-task");
+        await addCloneCommit(clone, env, "issue-1-task", "refs/remotes/origin/main");
+        await addCloneCommit(clone, env, "issue-1-task");
+
+        await expectRefusedWithNoPush(
+          () => publish({ published: undefined }),
+          `${moved}: tasker never published it, origin has ${main}`,
+          main,
+        );
+      });
+    });
+
     it("passes the ssh key to the ls-remote call of an already published branch", async () => {
       const ssh = await sshClone();
       const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
