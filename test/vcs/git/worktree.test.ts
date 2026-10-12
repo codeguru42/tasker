@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   assertTaskBranchShape,
+  assertTaskWorktree,
   createTaskWorktree,
   deleteTaskBranch,
   discardWorktreeChanges,
@@ -530,6 +531,30 @@ describe("git fixture", () => {
       expect(readFileSync(join(outer, "tracked.txt"), "utf8")).toBe("changed\n");
       expect(existsSync(join(outer, "untracked.txt"))).toBe(true);
       expect(existsSync(join(wt, "README.md"))).toBe(true);
+    });
+  });
+
+  describe("assertTaskWorktree", () => {
+    const guard = (extra: Partial<Parameters<typeof assertTaskWorktree>[0]> = {}) =>
+      assertTaskWorktree({ clone, env, path: path(), ...extra });
+
+    it("gives the real path of a worktree of the clone", async () => {
+      await create();
+      expect(await guard()).toBe(realpathSync(path()));
+    });
+
+    it("refuses a folder that is not a worktree of the clone", async () => {
+      mkdirSync(path(), { recursive: true });
+      const error = await failureOf(guard(), Error);
+      expect(error.message).toBe(`not a worktree of the clone: ${path()}`);
+    });
+
+    it("refuses a listed worktree whose .git is a folder", async () => {
+      await create();
+      rmSync(join(path(), ".git"));
+      mkdirSync(join(path(), ".git"));
+      const error = await failureOf(guard(), Error);
+      expect(error.message).toBe(`the worktree has no .git file: ${realpathSync(path())}`);
     });
   });
 
