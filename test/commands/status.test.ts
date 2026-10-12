@@ -3,22 +3,21 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { run } from "../../src/cli.js";
 import { showConfig } from "../../src/commands/show-config.js";
-import { loadConfig } from "../../src/config/load.js";
-import { resolveIssueKey } from "../../src/issue-key/resolve.js";
 import { status } from "../../src/commands/status.js";
 import { STATES } from "../../src/state/machine.js";
 import {
   captureIo,
+  dayAt,
+  issueKeyErrorMessage,
+  runCommand,
   seedTasks,
-  threeRepoConfig,
+  useThreeRepoDataRoot,
   validConfig,
-  writeDataRootConfig,
   writeTempConfig,
 } from "../helpers.js";
 
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";
-const at = (day: number) => `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
 
 const dirs: string[] = [];
 
@@ -27,31 +26,17 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-// Writes the three repo configuration and points TASKER_CONFIG at it.
-function setup() {
-  const written = writeDataRootConfig(threeRepoConfig());
-  dirs.push(written.dir);
-  vi.stubEnv("TASKER_CONFIG", written.path);
-  return written;
-}
-
-async function runStatus(...args: string[]) {
-  const io = captureIo();
-  const code = await run(["status", ...args], { commands: [status], io });
-  return { code, out: io.out.join(""), err: io.err.join("") };
-}
-
 describe("status", () => {
   it("lists the active tasks of all repos and hides finished and cancelled tasks", async () => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
-      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: at(3) },
-      { issueKey: `${TASKER}#1`, repoKey: TASKER, state: "finished", at: at(4) },
-      { issueKey: `${OTHER}#2`, repoKey: OTHER, state: "cancelled", at: at(5) },
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: dayAt(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: dayAt(3) },
+      { issueKey: `${TASKER}#1`, repoKey: TASKER, state: "finished", at: dayAt(4) },
+      { issueKey: `${OTHER}#2`, repoKey: OTHER, state: "cancelled", at: dayAt(5) },
     ]);
 
-    const result = await runStatus();
+    const result = await runCommand(status, "status");
 
     expect(result).toEqual({
       code: 0,
@@ -64,7 +49,7 @@ describe("status", () => {
   });
 
   it("prints the four columns, the newest change first and the higher id first on a tie", async () => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(
       dataRoot,
       [
@@ -77,11 +62,11 @@ describe("status", () => {
         issueKey: `${TASKER}#${n}`,
         repoKey: TASKER,
         state,
-        at: at(day),
+        at: dayAt(day),
       })),
     );
 
-    const result = await runStatus();
+    const result = await runCommand(status, "status");
 
     expect(result).toEqual({
       code: 0,
@@ -101,38 +86,38 @@ describe("status", () => {
     [
       "a store with only finished and cancelled tasks",
       [
-        { issueKey: `${TASKER}#1`, repoKey: TASKER, state: "finished", at: at(1) },
-        { issueKey: `${OTHER}#2`, repoKey: OTHER, state: "cancelled", at: at(2) },
+        { issueKey: `${TASKER}#1`, repoKey: TASKER, state: "finished", at: dayAt(1) },
+        { issueKey: `${OTHER}#2`, repoKey: OTHER, state: "cancelled", at: dayAt(2) },
       ],
     ],
   ])("prints no tasks for %s", async (_name, tasks) => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, tasks);
 
-    const result = await runStatus();
+    const result = await runCommand(status, "status");
 
     expect(result).toEqual({ code: 0, err: "", out: "no tasks\n" });
   });
 
   it("prints no tasks when --repo names a repo without active tasks", async () => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: dayAt(2) },
     ]);
 
-    const result = await runStatus("--repo", OTHER);
+    const result = await runCommand(status, "status", "--repo", OTHER);
 
     expect(result).toEqual({ code: 0, err: "", out: "no tasks\n" });
   });
 
   it("lists only the tasks of the repo that --repo names", async () => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
-      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: at(3) },
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: dayAt(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: dayAt(3) },
     ]);
 
-    const result = await runStatus("--repo", TASKER);
+    const result = await runCommand(status, "status", "--repo", TASKER);
 
     expect(result).toEqual({
       code: 0,
@@ -144,9 +129,9 @@ describe("status", () => {
   });
 
   it.each(["missing", "toString"])("rejects the unknown repo %s", async (key) => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
 
-    const result = await runStatus("--repo", key);
+    const result = await runCommand(status, "status", "--repo", key);
 
     expect(result).toEqual({ code: 1, out: "", err: `repo key not found: ${key}\n` });
     expect(existsSync(join(dataRoot, "tasker.db"))).toBe(false);
@@ -164,22 +149,22 @@ describe("status", () => {
         "codeguru42/other#2  codeguru42/other  cancelled  2026-01-05T00:00:00.000Z\n",
     ],
   ])("lists only the %s tasks for --state", async (state, out) => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#3`, repoKey: TASKER, state: "planning", at: at(3) },
-      { issueKey: `${TASKER}#1`, repoKey: TASKER, state: "finished", at: at(4) },
-      { issueKey: `${OTHER}#2`, repoKey: OTHER, state: "cancelled", at: at(5) },
+      { issueKey: `${TASKER}#3`, repoKey: TASKER, state: "planning", at: dayAt(3) },
+      { issueKey: `${TASKER}#1`, repoKey: TASKER, state: "finished", at: dayAt(4) },
+      { issueKey: `${OTHER}#2`, repoKey: OTHER, state: "cancelled", at: dayAt(5) },
     ]);
 
-    const result = await runStatus("--state", state);
+    const result = await runCommand(status, "status", "--state", state);
 
     expect(result).toEqual({ code: 0, err: "", out });
   });
 
   it("rejects an unknown state and lists the states", async () => {
-    setup();
+    useThreeRepoDataRoot();
 
-    const result = await runStatus("--state", "bogus");
+    const result = await runCommand(status, "status", "--state", "bogus");
 
     expect(result).toEqual({
       code: 1,
@@ -189,14 +174,14 @@ describe("status", () => {
   });
 
   it("lists only the tasks that match both --repo and --state", async () => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
-      { issueKey: `${TASKER}#6`, repoKey: TASKER, state: "executing", at: at(3) },
-      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "planning", at: at(4) },
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: dayAt(2) },
+      { issueKey: `${TASKER}#6`, repoKey: TASKER, state: "executing", at: dayAt(3) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "planning", at: dayAt(4) },
     ]);
 
-    const result = await runStatus("--repo", TASKER, "--state", "planning");
+    const result = await runCommand(status, "status", "--repo", TASKER, "--state", "planning");
 
     expect(result).toEqual({
       code: 0,
@@ -208,14 +193,14 @@ describe("status", () => {
   });
 
   it("lists only the tasks of the issue that --issue names", async () => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
-      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: at(3) },
-      { issueKey: `${OTHER}#8`, repoKey: OTHER, state: "planning", at: at(4) },
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: dayAt(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: dayAt(3) },
+      { issueKey: `${OTHER}#8`, repoKey: OTHER, state: "planning", at: dayAt(4) },
     ]);
 
-    const result = await runStatus("--issue", `${OTHER}#7`);
+    const result = await runCommand(status, "status", "--issue", `${OTHER}#7`);
 
     expect(result).toEqual({
       code: 0,
@@ -229,29 +214,24 @@ describe("status", () => {
   it.each(["nobody/else#1", `${TASKER}#5`])(
     "prints the error of the issue key %s",
     async (key) => {
-      const written = setup();
-      let expected = "";
-      try {
-        resolveIssueKey(key, loadConfig({ TASKER_CONFIG: written.path }));
-      } catch (error) {
-        expected = `${(error as Error).message}\n`;
-      }
-      expect(expected).not.toBe("");
+      const written = useThreeRepoDataRoot();
+      const expected = `${issueKeyErrorMessage(key, written.path)}
+`;
 
-      const result = await runStatus("--issue", key);
+      const result = await runCommand(status, "status", "--issue", key);
 
       expect(result).toEqual({ code: 1, out: "", err: expected });
     },
   );
 
   it("passes --repo to the issue key, so that it picks one of two repos", async () => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
-      { issueKey: `${TASKER}#5`, repoKey: "fork", state: "planning", at: at(3) },
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: dayAt(2) },
+      { issueKey: `${TASKER}#5`, repoKey: "fork", state: "planning", at: dayAt(3) },
     ]);
 
-    const result = await runStatus("--issue", `${TASKER}#5`, "--repo", "fork");
+    const result = await runCommand(status, "status", "--issue", `${TASKER}#5`, "--repo", "fork");
 
     expect(result).toEqual({
       code: 0,
@@ -263,13 +243,13 @@ describe("status", () => {
   });
 
   it("lists only the cancelled attempt of an issue for --issue with --state", async () => {
-    const { dataRoot } = setup();
+    const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
-      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "cancelled", at: at(2) },
-      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: at(3) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "cancelled", at: dayAt(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: dayAt(3) },
     ]);
 
-    const result = await runStatus("--issue", `${OTHER}#7`, "--state", "cancelled");
+    const result = await runCommand(status, "status", "--issue", `${OTHER}#7`, "--state", "cancelled");
 
     expect(result).toEqual({
       code: 0,
@@ -291,7 +271,7 @@ describe("status", () => {
       const showIo = captureIo();
       const showCode = await run(["show-config"], { commands: [showConfig], io: showIo });
 
-      const result = await runStatus();
+      const result = await runCommand(status, "status");
 
       expect(showCode).toBe(1);
       expect(result.code).toBe(1);
