@@ -140,7 +140,7 @@ export async function deleteRemoteTaskBranch(
 ): Promise<{ state: "deleted" | "already-gone" }> {
   const { clone, remote, publishTokens, sshKey, env, branch, published } = options;
   const tip = await remoteTip({ remote, branch, sshKey, env });
-  if (tip.state === "absent") return { state: "already-gone" };
+  if (compareTip(branch, published, tip) === "absent") return { state: "already-gone" };
   await pushWithToken(
     [`--force-with-lease=refs/heads/${branch}:${published}`, "origin", `:refs/heads/${branch}`],
     { location: { gitDir: clone }, publishTokens, sshKey, env },
