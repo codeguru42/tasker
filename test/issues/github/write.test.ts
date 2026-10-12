@@ -151,3 +151,23 @@ describe("markGithubDone without a done label", () => {
     expect(fake.calls()).toHaveLength(2);
   });
 });
+
+describe("markGithubDone with a done label", () => {
+  it("adds the label with one edit call and does not close the issue", async () => {
+    const fake = fakeGh(dir, {}, [token, { args: editArgs("--add-label", "done") }]);
+    await write.markGithubDone(ref, "done", "octo", fake.env);
+    expect(fake.calls().map((call) => call.args)).toEqual([token.args, editArgs("--add-label", "done")]);
+  });
+
+  it("rejects with an IssueWriteError that names the configuration key when the label is missing", async () => {
+    const stderr = editFailure("'done' not found");
+    const fake = fakeGh(dir, {}, [token, { args: editArgs("--add-label", "done"), exitCode: 1, stderr }]);
+    const error = await failureOf(write.markGithubDone(ref, "done", "octo", fake.env), issue.IssueWriteError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.configKey).toBe("issueTracker.doneLabel");
+    expect(error.message).toBe(
+      "could not add the label \"done\" of issueTracker.doneLabel to octo/repo#7: gh issue edit failed with exit code 1: failed to update https://github.com/octo/repo/issues/7: 'done' not found\nfailed to update 1 issue",
+    );
+    expect(fake.calls()).toHaveLength(2);
+  });
+});
