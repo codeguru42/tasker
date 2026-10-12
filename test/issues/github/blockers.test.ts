@@ -2,6 +2,7 @@ import { rmSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { IssueKeyError, type IssueRef } from "../../../src/issue-key/ref.js";
 import { readGithubBlockers } from "../../../src/issues/github/blockers.js";
+import { GhError } from "../../../src/issues/github/run.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
 import { failureOf, fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
 
@@ -145,6 +146,93 @@ describe("readGithubBlockers", () => {
     const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
     expect(error.key).toBe("octo/repo#7");
     expect(error.message).toContain("gh api graphql gave bad output for octo/repo#7:");
+  });
+
+  it.each([
+    ["output that is not JSON", "not json"],
+    ["an answer with no data", "{}"],
+    ["an unknown state", pageJson([node(3, "DRAFT", "octo/repo")])],
+    [
+      "a node with no repository",
+      pageJson([{ number: 3, state: "OPEN" }]),
+    ],
+    ["a name that does not form a key", pageJson([node(3, "OPEN", "bad")])],
+  ])("gives bad output for %s", async (_name, stdout) => {
+    const fake = fakeWith({ args: graphqlArgs("octo", "repo", "7"), stdout });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toContain("gh api graphql gave bad output for octo/repo#7:");
+  });
+
+  // gh exits 1 for a GraphQL error and prints the JSON on stdout.
+  const notFound = (path: string[], message: string, data: unknown) =>
+    JSON.stringify({ data, errors: [{ type: "NOT_FOUND", path, message }] });
+
+  it("names the key when the repository does not exist", async () => {
+    const message = "Could not resolve to a Repository with the name 'octo/repo'.";
+    const fake = fakeWith({
+      args: graphqlArgs("octo", "repo", "7"),
+      stdout: notFound(["repository"], message, { repository: null }),
+      exitCode: 1,
+    });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toBe(`the issue octo/repo#7 does not exist: ${message}`);
+  });
+
+  it("names the key when the issue does not exist", async () => {
+    const message = "Could not resolve to an Issue with the number of 7.";
+    const fake = fakeWith({
+      args: graphqlArgs("octo", "repo", "7"),
+      stdout: notFound(["repository", "issue"], message, { repository: { issue: null } }),
+      exitCode: 1,
+    });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toBe(`the issue octo/repo#7 does not exist: ${message}`);
+  });
+
+  it("gives the missing-issue error for a pull request number", async () => {
+    // gh 2.101.0 gives "issue": null and a NOT_FOUND error for the number of a pull request.
+    const message = "Could not resolve to an Issue with the number of 7.";
+    const fake = fakeWith({
+      args: graphqlArgs("octo", "repo", "7"),
+      stdout: notFound(["repository", "issue"], message, { repository: { issue: null } }),
+      exitCode: 1,
+    });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toBe(`the issue octo/repo#7 does not exist: ${message}`);
+  });
+
+  it("gives the messages of the errors when the answer has no data", async () => {
+    const fake = fakeWith({
+      args: graphqlArgs("octo", "repo", "7"),
+      stdout: JSON.stringify({ errors: [{ message: "Field 'nope' doesn't exist" }, { message: "Second problem" }] }),
+      exitCode: 1,
+    });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toBe(
+      "gh api graphql gave errors for octo/repo#7: Field 'nope' doesn't exist; Second problem",
+    );
+  });
+
+  it("gives the errors, not the blockers, when the answer has both", async () => {
+    const full = JSON.parse(pageJson([node(3, "OPEN", "octo/repo")])) as object;
+    const fake = fakeWith({
+      args: graphqlArgs("octo", "repo", "7"),
+      stdout: JSON.stringify({ ...full, errors: [{ message: "First" }, { message: "Second" }] }),
+    });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toBe("gh api graphql gave errors for octo/repo#7: First; Second");
+  });
+
+  it("keeps a gh failure with no JSON as a GhError", async () => {
+    const fake = fakeWith({ args: graphqlArgs("octo", "repo", "7"), stderr: "HTTP 502", exitCode: 1 });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), GhError);
+    expect(error.stderr).toContain("HTTP 502");
   });
 
   it("runs the graphql call with the token of the account", async () => {
