@@ -10,6 +10,7 @@ import {
   fakeSsh,
   GIT_TEST_IDENTITY,
   gitTestEnv,
+  localBranches,
   makeGitClone,
   makeGitOrigin,
   makeTempDir,
@@ -164,6 +165,11 @@ describe("addCloneCommit", () => {
     expect(sha).toMatch(/^[0-9a-f]{40}$/);
     expect(await git("rev-parse", "refs/heads/b1")).toBe(sha);
     expect(await git("rev-parse", `${sha}^`)).toBe(await git("rev-parse", "refs/remotes/origin/main"));
+  });
+
+  it("makes only the branch that it names, and localBranches() lists it", async () => {
+    await addCloneCommit(clone, origin.env, "b1");
+    expect(await localBranches(clone, origin.env)).toEqual(["refs/heads/b1"]);
   });
 
   it("makes a child of the tip of an existing branch", async () => {

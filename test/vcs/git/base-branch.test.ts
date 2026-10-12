@@ -299,20 +299,37 @@ describe("resolveBaseBranch", () => {
       expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
     });
 
-    it("gives the fetched commit and not the stale local copy", async () => {
+    it("gives the fetched commit and not a local branch with the same short name", async () => {
+      await runGit(["update-ref", "refs/heads/origin/main", "refs/remotes/origin/main"], {
+        gitDir: clone,
+        env,
+      });
       await origin.addCommit("main");
       const result = await resolve({ defaultBaseBranch: "main" });
       expect(result.revision).toBe("refs/remotes/origin/main");
       const head = await revParse(result.revision);
       expect(head).toBe(await origin.branchHead("main"));
-      expect(head).not.toBe(await revParse("refs/heads/main"));
+      const shadow = await runGit(["show-ref", "--verify", "--hash", "--", "refs/heads/origin/main"], {
+        gitDir: clone,
+        env,
+      });
+      expect(head).not.toBe(shadow.trim());
     });
 
     it("gives the remote main when the remote has a branch named origin/main", async () => {
       await origin.addCommit("main");
+      // The tag comes after addCommit: a tag origin/main makes the checkout of addCommit ambiguous.
+      await runGit(["tag", "origin/main", "main~1"], { gitDir: origin.path, env });
       const result = await resolve({ explicit: "main" });
       expect(result.revision).toBe("refs/remotes/origin/main");
-      expect(await revParse(result.revision)).toBe(await origin.branchHead("main"));
+      const head = await revParse(result.revision);
+      expect(head).toBe(await origin.branchHead("main"));
+      const tag = await runGit(["show-ref", "--verify", "--hash", "--", "refs/tags/origin/main"], {
+        gitDir: clone,
+        env,
+      });
+      expect(tag.trim()).toMatch(/^[0-9a-f]{40}$/);
+      expect(head).not.toBe(tag.trim());
     });
   });
 

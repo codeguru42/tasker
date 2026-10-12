@@ -4,11 +4,13 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type ProvisionOptions, provisionClone } from "../../../src/vcs/git/provision.js";
 import { remoteCwd, sshCommand } from "../../../src/vcs/git/ssh.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
+import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {
   failureOf,
   type FakeSsh,
   fakeSsh,
   type GitOrigin,
+  localBranches,
   makeGitOrigin,
   makeTempDir,
   readArgLog,
@@ -73,6 +75,43 @@ describe("provisionClone", () => {
     await provision();
     expect(await revParse("origin/main")).toBe(await origin.branchHead("main"));
     expect(await revParse("origin/feature")).toBe(await origin.branchHead("feature"));
+  });
+
+  it("makes a clone with no local branch", async () => {
+    await origin.createBranch("feature");
+    await provision();
+    expect(await localBranches(clone, origin.env)).toEqual([]);
+    expect(await revParse("refs/remotes/origin/main")).toBe(await origin.branchHead("main"));
+    expect(await revParse("refs/remotes/origin/feature")).toBe(await origin.branchHead("feature"));
+  });
+
+  it("makes a worktree from origin/main while HEAD of the clone names no branch", async () => {
+    await provision();
+    const target = await runGit(["symbolic-ref", "HEAD"], { gitDir: clone, env: origin.env });
+    expect(target.startsWith("refs/heads/")).toBe(true);
+    const error = await failureOf(
+      runGit(["rev-parse", "--verify", "--quiet", "HEAD"], { gitDir: clone, env: origin.env }),
+      GitError,
+    );
+    expect(error.exitCode).toBe(1);
+    await createTaskWorktree({
+      clone,
+      env: origin.env,
+      path: join(tmp, "worktrees", "issue-1"),
+      branch: "issue-1-x",
+      baseRevision: "refs/remotes/origin/main",
+    });
+    expect(await localBranches(clone, origin.env)).toEqual(["refs/heads/issue-1-x"]);
+  });
+
+  it("makes a sha1 clone when the user default is sha256", async () => {
+    await provision({ env: { ...origin.env, GIT_DEFAULT_HASH: "sha256" } });
+    const format = await runGit(["rev-parse", "--show-object-format"], {
+      gitDir: clone,
+      env: origin.env,
+    });
+    expect(format.trim()).toBe("sha1");
+    expect(await revParse("refs/remotes/origin/main")).toBe(await origin.branchHead("main"));
   });
 
   it("clones the same repo that ls-remote checks when the remote path is relative", async () => {
@@ -271,11 +310,11 @@ describe("provisionClone", () => {
       expect(out).toBe("tasker-ssh.config\n");
     });
 
-    it("passes the key to ssh for ls-remote, clone and fetch", async () => {
+    it("passes the key to ssh for ls-remote and fetch", async () => {
       const key = hardKey();
       await provision({ remote, config: { sshKey: key }, env: ssh.env });
       const calls = readArgLog(ssh.logPath);
-      expect(calls.length).toBeGreaterThanOrEqual(3);
+      expect(calls.length).toBeGreaterThanOrEqual(2);
       for (const call of calls) {
         expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
       }
@@ -290,9 +329,10 @@ describe("provisionClone", () => {
       await provision({ remote, config: { sshKey: key }, env });
       const calls = readArgLog(gitLog);
       const args = calls.flat();
-      for (const subcommand of ["ls-remote", "clone", "fetch", "config"]) {
+      for (const subcommand of ["ls-remote", "init", "remote", "fetch", "config"]) {
         expect(args).toContain(subcommand);
       }
+      expect(args).not.toContain("clone");
       for (const arg of calls.flat()) {
         expect(arg).not.toContain(key);
         expect(arg).not.toContain(sshCommand(key));
@@ -304,7 +344,7 @@ describe("provisionClone", () => {
       const env = { ...ssh.env, GIT_SSH_COMMAND: "ssh -o User=fromuser" };
       await provision({ remote, env });
       const calls = readArgLog(ssh.logPath);
-      expect(calls.length).toBeGreaterThanOrEqual(3);
+      expect(calls.length).toBeGreaterThanOrEqual(2);
       for (const call of calls) {
         expect(call).toContain("User=fromuser");
         expect(call).not.toContain("-i");

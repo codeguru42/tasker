@@ -31,6 +31,7 @@ import {
 } from "../../../src/vcs/git/worktree.js";
 import {
   failureOf,
+  localBranches,
   makeGitClone,
   makeGitOrigin,
   NOT_TASK_BRANCHES,
@@ -131,9 +132,6 @@ describe("git fixture", () => {
       gitDir: clone,
       env,
     }).then((out) => out.trim());
-  // The local branches of the clone, one full ref name per line.
-  const branches = () =>
-    runGit(["for-each-ref", "--format=%(refname)", "refs/heads"], { gitDir: clone, env });
   const addWorktree = (...args: string[]) =>
     runGit(["worktree", "add", ...args], { gitDir: clone, env });
   const remove = (extra: Partial<Parameters<typeof removeTaskWorktree>[0]> = {}) =>
@@ -396,11 +394,11 @@ describe("git fixture", () => {
   describe("createTaskWorktree, conflicts", () => {
     // Makes sure that create fails with message and changes no branch and no worktree.
     const expectConflict = async (message: string) => {
-      const branchesBefore = await branches();
+      const branchesBefore = await localBranches(clone, env);
       const worktreesBefore = await list();
       const error = await failureOf(create(), Error);
       expect(error.message).toBe(message);
-      expect(await branches()).toBe(branchesBefore);
+      expect(await localBranches(clone, env)).toEqual(branchesBefore);
       expect(await list()).toEqual(worktreesBefore);
     };
 
@@ -443,7 +441,7 @@ describe("git fixture", () => {
       await create();
       await remove();
       await deleteBranch();
-      expect(await branches()).not.toContain("refs/heads/issue-1-x");
+      expect(await localBranches(clone, env)).not.toContain("refs/heads/issue-1-x");
       expect(await origin.branchHead("issue-1-x")).toBe(remoteHead);
     });
 
@@ -454,7 +452,7 @@ describe("git fixture", () => {
     it("refuses a branch that a worktree holds", async () => {
       await create();
       await failureOf(deleteBranch(), GitError);
-      expect(await branches()).toContain("refs/heads/issue-1-x");
+      expect(await localBranches(clone, env)).toContain("refs/heads/issue-1-x");
     });
 
     it.each(["", "-x", "a..b", "HEAD"])(

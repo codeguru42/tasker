@@ -291,6 +291,15 @@ export async function addCloneCommit(
   return sha;
 }
 
+// The full names of the local branches of the bare clone, from git for-each-ref refs/heads/.
+export async function localBranches(clone: string, env: NodeJS.ProcessEnv): Promise<string[]> {
+  const out = await runGit(["for-each-ref", "--format=%(refname)", "refs/heads/"], {
+    gitDir: clone,
+    env,
+  });
+  return out.split("\n").filter((line) => line !== "");
+}
+
 let worktreeCommitCount = 0;
 
 // Writes content to file in the worktree, then commits all changes there with message.
