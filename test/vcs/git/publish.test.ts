@@ -347,6 +347,35 @@ describe("publish, land and delete", () => {
       expectNoTokenFile();
     });
 
+    describe("errors", () => {
+      it("names the base and the revision when the revision is not a fast-forward", async () => {
+        const revision = await addCloneCommit(clone, env, "issue-1-task");
+        const moved = await origin.addCommit("main");
+
+        const error = await failureOf(land({ revision }), Error);
+
+        expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(
+          true,
+        );
+        expect(await origin.branchHead("main")).toBe(moved);
+        expectNoTokenFile();
+      });
+
+      it("names the base and the revision when the remote does not answer", async () => {
+        const revision = await addCloneCommit(clone, env, "issue-1-task");
+
+        const error = await failureOf(
+          land({ revision, remote: join(origin.dir, "missing.git") }),
+          Error,
+        );
+
+        expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(
+          true,
+        );
+        expectNoTokenFile();
+      });
+    });
+
     it("passes the ssh key to each ssh call", async () => {
       const ssh = await sshClone();
       const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
