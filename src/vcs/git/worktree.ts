@@ -14,6 +14,21 @@ function slugOrUndefined(value: string): string | undefined {
   }
 }
 
+// True when name is one safe ref part: a path slug, at most MAX_BRANCH_LENGTH long, not "HEAD".
+// Git accepts each such name, and none starts with "-".
+function isTaskBranch(name: string): boolean {
+  return (
+    slugOrUndefined(name) === name && name.length <= MAX_BRANCH_LENGTH && name !== "HEAD"
+  );
+}
+
+// Throws unless name passes isTaskBranch(). Run it before any git call that takes a branch.
+export function assertTaskBranch(name: string): void {
+  if (!isTaskBranch(name)) {
+    throw new Error(`not a task branch name: ${JSON.stringify(name)}`);
+  }
+}
+
 // The task branch: the short ref, then the issue title as a lower-case slug.
 // The result is always a valid branch name:
 // - The short ref ends with no "-" or ".", and the slug starts with none.
@@ -22,6 +37,9 @@ function slugOrUndefined(value: string): string | undefined {
 // - A result with a slug has a "-", so it is never "HEAD".
 // - The length is at most MAX_BRANCH_LENGTH.
 export function taskBranchName(shortRef: string, title: string): string {
+  if (!isTaskBranch(shortRef)) {
+    throw new Error(`not a safe short ref: ${JSON.stringify(shortRef)}`);
+  }
   const room = MAX_BRANCH_LENGTH - shortRef.length - 1;
   if (room <= 0) return shortRef;
   // Lower case first, so a trailing ".LOCK" becomes ".lock" and pathSlug strips it.
