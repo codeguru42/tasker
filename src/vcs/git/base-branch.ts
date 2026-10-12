@@ -2,7 +2,7 @@ import { GitError, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
 
 const REMOTE_PREFIXES = ["refs/remotes/origin/", "origin/"];
-const LOCAL_PREFIX = "refs/heads/";
+export const LOCAL_PREFIX = "refs/heads/";
 
 // Parses the base branch that a user types. The result is the stored form:
 // the name of an origin branch, or refs/heads/<x> for a local branch of the clone.

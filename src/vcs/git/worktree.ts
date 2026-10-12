@@ -26,7 +26,7 @@ function isTaskBranch(name: string): boolean {
 }
 
 // Throws unless name passes isTaskBranch(). Run it before any git call that takes a branch.
-function assertTaskBranch(name: string): void {
+export function assertTaskBranch(name: string): void {
   if (!isTaskBranch(name)) {
     throw new Error(`not a task branch name: ${JSON.stringify(name)}`);
   }
