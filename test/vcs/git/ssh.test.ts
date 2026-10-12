@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs";
 import { userInfo } from "node:os";
-import { delimiter, join } from "node:path";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError } from "../../../src/vcs/git/run.js";
 import {
@@ -11,7 +11,15 @@ import {
   sshCommand,
   sshEnv,
 } from "../../../src/vcs/git/ssh.js";
-import { failureOf, gitTestEnv, makeTempDir, readArgLog, writeFakeSsh } from "../../helpers.js";
+import {
+  type FakeSsh,
+  failureOf,
+  fakeSsh,
+  gitTestEnv,
+  makeTempDir,
+  readArgLog,
+  sshKeyArgs,
+} from "../../helpers.js";
 
 describe("sshCommand", () => {
   it("quotes the key path and writes each ' as '\\''", () => {
@@ -82,14 +90,11 @@ describe("hideSshKey", () => {
 
 describe("runRemoteGit", () => {
   let dir: string;
-  let env: NodeJS.ProcessEnv;
-  let logPath: string;
+  let ssh: FakeSsh;
 
   beforeEach(() => {
     dir = makeTempDir("tasker-ssh-");
-    logPath = join(dir, "ssh.log");
-    writeFakeSsh(join(dir, "bin"), logPath, "refuse");
-    env = { ...gitTestEnv(dir), PATH: `${join(dir, "bin")}${delimiter}${process.env.PATH}` };
+    ssh = fakeSsh(dir, gitTestEnv(dir), "refuse");
   });
 
   afterEach(() => {
@@ -98,7 +103,11 @@ describe("runRemoteGit", () => {
 
   async function failure(sshKey: string): Promise<GitError> {
     return failureOf(
-      runRemoteGit(["ls-remote", "--", "ssh://tasker.invalid/repo.git"], { cwd: dir, env }, sshKey),
+      runRemoteGit(
+        ["ls-remote", "--", ssh.remote("/repo.git")],
+        { cwd: dir, env: ssh.env },
+        sshKey,
+      ),
       GitError,
     );
   }
@@ -129,14 +138,7 @@ describe("runRemoteGit", () => {
   it("passes the ssh command of the key to ssh", async () => {
     const key = join(dir, "k");
     await failure(key);
-    expect(readArgLog(logPath)[0]?.slice(0, 6)).toEqual([
-      "-i",
-      key,
-      "-o",
-      "IdentitiesOnly=yes",
-      "-o",
-      "BatchMode=yes",
-    ]);
+    expect(readArgLog(ssh.logPath)[0]?.slice(0, 6)).toEqual(sshKeyArgs(key));
   });
 });
 

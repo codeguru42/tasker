@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { remoteDefaultBranch } from "../../../src/vcs/git/default-branch.js";
 import { runGit } from "../../../src/vcs/git/run.js";
-import { type GitOrigin, makeGitOrigin, readArgLog, writeFakeSsh } from "../../helpers.js";
+import { fakeSsh, type GitOrigin, makeGitOrigin, readArgLog, sshKeyArgs } from "../../helpers.js";
 
 describe("remoteDefaultBranch", () => {
   let origin: GitOrigin;
@@ -50,23 +50,14 @@ describe("remoteDefaultBranch", () => {
   });
 
   it("passes the ssh key to ssh", async () => {
-    const binDir = join(origin.dir, "bin");
-    const logPath = join(origin.dir, "ssh.log");
-    writeFakeSsh(binDir, logPath, "serve");
+    const ssh = fakeSsh(origin.dir, origin.env, "serve");
     const key = join(origin.dir, "id key");
     const branch = await remoteDefaultBranch({
-      remote: `ssh://tasker.invalid${origin.path}`,
+      remote: ssh.remote(origin.path),
       sshKey: key,
-      env: { ...origin.env, PATH: `${binDir}:${process.env.PATH}` },
+      env: ssh.env,
     });
     expect(branch).toBe("main");
-    expect(readArgLog(logPath)[0]?.slice(0, 6)).toEqual([
-      "-i",
-      key,
-      "-o",
-      "IdentitiesOnly=yes",
-      "-o",
-      "BatchMode=yes",
-    ]);
+    expect(readArgLog(ssh.logPath)[0]?.slice(0, 6)).toEqual(sshKeyArgs(key));
   });
 });

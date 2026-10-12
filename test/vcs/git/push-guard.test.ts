@@ -14,11 +14,12 @@ import { pushWithToken } from "../../../src/vcs/git/push-guard.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   failureOf,
+  fakeSsh,
   type GitOrigin,
   makeGitOrigin,
   makeTempDir,
   readArgLog,
-  writeFakeSsh,
+  sshKeyArgs,
 } from "../../helpers.js";
 
 const HEX = "0123456789abcdef";
@@ -205,25 +206,10 @@ describe("the pre-push hook", () => {
     });
 
     it("passes the ssh key to ssh", async () => {
-      const binDir = join(origin.dir, "bin");
-      const logPath = join(origin.dir, "ssh.log");
-      writeFakeSsh(binDir, logPath, "serve");
+      const ssh = fakeSsh(origin.dir, origin.env, "serve");
       const key = join(origin.dir, "id key");
-      const env = { ...origin.env, PATH: `${binDir}:${process.env.PATH}` };
-      await push(
-        [`ssh://tasker.invalid${origin.path}`, "HEAD:refs/heads/x"],
-        { cwd: wt },
-        env,
-        key,
-      );
-      expect(readArgLog(logPath)[0]?.slice(0, 6)).toEqual([
-        "-i",
-        key,
-        "-o",
-        "IdentitiesOnly=yes",
-        "-o",
-        "BatchMode=yes",
-      ]);
+      await push([ssh.remote(origin.path), "HEAD:refs/heads/x"], { cwd: wt }, ssh.env, key);
+      expect(readArgLog(ssh.logPath)[0]?.slice(0, 6)).toEqual(sshKeyArgs(key));
       expect(await origin.branchHead("x")).toBe(await worktreeHead());
     });
   });

@@ -5,11 +5,12 @@ import { type RemoteTip, remoteTip, tipMoved } from "../../../src/vcs/git/remote
 import { runGit } from "../../../src/vcs/git/run.js";
 import {
   failureOf,
+  fakeSsh,
   type GitOrigin,
   makeGitOrigin,
   makeTempDir,
   readArgLog,
-  writeFakeSsh,
+  sshKeyArgs,
 } from "../../helpers.js";
 
 describe("remoteTip", () => {
@@ -69,25 +70,16 @@ describe("remoteTip", () => {
   );
 
   it("passes the ssh key to ssh", async () => {
-    const binDir = join(origin.dir, "bin");
-    const logPath = join(origin.dir, "ssh.log");
-    writeFakeSsh(binDir, logPath, "serve");
+    const ssh = fakeSsh(origin.dir, origin.env, "serve");
     const key = join(origin.dir, "id key");
     const result = await remoteTip({
-      remote: `ssh://tasker.invalid${origin.path}`,
+      remote: ssh.remote(origin.path),
       branch: "main",
       sshKey: key,
-      env: { ...origin.env, PATH: `${binDir}:${process.env.PATH}` },
+      env: ssh.env,
     });
     expect(result).toEqual({ state: "present", revision: await origin.branchHead("main") });
-    expect(readArgLog(logPath)[0]?.slice(0, 6)).toEqual([
-      "-i",
-      key,
-      "-o",
-      "IdentitiesOnly=yes",
-      "-o",
-      "BatchMode=yes",
-    ]);
+    expect(readArgLog(ssh.logPath)[0]?.slice(0, 6)).toEqual(sshKeyArgs(key));
   });
 
   it("rejects with the remote name when the remote does not answer", async () => {

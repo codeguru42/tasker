@@ -6,11 +6,13 @@ import { remoteCwd, sshCommand } from "../../../src/vcs/git/ssh.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   failureOf,
+  type FakeSsh,
+  fakeSsh,
   type GitOrigin,
   makeGitOrigin,
   makeTempDir,
   readArgLog,
-  writeFakeSsh,
+  sshKeyArgs,
   writeGitRecorder,
 } from "../../helpers.js";
 
@@ -236,16 +238,12 @@ describe("provisionClone", () => {
   describe("ssh key", () => {
     // A key path with every character that the include file or a shell can trip on.
     const hardKey = (): string => join(tmp, "k it's \" \\ $ ; # \t \n \r \u0001 key");
-    let binDir: string;
-    let sshLog: string;
+    let ssh: FakeSsh;
     let remote: string;
-    let sshEnv: NodeJS.ProcessEnv;
 
     beforeEach(() => {
-      binDir = join(tmp, "bin");
-      sshLog = join(tmp, "ssh.log");
-      remote = `ssh://tasker.invalid${origin.path}`;
-      sshEnv = { ...origin.env, PATH: `${binDir}${delimiter}${process.env.PATH}` };
+      ssh = fakeSsh(tmp, origin.env, "serve");
+      remote = ssh.remote(origin.path);
     });
 
     async function coreSshCommand(): Promise<string> {
@@ -257,17 +255,15 @@ describe("provisionClone", () => {
     }
 
     it("writes the ssh command of the key to core.sshCommand through the include file", async () => {
-      writeFakeSsh(binDir, sshLog, "serve");
       const key = hardKey();
-      await provision({ remote, config: { sshKey: key }, env: sshEnv });
+      await provision({ remote, config: { sshKey: key }, env: ssh.env });
       expect(await coreSshCommand()).toBe(sshCommand(key));
     });
 
     it("keeps one include.path line after two provisions", async () => {
-      writeFakeSsh(binDir, sshLog, "serve");
       const config = { sshKey: "/keys/a" };
-      await provision({ remote, config, env: sshEnv });
-      await provision({ remote, config, env: sshEnv });
+      await provision({ remote, config, env: ssh.env });
+      await provision({ remote, config, env: ssh.env });
       const out = await runGit(["config", "--get-all", "include.path"], {
         gitDir: clone,
         env: origin.env,
@@ -276,30 +272,21 @@ describe("provisionClone", () => {
     });
 
     it("passes the key to ssh for ls-remote, clone and fetch", async () => {
-      writeFakeSsh(binDir, sshLog, "serve");
       const key = hardKey();
-      await provision({ remote, config: { sshKey: key }, env: sshEnv });
-      const calls = readArgLog(sshLog);
+      await provision({ remote, config: { sshKey: key }, env: ssh.env });
+      const calls = readArgLog(ssh.logPath);
       expect(calls.length).toBeGreaterThanOrEqual(3);
       for (const call of calls) {
-        expect(call.slice(0, 6)).toEqual([
-          "-i",
-          key,
-          "-o",
-          "IdentitiesOnly=yes",
-          "-o",
-          "BatchMode=yes",
-        ]);
+        expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
       }
     });
 
     it("puts no key path or ssh command in any git argument", async () => {
-      writeFakeSsh(binDir, sshLog, "serve");
       const gitLog = join(tmp, "git.log");
       const gitBin = join(tmp, "gitbin");
       writeGitRecorder(gitBin, gitLog);
       const key = hardKey();
-      const env = { ...sshEnv, PATH: `${gitBin}${delimiter}${sshEnv.PATH}` };
+      const env = { ...ssh.env, PATH: `${gitBin}${delimiter}${ssh.env.PATH}` };
       await provision({ remote, config: { sshKey: key }, env });
       const calls = readArgLog(gitLog);
       const args = calls.flat();
@@ -314,10 +301,9 @@ describe("provisionClone", () => {
     });
 
     it("lets the GIT_SSH_COMMAND of the user reach ssh when no key is set", async () => {
-      writeFakeSsh(binDir, sshLog, "serve");
-      const env = { ...sshEnv, GIT_SSH_COMMAND: "ssh -o User=fromuser" };
+      const env = { ...ssh.env, GIT_SSH_COMMAND: "ssh -o User=fromuser" };
       await provision({ remote, env });
-      const calls = readArgLog(sshLog);
+      const calls = readArgLog(ssh.logPath);
       expect(calls.length).toBeGreaterThanOrEqual(3);
       for (const call of calls) {
         expect(call).toContain("User=fromuser");
@@ -326,10 +312,10 @@ describe("provisionClone", () => {
     });
 
     it("hides the key in the error when ssh refuses", async () => {
-      writeFakeSsh(binDir, sshLog, "refuse");
+      fakeSsh(tmp, origin.env, "refuse");
       const key = join(tmp, "no such it's key");
       const error = await failureOf(
-        provision({ remote, config: { sshKey: key }, env: sshEnv }),
+        provision({ remote, config: { sshKey: key }, env: ssh.env }),
         Error,
       );
       expect(error.message).toContain(remote);
@@ -338,22 +324,20 @@ describe("provisionClone", () => {
     });
 
     it("hides the key in the error when the fetch of a complete clone fails", async () => {
-      writeFakeSsh(binDir, sshLog, "serve");
       const key = join(tmp, "no such it's key");
       const config = { sshKey: key };
-      await provision({ remote, config, env: sshEnv });
-      writeFakeSsh(binDir, sshLog, "refuse");
-      const error = await failureOf(provision({ remote, config, env: sshEnv }), Error);
+      await provision({ remote, config, env: ssh.env });
+      fakeSsh(tmp, origin.env, "refuse");
+      const error = await failureOf(provision({ remote, config, env: ssh.env }), Error);
       expect(error.message).not.toContain(key);
       expect(error.message).toContain("<sshKey>");
     });
 
     it("leaves the include file as it was when the configuration is locked", async () => {
-      writeFakeSsh(binDir, sshLog, "serve");
-      await provision({ remote, config: { sshKey: "/keys/a" }, env: sshEnv });
+      await provision({ remote, config: { sshKey: "/keys/a" }, env: ssh.env });
       writeFileSync(join(clone, "config.lock"), "");
       await expect(
-        provision({ remote, config: { sshKey: "/keys/b" }, env: sshEnv }),
+        provision({ remote, config: { sshKey: "/keys/b" }, env: ssh.env }),
       ).rejects.toThrow(`the clone configuration is locked: ${clone}`);
       const file = readFileSync(join(clone, "tasker-ssh.config"), "utf8");
       expect(file).toContain(sshCommand("/keys/a"));
