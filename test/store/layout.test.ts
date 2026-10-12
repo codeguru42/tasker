@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createDataRoot, dataRootLayout } from "../../src/store/layout.js";
@@ -9,7 +9,6 @@ describe("dataRootLayout", () => {
     expect(dataRootLayout("/d")).toEqual({
       root: "/d",
       clones: "/d/clones",
-      worktrees: "/d/worktrees",
       artifacts: "/d/artifacts",
       database: "/d/tasker.db",
     });
@@ -27,13 +26,22 @@ describe("createDataRoot", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("creates a missing root and the three folders", () => {
+  it("creates a missing root, clones and artifacts", () => {
     const root = join(dir, "root");
     const layout = createDataRoot(root);
     expect(layout).toEqual(dataRootLayout(root));
-    for (const path of [root, layout.clones, layout.worktrees, layout.artifacts]) {
+    for (const path of [root, layout.clones, layout.artifacts]) {
       expect(statSync(path).isDirectory()).toBe(true);
     }
+    expect(existsSync(join(root, "worktrees"))).toBe(false);
+  });
+
+  it("keeps a top worktrees folder that exists", () => {
+    const root = join(dir, "root");
+    mkdirSync(join(root, "worktrees"), { recursive: true });
+    writeFileSync(join(root, "worktrees", "keep.txt"), "kept");
+    createDataRoot(root);
+    expect(readFileSync(join(root, "worktrees", "keep.txt"), "utf8")).toBe("kept");
   });
 
   it("does not throw on a second call and keeps existing content", () => {

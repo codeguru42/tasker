@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { pushWithToken } from "../../../src/vcs/git/push-guard.js";
+import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   failureOf,
@@ -46,9 +47,10 @@ describe("the pre-push hook", () => {
     origin = await makeGitOrigin();
     // The quote and the dollar sign test the shell quoting of the tokens path.
     tmp = makeTempDir("tasker-push-'$x-");
-    clone = join(tmp, "data", "clones", "x", "repo.git");
-    tokens = join(tmp, "data", "clones", "x", "publish-tokens");
-    wt = join(tmp, "data", "worktrees", "x", "wt");
+    const paths = repoPaths(join(tmp, "data"), "x");
+    clone = paths.clone;
+    tokens = paths.publishTokens;
+    wt = join(paths.worktrees, "wt");
     await provisionClone({
       remote: origin.path,
       clone,
@@ -137,15 +139,16 @@ describe("the pre-push hook", () => {
     const globalConfig = join(tmp, "global.gitconfig");
     writeFileSync(globalConfig, `[core]\n\thooksPath = ${empty}\n`);
     const env = { ...origin.env, GIT_CONFIG_GLOBAL: globalConfig };
-    clone = join(tmp, "data", "clones", "g", "repo.git");
+    const paths = repoPaths(join(tmp, "data"), "g");
+    clone = paths.clone;
     await provisionClone({
       remote: origin.path,
       clone,
       config: {},
       env,
-      publishTokens: tokens,
+      publishTokens: paths.publishTokens,
     });
-    const other = join(tmp, "data", "worktrees", "g", "wt");
+    const other = join(paths.worktrees, "wt");
     await addWorktree("global", other);
     const error = await failureOf(
       runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: other, env }),

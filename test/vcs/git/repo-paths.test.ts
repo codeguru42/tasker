@@ -1,5 +1,7 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { repoPaths, repoSlug } from "../../../src/vcs/git/repo-paths.js";
+import { isInside } from "../../helpers.js";
 
 const hardKeys = [
   "a/b",
@@ -45,8 +47,17 @@ describe("repoPaths", () => {
     expect(repoPaths("/d", "tasker")).toEqual({
       clone: "/d/clones/tasker/repo.git",
       publishTokens: "/d/clones/tasker/publish-tokens",
-      worktrees: "/d/worktrees/tasker",
+      worktrees: "/d/clones/tasker/worktrees",
     });
+  });
+
+  it("puts the worktrees next to the clone, outside the publish tokens and the clone", () => {
+    const paths = repoPaths("/d", "tasker");
+    expect(paths.worktrees).toBe(join("/d", "clones", repoSlug("tasker"), "worktrees"));
+    expect(repoPaths("/d", "a/b").worktrees).toBe(join("/d", "clones", "a_2fb", "worktrees"));
+    expect(isInside(paths.publishTokens, paths.worktrees)).toBe(false);
+    expect(isInside(paths.worktrees, paths.publishTokens)).toBe(false);
+    expect(isInside(paths.worktrees, paths.clone)).toBe(false);
   });
 });
 
