@@ -3,6 +3,7 @@ import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import {
+  addCloneCommit,
   failureOf,
   fakeSsh,
   GIT_TEST_IDENTITY,
@@ -137,6 +138,51 @@ describe("makeGitClone", () => {
     expect(await git("rev-parse", "refs/remotes/origin/main")).toBe(
       await origin.branchHead("main"),
     );
+  });
+});
+
+describe("addCloneCommit", () => {
+  let origin: GitOrigin;
+  let clone: string;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    clone = await makeGitClone(origin);
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  const git = (...args: string[]) =>
+    runGit(args, { gitDir: clone, env: origin.env }).then((out) => out.trim());
+
+  it("makes a new branch with origin main as the parent", async () => {
+    const sha = await addCloneCommit(clone, origin.env, "b1");
+    expect(sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(await git("rev-parse", "refs/heads/b1")).toBe(sha);
+    expect(await git("rev-parse", `${sha}^`)).toBe(await git("rev-parse", "refs/remotes/origin/main"));
+  });
+
+  it("makes a child of the tip of an existing branch", async () => {
+    const first = await addCloneCommit(clone, origin.env, "b1");
+    const second = await addCloneCommit(clone, origin.env, "b1");
+    expect(second).not.toBe(first);
+    expect(await git("rev-parse", `${second}^`)).toBe(first);
+    expect(await git("rev-parse", "refs/heads/b1")).toBe(second);
+  });
+
+  it("moves an existing branch to a commit on the given parent", async () => {
+    const first = await addCloneCommit(clone, origin.env, "b1");
+    const moved = await addCloneCommit(clone, origin.env, "b1", "refs/remotes/origin/main");
+    expect(moved).not.toBe(first);
+    expect(await git("rev-parse", "refs/heads/b1")).toBe(moved);
+    expect(await git("rev-parse", `${moved}^`)).toBe(await git("rev-parse", "refs/remotes/origin/main"));
+  });
+
+  it("refuses a branch or a parent that starts with a dash", async () => {
+    await failureOf(addCloneCommit(clone, origin.env, "-x"), Error);
+    await failureOf(addCloneCommit(clone, origin.env, "b1", "-x"), Error);
   });
 });
 
