@@ -475,6 +475,16 @@ describe("publish, land and delete", () => {
       await expectPushNeedsToken();
     });
 
+    it("reports a branch that origin no longer has, with no push", async () => {
+      const published = await addCloneCommit(clone, env, "issue-1-task");
+
+      const result = await remove({ published });
+
+      expect(result).toEqual({ state: "already-gone" });
+      expect(pushes()).toEqual([]);
+      expectNoTokenFile();
+    });
+
     it("passes the ssh key to each ssh call", async () => {
       const ssh = await sshClone();
       const published = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
