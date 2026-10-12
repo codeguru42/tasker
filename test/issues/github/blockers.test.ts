@@ -235,6 +235,22 @@ describe("readGithubBlockers", () => {
     expect(error.stderr).toContain("HTTP 502");
   });
 
+  it("keeps an HTTP error with a JSON body as a GhError", async () => {
+    const fake = fakeWith({
+      args: graphqlArgs("octo", "repo", "7"),
+      stdout:
+        JSON.stringify(
+          { message: "Bad credentials", documentation_url: "https://docs.github.com/rest", status: "401" },
+          null,
+          2,
+        ) + "\n",
+      stderr: "gh: Bad credentials (HTTP 401)\n",
+      exitCode: 1,
+    });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), GhError);
+    expect(error.stderr).toContain("HTTP 401");
+  });
+
   it("runs the graphql call with the token of the account", async () => {
     const fake = fakeWith({ args: graphqlArgs("octo", "repo", "7"), stdout: pageJson([]) });
     await readGithubBlockers(ref, "octo", fake.env);
