@@ -98,12 +98,15 @@ export function ghProjectCheck(repo: GithubDoctorRepo, timeoutMs = 15000): Check
           signal,
         });
       } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
+        // Only a failure of the repo view call itself is a project problem. Every other error (the
+        // token call, gh not installed, a signal, an abort) passes to the shared wrapper, which gives
+        // error with its message and no remediation, or the timeout result.
+        if (!(error instanceof GhError && error.subcommand === "repo view" && error.exitCode !== null)) {
           throw error;
         }
         return {
           status: "error",
-          detail: `${repo.key}: the account ${account} cannot see the project ${project}: ${error instanceof Error ? error.message : String(error)}`,
+          detail: `${repo.key}: the account ${account} cannot see the project ${project}: ${error.message}`,
           remediation: `Make sure that issueTracker.project of ${repo.key} names the repo on GitHub, and that the account ${account} can see it.`,
         };
       }
