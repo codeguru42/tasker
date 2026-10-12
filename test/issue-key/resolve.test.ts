@@ -197,6 +197,41 @@ describe("resolveIssueKey", () => {
       { repo: "c/d" },
       'repo "c/d" does not have the project of issue key "a/b#1"',
     ],
+    [
+      "only jira repos and a Jira-shaped key",
+      { j1: { provider: "jira" }, j2: { provider: "jira" } },
+      "PROJ-8",
+      {},
+      'no configured repo has the project of issue key "PROJ-8"',
+    ],
+    [
+      "only jira repos and a key that no parser accepts",
+      { j1: { provider: "jira" }, j2: { provider: "jira" } },
+      "foo",
+      {},
+      'not a Jira issue key: "foo" (expected PROJ-N or <site>/browse/PROJ-N)',
+    ],
+    [
+      "a github repo then a jira repo, and a key that the jira parser accepts",
+      { "a/b": { provider: "github" }, j: { provider: "jira" } },
+      "PROJ-8",
+      {},
+      'no configured repo has the project of issue key "PROJ-8"',
+    ],
+    [
+      "a github repo then a jira repo, and a key that no parser accepts",
+      { "a/b": { provider: "github" }, j: { provider: "jira" } },
+      "foo",
+      {},
+      'not a GitHub issue key: "foo" (expected owner/repo#N)',
+    ],
+    [
+      "--repo names a jira repo",
+      { j: { provider: "jira" } },
+      "PROJ-8",
+      { repo: "j" },
+      'repo "j" does not have the project of issue key "PROJ-8"',
+    ],
   ];
 
   it.each(REF_ROWS)(
