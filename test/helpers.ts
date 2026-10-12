@@ -526,7 +526,7 @@ export function writeFakeGh(
   for (const answer of answers) {
     const conditions = [
       `[ $# -eq ${answer.args.length} ]`,
-      ...answer.args.map((arg, index) => `[ "$${index + 1}" = ${shellQuote(arg)} ]`),
+      ...answer.args.map((arg, index) => `[ "\${${index + 1}}" = ${shellQuote(arg)} ]`),
     ];
     const lines = [
       `if ${conditions.join(" && ")}; then`,

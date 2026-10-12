@@ -10,6 +10,12 @@ export interface Issue {
   state: "open" | "closed";
 }
 
+// One issue that blocks another issue.
+export interface Blocker {
+  key: string; // <owner>/<repo>#<N>
+  state: Issue["state"];
+}
+
 // A read of one issue failed: the issue does not exist, it is a pull request, or the tracker gave bad output.
 export class IssueReadError extends Error {
   readonly key: string;
