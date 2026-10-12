@@ -1,5 +1,5 @@
-import { mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, realpathSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { runGit } from "./run.js";
 
@@ -94,6 +94,18 @@ export async function listWorktrees(options: {
   return entries;
 }
 
+// The path as git lists it: the real parent folder, then the last part. It works for a missing
+// folder, because git lists the real path of the parent.
+function canonicalPath(path: string): string {
+  const full = resolve(path);
+  try {
+    return join(realpathSync(dirname(full)), basename(full));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return full;
+    throw error;
+  }
+}
+
 // Makes the worktree of a task on a new branch. The new branch has no upstream.
 export async function createTaskWorktree(options: {
   clone: string;
@@ -104,8 +116,17 @@ export async function createTaskWorktree(options: {
 }): Promise<"created" | "reused-branch" | "reused-worktree"> {
   const { clone, env, path, branch, baseRevision } = options;
   assertTaskBranch(branch);
-  const target = resolve(path);
-  mkdirSync(dirname(target), { recursive: true });
+  mkdirSync(dirname(resolve(path)), { recursive: true });
+  const target = canonicalPath(path);
+  const entries = await listWorktrees({ clone, env });
+  const entry = entries.find((candidate) => candidate.path === target);
+  if (
+    entry?.branch === branch &&
+    entry.lockReason === undefined &&
+    existsSync(join(target, ".git"))
+  ) {
+    return "reused-worktree";
+  }
   await runGit(["worktree", "add", "--no-track", "-b", branch, "--", target, baseRevision], {
     gitDir: clone,
     env,
