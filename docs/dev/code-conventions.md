@@ -62,6 +62,6 @@ Write the `.js` extension in each relative import, for example `import { run } f
 ## Tests
 
 - Tests use Vitest. Each test file matches `test/**/*.test.ts`. Its name mirrors the file in `src/` that it tests, except for a test that reads a doc, scans the whole source tree, or tests the shared helpers.
-- Unit tests call `run()` with a capturing `Io` and with fixture commands. The `Io` collects output in arrays, so the test reads stdout and stderr and checks the returned exit code. The capturing `Io` and the fixture commands come from `test/helpers.ts`. Put a new shared helper in that file. Do not copy it into a test file.
+- Unit tests call `run()` with a capturing `Io` and with fixture commands. The `Io` collects output in arrays, so the test reads stdout and stderr and checks the returned exit code. The capturing `Io` and the fixture commands come from `test/helpers.ts`. [rules.md](rules.md#tests) gives the rules for the shared helpers.
 - End-to-end tests spawn `src/main.ts` through `tsx`. Write few of them, because they are slow.
 - Write the test first. Run it and watch it fail (red). Then write the code that makes it pass (green).
