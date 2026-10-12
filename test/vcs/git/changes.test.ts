@@ -68,6 +68,38 @@ describe("git changes", () => {
     await runGit(["fetch", "origin"], { gitDir: clone, env });
   };
 
+  // Writes a fake gpg into dir. It logs each call to <dir>/gpg.log. A sign call (-bsau) reads
+  // stdin, prints a fake signature and the SIG_CREATED status line. A --verify call prints
+  // GPG_MARKER. It gives the path of the program and of the log.
+  const GPG_MARKER = "FAKE GPG VERIFY";
+  const writeFakeGpg = (dir: string) => {
+    mkdirSync(dir, { recursive: true });
+    const program = join(dir, "gpg");
+    const logPath = join(dir, "gpg.log");
+    writeFileSync(
+      program,
+      [
+        "#!/bin/sh",
+        `printf '%s\\n' "$*" >> '${logPath}'`,
+        'case " $* " in',
+        '  *" -bsau "*)',
+        "    cat > /dev/null",
+        "    printf '\\n[GNUPG:] SIG_CREATED D 1 8 00 0 0\\n' >&2",
+        "    printf '%s\\n' '-----BEGIN PGP SIGNATURE-----' 'fake' '-----END PGP SIGNATURE-----'",
+        "    ;;",
+        '  *" --verify "*)',
+        `    echo '${GPG_MARKER}'`,
+        `    echo '${GPG_MARKER}' >&2`,
+        "    ;;",
+        "esac",
+        "exit 0",
+        "",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+    return { program, logPath };
+  };
+
   describe("worktreeDiff", () => {
     it("shows a commit of the branch", async () => {
       await commitInWorktree(path, env, { file: "feature.txt", content: "feature text" });
@@ -179,6 +211,22 @@ describe("git changes", () => {
       await commitInWorktree(path, env, { file: "feature.txt" });
       await moveBase();
       expect(await ownCommits()).not.toContain("base-only.txt");
+    });
+
+    it("starts no gpg and shows no signature when the configuration asks for one", async () => {
+      const gpg = writeFakeGpg(join(origin.dir, "gpg"));
+      // Git writes the signature to a temp file before it starts gpg. It uses TMPDIR for it.
+      env.TMPDIR = origin.dir;
+      await runGit(["config", "gpg.program", gpg.program], { gitDir: clone, env });
+      await runGit(["config", "log.showSignature", "true"], { gitDir: clone, env });
+      writeFileSync(join(path, "signed.txt"), "signed text\n");
+      await git("add", "-A");
+      await git("commit", "-S", "-m", "signed");
+      expect(readFileSync(gpg.logPath, "utf8")).toContain("-bsau");
+      const text = await ownCommits();
+      expect(text).toContain("+signed text");
+      expect(text).not.toContain(GPG_MARKER);
+      expect(readFileSync(gpg.logPath, "utf8")).not.toContain("--verify");
     });
   });
 
