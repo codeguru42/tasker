@@ -119,6 +119,41 @@ describe("task store", () => {
     expect(store.getTask(task.id)).toEqual(cleared);
   });
 
+  describe("attempts", () => {
+    it("gives attempt 1 to the first task of an issue", () => {
+      expect(store.createTask(newTask).attempt).toBe(1);
+    });
+
+    it("counts one more after a cancelled task and after a finished task", () => {
+      const first = store.createTask(newTask);
+      store.updateTask(first.id, { state: "cancelled" });
+      const second = store.createTask(newTask);
+      expect(second.attempt).toBe(2);
+      store.updateTask(second.id, { state: "finished" });
+      expect(store.createTask(newTask).attempt).toBe(3);
+    });
+
+    it("continues the count in another repo with the same issue key", () => {
+      const first = store.createTask(newTask);
+      store.updateTask(first.id, { state: "cancelled" });
+      expect(store.createTask({ ...newTask, repoKey: "other" }).attempt).toBe(2);
+    });
+
+    it("starts another issue at 1", () => {
+      const first = store.createTask(newTask);
+      store.updateTask(first.id, { state: "cancelled" });
+      const other = store.createTask({ ...newTask, issueKey: "codeguru42/tasker#99" });
+      expect(other.attempt).toBe(1);
+    });
+
+    it("keeps the attempt when an update names one", () => {
+      const task = store.createTask(newTask);
+      // @ts-expect-error attempt is not a field of TaskChanges
+      store.updateTask(task.id, { attempt: 5 });
+      expect(store.getTask(task.id)?.attempt).toBe(1);
+    });
+  });
+
   describe("active task index", () => {
     it("rejects a second active row for one repo and issue", () => {
       const before = eventCount();
