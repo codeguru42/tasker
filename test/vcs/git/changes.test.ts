@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { changedPaths, worktreeDiff } from "../../../src/vcs/git/changes.js";
+import { changedPaths, NO_OWN_COMMITS, ownCommitsText, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree, removeTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {
@@ -39,6 +39,8 @@ describe("git changes", () => {
     worktreeDiff({ clone, env, path, baseRevision: BASE, ...extra });
   const paths = (extra: Partial<Parameters<typeof changedPaths>[0]> = {}) =>
     changedPaths({ clone, env, branch: BRANCH, baseRevision: BASE, ...extra });
+  const ownCommits = (extra: Partial<Parameters<typeof ownCommitsText>[0]> = {}) =>
+    ownCommitsText({ clone, env, branch: BRANCH, baseRevision: BASE, ...extra });
   // Adds a commit to the base on origin and fetches it into the clone.
   const moveBase = async () => {
     await origin.addCommit("main", { file: "base-only.txt" });
@@ -124,6 +126,38 @@ describe("git changes", () => {
     it("refuses a missing task branch", async () => {
       const error = await failureOf(paths({ branch: "issue-99" }), Error);
       expect(error.message).toBe("cannot resolve the task branch: issue-99");
+    });
+  });
+
+  describe("ownCommitsText", () => {
+    it("gives the no commits text for a fresh branch", async () => {
+      expect(await ownCommits()).toBe(NO_OWN_COMMITS);
+      expect(NO_OWN_COMMITS).toBe("This branch has no commits of its own since its base yet.");
+    });
+
+    it("gives the commits oldest first, each with its diff", async () => {
+      const first = await commitInWorktree(path, env, {
+        file: "one.txt",
+        content: "one text",
+        message: "first",
+      });
+      const second = await commitInWorktree(path, env, {
+        file: "two.txt",
+        content: "two text",
+        message: "second",
+      });
+      const text = await ownCommits();
+      const at = (needle: string) => text.indexOf(needle);
+      expect(at(`commit ${first}`)).toBeGreaterThanOrEqual(0);
+      expect(at(`commit ${first}`)).toBeLessThan(at("+one text"));
+      expect(at("+one text")).toBeLessThan(at(`commit ${second}`));
+      expect(at(`commit ${second}`)).toBeLessThan(at("+two text"));
+    });
+
+    it("does not show a file that the base got after the fork", async () => {
+      await commitInWorktree(path, env, { file: "feature.txt" });
+      await moveBase();
+      expect(await ownCommits()).not.toContain("base-only.txt");
     });
   });
 });
