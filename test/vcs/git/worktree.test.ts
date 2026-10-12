@@ -9,7 +9,14 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { sandboxWritePaths } from "../../../src/vcs/git/assistant-surface.js";
+import {
+  fetchTips,
+  uncommittedChanges,
+  worktreeDiff,
+} from "../../../src/vcs/git/changes.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
+import { shellQuote } from "../../../src/vcs/git/ssh.js";
 import {
   assertTaskBranchShape,
   assertTaskWorktree,
@@ -555,6 +562,93 @@ describe("git fixture", () => {
       mkdirSync(join(path(), ".git"));
       const error = await failureOf(guard(), Error);
       expect(error.message).toBe(`the worktree has no .git file: ${realpathSync(path())}`);
+    });
+
+    // The admin dir of a worktree, read with a plain git call.
+    const adminDir = (worktree: string) => gitIn(worktree, "rev-parse", "--git-dir");
+    const ownGitDirError = () =>
+      `the worktree does not use its own git dir in the clone: ${realpathSync(path())}`;
+    const marker = () => join(origin.dir, "fsmonitor-ran");
+
+    // Points the commondir file of the worktree at a bare repo whose config runs a command
+    // that writes the marker when git starts in the worktree.
+    const tamperCommondir = async () => {
+      const admin = await adminDir(path());
+      await runGit(["init", "--bare", "fake.git"], { cwd: origin.dir, env });
+      const fake = join(origin.dir, "fake.git");
+      await runGit(["config", "core.fsmonitor", `touch ${shellQuote(marker())}; false`], {
+        gitDir: fake,
+        env,
+      });
+      writeFileSync(join(admin, "commondir"), `${fake}\n`);
+    };
+
+    it.each([
+      [
+        "the .git file names the admin dir of a second task worktree",
+        // This case passes facts 1 to 3. Only fact 4 (the gitdir file of the admin dir) catches it.
+        async (admin: string) => {
+          await create({
+            path: taskWorktreePath(worktrees, "issue-2"),
+            branch: "issue-2-y",
+          });
+          const other = await adminDir(taskWorktreePath(worktrees, "issue-2"));
+          writeFileSync(join(path(), ".git"), `gitdir: ${other}\n`);
+          return admin;
+        },
+      ],
+      [
+        "the .git file names the clone",
+        async () => {
+          writeFileSync(join(path(), ".git"), `gitdir: ${realpathSync(clone)}\n`);
+        },
+      ],
+      [
+        "the commondir file names another bare repo",
+        async (admin: string) => {
+          await runGit(["init", "--bare", "other.git"], { cwd: origin.dir, env });
+          writeFileSync(join(admin, "commondir"), `${join(origin.dir, "other.git")}\n`);
+        },
+      ],
+      [
+        "the commondir file is missing",
+        async (admin: string) => {
+          rmSync(join(admin, "commondir"));
+        },
+      ],
+    ])("refuses a worktree when %s", async (_name, tamper) => {
+      await create();
+      await tamper(await adminDir(path()));
+      const error = await failureOf(guard(), Error);
+      expect(error.message).toBe(ownGitDirError());
+    });
+
+    it.each([
+      ["discardWorktreeChanges", () => discardWorktreeChanges({ clone, env, path: path() })],
+      [
+        "worktreeDiff",
+        () => worktreeDiff({ clone, env, path: path(), baseRevision: base }),
+      ],
+      ["uncommittedChanges", () => uncommittedChanges({ clone, env, path: path() })],
+      [
+        "fetchTips",
+        () =>
+          fetchTips({ clone, env, sshKey: undefined, path: path(), baseRevision: base }),
+      ],
+      ["sandboxWritePaths", () => sandboxWritePaths({ clone, env, path: path() })],
+    ])("%s refuses a tampered worktree before git starts there", async (_name, call) => {
+      await create();
+      await tamperCommondir();
+      const error = await failureOf(call(), Error);
+      expect(error.message).toBe(ownGitDirError());
+      expect(existsSync(marker())).toBe(false);
+    });
+
+    it("runs the fake config when git starts in a tampered worktree", async () => {
+      await create();
+      await tamperCommondir();
+      await runGit(["status", "--porcelain"], { cwd: path(), env });
+      expect(existsSync(marker())).toBe(true);
     });
   });
 
