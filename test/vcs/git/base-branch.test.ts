@@ -352,3 +352,103 @@ describe("resolveBaseBranch order", () => {
     expect(await revParse(result.revision)).toBe(await origin.branchHead("main"));
   });
 });
+
+describe("resolveBaseBranch learned default", () => {
+  let origin: GitOrigin;
+  let tmp: string;
+  let clone: string;
+  let store: TaskStore;
+  let askCalls: number;
+  let answer: string;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    for (const name of ["hinted", "explicit", "learned", "configured", "asked"]) {
+      await origin.createBranch(name);
+    }
+    tmp = makeTempDir("tasker-base-");
+    clone = join(tmp, "repo.git");
+    await provisionClone({ remote: origin.path, clone, config: {}, env: origin.env });
+    store = openStore(join(tmp, "tasker.db"));
+    askCalls = 0;
+    answer = "asked";
+  });
+
+  afterEach(() => {
+    store.close();
+    origin.remove();
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  function resolve(extra: Partial<Parameters<typeof resolveBaseBranch>[0]> = {}) {
+    return resolveBaseBranch({
+      repoKey: "tasker",
+      clone,
+      sshKey: undefined,
+      env: origin.env,
+      memory: store,
+      ask: async () => {
+        askCalls += 1;
+        return answer;
+      },
+      ...extra,
+    });
+  }
+
+  const saved = (branch: string) => `tasker saved ${branch} as the default base branch of tasker.`;
+
+  it("saves the value of defaultBaseBranch", async () => {
+    const result = await resolve({ defaultBaseBranch: "configured" });
+    expect(result.source).toBe("config");
+    expect(store.getDefaultBaseBranch("tasker")).toBe("configured");
+    expect(result.notes).toEqual([saved("configured")]);
+  });
+
+  it("saves the answer of ask", async () => {
+    answer = "origin/asked";
+    const result = await resolve();
+    expect(result.source).toBe("ask");
+    expect(store.getDefaultBaseBranch("tasker")).toBe("asked");
+    expect(result.notes).toEqual([saved("asked")]);
+  });
+
+  it("saves nothing for a hint or an explicit base", async () => {
+    await resolve({ hint: "hinted" });
+    await resolve({ explicit: "explicit" });
+    expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
+  });
+
+  it("does not ask a second time after an answer", async () => {
+    await resolve();
+    const result = await resolve();
+    expect(result.source).toBe("learned");
+    expect(result.base).toBe("asked");
+    expect(result.notes).toEqual([]);
+    expect(askCalls).toBe(1);
+  });
+
+  describe("when the learned value is gone from origin", () => {
+    beforeEach(async () => {
+      store.setDefaultBaseBranch("tasker", "learned");
+      await runGit(["branch", "-D", "learned"], { gitDir: origin.path, env: origin.env });
+    });
+
+    it("forgets it and asks instead of using defaultBaseBranch", async () => {
+      const result = await resolve({ defaultBaseBranch: "configured" });
+      expect(askCalls).toBe(1);
+      expect(result.source).toBe("ask");
+      expect(result.base).toBe("asked");
+      expect(store.getDefaultBaseBranch("tasker")).toBe("asked");
+      expect(result.notes).toEqual([
+        "the learned base branch learned no longer exists on origin. tasker forgot it.",
+        saved("asked"),
+      ]);
+    });
+
+    it("keeps it forgotten when the answer does not exist", async () => {
+      answer = "nope";
+      await expect(resolve()).rejects.toThrow();
+      expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
+    });
+  });
+});
