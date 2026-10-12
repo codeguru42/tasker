@@ -485,6 +485,22 @@ describe("publish, land and delete", () => {
       expectNoTokenFile();
     });
 
+    it("refuses a branch that someone else moved, with no push", async () => {
+      const published = await addCloneCommit(clone, env, "issue-1-task");
+      await publish();
+      const other = await origin.addCommit("issue-1-task");
+      const before = pushes().length;
+
+      const error = await failureOf(remove({ published }), Error);
+
+      expect(error.message).toBe(
+        `the task branch moved on origin: issue-1-task: tasker published ${published}, origin has ${other}`,
+      );
+      expect(pushes()).toHaveLength(before);
+      expect(await origin.branchHead("issue-1-task")).toBe(other);
+      expectNoTokenFile();
+    });
+
     it("passes the ssh key to each ssh call", async () => {
       const ssh = await sshClone();
       const published = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
