@@ -228,10 +228,19 @@ export async function deleteTaskBranch(options: {
   });
 }
 
+// Resets tracked files, then deletes untracked files and nested git repos. Ignored files stay.
+// Git with a wrong cwd changes another repo, so the path must be a worktree of the clone.
+// Reset runs first, so a deleted .gitignore comes back before clean reads it.
 export async function discardWorktreeChanges(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
   path: string;
 }): Promise<void> {
-  throw new Error(`not implemented: ${options.path}`);
+  const { clone, env, path } = options;
+  const entries = await listWorktrees({ clone, env });
+  if (!entries.some((entry) => entry.path === canonicalPath(path))) {
+    throw new Error(`not a worktree of the clone: ${path}`);
+  }
+  await runGit(["reset", "--hard"], { cwd: path, env });
+  await runGit(["clean", "-ffd"], { cwd: path, env });
 }
