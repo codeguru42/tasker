@@ -1,9 +1,16 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
+import { pushWithToken } from "../../../src/vcs/git/push-guard.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
-import { type GitOrigin, makeGitOrigin, makeTempDir } from "../../helpers.js";
+import {
+  type GitOrigin,
+  makeGitOrigin,
+  makeTempDir,
+  readArgLog,
+  writeFakeSsh,
+} from "../../helpers.js";
 
 const HEX = "0123456789abcdef";
 const NO_TOKEN = "tasker: the push has no valid publish token";
@@ -139,5 +146,79 @@ describe("the pre-push hook", () => {
     const error = await failure(runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: other, env }));
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("x")).toBeUndefined();
+  });
+
+  describe("pushWithToken", () => {
+    const push = (
+      args: string[],
+      location: { cwd: string } | { gitDir: string },
+      env: NodeJS.ProcessEnv = origin.env,
+      sshKey?: string,
+    ): Promise<void> =>
+      pushWithToken(args, { location, publishTokens: tokens, sshKey, env });
+
+    async function worktreeHead(): Promise<string> {
+      return (await runGit(["rev-parse", "HEAD"], { cwd: wt, env: origin.env })).trim();
+    }
+
+    it("pushes from a worktree and leaves no token file", async () => {
+      await push(["origin", "HEAD:refs/heads/x"], { cwd: wt });
+      expect(await origin.branchHead("x")).toBe(await worktreeHead());
+      expect(readdirSync(tokens)).toEqual([]);
+    });
+
+    it("makes a missing tokens folder with mode 0700", async () => {
+      expect(existsSync(tokens)).toBe(false);
+      await push(["origin", "HEAD:refs/heads/x"], { cwd: wt });
+      expect(statSync(tokens).mode & 0o777).toBe(0o700);
+    });
+
+    it("keeps the mode of an existing tokens folder", async () => {
+      mkdirSync(tokens, { recursive: true, mode: 0o755 });
+      chmodSync(tokens, 0o755);
+      await push(["origin", "HEAD:refs/heads/x"], { cwd: wt });
+      expect(statSync(tokens).mode & 0o777).toBe(0o755);
+    });
+
+    it("rejects a push to a missing remote and leaves no token file", async () => {
+      await expect(
+        push([join(tmp, "missing.git"), "HEAD:refs/heads/x"], { cwd: wt }),
+      ).rejects.toBeInstanceOf(GitError);
+      expect(readdirSync(tokens)).toEqual([]);
+    });
+
+    it("replaces a token from the caller", async () => {
+      const env = { ...origin.env, TASKER_PUBLISH_TOKEN: "bogus" };
+      await push(["origin", "HEAD:refs/heads/x"], { cwd: wt }, env);
+      expect(await origin.branchHead("x")).toBe(await worktreeHead());
+    });
+
+    it("pushes from the bare clone", async () => {
+      await push(["origin", "main:refs/heads/y"], { gitDir: clone });
+      expect(await origin.branchHead("y")).toBe(await origin.branchHead("main"));
+    });
+
+    it("passes the ssh key to ssh", async () => {
+      const binDir = join(origin.dir, "bin");
+      const logPath = join(origin.dir, "ssh.log");
+      writeFakeSsh(binDir, logPath, "serve");
+      const key = join(origin.dir, "id key");
+      const env = { ...origin.env, PATH: `${binDir}:${process.env.PATH}` };
+      await push(
+        [`ssh://tasker.invalid${origin.path}`, "HEAD:refs/heads/x"],
+        { cwd: wt },
+        env,
+        key,
+      );
+      expect(readArgLog(logPath)[0]?.slice(0, 6)).toEqual([
+        "-i",
+        key,
+        "-o",
+        "IdentitiesOnly=yes",
+        "-o",
+        "BatchMode=yes",
+      ]);
+      expect(await origin.branchHead("x")).toBe(await worktreeHead());
+    });
   });
 });
