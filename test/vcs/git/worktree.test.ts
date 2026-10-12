@@ -342,6 +342,14 @@ describe("git fixture", () => {
       const error = await failureOf(create(), Error);
       expect(error.message).toBe(`the worktree has no .git file: ${path()}`);
     });
+
+    it("refuses an unlocked worktree whose .git is a folder", async () => {
+      await create();
+      rmSync(join(path(), ".git"));
+      await runGit(["init"], { cwd: path(), env });
+      const error = await failureOf(create(), Error);
+      expect(error.message).toBe(`the worktree has no .git file: ${path()}`);
+    });
   });
 
   describe("createTaskWorktree, conflicts", () => {
