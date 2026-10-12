@@ -1,4 +1,5 @@
 import { mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
 
@@ -157,6 +158,54 @@ describe("gh doctor checks", () => {
         remediation,
       });
       expect(argLists(fake)).toEqual([tokenArgs]);
+    });
+
+    it("gives error and no remediation when gh is not installed", async () => {
+      const empty = join(dir, "no-gh");
+      mkdirSync(empty);
+      const fake = fakeGh(dir, {}, []);
+      expect(await doctor.ghAuthCheck("octo").run({ PATH: empty })).toStrictEqual({
+        status: "error",
+        detail: "gh is not installed: gh was not found on PATH",
+      });
+      expect(argLists(fake)).toEqual([]);
+    });
+
+    it("gives error and no remediation for a 502", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: loginArgs, stderr: "gh: Server Error (HTTP 502)\n", exitCode: 1 },
+      ]);
+      expect(await doctor.ghAuthCheck("octo").run(fake.env)).toStrictEqual({
+        status: "error",
+        detail: "gh api user failed with exit code 1: gh: Server Error (HTTP 502)",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, loginArgs]);
+    });
+
+    it("gives error and no remediation when a signal stops gh", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: loginArgs, killWith: "TERM" },
+      ]);
+      expect(await doctor.ghAuthCheck("octo").run(fake.env)).toStrictEqual({
+        status: "error",
+        detail: "gh api user was stopped by signal SIGTERM",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, loginArgs]);
+    });
+
+    it("gives error and a remediation for a 401", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: loginArgs, stderr: "gh: Bad credentials (HTTP 401)\n", exitCode: 1 },
+      ]);
+      expect(await doctor.ghAuthCheck("octo").run(fake.env)).toStrictEqual({
+        status: "error",
+        detail: "gh api user failed with exit code 1: gh: Bad credentials (HTTP 401)",
+        remediation,
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, loginArgs]);
     });
 
     it("gives the timeout result when the token call is slow", async () => {

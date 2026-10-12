@@ -1,4 +1,5 @@
-import { rmSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { failureOf, fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
 
@@ -18,31 +19,108 @@ describe("authStatus", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("is ok when the login of the token is the account, with any ASCII case", async () => {
-    const fake = fakeGh(dir, {}, [
-      ghTokenAnswer("octo", "gho_test"),
-      { args: ["api", "user", "--jq", ".login"], stdout: "Octo\n" },
-    ]);
-    expect(await auth.authStatus("octo", fake.env)).toEqual({
-      ok: true,
-      login: "Octo",
-      detail: "gh is logged in as Octo",
-    });
-  });
-
   const loginArgs = ["api", "user", "--jq", ".login"];
   const tokenArgs = ["auth", "token", "--hostname", "github.com", "--user", "octo"];
+  const token = ghTokenAnswer("octo", "gho_test");
 
-  it("is not ok when the token call fails, and gives the message of the login error", async () => {
-    const fake = fakeGh(dir, {}, [
-      { args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 },
-    ]);
-    expect(await auth.authStatus("octo", fake.env)).toEqual({
-      ok: false,
-      detail:
-        "gh has no login for the account octo on github.com: run `gh auth login --hostname github.com` and log in as octo. gh said: no oauth token found",
-    });
-    expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs]);
+  const rows: {
+    name: string;
+    answers: Parameters<typeof fakeGh>[2];
+    notInstalled?: boolean;
+    result: Record<string, unknown>;
+    calls: string[][];
+  }[] = [
+    {
+      name: "is ok when the login of the token is the account, with any ASCII case",
+      answers: [token, { args: loginArgs, stdout: "Octo\n" }],
+      result: { ok: true, login: "Octo", detail: "gh is logged in as Octo", needsLogin: false },
+      calls: [tokenArgs, loginArgs],
+    },
+    {
+      name: "needs a login when the token call fails",
+      answers: [{ args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 }],
+      result: {
+        ok: false,
+        detail:
+          "gh has no login for the account octo on github.com: run `gh auth login --hostname github.com` and log in as octo. gh said: no oauth token found",
+        needsLogin: true,
+      },
+      calls: [tokenArgs],
+    },
+    {
+      name: "needs a login when gh gives no login",
+      answers: [token, { args: loginArgs, stdout: "\n" }],
+      result: {
+        ok: false,
+        detail: "gh api user gave no login for the account octo",
+        needsLogin: true,
+      },
+      calls: [tokenArgs, loginArgs],
+    },
+    {
+      name: "needs a login when the token is for another login",
+      answers: [token, { args: loginArgs, stdout: "hubot\n" }],
+      result: {
+        ok: false,
+        login: "hubot",
+        detail: "the token of the account octo is for the login hubot",
+        needsLogin: true,
+      },
+      calls: [tokenArgs, loginArgs],
+    },
+    {
+      name: "needs a login for a 401",
+      answers: [token, { args: loginArgs, stderr: "gh: Bad credentials (HTTP 401)\n", exitCode: 1 }],
+      result: {
+        ok: false,
+        detail: "gh api user failed with exit code 1: gh: Bad credentials (HTTP 401)",
+        needsLogin: true,
+      },
+      calls: [tokenArgs, loginArgs],
+    },
+    {
+      name: "needs no login for a 502",
+      answers: [token, { args: loginArgs, stderr: "gh: Server Error (HTTP 502)\n", exitCode: 1 }],
+      result: {
+        ok: false,
+        detail: "gh api user failed with exit code 1: gh: Server Error (HTTP 502)",
+        needsLogin: false,
+      },
+      calls: [tokenArgs, loginArgs],
+    },
+    {
+      name: "needs no login when a signal stops gh",
+      answers: [token, { args: loginArgs, killWith: "TERM" }],
+      result: {
+        ok: false,
+        detail: "gh api user was stopped by signal SIGTERM",
+        needsLogin: false,
+      },
+      calls: [tokenArgs, loginArgs],
+    },
+    {
+      name: "needs no login when gh is not installed",
+      answers: [],
+      notInstalled: true,
+      result: {
+        ok: false,
+        detail: "gh is not installed: gh was not found on PATH",
+        needsLogin: false,
+      },
+      calls: [],
+    },
+  ];
+
+  it.each(rows)("$name", async (row) => {
+    const fake = fakeGh(dir, {}, row.answers);
+    let env = fake.env;
+    if (row.notInstalled) {
+      const empty = join(dir, "empty");
+      mkdirSync(empty);
+      env = { PATH: empty };
+    }
+    expect(await auth.authStatus("octo", env)).toStrictEqual(row.result);
+    expect(fake.calls().map((call) => call.args)).toEqual(row.calls);
   });
 
   it("hides the token in the detail of a 401", async () => {
@@ -54,40 +132,10 @@ describe("authStatus", () => {
     expect(status).toEqual({
       ok: false,
       detail: "gh api user failed with exit code 1: gh: Bad credentials (HTTP 401) ***",
+      needsLogin: true,
     });
     expect(JSON.stringify(status)).not.toContain("gho_secret");
     expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs, loginArgs]);
-  });
-
-  it("is not ok when the token is for another login", async () => {
-    const fake = fakeGh(dir, {}, [
-      ghTokenAnswer("octo", "gho_test"),
-      { args: loginArgs, stdout: "hubot\n" },
-    ]);
-    expect(await auth.authStatus("octo", fake.env)).toEqual({
-      ok: false,
-      login: "hubot",
-      detail: "the token of the account octo is for the login hubot",
-    });
-    expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs, loginArgs]);
-  });
-
-  it("is not ok when gh gives no login", async () => {
-    const fake = fakeGh(dir, {}, [
-      ghTokenAnswer("octo", "gho_test"),
-      { args: loginArgs, stdout: "\n" },
-    ]);
-    expect(await auth.authStatus("octo", fake.env)).toEqual({
-      ok: false,
-      detail: "gh api user gave no login for the account octo",
-    });
-    expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs, loginArgs]);
-  });
-
-  it("is not ok when gh is not installed", async () => {
-    const status = await auth.authStatus("octo", { PATH: dir });
-    expect(status.ok).toBe(false);
-    expect(status.detail).toContain("gh is not installed");
   });
 
   it("throws an AbortError again", async () => {
