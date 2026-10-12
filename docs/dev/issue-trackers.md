@@ -4,19 +4,61 @@
 
 ## The GitHub folder
 
-All code that starts `gh` is in `src/issues/github/`. The test `test/issues/github/boundary.test.ts` enforces this rule with the source scan of `test/helpers.ts`. The test fails when a file outside `src/issues/github/` loads `child_process` or imports `src/process/run-child.ts`, and has a string literal that is `gh` or starts with `gh `. The scan has two known gaps. It cannot find a module name that the code builds at run time. It cannot find a command name that the code builds at run time.
+All code that starts `gh` is in `src/issues/github/`. The test `test/issues/github/boundary.test.ts` enforces this rule with the source scan of `test/helpers.ts`. The test fails when a file outside `src/issues/github/` loads `child_process` or imports `src/process/run-child.ts`, and has a string literal that is `gh` or starts with `gh `. No file outside `src/issues/` imports from `src/issues/github/`. The same test enforces this rule with `filesThatBreakBoundary()` of `test/helpers.ts`. A command gets a provider from `issueProviderFor()` in `src/issues/provider.ts`. See [The issue provider](#the-issue-provider). The scan has two known gaps. It cannot find a module name that the code builds at run time. It cannot find a command name that the code builds at run time.
 
 ## The files of src/issues/
 
+- `src/issues/provider.ts` holds `IssueTrackerId`, `AuthStatus`, `IssueProvider` and `issueProviderFor()`.
+- `src/issues/github/provider.ts` holds `createGithubProvider()`.
 - `src/issues/github/run.ts` holds `runGh()`, `readGhVersion()`, `RunGhOptions`, `GhError`, `GhNotInstalledError` and `GhLoginError`.
 - `src/issues/issue.ts` holds `Issue`, `Blocker`, `IssueReadError`, `IssueWriteError`, `BaseHintError`, `baseBranchHint()` and `inProgressMarker()`.
 - `src/issues/github/issue.ts` holds `readGithubIssue()` and `issueState()`.
 - `src/issues/github/blockers.ts` holds `readGithubBlockers()`.
 - `src/issues/github/write.ts` holds `assignGithubIssue()`, `markGithubInProgress()` and `markGithubDone()`.
-- `src/issues/github/auth.ts` holds `authStatus()` and `AuthStatus`.
-- `src/issues/github/doctor.ts` holds `githubDoctorChecks()`, `ghVersionCheck()`, `ghAuthCheck()`, `ghProjectCheck()`, `ghLabelsCheck()` and `GithubDoctorRepo`.
+- `src/issues/github/auth.ts` holds `authStatus()`.
+- `src/issues/github/doctor.ts` holds `accountOf()`, `githubDoctorChecks()`, `ghVersionCheck()`, `ghAuthCheck()`, `ghProjectCheck()`, `ghLabelsCheck()` and `GithubDoctorRepo`.
 
 Later issues add their files to this list.
+
+## The issue provider
+
+A command gets an `IssueProvider` from `issueProviderFor(config, repoKey)` in `src/issues/provider.ts`. A command never imports from `src/issues/github/`. Each member maps to one GitHub function and adds no behavior. `createGithubProvider({ account, repos })` in `src/issues/github/provider.ts` builds the GitHub provider. It takes `repos` only for `doctorChecks`.
+
+| Member | Calls |
+| --- | --- |
+| `id: IssueTrackerId` | `"github"` |
+| `account: string \| undefined` | the account of the pair |
+| `parse(rawKey, repoKey, project): IssueRef \| undefined` | `KEY_PARSERS.github` (the same function) |
+| `fetchIssue(ref, env): Promise<Issue>` | `readGithubIssue(ref, account, env)` |
+| `authStatus(env, options?): Promise<AuthStatus>` | `authStatus(account, env, options)` |
+| `baseBranchHint(issue): string \| undefined` | `baseBranchHint(issue)` of `src/issues/issue.ts` |
+| `blockingIssues(ref, env): Promise<Blocker[]>` | `readGithubBlockers(ref, account, env)` |
+| `assign(ref, assignee, env): Promise<void>` | `assignGithubIssue(ref, assignee, account, env)` |
+| `transitionStatus(ref, target, env): Promise<void>` | `markGithubInProgress(ref, target, account, env)` |
+| `inProgressMarker(issue, target): boolean` | `inProgressMarker(issue, target)` of `src/issues/issue.ts` |
+| `markDone(ref, target, env): Promise<void>` | `markGithubDone(ref, target, account, env)` |
+| `doctorChecks: Check[]` | `githubDoctorChecks(repos)` for the repos of the pair |
+
+`target` is the value of the configuration that the caller passes:
+
+- `transitionStatus` takes `issueTracker.inProgressLabel`, a string.
+- `inProgressMarker` takes `issueTracker.inProgressLabel`, which is `string | undefined`.
+- `markDone` takes `issueTracker.doneLabel`, which is `string | undefined`. With a label, the provider adds the label and the issue stays open. With `undefined`, the provider closes the issue as completed.
+- The caller reads `issueTracker.updateOnStart` and `issueTracker.updateOnFinish` to decide if it calls a write at all. The provider does not read them.
+
+`baseBranchHint()` and `inProgressMarker()` make no tracker call. `blockingIssues()` gives `[]` for a provider with no blocking links. `AuthStatus` is in `src/issues/provider.ts`. `IssueReadError`, `IssueWriteError` and `BaseHintError` stay in `src/issues/issue.ts`.
+
+`parse` takes the project, because one provider object serves many repos. It is the entry of `KEY_PARSERS` in `src/issue-key/resolve.ts`, not a wrapper. It gives the `IssueKeyError` of the parser for a key of the wrong form, `undefined` for a key of another project, and the ref with the stored spelling `<project>#<N>` for a key of the project. [Issue keys](issue-keys.md) gives the rules.
+
+`doctorChecks` is `githubDoctorChecks()` of the repos of the pair. As a result, each github provider gives its own version check. A doctor run over two GitHub accounts has two version checks.
+
+### The registry
+
+`issueProviderFor()` is the only place that reads `issueTracker.provider`. The cache is a `WeakMap` that maps a configuration object to a map. The inner key is `JSON.stringify([id, account])`. One configuration object gives one provider object for each `(id, account)` pair. Another configuration object gets new providers. A caller that changes a configuration object after the first call gets the old provider.
+
+- The account comes from `accountOf()` in `src/issues/github/doctor.ts`. It throws `<key>: issueTracker.account is not set` when the account is not set.
+- A repo key that is not in the configuration gives `unknown repo "<key>": no repo with this key is in the configuration`. The check uses `Object.hasOwn`, so `constructor` and `__proto__` also give this error.
+- A jira repo gives a `ConfigError` with the issue `repos.<key>.issueTracker.provider: the jira tracker is not available in this version`.
 
 ## runGh()
 
@@ -172,7 +214,7 @@ failed to update 1 issue
 
 ## Auth status
 
-`authStatus(account, env, { signal })` in `src/issues/github/auth.ts` tells whether `gh` is logged in as the account. It resolves with `{ ok, login?, detail, needsLogin }`. It runs `gh api user --jq .login` through `runGh()`, so it reads the token as every call does.
+`authStatus(account, env, { signal })` in `src/issues/github/auth.ts` tells whether `gh` is logged in as the account. It resolves with `{ ok, login?, detail, needsLogin }`. The type `AuthStatus` is in `src/issues/provider.ts`. It runs `gh api user --jq .login` through `runGh()`, so it reads the token as every call does.
 
 - The login is the trimmed stdout. When the login is not empty and equals the account, the result is `ok`. The compare uses `asciiFold()` from `src/issue-key/github.ts` on both sides, the ASCII-only fold of GitHub names. The detail is `gh is logged in as <login>`.
 - An empty login gives `ok: false` and `needsLogin: true`, with the detail `gh api user gave no login for the account <account>`.
@@ -244,6 +286,8 @@ Each answer names the whole argument list. It must match exactly, in order. The 
 
 A call with no answer exits with 99 and goes into `unanswered()`. It fails the test, also when the code under test catches the error.
 
-`test/issues/github/run.test.ts` calls `vi.resetModules()` and imports `run.ts` again before each test, so each test starts with an empty token cache. `test/issues/github/write.test.ts`, `test/issues/github/auth.test.ts` and `test/issues/github/doctor.test.ts` do the same. `auth.test.ts` tests `auth.ts`, and `doctor.test.ts` tests `doctor.ts`. `test/doctor/timed-check.test.ts` tests the shared wrapper.
+`test/issues/github/run.test.ts` calls `vi.resetModules()` and imports `run.ts` again before each test, so each test starts with an empty token cache. `test/issues/github/write.test.ts`, `test/issues/github/auth.test.ts`, `test/issues/github/doctor.test.ts` and `test/issues/github/provider.test.ts` do the same. The token cache of `runGh()` stays the one home of the token read. `auth.test.ts` tests `auth.ts`, and `doctor.test.ts` tests `doctor.ts`. `test/doctor/timed-check.test.ts` tests the shared wrapper.
 
 `test/issues/issue.test.ts`, `test/issues/github/issue.test.ts` and `test/issues/github/blockers.test.ts` test the new files. `test/issues/github/write.test.ts` tests `write.ts`.
+
+`test/issues/github/provider.test.ts` tests `createGithubProvider()`. It compares each member with a direct call of its GitHub function. `test/issues/provider.test.ts` tests `issueProviderFor()`. It needs no reset hook, because each test builds its own configuration object with `parseConfig()`, so no provider leaks between tests.
