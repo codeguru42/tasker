@@ -1,10 +1,19 @@
-import { existsSync, mkdirSync, realpathSync, symlinkSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   createTaskWorktree,
   listWorktrees,
+  removeTaskWorktree,
   taskBranchName,
   taskWorktreePath,
 } from "../../../src/vcs/git/worktree.js";
@@ -61,6 +70,18 @@ describe("git fixture", () => {
     origin.remove();
   });
 
+  const create = (extra: Partial<Parameters<typeof createTaskWorktree>[0]> = {}) =>
+    createTaskWorktree({
+      clone,
+      env,
+      path: taskWorktreePath(worktrees, "issue-1"),
+      branch: "issue-1-x",
+      baseRevision: "refs/remotes/origin/main",
+      ...extra,
+    });
+  const gitIn = (cwd: string, ...args: string[]) =>
+    runGit(args, { cwd, env }).then((out) => out.trim());
+
   describe("listWorktrees", () => {
     const base = "refs/remotes/origin/main";
     const list = () => listWorktrees({ clone, env });
@@ -107,18 +128,6 @@ describe("git fixture", () => {
   });
 
   describe("createTaskWorktree, new branch", () => {
-    const create = (extra: Partial<Parameters<typeof createTaskWorktree>[0]> = {}) =>
-      createTaskWorktree({
-        clone,
-        env,
-        path: taskWorktreePath(worktrees, "issue-1"),
-        branch: "issue-1-x",
-        baseRevision: "refs/remotes/origin/main",
-        ...extra,
-      });
-    const gitIn = (cwd: string, ...args: string[]) =>
-      runGit(args, { cwd, env }).then((out) => out.trim());
-
     it("makes a new branch and a worktree at the base", async () => {
       const path = taskWorktreePath(worktrees, "issue-1");
       expect(existsSync(worktrees)).toBe(false);
@@ -147,6 +156,71 @@ describe("git fixture", () => {
         expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
       },
     );
+  });
+
+  describe("removeTaskWorktree", () => {
+    const remove = (extra: Partial<Parameters<typeof removeTaskWorktree>[0]> = {}) =>
+      removeTaskWorktree({ clone, env, path: taskWorktreePath(worktrees, "issue-1"), ...extra });
+    const path = () => taskWorktreePath(worktrees, "issue-1");
+    const branchExists = () =>
+      runGit(["show-ref", "--verify", "--quiet", "--", "refs/heads/issue-1-x"], {
+        gitDir: clone,
+        env,
+      }).then(
+        () => true,
+        () => false,
+      );
+
+    it("removes a clean worktree and keeps the branch", async () => {
+      await create();
+      await remove();
+      expect(existsSync(path())).toBe(false);
+      expect(await listWorktrees({ clone, env })).toEqual([]);
+      expect(await branchExists()).toBe(true);
+    });
+
+    it("refuses a worktree with a changed tracked file", async () => {
+      await create();
+      writeFileSync(join(path(), "README.md"), "changed\n");
+      const error = await failureOf(remove(), GitError);
+      expect(error.stderr).toContain("contains modified or untracked files");
+      expect(readFileSync(join(path(), "README.md"), "utf8")).toBe("changed\n");
+    });
+
+    it("refuses a worktree with only an untracked file", async () => {
+      await create();
+      writeFileSync(join(path(), "new.txt"), "new\n");
+      const error = await failureOf(remove(), GitError);
+      expect(error.stderr).toContain("contains modified or untracked files");
+      expect(existsSync(join(path(), "new.txt"))).toBe(true);
+    });
+
+    it("removes a worktree with only an ignored file", async () => {
+      await create();
+      writeFileSync(join(path(), "ign"), "ignored\n");
+      await remove();
+      expect(existsSync(path())).toBe(false);
+    });
+
+    it("refuses a locked worktree", async () => {
+      await create();
+      await runGit(["worktree", "lock", "--", path()], { gitDir: clone, env });
+      await failureOf(remove(), GitError);
+      expect(existsSync(path())).toBe(true);
+    });
+
+    it("removes a registered worktree with no folder", async () => {
+      await create();
+      rmSync(path(), { recursive: true });
+      await remove();
+      expect(await listWorktrees({ clone, env })).toEqual([]);
+    });
+
+    it("refuses a plain folder", async () => {
+      mkdirSync(path(), { recursive: true });
+      await failureOf(remove(), GitError);
+      expect(existsSync(path())).toBe(true);
+    });
   });
 
   describe("taskBranchName for any title", () => {

@@ -112,3 +112,11 @@ export async function createTaskWorktree(options: {
   });
   return "created";
 }
+
+export async function removeTaskWorktree(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+}): Promise<void> {
+  throw new Error(`not implemented: ${options.path}`);
+}
