@@ -341,6 +341,53 @@ describe("git fixture", () => {
     });
   });
 
+  describe("createTaskWorktree, conflicts", () => {
+    const path = () => taskWorktreePath(worktrees, "issue-1");
+    const base = "refs/remotes/origin/main";
+    const branches = () =>
+      runGit(["for-each-ref", "--format=%(refname)", "refs/heads"], { gitDir: clone, env });
+    const addRaw = (...args: string[]) =>
+      runGit(["worktree", "add", ...args], { gitDir: clone, env });
+
+    // Makes sure that create fails with message and changes no branch and no worktree.
+    const expectConflict = async (message: string) => {
+      const branchesBefore = await branches();
+      const worktreesBefore = await listWorktrees({ clone, env });
+      const error = await failureOf(create(), Error);
+      expect(error.message).toBe(message);
+      expect(await branches()).toBe(branchesBefore);
+      expect(await listWorktrees({ clone, env })).toEqual(worktreesBefore);
+    };
+
+    it("refuses another branch at the path", async () => {
+      await addRaw("-b", "other", "--", path(), base);
+      await expectConflict(`the worktree path has another branch: ${path()} (other)`);
+    });
+
+    it("refuses a detached worktree at the path", async () => {
+      await addRaw("--detach", "--", path(), base);
+      await expectConflict(`the worktree path has another branch: ${path()} (detached)`);
+    });
+
+    it("refuses the branch in a worktree at another path", async () => {
+      const other = join(realpathSync(origin.dir), "other");
+      await addRaw("-b", "issue-1-x", "--", other, base);
+      await expectConflict(`the branch issue-1-x is in another worktree: ${other}`);
+    });
+
+    it("refuses a file at the path", async () => {
+      mkdirSync(worktrees);
+      writeFileSync(path(), "file\n");
+      await expectConflict(`something else is at the worktree path: ${path()}`);
+    });
+
+    it("refuses a folder with files at the path", async () => {
+      mkdirSync(path(), { recursive: true });
+      writeFileSync(join(path(), "file"), "file\n");
+      await expectConflict(`something else is at the worktree path: ${path()}`);
+    });
+  });
+
   describe("taskBranchName for any title", () => {
     // The room for the slug after "issue-7-" is 100 - 7 - 1 = 92 characters.
     it.each([
