@@ -281,3 +281,23 @@ export async function reconcileWorktree(o: {
   await runStep({ target, env, start, args, kind: strategy, base });
   return worktreeHead(target, env);
 }
+
+// Rebases only the commits after the upstream onto a base. Both are full revisions or full refs.
+// Stacked tasks use it. It gives the new head.
+export async function rebaseOnto(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+  upstream: string;
+  onto: string;
+}): Promise<string> {
+  const { clone, env, path } = o;
+  assertRevisionInput(o.upstream);
+  assertRevisionInput(o.onto);
+  const { target, start } = await prepare({ clone, env, path });
+  const upstream = await resolveRevision({ clone, env, value: o.upstream });
+  const onto = await resolveRevision({ clone, env, value: o.onto });
+  const args = ["rebase", ...REBASE_OPTIONS, "--onto", onto, upstream];
+  await runStep({ target, env, start, args, kind: "rebase", base: onto });
+  return worktreeHead(target, env);
+}
