@@ -1,3 +1,4 @@
+import { LOCAL_PREFIX } from "./base-branch.js";
 import { pushWithToken } from "./push-guard.js";
 import { GitError } from "./run.js";
 import { type RemoteTip, remoteTip } from "./remote-tip.js";
@@ -106,6 +107,11 @@ export async function landOnBase(
   options: RemoteOptions & { base: string; revision: string },
 ): Promise<void> {
   const { clone, remote, publishTokens, sshKey, env, base, revision } = options;
+  assertRevision("the revision", revision);
+  if (base === "") throw new Error(`cannot land ${revision}: the base branch is empty`);
+  if (base.startsWith(LOCAL_PREFIX)) {
+    throw landError(revision, base, "the base is a local branch");
+  }
   const summary = `cannot land ${revision} on the base branch: ${base}`;
   let tip: RemoteTip;
   try {
