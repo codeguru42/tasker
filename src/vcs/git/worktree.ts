@@ -1,9 +1,22 @@
 import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
+import { ISSUE_NUMBER } from "../../issue-key/github.js";
+import { JIRA_PROJECT, SITE_LABEL } from "../../issue-key/jira.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { GitError, runGit } from "./run.js";
 
 const MAX_BRANCH_LENGTH = 100;
+
+const SITE = `${SITE_LABEL}(?:\\.${SITE_LABEL})*`;
+const SHORT_REF = `(?:issue-${ISSUE_NUMBER}|(?:(?<site>${SITE})-browse-)?${JIRA_PROJECT}-${ISSUE_NUMBER})`;
+const SHORT_REF_PATTERN = new RegExp(`^${SHORT_REF}$`);
+
+// True when match is a full match and its site, when present, is lower case,
+// because the Jira parser writes the site in lower case.
+function lowerSiteMatch(match: RegExpExecArray | null): boolean {
+  const site = match?.groups?.site;
+  return match !== null && (site === undefined || site === site.toLowerCase());
+}
 
 // pathSlug(), but undefined when no character is left. Any other error passes through.
 function slugOrUndefined(value: string): string | undefined {
@@ -25,6 +38,11 @@ function isTaskBranch(name: string): boolean {
   );
 }
 
+// True when value is a short ref that the issue key parsers make.
+export function isShortRef(value: string): boolean {
+  return isTaskBranch(value) && lowerSiteMatch(SHORT_REF_PATTERN.exec(value));
+}
+
 // Throws unless name passes isTaskBranch(). Run it before any git call that takes a branch.
 export function assertTaskBranch(name: string): void {
   if (!isTaskBranch(name)) {
@@ -40,7 +58,7 @@ export function assertTaskBranch(name: string): void {
 // - A result with a slug has a "-", so it is never "HEAD".
 // - The length is at most MAX_BRANCH_LENGTH.
 export function taskBranchName(shortRef: string, title: string): string {
-  if (!isTaskBranch(shortRef)) {
+  if (!isShortRef(shortRef)) {
     throw new Error(`not a safe short ref: ${JSON.stringify(shortRef)}`);
   }
   const room = MAX_BRANCH_LENGTH - shortRef.length - 1;
