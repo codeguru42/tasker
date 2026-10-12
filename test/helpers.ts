@@ -15,6 +15,7 @@ import {
 import { tmpdir, userInfo } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
+import { fileURLToPath } from "node:url";
 import type { Io, RegisterCommand } from "../src/cli.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -593,4 +594,45 @@ export function treeSnapshot(folder: string): TreeEntry[] {
   };
   walk(folder);
   return entries.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+}
+
+export const sourceDir = fileURLToPath(new URL("../src/", import.meta.url));
+
+const childProcessName = String.raw`["'\`](?:node:)?child_process["'\`]`;
+const loadsChildProcessPattern = new RegExp(
+  [
+    String.raw`\bfrom\s*${childProcessName}`, // import ... from, export ... from
+    String.raw`\bimport\s*${childProcessName}`, // import "child_process"
+    String.raw`\bimport\s*\(\s*${childProcessName}`, // import("child_process")
+    String.raw`\brequire\s*\(\s*${childProcessName}`, // require("child_process")
+  ].join("|"),
+);
+
+// True when text loads the child process module in any of these forms.
+export function loadsChildProcess(text: string): boolean {
+  return loadsChildProcessPattern.test(text);
+}
+
+export interface SourceFile {
+  file: string;
+  text: string;
+}
+
+// Each .ts file under src/ (a path with "/") and its text.
+export function sourceFiles(): SourceFile[] {
+  return readdirSync(sourceDir, { recursive: true, encoding: "utf8" })
+    .map((file) => file.split("\\").join("/"))
+    .filter((file) => file.endsWith(".ts"))
+    .map((file) => ({ file, text: readFileSync(join(sourceDir, file), "utf8") }));
+}
+
+// The files under src/ (paths with "/") that start command.
+// The scan finds a literal command, alone or followed by a space and arguments, and a literal module name.
+// It cannot find a module name or a command name that is built at run time.
+export function filesThatStart(command: string): string[] {
+  const escaped = command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const commandLiteral = new RegExp(`(["'\`])${escaped}(?: [^"'\`]*)?\\1`);
+  return sourceFiles()
+    .filter(({ text }) => loadsChildProcess(text) && commandLiteral.test(text))
+    .map(({ file }) => file);
 }
