@@ -169,10 +169,21 @@ export function canTransition(from: TaskState, to: TaskState): boolean {
   return TRANSITIONS[from].has(to);
 }
 
-export function transitionTask(store: TaskStore, id: number, to: TaskState): Task {
+// detail cannot set from or to: the type rejects them, and the values of the machine win at run time.
+export type TransitionDetail = Record<string, unknown> & { from?: never; to?: never };
+
+// Writes the new state and one transition event { ...detail, from, to } in one transaction.
+// An illegal edge writes nothing: no state change and no event.
+export function transitionTask(
+  store: TaskStore,
+  id: number,
+  to: TaskState,
+  detail?: TransitionDetail,
+): Task {
   return store.updateTask(id, { state: to }, (current) => {
     if (!isTaskState(current.state) || !canTransition(current.state, to)) {
       throw new Error(`illegal state transition: ${current.state} -> ${to}`);
     }
+    return { type: "transition", data: { ...detail, from: current.state, to } };
   });
 }

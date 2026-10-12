@@ -62,6 +62,11 @@ export interface TaskFilter {
   states?: readonly string[];
 }
 
+export interface NewEvent {
+  type: string;
+  data?: unknown;
+}
+
 export interface TaskEvent {
   id: number;
   taskId: number;
@@ -84,7 +89,12 @@ export interface TaskStore {
   findActiveTask(repoKey: string, issueKey: string): Task | undefined;
   // The active task when one exists, else the task with the highest id.
   findLatestTask(repoKey: string, issueKey: string): Task | undefined;
-  updateTask(id: number, changes: TaskChanges, check?: (current: Task) => void): Task;
+  // The event that check returns is appended in the same transaction as the row write.
+  updateTask(
+    id: number,
+    changes: TaskChanges,
+    check?: (current: Task) => NewEvent | void,
+  ): Task;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
   listEvents(taskId: number): TaskEvent[];
   getDefaultBaseBranch(repoKey: string): string | undefined;
@@ -309,7 +319,8 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (current === undefined) {
           throw new Error(`task not found: ${id}`);
         }
-        check?.(current);
+        const event = check?.(current);
+        const at = now().toISOString();
         const next = { ...current };
         if (changes.state !== undefined) next.state = changes.state;
         if (changes.branch !== undefined) next.branch = changes.branch;
@@ -326,9 +337,17 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           next.title,
           next.shortRef,
           next.base,
-          now().toISOString(),
+          at,
           id,
         ) as unknown as TaskRow;
+        if (event !== undefined) {
+          statements.insertEvent.get(
+            id,
+            at,
+            event.type,
+            event.data === undefined ? null : JSON.stringify(event.data),
+          );
+        }
         return rowToTask(row);
       });
     },
