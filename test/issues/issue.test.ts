@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BaseHintError, type Issue, baseBranchHint } from "../../src/issues/issue.js";
+import { BaseHintError, type Issue, baseBranchHint, inProgressMarker } from "../../src/issues/issue.js";
 
 function issueWith(labels: string[]): Issue {
   return {
@@ -73,5 +73,30 @@ describe("baseBranchHint", () => {
       expect(hintError.message).toContain(JSON.stringify(label));
     }
     expect(hintError.message).toContain("octo/repo#7");
+  });
+});
+
+describe("inProgressMarker", () => {
+  it("gives false when the label is undefined", () => {
+    expect(inProgressMarker(issueWith(["wip"]), undefined)).toBe(false);
+  });
+
+  it("gives false for an issue with no labels", () => {
+    expect(inProgressMarker(issueWith([]), "wip")).toBe(false);
+  });
+
+  it("gives false when the issue lacks the label", () => {
+    expect(inProgressMarker(issueWith(["bug"]), "wip")).toBe(false);
+  });
+
+  it.each([
+    ["wip", "wip", true],
+    ["In Progress", "in progress", true],
+    ["ÜBER", "über", true],
+    ["BASE:X", "base:x", true],
+    ["base:", "base:", true],
+    ["wip ", "wip", false],
+  ])("compares the issue label %j with the asked label %j: %s", (name, asked, expected) => {
+    expect(inProgressMarker(issueWith(["bug", name]), asked)).toBe(expected);
   });
 });
