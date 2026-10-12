@@ -83,6 +83,8 @@ The repair of the `initializing` lock trusts the lock. Git sets this lock while 
 tasker never uses `--force`.
 
 - Git refuses a worktree with a changed tracked file or an untracked file.
+- Git refuses a locked worktree and a folder that is not a worktree.
+- A registered worktree with no folder is removed.
 - Ignored files do not block the remove. Git deletes them with the folder.
 - The branch stays.
 
@@ -103,10 +105,11 @@ tasker reads the exact ref `refs/heads/<branch>` with `git show-ref`, not `git r
 - A stopped `git worktree add` can leave an admin folder in the clone with only a `locked` file. Git does not list it, and the next create uses a new admin name.
 - A failed `git worktree add` can leave the new branch. The next create reuses it.
 - The repair of the `initializing` lock writes the committed files over a partial checkout.
+- For an unlocked worktree whose folder is gone, create removes that worktree entry and adds the worktree again.
 
 ## Diff and changes
 
-tasker reads the commits itself, because some assistants have no shell in planning.
+This part reads what a task changed against its base, and what is not committed yet. tasker reads the commits itself, because some assistants have no shell in planning.
 
 ### Revision input
 
@@ -141,7 +144,7 @@ The fetch uses the ssh key of the repo. See [version-control.md](version-control
 
 ### Side effects
 
-The other reads write no ref, no file and no configuration.
+Apart from the fetch, these reads write no ref, no file and no configuration.
 
 ## Reconcile
 
@@ -194,7 +197,6 @@ The code decides on a conflict only from the list of `git diff --name-only --dif
 
 ### A failed step
 
-- The code decides on a conflict only from the list of unmerged paths.
 - The code drops an error of the abort, because the restore runs next and checks the state.
 - An error of the restore wins over the other errors.
 
