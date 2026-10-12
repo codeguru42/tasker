@@ -1,6 +1,6 @@
 # Workspaces
 
-This page describes the base branch and the workspace of a task. The code is in `src/vcs/git/base-branch.ts`, `src/vcs/git/worktree.ts`, `src/vcs/git/changes.ts` and `src/vcs/git/refs.ts`.
+This page describes the base branch and the workspace of a task. The code is in `src/vcs/git/base-branch.ts`, `src/vcs/git/worktree.ts`, `src/vcs/git/changes.ts`, `src/vcs/git/refs.ts` and `src/vcs/git/reconcile.ts`.
 
 ## Base branch
 
@@ -281,3 +281,144 @@ The steps are: check the base text, run the guard, fetch, read the head of the w
 
 - The fetch of `fetchTips()` moves and prunes `refs/remotes/origin/*` in the clone. This also happens when the head read or the base read fails after the fetch. A bad base text or a failed guard causes no fetch.
 - Every other function in `changes.ts`, `assertTaskWorktree()` and the functions of `refs.ts` read. They write no ref, no file and no configuration.
+
+## Reconcile
+
+`src/vcs/git/reconcile.ts` brings a task worktree onto a base that moved. When a step fails, the same function puts the worktree back where it was. No command calls these functions yet. `tasker update-branch` will call them (M13).
+
+### The functions
+
+| Function | Git command | Where | Result |
+| --- | --- | --- | --- |
+| `fetchOrigin()` (in `changes.ts`) | `fetch --prune origin` | the clone | nothing |
+| `worktreeState()` | `rev-parse`, `symbolic-ref`, `status` | the worktree | `{ head, branch, changes }` |
+| `reconcileWorktree()` | `rebase` or `merge` | the worktree | the new head |
+| `rebaseOnto()` | `rebase --onto` | the worktree | the new head |
+| `resyncWorktree()` | `merge --ff-only`, `rebase` or `merge` | the worktree | `{ moved, how, head }` |
+| `restoreWorktree()` | `rebase --quit`, `checkout`, `clean` | the worktree | nothing |
+| `restoreCommands()` | none | none | a list of git command texts |
+
+The base is a full revision or a full ref. Each function that takes `path` runs the guard `assertTaskWorktree()`. [The guard paragraph](#workspaces-1) lists its errors.
+
+### The fetch
+
+`fetchOrigin()` runs the fetch through `runRemoteGit()` with `sshKey` (see [version-control.md](version-control.md#the-ssh-key)). `fetchTips()` calls it too. No reconcile function fetches. The caller runs `fetchOrigin()` first.
+
+### The order
+
+Each of `reconcileWorktree()`, `rebaseOnto()` and `resyncWorktree()` runs these steps in this order:
+
+1. Check the revision input. A bad text throws `not a full revision or ref: <JSON>`.
+2. Run the guard.
+3. Read the start state and make sure that the worktree is clean. This is one read. A worktree with changes throws `the worktree has uncommitted changes: <path>: <JSON paths>`. No step and no restore runs.
+4. Resolve each revision to a full revision.
+5. Run the git step.
+
+The clean check comes first because the restore runs `checkout --force` and `clean -fd`. Both delete uncommitted work.
+
+### The arguments
+
+Every revision on a command line is a full revision. Every branch passed `assertTaskBranch()`. `runGit()` removes `GIT_CONFIG_PARAMETERS` and the `GIT_CONFIG_COUNT` variables. As a result, `-c key=value` is not possible, so each rule of the user configuration has a command option.
+
+The rebase is `git rebase <options> <base>`. `rebaseOnto()` runs `git rebase <options> --onto <onto> <upstream>`. It applies only the commits of `<upstream>..HEAD`. The rebase options are:
+
+| Option | Reason |
+| --- | --- |
+| `--merge` | `rebase.backend=apply` uses `rebase-apply/`. This option forces `rebase-merge/`. |
+| `--no-autostash` | It stops `rebase.autoStash`. |
+| `--no-update-refs` | It stops `rebase.updateRefs`, which moves other local branches. |
+| `--no-rebase-merges` | It stops `rebase.rebaseMerges`, so the history stays linear. |
+| `--no-gpg-sign` | It stops a gpg failure from `commit.gpgSign`. |
+| `--no-verify` | It skips the `pre-rebase` hook. |
+| `--no-rerere-autoupdate` | It stops `rerere.autoUpdate`, so a conflict stays unmerged. |
+
+The merge is `git merge -s ort --ff --commit --no-squash --no-edit --no-log --no-autostash --no-gpg-sign --no-verify --no-verify-signatures --no-rerere-autoupdate <base>`. The reasons are:
+
+| Option | Reason |
+| --- | --- |
+| `-s ort` | It stops `pull.twohead`, which can drop the changes of the base. |
+| `--ff` | It stops `merge.ff=only`. |
+| `--commit` and `--no-squash` | They stop `branch.<name>.mergeOptions=--squash`. |
+| `--no-edit` | It stops `GIT_MERGE_AUTOEDIT=yes` from running an editor. |
+| `--no-log` | It stops `merge.log`, so the message stays the default. |
+| `--no-autostash` | It stops `merge.autoStash`. |
+| `--no-gpg-sign` | It stops a gpg failure from `commit.gpgSign`. |
+| `--no-verify` | It skips the `pre-merge-commit` and `commit-msg` hooks. |
+| `--no-verify-signatures` | It stops `merge.verifySignatures`. |
+| `--no-rerere-autoupdate` | It stops `rerere.autoUpdate`, so a conflict stays unmerged. |
+
+The fast-forward is `git merge --ff-only --no-squash --no-autostash <base>`.
+
+These settings need no option. `rebase.autoSquash` has no effect on a rebase that is not interactive. `merge.conflictStyle` changes only the markers, and the abort removes them. `pull.rebase` has no effect.
+
+### The conflict rule
+
+Exit code 1 does not mean a conflict. A refused dirty worktree, an untracked file in the way, a refusing `pre-rebase` hook and a gpg failure in a rebase also exit with 1. A merge can exit with 2 or 128 for other failures.
+
+The code decides on a conflict only from the list of `git diff --name-only --diff-filter=U -z`. Each unmerged path shows one time, raw and relative to the root. An empty list means no conflict.
+
+### A failed step
+
+When the git step throws a `GitError`, the code runs these steps in this order:
+
+1. Read the list of unmerged paths. A `GitError` of this read gives an empty list.
+2. If the list is not empty, run `rebase --abort` or `merge --abort`. The abort is for the strategy of the step. The code drops a `GitError` of the abort, because the restore runs next and checks the state.
+3. Run the restore. An error of the restore wins over the other errors.
+4. If the list was not empty, throw `ReconcileConflictError`. Else throw the original `GitError` again.
+
+The message of `ReconcileConflictError` is `the <rebase|merge> onto <base> stopped on conflicts: <path>: <JSON paths>`. The error has the field `paths`. An error that is not a `GitError` passes through with no restore.
+
+### The resync
+
+`resyncWorktree()` gives `{ moved, how, head }`. It does not fetch, and it does not call `reconcileWorktree()`. The cases are:
+
+- The worktree holds the base already. Then `how` is `none`. This covers a task that someone merged into the base outside tasker.
+- The head is an ancestor of the base. Then it runs the fast-forward, and `how` is `fast-forward`. A fast-forward has no conflicts.
+- Any other case runs the strategy, and `how` is `rebase` or `merge`.
+
+`moved` is `true` for every `how` except `none`. `head` is always the head that the worktree has at the end.
+
+### The state read
+
+`worktreeState()` gives `head`, `branch` and `changes`. `branch` comes from `git symbolic-ref -q HEAD` without the `refs/heads/` prefix. Exit code 1 means a detached HEAD, and `branch` is `undefined`. Every other failure passes through.
+
+### The restore
+
+`restoreWorktree()` takes a start `{ head, branch }`. It checks the input before any git call. `head` must be a full revision, and a set `branch` must be a task branch name. Then it runs the guard and these steps:
+
+1. If a rebase is in progress, run `rebase --quit`. A failed or conflicted rebase leaves `rebase-merge/`, and `checkout --force` does not remove it.
+2. For a start on a branch, run `checkout --force -B <branch> <head>`. This puts the branch at the start, also when the failed step moved it. For a detached start, run `checkout --force --detach <head>`. The checkout also removes the merge state.
+3. Run `clean -fd`. It deletes untracked files and keeps ignored files.
+4. Read the state again. The state is right when HEAD and the branch equal the start, no change is left, and no rebase or merge is in progress.
+
+A `GitError` of steps 1 to 3 does not stop the restore. The code keeps the stderr and runs the next command. Any other error passes through.
+
+The caller must find the worktree clean before the step. The restore deletes uncommitted work and untracked files.
+
+A rebase is in progress when `rebase-merge` or `rebase-apply` exists in the admin folder. A merge is in progress when `MERGE_HEAD` exists. Git has no plumbing command with an exit code for this, and the text of `git status` is not stable. So the code asks `git rev-parse --git-path <name>` for each file and tests that the path exists. The path is relative to the worktree or absolute. The code resolves it against the worktree.
+
+### The restore error
+
+When the state is wrong after the restore, the code throws an `Error`. The text is:
+
+`cannot restore the worktree: <path>: HEAD is at <head>, <detached|on the branch <b>>[, a rebase is in progress][, a merge is in progress][, <n> uncommitted changes]. Run these git commands in the worktree, in this order: <commands>[: <first stderr>]`
+
+`restoreCommands(start, found)` gives the commands. It is exported because the fixture cannot make each state. These are the rows, in order:
+
+1. `git rebase --abort`, when a rebase is in progress.
+2. `git merge --abort`, when a merge is in progress.
+3. `git checkout --force -B <branch> <head>` for a start on a branch, or `git checkout --force --detach <head>` for a detached start. The row applies when the head or the branch differs from the start.
+4. `git reset --hard`, when a change is tracked and the list has no checkout.
+5. `git clean -fd`, when an untracked file is left.
+
+A right state gives an empty list. A branch that another worktree has checked out, a `refs/heads/<branch>.lock` file and an `index.lock` file in the admin folder make the checkout fail. The error then names the state and the commands.
+
+### Side effects
+
+- The fetch moves and prunes `refs/remotes/origin/*` in the clone. It changes no worktree.
+- A successful rebase moves the task branch, or only HEAD for a detached start, and rewrites its commits. A merge adds a merge commit. A fast-forward moves the branch or HEAD.
+- The hooks `post-checkout`, `post-rewrite` and `post-merge` in `<clone>/hooks` run. No option skips them.
+- With `rerere.enabled` in the user configuration, git writes `rr-cache/` and `MERGE_RR` in the clone. No option stops it.
+- `ORIG_HEAD` and `AUTO_MERGE` stay in the admin folder.
+- The restore drops the commits that the failed step made on the branch. It deletes untracked files and keeps ignored files.
+- A refused dirty worktree changes nothing.
