@@ -133,9 +133,8 @@ Each running agent has a slot and a delay. The delay is the number of minutes be
 
 - If an agent has no job, the agent must tell the orchestrator each time a tasker run starts: `tasker plan`, `tasker refine`, `tasker execute`, `tasker review` or `tasker resume`.
 - If the orchestrator gets a run-start report and the ticket already has a job that has not fired, the orchestrator does not schedule another job.
-- When the orchestrator gets this report, the orchestrator runs `tasker show-quota` again. If there is a reset time, the orchestrator schedules the job of that agent.
+- If an agent without a job reports that a tasker run starts or ends, the orchestrator runs `tasker show-quota` again. If there is a reset time, the orchestrator schedules the job of that agent. If there is no reset time, nothing else changes.
 - When the orchestrator schedules the job of an agent that had no job, the orchestrator tells the agent that it has a job. If the agent gets this message, the agent stops the run-start reports.
-- If there is still no reset time, the orchestrator runs `tasker show-quota` again each time an agent without a job reports a new tasker run. The orchestrator also runs it again each time an agent reports that a run ended.
 - If the quota runs out before the orchestrator schedules a job, no job resumes the agent. In that case, the orchestrator tells the user when the orchestrator has tokens again.
 
 ### When the job fires
