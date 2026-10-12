@@ -139,11 +139,31 @@ export async function deleteRemoteTaskBranch(
   options: RemoteOptions & { branch: string; published: string },
 ): Promise<{ state: "deleted" | "already-gone" }> {
   const { clone, remote, publishTokens, sshKey, env, branch, published } = options;
-  const tip = await remoteTip({ remote, branch, sshKey, env });
-  if (compareTip(branch, published, tip) === "absent") return { state: "already-gone" };
-  await pushWithToken(
-    [`--force-with-lease=refs/heads/${branch}:${published}`, "origin", `:refs/heads/${branch}`],
-    { location: { gitDir: clone }, publishTokens, sshKey, env },
-  );
+  assertTaskBranch(branch);
+  assertTaskBranchShape(branch);
+  assertRevision("the published revision", published);
+  const summary = `cannot delete the task branch on origin: ${branch}`;
+  const readTip = async (): Promise<RemoteTip> => {
+    try {
+      return await remoteTip({ remote, branch, sshKey, env });
+    } catch (error) {
+      throw failed(summary, error);
+    }
+  };
+  if (compareTip(branch, published, await readTip()) === "absent") {
+    return { state: "already-gone" };
+  }
+  try {
+    await pushWithToken(
+      [`--force-with-lease=refs/heads/${branch}:${published}`, "origin", `:refs/heads/${branch}`],
+      { location: { gitDir: clone }, publishTokens, sshKey, env },
+    );
+  } catch (error) {
+    // Someone can have moved or deleted the branch since the first read.
+    if (compareTip(branch, published, await readTip()) === "absent") {
+      return { state: "already-gone" };
+    }
+    throw failed(summary, error);
+  }
   return { state: "deleted" };
 }
