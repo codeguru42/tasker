@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fakeGh, makeTempDir } from "../../helpers.js";
+import { fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
 
 describe("gh doctor checks", () => {
   // The module loads again before each test, so that each test starts with an empty token cache.
@@ -88,6 +88,88 @@ describe("gh doctor checks", () => {
       const fake = fakeGh(dir, {}, [{ args: versionArgs, stdout: "gh version 2.101.0\n" }]);
       await doctor.ghVersionCheck().run(fake.env);
       expect(fake.calls().filter((call) => call.args[0] === "auth")).toEqual([]);
+    });
+  });
+
+  describe("ghAuthCheck", () => {
+    const tokenArgs = ["auth", "token", "--hostname", "github.com", "--user", "octo"];
+    const loginArgs = ["api", "user", "--jq", ".login"];
+    const remediation = "Run `gh auth login --hostname github.com` and log in as octo.";
+    const argLists = (fake: ReturnType<typeof fakeGh>) => fake.calls().map((call) => call.args);
+
+    it("has the name, required and timeoutMs of the auth check", () => {
+      const check = doctor.ghAuthCheck("octo");
+      expect({ name: check.name, required: check.required, timeoutMs: check.timeoutMs }).toEqual({
+        name: "gh auth: octo",
+        required: true,
+        timeoutMs: 15000,
+      });
+    });
+
+    it("is ok when the token is for the account", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: loginArgs, stdout: "octo\n" },
+      ]);
+      expect(await doctor.ghAuthCheck("octo").run(fake.env)).toEqual({
+        status: "ok",
+        detail: "gh is logged in as octo",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, loginArgs]);
+    });
+
+    it("gives error and a remediation for another login", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: loginArgs, stdout: "hubot\n" },
+      ]);
+      expect(await doctor.ghAuthCheck("octo").run(fake.env)).toEqual({
+        status: "error",
+        detail: "the token of the account octo is for the login hubot",
+        remediation,
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, loginArgs]);
+    });
+
+    it("gives error and a remediation when the token call fails", async () => {
+      const fake = fakeGh(dir, {}, [
+        { args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 },
+      ]);
+      expect(await doctor.ghAuthCheck("octo").run(fake.env)).toEqual({
+        status: "error",
+        detail:
+          "gh has no login for the account octo on github.com: run `gh auth login --hostname github.com` and log in as octo. gh said: no oauth token found",
+        remediation,
+      });
+      expect(argLists(fake)).toEqual([tokenArgs]);
+    });
+
+    it("gives the timeout result when the token call is slow", async () => {
+      const fake = fakeGh(dir, {}, [
+        { ...ghTokenAnswer("octo", "gho_test"), delaySeconds: 5 },
+        { args: loginArgs, stdout: "octo\n" },
+      ]);
+      const start = Date.now();
+      expect(await doctor.ghAuthCheck("octo", 200).run(fake.env)).toEqual({
+        status: "error",
+        detail: "the check did not finish in 200 ms",
+      });
+      expect(Date.now() - start).toBeLessThan(2000);
+      expect(argLists(fake)).toEqual([tokenArgs]);
+    });
+
+    it("gives the timeout result when the api user call is slow", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: loginArgs, stdout: "octo\n", delaySeconds: 5 },
+      ]);
+      const start = Date.now();
+      expect(await doctor.ghAuthCheck("octo", 200).run(fake.env)).toEqual({
+        status: "error",
+        detail: "the check did not finish in 200 ms",
+      });
+      expect(Date.now() - start).toBeLessThan(2000);
+      expect(argLists(fake)).toEqual([tokenArgs, loginArgs]);
     });
   });
 });
