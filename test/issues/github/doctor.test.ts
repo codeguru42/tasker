@@ -262,4 +262,151 @@ describe("gh doctor checks", () => {
       expect(argLists(fake)).toEqual([tokenArgs, viewArgs("octo/repo")]);
     });
   });
+
+  describe("ghLabelsCheck", () => {
+    const tokenArgs = ["auth", "token", "--hostname", "github.com", "--user", "octo"];
+    const labelArgs = (name: string) => ["api", `repos/octo/repo/labels/${name}`];
+    const argLists = (fake: ReturnType<typeof fakeGh>) => fake.calls().map((call) => call.args);
+    const found = (name: string) => ({ args: labelArgs(name), stdout: `{"name":"${name}"}\n` });
+    const notFound = (name: string) => ({
+      args: labelArgs(name),
+      stdout:
+        '{"message":"Not Found","documentation_url":"https://docs.github.com/rest/issues/labels#get-a-label","status":"404"}',
+      stderr: "gh: Not Found (HTTP 404)\n",
+      exitCode: 1,
+    });
+    const IN_PROGRESS = "issueTracker.inProgressLabel";
+    const DONE = "issueTracker.doneLabel";
+    const bothLabels = githubRepo("main", {
+      updateOnStart: true,
+      inProgressLabel: "wip",
+      updateOnFinish: true,
+      doneLabel: "done",
+    });
+
+    it("has the name, required and timeoutMs of the labels check", () => {
+      const check = doctor.ghLabelsCheck(githubRepo("main"));
+      expect({ name: check.name, required: check.required, timeoutMs: check.timeoutMs }).toEqual({
+        name: "gh labels: main",
+        required: true,
+        timeoutMs: 15000,
+      });
+    });
+
+    it("is ok with no gh call when no label applies", async () => {
+      const fake = fakeGh(dir, {}, []);
+      const repo = githubRepo("main", {
+        updateOnStart: false,
+        inProgressLabel: "wip",
+        updateOnFinish: false,
+        doneLabel: "done",
+      });
+      expect(await doctor.ghLabelsCheck(repo).run(fake.env)).toEqual({
+        status: "ok",
+        detail: "main: no label to check",
+      });
+      expect(fake.calls()).toEqual([]);
+    });
+
+    it("gives error for a missing in-progress label", async () => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), notFound("wip")]);
+      const repo = githubRepo("main", { updateOnStart: true, inProgressLabel: "wip" });
+      expect(await doctor.ghLabelsCheck(repo).run(fake.env)).toEqual({
+        status: "error",
+        detail: `main:\nthe label "wip" of ${IN_PROGRESS} does not exist in octo/repo: tasker start fails`,
+        remediation: `Create each missing label in octo/repo on GitHub, or change ${IN_PROGRESS}.`,
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip")]);
+    });
+
+    it("gives warn for a missing done label, after it reads the in-progress label", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        found("wip"),
+        notFound("done"),
+      ]);
+      expect(await doctor.ghLabelsCheck(bothLabels).run(fake.env)).toEqual({
+        status: "warn",
+        detail:
+          `main:\nthe label "wip" of ${IN_PROGRESS} exists\n` +
+          `the label "done" of ${DONE} does not exist in octo/repo: tasker finish only warns`,
+        remediation: `Create each missing label in octo/repo on GitHub, or change ${DONE}.`,
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip"), labelArgs("done")]);
+    });
+
+    it("gives error when both labels are missing, and names both keys", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        notFound("wip"),
+        notFound("done"),
+      ]);
+      expect(await doctor.ghLabelsCheck(bothLabels).run(fake.env)).toEqual({
+        status: "error",
+        detail:
+          `main:\nthe label "wip" of ${IN_PROGRESS} does not exist in octo/repo: tasker start fails\n` +
+          `the label "done" of ${DONE} does not exist in octo/repo: tasker finish only warns`,
+        remediation: `Create each missing label in octo/repo on GitHub, or change ${IN_PROGRESS} and ${DONE}.`,
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip"), labelArgs("done")]);
+    });
+
+    it("is ok when both labels exist", async () => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), found("wip"), found("done")]);
+      expect(await doctor.ghLabelsCheck(bothLabels).run(fake.env)).toEqual({
+        status: "ok",
+        detail:
+          `main:\nthe label "wip" of ${IN_PROGRESS} exists\n` +
+          `the label "done" of ${DONE} exists`,
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip"), labelArgs("done")]);
+    });
+
+    it("gives error with the gh message for a 401", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        {
+          args: labelArgs("wip"),
+          stdout: '{"message":"Bad credentials","status":"401"}',
+          stderr: "gh: Bad credentials (HTTP 401)\n",
+          exitCode: 1,
+        },
+      ]);
+      const repo = githubRepo("main", { updateOnStart: true, inProgressLabel: "wip" });
+      expect(await doctor.ghLabelsCheck(repo).run(fake.env)).toEqual({
+        status: "error",
+        detail:
+          "gh api repos/octo/repo/labels/wip failed with exit code 1: gh: Bad credentials (HTTP 401)",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip")]);
+    });
+
+    it("gives the timeout result when gh is slow", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { ...found("wip"), delaySeconds: 5 },
+      ]);
+      const repo = githubRepo("main", { updateOnStart: true, inProgressLabel: "wip" });
+      const start = Date.now();
+      expect(await doctor.ghLabelsCheck(repo, 200).run(fake.env)).toEqual({
+        status: "error",
+        detail: "the check did not finish in 200 ms",
+      });
+      expect(Date.now() - start).toBeLessThan(2000);
+      expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip")]);
+    });
+
+    it.each([
+      ["in progress", "in%20progress"],
+      ["area/x", "area%2Fx"],
+      ["{owner}", "%7Bowner%7D"],
+      ["a?b#c%", "a%3Fb%23c%25"],
+    ])("encodes the label %j as %s in the path", async (name, encoded) => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), found(encoded)]);
+      const repo = githubRepo("main", { updateOnStart: true, inProgressLabel: name });
+      const result = await doctor.ghLabelsCheck(repo).run(fake.env);
+      expect(result.status).toBe("ok");
+      expect(argLists(fake)).toEqual([tokenArgs, labelArgs(encoded)]);
+    });
+  });
 });
