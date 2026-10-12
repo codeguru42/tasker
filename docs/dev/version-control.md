@@ -10,7 +10,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/default-branch.ts` holds `remoteDefaultBranch()`.
 - `src/vcs/git/provision.ts` holds `provisionClone()`.
 - `src/vcs/git/base-branch.ts` holds `parseBaseInput()`, `baseRevision()`, `resolveBaseBranch()` and `LOCAL_PREFIX`.
-- `src/vcs/git/worktree.ts` holds `taskBranchName()`, `isShortRef()`, `assertTaskBranch()`, `assertTaskBranchShape()`, `taskWorktreePath()`, `listWorktrees()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
+- `src/vcs/git/worktree.ts` holds `taskBranchName()`, `assertTaskBranch()`, `assertTaskBranchShape()`, `taskWorktreePath()`, `listWorktrees()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
 - `src/vcs/git/push-guard.ts` holds `installPushHook()` and `pushWithToken()`.
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
 - `src/vcs/git/publish.ts` holds `publishTaskBranch()`, `landOnBase()` and `deleteRemoteTaskBranch()`.

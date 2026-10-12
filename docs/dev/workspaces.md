@@ -93,7 +93,7 @@ Every function that runs git takes one options object. Calls on the clone use `g
 - If the short ref leaves no room, or the title has no usable character, the name is the short ref alone.
 - If the short ref is not one of the short ref forms below, the function throws `not a safe short ref: <JSON text of the short ref>`.
 
-The short ref is the one that the issue key parsers make:
+The short ref is the one that the issue key parsers make. `src/issue-key/short-ref.ts` holds these forms:
 
 - `issue-<N>` for a GitHub key. `<N>` is a number with no leading zero.
 - `<PROJ>-<N>` for a Jira key with no site. `<PROJ>` starts with an upper-case letter, then has upper-case letters, digits or `_`.
