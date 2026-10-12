@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
-import { runGit } from "./run.js";
+import { GitError, runGit } from "./run.js";
 
 const MAX_BRANCH_LENGTH = 100;
 
@@ -106,6 +106,24 @@ function canonicalPath(path: string): string {
   }
 }
 
+// True when refs/heads/<branch> exists in the clone. show-ref matches only the exact ref.
+async function branchExists(
+  clone: string,
+  env: NodeJS.ProcessEnv,
+  branch: string,
+): Promise<boolean> {
+  try {
+    await runGit(["show-ref", "--verify", "--quiet", "--", `refs/heads/${branch}`], {
+      gitDir: clone,
+      env,
+    });
+    return true;
+  } catch (error) {
+    if (error instanceof GitError && error.exitCode === 1) return false;
+    throw error;
+  }
+}
+
 // Makes the worktree of a task on a new branch. The new branch has no upstream.
 export async function createTaskWorktree(options: {
   clone: string;
@@ -120,12 +138,16 @@ export async function createTaskWorktree(options: {
   const target = canonicalPath(path);
   const entries = await listWorktrees({ clone, env });
   const entry = entries.find((candidate) => candidate.path === target);
-  if (
-    entry?.branch === branch &&
-    entry.lockReason === undefined &&
-    existsSync(join(target, ".git"))
-  ) {
-    return "reused-worktree";
+  if (entry?.branch === branch && entry.lockReason === undefined) {
+    if (existsSync(join(target, ".git"))) return "reused-worktree";
+    if (!existsSync(target)) {
+      // The folder is gone. Git drops only this entry, and the branch stays.
+      await runGit(["worktree", "remove", "--", target], { gitDir: clone, env });
+    }
+  }
+  if (await branchExists(clone, env, branch)) {
+    await runGit(["worktree", "add", "--", target, branch], { gitDir: clone, env });
+    return "reused-branch";
   }
   await runGit(["worktree", "add", "--no-track", "-b", branch, "--", target, baseRevision], {
     gitDir: clone,
