@@ -24,3 +24,12 @@ export function readDenyPaths(config: GitVcsConfig): string[] {
   }
   return [key];
 }
+
+// The folders that a git commit in the task worktree writes to, as absolute paths.
+export async function sandboxWritePaths(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+}): Promise<string[]> {
+  return options.clone === "" ? [] : [];
+}
