@@ -31,7 +31,7 @@ Names such as `-x` and `a..b` pass the parse. The existence check then rejects t
 
 ### Revision
 
-`baseRevision(base)` gives the git revision of a stored base. For `refs/heads/<x>` it returns the same text. For `<x>` it returns `refs/remotes/origin/<x>`, which is the remote-tracking ref of `origin/<x>`. The short name `origin/<x>` can name a stale local branch in the bare clone, so tasker uses the full ref.
+`baseRevision(base)` gives the git revision of a stored base. For `refs/heads/<x>` it returns the same text. For `<x>` it returns `refs/remotes/origin/<x>`, which is the remote-tracking ref of `origin/<x>`. The short name `origin/<x>` can name another ref first. Git reads `refs/tags/` and `refs/heads/` before `refs/remotes/`. Examples are a tag `origin/<x>` that the fetch brings from the remote, and a local branch `refs/heads/origin/<x>` that a person makes in the clone. For this reason, tasker uses the full ref.
 
 ### Existence check
 
