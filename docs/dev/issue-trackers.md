@@ -9,8 +9,9 @@ All code that starts `gh` is in `src/issues/github/`. The test `test/issues/gith
 ## The files of src/issues/
 
 - `src/issues/github/run.ts` holds `runGh()`, `RunGhOptions`, `GhError`, `GhNotInstalledError` and `GhLoginError`.
-- `src/issues/issue.ts` holds `Issue`, `IssueReadError`, `BaseHintError`, `baseBranchHint()` and `inProgressMarker()`.
-- `src/issues/github/issue.ts` holds `readGithubIssue()`.
+- `src/issues/issue.ts` holds `Issue`, `Blocker`, `IssueReadError`, `BaseHintError`, `baseBranchHint()` and `inProgressMarker()`.
+- `src/issues/github/issue.ts` holds `readGithubIssue()` and `issueState()`.
+- `src/issues/github/blockers.ts` holds `readGithubBlockers()`.
 
 Later issues add their files to this list.
 
@@ -70,6 +71,8 @@ The read runs `gh issue view <N> -R <project> --json number,title,body,url,label
 
 The project and the number come from the stored key. `resolveIssueKey()` stores the key as `<project>#<N>`, so the project is `issueTracker.project`, or the repo key when it is not set. See [Issue keys](issue-keys.md). A key that does not split gives the `IssueKeyError` of `splitGithubKey()` before `gh` starts.
 
+`issueState(raw)` maps the state that GitHub gives. `OPEN` gives `"open"`, `CLOSED` gives `"closed"`, and any other state gives `undefined`. `readGithubIssue()` and `readGithubBlockers()` both use it. Each of them builds its own bad output error.
+
 The read gives these errors:
 
 - `IssueReadError` has the field `key`. Its message is `the issue <key> does not exist: <stderr>` when `gh` says that it cannot resolve the issue. A missing repo and the other `gh` failures stay a `GhError`.
@@ -92,6 +95,28 @@ The `BaseHintError` has the field `labels`. Its message names each label as JSON
 
 `inProgressMarker(issue, label)` gives `false` when `label` is `undefined`. Else it gives `true` when the issue has a label equal to `label` after `toLowerCase()` of both names. It does not trim the names.
 
+## Blocking issues
+
+`readGithubBlockers(ref, account, env)` reads every issue that blocks one GitHub issue. It resolves with a list of `Blocker`. A `Blocker` has the fields `key` (`<owner>/<repo>#<N>`) and `state` (`"open"` or `"closed"`, the same type as `Issue.state`). No command uses it yet. M13 uses it to stack a task on the branch of a blocker.
+
+The read runs `gh api graphql` through `runGh()`, with the account of the tracker. The arguments are `-f query=<query>`, `-f owner=<owner>`, `-f name=<repo>`, `-F number=<N>`, and from the second page on `-f cursor=<cursor>`. The first page has no cursor argument. `-f` always sends a string. `-F` sends `123` as a number and `true` as a Boolean, and GitHub then refuses the variable. A name of only digits, or `true`, is a valid GitHub name, so owner, name and cursor use `-f`. Only `number` uses `-F`, because the query needs an `Int`.
+
+The query asks for `blockedBy(first: 100, after: $cursor)`. For each blocker it asks for `number`, `state` and `repository { nameWithOwner }`. It also asks for `pageInfo { hasNextPage endCursor }`. The code reads every page, one call after the other. A page with `hasNextPage` set to true must have a new `endCursor`.
+
+The key of a blocker is `<owner>/<repo>#<N>`. When `nameWithOwner` equals the project of the key of the issue, the blocker gets the project spelling of that key, which is the spelling of the configuration. Else it gets the `nameWithOwner` that GitHub gives. The compare uses the same ASCII fold as the issue key resolve. See [Issue keys](issue-keys.md). Each key goes through `splitGithubKey()`.
+
+`issueState()` gives the state of each blocker. The list keeps the order that GitHub gives, page after page. An issue with no blockers gives `[]`. A null `endCursor` with `hasNextPage` set to false is normal.
+
+`gh` exits with code 1 for a GraphQL error and prints the JSON answer on stdout. The read uses that JSON when the exit code is a number and stdout is JSON. Any other `gh` failure stays a `GhError`: output that is not JSON, a signal, a login error, or an HTTP error such as 502.
+
+The read checks the answer in this order, and gives an `IssueReadError` with the field `key`:
+
+- The repo or the issue is null. The message is `the issue <key> does not exist`, plus `: <messages>` when the answer has errors. `<messages>` are the messages of `errors`, joined with `; `. A pull request number gives this error too, because GitHub answers `issue: null` for it.
+- `errors` is not empty. The message is `gh api graphql gave errors for <key>: <messages>`. This holds also when the answer has data.
+- The message is `gh api graphql gave bad output for <key>: <reason>` for output that is not JSON, the wrong fields, a missing `data`, a blocker whose key does not form a GitHub key, an unknown state, or a page that has no new cursor.
+
+A missing repo gives an `IssueReadError` here, but a `GhError` in `readGithubIssue()`. The GraphQL answer says which part is null. `gh issue view` gives only stderr.
+
 ## Tests
 
 The fake `gh` is in `test/helpers.ts`. It uses shell builtins only, so the real `gh` can never run.
@@ -106,4 +131,4 @@ A call with no answer exits with 99 and goes into `unanswered()`. It fails the t
 
 `test/issues/github/run.test.ts` calls `vi.resetModules()` and imports `run.ts` again before each test, so each test starts with an empty token cache.
 
-`test/issues/issue.test.ts` and `test/issues/github/issue.test.ts` test the new files.
+`test/issues/issue.test.ts`, `test/issues/github/issue.test.ts` and `test/issues/github/blockers.test.ts` test the new files.
