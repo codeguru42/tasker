@@ -4,6 +4,8 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 
 ## The git folder
 
+- `src/vcs/git/config.ts` holds `GitConfigSchema` and the type `GitVcsConfig`.
+- `src/vcs/git/provider.ts` holds `createGitProvider()`.
 - `src/vcs/git/run.ts` holds `runGit()` and `gitSshCommand()`.
 - `src/vcs/git/repo-paths.ts` holds `repoSlug()` and `repoPaths()`.
 - `src/vcs/git/ssh.ts` holds `shellQuote()`, `sshCommand()`, `sshEnv()`, `hideSshKey()`, `homeKeyPath()`, `runRemoteGit()`, `remoteNotAnswering()`, `remoteCwd()`, `isLocalRemote()` and `cloneUrl()`.
@@ -13,7 +15,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/worktree.ts` holds `taskBranchName()`, `assertTaskBranch()`, `assertTaskBranchShape()`, `taskWorktreePath()`, `withoutLineEnd()`, `listWorktrees()`, `assertTaskWorktree()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
 - `src/vcs/git/refs.ts` holds `isFullRevision()`, `refExists()`, `refRevision()`, `assertRevisionInput()` and `resolveRevision()`.
 - `src/vcs/git/changes.ts` holds `worktreeDiff()`, `changedPaths()`, `ownCommitsText()`, `hasCommitsNotIn()`, `uncommittedChanges()`, `uncommittedRefusal()`, `isAncestor()`, `fetchTips()`, `fetchOrigin()`, `nulFields()`, `jsonPathList()`, `worktreeHead()`, `worktreeChanges()` and `NO_OWN_COMMITS`.
-- `src/vcs/git/reconcile.ts` holds `worktreeState()`, `reconcileWorktree()`, `rebaseOnto()`, `resyncWorktree()`, `restoreWorktree()`, `restoreCommands()` and `ReconcileConflictError`. [workspaces.md](workspaces.md#reconcile) gives the rules.
+- `src/vcs/git/reconcile.ts` holds `worktreeState()`, `reconcileWorktree()`, `rebaseOnto()`, `resyncWorktree()`, `restoreWorktree()`, and `restoreCommands()`. [workspaces.md](workspaces.md#reconcile) gives the rules.
 - `src/vcs/git/assistant-surface.ts` holds `EXECUTE_COMMIT_TEXT`, `DENY_RULES`, `readDenyPaths()` and `sandboxWritePaths()`.
 - `src/vcs/git/push-guard.ts` holds `installPushHook()` and `pushWithToken()`.
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
@@ -25,6 +27,62 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 No other folder in `src/` starts git.
 
 The test `test/vcs/git/boundary.test.ts` enforces this rule. It fails when a file outside `src/vcs/git/` loads `child_process` and has a string literal that is `git` or starts with `git `. The test finds each way to load the module: `import ... from`, `import "..."`, `import("...")`, `require("...")` and `export ... from`. It does this for `child_process` and `node:child_process`. The test has two known gaps. It cannot find a module name that the code builds at run time. It cannot find a git name that the code builds at run time.
+
+## The provider interface
+
+`src/vcs/provider.ts` holds the `VcsProvider` interface and `createVcsProvider()`. No command uses them yet. `tasker start` uses them in M4.
+
+A command gets a provider from `createVcsProvider(repoConfig)` and calls its operations. `createVcsProvider()` is the only place that picks a provider. It reads `vcs.provider` and passes `remote` and `vcs.config` to the provider. Git is the only provider. `src/vcs/git/provider.ts` holds `createGitProvider()`.
+
+Each operation takes the context `{ dataRoot, repoKey, env }` first. The git provider finds the folders of the repo with `repoPaths(dataRoot, repoKey)`.
+
+The git provider maps names only. Each operation has the errors and the side effects of its git function, and no others.
+
+These files of `src/vcs/` are outside `src/vcs/git/`:
+
+- `src/vcs/provider.ts` holds the interface, `createVcsProvider()` and the types of the interface.
+- `src/vcs/errors.ts` holds `ReconcileConflictError`.
+- `src/vcs/config-schema.ts` holds `vcsConfigSchema()`.
+
+The interface owns the types that its operations take and return. The git modules import these types from `src/vcs/provider.ts`. `Check` stays in `src/doctor/check.ts`, because it is the type of a doctor check and not a version control type.
+
+The interface uses neutral names. The git provider maps them to the names of git:
+
+| Neutral name | Git name |
+| --- | --- |
+| workspace (the folder of a task) | task worktree |
+| `taskRef` | task branch (the name, not `refs/heads/<name>`) |
+| revision (`baseRevision`, `revision`, `published`) | full revision (40 hex) or full ref |
+| base, `defaultBase` | base branch, `defaultBaseBranch` |
+| `reused-task-ref` | `reused-branch` |
+| `reused-workspace` | `reused-worktree` |
+
+Each operation calls one git function:
+
+| Operation | Git function |
+| --- | --- |
+| `provision` | `provisionClone()` |
+| `createWorkspace` | `createTaskWorktree()` |
+| `removeWorkspace` | `removeTaskWorktree()` |
+| `resolveBase` | `resolveBaseBranch()` |
+| `diffAgainstBase` | `worktreeDiff()` |
+| `ownCommits` | `ownCommitsText()` |
+| `uncommittedChanges` | `uncommittedChanges()` |
+| `reconcile` | `reconcileWorktree()` |
+| `publish` | `publishTaskBranch()` |
+| `land` | `landOnBase()` |
+| `deleteRemoteTaskRef` | `deleteRemoteTaskBranch()` |
+| `installPushGuard` | `installPushHook()` |
+| `assistantSurface` | `EXECUTE_COMMIT_TEXT`, `DENY_RULES`, `readDenyPaths()` and `sandboxWritePaths()` |
+| `doctorChecks` | `gitDoctorChecks()` |
+
+`reconcile` does not fetch. A caller runs `resolveBase` first, which fetches. A conflict rejects with `ReconcileConflictError` from `src/vcs/errors.ts`.
+
+Push guard rule: a provider that cannot guard a push refuses to provision. Its `provision()` rejects, and the provider never runs with a weaker guard. The git provider guards a push with the pre-push hook that `provisionClone()` writes (see [Push guard](#push-guard)). If the hook write fails, `provisionClone()` rejects.
+
+Each git provider gives its own version check, so a doctor run over two git repos has two version checks.
+
+The test `test/vcs/git/boundary.test.ts` also fails when a `.ts` file under `src/` outside `src/vcs/` imports from `src/vcs/git/`. It finds `import ... from`, `import "..."`, `import("...")`, `require("...")` and `export ... from` with a relative path. Files under `test/` are not in scope, because the tests of the git code import it. The test cannot find a module name that the code builds at run time.
 
 ## How tasker uses git
 
