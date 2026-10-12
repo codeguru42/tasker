@@ -1,10 +1,16 @@
-import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { worktreeState } from "../../../src/vcs/git/reconcile.js";
-import { runGit } from "../../../src/vcs/git/run.js";
+import { restoreWorktree, type StartState, worktreeState } from "../../../src/vcs/git/reconcile.js";
+import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
-import { failureOf, type GitOrigin, makeGitClone, makeGitOrigin } from "../../helpers.js";
+import {
+  commitInWorktree,
+  failureOf,
+  type GitOrigin,
+  makeGitClone,
+  makeGitOrigin,
+} from "../../helpers.js";
 
 describe("git reconcile", () => {
   let origin: GitOrigin;
@@ -31,9 +37,32 @@ describe("git reconcile", () => {
 
   // Runs git in the worktree and gives the trimmed output.
   const git = (...args: string[]) => runGit(args, { cwd: path, env }).then((out) => out.trim());
+  // Adds a commit to the base on origin and fetches it into the clone.
+  const moveBase = async (change: { file?: string; content?: string; message?: string }) => {
+    const tip = await origin.addCommit("main", change);
+    await runGit(["fetch", "origin"], { gitDir: clone, env });
+    return tip;
+  };
   const state = (extra: Partial<Parameters<typeof worktreeState>[0]> = {}) =>
     worktreeState({ clone, env, path, ...extra });
 
+  const restore = (
+    start: StartState,
+    extra: Partial<Parameters<typeof restoreWorktree>[0]> = {},
+  ) => restoreWorktree({ clone, env, path, start, ...extra });
+  // Tells whether a rebase or a merge is in progress. It does not use the code under test.
+  const inProgressNow = async () => {
+    const exists = async (name: string) =>
+      existsSync(resolve(target, await git("rev-parse", "--git-path", name)));
+    return {
+      rebase: (await exists("rebase-merge")) || (await exists("rebase-apply")),
+      merge: await exists("MERGE_HEAD"),
+    };
+  };
+  const expectAsBefore = async (start: StartState) => {
+    expect(await state()).toEqual({ ...start, changes: [] });
+    expect(await inProgressNow()).toEqual({ rebase: false, merge: false });
+  };
   describe("worktreeState", () => {
     it("gives the head, the branch and no changes for a fresh worktree", async () => {
       expect(await state()).toEqual({
@@ -60,6 +89,61 @@ describe("git reconcile", () => {
       mkdirSync(plain);
       const error = await failureOf(state({ path: plain }), Error);
       expect(error.message).toBe(`not a worktree of the clone: ${plain}`);
+    });
+  });
+
+  describe("restoreWorktree", () => {
+    it("puts back a worktree with a commit, an untracked file and a staged change", async () => {
+      const start = await state();
+      await commitInWorktree(path, env, { file: "a.txt" });
+      writeFileSync(join(target, "note.txt"), "x");
+      writeFileSync(join(target, "staged.txt"), "y");
+      await git("add", "staged.txt");
+      await restore(start);
+      await expectAsBefore(start);
+    });
+
+    it("puts back a worktree that a rebase stopped on a conflict", async () => {
+      await commitInWorktree(path, env, { file: "a.txt" });
+      await commitInWorktree(path, env, { file: "shared.txt", content: "task" });
+      const start = await state();
+      const base = await moveBase({ file: "shared.txt", content: "base" });
+      await failureOf(git("rebase", base), GitError);
+      expect((await state()).branch).toBeUndefined();
+      await restore(start);
+      await expectAsBefore(start);
+    });
+
+    it("puts back a worktree that a merge stopped on a conflict", async () => {
+      await commitInWorktree(path, env, { file: "shared.txt", content: "task" });
+      const start = await state();
+      const base = await moveBase({ file: "shared.txt", content: "base" });
+      await failureOf(git("merge", "--no-edit", base), GitError);
+      expect((await inProgressNow()).merge).toBe(true);
+      await restore(start);
+      await expectAsBefore(start);
+    });
+
+    it("puts back a detached start and leaves the branch where it is", async () => {
+      await git("checkout", "--detach");
+      const start = await state();
+      expect(start.branch).toBeUndefined();
+      const branchHead = await git("rev-parse", `refs/heads/${BRANCH}`);
+      await commitInWorktree(path, env, { file: "a.txt" });
+      await restore(start);
+      await expectAsBefore(start);
+      expect(await git("rev-parse", `refs/heads/${BRANCH}`)).toBe(branchHead);
+    });
+
+    it("refuses a start revision that is not a full revision", async () => {
+      const error = await failureOf(restore({ head: "main", branch: BRANCH }), Error);
+      expect(error.message).toBe('the start revision is not a full revision: "main"');
+    });
+
+    it("refuses a start branch that is not a task branch name", async () => {
+      const start = await state();
+      const error = await failureOf(restore({ head: start.head, branch: "HEAD" }), Error);
+      expect(error.message).toBe('not a task branch name: "HEAD"');
     });
   });
 });
