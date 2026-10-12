@@ -95,6 +95,23 @@ describe("resolveIssueKey", () => {
       {},
       { key: "a/bc#1", repoKey: "a/bc", shortRef: "issue-1" },
     ],
+    [
+      "a shared project with --repo",
+      {
+        one: { provider: "github", project: "codeguru42/tasker" },
+        two: { provider: "github", project: "codeguru42/tasker" },
+      },
+      "codeguru42/tasker#5",
+      { repo: "two" },
+      { key: "codeguru42/tasker#5", repoKey: "two", shortRef: "issue-5" },
+    ],
+    [
+      "--repo that names the one matching repo",
+      { "a/b": { provider: "github" }, "c/d": { provider: "github" } },
+      "a/b#1",
+      { repo: "a/b" },
+      { key: "a/b#1", repoKey: "a/b", shortRef: "issue-1" },
+    ],
   ];
 
   const ERROR_ROWS: ErrorRow[] = [
@@ -142,6 +159,44 @@ describe("resolveIssueKey", () => {
         GITHUB_MESSAGE(rawKey),
       ],
     ),
+    [
+      "a shared project with no --repo",
+      {
+        one: { provider: "github", project: "codeguru42/tasker" },
+        two: { provider: "github", project: "codeguru42/tasker" },
+      },
+      "codeguru42/tasker#5",
+      {},
+      'issue key "codeguru42/tasker#5" matches more than one repo ("one", "two"): pass --repo <key> to pick one',
+    ],
+    [
+      "an unknown repo before the parse",
+      { "a/b": { provider: "github" } },
+      "bad",
+      { repo: "nope" },
+      'unknown repo "nope": no repo with this key is in the configuration',
+    ],
+    [
+      "the repo name constructor",
+      { "codeguru42/tasker": { provider: "github" } },
+      "codeguru42/tasker#5",
+      { repo: "constructor" },
+      'unknown repo "constructor": no repo with this key is in the configuration',
+    ],
+    [
+      "the repo name __proto__",
+      { "codeguru42/tasker": { provider: "github" } },
+      "codeguru42/tasker#5",
+      { repo: "__proto__" },
+      'unknown repo "__proto__": no repo with this key is in the configuration',
+    ],
+    [
+      "a repo that is not a match",
+      { "a/b": { provider: "github" }, "c/d": { provider: "github" } },
+      "a/b#1",
+      { repo: "c/d" },
+      'repo "c/d" does not have the project of issue key "a/b#1"',
+    ],
   ];
 
   it.each(REF_ROWS)(
