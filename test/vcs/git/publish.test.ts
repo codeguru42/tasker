@@ -347,6 +347,57 @@ describe("publish, land and delete", () => {
       expectNoTokenFile();
     });
 
+    describe("input checks", () => {
+      async function expectRefusedBeforeAnyGitCall(
+        overrides: (revision: string) => Parameters<typeof land>[0],
+        message: (revision: string) => string,
+      ): Promise<void> {
+        const revision = await addCloneCommit(clone, env, "issue-1-task");
+        const main = await origin.branchHead("main");
+        const mark = gitCalls().length;
+
+        const error = await failureOf(land(overrides(revision)), Error);
+
+        expect(error.message).toBe(message(revision));
+        expect(gitCalls(mark)).toEqual([]);
+        expect(await origin.branchHead("main")).toBe(main);
+        expectNoTokenFile();
+      }
+
+      it("refuses a local base", async () => {
+        await expectRefusedBeforeAnyGitCall(
+          (revision) => ({ base: "refs/heads/main", revision }),
+          (revision) =>
+            `cannot land ${revision} on the base branch: refs/heads/main: the base is a local branch`,
+        );
+      });
+
+      it("refuses an empty base", async () => {
+        await expectRefusedBeforeAnyGitCall(
+          (revision) => ({ base: "", revision }),
+          (revision) => `cannot land ${revision}: the base branch is empty`,
+        );
+      });
+
+      it("refuses a branch name as the revision", async () => {
+        await expectRefusedBeforeAnyGitCall(
+          () => ({ revision: "main" }),
+          () => 'the revision is not a full revision: "main"',
+        );
+      });
+
+      it("refuses a short revision", async () => {
+        let short = "";
+        await expectRefusedBeforeAnyGitCall(
+          (revision) => {
+            short = revision.slice(0, 7);
+            return { revision: short };
+          },
+          () => `the revision is not a full revision: "${short}"`,
+        );
+      });
+    });
+
     describe("errors", () => {
       it("names the base and the revision when the revision is not a fast-forward", async () => {
         const revision = await addCloneCommit(clone, env, "issue-1-task");
