@@ -89,10 +89,9 @@ describe("git changes", () => {
     );
 
     it("lists a deleted file", async () => {
-      await commitInWorktree(path, env, { file: "gone.txt" });
-      await git("rm", "gone.txt");
-      await git("commit", "-m", "remove gone.txt");
-      expect(await paths()).toEqual(["gone.txt"]);
+      await git("rm", "README.md");
+      await git("commit", "-m", "remove README.md");
+      expect(await paths()).toEqual(["README.md"]);
     });
 
     it("lists a binary file", async () => {
