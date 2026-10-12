@@ -1,6 +1,6 @@
 # Workspaces
 
-This page describes the base branch and the workspace of a task. The code is in `src/vcs/git/base-branch.ts` and `src/vcs/git/worktree.ts`.
+This page describes the base branch and the workspace of a task. The code is in `src/vcs/git/base-branch.ts`, `src/vcs/git/worktree.ts`, `src/vcs/git/changes.ts` and `src/vcs/git/refs.ts`.
 
 ## Base branch
 
@@ -35,7 +35,7 @@ Names such as `-x` and `a..b` pass the parse. The existence check then rejects t
 
 ### Existence check
 
-A base exists when `git show-ref --verify --quiet -- <revision>` exits with 0. Exit code 1 means that the ref is missing. Every other error passes through unchanged.
+`refExists()` (see "Diff and changes") does the check. A base exists when `git show-ref --verify --quiet -- <revision>` exits with 0. Exit code 1 means that the ref is missing. Every other error passes through unchanged.
 
 ### The resolve
 
@@ -83,6 +83,8 @@ The resolve returns an object with these fields:
 The workspace of a task is a git worktree on a task branch. The worktree comes from the bare clone of the repo. No command calls these functions yet. No function in `worktree.ts` talks to the remote, so no call needs `sshEnv()`.
 
 Every function that runs git takes one options object. Calls on the clone use `gitDir`. Calls in a worktree use `cwd`.
+
+`assertTaskWorktree({ clone, env, path })` guards each function that runs git in a worktree, because git with a wrong working folder changes another repo. It makes two checks. If `path` is not a worktree of the clone, it throws `not a worktree of the clone: <path>`. If the real path of the worktree has no `.git` file, it throws `the worktree has no .git file: <target>`. Without that file, git would use a repo around the folder. It returns the real path, and the caller runs git with `cwd` set to it. The guard only reads.
 
 ### The branch name
 
@@ -175,7 +177,7 @@ The function deletes only a local branch with the task branch shape. It refuses 
 
 ### Discard
 
-`discardWorktreeChanges({ clone, env, path })` throws `not a worktree of the clone: <path>` when `path` is not a worktree of the clone. When the folder has no `.git` file, it throws `the worktree has no .git file: <target>`. Git with a wrong working folder changes another repo, so both checks run before any git command. Then the function runs these commands in the real path of the worktree, in this order:
+`discardWorktreeChanges({ clone, env, path })` calls `assertTaskWorktree()` before any git command. Then it runs these commands in the real path of the worktree, in this order:
 
 1. `git reset --hard`. A deleted `.gitignore` comes back before the next command reads it.
 2. `git clean -ffd`. This deletes untracked files and untracked folders, also a nested git repo.
@@ -184,7 +186,7 @@ Ignored files stay, because the command has no `-x`. They do not block a later r
 
 ### Revision
 
-`taskBranchRevision({ clone, env, branch })` gives the commit SHA of the local task branch. It runs the name check, then reads the exact ref `refs/heads/<branch>` with `git show-ref`. It does not use `git rev-parse`, because git can then read another ref, for example `refs/heads/refs/heads/<branch>`. If the branch is missing, it throws `cannot resolve the task branch: <branch>`.
+`taskBranchRevision({ clone, env, branch })` gives the commit SHA of the local task branch. It runs the name check, then reads the exact ref `refs/heads/<branch>` with `refRevision()`, which uses `git show-ref`. It does not use `git rev-parse`, because git can then read another ref, for example `refs/heads/refs/heads/<branch>`. If the branch is missing, it throws `cannot resolve the task branch: <branch>`.
 
 ### Side effects
 
@@ -198,3 +200,67 @@ Ignored files stay, because the command has no `-x`. They do not block a later r
 - Remove deletes ignored files with the worktree folder.
 - Discard deletes a nested git repo in an untracked folder, and keeps ignored files.
 - Delete removes only a local branch with the task branch shape.
+
+## Diff and changes
+
+The functions in `src/vcs/git/changes.ts` read what a task changed against its base, and what is not committed yet. tasker reads the commits itself, because some assistants have no shell in planning. No command calls these functions yet.
+
+### Revision input
+
+Each revision input of these functions goes through `src/vcs/git/refs.ts` before git gets it. The callers pass the stored form of the base from `baseRevision()`, which is a full ref.
+
+- A full revision is 40 lower-case hex characters. `isFullRevision()` tests it. The functions keep it as it is and do not read it. A full revision that the clone does not have reaches git, and git fails.
+- A text that starts with `refs/` is a ref. `resolveRevision()` reads the exact ref in two calls in the clone. First, `refExists()` runs `git show-ref --verify --quiet -- <ref>`, and exit code 1 means that the ref is missing. Then `refRevision()` runs `git show-ref --verify --hash -- <ref>` and trims the output. Other errors pass through. The code never reads the error text of git.
+- Any other text throws `not a full revision or ref: <JSON text of the input>`. `assertRevisionInput()` makes this check, and each function runs it on every revision input before any git call.
+- A ref that is missing throws `cannot resolve the revision: <ref>`.
+
+The exact read refuses a text such as `refs/heads/a..refs/heads/b` or `refs/heads/x^{tree}`, because `show-ref --verify --quiet` exits with 1 for it. Git then never gets a range or a suffix that changes what `diff`, `rev-list` or `merge-base` do. A branch input goes through `taskBranchRevision()`. A missing branch throws `cannot resolve the task branch: <branch>`, and these functions run the name check only.
+
+Order in each function: the input checks, then the worktree guard (for a function that runs git in a worktree), then the ref reads, then the git command with full revisions only.
+
+### The functions
+
+Calls on the clone use `gitDir`. Calls in a worktree use `cwd` with the real path from `assertTaskWorktree()`.
+
+| Function | Git command | Where | Result |
+| --- | --- | --- | --- |
+| `worktreeDiff({ clone, env, path, baseRevision })` | `git diff --no-renames --no-color --no-ext-diff --no-textconv <base>...HEAD --` | worktree | The text as git prints it. |
+| `changedPaths({ clone, env, branch, baseRevision })` | `git diff --no-renames -z --name-only <base>...<branch> --` | clone | The list of raw paths. |
+| `ownCommitsText({ clone, env, branch, baseRevision })` | `git log --reverse --no-renames --no-color --no-ext-diff --no-textconv --patch "--format=commit %H%n%n%B" <base>..<branch> --` | clone | The own commits, oldest first, each with its diff. |
+| `hasCommitsNotIn({ clone, env, head, others })` | `git rev-list --count <head> --not <others...> --` | clone | `true` when the count is more than 0. |
+| `uncommittedChanges({ clone, env, path })` | `git status --porcelain --untracked-files=normal --no-renames -z` | worktree | The list of `{ status, path }`. |
+| `isAncestor({ clone, env, ancestor, descendant })` | `git merge-base --is-ancestor <ancestor> <descendant>` | clone | `true` or `false`. |
+| `fetchTips({ clone, env, sshKey, path, baseRevision })` | `git fetch --prune origin`, then `git rev-parse --verify HEAD^{commit}` | clone, then worktree | `{ head, base }`. |
+
+`uncommittedRefusal(path, changes)` is a pure function. It gives `the worktree has uncommitted changes: <path>: <JSON text of each path, joined with ", ">`. The JSON text keeps a path with a comma or a newline readable and exact.
+
+### Reasons for the flags
+
+- The three-dot range `<base>...<branch>` compares the branch with the merge base. A file that only the base got after the fork does not show. The two-dot range of `git diff` lists those files, so the diffs use the three-dot range.
+- The own commits use the two-dot range `<base>..<branch>`, which gives the commits that the branch has and the base does not.
+- `-z` makes git print each path raw and end it with a NUL. Without `-z`, git quotes a path with a newline, a tab, a quote or a non-ASCII character. A private parser splits the output on NUL and drops the empty item after the last NUL.
+- `--no-renames` makes a rename give both paths: two paths in the diff, and two records in the status.
+- `--untracked-files=normal` makes untracked files show, also when the worktree has `status.showUntrackedFiles=no`. An untracked folder gives one record, for example `?? sub/`. An ignored file does not show. Each path is relative to the root of the worktree.
+- `--no-color`, `--no-ext-diff` and `--no-textconv` stop colors, `diff.external` and textconv filters of the user configuration from changing the text. `diff.noprefix` still changes the `a/` and `b/` prefixes of the diff text.
+- The explicit `--format` stops `format.pretty` and `log.decorate` of the user from changing the text.
+
+### Results and errors
+
+- `worktreeDiff()` compares commits. An uncommitted change of a tracked file does not show.
+- `changedPaths()` and `ownCommitsText()` read the branch in the clone, so the worktree is not necessary. A fresh branch gives an empty list.
+- `NO_OWN_COMMITS` is the text that `ownCommitsText()` gives when git prints nothing: `This branch has no commits of its own since its base yet.` A merge commit shows no diff, as git does by default.
+- `hasCommitsNotIn()` runs the input check on `head` and on each other revision first. An empty `others` gives `true` for each head that exists, because git then counts every commit that the head reaches.
+- `uncommittedChanges()` gives one record for each path. `status` is the two status characters, for example ` M`, `??`, `D ` or `A `. An empty list means a clean worktree. A staged rename gives a `D ` record and an `A ` record.
+- `isAncestor()` gives `true` for the same commit. Only a `GitError` with exit code 1 gives `false`. Every other failure passes through, for example exit code 128 for a full revision that the clone does not have.
+- A function that takes `path` throws `not a worktree of the clone: <path>` or `the worktree has no .git file: <target>` from the guard.
+
+### The remote
+
+`fetchTips()` is the one function in `changes.ts` that talks to the remote. It runs the fetch through `runRemoteGit()` with `sshKey`, as provision does (see [version-control.md](version-control.md#the-ssh-key)). `runGit()` sets its own ssh command, and that command beats `core.sshCommand` of the clone, so a call without the key environment does not use the configured key.
+
+The steps are: check the base text, run the guard, fetch, read the head of the worktree, then read the base. The base is read after the fetch, because the fetch can make or move the ref.
+
+### Side effects
+
+- The fetch of `fetchTips()` moves and prunes `refs/remotes/origin/*` in the clone. This also happens when the head read or the base read fails after the fetch. A bad base text or a failed guard causes no fetch.
+- Every other function in `changes.ts`, `assertTaskWorktree()` and the functions of `refs.ts` read. They write no ref, no file and no configuration.
