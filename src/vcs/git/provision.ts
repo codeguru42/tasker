@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:f
 import { dirname, join, resolve } from "node:path";
 import { installPushHook } from "./push-guard.js";
 import { GitError, runGit } from "./run.js";
-import { cloneUrl, remoteCwd, runRemoteGit, sshCommand } from "./ssh.js";
+import { cloneUrl, remoteCwd, remoteNotAnswering, runRemoteGit, sshCommand } from "./ssh.js";
 
 const INCLUDE_FILE = "tasker-ssh.config";
 
@@ -60,8 +60,7 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
     throw new Error(`the remote has no refs: ${remote}`);
   }
   if (failure !== undefined) {
-    const detail = failure.stderr.trim();
-    throw new Error(`the remote does not answer: ${remote}${detail === "" ? "" : `: ${detail}`}`);
+    throw remoteNotAnswering(remote, failure);
   }
 
   // The clone runs from the same cwd as ls-remote, so it needs an absolute destination.

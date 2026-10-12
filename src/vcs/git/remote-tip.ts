@@ -1,5 +1,5 @@
 import { GitError } from "./run.js";
-import { remoteCwd, runRemoteGit } from "./ssh.js";
+import { remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
 
 export type RemoteTip = { state: "present"; revision: string } | { state: "absent" };
 
@@ -23,10 +23,7 @@ export async function remoteTip(options: {
     if (!(error instanceof GitError)) {
       throw error;
     }
-    const detail = error.stderr.trim();
-    // The error text can hold git output, so the new error sets no cause.
-    // eslint-disable-next-line preserve-caught-error
-    throw new Error(`the remote does not answer: ${remote}${detail === "" ? "" : `: ${detail}`}`);
+    throw remoteNotAnswering(remote, error);
   }
   for (const line of output.split("\n")) {
     const [revision, name] = line.split("\t");
