@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
-import { landOnBase, publishTaskBranch } from "../../../src/vcs/git/publish.js";
+import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "../../../src/vcs/git/publish.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
   addCloneCommit,
@@ -64,6 +64,21 @@ describe("publish, land and delete", () => {
       env,
       base: "main",
       revision: "0".repeat(40),
+      ...overrides,
+    });
+  }
+
+  function remove(
+    overrides: Partial<Parameters<typeof deleteRemoteTaskBranch>[0]> = {},
+  ): ReturnType<typeof deleteRemoteTaskBranch> {
+    return deleteRemoteTaskBranch({
+      clone,
+      remote: origin.path,
+      publishTokens: tokens,
+      sshKey: undefined,
+      env,
+      branch: "issue-1-task",
+      published: "0".repeat(40),
       ...overrides,
     });
   }
@@ -435,6 +450,40 @@ describe("publish, land and delete", () => {
       await land({ ...ssh.overrides, revision });
 
       expect(await origin.branchHead("main")).toBe(revision);
+      const calls = readArgLog(ssh.fake.logPath).slice(mark);
+      expect(calls.length).toBeGreaterThanOrEqual(1);
+      for (const call of calls) expect(call.slice(0, 6)).toEqual(sshKeyArgs(ssh.key));
+    });
+  });
+
+  describe("deleteRemoteTaskBranch", () => {
+    it("deletes the branch with a lease on the published revision", async () => {
+      const published = await addCloneCommit(clone, env, "issue-1-task");
+      await publish();
+
+      const result = await remove({ published });
+
+      expect(result).toEqual({ state: "deleted" });
+      expect(await origin.branchHead("issue-1-task")).toBeUndefined();
+      expect(pushes().at(-1)).toEqual([
+        "push",
+        `--force-with-lease=refs/heads/issue-1-task:${published}`,
+        "origin",
+        ":refs/heads/issue-1-task",
+      ]);
+      expectNoTokenFile();
+      await expectPushNeedsToken();
+    });
+
+    it("passes the ssh key to each ssh call", async () => {
+      const ssh = await sshClone();
+      const published = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
+      await publish(ssh.overrides);
+      const mark = readArgLog(ssh.fake.logPath).length;
+
+      const result = await remove({ ...ssh.overrides, published });
+
+      expect(result).toEqual({ state: "deleted" });
       const calls = readArgLog(ssh.fake.logPath).slice(mark);
       expect(calls.length).toBeGreaterThanOrEqual(1);
       for (const call of calls) expect(call.slice(0, 6)).toEqual(sshKeyArgs(ssh.key));
