@@ -3,7 +3,8 @@ import { userInfo } from "node:os";
 import type { Check, CheckResult } from "../../doctor/check.js";
 import type { GitVcsConfig } from "./provision.js";
 import { GitError, GitNotInstalledError, runGit } from "./run.js";
-import { hideSshKey, remoteCwd } from "./ssh.js";
+import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
+import { type SshAccount, sshAccount, sshTarget } from "./ssh-account.js";
 import { withoutLineEnd } from "./worktree.js";
 
 const MINIMUM_GIT = { major: 2, minor: 20 };
@@ -173,6 +174,65 @@ export function identityCheck(repo: GitDoctorRepo, timeoutMs = 5000): Check {
         };
       }
       return { status: "ok", detail: `a commit in the clone gets ${name} <${email}>` };
+    },
+  );
+}
+
+function accountText(account: SshAccount): string {
+  switch (account.state) {
+    case "found":
+      return `The remote sees the ssh account ${account.account}.`;
+    case "none":
+      return "The remote gives no ssh account name.";
+    case "git-ssh":
+      return "tasker does not read the ssh account when GIT_SSH is set.";
+  }
+}
+
+function connectionRemediation(account: SshAccount | undefined): string {
+  if (account === undefined) {
+    return "Make sure that remote names the repo and that the remote answers.";
+  }
+  if (account.state === "found") {
+    return `The remote sees the ssh account ${account.account}. If this account cannot see the repo, set vcs.config.sshKey to a key of an account that can. Else make sure that remote names the repo.`;
+  }
+  return "Make sure that vcs.config.sshKey names a key that the remote accepts. Then make sure that remote names the repo.";
+}
+
+// Asks the remote for HEAD. For an ssh remote, it also reads the ssh account that the remote sees,
+// also when the first call fails, so the user can tell a wrong key from a wrong remote.
+export function connectionCheck(repo: GitDoctorRepo, timeoutMs = 30000): Check {
+  const { remote } = repo;
+  const { sshKey } = repo.config;
+  return makeCheck(
+    { name: `git connection: ${repo.key}`, required: true, timeoutMs, sshKey },
+    async (env, { signal }) => {
+      let failure: GitError | undefined;
+      try {
+        await runRemoteGit(
+          ["ls-remote", "--", remote, "HEAD"],
+          { cwd: remoteCwd(), env, signal },
+          sshKey,
+        );
+      } catch (error) {
+        if (!(error instanceof GitError)) {
+          throw error;
+        }
+        failure = error;
+      }
+      const account =
+        sshTarget(remote) === undefined
+          ? undefined
+          : await sshAccount({ remote, sshKey, env, signal });
+      const text = account === undefined ? "" : `\n${accountText(account)}`;
+      if (failure === undefined) {
+        return { status: "ok", detail: `the remote answers: ${remote}${text}` };
+      }
+      return {
+        status: "error",
+        detail: `${remoteNotAnswering(remote, failure).message}${text}`,
+        remediation: connectionRemediation(account),
+      };
     },
   );
 }
