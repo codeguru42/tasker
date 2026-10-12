@@ -1,9 +1,11 @@
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
+import { relative } from "node:path";
 import type { Check, CheckResult } from "../../doctor/check.js";
 import type { GitVcsConfig } from "./provision.js";
 import { GitError, GitNotInstalledError, runGit } from "./run.js";
 import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
+import { DeadlineError, findStaleLocks, isInside, type ProcView } from "./stale-locks.js";
 import { type SshAccount, sshAccount, sshTarget } from "./ssh-account.js";
 import { withoutLineEnd } from "./worktree.js";
 
@@ -53,7 +55,8 @@ function makeCheck(
       try {
         result = await body(env, { signal, deadline });
       } catch (error) {
-        result = signal.aborted
+        result =
+          signal.aborted || error instanceof DeadlineError
           ? timedOut(spec.timeoutMs)
           : { status: "error", detail: error instanceof Error ? error.message : String(error) };
       }
@@ -232,6 +235,69 @@ export function connectionCheck(repo: GitDoctorRepo, timeoutMs = 30000): Check {
         status: "error",
         detail: `${remoteNotAnswering(remote, failure).message}${text}`,
         remediation: connectionRemediation(account),
+      };
+    },
+  );
+}
+
+// Reports lock files in the clone that nobody has written for a minute. It deletes nothing.
+// procView gives the view of /proc. The check calls it only when it finds a stale lock.
+export function staleLockCheck(
+  repo: GitDoctorRepo,
+  procView: () => ProcView | undefined,
+  timeoutMs = 10000,
+): Check {
+  return makeCheck(
+    {
+      name: `git lock files: ${repo.key}`,
+      required: false,
+      timeoutMs,
+      sshKey: repo.config.sshKey,
+    },
+    async (_env, { deadline }) => {
+      if (!existsSync(repo.clone)) {
+        return NO_CLONE;
+      }
+      const found = findStaleLocks(repo.clone, Date.now(), deadline);
+      if (found.length === 0) {
+        return { status: "ok", detail: "no stale lock files" };
+      }
+      const root = realpathSync(repo.clone);
+      const view = procView();
+      const left: string[] = [];
+      const skipped: string[] = [];
+      for (const lock of found) {
+        const rel = relative(root, lock.path);
+        const cwd =
+          view?.readable === true
+            ? view.gitCwds.find((folder) => isInside(lock.path, folder))
+            : undefined;
+        if (view?.readable === true && view.openFiles.has(lock.path)) {
+          skipped.push(`skipped ${rel}: a process has it open`);
+        } else if (cwd !== undefined) {
+          skipped.push(`skipped ${rel}: a git process runs in ${cwd}`);
+        } else {
+          left.push(`${rel} (${Math.floor(lock.ageMs / 1000)} s old)`);
+        }
+      }
+      const notes: string[] = [];
+      if (view === undefined) {
+        notes.push(
+          "tasker reads open files only on Linux, so it cannot tell whether a process uses these files.",
+        );
+      } else if (!view.readable) {
+        notes.push(
+          `tasker cannot read /proc (${view.reason}), so it cannot tell whether a process uses these files.`,
+        );
+      }
+      if (left.length === 0) {
+        return { status: "ok", detail: skipped.join("\n") };
+      }
+      return {
+        status: "warn",
+        detail: [...left, ...skipped, ...notes].join("\n"),
+        remediation:
+          "Doctor deletes nothing. Make sure that no tasker or git process uses the clone. Then delete each file by hand.",
       };
     },
   );
