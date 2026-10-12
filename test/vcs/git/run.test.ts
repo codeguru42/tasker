@@ -286,6 +286,15 @@ describe("runGit keeps git from asking questions", () => {
     expect(out).toBe("prompt=0\nssh-command=ssh -i /keys/id\nssh unset\n");
   });
 
+  it("keeps the GIT_SSH_COMMAND of the caller and removes its GIT_SSH", async () => {
+    writeFakeGit(bin, envScript);
+    const out = await runGit(["version"], {
+      cwd: dir,
+      env: { ...env, GIT_SSH_COMMAND: "ssh -i /keys/id", GIT_SSH: "/opt/bin/my-ssh" },
+    });
+    expect(out).toBe("prompt=0\nssh-command=ssh -i /keys/id\nssh unset\n");
+  });
+
   it("keeps the GIT_SSH of the caller", async () => {
     writeFakeGit(bin, envScript);
     const out = await runGit(["version"], {
