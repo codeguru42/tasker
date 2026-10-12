@@ -209,6 +209,33 @@ describe("parseConfig repos", () => {
     expectIssueAt(issuesOf(raw), "repos.codeguru42/tasker.verify.commands");
   });
 
+  it("rejects a defaultBaseBranch in the form refs/heads/<x>", () => {
+    const raw = validConfig();
+    raw.repos.tasker.defaultBaseBranch = "refs/heads/main";
+    expect(issuesOf(raw)).toContain(
+      "repos.tasker.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>",
+    );
+  });
+
+  it("reports a bad defaultBaseBranch together with an error in another repo", () => {
+    const raw = validConfig();
+    raw.repos.tasker.defaultBaseBranch = "refs/heads/main";
+    raw.repos.other = structuredClone(raw.repos.tasker);
+    raw.repos.other.defaultBaseBranch = "main";
+    raw.repos.other.verify.commands = [];
+    const issues = issuesOf(raw);
+    expect(issues).toContain(
+      "repos.tasker.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>",
+    );
+    expectIssueAt(issues, "repos.other.verify.commands");
+  });
+
+  it.each(["main", "release/1.0"])("keeps the defaultBaseBranch %s as it is", (name) => {
+    const raw = validConfig();
+    raw.repos.tasker.defaultBaseBranch = name;
+    expect(parseConfig(raw, {}, home).repos.tasker.defaultBaseBranch).toBe(name);
+  });
+
   it.each([
     ["overagePolicy", "maybe", "repos.tasker.overagePolicy"],
     ["quotaApprovalThreshold", 0, "repos.tasker.quotaApprovalThreshold"],
