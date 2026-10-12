@@ -108,12 +108,18 @@ export function tableNames(db: DatabaseSync): string[] {
 // The repo root, for spawn tests that need it as cwd.
 export const repoRoot = new URL("..", import.meta.url);
 
-// Writes raw as JSON to config.json in a new temp dir. The caller removes dir.
-export function writeTempConfig(raw: unknown): { dir: string; path: string } {
+// Writes the value that build gives for a new temp dir as JSON to config.json in that dir.
+// The caller removes dir.
+function writeConfigFile(build: (dir: string) => unknown): { dir: string; path: string } {
   const dir = makeTempDir("tasker-config-");
   const path = join(dir, "config.json");
-  writeFileSync(path, JSON.stringify(raw));
+  writeFileSync(path, JSON.stringify(build(dir)));
   return { dir, path };
+}
+
+// Writes raw as JSON to config.json in a new temp dir. The caller removes dir.
+export function writeTempConfig(raw: unknown): { dir: string; path: string } {
+  return writeConfigFile(() => raw);
 }
 
 // Writes raw as config.json in a new temp dir, with dataRoot set to <dir>/data. The caller removes dir.
@@ -123,11 +129,8 @@ export function writeDataRootConfig(raw: Record<string, any> = validConfig()): {
   path: string;
   dataRoot: string;
 } {
-  const dir = makeTempDir("tasker-config-");
-  const dataRoot = join(dir, "data");
-  const path = join(dir, "config.json");
-  writeFileSync(path, JSON.stringify({ ...raw, dataRoot }));
-  return { dir, path, dataRoot };
+  const written = writeConfigFile((dir) => ({ ...raw, dataRoot: join(dir, "data") }));
+  return { ...written, dataRoot: join(written.dir, "data") };
 }
 
 export interface SeedTask {
