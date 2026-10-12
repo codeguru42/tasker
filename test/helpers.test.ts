@@ -184,6 +184,16 @@ describe("addCloneCommit", () => {
     await failureOf(addCloneCommit(clone, origin.env, "-x"), Error);
     await failureOf(addCloneCommit(clone, origin.env, "b1", "-x"), Error);
   });
+
+  it("names the value that starts with a dash in the error", async () => {
+    const branchError = await failureOf(
+      addCloneCommit(clone, origin.env, "-x", "refs/remotes/origin/main"),
+      Error,
+    );
+    expect(branchError.message).toContain('"-x"');
+    const parentError = await failureOf(addCloneCommit(clone, origin.env, "issue-1-x", "-p"), Error);
+    expect(parentError.message).toContain('"-p"');
+  });
 });
 
 describe("failureOf", () => {
