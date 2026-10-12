@@ -27,6 +27,19 @@ export class IssueReadError extends Error {
   }
 }
 
+// A label write to one issue failed. The error names the configuration key of the label.
+export class IssueWriteError extends Error {
+  readonly key: string;
+  readonly configKey: string;
+
+  constructor(key: string, configKey: string, message: string) {
+    super(message);
+    this.name = "IssueWriteError";
+    this.key = key;
+    this.configKey = configKey;
+  }
+}
+
 // The base: labels of an issue give no usable base branch hint.
 export class BaseHintError extends Error {
   readonly labels: string[];
