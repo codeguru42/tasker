@@ -1,18 +1,10 @@
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { filesThatStart, isInside, loadsChildProcess, sourceDir, sourceFiles, startsCommand } from "../../helpers.js";
-
-const moduleSpecifierPattern = /\b(?:from|import|require)\s*\(?\s*(["'`])([^"'`]+)\1/g;
+import { filesThatStart, importsPath, loadsChildProcess, sourceDir, sourceFiles, startsCommand } from "../../helpers.js";
 
 // True when the text of file (a path under src/, with "/") loads or re-exports a module in src/vcs/git/.
-// The test cannot find a module name that the code builds at run time.
 function importsVcsGit(file: string, text: string): boolean {
-  const fileDir = join(sourceDir, dirname(file));
-  const gitDir = join(sourceDir, "vcs", "git");
-  return [...text.matchAll(moduleSpecifierPattern)].some((match) => {
-    const specifier = match[2];
-    return specifier.startsWith(".") && isInside(resolve(fileDir, specifier), gitDir);
-  });
+  return importsPath(file, text, join(sourceDir, "vcs", "git"));
 }
 
 // True when file is outside src/vcs/ and importsVcsGit() is true.

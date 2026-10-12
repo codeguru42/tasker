@@ -752,13 +752,37 @@ export function sourceFiles(): SourceFile[] {
     .map((file) => ({ file, text: readFileSync(join(sourceDir, file), "utf8") }));
 }
 
+const moduleSpecifierPattern = /\b(?:from|import|require)\s*\(?\s*(["'`])([^"'`]+)\1/g;
+
+// True when text (the text of file, a path under src/ with "/") loads or re-exports target.
+// target is a path under sourceDir: a folder, or a .ts file. A relative specifier counts when
+// it resolves to target or to a path inside target. A ".js" ending counts as ".ts" (NodeNext).
+// It cannot find a module name that the code builds at run time.
+export function importsPath(file: string, text: string, target: string): boolean {
+  const fileDir = join(sourceDir, dirname(file));
+  return [...text.matchAll(moduleSpecifierPattern)].some((match) => {
+    const specifier = match[2];
+    if (!specifier.startsWith(".")) return false;
+    const resolved = resolve(fileDir, specifier);
+    return isInside(resolved, target) || resolved.replace(/\.js$/, ".ts") === target;
+  });
+}
+
+export const runChildPath = join(sourceDir, "process", "run-child.ts");
+
+// True when text (the text of file) starts command: it loads child_process or imports
+// src/process/run-child.ts, and it has the string literal command or "command ...".
+export function startsCommand(file: string, text: string, command: string): boolean {
+  const escaped = command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const commandLiteral = new RegExp(`(["'\`])${escaped}(?: [^"'\`]*)?\\1`);
+  return (loadsChildProcess(text) || importsPath(file, text, runChildPath)) && commandLiteral.test(text);
+}
+
 // The files under src/ (paths with "/") that start command.
 // The scan finds a literal command, alone or followed by a space and arguments, and a literal module name.
 // It cannot find a module name or a command name that is built at run time.
 export function filesThatStart(command: string): string[] {
-  const escaped = command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const commandLiteral = new RegExp(`(["'\`])${escaped}(?: [^"'\`]*)?\\1`);
   return sourceFiles()
-    .filter(({ text }) => loadsChildProcess(text) && commandLiteral.test(text))
+    .filter(({ file, text }) => startsCommand(file, text, command))
     .map(({ file }) => file);
 }
