@@ -101,3 +101,30 @@ export async function hasCommitsNotIn(o: {
   });
   return Number(output.trim()) > 0;
 }
+
+export interface UncommittedChange {
+  // The two status characters of git, for example " M", "??", "D " or "A ".
+  status: string;
+  // The raw path, relative to the root of the worktree.
+  path: string;
+}
+
+// The uncommitted changes of the task worktree. An empty list means a clean worktree.
+// -z gives raw paths, and --no-renames gives one path for each record.
+// --untracked-files=normal shows untracked files, also when the configuration hides them.
+export async function uncommittedChanges(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+}): Promise<UncommittedChange[]> {
+  const { clone, env, path } = o;
+  const target = await assertTaskWorktree({ clone, env, path });
+  const output = await runGit(
+    ["status", "--porcelain", "--untracked-files=normal", "--no-renames", "-z"],
+    { cwd: target, env },
+  );
+  return nulFields(output).map((field) => ({
+    status: field.slice(0, 2),
+    path: field.slice(3),
+  }));
+}

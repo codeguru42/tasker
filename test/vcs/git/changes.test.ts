@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   changedPaths,
   hasCommitsNotIn,
-  NO_OWN_COMMITS, ownCommitsText,
+  NO_OWN_COMMITS,
+  ownCommitsText,
+  uncommittedChanges,
   worktreeDiff,
 } from "../../../src/vcs/git/changes.js";
 import { runGit } from "../../../src/vcs/git/run.js";
