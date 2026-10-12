@@ -87,7 +87,7 @@ This table describes the object after tasker merges a named tracker into it.
 | `match` | object | optional | `labels`: list of non-empty strings with at least one item. `components`: list of non-empty strings with at least one item. The object must name `labels` or `components`. |
 | `site` | non-empty string | optional | The site of the tracker. tasker stores it in lower case. |
 | `tracker` | non-empty string | optional | The name of an entry under `trackers`. |
-| `account` | non-empty string | optional | The account to use. |
+| `account` | non-empty string | optional | The account that tasker uses. The `github` tracker requires it, because tasker runs `gh` as this account. Without it, tasker reports `repos.<key>.issueTracker.account: is required for the github tracker`. |
 | `releaseBranchFieldId` | non-empty string | optional | The id of the field that holds the release branch. |
 | `releaseBranchField` | non-empty string | optional | The name of the field that holds the release branch. |
 | `updateOnStart` | boolean | `false` | Update the issue when work starts. |
@@ -100,7 +100,7 @@ This table describes the object after tasker merges a named tracker into it.
 
 ## `trackers`
 
-`trackers` maps a name to a tracker definition. A definition takes every `issueTracker` key except `project`, `tracker` and `match`. Its `provider` is required.
+`trackers` maps a name to a tracker definition. A definition takes every `issueTracker` key except `project`, `tracker` and `match`. Its `provider` is required. A definition can leave `account` out, because each repo can set it.
 
 A repo uses a definition when `issueTracker.tracker` names it. Then tasker merges the two:
 
@@ -108,6 +108,7 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 - The repo must not set `provider`. The provider comes only from the definition.
 - If the name is not under `trackers`, tasker reports an error at `repos.<key>.issueTracker.tracker`.
 - If the definition has an error, tasker reports it once, under `trackers.<name>`.
+- tasker checks `account` on the merged `issueTracker` of each repo.
 
 ## `assistant`
 
