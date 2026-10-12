@@ -201,13 +201,23 @@ async function prepare(o: {
   return { target, start };
 }
 
-// Runs one git step in the worktree.
+// Runs one git step in the worktree. When the step fails with a GitError, it restores the
+// worktree to the start. An error of the restore wins. Else it throws the GitError again.
+// Any other error passes through with no restore.
 async function runStep(o: {
   target: string;
   env: NodeJS.ProcessEnv;
+  start: StartState;
   args: string[];
 }): Promise<void> {
-  await runGit(o.args, { cwd: o.target, env: o.env });
+  const { target, env, start, args } = o;
+  try {
+    await runGit(args, { cwd: target, env });
+  } catch (error) {
+    if (!(error instanceof GitError)) throw error;
+    await restoreAt(target, env, start);
+    throw error;
+  }
 }
 
 // Brings the task worktree onto the base with a rebase or a merge. The base is a full revision
@@ -221,10 +231,10 @@ export async function reconcileWorktree(o: {
 }): Promise<string> {
   const { clone, env, path, baseRevision, strategy } = o;
   assertRevisionInput(baseRevision);
-  const { target } = await prepare({ clone, env, path });
+  const { target, start } = await prepare({ clone, env, path });
   const base = await resolveRevision({ clone, env, value: baseRevision });
   const args =
     strategy === "rebase" ? ["rebase", ...REBASE_OPTIONS, base] : ["merge", ...MERGE_OPTIONS, base];
-  await runStep({ target, env, args });
+  await runStep({ target, env, start, args });
   return worktreeHead(target, env);
 }
