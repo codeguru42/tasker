@@ -1,7 +1,15 @@
 import { spawn } from "node:child_process";
-import { rmSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fakeGh, ghTokenAnswer, makeTempDir, repoRoot } from "../../helpers.js";
+import { failureOf, fakeGh, ghTokenAnswer, makeTempDir, repoRoot } from "../../helpers.js";
+
+// Fails when token is in the error: its text, its stack, any own property, or a cause.
+function expectNoToken(error: Error, token: string): void {
+  expect(String(error)).not.toContain(token);
+  expect(error.stack ?? "").not.toContain(token);
+  expect(JSON.stringify(error, Object.getOwnPropertyNames(error))).not.toContain(token);
+  expect(error.cause).toBeUndefined();
+}
 
 describe("runGh", () => {
   // The module loads again before each test, so that each test starts with an empty token cache.
@@ -155,5 +163,162 @@ describe("runGh", () => {
       },
     );
     expect(result).toEqual({ code: 0, stdout: "", stderr: "" });
+  });
+
+  describe("errors", () => {
+    const token = "gho_secret";
+    const apiUser = ["api", "user"];
+
+    it("rejects a failing call with a GhError", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: ["issue", "view", "7"], stderr: "boom\n", exitCode: 1 },
+      ]);
+      const error = await failureOf(
+        gh.runGh(["issue", "view", "7"], { account: "octo", env: fake.env }),
+        gh.GhError,
+      );
+      expect(error.message).toBe("gh issue view failed with exit code 1: boom");
+      expect(error.subcommand).toBe("issue view");
+      expect(error.stderr).toBe("boom\n");
+      expect(error.exitCode).toBe(1);
+    });
+
+    it.each([
+      [["api", "graphql", "-f", "query=x"], "api graphql"],
+      [["api", "-X", "PATCH", "repos/a/b"], "api"],
+      [["api", "user"], "api user"],
+      [["issue", "view", "7"], "issue view"],
+    ])("names the subcommand of %j as %s", async (args, subcommand) => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args, exitCode: 1 },
+      ]);
+      const error = await failureOf(
+        gh.runGh(args, { account: "octo", env: fake.env }),
+        gh.GhError,
+      );
+      expect(error.subcommand).toBe(subcommand);
+    });
+
+    it("rejects with a GhNotInstalledError when PATH holds no gh", async () => {
+      const empty = `${dir}/empty`;
+      mkdirSync(empty);
+      const error = await failureOf(
+        gh.runGh(apiUser, { account: "octo", env: { PATH: empty } }),
+        gh.GhNotInstalledError,
+      );
+      expect(error.message).toContain("gh is not installed");
+    });
+
+    it("rejects with a GhNotInstalledError when the env has no PATH", async () => {
+      const fake = fakeGh(dir, {}, []);
+      const error = await failureOf(
+        gh.runGh(apiUser, { account: "octo", env: {} }),
+        gh.GhNotInstalledError,
+      );
+      expect(error.message).toContain("gh is not installed");
+      expect(fake.calls()).toEqual([]);
+    });
+
+    it("rejects with a GhLoginError when the token call fails", async () => {
+      const fake = fakeGh(dir, {}, [
+        {
+          args: ["auth", "token", "--hostname", "github.com", "--user", "ghost"],
+          stderr: "no oauth token found for github.com account ghost\n",
+          exitCode: 1,
+        },
+      ]);
+      const error = await failureOf(
+        gh.runGh(apiUser, { account: "ghost", env: fake.env }),
+        gh.GhLoginError,
+      );
+      expect(error.message).toContain("run `gh auth login --hostname github.com` and log in as ghost");
+      expect(error.message).toContain("no oauth token found for github.com account ghost");
+      expect(error.account).toBe("ghost");
+      expect(fake.calls()).toHaveLength(1);
+    });
+
+    it("rejects with a GhLoginError when the token is empty", async () => {
+      const fake = fakeGh(dir, {}, [
+        { args: ["auth", "token", "--hostname", "github.com", "--user", "octo"], stdout: "\n" },
+      ]);
+      await failureOf(gh.runGh(apiUser, { account: "octo", env: fake.env }), gh.GhLoginError);
+    });
+
+    it("does not keep a failed token read", async () => {
+      const failing = fakeGh(dir, {}, [
+        {
+          args: ["auth", "token", "--hostname", "github.com", "--user", "octo"],
+          stderr: "no token\n",
+          exitCode: 1,
+        },
+      ]);
+      await failureOf(gh.runGh(apiUser, { account: "octo", env: failing.env }), gh.GhLoginError);
+      const working = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: apiUser, stdout: "{}" },
+      ]);
+      await expect(gh.runGh(apiUser, { account: "octo", env: working.env })).resolves.toBe("{}");
+    });
+
+    it("replaces the token in the error of a main call that exits with 1", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", token),
+        { args: apiUser, stdout: `out ${token}`, stderr: `err ${token}\n`, exitCode: 1 },
+      ]);
+      const error = await failureOf(
+        gh.runGh(apiUser, { account: "octo", env: fake.env }),
+        gh.GhError,
+      );
+      expectNoToken(error, token);
+      expect(error.message).toContain("***");
+      expect(error.stderr).toContain("***");
+      expect(error.stdout).toContain("***");
+    });
+
+    it("keeps the stdout of the token call out of a GhLoginError", async () => {
+      const fake = fakeGh(dir, {}, [
+        {
+          args: ["auth", "token", "--hostname", "github.com", "--user", "octo"],
+          stdout: `${token}\n`,
+          exitCode: 1,
+        },
+      ]);
+      const error = await failureOf(
+        gh.runGh(apiUser, { account: "octo", env: fake.env }),
+        gh.GhLoginError,
+      );
+      expectNoToken(error, token);
+    });
+
+    it("drops the stdout of a token call that a signal stops", async () => {
+      const fake = fakeGh(dir, {}, [
+        {
+          args: ["auth", "token", "--hostname", "github.com", "--user", "octo"],
+          stdout: `${token}\n`,
+          killWith: "TERM",
+        },
+      ]);
+      const error = await failureOf(
+        gh.runGh(apiUser, { account: "octo", env: fake.env }),
+        gh.GhError,
+      );
+      expect(error.message).toBe("gh auth token was stopped by signal SIGTERM");
+      expect(error.stdout).toBe("");
+      expectNoToken(error, token);
+    });
+
+    it("replaces the token in the error of a main call that a signal stops", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", token),
+        { args: apiUser, stdout: `out ${token}`, stderr: `err ${token}`, killWith: "TERM" },
+      ]);
+      const error = await failureOf(
+        gh.runGh(apiUser, { account: "octo", env: fake.env }),
+        gh.GhError,
+      );
+      expectNoToken(error, token);
+    });
   });
 });
