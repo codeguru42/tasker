@@ -1,3 +1,5 @@
+import type { GitVcsConfig } from "./provision.js";
+
 // The commit rules of the execute prompt. The caller replaces {{BASE_REF}} with the base revision.
 export const EXECUTE_COMMIT_TEXT = [
   "Commit each red/green pair, or each completed todo, as its own commit. Never collect the whole plan into one commit at the end. If a run stops partway (a quota limit, a timeout), the work that it finished must stay committed.",
@@ -6,3 +8,8 @@ export const EXECUTE_COMMIT_TEXT = [
 
 // The deny rules for the shell of the assistant, in the rule syntax of Claude Code.
 export const DENY_RULES: readonly string[] = ["Bash(git push:*)"];
+
+// The files that the sandbox must not read: the ssh key, when it is set.
+export function readDenyPaths(config: GitVcsConfig): string[] {
+  return config.sshKey === undefined ? [] : [];
+}
