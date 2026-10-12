@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
+import { runGit } from "./run.js";
 
 const MAX_BRANCH_LENGTH = 100;
 
@@ -63,9 +64,31 @@ export interface WorktreeEntry {
   lockReason?: string;
 }
 
+// The worktrees of the clone, without the bare clone itself.
 export async function listWorktrees(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
 }): Promise<WorktreeEntry[]> {
-  throw new Error(`not implemented: ${options.clone}`);
+  const out = await runGit(["worktree", "list", "--porcelain", "-z"], {
+    gitDir: options.clone,
+    env: options.env,
+  });
+  const entries: WorktreeEntry[] = [];
+  for (const record of out.split("\0\0")) {
+    const fields = record.split("\0").filter((field) => field !== "");
+    const worktree = fields.find((field) => field.startsWith("worktree "));
+    if (worktree === undefined || fields.includes("bare")) continue;
+    const entry: WorktreeEntry = { path: worktree.slice("worktree ".length) };
+    for (const field of fields) {
+      if (field.startsWith("branch refs/heads/")) {
+        entry.branch = field.slice("branch refs/heads/".length);
+      } else if (field === "locked") {
+        entry.lockReason = "";
+      } else if (field.startsWith("locked ")) {
+        entry.lockReason = field.slice("locked ".length);
+      }
+    }
+    entries.push(entry);
+  }
+  return entries;
 }
