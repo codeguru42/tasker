@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { GitError, GitNotInstalledError, runGit } from "../../../src/vcs/git/run.js";
+import { GitError, GitNotInstalledError, gitSshCommand, runGit } from "../../../src/vcs/git/run.js";
 import { failureOf, gitTestEnv, makeTempDir, repoRoot, writeFakeGit } from "../../helpers.js";
 
 describe("runGit", () => {
@@ -343,5 +343,27 @@ describe("runGit keeps git from asking questions", () => {
     const pgrp = stat.slice(stat.lastIndexOf(")") + 2).split(" ")[2];
     const out = await runGit(["version"], { cwd: dir, env });
     expect(out).toBe(`${pgrp}\n`);
+  });
+});
+
+describe("gitSshCommand", () => {
+  it("gives the GIT_SSH_COMMAND of the caller", () => {
+    expect(gitSshCommand({ GIT_SSH_COMMAND: "ssh -p 2222", GIT_SSH: "/x/ssh" })).toBe("ssh -p 2222");
+  });
+
+  it("gives undefined when only GIT_SSH is set", () => {
+    expect(gitSshCommand({ GIT_SSH: "/x/ssh" })).toBeUndefined();
+  });
+
+  it("gives the batch ssh command when neither variable is set", () => {
+    expect(gitSshCommand({})).toBe("ssh -o BatchMode=yes");
+  });
+
+  it("gives undefined for an empty GIT_SSH_COMMAND with GIT_SSH", () => {
+    expect(gitSshCommand({ GIT_SSH_COMMAND: "", GIT_SSH: "/x/ssh" })).toBeUndefined();
+  });
+
+  it("gives the batch ssh command when both values are empty", () => {
+    expect(gitSshCommand({ GIT_SSH_COMMAND: "", GIT_SSH: "" })).toBe("ssh -o BatchMode=yes");
   });
 });
