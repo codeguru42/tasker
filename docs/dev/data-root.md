@@ -55,6 +55,24 @@ The index `events_task_id` on `task_id` and `id` serves `listEvents()`.
 
 Two triggers make the table append-only: `events_no_update` and `events_no_delete`. An `UPDATE` or a `DELETE` on `events` fails with the error `events are append-only`. This holds for raw SQL too, not only for the store functions. A later cleanup of old events (`retentionDays`) must drop or replace these triggers in a new schema version.
 
+## `default_base_branches` table
+
+Schema version 3 adds this table. It holds the learned default base branch of each repo.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `repo_key` | text | Primary key. The repo key in the configuration. |
+| `branch` | text | Required. The learned default. It is the name of an origin branch. |
+| `updated_at` | text | Required. The time of the last save, in ISO 8601 UTC. |
+
+The store has three functions for the table:
+
+- `getDefaultBaseBranch(repoKey)` returns the branch, or `undefined` when the repo has no row.
+- `setDefaultBaseBranch(repoKey, branch)` inserts the row or replaces the branch of the row.
+- `forgetDefaultBaseBranch(repoKey, branch)` deletes the row only when its branch equals `branch`. A value that another process saved in the meantime stays.
+
+[workspaces.md](workspaces.md#learned-default) says when tasker writes or deletes the row.
+
 ## Schema versions
 
 The array `migrations` in `src/store/migrations.ts` holds one SQL string for each schema version. Version N means that the first N strings ran. SQLite keeps N in `PRAGMA user_version`.
