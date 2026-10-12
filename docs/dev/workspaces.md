@@ -241,6 +241,7 @@ Calls on the clone use `gitDir`. Calls in a worktree use `cwd` with the real pat
 - `-z` makes git print each path raw and end it with a NUL. Without `-z`, git quotes a path with a newline, a tab, a quote or a non-ASCII character. A private parser splits the output on NUL and drops the empty item after the last NUL.
 - `--no-renames` makes a rename give both paths: two paths in the diff, and two records in the status.
 - `--untracked-files=normal` makes untracked files show, also when the worktree has `status.showUntrackedFiles=no`. An untracked folder gives one record, for example `?? sub/`. An ignored file does not show. Each path is relative to the root of the worktree.
+- The status call of `uncommittedChanges()` runs with `GIT_OPTIONAL_LOCKS=0` in its environment. Without it, `git status` takes `index.lock` and can rewrite the index of the worktree. A git command of the assistant in the same worktree then fails on the lock.
 - `--no-color`, `--no-ext-diff` and `--no-textconv` stop colors, `diff.external` and textconv filters of the user configuration from changing the text. `diff.noprefix` still changes the `a/` and `b/` prefixes of the diff text.
 - The explicit `--format` stops `format.pretty` and `log.decorate` of the user from changing the text.
 
