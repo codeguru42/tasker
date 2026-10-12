@@ -137,6 +137,11 @@ function rowToEvent(row: EventRow): TaskEvent {
   };
 }
 
+// The task of a row, or undefined when the query found no row.
+function toTask(row: TaskRow | undefined): Task | undefined {
+  return row === undefined ? undefined : rowToTask(row);
+}
+
 function rowToTask(row: TaskRow): Task {
   return {
     id: row.id,
@@ -221,8 +226,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   }
 
   function readTask(id: number): Task | undefined {
-    const row = statements.selectTask.get(id) as TaskRow | undefined;
-    return row === undefined ? undefined : rowToTask(row);
+    return toTask(statements.selectTask.get(id) as TaskRow | undefined);
   }
 
   return {
@@ -300,17 +304,19 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     findActiveTask(repoKey, issueKey) {
-      const row = statements.selectActiveTask.get(repoKey, issueKey) as
-        | TaskRow
-        | undefined;
-      return row === undefined ? undefined : rowToTask(row);
+      return toTask(
+        statements.selectActiveTask.get(repoKey, issueKey) as
+          | TaskRow
+          | undefined,
+      );
     },
 
     findLatestTask(repoKey, issueKey) {
-      const row = statements.selectLatestTask.get(repoKey, issueKey) as
-        | TaskRow
-        | undefined;
-      return row === undefined ? undefined : rowToTask(row);
+      return toTask(
+        statements.selectLatestTask.get(repoKey, issueKey) as
+          | TaskRow
+          | undefined,
+      );
     },
 
     updateTask(id, changes, check) {
