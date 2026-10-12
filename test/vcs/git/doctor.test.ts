@@ -1,6 +1,6 @@
 import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { userInfo } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   connectionCheck,
@@ -353,6 +353,20 @@ describe("staleLockCheck", () => {
     const result = await staleLockCheck(repo(), view([], [cwd])).run(origin.env);
     expect(result.status).toBe("ok");
     expect(result.detail).toBe(`skipped refs/heads/x.lock: a git process runs in ${cwd}`);
+  });
+
+  it("does not skip a lock for a git process in a folder above the clone", async () => {
+    makeLock("a.lock");
+    const result = await staleLockCheck(repo(), view([], [dirname(root)])).run(origin.env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).toMatch(/^a\.lock \(9[01] s old\)$/);
+  });
+
+  it("does not skip a lock for a git process in /", async () => {
+    makeLock("a.lock");
+    const result = await staleLockCheck(repo(), view([], ["/"])).run(origin.env);
+    expect(result.status).toBe("warn");
+    expect(result.detail).toMatch(/^a\.lock \(9[01] s old\)$/);
   });
 
   it("lists the locks that are left and the skipped locks", async () => {
