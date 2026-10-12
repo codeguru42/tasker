@@ -3,6 +3,8 @@ import { type ChildResult, CommandNotFoundError, runChild } from "../../process/
 export interface RunGhOptions {
   account: string;
   env: NodeJS.ProcessEnv;
+  // signal stops gh with SIGTERM and rejects with an AbortError.
+  signal?: AbortSignal;
 }
 
 export class GhError extends Error {
@@ -93,7 +95,8 @@ const tokens = new Map<string, Promise<string>>();
 // runGh() does not add process.env. gh is found on the PATH of env. An env with no PATH
 // or an empty one rejects before gh starts, through runChild().
 // gh gets no input stream. Its stdout and stderr go to pipes, never to the terminal.
-// gh runs in the cwd of tasker. A call that acts on a repo must name the repo.
+// options.signal stops the main call of gh with SIGTERM. Then runGh() rejects with an AbortError.
+// gh runs in the cwd of tasker. A call that acts on a repo must name the repo. runGh() has no cwd option.
 // runGh() writes nothing to the console or a log.
 export function runGh(args: readonly string[], options: RunGhOptions): Promise<string> {
   if (args.length === 0) {
@@ -104,7 +107,7 @@ export function runGh(args: readonly string[], options: RunGhOptions): Promise<s
   }
   const env = ghEnv(options.env);
   return accountToken(options.account, env).then((token) =>
-    spawnGh([...args], { ...env, GH_TOKEN: token }, { token }),
+    spawnGh([...args], { ...env, GH_TOKEN: token }, { token, signal: options.signal }),
   );
 }
 
@@ -164,13 +167,13 @@ async function readToken(account: string, env: NodeJS.ProcessEnv): Promise<strin
 async function spawnGh(
   args: readonly string[],
   env: NodeJS.ProcessEnv,
-  mode: { dropStdout?: boolean; token?: string } = {},
+  mode: { dropStdout?: boolean; token?: string; signal?: AbortSignal } = {},
 ): Promise<string> {
   const hide = (text: string) =>
     mode.token === undefined ? text : text.split(mode.token).join(REDACTED);
   let result: ChildResult;
   try {
-    result = await runChild("gh", args, { env });
+    result = await runChild("gh", args, { env, signal: mode.signal });
   } catch (error) {
     if (error instanceof CommandNotFoundError) {
       throw new GhNotInstalledError(error.message);
