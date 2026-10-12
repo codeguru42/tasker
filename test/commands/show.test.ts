@@ -48,7 +48,7 @@ describe("show", () => {
       },
     ]);
 
-    const result = await runShow(`${TASKER}#5`);
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
 
     expect(result).toEqual({
       code: 0,
@@ -159,7 +159,8 @@ describe("show", () => {
     const code = await run(["show", "--help"], { commands: [show], io });
 
     expect(code).toBe(0);
-    const help = io.out.join("");
+    // Commander wraps the long lines of the help, so compare with single spaces.
+    const help = io.out.join("").replace(/\s+/g, " ");
     expect(help).toContain(
       "Print the details of the task of an issue: the active task, else the newest one",
     );

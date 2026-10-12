@@ -44,6 +44,10 @@ Prints the configuration as JSON, with the defaults filled in.
 
 If the key does not exist, or the configuration is missing or invalid, the command prints an error and exits with code 1.
 
+### `tasker show`
+
+Prints the details of the task of an issue: the active task, else the newest task.
+
 ### `tasker status`
 
 Lists the tasks by issue key and state. With no option, it lists the active tasks of all repos. A task is active when its state is not `finished` and not `cancelled`.

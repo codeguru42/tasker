@@ -5,7 +5,7 @@ import type { Config } from "../config/schema.js";
 import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
 import { resolveIssueKey, type ResolveOptions } from "../issue-key/resolve.js";
 import { createDataRoot } from "../store/layout.js";
-import { openStore, type TaskStore } from "../store/store.js";
+import { openStore, type Task, type TaskStore } from "../store/store.js";
 
 // Prints message to stderr and stops the command with exit code 1.
 export function fail(io: Io, message: string): never {
@@ -45,4 +45,24 @@ export function withStore<T>(config: Config, fn: (store: TaskStore) => T): T {
   } finally {
     store.close();
   }
+}
+
+// Runs fn with the store and the task of the issue: the active task, else the newest one.
+// A key that does not resolve stops the command before the store opens.
+// An issue with no task stops the command with exit code 1.
+export function withIssueTask<T>(
+  io: Io,
+  config: Config,
+  rawKey: string,
+  options: ResolveOptions,
+  fn: (store: TaskStore, task: Task) => T,
+): T {
+  const ref = resolveIssueKeyOrFail(io, rawKey, config, options);
+  return withStore(config, (store) => {
+    const task = store.findLatestTask(ref.repoKey, ref.key);
+    if (task === undefined) {
+      fail(io, `no task for the issue ${ref.key} in the repo ${ref.repoKey}`);
+    }
+    return fn(store, task);
+  });
 }
