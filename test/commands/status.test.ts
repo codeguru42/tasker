@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { run } from "../../src/cli.js";
 import { showConfig } from "../../src/commands/show-config.js";
+import { loadConfig } from "../../src/config/load.js";
+import { resolveIssueKey } from "../../src/issue-key/resolve.js";
 import { status } from "../../src/commands/status.js";
 import { STATES } from "../../src/state/machine.js";
 import { captureIo, seedTasks, validConfig, writeDataRootConfig, writeTempConfig } from "../helpers.js";
@@ -211,6 +213,79 @@ describe("status", () => {
       out:
         "ISSUE                REPO               STATE     UPDATED\n" +
         "codeguru42/tasker#5  codeguru42/tasker  planning  2026-01-02T00:00:00.000Z\n",
+    });
+  });
+
+  it("lists only the tasks of the issue that --issue names", async () => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: at(3) },
+      { issueKey: `${OTHER}#8`, repoKey: OTHER, state: "planning", at: at(4) },
+    ]);
+
+    const result = await runStatus("--issue", `${OTHER}#7`);
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "ISSUE               REPO              STATE      UPDATED\n" +
+        "codeguru42/other#7  codeguru42/other  executing  2026-01-03T00:00:00.000Z\n",
+    });
+  });
+
+  it.each(["nobody/else#1", `${TASKER}#5`])(
+    "prints the error of the issue key %s",
+    async (key) => {
+      const written = setup();
+      let expected = "";
+      try {
+        resolveIssueKey(key, loadConfig({ TASKER_CONFIG: written.path }));
+      } catch (error) {
+        expected = `${(error as Error).message}\n`;
+      }
+      expect(expected).not.toBe("");
+
+      const result = await runStatus("--issue", key);
+
+      expect(result).toEqual({ code: 1, out: "", err: expected });
+    },
+  );
+
+  it("passes --repo to the issue key, so that it picks one of two repos", async () => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: at(2) },
+      { issueKey: `${TASKER}#5`, repoKey: "fork", state: "planning", at: at(3) },
+    ]);
+
+    const result = await runStatus("--issue", `${TASKER}#5`, "--repo", "fork");
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "ISSUE                REPO  STATE     UPDATED\n" +
+        "codeguru42/tasker#5  fork  planning  2026-01-03T00:00:00.000Z\n",
+    });
+  });
+
+  it("lists only the cancelled attempt of an issue for --issue with --state", async () => {
+    const { dataRoot } = setup();
+    seedTasks(dataRoot, [
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "cancelled", at: at(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: at(3) },
+    ]);
+
+    const result = await runStatus("--issue", `${OTHER}#7`, "--state", "cancelled");
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "ISSUE               REPO              STATE      UPDATED\n" +
+        "codeguru42/other#7  codeguru42/other  cancelled  2026-01-02T00:00:00.000Z\n",
     });
   });
 
