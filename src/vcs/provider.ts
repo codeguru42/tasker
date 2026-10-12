@@ -1,3 +1,5 @@
+import type { Check } from "../doctor/check.js";
+
 // The local state of one repo, and the env of each child process.
 export interface VcsContext {
   dataRoot: string;
@@ -51,6 +53,13 @@ export interface PublishResult {
   lease: boolean;
 }
 
+export interface AssistantSurface {
+  executeCommitText: string;
+  denyRules: readonly string[];
+  denyReadPaths: string[];
+  sandboxWritePaths(path: string): Promise<string[]>;
+}
+
 // The result of deleteRemoteTaskRef, and of deleteRemoteTaskBranch() in src/vcs/git/publish.ts.
 export interface RemoteTaskRefDeletion {
   state: "deleted" | "already-gone";
@@ -101,6 +110,10 @@ export interface VcsProvider {
     ctx: VcsContext,
     o: { taskRef: string; published: string },
   ): Promise<RemoteTaskRefDeletion>;
+  // The text and the paths that the provider adds to the assistant of a task.
+  assistantSurface(ctx: VcsContext): AssistantSurface;
+  // The doctor checks of the repo. The checks do not run until the caller runs them.
+  doctorChecks(ctx: VcsContext, o: { procRoot: string; platform: NodeJS.Platform }): Check[];
   // Writes the push guard again.
   installPushGuard(ctx: VcsContext): void;
 }

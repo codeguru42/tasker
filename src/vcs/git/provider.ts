@@ -1,8 +1,15 @@
 import type { VcsProvider } from "../provider.js";
 import type { GitVcsConfig } from "./config.js";
+import {
+  DENY_RULES,
+  EXECUTE_COMMIT_TEXT,
+  readDenyPaths,
+  sandboxWritePaths,
+} from "./assistant-surface.js";
 import { resolveBaseBranch } from "./base-branch.js";
 import { ownCommitsText, uncommittedChanges, worktreeDiff } from "./changes.js";
 import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "./publish.js";
+import { gitDoctorChecks } from "./doctor.js";
 import { installPushHook } from "./push-guard.js";
 import { provisionClone } from "./provision.js";
 import { reconcileWorktree } from "./reconcile.js";
@@ -115,6 +122,23 @@ export function createGitProvider({
         env: ctx.env,
         branch: taskRef,
         published,
+      });
+    },
+    assistantSurface(ctx) {
+      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      return {
+        executeCommitText: EXECUTE_COMMIT_TEXT,
+        denyRules: DENY_RULES,
+        denyReadPaths: readDenyPaths(config),
+        sandboxWritePaths: (path) => sandboxWritePaths({ clone, env: ctx.env, path }),
+      };
+    },
+    doctorChecks(ctx, { procRoot, platform }) {
+      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      return gitDoctorChecks({
+        repos: [{ key: ctx.repoKey, remote, clone, config }],
+        procRoot,
+        platform,
       });
     },
     installPushGuard(ctx) {
