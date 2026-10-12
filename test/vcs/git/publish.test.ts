@@ -300,6 +300,7 @@ describe("publish, land and delete", () => {
         const error = await failureOf(publish(), Error);
 
         expect(error.message.startsWith(named)).toBe(true);
+        expect(error.message).toContain(ORIGIN_REFUSES);
         expect(await origin.branchHead("issue-1-task")).toBeUndefined();
         expectNoTokenFile();
       });
@@ -521,6 +522,7 @@ describe("publish, land and delete", () => {
         const error = await failureOf(remove({ published }), Error);
 
         expect(error.message.startsWith(named)).toBe(true);
+        expect(error.message).toContain(ORIGIN_REFUSES);
         expect(await origin.branchHead("issue-1-task")).toBe(published);
         expectNoTokenFile();
       });
