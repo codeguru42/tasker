@@ -139,6 +139,15 @@ export function runGh(args: readonly string[], options: RunGhOptions): Promise<s
   );
 }
 
+// Runs `gh --version` with the env of runGh() and no token, and resolves with its stdout.
+// The version check needs no login, so it makes no token call. signal stops gh.
+export function readGhVersion(
+  env: NodeJS.ProcessEnv,
+  options: { signal?: AbortSignal } = {},
+): Promise<string> {
+  return spawnGh(["--version"], ghEnv(env), { signal: options.signal });
+}
+
 // See the doc comment of runGh().
 function ghEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const result: NodeJS.ProcessEnv = { ...env };
