@@ -191,7 +191,7 @@ Ignored files stay, because the command has no `-x`. They do not block a later r
 ### Side effects
 
 - A failed create leaves the parent folder of the worktree.
-- A new task branch has no upstream. A reused branch also has none.
+- A new task branch has no upstream. A reused branch has no upstream only when it had none before, because `git worktree add` without `-b` keeps the configuration of the branch.
 - On reuse, the branch keeps its commits and does not move to the base.
 - The repair of the `initializing` lock runs `git reset --hard`. It writes the committed files over a partial checkout.
 - A stopped `git worktree add` can leave an admin folder in the clone with only a `locked` file. Git does not list it, and the next create uses a new admin name.
