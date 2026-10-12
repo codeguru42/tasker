@@ -247,6 +247,42 @@ describe("gh doctor checks", () => {
       expect(argLists(fake)).toEqual([tokenArgs, viewArgs("octo/nope")]);
     });
 
+    it("gives error with no remediation when the token call fails", async () => {
+      const fake = fakeGh(dir, {}, [
+        { args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 },
+      ]);
+      const check = doctor.ghProjectCheck(githubRepo("octo/repo"));
+      expect(await check.run(fake.env)).toStrictEqual({
+        status: "error",
+        detail:
+          "gh has no login for the account octo on github.com: run `gh auth login --hostname github.com` and log in as octo. gh said: no oauth token found",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs]);
+    });
+
+    it("gives error with no remediation when a signal stops gh repo view", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { args: viewArgs("octo/repo"), killWith: "TERM" },
+      ]);
+      const check = doctor.ghProjectCheck(githubRepo("octo/repo"));
+      expect(await check.run(fake.env)).toStrictEqual({
+        status: "error",
+        detail: "gh repo view was stopped by signal SIGTERM",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, viewArgs("octo/repo")]);
+    });
+
+    it("gives error with no remediation when gh is not installed", async () => {
+      const empty = `${dir}/empty`;
+      mkdirSync(empty);
+      const check = doctor.ghProjectCheck(githubRepo("octo/repo"));
+      expect(await check.run({ PATH: empty })).toStrictEqual({
+        status: "error",
+        detail: "gh is not installed: gh was not found on PATH",
+      });
+    });
+
     it("gives the timeout result when gh is slow", async () => {
       const fake = fakeGh(dir, {}, [
         ghTokenAnswer("octo", "gho_test"),
