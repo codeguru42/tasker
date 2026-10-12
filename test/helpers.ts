@@ -263,6 +263,19 @@ export async function addCloneCommit(
   return sha;
 }
 
+// Names that pass the syntax check of a task branch but not the shape check.
+export const NOT_TASK_BRANCHES = [
+  "main",
+  "master",
+  "feature-x",
+  "issue-0-x",
+  "issue-x",
+  "issue-17-Fix",
+  "proj-12-x",
+  "PROJ-012-x",
+  "release-1.2",
+];
+
 // The text that the pre-push hook prints for a push with no valid publish token.
 export const NO_TOKEN = "tasker: the push has no valid publish token";
 

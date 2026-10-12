@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import {
+  assertTaskBranchShape,
   createTaskWorktree,
   deleteTaskBranch,
   discardWorktreeChanges,
@@ -20,7 +21,13 @@ import {
   taskBranchRevision,
   taskWorktreePath,
 } from "../../../src/vcs/git/worktree.js";
-import { failureOf, makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers.js";
+import {
+  failureOf,
+  makeGitClone,
+  makeGitOrigin,
+  NOT_TASK_BRANCHES,
+  type GitOrigin,
+} from "../../helpers.js";
 
 describe("taskBranchName", () => {
   it.each([
@@ -424,7 +431,7 @@ describe("git fixture", () => {
     });
 
     it("refuses a missing branch", async () => {
-      await failureOf(deleteBranch({ branch: "nosuch" }), GitError);
+      await failureOf(deleteBranch({ branch: "issue-2-nosuch" }), GitError);
     });
 
     it("refuses a branch that a worktree holds", async () => {
@@ -438,6 +445,23 @@ describe("git fixture", () => {
       async (branch) => {
         const error = await failureOf(deleteBranch({ branch, env: {} }), Error);
         expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
+      },
+    );
+
+    it.each(NOT_TASK_BRANCHES)(
+      "refuses the name %j, which has no task branch shape, before any git call",
+      async (branch) => {
+        const error = await failureOf(deleteBranch({ branch, env: {} }), Error);
+        expect(error.message).toBe(`not a task branch: ${JSON.stringify(branch)}`);
+      },
+    );
+
+    describe.each(["issue-17", "PROJ-12", "acme.atlassian.net-browse-PROJ-12"])(
+      "the result of taskBranchName() for %s",
+      (shortRef) => {
+        it.each(["Fix it", "", "word ".repeat(100)])("has the shape for the title %j", (title) => {
+          expect(() => assertTaskBranchShape(taskBranchName(shortRef, title))).not.toThrow();
+        });
       },
     );
   });
