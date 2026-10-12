@@ -9,14 +9,15 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/version.ts` reads the version from `package.json`.
 - `src/commands/` holds one file for each command. `src/commands/index.ts` lists them.
 - `src/config/` holds the configuration loader. `path.ts` finds the file, `expand.ts` expands paths, `allowed-env-names.ts` holds the default env allowlist, `schema.ts` validates the file, and `load.ts` reads it.
-- `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, `transaction.ts` holds `immediateTransaction()`, the shared helper that runs each write and each migration in one `BEGIN IMMEDIATE` transaction, and `store.ts` opens the database and reads and writes tasks and events.
-- `src/vcs/git/` holds all code that starts git. `run.ts` holds `runGit()`, `repo-paths.ts` holds `repoSlug()` and `repoPaths()`, `ssh.ts` holds the ssh command of a key, `runRemoteGit()`, `remoteCwd()` and `cloneUrl()`, `default-branch.ts` holds `remoteDefaultBranch()`, and `provision.ts` holds `provisionClone()`. Only this folder starts git. The test `test/vcs/git/boundary.test.ts` enforces this.
+- `src/store/` holds the task store. `layout.ts` creates the folders under `dataRoot`, `migrate.ts` applies schema versions, `migrations.ts` holds the schema versions, `transaction.ts` holds `immediateTransaction()`, the shared helper that runs each write and each migration in one `BEGIN IMMEDIATE` transaction, and `store.ts` opens the database, reads and writes tasks and events, and reads, saves and forgets the learned default base branch of each repo.
+- `src/vcs/git/` holds all code that starts git. `run.ts` holds `runGit()`, `repo-paths.ts` holds `repoSlug()` and `repoPaths()`, `ssh.ts` holds the ssh command of a key, `runRemoteGit()`, `remoteCwd()` and `cloneUrl()`, `default-branch.ts` holds `remoteDefaultBranch()`, `provision.ts` holds `provisionClone()`, and `base-branch.ts` holds `parseBaseInput()`, `baseRevision()` and `resolveBaseBranch()`. Only this folder starts git. The test `test/vcs/git/boundary.test.ts` enforces this.
 - `src/issue-key/` holds the issue key parsers. `ref.ts` holds the `IssueRef` type and `IssueKeyError`, `path-slug.ts` makes a string safe for a file path and a git branch name, `github.ts` parses a GitHub key, and `jira.ts` parses a Jira key. The caller selects the parser and passes the repo key.
 - `src/state/` holds the state machine. `machine.ts` declares the task states and the legal edges, and checks a change of state.
 - `AGENTS.md` is an index that links to the docs. It gives no rules itself. Each assistant session reads it first.
 - `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.
 - `docs/config.md` is the configuration reference.
 - `docs/dev/data-root.md` describes the folders under `dataRoot` and the tables of the database.
+- `docs/dev/workspaces.md` describes the base branch of a task.
 - `docs/dev/orchestration.md` gives the rules for an orchestrator, an assistant session that runs tickets from the project board through the installed `tasker`.
 - `docs/dev/rebase-conflicts.md` gives the procedure for a rebase conflict that `tasker update-branch` reports.
 - `docs/dev/version-control.md` describes the git code in `src/vcs/git/`, `runGit()` and the folders of a repo.
