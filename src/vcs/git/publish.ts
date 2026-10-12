@@ -1,3 +1,4 @@
+import type { RemoteTaskRefDeletion } from "../provider.js";
 import { LOCAL_PREFIX } from "./base-branch.js";
 import { pushWithToken } from "./push-guard.js";
 import { isFullRevision } from "./refs.js";
@@ -139,7 +140,7 @@ export async function landOnBase(
 // Deletes the task branch on origin, when origin still has it at the published revision.
 export async function deleteRemoteTaskBranch(
   options: RemoteOptions & { branch: string; published: string },
-): Promise<{ state: "deleted" | "already-gone" }> {
+): Promise<RemoteTaskRefDeletion> {
   const { clone, remote, publishTokens, sshKey, env, branch, published } = options;
   assertTaskBranch(branch);
   assertTaskBranchShape(branch);

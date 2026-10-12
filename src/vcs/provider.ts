@@ -44,6 +44,11 @@ export interface UncommittedChange {
 
 export type ReconcileStrategy = "rebase" | "merge";
 
+// The result of deleteRemoteTaskRef, and of deleteRemoteTaskBranch() in src/vcs/git/publish.ts.
+export interface RemoteTaskRefDeletion {
+  state: "deleted" | "already-gone";
+}
+
 /**
  * The version control operations of tasker. A command gets a provider from createVcsProvider()
  * and never imports from src/vcs/git/. Each operation has the errors and the side effects of its
