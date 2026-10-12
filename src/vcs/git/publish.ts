@@ -25,7 +25,7 @@ export interface PublishResult {
 export async function publishTaskBranch(
   options: RemoteOptions & { branch: string; published: string | undefined },
 ): Promise<PublishResult> {
-  const { clone, remote, publishTokens, sshKey, env, branch } = options;
+  const { clone, remote, publishTokens, sshKey, env, branch, published } = options;
   const revision = await taskBranchRevision({ clone, env, branch });
   const tip = await remoteTip({ remote, branch, sshKey, env });
   if (tip.state === "present" && tip.revision === revision) {
@@ -33,7 +33,7 @@ export async function publishTaskBranch(
   }
   await pushWithToken(
     [
-      `--force-with-lease=refs/heads/${branch}:`,
+      `--force-with-lease=refs/heads/${branch}:${published ?? ""}`,
       "origin",
       `refs/heads/${branch}:refs/heads/${branch}`,
     ],
