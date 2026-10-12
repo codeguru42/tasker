@@ -13,6 +13,22 @@ describe("taskBranchName", () => {
   });
 });
 
+describe("taskBranchName with a bad short ref", () => {
+  it.each(["", "-x", "a..b", "a/b", "x.lock", "HEAD", "a".repeat(101)])(
+    "refuses the short ref %j",
+    (shortRef) => {
+      expect(() => taskBranchName(shortRef, "Fix it")).toThrow(
+        `not a safe short ref: ${JSON.stringify(shortRef)}`,
+      );
+    },
+  );
+
+  it("gives a short ref of exactly 100 characters alone", () => {
+    const shortRef = "a".repeat(100);
+    expect(taskBranchName(shortRef, "Fix it")).toBe(shortRef);
+  });
+});
+
 describe("git fixture", () => {
   let origin: GitOrigin;
   let clone: string;
