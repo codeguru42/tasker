@@ -80,7 +80,7 @@ Each operation calls one git function:
 
 Push guard rule: a provider that cannot guard a push refuses to provision. Its `provision()` rejects, and the provider never runs with a weaker guard. The git provider guards a push with the pre-push hook that `provisionClone()` writes (see [Push guard](#push-guard)). If the hook write fails, `provisionClone()` rejects.
 
-Each git provider gives its own version check, so a doctor run over two git repos has two version checks.
+`doctorChecks()` calls `gitDoctorChecks()` for one repo. As a result, each git provider gives its own version check, and its lock-file check reads `/proc` in its own `gitDoctorChecks()` call. A doctor run over two git repos has two version checks and can read `/proc` two times.
 
 The test `test/vcs/git/boundary.test.ts` also fails when a `.ts` file under `src/` outside `src/vcs/` imports from `src/vcs/git/`. It finds `import ... from`, `import "..."`, `import("...")`, `require("...")` and `export ... from` with a relative path. Files under `test/` are not in scope, because the tests of the git code import it. The test cannot find a module name that the code builds at run time.
 
@@ -441,7 +441,7 @@ If the push fails, the function reads the tip again with the rules of step 3. An
 
 ## Doctor checks
 
-The git doctor checks live in `src/vcs/git/doctor.ts`. No command runs them yet. The `tasker doctor` command will call `gitDoctorChecks({ repos, procRoot, platform })`. It must pass `procRoot: "/proc"` and `platform: process.platform`. Each repo is a `GitDoctorRepo`: `{ key, remote, clone, config }`, where `config` has the shape of `vcs.config`.
+The git doctor checks live in `src/vcs/git/doctor.ts`. No command runs them yet. The `tasker doctor` command will get the checks from `doctorChecks()` of each provider (see [The provider interface](#the-provider-interface)). It must pass `procRoot: "/proc"` and `platform: process.platform`. Each repo is a `GitDoctorRepo`: `{ key, remote, clone, config }`, where `config` has the shape of `vcs.config`.
 
 The check type is in `src/doctor/check.ts`. It does not depend on git. A `Check` has `name`, `required`, `timeoutMs` and `run(env)`. `run()` resolves with `{ status, detail, remediation? }`. The status is `ok`, `warn` or `error`. `run()` never rejects.
 
@@ -512,7 +512,7 @@ The check looks for files that end in `.lock` in the clone and are older than 60
 - A lock that is left gives `warn`. The detail has one line for each file with its age in whole seconds. The remediation says that doctor deletes nothing.
 - On a platform that is not Linux, or when `/proc` cannot be read, the detail has a note that tasker cannot tell whether a process uses the files.
 
-The reader skips each part of a process that gives an error, for example `EACCES` for a process of another user. One doctor run reads `/proc` once at most, and only when a lock-file check finds a stale lock.
+The reader skips each part of a process that gives an error, for example `EACCES` for a process of another user. One `gitDoctorChecks()` call reads `/proc` once at most, and only when a lock-file check of that call finds a stale lock.
 
 ### Side effects
 
