@@ -118,7 +118,7 @@ The short ref is the one that the issue key parsers make. `src/issue-key/short-r
 
 Every other function that takes a branch runs the same name check first, before any git call. A branch must be a path slug of at most 100 characters, and it must not be `HEAD`. If it is not, the function throws `not a task branch name: <JSON text of the name>`. As a result, git never gets a name with a leading `-`, `..`, `/`, `~`, `^`, `@{` or a space.
 
-The shape check runs after the name check. A name has the task branch shape when it is a short ref alone, or a short ref, a `-` and a lower-case slug. Each name that `taskBranchName()` gives has this shape. `createTaskWorktree()`, `deleteTaskBranch()`, `publishTaskBranch()` and `deleteRemoteTaskBranch()` run the shape check before any git call and before any write to the disk. If a name has no task branch shape, for example `main`, `master` or `feature-x`, the function throws `not a task branch: <JSON text of the name>`. `taskBranchRevision()` only reads, so it runs the name check only.
+The shape check runs after the name check. A name has the task branch shape when it is a short ref alone, or a short ref, a `-` and a lower-case slug. Each name that `taskBranchName()` gives has this shape. `createTaskWorktree()`, `deleteTaskBranch()`, `publishTaskBranch()` and `deleteRemoteTaskBranch()` run the shape check before any git call and before any write to the disk. If a name has no task branch shape, for example `main`, `master` or `feature-x`, the function throws `not a task branch: <JSON text of the name>`. `restoreWorktree()` runs the name check and the shape check on its start branch before any git call. `reconcileWorktree()`, `rebaseOnto()` and `resyncWorktree()` run both checks on the branch of the worktree after they read it, before any ref read and before any step. A detached HEAD has no branch and passes. `taskBranchRevision()` only reads, so it runs the name check only.
 
 ### The worktree path
 
@@ -286,6 +286,8 @@ The steps are: check the base text, run the guard, fetch, read the head of the w
 
 `src/vcs/git/reconcile.ts` brings a task worktree onto a base that moved. When a step fails, the same function puts the worktree back where it was. No command calls these functions yet. `tasker update-branch` will call them (M13).
 
+The functions act only on a worktree that is on a task branch or detached. [The branch name](#the-branch-name) gives the check.
+
 ### The functions
 
 | Function | Git command | Where | Result |
@@ -310,7 +312,7 @@ Each of `reconcileWorktree()`, `rebaseOnto()` and `resyncWorktree()` runs these 
 
 1. Check the revision input. A bad text throws `not a full revision or ref: <JSON>`.
 2. Run the guard.
-3. Read the start state and make sure that the worktree is clean. This is one read. A worktree with changes throws `the worktree has uncommitted changes: <path>: <JSON paths>`. No step and no restore runs.
+3. Read the start state. This is one read. Run the branch check of [The branch name](#the-branch-name) on the branch. Then make sure that the worktree is clean. A worktree with changes throws `the worktree has uncommitted changes: <path>: <JSON paths>`. No step and no restore runs.
 4. Resolve each revision to a full revision.
 5. Run the git step.
 
@@ -318,7 +320,7 @@ The clean check comes first because the restore runs `checkout --force` and `cle
 
 ### The arguments
 
-Every revision on a command line is a full revision. Every branch passed `assertTaskBranch()`. `runGit()` removes `GIT_CONFIG_PARAMETERS` and the `GIT_CONFIG_COUNT` variables. As a result, `-c key=value` is not possible, so each rule of the user configuration has a command option.
+Every revision on a command line is a full revision. The only branch on a command line is the start branch of the restore checkout, and it passed the branch check. `runGit()` removes `GIT_CONFIG_PARAMETERS` and the `GIT_CONFIG_COUNT` variables. As a result, `-c key=value` is not possible, so each rule of the user configuration has a command option.
 
 The rebase is `git rebase <options> <base>`. `rebaseOnto()` runs `git rebase <options> --onto <onto> <upstream>`. It applies only the commits of `<upstream>..HEAD`. The rebase options are:
 
@@ -384,7 +386,7 @@ The message of `ReconcileConflictError` is `the <rebase|merge> onto <base> stopp
 
 ### The restore
 
-`restoreWorktree()` takes a start `{ head, branch }`. It checks the input before any git call. `head` must be a full revision, and a set `branch` must be a task branch name. Then it runs the guard and these steps:
+`restoreWorktree()` takes a start `{ head, branch }`. It checks the input before any git call. `head` must be a full revision, and a set `branch` must pass the branch check of [The branch name](#the-branch-name). Then it runs the guard and these steps:
 
 1. If a rebase is in progress, run `rebase --quit`. A failed or conflicted rebase leaves `rebase-merge/`, and `checkout --force` does not remove it.
 2. For a start on a branch, run `checkout --force -B <branch> <head>`. This puts the branch at the start, also when the failed step moved it. For a detached start, run `checkout --force --detach <head>`. The checkout also removes the merge state.
