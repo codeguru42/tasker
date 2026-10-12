@@ -15,7 +15,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/worktree.ts` holds `taskBranchName()`, `assertTaskBranch()`, `assertTaskBranchShape()`, `taskWorktreePath()`, `withoutLineEnd()`, `listWorktrees()`, `assertTaskWorktree()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
 - `src/vcs/git/refs.ts` holds `isFullRevision()`, `refExists()`, `refRevision()`, `assertRevisionInput()` and `resolveRevision()`.
 - `src/vcs/git/changes.ts` holds `worktreeDiff()`, `changedPaths()`, `ownCommitsText()`, `hasCommitsNotIn()`, `uncommittedChanges()`, `uncommittedRefusal()`, `isAncestor()`, `fetchTips()`, `fetchOrigin()`, `nulFields()`, `jsonPathList()`, `worktreeHead()`, `worktreeChanges()` and `NO_OWN_COMMITS`.
-- `src/vcs/git/reconcile.ts` holds `worktreeState()`, `reconcileWorktree()`, `rebaseOnto()`, `resyncWorktree()`, `restoreWorktree()`, and `restoreCommands()`. [workspaces.md](workspaces.md#reconcile) gives the rules.
+- `src/vcs/git/reconcile.ts` holds `worktreeState()`, `reconcileWorktree()`, `rebaseOnto()`, `resyncWorktree()`, `restoreWorktree()` and `restoreCommands()`. [workspaces.md](workspaces.md#reconcile) gives the rules.
 - `src/vcs/git/assistant-surface.ts` holds `EXECUTE_COMMIT_TEXT`, `DENY_RULES`, `readDenyPaths()` and `sandboxWritePaths()`.
 - `src/vcs/git/push-guard.ts` holds `installPushHook()` and `pushWithToken()`.
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
