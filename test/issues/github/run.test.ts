@@ -253,6 +253,35 @@ describe("runGh", () => {
     });
   });
 
+  describe("readGhVersion", () => {
+    it("resolves with the stdout of gh --version and sends no token", async () => {
+      const fake = fakeGh(dir, {}, [
+        { args: ["--version"], stdout: "gh version 2.101.0 (2026-09-15)\n" },
+      ]);
+      expect(await gh.readGhVersion(fake.env)).toBe("gh version 2.101.0 (2026-09-15)\n");
+      expect(fake.calls()).toEqual([{ args: ["--version"], ghToken: undefined, env: {} }]);
+    });
+
+    it("rejects with a GhNotInstalledError when PATH holds no gh", async () => {
+      const empty = `${dir}/empty`;
+      mkdirSync(empty);
+      const error = await failureOf(gh.readGhVersion({ PATH: empty }), gh.GhNotInstalledError);
+      expect(error.message).toContain("gh is not installed");
+    });
+
+    it("rejects with an AbortError when the signal aborts", async () => {
+      const fake = fakeGh(dir, {}, [{ args: ["--version"], stdout: "x", delaySeconds: 5 }]);
+      const start = Date.now();
+      const error = await failureOf(
+        gh.readGhVersion(fake.env, { signal: AbortSignal.timeout(100) }),
+        Error,
+      );
+      expect(error.name).toBe("AbortError");
+      expect(Date.now() - start).toBeLessThan(2000);
+      expect(fake.calls()).toEqual([{ args: ["--version"], ghToken: undefined, env: {} }]);
+    });
+  });
+
   describe("errors", () => {
     const token = "gho_secret";
     const apiUser = ["api", "user"];
