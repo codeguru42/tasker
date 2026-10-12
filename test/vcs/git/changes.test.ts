@@ -4,13 +4,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   changedPaths,
   hasCommitsNotIn,
+  isAncestor,
   NO_OWN_COMMITS,
   ownCommitsText,
   uncommittedChanges,
   uncommittedRefusal,
   worktreeDiff,
 } from "../../../src/vcs/git/changes.js";
-import { runGit } from "../../../src/vcs/git/run.js";
+import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree, removeTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {
   commitInWorktree,
@@ -240,6 +241,36 @@ describe("git changes", () => {
       mkdirSync(plain);
       const error = await failureOf(changes({ path: plain }), Error);
       expect(error.message).toBe(`not a worktree of the clone: ${plain}`);
+    });
+  });
+
+  describe("isAncestor", () => {
+    const ancestor = (a: string, d: string) =>
+      isAncestor({ clone, env, ancestor: a, descendant: d });
+
+    it("is true for the base and a branch commit", async () => {
+      const sha = await commitInWorktree(path, env, { file: "feature.txt" });
+      expect(await ancestor(BASE, sha)).toBe(true);
+    });
+
+    it("is true for the same commit", async () => {
+      expect(await ancestor(BASE, BASE)).toBe(true);
+    });
+
+    it("is false the other way", async () => {
+      const sha = await commitInWorktree(path, env, { file: "feature.txt" });
+      expect(await ancestor(sha, BASE)).toBe(false);
+    });
+
+    it("passes on the failure of git for a commit that the clone does not have", async () => {
+      const error = await failureOf(ancestor("1".repeat(40), BASE), GitError);
+      expect(error.subcommand).toBe("merge-base");
+      expect(error.exitCode).toBe(128);
+    });
+
+    it("refuses a missing ref", async () => {
+      const error = await failureOf(ancestor("refs/heads/missing", BASE), Error);
+      expect(error.message).toBe("cannot resolve the revision: refs/heads/missing");
     });
   });
 });
