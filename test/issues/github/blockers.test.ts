@@ -157,6 +157,8 @@ describe("readGithubBlockers", () => {
       pageJson([{ number: 3, state: "OPEN" }]),
     ],
     ["a name that does not form a key", pageJson([node(3, "OPEN", "bad")])],
+    ["a null blockedBy with no errors", JSON.stringify({ data: { repository: { issue: { blockedBy: null } } } })],
+    ["errors that are not a list", JSON.stringify({ data: null, errors: "bad" })],
   ])("gives bad output for %s", async (_name, stdout) => {
     const fake = fakeWith({ args: graphqlArgs("octo", "repo", "7"), stdout });
     const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
@@ -227,6 +229,51 @@ describe("readGithubBlockers", () => {
     const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
     expect(error.key).toBe("octo/repo#7");
     expect(error.message).toBe("gh api graphql gave errors for octo/repo#7: First; Second");
+  });
+
+  it("gives the GraphQL errors when blockedBy is null", async () => {
+    const fake = fakeWith({
+      args: graphqlArgs("octo", "repo", "7"),
+      stdout: JSON.stringify({
+        data: { repository: { issue: { blockedBy: null } } },
+        errors: [
+          {
+            type: "FORBIDDEN",
+            path: ["repository", "issue", "blockedBy"],
+            message: "Resource not accessible by integration",
+          },
+        ],
+      }),
+      exitCode: 1,
+    });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toBe(
+      "gh api graphql gave errors for octo/repo#7: Resource not accessible by integration",
+    );
+  });
+
+  it("gives the GraphQL errors when a node is null", async () => {
+    const page = JSON.parse(pageJson([null])) as object;
+    const fake = fakeWith({
+      args: graphqlArgs("octo", "repo", "7"),
+      stdout: JSON.stringify({
+        ...page,
+        errors: [
+          {
+            type: "FORBIDDEN",
+            path: ["repository", "issue", "blockedBy", "nodes", 0],
+            message: "Resource protected by organization SAML enforcement.",
+          },
+        ],
+      }),
+      exitCode: 1,
+    });
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toBe(
+      "gh api graphql gave errors for octo/repo#7: Resource protected by organization SAML enforcement.",
+    );
   });
 
   it("keeps a gh failure with no JSON as a GhError", async () => {
