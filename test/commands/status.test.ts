@@ -167,7 +167,7 @@ describe("status", () => {
     ],
     [
       "cancelled",
-      "ISSUE               REPO               STATE      UPDATED\n" +
+      "ISSUE               REPO              STATE      UPDATED\n" +
         "codeguru42/other#2  codeguru42/other  cancelled  2026-01-05T00:00:00.000Z\n",
     ],
   ])("lists only the %s tasks for --state", async (state, out) => {
