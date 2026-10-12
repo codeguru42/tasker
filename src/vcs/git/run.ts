@@ -1,5 +1,5 @@
-import { spawn } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
+import { assertPathSet, type ChildResult, CommandNotFoundError, runChild } from "../../process/run-child.js";
 
 // Where git runs. cwd: a folder in a work tree, for any command that needs one.
 // gitDir: the bare clone that tasker made, and nothing else. Git runs with
@@ -125,8 +125,10 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
   if (subcommand.startsWith("-")) {
     return Promise.reject(new Error("runGit needs the git subcommand as the first argument"));
   }
-  if (!options.env.PATH) {
-    return Promise.reject(new GitNotInstalledError("git is not installed: the env has no PATH"));
+  try {
+    assertPathSet("git", options.env);
+  } catch (error) {
+    return Promise.reject(new GitNotInstalledError((error as Error).message));
   }
   const location: Location =
     "gitDir" in options
@@ -148,73 +150,49 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
 }
 
 // Starts git once and resolves with its stdout. It rejects as runGit() describes.
-function spawnGit(
+async function spawnGit(
   fullArgs: readonly string[],
   subcommand: string,
   location: Location,
   env: NodeJS.ProcessEnv,
   signal: AbortSignal | undefined,
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = spawn("git", fullArgs, {
-      cwd: location.path,
-      env,
-      stdio: ["ignore", "pipe", "pipe"],
-      signal,
-    });
-    const out: Buffer[] = [];
-    const err: Buffer[] = [];
-    child.stdout.on("data", (chunk: Buffer) => out.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => err.push(chunk));
-    child.on("error", (error: NodeJS.ErrnoException) => {
-      if (error.name === "AbortError") {
-        // An ssh child that git left running must not hold the pipes open.
-        child.stdout.destroy();
-        child.stderr.destroy();
-        reject(error);
-        return;
-      }
-      if ((error.code === "ENOENT" || error.code === "ENOTDIR") && !isFolder(location.path)) {
-        // Node reports a missing cwd as ENOENT and a cwd that is a file as ENOTDIR.
-        reject(folderError(location));
-      } else if (error.code === "ENOENT") {
-        reject(new GitNotInstalledError("git is not installed: git was not found on PATH"));
-      } else {
-        reject(error);
-      }
-    });
-    child.on("close", (code, signal) => {
-      const stdout = Buffer.concat(out).toString("utf8");
-      const stderr = Buffer.concat(err).toString("utf8");
-      if (code === 0) {
-        resolve(stdout);
-        return;
-      }
-      if (code === null) {
-        reject(
-          new GitError(
-            `git ${subcommand} was stopped by signal ${signal}`,
-            subcommand,
-            stdout,
-            stderr,
-            null,
-          ),
-        );
-        return;
-      }
-      const detail = stderr.trim();
-      const reason = detail === "" ? "" : `: ${detail}`;
-      reject(
-        new GitError(
-          `git ${subcommand} failed with exit code ${code}${reason}`,
-          subcommand,
-          stdout,
-          stderr,
-          code,
-        ),
-      );
-    });
-  });
+  let result: ChildResult;
+  try {
+    result = await runChild("git", fullArgs, { cwd: location.path, env, signal });
+  } catch (error) {
+    const notFound = error instanceof CommandNotFoundError;
+    if ((notFound || (error as NodeJS.ErrnoException).code === "ENOTDIR") && !isFolder(location.path)) {
+      // Node reports a missing cwd as ENOENT and a cwd that is a file as ENOTDIR.
+      throw folderError(location);
+    }
+    if (notFound) {
+      throw new GitNotInstalledError(error.message);
+    }
+    throw error; // An AbortError and every other error pass through.
+  }
+  const { code, signal: stopSignal, stdout, stderr } = result;
+  if (code === 0) {
+    return stdout;
+  }
+  if (code === null) {
+    throw new GitError(
+      `git ${subcommand} was stopped by signal ${stopSignal}`,
+      subcommand,
+      stdout,
+      stderr,
+      null,
+    );
+  }
+  const detail = stderr.trim();
+  const reason = detail === "" ? "" : `: ${detail}`;
+  throw new GitError(
+    `git ${subcommand} failed with exit code ${code}${reason}`,
+    subcommand,
+    stdout,
+    stderr,
+    code,
+  );
 }
 
 function isFolder(path: string): boolean {
