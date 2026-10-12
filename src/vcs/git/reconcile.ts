@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   type UncommittedChange,
+  isAncestor,
   jsonPathList,
   nulFields,
   uncommittedRefusal,
@@ -57,6 +58,9 @@ const MERGE_OPTIONS = [
   "--no-verify-signatures",
   "--no-rerere-autoupdate",
 ];
+
+// The fast-forward only merge. It has no conflicts.
+const FAST_FORWARD_OPTIONS = ["--ff-only", "--no-squash", "--no-autostash"];
 
 // The place that a worktree starts from: the full revision of HEAD and the task branch.
 // The branch is undefined for a detached HEAD.
@@ -263,6 +267,12 @@ async function unmergedPaths(target: string, env: NodeJS.ProcessEnv): Promise<st
   }
 }
 
+function strategyArgs(strategy: ReconcileStrategy, base: string): string[] {
+  return strategy === "rebase"
+    ? ["rebase", ...REBASE_OPTIONS, base]
+    : ["merge", ...MERGE_OPTIONS, base];
+}
+
 // Brings the task worktree onto the base with a rebase or a merge. The base is a full revision
 // or a full ref. It gives the new head.
 export async function reconcileWorktree(o: {
@@ -276,9 +286,7 @@ export async function reconcileWorktree(o: {
   assertRevisionInput(baseRevision);
   const { target, start } = await prepare({ clone, env, path });
   const base = await resolveRevision({ clone, env, value: baseRevision });
-  const args =
-    strategy === "rebase" ? ["rebase", ...REBASE_OPTIONS, base] : ["merge", ...MERGE_OPTIONS, base];
-  await runStep({ target, env, start, args, kind: strategy, base });
+  await runStep({ target, env, start, args: strategyArgs(strategy, base), kind: strategy, base });
   return worktreeHead(target, env);
 }
 
@@ -300,4 +308,47 @@ export async function rebaseOnto(o: {
   const args = ["rebase", ...REBASE_OPTIONS, "--onto", onto, upstream];
   await runStep({ target, env, start, args, kind: "rebase", base: onto });
   return worktreeHead(target, env);
+}
+
+export interface ResyncResult {
+  moved: boolean;
+  how: "none" | "fast-forward" | "rebase" | "merge";
+  head: string;
+}
+
+// The one rule for the result: moved is true for every case except "none".
+async function resyncResult(
+  target: string,
+  env: NodeJS.ProcessEnv,
+  how: ResyncResult["how"],
+): Promise<ResyncResult> {
+  return { moved: how !== "none", how, head: await worktreeHead(target, env) };
+}
+
+// Brings the task worktree onto the base tip that the caller fetched. It does not fetch.
+// If the worktree holds the base already (for example someone merged the task into the base
+// outside tasker), nothing moves. If the base is ahead and the task has no other commits, it
+// fast-forwards. Else it runs the strategy, with the restore and the conflict rule of
+// reconcileWorktree().
+export async function resyncWorktree(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+  baseRevision: string;
+  strategy: ReconcileStrategy;
+}): Promise<ResyncResult> {
+  const { clone, env, path, baseRevision, strategy } = o;
+  assertRevisionInput(baseRevision);
+  const { target, start } = await prepare({ clone, env, path });
+  const base = await resolveRevision({ clone, env, value: baseRevision });
+  if (await isAncestor({ clone, env, ancestor: base, descendant: start.head })) {
+    return resyncResult(target, env, "none");
+  }
+  if (await isAncestor({ clone, env, ancestor: start.head, descendant: base })) {
+    const args = ["merge", ...FAST_FORWARD_OPTIONS, base];
+    await runStep({ target, env, start, args, kind: "merge", base });
+    return resyncResult(target, env, "fast-forward");
+  }
+  await runStep({ target, env, start, args: strategyArgs(strategy, base), kind: strategy, base });
+  return resyncResult(target, env, strategy);
 }
