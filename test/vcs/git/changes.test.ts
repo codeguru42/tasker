@@ -1,7 +1,12 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { changedPaths, NO_OWN_COMMITS, ownCommitsText, worktreeDiff } from "../../../src/vcs/git/changes.js";
+import {
+  changedPaths,
+  hasCommitsNotIn,
+  NO_OWN_COMMITS, ownCommitsText,
+  worktreeDiff,
+} from "../../../src/vcs/git/changes.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree, removeTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {
@@ -158,6 +163,34 @@ describe("git changes", () => {
       await commitInWorktree(path, env, { file: "feature.txt" });
       await moveBase();
       expect(await ownCommits()).not.toContain("base-only.txt");
+    });
+  });
+
+  describe("hasCommitsNotIn", () => {
+    const has = (head: string, others: readonly string[]) =>
+      hasCommitsNotIn({ clone, env, head, others });
+
+    it("is true for a branch commit that the base does not reach", async () => {
+      const sha = await commitInWorktree(path, env, { file: "feature.txt" });
+      expect(await has(sha, [BASE])).toBe(true);
+    });
+
+    it("is false when another revision reaches the head", async () => {
+      const sha = await commitInWorktree(path, env, { file: "feature.txt" });
+      expect(await has(sha, [BASE, sha])).toBe(false);
+    });
+
+    it("is false for a fresh branch", async () => {
+      expect(await has(`refs/heads/${BRANCH}`, [BASE])).toBe(false);
+    });
+
+    it("is true for each existing head when others is empty", async () => {
+      expect(await has(BASE, [])).toBe(true);
+    });
+
+    it("refuses a head that is not a full revision or a ref", async () => {
+      const error = await failureOf(has("main", [BASE]), Error);
+      expect(error.message).toBe('not a full revision or ref: "main"');
     });
   });
 });
