@@ -212,6 +212,53 @@ describe("task store", () => {
     );
   });
 
+  describe("find the active task and the latest task", () => {
+    const find = { repo: "tasker", issue: "codeguru42/tasker#6" };
+
+    it("finds no active task when the issue has no task", () => {
+      expect(store.findActiveTask(find.repo, find.issue)).toBeUndefined();
+    });
+
+    it("finds the active task", () => {
+      const task = store.createTask(newTask);
+      expect(store.findActiveTask(find.repo, find.issue)).toEqual(task);
+    });
+
+    it("finds no active task when the only task is cancelled", () => {
+      const task = store.createTask(newTask);
+      store.updateTask(task.id, { state: "cancelled" });
+      expect(store.findActiveTask(find.repo, find.issue)).toBeUndefined();
+    });
+
+    it("ignores the active task of the same issue in another repo", () => {
+      store.createTask({ ...newTask, repoKey: "other" });
+      expect(store.findActiveTask(find.repo, find.issue)).toBeUndefined();
+    });
+
+    it("finds no latest task when the issue has no task", () => {
+      expect(store.findLatestTask(find.repo, find.issue)).toBeUndefined();
+    });
+
+    it("finds the inactive task with the highest id", () => {
+      const a = store.createTask(newTask);
+      store.updateTask(a.id, { state: "cancelled" });
+      const b = store.createTask(newTask);
+      const finished = store.updateTask(b.id, { state: "finished" });
+      expect(store.findLatestTask(find.repo, find.issue)).toEqual(finished);
+    });
+
+    it("prefers the active task over an inactive task with a higher id", () => {
+      const active = store.createTask(newTask);
+      store.createTask({ ...newTask, state: "finished" });
+      expect(store.findLatestTask(find.repo, find.issue)).toEqual(active);
+    });
+
+    it("ignores the tasks of another repo", () => {
+      store.createTask({ ...newTask, repoKey: "other" });
+      expect(store.findLatestTask(find.repo, find.issue)).toBeUndefined();
+    });
+  });
+
   describe("active task index", () => {
     it("rejects a second active row for one repo and issue", () => {
       const before = eventCount();
