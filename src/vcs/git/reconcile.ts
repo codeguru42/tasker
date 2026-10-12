@@ -1,9 +1,49 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { type UncommittedChange, worktreeChanges, worktreeHead } from "./changes.js";
-import { isFullRevision } from "./refs.js";
+import {
+  type UncommittedChange,
+  uncommittedRefusal,
+  worktreeChanges,
+  worktreeHead,
+} from "./changes.js";
+import { assertRevisionInput, isFullRevision, resolveRevision } from "./refs.js";
 import { GitError, runGit } from "./run.js";
 import { assertTaskBranch, assertTaskWorktree } from "./worktree.js";
+
+export type ReconcileStrategy = "rebase" | "merge";
+
+// The options of every rebase. They stop the configuration of the user from changing the rebase.
+// --merge forces rebase-merge/, --no-autostash and --no-update-refs stop rebase.autoStash and
+// rebase.updateRefs, --no-rebase-merges gives a linear history, --no-gpg-sign stops a gpg
+// failure, --no-verify skips the pre-rebase hook, and --no-rerere-autoupdate keeps a conflict
+// unmerged. "-c" is not possible, because runGit() removes the GIT_CONFIG_* variables.
+const REBASE_OPTIONS = [
+  "--merge",
+  "--no-autostash",
+  "--no-update-refs",
+  "--no-rebase-merges",
+  "--no-gpg-sign",
+  "--no-verify",
+  "--no-rerere-autoupdate",
+];
+
+// The options of every merge. -s ort stops pull.twohead, --ff and --commit and --no-squash stop
+// merge.ff and branch.<name>.mergeOptions, --no-edit stops GIT_MERGE_AUTOEDIT, --no-log stops
+// merge.log, and the other options stop the autostash, gpg, hooks, signatures and rerere.
+const MERGE_OPTIONS = [
+  "-s",
+  "ort",
+  "--ff",
+  "--commit",
+  "--no-squash",
+  "--no-edit",
+  "--no-log",
+  "--no-autostash",
+  "--no-gpg-sign",
+  "--no-verify",
+  "--no-verify-signatures",
+  "--no-rerere-autoupdate",
+];
 
 // The place that a worktree starts from: the full revision of HEAD and the task branch.
 // The branch is undefined for a detached HEAD.
@@ -145,4 +185,46 @@ export async function restoreWorktree(o: {
   if (start.branch !== undefined) assertTaskBranch(start.branch);
   const target = await assertTaskWorktree({ clone, env, path });
   await restoreAt(target, env, start);
+}
+
+// The guard, the clean check and the start read. The restore deletes uncommitted work, so a
+// worktree with changes is refused before any step runs.
+async function prepare(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+}): Promise<{ target: string; start: StartState }> {
+  const { clone, env, path } = o;
+  const target = await assertTaskWorktree({ clone, env, path });
+  const { changes, ...start } = await stateAt(target, env);
+  if (changes.length > 0) throw new Error(uncommittedRefusal(target, changes));
+  return { target, start };
+}
+
+// Runs one git step in the worktree.
+async function runStep(o: {
+  target: string;
+  env: NodeJS.ProcessEnv;
+  args: string[];
+}): Promise<void> {
+  await runGit(o.args, { cwd: o.target, env: o.env });
+}
+
+// Brings the task worktree onto the base with a rebase or a merge. The base is a full revision
+// or a full ref. It gives the new head.
+export async function reconcileWorktree(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+  baseRevision: string;
+  strategy: ReconcileStrategy;
+}): Promise<string> {
+  const { clone, env, path, baseRevision, strategy } = o;
+  assertRevisionInput(baseRevision);
+  const { target } = await prepare({ clone, env, path });
+  const base = await resolveRevision({ clone, env, value: baseRevision });
+  const args =
+    strategy === "rebase" ? ["rebase", ...REBASE_OPTIONS, base] : ["merge", ...MERGE_OPTIONS, base];
+  await runStep({ target, env, args });
+  return worktreeHead(target, env);
 }
