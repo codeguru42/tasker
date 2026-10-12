@@ -103,6 +103,51 @@ describe("readGithubBlockers", () => {
     expect(error.message).toContain("gh api graphql gave bad output for octo/kit#7:");
   });
 
+  it("reads every page, with the cursor of the page before", async () => {
+    const fake = fakeWith(
+      {
+        args: graphqlArgs("octo", "repo", "7"),
+        stdout: pageJson([node(3, "OPEN", "octo/repo")], { hasNextPage: true, endCursor: "MQ" }),
+      },
+      {
+        args: graphqlArgs("octo", "repo", "7", "MQ"),
+        stdout: pageJson([node(9, "CLOSED", "other/lib")], { hasNextPage: false, endCursor: "Mg" }),
+      },
+    );
+    await expect(readGithubBlockers(ref, "octo", fake.env)).resolves.toEqual([
+      { key: "octo/repo#3", state: "open" },
+      { key: "other/lib#9", state: "closed" },
+    ]);
+    expect(fake.calls().map((call) => call.args)).toEqual([
+      ["auth", "token", "--hostname", "github.com", "--user", "octo"],
+      graphqlArgs("octo", "repo", "7"),
+      graphqlArgs("octo", "repo", "7", "MQ"),
+    ]);
+  });
+
+  it.each([
+    [
+      "a page with more pages and no cursor",
+      [{ hasNextPage: true, endCursor: null }],
+    ],
+    [
+      "a second page that gives the same cursor again",
+      [
+        { hasNextPage: true, endCursor: "MQ" },
+        { hasNextPage: true, endCursor: "MQ" },
+      ],
+    ],
+  ])("gives bad output for %s", async (_name, pages) => {
+    const answers = pages.map((pageInfo, index) => ({
+      args: graphqlArgs("octo", "repo", "7", index === 0 ? undefined : pages[index - 1].endCursor ?? undefined),
+      stdout: pageJson([], pageInfo),
+    }));
+    const fake = fakeWith(...answers);
+    const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.message).toContain("gh api graphql gave bad output for octo/repo#7:");
+  });
+
   it("runs the graphql call with the token of the account", async () => {
     const fake = fakeWith({ args: graphqlArgs("octo", "repo", "7"), stdout: pageJson([]) });
     await readGithubBlockers(ref, "octo", fake.env);
