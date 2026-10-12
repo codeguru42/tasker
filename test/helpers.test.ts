@@ -2,7 +2,10 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { loadConfig } from "../src/config/load.js";
 import { parseConfig } from "../src/config/schema.js";
+import { IssueKeyError } from "../src/issue-key/ref.js";
+import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { openStore } from "../src/store/store.js";
 import { createDataRoot } from "../src/store/layout.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -10,19 +13,24 @@ import { createTaskWorktree } from "../src/vcs/git/worktree.js";
 import {
   addCloneCommit,
   commitInWorktree,
+  dayAt,
   failureOf,
   fakeGh,
   fakeSsh,
   GIT_TEST_IDENTITY,
+  greet,
   ghTokenAnswer,
   gitTestEnv,
+  issueKeyErrorMessage,
   localBranches,
   makeGitClone,
   makeGitOrigin,
   makeTempDir,
+  runCommand,
   seedTasks,
   sshKeyArgs,
   threeRepoConfig,
+  useThreeRepoDataRoot,
   validConfig,
   writeDataRootConfig,
   writeFakeGh,
@@ -569,5 +577,73 @@ describe("seedTasks with more fields", () => {
     } finally {
       store.close();
     }
+  });
+});
+
+describe("dayAt", () => {
+  it("gives 00:00 UTC of a day in January 2026", () => {
+    expect(dayAt(2)).toBe("2026-01-02T00:00:00.000Z");
+    expect(dayAt(12)).toBe("2026-01-12T00:00:00.000Z");
+  });
+});
+
+describe("useThreeRepoDataRoot", () => {
+  let written: ReturnType<typeof useThreeRepoDataRoot>;
+
+  it("points TASKER_CONFIG at the written configuration", () => {
+    written = useThreeRepoDataRoot();
+
+    expect(process.env.TASKER_CONFIG).toBe(written.path);
+    expect(written.dataRoot).toBe(join(written.dir, "data"));
+    expect(JSON.parse(readFileSync(written.path, "utf8"))).toEqual({
+      ...threeRepoConfig(),
+      dataRoot: written.dataRoot,
+    });
+  });
+
+  it("removes the folder and the env stub after the test", () => {
+    expect(existsSync(written.dir)).toBe(false);
+    expect(process.env.TASKER_CONFIG).not.toBe(written.path);
+  });
+});
+
+describe("runCommand", () => {
+  it("gives the help text and code 0 for --help", async () => {
+    const result = await runCommand(greet, "greet", "--help");
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe("");
+    expect(result.out).toContain("Say hello");
+    expect(result.out).toContain("Who to greet");
+  });
+
+  it("gives code 1 and an error on stderr for an unknown option", async () => {
+    const result = await runCommand(greet, "greet", "--bogus");
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe("");
+    expect(result.err).toContain("--bogus");
+  });
+});
+
+describe("issueKeyErrorMessage", () => {
+  it("gives the message of the error that resolveIssueKey throws", () => {
+    const { path } = useThreeRepoDataRoot();
+    let expected = "";
+    try {
+      resolveIssueKey("nobody/else#1", loadConfig({ TASKER_CONFIG: path }));
+    } catch (error) {
+      if (!(error instanceof IssueKeyError)) throw error;
+      expected = error.message;
+    }
+
+    expect(expected).not.toBe("");
+    expect(issueKeyErrorMessage("nobody/else#1", path)).toBe(expected);
+  });
+
+  it("fails the test for a key that resolves", () => {
+    const { path } = useThreeRepoDataRoot();
+
+    expect(() => issueKeyErrorMessage("codeguru42/other#1", path)).toThrow();
   });
 });
