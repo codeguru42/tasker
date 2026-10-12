@@ -1,7 +1,6 @@
 import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
-import { ISSUE_NUMBER } from "../../issue-key/github.js";
-import { JIRA_PROJECT, SITE_LABEL } from "../../issue-key/jira.js";
+import { ISSUE_NUMBER, JIRA_PROJECT, SITE_LABEL } from "../../issue-key/short-ref.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { GitError, runGit } from "./run.js";
 
