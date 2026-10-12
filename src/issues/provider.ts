@@ -1,3 +1,11 @@
+import type { RepoConfig } from "../config/schema.js";
+import type { Check } from "../doctor/check.js";
+import type { IssueRef } from "../issue-key/ref.js";
+import type { Blocker, Issue } from "./issue.js";
+
+// The id of an issue tracker: the value of issueTracker.provider.
+export type IssueTrackerId = RepoConfig["issueTracker"]["provider"];
+
 // The result of authStatus(). login is the login that the token of the account belongs to.
 // needsLogin is true only when a new login is the fix: a failed token call, an empty login,
 // another login, or a 401 of gh api user.
@@ -6,4 +14,43 @@ export interface AuthStatus {
   login?: string;
   detail: string;
   needsLogin: boolean;
+}
+
+/**
+ * The issue tracker operations of tasker. A command gets a provider from issueProviderFor()
+ * and never imports from src/issues/github/. Each operation has the errors and the side effects
+ * of its GitHub function, and no others.
+ */
+export interface IssueProvider {
+  // "github". Later also "jira".
+  readonly id: IssueTrackerId;
+  // The pinned identity of the tracker, if it has one. For github, issueTracker.account.
+  readonly account: string | undefined;
+  // The IssueRef of rawKey in a repo with this project, with the stored spelling <project>#<N>,
+  // or undefined for a key of another project. It throws the IssueKeyError of the parser for a
+  // key of the wrong form. It takes the project because one provider serves many repos. It is the
+  // entry of KEY_PARSERS in src/issue-key/resolve.ts.
+  parse(rawKey: string, repoKey: string, project: string): IssueRef | undefined;
+  // Reads the issue.
+  fetchIssue(ref: IssueRef, env: NodeJS.ProcessEnv): Promise<Issue>;
+  // Whether the credentials work, and as which account. signal stops the call.
+  authStatus(env: NodeJS.ProcessEnv, options?: { signal?: AbortSignal }): Promise<AuthStatus>;
+  // A base branch named on the issue, or undefined. No tracker call.
+  baseBranchHint(issue: Issue): string | undefined;
+  // Every blocker with its state. A provider with no blocking links gives [].
+  blockingIssues(ref: IssueRef, env: NodeJS.ProcessEnv): Promise<Blocker[]>;
+  // Adds an assignee. The caller passes issueTracker.assignee.
+  assign(ref: IssueRef, assignee: string, env: NodeJS.ProcessEnv): Promise<void>;
+  // Marks the issue in progress. target is issueTracker.inProgressLabel. The caller reads
+  // issueTracker.updateOnStart to decide if it calls this write at all.
+  transitionStatus(ref: IssueRef, target: string, env: NodeJS.ProcessEnv): Promise<void>;
+  // Whether the issue has the in-progress marker. target is issueTracker.inProgressLabel.
+  // No tracker call.
+  inProgressMarker(issue: Issue, target: string | undefined): boolean;
+  // Marks the issue done. target is issueTracker.doneLabel. With a label, the label is added and
+  // the issue stays open. With undefined, the issue closes as completed. The caller reads
+  // issueTracker.updateOnFinish to decide if it calls this write at all.
+  markDone(ref: IssueRef, target: string | undefined, env: NodeJS.ProcessEnv): Promise<void>;
+  // The doctor checks of the provider. The checks do not run until the caller runs them.
+  readonly doctorChecks: Check[];
 }
