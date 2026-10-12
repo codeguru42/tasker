@@ -159,9 +159,10 @@ describe("git reconcile", () => {
       writeFileSync(join(clone, "refs", "heads", `${BRANCH}.lock`), "");
       await failureOf(git("rebase", base), GitError);
       const detachedHead = await git("rev-parse", "HEAD");
+      // The failed checkout has already staged the removal of the base file.
       const error = await failureOf(restore(start), Error);
       expect(error.message.startsWith(
-        `cannot restore the worktree: ${target}: HEAD is at ${detachedHead}, detached. ` +
+        `cannot restore the worktree: ${target}: HEAD is at ${detachedHead}, detached, 1 uncommitted changes. ` +
           `Run these git commands in the worktree, in this order: ` +
           `git checkout --force -B ${BRANCH} ${start.head}: `,
       )).toBe(true);

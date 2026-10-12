@@ -16,6 +16,11 @@ export interface WorktreeState extends StartState {
   changes: UncommittedChange[];
 }
 
+export interface FoundState extends WorktreeState {
+  rebase: boolean;
+  merge: boolean;
+}
+
 // Reads the state of the worktree. The target must be the real path from assertTaskWorktree().
 // The branch comes from "symbolic-ref -q HEAD". Exit code 1 means a detached HEAD. Every other
 // failure passes through.
@@ -81,6 +86,47 @@ async function restoreAt(target: string, env: NodeJS.ProcessEnv, start: StartSta
       : ["checkout", "--force", "-B", start.branch, start.head],
   );
   await attempt(["clean", "-fd"]);
+  const found: FoundState = { ...(await stateAt(target, env)), ...(await inProgress(target, env)) };
+  const right =
+    found.head === start.head &&
+    found.branch === start.branch &&
+    found.changes.length === 0 &&
+    !found.rebase &&
+    !found.merge;
+  if (right) return;
+  const n = found.changes.length;
+  const where = found.branch === undefined ? "detached" : `on the branch ${found.branch}`;
+  const stderr = stderrs[0] === undefined || stderrs[0] === "" ? "" : `: ${stderrs[0]}`;
+  throw new Error(
+    `cannot restore the worktree: ${target}: HEAD is at ${found.head}, ${where}` +
+      `${found.rebase ? ", a rebase is in progress" : ""}` +
+      `${found.merge ? ", a merge is in progress" : ""}` +
+      `${n > 0 ? `, ${n} uncommitted changes` : ""}. ` +
+      `Run these git commands in the worktree, in this order: ` +
+      `${restoreCommands(start, found).join(", then ")}${stderr}`,
+  );
+}
+
+// The git commands that fit a wrong state, in order. It is exported because the fixture cannot
+// make each state: a rebase or a merge in progress appears only when "rebase --quit" or the
+// checkout fails. A pure test covers each row.
+export function restoreCommands(start: StartState, found: FoundState): string[] {
+  const commands: string[] = [];
+  if (found.rebase) commands.push("git rebase --abort");
+  if (found.merge) commands.push("git merge --abort");
+  const wrongPlace =
+    found.head !== start.head ||
+    (start.branch === undefined ? found.branch !== undefined : found.branch !== start.branch);
+  if (wrongPlace) {
+    commands.push(
+      start.branch === undefined
+        ? `git checkout --force --detach ${start.head}`
+        : `git checkout --force -B ${start.branch} ${start.head}`,
+    );
+  }
+  if (!wrongPlace && found.changes.some((c) => c.status !== "??")) commands.push("git reset --hard");
+  if (found.changes.some((c) => c.status === "??")) commands.push("git clean -fd");
+  return commands;
 }
 
 // Puts the task worktree back at the start. The caller must find the worktree clean before the
