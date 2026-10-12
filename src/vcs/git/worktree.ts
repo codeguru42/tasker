@@ -49,3 +49,7 @@ export function taskBranchName(shortRef: string, title: string): string {
   const slug = pathSlug(first.slice(0, room));
   return `${shortRef}-${slug}`;
 }
+
+export function taskWorktreePath(worktrees: string, shortRef: string): string {
+  throw new Error(`not implemented: ${worktrees} ${shortRef}`);
+}

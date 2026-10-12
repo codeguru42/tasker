@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runGit } from "../../../src/vcs/git/run.js";
-import { taskBranchName } from "../../../src/vcs/git/worktree.js";
+import { taskBranchName, taskWorktreePath } from "../../../src/vcs/git/worktree.js";
 import { makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers.js";
 
 describe("taskBranchName", () => {
@@ -26,6 +26,14 @@ describe("taskBranchName with a bad short ref", () => {
   it("gives a short ref of exactly 100 characters alone", () => {
     const shortRef = "a".repeat(100);
     expect(taskBranchName(shortRef, "Fix it")).toBe(shortRef);
+  });
+});
+
+describe("taskWorktreePath", () => {
+  it("puts the worktree in the worktrees folder, named after the short ref", () => {
+    expect(taskWorktreePath("/data/worktrees/x", "issue-14")).toBe(
+      join("/data/worktrees/x", "issue-14"),
+    );
   });
 });
 
