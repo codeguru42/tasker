@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import type { GitVcsConfig } from "./provision.js";
@@ -15,9 +15,15 @@ export const EXECUTE_COMMIT_TEXT = [
 // The deny rules for the shell of the assistant, in the rule syntax of Claude Code.
 export const DENY_RULES: readonly string[] = ["Bash(git push:*)"];
 
-// The files that the sandbox must not read: the ssh key, when it is set. A "~/" key resolves
-// against the home folder, as ssh does. Any other key must be absolute. tasker cannot resolve
-// another key, and a deny path that tasker cannot resolve leaves the key open, so it throws.
+// The files that the sandbox must not read: the ssh key, when it is set.
+// - No key: no path.
+// - A key that is not "~/" and not absolute: throws, because tasker cannot resolve it, and a deny
+//   path that tasker cannot resolve leaves the key open.
+// - A "~/" key resolves against the home folder, as ssh does.
+// - A missing key file: the path alone. ssh cannot open the key either.
+// - A key with no symlink: the path alone.
+// - A key with a symlink in the file or in a folder on its path: the path, then the real path,
+//   because ssh opens the real file.
 export function readDenyPaths(config: GitVcsConfig): string[] {
   const key = config.sshKey;
   if (key === undefined) return [];
@@ -25,7 +31,14 @@ export function readDenyPaths(config: GitVcsConfig): string[] {
   if (!isAbsolute(path)) {
     throw new Error(`cannot resolve the ssh key path for the sandbox: ${key}`);
   }
-  return [path];
+  let real: string;
+  try {
+    real = realpathSync(path);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [path];
+    throw error;
+  }
+  return real === path ? [path] : [path, real];
 }
 
 // The folders that a git commit in the task worktree writes to, as absolute paths:
