@@ -1,5 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { pathSlug } from "../issue-key/path-slug.js";
+import type { Task } from "./store.js";
 
 export interface DataRootLayout {
   root: string;
@@ -24,4 +26,16 @@ export function createDataRoot(dataRoot: string): DataRootLayout {
     mkdirSync(path, { recursive: true });
   }
   return layout;
+}
+
+// The folder of the files of one attempt. It makes no folder.
+export function taskArtifactsDir(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+): string {
+  return join(
+    dataRootLayout(dataRoot).artifacts,
+    pathSlug(task.issueKey),
+    `attempt-${task.attempt}`,
+  );
 }
