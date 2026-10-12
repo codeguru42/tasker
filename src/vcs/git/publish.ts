@@ -1,4 +1,5 @@
 import { pushWithToken } from "./push-guard.js";
+import { remoteTip } from "./remote-tip.js";
 import { taskBranchRevision } from "./worktree.js";
 
 interface RemoteOptions {
@@ -24,8 +25,12 @@ export interface PublishResult {
 export async function publishTaskBranch(
   options: RemoteOptions & { branch: string; published: string | undefined },
 ): Promise<PublishResult> {
-  const { clone, publishTokens, sshKey, env, branch } = options;
+  const { clone, remote, publishTokens, sshKey, env, branch } = options;
   const revision = await taskBranchRevision({ clone, env, branch });
+  const tip = await remoteTip({ remote, branch, sshKey, env });
+  if (tip.state === "present" && tip.revision === revision) {
+    return { state: "already-published", branch, revision, lease: false };
+  }
   await pushWithToken(
     [
       `--force-with-lease=refs/heads/${branch}:`,
