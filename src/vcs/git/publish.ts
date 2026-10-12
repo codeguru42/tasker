@@ -138,7 +138,9 @@ export async function landOnBase(
 export async function deleteRemoteTaskBranch(
   options: RemoteOptions & { branch: string; published: string },
 ): Promise<{ state: "deleted" | "already-gone" }> {
-  const { clone, publishTokens, sshKey, env, branch, published } = options;
+  const { clone, remote, publishTokens, sshKey, env, branch, published } = options;
+  const tip = await remoteTip({ remote, branch, sshKey, env });
+  if (tip.state === "absent") return { state: "already-gone" };
   await pushWithToken(
     [`--force-with-lease=refs/heads/${branch}:${published}`, "origin", `:refs/heads/${branch}`],
     { location: { gitDir: clone }, publishTokens, sshKey, env },
