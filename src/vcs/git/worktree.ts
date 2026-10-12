@@ -2,7 +2,8 @@ import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, statSync }
 import { basename, dirname, join, resolve } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { isShortRef, SHORT_REF } from "../../issue-key/short-ref.js";
-import { GitError, runGit } from "./run.js";
+import { refExists, refRevision } from "./refs.js";
+import { runGit } from "./run.js";
 
 const MAX_BRANCH_LENGTH = 100;
 
@@ -119,24 +120,6 @@ function canonicalPath(path: string): string {
   }
 }
 
-// True when refs/heads/<branch> exists in the clone. show-ref matches only the exact ref.
-async function branchExists(
-  clone: string,
-  env: NodeJS.ProcessEnv,
-  branch: string,
-): Promise<boolean> {
-  try {
-    await runGit(["show-ref", "--verify", "--quiet", "--", `refs/heads/${branch}`], {
-      gitDir: clone,
-      env,
-    });
-    return true;
-  } catch (error) {
-    if (error instanceof GitError && error.exitCode === 1) return false;
-    throw error;
-  }
-}
-
 function isFile(path: string): boolean {
   try {
     return statSync(path).isFile();
@@ -208,7 +191,7 @@ export async function createTaskWorktree(options: {
   if (!isMissingOrEmptyFolder(target)) {
     throw new Error(`something else is at the worktree path: ${target}`);
   }
-  if (await branchExists(clone, env, branch)) {
+  if (await refExists({ clone, env, ref: `refs/heads/${branch}` })) {
     await runGit(["worktree", "add", "--", target, branch], { gitDir: clone, env });
     return "reused-branch";
   }
@@ -278,12 +261,7 @@ export async function taskBranchRevision(options: {
 }): Promise<string> {
   const { clone, env, branch } = options;
   assertTaskBranch(branch);
-  if (!(await branchExists(clone, env, branch))) {
-    throw new Error(`cannot resolve the task branch: ${branch}`);
-  }
-  const out = await runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {
-    gitDir: clone,
-    env,
-  });
-  return out.trim();
+  const revision = await refRevision({ clone, env, ref: `refs/heads/${branch}` });
+  if (revision === undefined) throw new Error(`cannot resolve the task branch: ${branch}`);
+  return revision;
 }

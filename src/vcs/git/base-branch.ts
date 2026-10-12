@@ -1,4 +1,4 @@
-import { GitError, runGit } from "./run.js";
+import { refExists } from "./refs.js";
 import { runRemoteGit } from "./ssh.js";
 
 const REMOTE_PREFIXES = ["refs/remotes/origin/", "origin/"];
@@ -57,18 +57,9 @@ interface ResolvedBase {
   notes: string[];
 }
 
-// True when the ref of base exists in the clone. Exit 1 of show-ref means that the ref is missing.
-async function exists(clone: string, env: NodeJS.ProcessEnv, base: string): Promise<boolean> {
-  try {
-    await runGit(["show-ref", "--verify", "--quiet", "--", baseRevision(base)], {
-      gitDir: clone,
-      env,
-    });
-    return true;
-  } catch (error) {
-    if (error instanceof GitError && error.exitCode === 1) return false;
-    throw error;
-  }
+// True when the ref of base exists in the clone.
+function exists(clone: string, env: NodeJS.ProcessEnv, base: string): Promise<boolean> {
+  return refExists({ clone, env, ref: baseRevision(base) });
 }
 
 // Fetches origin, then picks the base branch of a task. The sources come in this order:

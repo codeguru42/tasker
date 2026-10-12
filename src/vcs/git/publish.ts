@@ -1,5 +1,6 @@
 import { LOCAL_PREFIX } from "./base-branch.js";
 import { pushWithToken } from "./push-guard.js";
+import { isFullRevision } from "./refs.js";
 import { GitError } from "./run.js";
 import { type RemoteTip, remoteTip } from "./remote-tip.js";
 import { assertTaskBranch, assertTaskBranchShape, taskBranchRevision } from "./worktree.js";
@@ -25,7 +26,7 @@ export interface PublishResult {
 
 // Throws unless value is a full revision of the clone: 40 lower-case hex characters.
 function assertRevision(name: string, value: string): void {
-  if (!/^[0-9a-f]{40}$/.test(value)) {
+  if (!isFullRevision(value)) {
     throw new Error(`${name} is not a full revision: ${JSON.stringify(value)}`);
   }
 }
