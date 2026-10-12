@@ -15,6 +15,7 @@ tasker keeps all of its data under one folder, the `dataRoot` of the configurati
 | `<dataRoot>/clones/<slug>/repo.git/tasker-ssh.config` | The include file with the ssh command (`core.sshCommand`). Provision writes it, and `include.path` links it. See [docs/dev/version-control.md](version-control.md#provision). |
 | `<dataRoot>/clones/<slug>/publish-tokens/` | The publish tokens of one repo. |
 | `<dataRoot>/worktrees/<slug>/` | The worktrees of the tasks of one repo. |
+| `<dataRoot>/worktrees/<slug>/<shortRef>/` | The worktree of one task. |
 | `<dataRoot>/artifacts/` | The files that tasks produce. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
 

@@ -10,6 +10,7 @@ All code that starts `git` lives in `src/vcs/git/`. No command uses this code ye
 - `src/vcs/git/default-branch.ts` holds `remoteDefaultBranch()`.
 - `src/vcs/git/provision.ts` holds `provisionClone()`.
 - `src/vcs/git/base-branch.ts` holds `parseBaseInput()`, `baseRevision()` and `resolveBaseBranch()`.
+- `src/vcs/git/worktree.ts` holds `taskBranchName()`, `taskWorktreePath()`, `listWorktrees()`, `createTaskWorktree()`, `removeTaskWorktree()`, `deleteTaskBranch()`, `discardWorktreeChanges()` and `taskBranchRevision()`.
 - `src/vcs/git/push-guard.ts` holds `installPushHook()` and `pushWithToken()`.
 - `src/vcs/git/remote-tip.ts` holds `remoteTip()` and `tipMoved()`.
 
@@ -23,7 +24,7 @@ This section describes the design. No command uses this code yet.
 
 tasker makes one bare clone for each repo that it owns. The clone is at the `clone` path of `repoPaths()`: `<dataRoot>/clones/<slug>/repo.git`. A bare clone has no work tree.
 
-tasker starts each task in its own worktree. tasker makes the worktree from the bare clone. The worktree is under the `worktrees` path of `repoPaths()`: `<dataRoot>/worktrees/<slug>/`.
+tasker starts each task in its own worktree. tasker makes the worktree from the bare clone. The worktree is under the `worktrees` path of `repoPaths()`: `<dataRoot>/worktrees/<slug>/`. Each task worktree is at `<worktrees>/<shortRef>`, on its task branch (see [workspaces.md](workspaces.md#workspaces)).
 
 tasker never works directly in the bare clone. Task work happens only in the worktree of the task.
 
