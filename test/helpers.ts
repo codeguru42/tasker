@@ -169,6 +169,11 @@ async function writeAndCommit(
   return (await runGit(["rev-parse", "HEAD"], { cwd: folder, env })).trim();
 }
 
+// True when path is folder or inside it.
+export function isInside(path: string, folder: string): boolean {
+  return path === folder || path.startsWith(folder + sep);
+}
+
 // The absolute path of file in work. It throws with refusal as the text before the file
 // when the path is not inside work.
 function resolveInside(work: string, file: string, refusal: string): string {

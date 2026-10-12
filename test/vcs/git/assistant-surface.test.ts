@@ -12,7 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { userInfo } from "node:os";
-import { join, relative, sep } from "node:path";
+import { join, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DENY_RULES,
@@ -26,6 +26,7 @@ import {
   commitInWorktree,
   failureOf,
   gitCloneTokens,
+  isInside,
   makeGitClone,
   makeGitOrigin,
   makeTempDir,
@@ -86,9 +87,6 @@ function snapshot(folder: string): Map<string, string> {
   }
   return files;
 }
-
-// True when path is folder or inside it.
-const isInside = (path: string, folder: string) => path === folder || path.startsWith(folder + sep);
 
 describe("assistant surface values", () => {
   it("gives the commit rules of the execute prompt", () => {
