@@ -19,7 +19,7 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/` | The files of one attempt of a task. The issue slug comes from the issue key. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
 
-`<slug>` comes from the repo key. [version-control.md](version-control.md) describes the slug. tasker does not make the folders of a repo at the first start.
+`<slug>` comes from the repo key. [version-control.md](version-control.md) describes the slug. The setup of the data root does not make the folders of a repo. Provision makes them.
 
 SQLite runs in WAL mode (write-ahead log). It also makes `tasker.db-wal` and `tasker.db-shm` next to the database file. Do not delete these files while a tasker process runs.
 
@@ -35,7 +35,7 @@ If a database of version 3 holds two active rows for one pair, the upgrade to ve
 
 ## `events` table
 
-The table is an append-only log. Each event belongs to one task. The store writes each event in the same transaction as its row change. See [the code of the state machine](../statemachine.md#code).
+The table is an append-only log. Each event belongs to one task. See [Writes from more than one process](#writes-from-more-than-one-process).
 
 Two triggers make the table append-only. An `UPDATE` or a `DELETE` on `events` fails. This holds for raw SQL too, not only for the store functions. A later cleanup of old events (`retentionDays`) must drop or replace these triggers in a new schema version.
 
