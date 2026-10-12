@@ -223,6 +223,31 @@ describe("git fixture", () => {
     });
   });
 
+  describe("createTaskWorktree, reused worktree", () => {
+    const head = (branch: string) =>
+      runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {
+        gitDir: clone,
+        env,
+      }).then((out) => out.trim());
+
+    it("uses the worktree again and does not move the branch", async () => {
+      expect(await create()).toBe("created");
+      const before = await head("issue-1-x");
+      expect(await create()).toBe("reused-worktree");
+      expect(await head("issue-1-x")).toBe(before);
+      expect(await listWorktrees({ clone, env })).toHaveLength(1);
+    });
+
+    it("uses the worktree again when the worktrees folder is a symlink", async () => {
+      const real = join(origin.dir, "real-worktrees");
+      mkdirSync(real);
+      symlinkSync(real, worktrees);
+      expect(await create()).toBe("created");
+      expect(await create()).toBe("reused-worktree");
+      expect(await listWorktrees({ clone, env })).toHaveLength(1);
+    });
+  });
+
   describe("taskBranchName for any title", () => {
     // The room for the slug after "issue-7-" is 100 - 7 - 1 = 92 characters.
     it.each([
