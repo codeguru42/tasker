@@ -199,3 +199,24 @@ export function ghLabelsCheck(repo: GithubDoctorRepo, timeoutMs = 15000): Check 
     },
   );
 }
+
+// The doctor checks of the repos that use the github tracker, in this order:
+// 1. The version check, once, and only when at least one repo uses the github tracker.
+//    No github repo gives [].
+// 2. One auth check for each distinct account, in the order of first use. The match is exact,
+//    the same as the token cache of runGh().
+// 3. For each github repo, in the order of the configuration, the project check and then the
+//    labels check.
+// The checks never change GitHub. They make only read-only gh calls.
+export function githubDoctorChecks(repos: readonly GithubDoctorRepo[]): Check[] {
+  const github = repos.filter((repo) => repo.issueTracker.provider === "github");
+  if (github.length === 0) {
+    return [];
+  }
+  const accounts = new Set(github.map(accountOf));
+  return [
+    ghVersionCheck(),
+    ...[...accounts].map((account) => ghAuthCheck(account)),
+    ...github.flatMap((repo) => [ghProjectCheck(repo), ghLabelsCheck(repo)]),
+  ];
+}
