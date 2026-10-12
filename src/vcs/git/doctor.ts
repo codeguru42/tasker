@@ -2,7 +2,7 @@ import { existsSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
 import { relative } from "node:path";
 import type { Check, CheckResult } from "../../doctor/check.js";
-import type { GitVcsConfig } from "./provision.js";
+import type { GitVcsConfig } from "./config.js";
 import { GitError, GitNotInstalledError, runGit } from "./run.js";
 import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
 import {

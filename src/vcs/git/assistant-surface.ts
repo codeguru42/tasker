@@ -1,7 +1,7 @@
 import { mkdirSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
-import type { GitVcsConfig } from "./provision.js";
+import type { GitVcsConfig } from "./config.js";
 import { runGit } from "./run.js";
 import { homeKeyPath } from "./ssh.js";
 import { assertTaskWorktree, withoutLineEnd } from "./worktree.js";

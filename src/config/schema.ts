@@ -1,6 +1,7 @@
 import { isAbsolute } from "node:path";
 import { z } from "zod";
 import { ALLOWED_ENV_NAMES } from "./allowed-env-names.js";
+import { vcsConfigSchema } from "../vcs/config-schema.js";
 import { expandPath } from "./expand.js";
 
 const positive = z.number().positive();
@@ -42,16 +43,21 @@ const ForgeSchema = z.strictObject({
   mergeMethod: z.enum(["merge", "squash", "rebase"]).default("merge"),
 });
 
-const GitConfigSchema = z.strictObject({
-  authorName: nonEmpty.optional(),
-  authorEmail: nonEmpty.optional(),
-  sshKey: nonEmpty.optional(),
-});
+export const VCS_PROVIDER_IDS = ["git"] as const; // the vcs.provider enum
+export type VcsProviderId = (typeof VCS_PROVIDER_IDS)[number];
 
-const VcsSchema = z.strictObject({
-  provider: z.literal("git").default("git"),
-  config: GitConfigSchema.default({}),
-});
+function vcsBranch<P extends VcsProviderId>(provider: P) {
+  return z.strictObject({
+    provider: z.literal(provider),
+    config: vcsConfigSchema(provider).default({}),
+  });
+}
+
+// The preprocess only fills in the default provider on a copy. It never adds an issue and never changes raw.
+const VcsSchema = z.preprocess(
+  (value) => (isObject(value) && value.provider === undefined ? { ...value, provider: "git" } : value),
+  z.discriminatedUnion("provider", [vcsBranch("git")]),
+);
 
 const nonEmptyList = z.array(nonEmpty).min(1);
 
@@ -240,6 +246,7 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
 }
 
 export type Config = z.output<ReturnType<typeof buildConfigSchema>>;
+export type RepoConfig = Config["repos"][string];
 
 export function formatIssues(issues: readonly z.core.$ZodIssue[]): string[] {
   const lines: string[] = [];

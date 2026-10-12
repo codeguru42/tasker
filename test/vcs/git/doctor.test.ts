@@ -10,7 +10,7 @@ import {
   identityCheck,
   staleLockCheck,
 } from "../../../src/vcs/git/doctor.js";
-import type { GitVcsConfig } from "../../../src/vcs/git/provision.js";
+import type { GitVcsConfig } from "../../../src/vcs/git/config.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { type ProcView, readProcView } from "../../../src/vcs/git/stale-locks.js";
 import {

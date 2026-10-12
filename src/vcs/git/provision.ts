@@ -1,17 +1,11 @@
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import type { GitVcsConfig } from "./config.js";
 import { installPushHook } from "./push-guard.js";
 import { GitError, runGit } from "./run.js";
 import { cloneUrl, remoteCwd, remoteNotAnswering, runRemoteGit, sshCommand } from "./ssh.js";
 
 const INCLUDE_FILE = "tasker-ssh.config";
-
-// The same structure as the output of GitConfigSchema, so a caller passes repo.vcs.config.
-export interface GitVcsConfig {
-  authorName?: string;
-  authorEmail?: string;
-  sshKey?: string;
-}
 
 export interface ProvisionOptions {
   remote: string;

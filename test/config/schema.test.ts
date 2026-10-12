@@ -423,6 +423,30 @@ describe("parseConfig vcs", () => {
     expectIssueAt(issues, "repos.tasker.vcs.provider");
     expectIssueAt(issues, "repos.tasker.verify.commands");
   });
+
+  it("reports every vcs error together with the other errors of the repo", () => {
+    const raw = validConfig();
+    raw.repos.tasker.vcs = { provider: "git", config: { authorname: "x", sshKey: "" }, sshKey: "y" };
+    raw.repos.tasker.verify.commands = [];
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(4);
+    expect(issues).toContain("repos.tasker.vcs.config.authorname: unrecognized key");
+    expectIssueAt(issues, "repos.tasker.vcs.config.sshKey");
+    expect(issues).toContain("repos.tasker.vcs.sshKey: unrecognized key");
+    expectIssueAt(issues, "repos.tasker.verify.commands");
+  });
+
+  it("reports a vcs error together with an error of another repo and of the top level", () => {
+    const raw = validConfig();
+    raw.repos.other = structuredClone(raw.repos.tasker);
+    raw.repos.tasker.vcs = { config: { authorname: "x" } };
+    raw.repos.other.verify.commands = [];
+    raw.bogus = 1;
+    const issues = issuesOf(raw);
+    expect(issues).toContain("repos.tasker.vcs.config.authorname: unrecognized key");
+    expectIssueAt(issues, "repos.other.verify.commands");
+    expect(issues).toContain("bogus: unrecognized key");
+  });
 });
 
 describe.each(["verify", "bootstrap"])("parseConfig %s.env", (phase) => {
