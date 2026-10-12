@@ -189,6 +189,70 @@ describe("runGh", () => {
     });
   });
 
+  describe("signal and the shared token read", () => {
+    const apiUser = ["api", "user"];
+
+    it("keeps the token read for a caller that still waits", async () => {
+      const fake = fakeGh(dir, {}, [
+        { ...ghTokenAnswer("octo", "gho_test"), delaySeconds: 1 },
+        { args: apiUser, stdout: "{}" },
+      ]);
+      const start = Date.now();
+      const a = failureOf(
+        gh.runGh(apiUser, { account: "octo", env: fake.env, signal: AbortSignal.timeout(100) }),
+        Error,
+      );
+      const b = gh.runGh(apiUser, { account: "octo", env: fake.env });
+      const error = await a;
+      expect(error.name).toBe("AbortError");
+      expect(Date.now() - start).toBeLessThan(800);
+      expect(await b).toBe("{}");
+      await gh.runGh(apiUser, { account: "octo", env: fake.env });
+      expect(fake.calls().map((call) => call.args)).toEqual([
+        tokenArgs("octo"),
+        apiUser,
+        apiUser,
+      ]);
+    });
+
+    it("stops the token read when every caller stopped, and the next call reads again", async () => {
+      const fake = fakeGh(dir, {}, [
+        { ...ghTokenAnswer("octo", "gho_old"), delaySeconds: 5 },
+        { args: apiUser, stdout: "{}" },
+      ]);
+      const start = Date.now();
+      const a = failureOf(
+        gh.runGh(apiUser, { account: "octo", env: fake.env, signal: AbortSignal.timeout(100) }),
+        Error,
+      );
+      const b = failureOf(
+        gh.runGh(apiUser, { account: "octo", env: fake.env, signal: AbortSignal.timeout(200) }),
+        Error,
+      );
+      const [errorA, errorB] = await Promise.all([a, b]);
+      expect(errorA.name).toBe("AbortError");
+      expect(errorB.name).toBe("AbortError");
+      expect(Date.now() - start).toBeLessThan(1500);
+      fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_new"), { args: apiUser, stdout: "{}" }]);
+      expect(await gh.runGh(apiUser, { account: "octo", env: fake.env })).toBe("{}");
+      const calls = fake.calls();
+      expect(calls.filter((call) => call.args[0] === "auth")).toHaveLength(2);
+      expect(calls[calls.length - 1]).toEqual({ args: apiUser, ghToken: "gho_new", env: {} });
+    });
+
+    it("rejects at once for a signal that already aborted, and starts no gh", async () => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: apiUser }]);
+      const start = Date.now();
+      const error = await failureOf(
+        gh.runGh(apiUser, { account: "octo", env: fake.env, signal: AbortSignal.abort() }),
+        Error,
+      );
+      expect(error.name).toBe("AbortError");
+      expect(Date.now() - start).toBeLessThan(500);
+      expect(fake.calls()).toEqual([]);
+    });
+  });
+
   describe("errors", () => {
     const token = "gho_secret";
     const apiUser = ["api", "user"];
