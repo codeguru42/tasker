@@ -91,7 +91,7 @@ Every function that runs git takes one options object. Calls on the clone use `g
 - The short ref keeps its case. The code makes the title lower case before it makes the slug.
 - The name has at most 100 characters. The code cuts the slug to fit, and it removes a `-`, a `.` or a `.lock` that the cut leaves at the end.
 - If the short ref leaves no room, or the title has no usable character, the name is the short ref alone.
-- If the short ref is not one of the short ref forms below, the function throws `not a safe short ref: <JSON text of the short ref>`.
+- If the short ref is not one of the short ref forms below, or if it fails the name check (see below), the function throws `not a safe short ref: <JSON text of the short ref>`. For example, a short ref of more than 100 characters fails the name check.
 
 The short ref is the one that the issue key parsers make. `src/issue-key/short-ref.ts` holds these forms:
 
