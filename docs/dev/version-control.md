@@ -273,8 +273,9 @@ The slug turns the repo key into one folder name that a person can read. It is t
 
 The slug has these limits:
 
-- A slug longer than 255 bytes, the usual limit for a file name, throws.
-- Two keys can give the same slug, for example `a/b` and `a-b`.
+- A repo slug longer than 255 bytes, the usual limit for a file name, throws.
+- Two inputs can give the same slug. For example, the repo keys `a/b` and `a-b` share a repo folder.
+- Two issue keys can also give the same slug, for example the Jira keys `jira.example.com/browse/PROJ-1` and `jira-example.com/browse/PROJ-1`. The two issues then share the short ref, the worktree folder, the task branch and the folder of the files of a task.
 - On a file system that ignores case, two keys that differ only in case also share a folder.
 
 tasker does not check for a shared slug.
