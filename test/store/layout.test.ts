@@ -5,6 +5,7 @@ import {
   createDataRoot,
   dataRootLayout,
   taskArtifactsDir,
+  taskLogsDir,
 } from "../../src/store/layout.js";
 import { makeTempDir } from "../helpers.js";
 
@@ -36,6 +37,24 @@ describe("taskArtifactsDir", () => {
     const root = makeTempDir("tasker-data-");
     try {
       const path = taskArtifactsDir(root, { issueKey: "PROJ-7", attempt: 1 });
+      expect(existsSync(path)).toBe(false);
+      expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("taskLogsDir", () => {
+  it("puts the logs in the logs folder of the files of the attempt", () => {
+    const task = { issueKey: "codeguru42/tasker#10", attempt: 2 };
+    expect(taskLogsDir("/d", task)).toBe(join(taskArtifactsDir("/d", task), "logs"));
+  });
+
+  it("makes no folder", () => {
+    const root = makeTempDir("tasker-data-");
+    try {
+      const path = taskLogsDir(root, { issueKey: "PROJ-7", attempt: 1 });
       expect(existsSync(path)).toBe(false);
       expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
     } finally {
