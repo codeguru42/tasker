@@ -300,3 +300,14 @@ export async function taskBranchRevision(options: {
   if (revision === undefined) throw new Error(`cannot resolve the task branch: ${branch}`);
   return revision;
 }
+
+// True when the local task branch exists. It reads the exact ref only.
+export async function taskBranchExists(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  branch: string;
+}): Promise<boolean> {
+  const { clone, env, branch } = options;
+  assertTaskBranch(branch);
+  return refExists({ clone, env, ref: `refs/heads/${branch}` });
+}
