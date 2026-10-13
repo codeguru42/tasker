@@ -48,11 +48,28 @@ export function formatFields(fields: [string, string | number | null | undefined
   return fields.map(([field, value]) => `${field}: ${fieldValue(value)}\n`).join("");
 }
 
+function openDataRootStore(config: Config): TaskStore {
+  return openStore(createDataRoot(config.dataRoot).database);
+}
+
 // Opens the store of dataRoot, runs fn and closes the store, also after an error.
 export function withStore<T>(config: Config, fn: (store: TaskStore) => T): T {
-  const store = openStore(createDataRoot(config.dataRoot).database);
+  const store = openDataRootStore(config);
   try {
     return fn(store);
+  } finally {
+    store.close();
+  }
+}
+
+// Like withStore, for an async fn: the store closes after the promise settles.
+export async function withStoreAsync<T>(
+  config: Config,
+  fn: (store: TaskStore) => Promise<T>,
+): Promise<T> {
+  const store = openDataRootStore(config);
+  try {
+    return await fn(store);
   } finally {
     store.close();
   }
