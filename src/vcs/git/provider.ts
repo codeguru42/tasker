@@ -16,6 +16,8 @@ import { reconcileWorktree } from "./reconcile.js";
 import { repoPaths } from "./repo-paths.js";
 import {
   createTaskWorktree,
+  deleteTaskBranch,
+  discardWorktreeChanges,
   listWorktrees,
   removeTaskWorktree,
   taskBranchExists,
@@ -66,6 +68,14 @@ export function createGitProvider({
     async taskRefExists(ctx, { taskRef }) {
       const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
       return taskBranchExists({ clone, env: ctx.env, branch: taskRef });
+    },
+    async deleteTaskRef(ctx, { taskRef }) {
+      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      await deleteTaskBranch({ clone, env: ctx.env, branch: taskRef });
+    },
+    async discardWorkspaceChanges(ctx, { path }) {
+      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      await discardWorktreeChanges({ clone, env: ctx.env, path });
     },
     async resolveBase(ctx, { memory, hint, explicit, defaultBase, ask }) {
       const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);

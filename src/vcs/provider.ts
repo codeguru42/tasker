@@ -96,6 +96,10 @@ export interface VcsProvider {
   listWorkspaces(ctx: VcsContext): Promise<WorkspaceEntry[]>;
   // True when the local taskRef exists.
   taskRefExists(ctx: VcsContext, o: { taskRef: string }): Promise<boolean>;
+  // Deletes the local taskRef. It makes no remote call.
+  deleteTaskRef(ctx: VcsContext, o: { taskRef: string }): Promise<void>;
+  // Discards the uncommitted changes of the workspace. Ignored files stay.
+  discardWorkspaceChanges(ctx: VcsContext, o: { path: string }): Promise<void>;
   // Picks the base of a task, fetches the remote and gives the base with its revision.
   resolveBase(ctx: VcsContext, o: ResolveBaseRequest): Promise<ResolvedBase>;
   // The diff of the workspace against baseRevision, as text.
