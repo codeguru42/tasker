@@ -29,7 +29,7 @@ The agent of the ticket runs steps 1 to 10. Each step gives the state of the tas
 
 1. Run `tasker doctor`.
 2. Run `tasker start <issue>`. The task goes to `workspace_ready`. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
-3. Read the plan with `tasker show-plan` and `tasker show-questions`. Compare the plan with the Requirements and the Docs sections of the issue. Then do the quote check (see below).
+3. Read the plan with `tasker show-plan` and `tasker show-questions`. Compare the plan with the Requirements and the Docs sections of the issue. Then apply the stop rule and do the quote check (see below).
 4. If the plan needs changes, run `tasker refine <issue> "<feedback>"`. Add the repo-files rule to the feedback text. The task goes to `awaiting_plan_review` again. Then do steps 3 and 4 again until the plan needs no changes. Put the answers to the plan questions in the feedback text. `tasker plan` takes no feedback.
 5. Run `tasker approve`. The task goes to `approved`. Run `tasker execute`. The task goes to `executed`. Run `tasker verify`. If the verify commands pass, the task goes to `awaiting_work_review`. If they fail, follow the verify-failure rule. Run `tasker review`. When the review has findings, the task goes to `reviewed`. When it has none, the task stays in `awaiting_work_review`. If the review has no findings, go to step 9.
 6. Read the findings with `tasker show-review`. Decide for each finding if it is real. Then do the quote check (see below).
@@ -41,6 +41,14 @@ The agent of the ticket runs steps 1 to 10. Each step gives the state of the tas
 The add-work rule: if the task is in `awaiting_work_review` and the agent must add work, the agent runs `tasker review <issue> "<feedback>"`. The agent adds the repo-files rule to the feedback text. The task reaches `awaiting_work_review` after a review with no findings in step 5 or step 9, or after the agent dismisses all the findings in step 7. In this state, `tasker refine` refuses to run. The work can come from the orchestrator, for example. After `tasker review <issue> "<feedback>"`, the task goes to `refining`, and tasker makes a new plan revision. Then the task goes to `awaiting_plan_review`. Then the agent does steps 3 and 4 for the new plan, and steps 5 to 8 again, starting with `tasker approve`.
 
 The repo-files rule: the agent adds this rule to the feedback text where a step, the add-work rule or the verify-failure rule says so. The rule tells the plan session (the session that tasker starts to make the plan) to read only the files in the worktree of the task. A file is outside the worktree when its path is not under the path on the `worktree:` line of `tasker show <issue>`. The plan session must not read or quote a file outside the worktree. If the plan session needs a detail that the issue, the feedback text and the files in the worktree do not give, it asks a plan question. It does not take the detail from another place. If the plan of step 2 needs no changes, the agent does not run a refine only to send this rule. The quote check covers that plan. The repo-files rule and the quote check cover only the plan session, the plans and the review findings. They do not cover the execute session or the diff.
+
+The stop rule: each time before the agent runs `tasker approve` in step 5, the agent stops in each of these cases:
+
+- The plan has an open question that the issue does not answer.
+- The plan makes a design choice that the issue does not make.
+- The plan has a security gap.
+
+In each case, the agent reports the case to the orchestrator. The orchestrator gets the answer, from the user if the decision belongs to the user. While the agent waits, the task stays in `awaiting_plan_review`. After the answer, the agent puts the answer in the feedback text of the refine of step 4. Then the agent continues with step 4 and runs `tasker approve` in step 5. An answer before `tasker approve` costs no review loop, but a later answer costs one or more review loops. The quote check gives one more case that stops before `tasker approve`.
 
 The quote check: a plan or a finding quotes a file outside the worktree when it gives text from that file, or when it says that it read that file. "Outside the worktree" has the meaning of the repo-files rule. If a plan or a finding quotes a file outside the worktree, the agent tells the orchestrator. Then the orchestrator tells the user. After this report, the agent can still do the steps that come before `tasker approve` or `tasker accept`. For example, it can run a refine of step 4 or step 8, or dismiss a finding in step 7. If the next command of the agent is `tasker approve` or `tasker accept`, the agent stops and waits until the orchestrator answers. While the agent waits, the task stays in its state, for example `awaiting_plan_review` before `tasker approve`, or `awaiting_work_review` before `tasker accept`. After the orchestrator answers, the agent does the step that the answer gives. If the answer gives no step, the agent continues "Run one ticket" from the step where it stopped.
 
@@ -191,7 +199,7 @@ If a case says that the orchestrator schedules the next job, the orchestrator ru
 These limits apply to the orchestrator and to the agents, except where a bullet names one actor.
 
 - Do not change the repo or the worktrees of tasker by hand. Only `tasker` commands change them.
-- If the issue does not give a detail that the work needs, the agent asks the user through the orchestrator.
+- If the issue does not give a detail that the work needs, the agent asks the user through the orchestrator. Before `tasker approve`, the stop rule of "Run one ticket" gives the steps.
 - If tasker stops for a quota, follow "Quota". Never run `tasker approve-credits`.
 - Do not run `npm link` or a global install from a task worktree. The global `tasker` runs the tickets, and the install replaces it.
 - Only the orchestrator writes memory, so that two agents do not write the same file. Agents report what they learn to the orchestrator in their final report.
