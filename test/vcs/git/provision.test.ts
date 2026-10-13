@@ -95,14 +95,15 @@ describe("provisionClone", () => {
       GitError,
     );
     expect(error.exitCode).toBe(1);
+    const { branch, worktree } = taskNames(join(tmp, "worktrees"), 1);
     await createTaskWorktree({
       clone,
       env: origin.env,
-      path: taskNames(join(tmp, "worktrees"), 1).worktree,
-      branch: taskNames(join(tmp, "worktrees"), 1).branch,
+      path: worktree,
+      branch,
       baseRevision: "refs/remotes/origin/main",
     });
-    expect(await localBranches(clone, origin.env)).toEqual([`refs/heads/${taskNames(join(tmp, "worktrees"), 1).branch}`]);
+    expect(await localBranches(clone, origin.env)).toEqual([`refs/heads/${branch}`]);
   });
 
   it("makes a sha1 clone when the user default is sha256", async () => {

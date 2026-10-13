@@ -15,7 +15,7 @@ import {
 } from "../../../src/vcs/git/changes.js";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
-import { createTaskWorktree, removeTaskWorktree } from "../../../src/vcs/git/worktree.js";
+import { createTaskWorktree, removeTaskWorktree, taskBranchName } from "../../../src/vcs/git/worktree.js";
 import {
   commitInWorktree,
   failureOf,
@@ -28,7 +28,7 @@ import {
   taskNames,
 } from "../../helpers.js";
 
-const MISSING_BRANCH = taskNames("/w", 99, "").branch;
+const MISSING_BRANCH = taskBranchName("issue-99", "");
 
 describe("git changes", () => {
   let origin: GitOrigin;
@@ -37,14 +37,14 @@ describe("git changes", () => {
   let path: string;
 
   const BASE = "refs/remotes/origin/main";
-  const BRANCH = taskNames("/w", 15).branch;
+  let branch: string;
 
   beforeEach(async () => {
     origin = await makeGitOrigin();
     env = origin.env;
     clone = await makeGitClone(origin);
-    path = taskNames(join(origin.dir, "worktrees"), 15).worktree;
-    await createTaskWorktree({ clone, env, path, branch: BRANCH, baseRevision: BASE });
+    ({ branch, worktree: path } = taskNames(join(origin.dir, "worktrees"), 15));
+    await createTaskWorktree({ clone, env, path, branch, baseRevision: BASE });
   });
 
   afterEach(() => {
@@ -56,9 +56,9 @@ describe("git changes", () => {
   const diff = (extra: Partial<Parameters<typeof worktreeDiff>[0]> = {}) =>
     worktreeDiff({ clone, env, path, baseRevision: BASE, ...extra });
   const paths = (extra: Partial<Parameters<typeof changedPaths>[0]> = {}) =>
-    changedPaths({ clone, env, branch: BRANCH, baseRevision: BASE, ...extra });
+    changedPaths({ clone, env, branch, baseRevision: BASE, ...extra });
   const ownCommits = (extra: Partial<Parameters<typeof ownCommitsText>[0]> = {}) =>
-    ownCommitsText({ clone, env, branch: BRANCH, baseRevision: BASE, ...extra });
+    ownCommitsText({ clone, env, branch, baseRevision: BASE, ...extra });
   const changes = (extra: Partial<Parameters<typeof uncommittedChanges>[0]> = {}) =>
     uncommittedChanges({ clone, env, path, ...extra });
   const tips = (extra: Partial<Parameters<typeof fetchTips>[0]> = {}) =>
@@ -249,7 +249,7 @@ describe("git changes", () => {
     });
 
     it("is false for a fresh branch", async () => {
-      expect(await has(`refs/heads/${BRANCH}`, [BASE])).toBe(false);
+      expect(await has(`refs/heads/${branch}`, [BASE])).toBe(false);
     });
 
     it("is true for each existing head when others is empty", async () => {
@@ -422,12 +422,12 @@ describe("git changes", () => {
         env: ssh.env,
         publishTokens: join(origin.dir, "ssh-clone", "publish-tokens"),
       });
-      const sshPath = taskNames(join(origin.dir, "ssh-worktrees"), 15).worktree;
+      const sshNames = taskNames(join(origin.dir, "ssh-worktrees"), 15);
       await createTaskWorktree({
         clone: sshClone,
         env: ssh.env,
-        path: sshPath,
-        branch: BRANCH,
+        path: sshNames.worktree,
+        branch: sshNames.branch,
         baseRevision: BASE,
       });
       rmSync(ssh.logPath, { force: true });
@@ -437,7 +437,7 @@ describe("git changes", () => {
         clone: sshClone,
         env: ssh.env,
         sshKey: key,
-        path: sshPath,
+        path: sshNames.worktree,
         baseRevision: BASE,
       });
 

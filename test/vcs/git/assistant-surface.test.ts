@@ -160,24 +160,23 @@ describe("assistant surface values", () => {
   });
 });
 
-const { branch: BRANCH } = taskNames("/w", 18);
-
 describe("sandboxWritePaths", () => {
   let origin: GitOrigin;
   let clone: string;
   let worktree: string;
+  let branch: string;
   let env: NodeJS.ProcessEnv;
 
   beforeEach(async () => {
     origin = await makeGitOrigin();
     clone = await makeGitClone(origin);
     env = origin.env;
-    worktree = taskNames(join(origin.dir, "worktrees"), 18).worktree;
+    ({ branch, worktree } = taskNames(join(origin.dir, "worktrees"), 18));
     await createTaskWorktree({
       clone,
       env,
       path: worktree,
-      branch: BRANCH,
+      branch,
       baseRevision: "refs/remotes/origin/main",
     });
   });
@@ -248,7 +247,7 @@ describe("sandboxWritePaths", () => {
     const realWorktree = realpathSync(worktree);
     const writable = [realWorktree, ...(await writePaths())];
     const tip = () =>
-      runGit(["rev-parse", `refs/heads/${BRANCH}`], { gitDir: clone, env });
+      runGit(["rev-parse", `refs/heads/${branch}`], { gitDir: clone, env });
     const before = await tip();
     writeFileSync(join(worktree, "sandboxed.txt"), "sandboxed\n");
     const add = inSandbox(writable, realWorktree, env, ["git", "add", "-A"]);

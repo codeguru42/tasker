@@ -266,7 +266,7 @@ describe("addCloneCommit", () => {
       Error,
     );
     expect(branchError.message).toContain('"-x"');
-    const parentError = await failureOf(addCloneCommit(clone, origin.env, taskNames("/w", 1).branch, "-p"), Error);
+    const parentError = await failureOf(addCloneCommit(clone, origin.env, taskBranchName("issue-1", "x"), "-p"), Error);
     expect(parentError.message).toContain('"-p"');
   });
 });
@@ -278,12 +278,13 @@ describe("commitInWorktree", () => {
   beforeEach(async () => {
     origin = await makeGitOrigin();
     const clone = await makeGitClone(origin);
-    worktree = taskNames(join(origin.dir, "worktrees"), 15).worktree;
+    const names = taskNames(join(origin.dir, "worktrees"), 15);
+    worktree = names.worktree;
     await createTaskWorktree({
       clone,
       env: origin.env,
       path: worktree,
-      branch: taskNames("/w", 15).branch,
+      branch: names.branch,
       baseRevision: "refs/remotes/origin/main",
     });
   });

@@ -14,7 +14,7 @@ import {
 import { ReconcileConflictError } from "../../../src/vcs/errors.js";
 import type { ReconcileStrategy } from "../../../src/vcs/provider.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
-import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
+import { createTaskWorktree, taskBranchName } from "../../../src/vcs/git/worktree.js";
 import {
   commitInWorktree,
   failureOf,
@@ -25,13 +25,12 @@ import {
   writeGitFailAfter,
 } from "../../helpers.js";
 
-const { branch: BRANCH } = taskNames("/w", 16);
-
 describe("git reconcile", () => {
   let origin: GitOrigin;
   let env: NodeJS.ProcessEnv;
   let clone: string;
   let path: string;
+  let branch: string;
   let target: string;
 
   const BASE = "refs/remotes/origin/main";
@@ -40,8 +39,8 @@ describe("git reconcile", () => {
     origin = await makeGitOrigin();
     env = origin.env;
     clone = await makeGitClone(origin);
-    path = taskNames(join(origin.dir, "worktrees"), 16).worktree;
-    await createTaskWorktree({ clone, env, path, branch: BRANCH, baseRevision: BASE });
+    ({ branch, worktree: path } = taskNames(join(origin.dir, "worktrees"), 16));
+    await createTaskWorktree({ clone, env, path, branch, baseRevision: BASE });
     target = realpathSync(path);
   });
 
@@ -96,7 +95,7 @@ describe("git reconcile", () => {
     it("gives the head, the branch and no changes for a fresh worktree", async () => {
       expect(await state()).toEqual({
         head: await git("rev-parse", BASE),
-        branch: BRANCH,
+        branch,
         changes: [],
       });
     });
@@ -157,15 +156,15 @@ describe("git reconcile", () => {
       await git("checkout", "--detach");
       const start = await state();
       expect(start.branch).toBeUndefined();
-      const branchHead = await git("rev-parse", `refs/heads/${BRANCH}`);
+      const branchHead = await git("rev-parse", `refs/heads/${branch}`);
       await commitInWorktree(path, env, { file: "a.txt" });
       await restore(start);
       await expectAsBefore(start);
-      expect(await git("rev-parse", `refs/heads/${BRANCH}`)).toBe(branchHead);
+      expect(await git("rev-parse", `refs/heads/${branch}`)).toBe(branchHead);
     });
 
     it("refuses a start revision that is not a full revision", async () => {
-      const error = await failureOf(restore({ head: "main", branch: BRANCH }), Error);
+      const error = await failureOf(restore({ head: "main", branch }), Error);
       expect(error.message).toBe('the start revision is not a full revision: "main"');
     });
 
@@ -190,7 +189,7 @@ describe("git reconcile", () => {
       await commitInWorktree(path, env, { file: "a.txt" });
       const start = await state();
       const base = await moveBase({});
-      writeFileSync(join(clone, "refs", "heads", `${BRANCH}.lock`), "");
+      writeFileSync(join(clone, "refs", "heads", `${branch}.lock`), "");
       await failureOf(git("rebase", base), GitError);
       const detachedHead = await git("rev-parse", "HEAD");
       // The failed checkout has already staged the removal of the base file.
@@ -198,9 +197,9 @@ describe("git reconcile", () => {
       expect(error.message.startsWith(
         `cannot restore the worktree: ${target}: HEAD is at ${detachedHead}, detached, 1 uncommitted changes. ` +
           `Run these git commands in the worktree, in this order: ` +
-          `git checkout --force -B ${BRANCH} ${start.head}: `,
+          `git checkout --force -B ${branch} ${start.head}: `,
       )).toBe(true);
-      expect(error.message).toContain(`${BRANCH}.lock`);
+      expect(error.message).toContain(`${branch}.lock`);
       expect(error.message).not.toContain("git rebase --abort");
     });
   });
@@ -221,7 +220,7 @@ describe("git reconcile", () => {
       const tip = await moveBase({ file: "b.txt" });
       const result = await reconcile("rebase");
       expect(await git("rev-parse", "HEAD^")).toBe(tip);
-      expect((await state()).branch).toBe(BRANCH);
+      expect((await state()).branch).toBe(branch);
       expect(result).toBe(await git("rev-parse", "HEAD"));
     });
 
@@ -274,11 +273,11 @@ describe("git reconcile", () => {
     it("throws the error of the restore when the restore fails too", async () => {
       await commitInWorktree(path, env, { file: "a.txt" });
       await moveBase({ file: "b.txt" });
-      writeFileSync(join(clone, "refs", "heads", `${BRANCH}.lock`), "");
+      writeFileSync(join(clone, "refs", "heads", `${branch}.lock`), "");
       const error = await failureOf(reconcile("rebase"), Error);
       expect(error).not.toBeInstanceOf(GitError);
       expect(error.message).toContain("cannot restore the worktree");
-      expect(error.message).toContain(`${BRANCH}.lock`);
+      expect(error.message).toContain(`${branch}.lock`);
     });
 
     it.each(["rebase", "merge"] as const)("aborts a %s that stops on a conflict", async (strategy) => {
@@ -306,7 +305,7 @@ describe("git reconcile", () => {
       expect(await git("ls-files")).toContain("g.txt");
       expect(await git("ls-files")).toContain("h.txt");
       expect(await git("ls-files")).not.toContain("p.txt");
-      expect((await state()).branch).toBe(BRANCH);
+      expect((await state()).branch).toBe(branch);
     });
 
     it("aborts and restores when a commit conflicts", async () => {
@@ -343,7 +342,7 @@ describe("git reconcile", () => {
       await commitInWorktree(path, env, { file: "a.txt" });
       const start = await state();
       // Origin main takes the task commit by a fast-forward, as a landing outside tasker does.
-      await runGit(["fetch", clone, `refs/heads/${BRANCH}:refs/heads/main`], {
+      await runGit(["fetch", clone, `refs/heads/${branch}:refs/heads/main`], {
         gitDir: origin.path,
         env,
       });
@@ -356,7 +355,7 @@ describe("git reconcile", () => {
     it("fast-forwards a task with no own commits", async () => {
       const tip = await moveBase({ file: "b.txt" });
       expect(await resync("rebase")).toEqual({ moved: true, how: "fast-forward", head: tip });
-      expect(await git("rev-parse", `refs/heads/${BRANCH}`)).toBe(tip);
+      expect(await git("rev-parse", `refs/heads/${branch}`)).toBe(tip);
     });
 
     it.each(["rebase", "merge"] as const)("brings a diverged task onto the base with a %s", async (strategy) => {
@@ -380,6 +379,7 @@ describe("git reconcile", () => {
 });
 
 describe("restoreCommands", () => {
+  const BRANCH = taskBranchName("issue-16", "x");
   const A = "a".repeat(40);
   const B = "b".repeat(40);
   const onBranch: StartState = { head: A, branch: BRANCH };
