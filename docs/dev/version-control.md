@@ -269,6 +269,12 @@ The probe is the one place that starts ssh directly, because git has no command 
 
 ## The repo slug
 
-The slug turns the repo key into one safe folder name. One rule covers each byte, and `_` never stands for itself, so two keys never share a slug, also on a file system that ignores case. A slug is never `.` or `..` and never has a `/`. For example, `a/b-c` gives `a_2fb-c` and `Tasker` gives `_54asker`.
+The slug turns the repo key into one folder name that a person can read. It is the same slug that tasker uses for the folder of the files of a task, for the short ref and for the title part of a branch name.
 
-A slug longer than 255 bytes, the usual limit for a file name, throws. This keeps the promise that no two keys share a slug.
+The slug has these limits:
+
+- A slug longer than 255 bytes, the usual limit for a file name, throws.
+- Two keys can give the same slug, for example `a/b` and `a-b`.
+- On a file system that ignores case, two keys that differ only in case also share a folder.
+
+tasker does not check for a shared slug.
