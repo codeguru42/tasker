@@ -13,7 +13,12 @@ import { ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/v
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
-import { taskBranchName, taskWorktreePath } from "../../../src/vcs/git/worktree.js";
+import {
+  listWorktrees,
+  taskBranchExists,
+  taskBranchName,
+  taskWorktreePath,
+} from "../../../src/vcs/git/worktree.js";
 import {
   commitInWorktree,
   localBranches,
@@ -153,6 +158,24 @@ describe("createGitProvider", () => {
       });
       expect(direct.length).toBeGreaterThan(0);
       expect(await git.uncommittedChanges(fixture.context, { path })).toEqual(direct);
+    });
+
+    it("lists the workspaces like listWorktrees", async () => {
+      const { git, path } = await workspace();
+      const direct = await listWorktrees({ clone: paths().clone, env: fixture.context.env });
+      expect(direct.map((entry) => entry.path)).toContain(path);
+      expect(await git.listWorkspaces(fixture.context)).toEqual(direct);
+    });
+
+    it("finds a task ref like taskBranchExists", async () => {
+      const { git, taskRef } = await workspace();
+      const { clone } = paths();
+      const env = fixture.context.env;
+      const missing = taskBranchName("issue-2", "nosuch");
+      expect(await taskBranchExists({ clone, env, branch: taskRef })).toBe(true);
+      expect(await git.taskRefExists(fixture.context, { taskRef })).toBe(true);
+      expect(await taskBranchExists({ clone, env, branch: missing })).toBe(false);
+      expect(await git.taskRefExists(fixture.context, { taskRef: missing })).toBe(false);
     });
 
     it("reconciles the workspace onto the new base and gives its head", async () => {
