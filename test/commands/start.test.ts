@@ -96,6 +96,18 @@ describe("start", () => {
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
+  it("uses --base as the explicit base", async () => {
+    const fixture = await useStartFixture();
+    await fixture.origin.createBranch("dev");
+
+    const result = await runCommand(start, "start", KEY, "--base", "dev");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("base: dev\n");
+    expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "dev", source: "explicit" });
+    expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
   it("prints the description of the command and of both options for --help", async () => {
     const { code, out } = await runCommand(start, "start", "--help");
 
