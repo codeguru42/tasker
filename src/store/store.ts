@@ -160,10 +160,35 @@ function rowToTask(row: TaskRow): Task {
   };
 }
 
+// The time that a process waits for a lock that another process holds.
+const BUSY_TIMEOUT_MS = 5000;
+const SQLITE_BUSY = 5;
+
+// errcode can be an extended code, and its low byte is the primary code.
+function isBusy(error: unknown): boolean {
+  const code = (error as { errcode?: unknown }).errcode;
+  return typeof code === "number" && (code & 0xff) === SQLITE_BUSY;
+}
+
+// On a new file, the switch to WAL upgrades a read lock to a write lock, and SQLite does not call
+// the busy handler for that upgrade. So the switch tries again when the database is busy.
+function switchToWal(db: DatabaseSync): void {
+  const pause = new Int32Array(new SharedArrayBuffer(4));
+  for (;;) {
+    try {
+      db.exec("PRAGMA journal_mode = WAL");
+      return;
+    } catch (error) {
+      if (!isBusy(error)) throw error;
+      Atomics.wait(pause, 0, 0, 10);
+    }
+  }
+}
+
 function setUp(db: DatabaseSync) {
-  // The busy timeout comes first because the switch to WAL takes a lock.
-  db.exec("PRAGMA busy_timeout = 5000");
-  db.exec("PRAGMA journal_mode = WAL");
+  // The busy timeout comes first, because the commit of the switch to WAL and the migrations wait on it.
+  db.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
+  switchToWal(db);
   db.exec("PRAGMA foreign_keys = ON");
   migrate(db, migrations);
   // The tables exist now, so the statements can be prepared.
