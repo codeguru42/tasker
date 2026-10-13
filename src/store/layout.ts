@@ -39,3 +39,11 @@ export function taskArtifactsDir(
     `attempt-${task.attempt}`,
   );
 }
+
+// The folder of the logs of one attempt. It makes no folder.
+export function taskLogsDir(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+): string {
+  return join(taskArtifactsDir(dataRoot, task), "logs");
+}
