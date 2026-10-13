@@ -36,9 +36,15 @@ export function createDefaultIo(
     io.prompt = (question) =>
       new Promise<string>((resolve, reject) => {
         const rl = createInterface({ input: streams.stdin, output: streams.stderr });
+        // Set when the answer or the cancel came, so that close does not reject again.
         let answered = false;
         rl.once("close", () => {
           if (!answered) reject(new Error("no answer: the input closed"));
+        });
+        rl.once("SIGINT", () => {
+          answered = true;
+          rl.close();
+          reject(new Error("no answer: the question was cancelled"));
         });
         rl.question(question, (line) => {
           answered = true;
