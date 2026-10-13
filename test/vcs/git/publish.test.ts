@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "../../../src/vcs/git/publish.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
+import { taskBranchName } from "../../../src/vcs/git/worktree.js";
 import {
   addCloneCommit,
   failureOf,
@@ -18,6 +19,8 @@ import {
   sshKeyArgs,
   writeGitRecorder,
 } from "../../helpers.js";
+
+const BRANCH = taskBranchName("issue-1", "task");
 
 describe("publish, land and delete", () => {
   let origin: GitOrigin;
@@ -49,7 +52,7 @@ describe("publish, land and delete", () => {
       publishTokens: tokens,
       sshKey: undefined,
       env,
-      branch: "issue-1-task",
+      branch: BRANCH,
       published: undefined,
       ...overrides,
     });
@@ -77,7 +80,7 @@ describe("publish, land and delete", () => {
       publishTokens: tokens,
       sshKey: undefined,
       env,
-      branch: "issue-1-task",
+      branch: BRANCH,
       published: "0".repeat(40),
       ...overrides,
     });
@@ -157,25 +160,25 @@ describe("publish, land and delete", () => {
 
   describe("publishTaskBranch", () => {
     it("publishes a new branch with the empty lease", async () => {
-      const revision = await addCloneCommit(clone, env, "issue-1-task");
+      const revision = await addCloneCommit(clone, env, BRANCH);
       const main = await origin.branchHead("main");
 
       const result = await publish({ published: undefined });
 
       expect(result).toEqual({
         state: "published",
-        branch: "issue-1-task",
+        branch: BRANCH,
         revision,
         lease: true,
       });
-      expect(await origin.branchHead("issue-1-task")).toBe(revision);
+      expect(await origin.branchHead(BRANCH)).toBe(revision);
       expect(await origin.branchHead("main")).toBe(main);
       expect(pushes()).toEqual([
         [
           "push",
-          "--force-with-lease=refs/heads/issue-1-task:",
+          `--force-with-lease=refs/heads/${BRANCH}:`,
           "origin",
-          "refs/heads/issue-1-task:refs/heads/issue-1-task",
+          `refs/heads/${BRANCH}:refs/heads/${BRANCH}`,
         ],
       ]);
       expectNoTokenFile();
@@ -184,20 +187,20 @@ describe("publish, land and delete", () => {
 
     it("passes the ssh key to each ssh call", async () => {
       const ssh = await sshClone();
-      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
+      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, BRANCH);
       const mark = readArgLog(ssh.fake.logPath).length;
 
       const result = await publish(ssh.overrides);
 
       expect(result.state).toBe("published");
-      expect(await origin.branchHead("issue-1-task")).toBe(revision);
+      expect(await origin.branchHead(BRANCH)).toBe(revision);
       const calls = readArgLog(ssh.fake.logPath).slice(mark);
       expect(calls.length).toBeGreaterThanOrEqual(1);
       for (const call of calls) expect(call.slice(0, 6)).toEqual(sshKeyArgs(ssh.key));
     });
 
     it("reports a branch that origin already has, with no push and no lease", async () => {
-      const revision = await addCloneCommit(clone, env, "issue-1-task");
+      const revision = await addCloneCommit(clone, env, BRANCH);
       await publish({ published: undefined });
       const before = pushes().length;
 
@@ -205,7 +208,7 @@ describe("publish, land and delete", () => {
 
       expect(result).toEqual({
         state: "already-published",
-        branch: "issue-1-task",
+        branch: BRANCH,
         revision,
         lease: false,
       });
@@ -214,31 +217,31 @@ describe("publish, land and delete", () => {
     });
 
     it("publishes a rebased branch with a lease on the published revision", async () => {
-      const first = await addCloneCommit(clone, env, "issue-1-task");
+      const first = await addCloneCommit(clone, env, BRANCH);
       await publish({ published: undefined });
-      const rebased = await addCloneCommit(clone, env, "issue-1-task", "refs/remotes/origin/main");
+      const rebased = await addCloneCommit(clone, env, BRANCH, "refs/remotes/origin/main");
 
       const result = await publish({ published: first });
 
       expect(result).toEqual({
         state: "published",
-        branch: "issue-1-task",
+        branch: BRANCH,
         revision: rebased,
         lease: true,
       });
-      expect(await origin.branchHead("issue-1-task")).toBe(rebased);
+      expect(await origin.branchHead(BRANCH)).toBe(rebased);
       expect(pushes().at(-1)).toEqual([
         "push",
-        `--force-with-lease=refs/heads/issue-1-task:${first}`,
+        `--force-with-lease=refs/heads/${BRANCH}:${first}`,
         "origin",
-        "refs/heads/issue-1-task:refs/heads/issue-1-task",
+        `refs/heads/${BRANCH}:refs/heads/${BRANCH}`,
       ]);
       expectNoTokenFile();
       await expectPushNeedsToken();
     });
 
     describe("when someone else moved the branch", () => {
-      const moved = "the task branch moved on origin: issue-1-task";
+      const moved = `the task branch moved on origin: ${BRANCH}`;
 
       async function expectRefusedWithNoPush(
         run: () => Promise<unknown>,
@@ -249,15 +252,15 @@ describe("publish, land and delete", () => {
         const error = await failureOf(run(), Error);
         expect(error.message).toBe(message);
         expect(pushes()).toHaveLength(before);
-        expect(await origin.branchHead("issue-1-task")).toBe(originHead);
+        expect(await origin.branchHead(BRANCH)).toBe(originHead);
         expectNoTokenFile();
       }
 
       it("refuses when origin has a revision that tasker did not publish", async () => {
-        const first = await addCloneCommit(clone, env, "issue-1-task");
+        const first = await addCloneCommit(clone, env, BRANCH);
         await publish({ published: undefined });
-        const other = await origin.addCommit("issue-1-task");
-        await addCloneCommit(clone, env, "issue-1-task", "refs/remotes/origin/main");
+        const other = await origin.addCommit(BRANCH);
+        await addCloneCommit(clone, env, BRANCH, "refs/remotes/origin/main");
 
         await expectRefusedWithNoPush(
           () => publish({ published: first }),
@@ -267,7 +270,7 @@ describe("publish, land and delete", () => {
       });
 
       it("refuses when origin no longer has the branch", async () => {
-        const revision = await addCloneCommit(clone, env, "issue-1-task");
+        const revision = await addCloneCommit(clone, env, BRANCH);
 
         await expectRefusedWithNoPush(
           () => publish({ published: revision }),
@@ -278,9 +281,9 @@ describe("publish, land and delete", () => {
 
       it("refuses a first publish over a branch that someone else made", async () => {
         const main = await origin.branchHead("main");
-        await origin.createBranch("issue-1-task");
-        await addCloneCommit(clone, env, "issue-1-task", "refs/remotes/origin/main");
-        await addCloneCommit(clone, env, "issue-1-task");
+        await origin.createBranch(BRANCH);
+        await addCloneCommit(clone, env, BRANCH, "refs/remotes/origin/main");
+        await addCloneCommit(clone, env, BRANCH);
 
         await expectRefusedWithNoPush(
           () => publish({ published: undefined }),
@@ -291,22 +294,22 @@ describe("publish, land and delete", () => {
     });
 
     describe("errors", () => {
-      const named = "cannot publish the task branch: issue-1-task";
+      const named = `cannot publish the task branch: ${BRANCH}`;
 
       it("names the branch when origin refuses the push", async () => {
-        await addCloneCommit(clone, env, "issue-1-task");
+        await addCloneCommit(clone, env, BRANCH);
         refusePushesOnOrigin();
 
         const error = await failureOf(publish(), Error);
 
         expect(error.message.startsWith(named)).toBe(true);
         expect(error.message).toContain(ORIGIN_REFUSES);
-        expect(await origin.branchHead("issue-1-task")).toBeUndefined();
+        expect(await origin.branchHead(BRANCH)).toBeUndefined();
         expectNoTokenFile();
       });
 
       it("names the branch when the remote does not answer", async () => {
-        await addCloneCommit(clone, env, "issue-1-task");
+        await addCloneCommit(clone, env, BRANCH);
 
         const error = await failureOf(
           publish({ remote: join(origin.dir, "missing.git") }),
@@ -334,7 +337,7 @@ describe("publish, land and delete", () => {
 
     it("passes the ssh key to the ls-remote call of an already published branch", async () => {
       const ssh = await sshClone();
-      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
+      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, BRANCH);
       await publish(ssh.overrides);
       const mark = readArgLog(ssh.fake.logPath).length;
 
@@ -349,7 +352,7 @@ describe("publish, land and delete", () => {
 
   describe("landOnBase", () => {
     it("lands a child of the base by fast-forward", async () => {
-      const revision = await addCloneCommit(clone, env, "issue-1-task");
+      const revision = await addCloneCommit(clone, env, BRANCH);
 
       await land({ revision });
 
@@ -360,7 +363,7 @@ describe("publish, land and delete", () => {
     });
 
     it.each(["nope", "HEAD"])("refuses a base that origin does not have: %s", async (base) => {
-      const revision = await addCloneCommit(clone, env, "issue-1-task");
+      const revision = await addCloneCommit(clone, env, BRANCH);
 
       const error = await failureOf(land({ base, revision }), Error);
 
@@ -377,7 +380,7 @@ describe("publish, land and delete", () => {
         overrides: (revision: string) => Parameters<typeof land>[0],
         message: (revision: string) => string,
       ): Promise<void> {
-        const revision = await addCloneCommit(clone, env, "issue-1-task");
+        const revision = await addCloneCommit(clone, env, BRANCH);
         const main = await origin.branchHead("main");
         const mark = gitCalls().length;
 
@@ -425,7 +428,7 @@ describe("publish, land and delete", () => {
 
     describe("errors", () => {
       it("names the base and the revision when the revision is not a fast-forward", async () => {
-        const revision = await addCloneCommit(clone, env, "issue-1-task");
+        const revision = await addCloneCommit(clone, env, BRANCH);
         const moved = await origin.addCommit("main");
 
         const error = await failureOf(land({ revision }), Error);
@@ -438,7 +441,7 @@ describe("publish, land and delete", () => {
       });
 
       it("names the base and the revision when the remote does not answer", async () => {
-        const revision = await addCloneCommit(clone, env, "issue-1-task");
+        const revision = await addCloneCommit(clone, env, BRANCH);
 
         const error = await failureOf(
           land({ revision, remote: join(origin.dir, "missing.git") }),
@@ -454,7 +457,7 @@ describe("publish, land and delete", () => {
 
     it("passes the ssh key to each ssh call", async () => {
       const ssh = await sshClone();
-      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
+      const revision = await addCloneCommit(ssh.clone, ssh.fake.env, BRANCH);
       const mark = readArgLog(ssh.fake.logPath).length;
 
       await land({ ...ssh.overrides, revision });
@@ -468,25 +471,25 @@ describe("publish, land and delete", () => {
 
   describe("deleteRemoteTaskBranch", () => {
     it("deletes the branch with a lease on the published revision", async () => {
-      const published = await addCloneCommit(clone, env, "issue-1-task");
+      const published = await addCloneCommit(clone, env, BRANCH);
       await publish();
 
       const result = await remove({ published });
 
       expect(result).toEqual({ state: "deleted" });
-      expect(await origin.branchHead("issue-1-task")).toBeUndefined();
+      expect(await origin.branchHead(BRANCH)).toBeUndefined();
       expect(pushes().at(-1)).toEqual([
         "push",
-        `--force-with-lease=refs/heads/issue-1-task:${published}`,
+        `--force-with-lease=refs/heads/${BRANCH}:${published}`,
         "origin",
-        ":refs/heads/issue-1-task",
+        `:refs/heads/${BRANCH}`,
       ]);
       expectNoTokenFile();
       await expectPushNeedsToken();
     });
 
     it("reports a branch that origin no longer has, with no push", async () => {
-      const published = await addCloneCommit(clone, env, "issue-1-task");
+      const published = await addCloneCommit(clone, env, BRANCH);
 
       const result = await remove({ published });
 
@@ -496,26 +499,26 @@ describe("publish, land and delete", () => {
     });
 
     it("refuses a branch that someone else moved, with no push", async () => {
-      const published = await addCloneCommit(clone, env, "issue-1-task");
+      const published = await addCloneCommit(clone, env, BRANCH);
       await publish();
-      const other = await origin.addCommit("issue-1-task");
+      const other = await origin.addCommit(BRANCH);
       const before = pushes().length;
 
       const error = await failureOf(remove({ published }), Error);
 
       expect(error.message).toBe(
-        `the task branch moved on origin: issue-1-task: tasker published ${published}, origin has ${other}`,
+        `the task branch moved on origin: ${BRANCH}: tasker published ${published}, origin has ${other}`,
       );
       expect(pushes()).toHaveLength(before);
-      expect(await origin.branchHead("issue-1-task")).toBe(other);
+      expect(await origin.branchHead(BRANCH)).toBe(other);
       expectNoTokenFile();
     });
 
     describe("errors", () => {
-      const named = "cannot delete the task branch on origin: issue-1-task";
+      const named = `cannot delete the task branch on origin: ${BRANCH}`;
 
       it("names the branch when origin refuses the push", async () => {
-        const published = await addCloneCommit(clone, env, "issue-1-task");
+        const published = await addCloneCommit(clone, env, BRANCH);
         await publish();
         refusePushesOnOrigin();
 
@@ -523,12 +526,12 @@ describe("publish, land and delete", () => {
 
         expect(error.message.startsWith(named)).toBe(true);
         expect(error.message).toContain(ORIGIN_REFUSES);
-        expect(await origin.branchHead("issue-1-task")).toBe(published);
+        expect(await origin.branchHead(BRANCH)).toBe(published);
         expectNoTokenFile();
       });
 
       it("keeps the push error when the second read of the tip fails", async () => {
-        const published = await addCloneCommit(clone, env, "issue-1-task");
+        const published = await addCloneCommit(clone, env, BRANCH);
         await publish();
         refusePushesOnOrigin({ hideOrigin: true });
         const mark = gitCalls().length;
@@ -545,7 +548,7 @@ describe("publish, land and delete", () => {
       });
 
       it("names the branch when the remote does not answer", async () => {
-        const published = await addCloneCommit(clone, env, "issue-1-task");
+        const published = await addCloneCommit(clone, env, BRANCH);
 
         const error = await failureOf(
           remove({ published, remote: join(origin.dir, "missing.git") }),
@@ -577,7 +580,7 @@ describe("publish, land and delete", () => {
 
     it("passes the ssh key to each ssh call", async () => {
       const ssh = await sshClone();
-      const published = await addCloneCommit(ssh.clone, ssh.fake.env, "issue-1-task");
+      const published = await addCloneCommit(ssh.clone, ssh.fake.env, BRANCH);
       await publish(ssh.overrides);
       const mark = readArgLog(ssh.fake.logPath).length;
 

@@ -266,7 +266,7 @@ describe("addCloneCommit", () => {
       Error,
     );
     expect(branchError.message).toContain('"-x"');
-    const parentError = await failureOf(addCloneCommit(clone, origin.env, "issue-1-x", "-p"), Error);
+    const parentError = await failureOf(addCloneCommit(clone, origin.env, taskNames("/w", 1).branch, "-p"), Error);
     expect(parentError.message).toContain('"-p"');
   });
 });
@@ -278,12 +278,12 @@ describe("commitInWorktree", () => {
   beforeEach(async () => {
     origin = await makeGitOrigin();
     const clone = await makeGitClone(origin);
-    worktree = join(origin.dir, "worktrees", "issue-15");
+    worktree = taskNames(join(origin.dir, "worktrees"), 15).worktree;
     await createTaskWorktree({
       clone,
       env: origin.env,
       path: worktree,
-      branch: "issue-15-x",
+      branch: taskNames("/w", 15).branch,
       baseRevision: "refs/remotes/origin/main",
     });
   });
@@ -581,6 +581,7 @@ describe("seedTasks with more fields", () => {
 
   it("stores the title, base, branch and worktreePath when given", () => {
     dir = makeTempDir("tasker-seed-");
+    const names = taskNames("/tmp/wt", 1, "A title");
 
     const [task] = seedTasks(join(dir, "data"), [
       {
@@ -590,16 +591,16 @@ describe("seedTasks with more fields", () => {
         at: "2026-01-02T00:00:00.000Z",
         title: "A title",
         base: "main",
-        branch: "issue-1-a-title",
-        worktreePath: "/tmp/wt/issue-1",
+        branch: names.branch,
+        worktreePath: names.worktree,
       },
     ]);
 
     expect(task).toMatchObject({
       title: "A title",
       base: "main",
-      branch: "issue-1-a-title",
-      worktreePath: "/tmp/wt/issue-1",
+      branch: names.branch,
+      worktreePath: names.worktree,
     });
   });
 

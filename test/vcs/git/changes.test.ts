@@ -25,7 +25,10 @@ import {
   makeGitOrigin,
   readArgLog,
   sshKeyArgs,
+  taskNames,
 } from "../../helpers.js";
+
+const MISSING_BRANCH = taskNames("/w", 99, "").branch;
 
 describe("git changes", () => {
   let origin: GitOrigin;
@@ -34,13 +37,13 @@ describe("git changes", () => {
   let path: string;
 
   const BASE = "refs/remotes/origin/main";
-  const BRANCH = "issue-15-x";
+  const BRANCH = taskNames("/w", 15).branch;
 
   beforeEach(async () => {
     origin = await makeGitOrigin();
     env = origin.env;
     clone = await makeGitClone(origin);
-    path = join(origin.dir, "worktrees", "issue-15");
+    path = taskNames(join(origin.dir, "worktrees"), 15).worktree;
     await createTaskWorktree({ clone, env, path, branch: BRANCH, baseRevision: BASE });
   });
 
@@ -178,8 +181,8 @@ describe("git changes", () => {
     });
 
     it("refuses a missing task branch", async () => {
-      const error = await failureOf(paths({ branch: "issue-99" }), Error);
-      expect(error.message).toBe("cannot resolve the task branch: issue-99");
+      const error = await failureOf(paths({ branch: MISSING_BRANCH }), Error);
+      expect(error.message).toBe(`cannot resolve the task branch: ${MISSING_BRANCH}`);
     });
   });
 
@@ -419,7 +422,7 @@ describe("git changes", () => {
         env: ssh.env,
         publishTokens: join(origin.dir, "ssh-clone", "publish-tokens"),
       });
-      const sshPath = join(origin.dir, "ssh-worktrees", "issue-15");
+      const sshPath = taskNames(join(origin.dir, "ssh-worktrees"), 15).worktree;
       await createTaskWorktree({
         clone: sshClone,
         env: ssh.env,

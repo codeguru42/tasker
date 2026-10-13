@@ -21,8 +21,11 @@ import {
   type GitOrigin,
   makeGitClone,
   makeGitOrigin,
+  taskNames,
   writeGitFailAfter,
 } from "../../helpers.js";
+
+const { branch: BRANCH } = taskNames("/w", 16);
 
 describe("git reconcile", () => {
   let origin: GitOrigin;
@@ -32,13 +35,12 @@ describe("git reconcile", () => {
   let target: string;
 
   const BASE = "refs/remotes/origin/main";
-  const BRANCH = "issue-16-x";
 
   beforeEach(async () => {
     origin = await makeGitOrigin();
     env = origin.env;
     clone = await makeGitClone(origin);
-    path = join(origin.dir, "worktrees", "issue-16");
+    path = taskNames(join(origin.dir, "worktrees"), 16).worktree;
     await createTaskWorktree({ clone, env, path, branch: BRANCH, baseRevision: BASE });
     target = realpathSync(path);
   });
@@ -380,7 +382,7 @@ describe("git reconcile", () => {
 describe("restoreCommands", () => {
   const A = "a".repeat(40);
   const B = "b".repeat(40);
-  const onBranch: StartState = { head: A, branch: "issue-16-x" };
+  const onBranch: StartState = { head: A, branch: BRANCH };
   const right: FoundState = { ...onBranch, changes: [], rebase: false, merge: false };
   const tracked = { status: " M", path: "a.txt" };
   const untracked = { status: "??", path: "n.txt" };
@@ -399,19 +401,19 @@ describe("restoreCommands", () => {
 
   it("checks out the branch again when the head is wrong", () => {
     expect(restoreCommands(onBranch, { ...right, head: B })).toEqual([
-      `git checkout --force -B issue-16-x ${A}`,
+      `git checkout --force -B ${BRANCH} ${A}`,
     ]);
   });
 
   it("checks out the branch again when HEAD is detached", () => {
     expect(restoreCommands(onBranch, { ...right, branch: undefined })).toEqual([
-      `git checkout --force -B issue-16-x ${A}`,
+      `git checkout --force -B ${BRANCH} ${A}`,
     ]);
   });
 
   it("detaches again when a detached start finds a branch", () => {
     const detached: StartState = { head: A, branch: undefined };
-    expect(restoreCommands(detached, { ...right, branch: "issue-16-x" })).toEqual([
+    expect(restoreCommands(detached, { ...right, branch: BRANCH })).toEqual([
       `git checkout --force --detach ${A}`,
     ]);
   });
@@ -430,7 +432,7 @@ describe("restoreCommands", () => {
 
   it("gives no reset when a checkout is in the list", () => {
     expect(restoreCommands(onBranch, { ...right, head: B, changes: [tracked, untracked] })).toEqual([
-      `git checkout --force -B issue-16-x ${A}`,
+      `git checkout --force -B ${BRANCH} ${A}`,
       "git clean -fd",
     ]);
   });

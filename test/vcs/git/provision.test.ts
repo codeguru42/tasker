@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { delimiter, join, parse, relative, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type ProvisionOptions, provisionClone } from "../../../src/vcs/git/provision.js";
+import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { remoteCwd, sshCommand } from "../../../src/vcs/git/ssh.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
@@ -15,6 +16,7 @@ import {
   makeTempDir,
   readArgLog,
   sshKeyArgs,
+  taskNames,
   writeGitRecorder,
 } from "../../helpers.js";
 
@@ -27,8 +29,7 @@ describe("provisionClone", () => {
   beforeEach(async () => {
     origin = await makeGitOrigin();
     tmp = makeTempDir("tasker-provision-");
-    clone = join(tmp, "data", "clones", "x", "repo.git");
-    tokens = join(tmp, "data", "clones", "x", "publish-tokens");
+    ({ clone, publishTokens: tokens } = repoPaths(join(tmp, "data"), "x"));
   });
 
   afterEach(() => {
@@ -97,11 +98,11 @@ describe("provisionClone", () => {
     await createTaskWorktree({
       clone,
       env: origin.env,
-      path: join(tmp, "worktrees", "issue-1"),
-      branch: "issue-1-x",
+      path: taskNames(join(tmp, "worktrees"), 1).worktree,
+      branch: taskNames(join(tmp, "worktrees"), 1).branch,
       baseRevision: "refs/remotes/origin/main",
     });
-    expect(await localBranches(clone, origin.env)).toEqual(["refs/heads/issue-1-x"]);
+    expect(await localBranches(clone, origin.env)).toEqual([`refs/heads/${taskNames(join(tmp, "worktrees"), 1).branch}`]);
   });
 
   it("makes a sha1 clone when the user default is sha256", async () => {

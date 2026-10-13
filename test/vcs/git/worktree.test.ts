@@ -36,8 +36,13 @@ import {
   makeGitClone,
   makeGitOrigin,
   NOT_TASK_BRANCHES,
+  taskNames,
   type GitOrigin,
 } from "../../helpers.js";
+
+const BRANCH = taskBranchName("issue-1", "x");
+const OTHER_BRANCH = taskBranchName("issue-2", "y");
+const MISSING_BRANCH = taskBranchName("issue-2", "nosuch");
 
 describe("taskBranchName", () => {
   it.each([
@@ -148,7 +153,7 @@ describe("git fixture", () => {
       clone,
       env,
       path: path(),
-      branch: "issue-1-x",
+      branch: BRANCH,
       baseRevision: base,
       ...extra,
     });
@@ -211,8 +216,8 @@ describe("git fixture", () => {
       expect(existsSync(worktrees)).toBe(false);
       expect(await create()).toBe("created");
       expect(await gitIn(path(), "rev-parse", "HEAD")).toBe(await origin.branchHead("main"));
-      expect(await gitIn(path(), "symbolic-ref", "HEAD")).toBe("refs/heads/issue-1-x");
-      await runGit(["show-ref", "--verify", "--quiet", "--", "refs/heads/issue-1-x"], {
+      expect(await gitIn(path(), "symbolic-ref", "HEAD")).toBe(`refs/heads/${BRANCH}`);
+      await runGit(["show-ref", "--verify", "--quiet", "--", `refs/heads/${BRANCH}`], {
         gitDir: clone,
         env,
       });
@@ -221,7 +226,7 @@ describe("git fixture", () => {
     it("gives the new branch no upstream", async () => {
       await create();
       const error = await failureOf(
-        runGit(["config", "--get", "branch.issue-1-x.remote"], { gitDir: clone, env }),
+        runGit(["config", "--get", `branch.${BRANCH}.remote`], { gitDir: clone, env }),
         GitError,
       );
       expect(error.exitCode).toBe(1);
@@ -247,7 +252,7 @@ describe("git fixture", () => {
 
   describe("removeTaskWorktree", () => {
     const branchExists = () =>
-      runGit(["show-ref", "--verify", "--quiet", "--", "refs/heads/issue-1-x"], {
+      runGit(["show-ref", "--verify", "--quiet", "--", `refs/heads/${BRANCH}`], {
         gitDir: clone,
         env,
       }).then(
@@ -310,9 +315,9 @@ describe("git fixture", () => {
   describe("createTaskWorktree, reused worktree", () => {
     it("uses the worktree again and does not move the branch", async () => {
       expect(await create()).toBe("created");
-      const before = await head("issue-1-x");
+      const before = await head(BRANCH);
       expect(await create()).toBe("reused-worktree");
-      expect(await head("issue-1-x")).toBe(before);
+      expect(await head(BRANCH)).toBe(before);
       expect(await list()).toHaveLength(1);
     });
 
@@ -331,7 +336,7 @@ describe("git fixture", () => {
     const branchWithOwnCommit = async () => {
       await create();
       await gitIn(path(), "commit", "--allow-empty", "-m", "own");
-      const own = await head("issue-1-x");
+      const own = await head(BRANCH);
       await remove();
       return own;
     };
@@ -341,7 +346,7 @@ describe("git fixture", () => {
       expect(own).not.toBe(await origin.branchHead("main"));
       expect(await create()).toBe("reused-branch");
       expect(await gitIn(path(), "rev-parse", "HEAD")).toBe(own);
-      expect(await head("issue-1-x")).toBe(own);
+      expect(await head(BRANCH)).toBe(own);
     });
 
     it("accepts an empty folder at the path", async () => {
@@ -442,8 +447,8 @@ describe("git fixture", () => {
 
     it("refuses the branch in a worktree at another path", async () => {
       const other = join(realpathSync(origin.dir), "other");
-      await addWorktree("-b", "issue-1-x", "--", other, base);
-      await expectConflict(`the branch issue-1-x is in another worktree: ${other}`);
+      await addWorktree("-b", BRANCH, "--", other, base);
+      await expectConflict(`the branch ${BRANCH} is in another worktree: ${other}`);
     });
 
     it("refuses a file at the path", async () => {
@@ -461,26 +466,26 @@ describe("git fixture", () => {
 
   describe("deleteTaskBranch", () => {
     const deleteBranch = (extra: Partial<Parameters<typeof deleteTaskBranch>[0]> = {}) =>
-      deleteTaskBranch({ clone, env, branch: "issue-1-x", ...extra });
+      deleteTaskBranch({ clone, env, branch: BRANCH, ...extra });
 
     it("deletes the local branch and leaves the origin alone", async () => {
-      await origin.createBranch("issue-1-x");
-      const remoteHead = await origin.branchHead("issue-1-x");
+      await origin.createBranch(BRANCH);
+      const remoteHead = await origin.branchHead(BRANCH);
       await create();
       await remove();
       await deleteBranch();
-      expect(await localBranches(clone, env)).not.toContain("refs/heads/issue-1-x");
-      expect(await origin.branchHead("issue-1-x")).toBe(remoteHead);
+      expect(await localBranches(clone, env)).not.toContain(`refs/heads/${BRANCH}`);
+      expect(await origin.branchHead(BRANCH)).toBe(remoteHead);
     });
 
     it("refuses a missing branch", async () => {
-      await failureOf(deleteBranch({ branch: "issue-2-nosuch" }), GitError);
+      await failureOf(deleteBranch({ branch: MISSING_BRANCH }), GitError);
     });
 
     it("refuses a branch that a worktree holds", async () => {
       await create();
       await failureOf(deleteBranch(), GitError);
-      expect(await localBranches(clone, env)).toContain("refs/heads/issue-1-x");
+      expect(await localBranches(clone, env)).toContain(`refs/heads/${BRANCH}`);
     });
 
     it.each(["", "-x", "a..b", "HEAD"])(
@@ -559,7 +564,7 @@ describe("git fixture", () => {
       await gitIn(outer, "commit", "-m", "outer");
       writeFileSync(join(outer, "tracked.txt"), "changed\n");
       writeFileSync(join(outer, "untracked.txt"), "untracked\n");
-      const wt = taskWorktreePath(join(outer, "worktrees"), "issue-1");
+      const wt = taskNames(join(outer, "worktrees"), 1).worktree;
       await create({ path: wt });
       rmSync(join(wt, ".git"));
 
@@ -621,7 +626,7 @@ describe("git fixture", () => {
         async (admin: string) => {
           await create({
             path: taskWorktreePath(worktrees, "issue-2"),
-            branch: "issue-2-y",
+            branch: OTHER_BRANCH,
           });
           const other = await adminDir(taskWorktreePath(worktrees, "issue-2"));
           writeFileSync(join(path(), ".git"), `gitdir: ${other}\n`);
@@ -685,7 +690,7 @@ describe("git fixture", () => {
 
   describe("taskBranchRevision", () => {
     const revision = (extra: Partial<Parameters<typeof taskBranchRevision>[0]> = {}) =>
-      taskBranchRevision({ clone, env, branch: "issue-1-x", ...extra });
+      taskBranchRevision({ clone, env, branch: BRANCH, ...extra });
 
     it("gives the SHA of a created branch", async () => {
       await create();
@@ -694,17 +699,17 @@ describe("git fixture", () => {
 
     it("refuses a missing branch", async () => {
       const error = await failureOf(revision(), Error);
-      expect(error.message).toBe("cannot resolve the task branch: issue-1-x");
+      expect(error.message).toBe(`cannot resolve the task branch: ${BRANCH}`);
     });
 
     it("does not read another ref through the git name rules", async () => {
       const sha = (await origin.branchHead("main")) as string;
-      await runGit(["update-ref", "refs/heads/refs/heads/issue-1-x", sha], {
+      await runGit(["update-ref", `refs/heads/refs/heads/${BRANCH}`, sha], {
         gitDir: clone,
         env,
       });
       const error = await failureOf(revision(), Error);
-      expect(error.message).toBe("cannot resolve the task branch: issue-1-x");
+      expect(error.message).toBe(`cannot resolve the task branch: ${BRANCH}`);
     });
 
     it.each(["", "a..b", "x~1", "x^{commit}", "-x"])(

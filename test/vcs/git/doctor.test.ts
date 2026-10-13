@@ -11,6 +11,7 @@ import {
   staleLockCheck,
 } from "../../../src/vcs/git/doctor.js";
 import type { GitVcsConfig } from "../../../src/vcs/git/config.js";
+import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { type ProcView, readProcView } from "../../../src/vcs/git/stale-locks.js";
 import {
@@ -221,7 +222,7 @@ describe("connectionCheck", () => {
   });
 
   function repo(remote: string, config: GitVcsConfig = {}): GitDoctorRepo {
-    return { key: "o/r", remote, clone: join(origin.dir, "clone", "repo.git"), config };
+    return { key: "o/r", remote, clone: repoPaths(join(origin.dir, "data"), "o/r").clone, config };
   }
 
   it("has the name, the required flag and the time limit", () => {

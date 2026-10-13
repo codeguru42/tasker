@@ -2,13 +2,14 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { show } from "../../src/commands/show.js";
-import { dayAt, issueKeyErrorMessage, runCommand, seedTasks, useThreeRepoDataRoot } from "../helpers.js";
+import { dayAt, issueKeyErrorMessage, runCommand, seedTasks, taskNames, useThreeRepoDataRoot } from "../helpers.js";
 
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";
 
 describe("show", () => {
   it("prints the fields of a task in workspace_ready", async () => {
+    const names = taskNames("/tmp/wt", 5, "Add tasker show");
     const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
       {
@@ -18,8 +19,8 @@ describe("show", () => {
         at: dayAt(2),
         title: "Add tasker show",
         base: "main",
-        branch: "issue-5-add-tasker-show",
-        worktreePath: "/tmp/wt/issue-5",
+        branch: names.branch,
+        worktreePath: names.worktree,
       },
     ]);
 
@@ -35,8 +36,8 @@ describe("show", () => {
         "state: workspace_ready\n" +
         "attempt: 1\n" +
         "base: main\n" +
-        "branch: issue-5-add-tasker-show\n" +
-        "worktree: /tmp/wt/issue-5\n" +
+        `branch: ${names.branch}\n` +
+        `worktree: ${names.worktree}\n` +
         "created: 2026-01-02T00:00:00.000Z\n" +
         "updated: 2026-01-02T00:00:00.000Z\n" +
         'last event: 2026-01-02T00:00:00.000Z created {"state":"workspace_ready"}\n',
