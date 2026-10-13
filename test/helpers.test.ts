@@ -4,10 +4,11 @@ import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { loadConfig } from "../src/config/load.js";
 import { parseConfig } from "../src/config/schema.js";
+import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { openStore } from "../src/store/store.js";
-import { createDataRoot } from "../src/store/layout.js";
+import { createDataRoot, taskArtifactsDir } from "../src/store/layout.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { createTaskWorktree } from "../src/vcs/git/worktree.js";
 import {
@@ -38,6 +39,7 @@ import {
   validConfig,
   waitUntil,
   waitUntilGone,
+  writeBootstrapLog,
   writeDataRootConfig,
   writeFakeGh,
   type GitOrigin,
@@ -755,5 +757,19 @@ describe("readPidFile", () => {
     const path = join(useTempDir("tasker-pid-file-"), "pid");
 
     await expect(readPidFile(path, 150)).rejects.toThrow();
+  });
+});
+
+describe("writeBootstrapLog", () => {
+  it("writes the text to the bootstrap log in the logs folder of the attempt of the task", () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state: "workspace_ready", at: dayAt(2) },
+    ]);
+
+    writeBootstrapLog(dataRoot, task, "=== bootstrap run ===\n");
+
+    const expected = bootstrapLogPath(join(taskArtifactsDir(dataRoot, task), "logs"));
+    expect(readFileSync(expected, "utf8")).toBe("=== bootstrap run ===\n");
   });
 });
