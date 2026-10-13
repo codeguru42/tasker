@@ -51,11 +51,11 @@ A forget deletes the row only when it still holds the branch that tasker found m
 
 The table holds the named locks. A named lock stops two tasker processes from changing the same thing at the same time. For example, two `tasker start` runs in one repo both write the configuration of the bare clone, and git then fails with a held `config.lock`.
 
-There are two kinds of lock: one lock for the bare clone of a repo, and one lock for a task. The lock of a clone is for each change to the clone: provision, fetch, worktree add and remove, and branch delete. The lock of a task is for each command that changes the task. The two kinds are separate, so two tasks of one repo wait for each other only while one of them changes the clone.
+There are two kinds of lock: one lock for the bare clone of a repo, and one lock for a task. Each change to the bare clone of a repo (provision, fetch, worktree add and remove, branch delete) must hold the lock of that clone. Each command that changes a task must hold the lock of that task. The two kinds are separate, so two tasks of one repo wait for each other only while one of them changes the clone.
 
 One process never takes the same lock two times. A second try is an error, not a wait.
 
-A crash leaves the row of the lock. The next try finds that the process of the row is dead, and it takes the lock. Nobody must delete a row by hand.
+A crash leaves the row of the lock. The next try finds that the process of the row is dead, and it takes the lock.
 
 The check of the process works only on one machine. A `dataRoot` on a network drive that two machines share is not supported.
 
