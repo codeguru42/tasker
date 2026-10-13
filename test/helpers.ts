@@ -174,6 +174,13 @@ export function startLockHolder(dbPath: string, name: string, goPath?: string): 
   return { pid: child.pid, attempt, exited: child.exited };
 }
 
+// Starts test/fixtures/write-lock-holder.ts. It resolves when the child holds the write lock of dbPath.
+// The child keeps the lock for holdMs ms. savePid kills it after the test.
+export async function startWriteLockHolder(dbPath: string, holdMs: number): Promise<void> {
+  const line = await startFixture("write-lock-holder.ts", [dbPath, String(holdMs)]).firstLine;
+  if (line !== "held") throw new Error(`the write lock child printed ${line}`);
+}
+
 // Runs tasker (src/main.ts through tsx) in a child process with env on top of the process env.
 export function spawnTasker(
   args: readonly string[],
