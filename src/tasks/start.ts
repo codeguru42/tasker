@@ -78,6 +78,7 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
     (active.state === "provisioning" ||
       (active.state === "failed" && failedFrom(store, active.id) === "provisioning"));
   if (active !== undefined && !continues) return { started: false, task: active };
+  if (active === undefined && issue.state === "closed") throw new Error(`the issue is closed: ${ref.key}`);
   const task =
     active === undefined
       ? store.createTask({
