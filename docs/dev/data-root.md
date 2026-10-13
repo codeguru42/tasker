@@ -71,7 +71,7 @@ To add a version, append one migration. Never edit a migration that exists, beca
 
 ## Writes from more than one process
 
-Two tasker processes can use the same database at once. A busy timeout makes a process that finds the database locked wait and not fail at once. WAL lets readers work while the writer writes.
+Two tasker processes can use the same database at once. A busy timeout makes a process that finds the database locked wait and not fail at once. SQLite has one case that does not use it. On a new file, the switch to WAL upgrades a read lock to a write lock, and SQLite does not wait for that upgrade. As a result, the store tries the switch again until the busy timeout ends. WAL lets readers work while the writer writes.
 
 Each write, and each migration, runs in a `BEGIN IMMEDIATE` transaction, which takes the write lock at the start. As a result, a read-check-write of a row is one step, and another process cannot change the row in between. Two processes that open a new database at the same time do not both run the same migration.
 
