@@ -29,7 +29,7 @@ import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { failTask } from "../src/state/machine.js";
 import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
-import { openStore, type Task } from "../src/store/store.js";
+import { openStore, type StoreOptions, type Task, type TaskStore } from "../src/store/store.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -414,6 +414,22 @@ export function issueKeyErrorMessage(key: string, configPath: string): string {
     return error.message;
   }
   return expect.fail(`the issue key ${key} resolves`);
+}
+
+// Runs fn with the open store of dataRoot, then closes the store. When fn gives a promise, the
+// store closes after the promise settles. When fn throws, the store closes and the error goes on.
+export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
+  const store = openStore(createDataRoot(dataRoot).database, options);
+  let result: T;
+  try {
+    result = fn(store);
+  } catch (error) {
+    store.close();
+    throw error;
+  }
+  if (result instanceof Promise) return result.finally(() => store.close()) as T;
+  store.close();
+  return result;
 }
 
 // Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
