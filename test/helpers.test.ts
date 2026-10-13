@@ -19,6 +19,7 @@ import {
 } from "../src/vcs/git/worktree.js";
 import {
   addCloneCommit,
+  captureIo,
   commitInWorktree,
   dayAt,
   failureOf,
@@ -832,5 +833,24 @@ describe("useProcessEnv", () => {
 
   it("restores process.env after the test", () => {
     expect(process.env.TASKER_HELPER_PROBE).toBeUndefined();
+  });
+});
+
+describe("captureIo", () => {
+  it("has no prompt with no options", () => {
+    expect(captureIo().prompt).toBeUndefined();
+  });
+
+  it("answers each question in turn and records it", async () => {
+    const io = captureIo({ answers: ["a", "b"] });
+    await expect(io.prompt?.("first? ")).resolves.toBe("a");
+    await expect(io.prompt?.("second? ")).resolves.toBe("b");
+    expect(io.questions).toEqual(["first? ", "second? "]);
+  });
+
+  it("rejects when no answer is left", async () => {
+    const io = captureIo({ answers: [] });
+    await expect(io.prompt?.("more? ")).rejects.toThrow();
+    expect(io.questions).toEqual(["more? "]);
   });
 });
