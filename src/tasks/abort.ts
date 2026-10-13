@@ -30,26 +30,33 @@ export async function abortTask(store: TaskStore, request: AbortRequest): Promis
   if (task.worktreePath !== null || task.branch !== null) {
     const vcs = createVcsProvider(config.repos[ref.repoKey]);
     const ctx = { dataRoot: config.dataRoot, repoKey: ref.repoKey, env: request.env };
-    if (task.worktreePath !== null) {
-      const path = canonicalPath(task.worktreePath);
-      const entry = (await vcs.listWorkspaces(ctx)).find((e) => e.path === path);
-      const changes = entry !== undefined && existsSync(entry.path)
+    const entry =
+      task.worktreePath === null
+        ? undefined
+        : (await vcs.listWorkspaces(ctx)).find((e) => e.path === canonicalPath(task.worktreePath!));
+    const changes =
+      entry !== undefined && existsSync(entry.path)
         ? await vcs.uncommittedChanges(ctx, { path: entry.path })
         : [];
-      if (changes.length > 0 && !request.force) {
-        const lines = changes.map((change) => `${change.status} ${change.path}`);
-        throw new Error(
-          [`the worktree has uncommitted changes: ${path}`, ...lines, "tasker abort --force discards them"].join("\n"),
-        );
-      }
-      if (changes.length > 0) {
-        await vcs.discardWorkspaceChanges(ctx, { path });
-        report(`discarded the uncommitted changes of ${path}`);
-      }
-      await vcs.removeWorkspace(ctx, { path });
-      report(`removed the worktree ${path}`);
+    if (changes.length > 0 && !request.force) {
+      const lines = changes.map((change) => `${change.status} ${change.path}`);
+      throw new Error(
+        [
+          `the worktree has uncommitted changes: ${entry!.path}`,
+          ...lines,
+          "tasker abort --force discards them",
+        ].join("\n"),
+      );
     }
-    if (task.branch !== null) {
+    if (entry !== undefined) {
+      if (changes.length > 0) {
+        await vcs.discardWorkspaceChanges(ctx, { path: entry.path });
+        report(`discarded the uncommitted changes of ${entry.path}`);
+      }
+      await vcs.removeWorkspace(ctx, { path: entry.path });
+      report(`removed the worktree ${entry.path}`);
+    }
+    if (task.branch !== null && (await vcs.taskRefExists(ctx, { taskRef: task.branch }))) {
       await vcs.deleteTaskRef(ctx, { taskRef: task.branch });
       report(`deleted the branch ${task.branch}`);
     }
