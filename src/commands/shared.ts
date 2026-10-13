@@ -75,6 +75,16 @@ export async function withStoreAsync<T>(
   }
 }
 
+// The task of the issue: the active task, else the newest one.
+// An issue with no task stops the command with exit code 1.
+function issueTaskOrFail(io: Io, store: TaskStore, ref: IssueRef): Task {
+  const task = store.findLatestTask(ref.repoKey, ref.key);
+  if (task === undefined) {
+    fail(io, `no task for the issue ${ref.key} in the repo ${ref.repoKey}`);
+  }
+  return task;
+}
+
 // Runs fn with the store and the task of the issue: the active task, else the newest one.
 // A key that does not resolve stops the command before the store opens.
 // An issue with no task stops the command with exit code 1.
@@ -86,11 +96,18 @@ export function withIssueTask<T>(
   fn: (store: TaskStore, task: Task) => T,
 ): T {
   const ref = resolveIssueKeyOrFail(io, rawKey, config, options);
-  return withStore(config, (store) => {
-    const task = store.findLatestTask(ref.repoKey, ref.key);
-    if (task === undefined) {
-      fail(io, `no task for the issue ${ref.key} in the repo ${ref.repoKey}`);
-    }
-    return fn(store, task);
-  });
+  return withStore(config, (store) => fn(store, issueTaskOrFail(io, store, ref)));
+}
+
+// Like withIssueTask, for an async fn: the store closes after the promise settles.
+// The fn also gets the ref that the key resolved to.
+export function withIssueTaskAsync<T>(
+  io: Io,
+  config: Config,
+  rawKey: string,
+  options: ResolveOptions,
+  fn: (store: TaskStore, task: Task, ref: IssueRef) => Promise<T>,
+): Promise<T> {
+  const ref = resolveIssueKeyOrFail(io, rawKey, config, options);
+  return withStoreAsync(config, (store) => fn(store, issueTaskOrFail(io, store, ref), ref));
 }

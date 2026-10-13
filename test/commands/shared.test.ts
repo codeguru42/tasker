@@ -98,6 +98,7 @@ describe("withStoreAsync", () => {
 });
 
 describe("withIssueTaskAsync", () => {
+  const REPO = "codeguru42/tasker";
   const KEY = "codeguru42/tasker#1";
   let dataRoot: string;
 
@@ -107,13 +108,16 @@ describe("withIssueTaskAsync", () => {
 
   function configFor(dir: string) {
     dataRoot = dir;
-    return parseConfig({ ...validConfig(), dataRoot: dir }, {}, "/home/test");
+    const raw = validConfig();
+    raw.repos = { [REPO]: raw.repos.tasker };
+    return parseConfig({ ...raw, dataRoot: dir }, {}, "/home/test");
   }
 
   function seed() {
-    return seedTasks(dataRoot, [
-      { issueKey: KEY, repoKey: "tasker", state: "planning", at: "2026-01-01T00:00:00.000Z" },
-    ])[0];
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: KEY, repoKey: REPO, state: "planning", at: "2026-01-01T00:00:00.000Z" },
+    ]);
+    return task!;
   }
 
   it("calls fn with the store, the task and the ref", async () => {
@@ -127,7 +131,7 @@ describe("withIssueTaskAsync", () => {
     }));
 
     expect(seen.task).toEqual(seeded);
-    expect(seen.ref).toMatchObject({ key: KEY, repoKey: "tasker" });
+    expect(seen.ref).toMatchObject({ key: KEY, repoKey: REPO });
     expect(seen.store).toBeDefined();
   });
 
@@ -137,7 +141,7 @@ describe("withIssueTaskAsync", () => {
 
     const value = await withIssueTaskAsync(captureIo(), config, KEY, {}, async (store, task) => {
       await new Promise((resolve) => setTimeout(resolve, 5));
-      return store.getTask(task.id).issueKey;
+      return store.getTask(task.id)?.issueKey;
     });
 
     expect(value).toBe(KEY);
@@ -149,7 +153,7 @@ describe("withIssueTaskAsync", () => {
 
     const store = await withIssueTaskAsync(captureIo(), config, KEY, {}, async (opened) => opened);
 
-    expect(() => store.findActiveTask("tasker", KEY)).toThrow();
+    expect(() => store.findActiveTask(REPO, KEY)).toThrow();
   });
 
   it("fails with exit code 1 for an issue with no task", async () => {
@@ -163,7 +167,7 @@ describe("withIssueTaskAsync", () => {
 
     expect(error).toBeInstanceOf(CommanderError);
     expect((error as CommanderError).exitCode).toBe(1);
-    expect(io.err.join("")).toBe(`no task for the issue ${KEY} in the repo tasker\n`);
+    expect(io.err.join("")).toBe(`no task for the issue ${KEY} in the repo ${REPO}\n`);
     expect(called).toBe(false);
   });
 });
