@@ -1,7 +1,8 @@
+import { readFileSync } from "node:fs";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
-import { bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
+import { type BootstrapResult, bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
 import { phaseEnv } from "../phases/env.js";
 import { errorMessage } from "../doctor/error-message.js";
 import { failTask, transitionTask } from "../state/machine.js";
@@ -24,6 +25,45 @@ export interface StartRequest {
 export interface StartOutcome {
   started: boolean;
   task: Task;
+}
+
+// The bootstrap failed. The tail is the text of the end of the log.
+export class BootstrapFailedError extends Error {
+  constructor(
+    message: string,
+    readonly tail: string,
+  ) {
+    super(message);
+    this.name = "BootstrapFailedError";
+  }
+}
+
+export function bootstrapFailureMessage(
+  result: Extract<BootstrapResult, { status: "failed" }>,
+  log: string,
+  timeoutMin: number,
+): string {
+  const outcome = result.timedOut
+    ? `timed out after ${timeoutMin} min`
+    : result.signal === undefined
+      ? `exit code ${result.exitCode}`
+      : `stopped by signal ${result.signal}`;
+  return `bootstrap command ${result.index} failed: ${result.command}: ${outcome}. The log is ${log}.`;
+}
+
+// The last count lines of the log, with a header that gives the real count. It never throws.
+export function bootstrapLogTail(log: string, count: number): string {
+  let text: string;
+  try {
+    text = readFileSync(log, "utf8");
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    return code === "ENOENT" ? `the log is missing: ${log}\n` : `cannot read the log ${log}: ${code}\n`;
+  }
+  const lines = text.split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  const last = lines.slice(-count);
+  return `the last ${last.length} lines of the log:\n${last.map((line) => `${line}\n`).join("")}`;
 }
 
 // Makes a task for the issue and takes it to workspace_ready.
@@ -75,14 +115,21 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
     }));
     return created;
   });
-  const logsDir = taskLogsDir(config.dataRoot, task);
-  const result = await runBootstrap({
-    commands: repo.bootstrap.commands,
-    env: phaseEnv(env, repo.bootstrap.env),
-    cwd: workspace.path,
-    timeoutMs: config.limits.bootstrapTimeoutMin * 60_000,
-    logsDir,
+  await failOnError(async () => {
+    const logsDir = taskLogsDir(config.dataRoot, task);
+    const log = bootstrapLogPath(logsDir);
+    const timeoutMin = config.limits.bootstrapTimeoutMin;
+    const result = await runBootstrap({
+      commands: repo.bootstrap.commands,
+      env: phaseEnv(env, repo.bootstrap.env),
+      cwd: workspace.path,
+      timeoutMs: timeoutMin * 60_000,
+      logsDir,
+    });
+    store.appendEvent(task.id, "bootstrap", { ...result, log });
+    if (result.status === "failed") {
+      throw new BootstrapFailedError(bootstrapFailureMessage(result, log, timeoutMin), bootstrapLogTail(log, 20));
+    }
   });
-  store.appendEvent(task.id, "bootstrap", { ...result, log: bootstrapLogPath(logsDir) });
   return { started: true, task: transitionTask(store, task.id, "workspace_ready") };
 }

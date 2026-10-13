@@ -1,6 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
 import { errorMessage } from "../doctor/error-message.js";
-import { startTask } from "../tasks/start.js";
+import { BootstrapFailedError, startTask } from "../tasks/start.js";
 import { fail, formatFields, loadConfigOrFail, resolveIssueKeyOrFail, withStoreAsync } from "./shared.js";
 
 export const start: RegisterCommand = (program, io) => {
@@ -39,6 +39,8 @@ export const start: RegisterCommand = (program, io) => {
           }),
         ));
       } catch (error) {
+        // The bootstrap error comes first, then the tail of the log.
+        if (error instanceof BootstrapFailedError) fail(io, `${error.message}\n${error.tail.trimEnd()}`);
         fail(io, errorMessage(error));
       }
       io.stdout(
