@@ -36,7 +36,6 @@ import {
   makeGitClone,
   makeGitOrigin,
   NOT_TASK_BRANCHES,
-  taskNames,
   type GitOrigin,
 } from "../../helpers.js";
 
@@ -564,7 +563,7 @@ describe("git fixture", () => {
       await gitIn(outer, "commit", "-m", "outer");
       writeFileSync(join(outer, "tracked.txt"), "changed\n");
       writeFileSync(join(outer, "untracked.txt"), "untracked\n");
-      const wt = taskNames(join(outer, "worktrees"), 1).worktree;
+      const wt = taskWorktreePath(join(outer, "worktrees"), "issue-1");
       await create({ path: wt });
       rmSync(join(wt, ".git"));
 
