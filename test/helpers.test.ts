@@ -34,6 +34,7 @@ import {
   seedTasks,
   sshKeyArgs,
   threeRepoConfig,
+  useProcessEnv,
   useTempDir,
   useThreeRepoDataRoot,
   validConfig,
@@ -771,5 +772,24 @@ describe("writeBootstrapLog", () => {
 
     const expected = bootstrapLogPath(taskLogsDir(dataRoot, task));
     expect(readFileSync(expected, "utf8")).toBe("=== bootstrap run ===\n");
+  });
+});
+
+describe("useProcessEnv", () => {
+  it("sets a name", () => {
+    useProcessEnv({ TASKER_HELPER_PROBE: "x" });
+
+    expect(process.env.TASKER_HELPER_PROBE).toBe("x");
+  });
+
+  it("removes a name when the value is undefined", () => {
+    useProcessEnv({ TASKER_HELPER_PROBE: "x" });
+    useProcessEnv({ TASKER_HELPER_PROBE: undefined });
+
+    expect(process.env.TASKER_HELPER_PROBE).toBeUndefined();
+  });
+
+  it("restores process.env after the test", () => {
+    expect(process.env.TASKER_HELPER_PROBE).toBeUndefined();
   });
 });
