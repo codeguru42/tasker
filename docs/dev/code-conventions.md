@@ -38,7 +38,7 @@ Each new command must be in the skill and in the `--help` output. The test `test
 
 1. Add the provider id to the `vcs.provider` enum in `src/config/schema.ts`, and add a `vcsBranch("<id>")` branch to the union there. Add the id to the `provider` row of the `vcs` table in `docs/config.md`, and describe its `config` keys there.
 2. Create `src/vcs/<id>/config.ts` with the strict zod schema of its `vcs.config`. Add a case for the id in `vcsConfigSchema()` in `src/vcs/config-schema.ts`.
-3. Create `src/vcs/<id>/provider.ts`. It implements `VcsProvider` from `src/vcs/provider.ts`, and it imports the types of the interface from there.
+3. Create `src/vcs/<id>/provider.ts`. It implements `VcsProvider` from `src/vcs/provider.ts`. [version-control.md](version-control.md#the-provider-interface) gives the rule for the types.
 4. Add a case for the id in `createVcsProvider()` in `src/vcs/provider.ts`.
 5. Follow the push guard rule in the doc comment of `VcsProvider`. If the provider cannot guard a push, its `provision()` rejects.
 6. Give the doctor checks of the provider from `doctorChecks()`.
