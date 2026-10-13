@@ -10,7 +10,12 @@ import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { openStore } from "../src/store/store.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
-import { createTaskWorktree } from "../src/vcs/git/worktree.js";
+import {
+  assertTaskBranchShape,
+  createTaskWorktree,
+  taskBranchName,
+  taskWorktreePath,
+} from "../src/vcs/git/worktree.js";
 import {
   addCloneCommit,
   commitInWorktree,
@@ -33,6 +38,7 @@ import {
   savePid,
   seedTasks,
   sshKeyArgs,
+  taskNames,
   threeRepoConfig,
   useProcessEnv,
   useTempDir,
@@ -145,6 +151,25 @@ describe("makeGitOrigin", () => {
       "the branch name must not start with -",
     );
     await expect(origin.addCommit("-x")).rejects.toThrow("the branch name must not start with -");
+  });
+});
+
+describe("taskNames", () => {
+  it("gives the branch and the worktree of a GitHub issue number", () => {
+    expect(taskNames("/w", 16)).toStrictEqual({
+      branch: taskBranchName("issue-16", "x"),
+      worktree: taskWorktreePath("/w", "issue-16"),
+    });
+  });
+
+  it("uses the title for the branch", () => {
+    expect(taskNames("/w", 5, "Add tasker show").branch).toBe(
+      taskBranchName("issue-5", "Add tasker show"),
+    );
+  });
+
+  it("gives a branch with the shape of a task branch", () => {
+    expect(() => assertTaskBranchShape(taskNames("/w", 1).branch)).not.toThrow();
   });
 });
 
