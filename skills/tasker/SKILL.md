@@ -88,6 +88,16 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 Two starts for different issues of one repo run at the same time. They wait for each other only while one of them uses the clone or waits for your answer to the question for the base branch. A wait for the clone ends after 5 minutes with the lock error. The task then stays in the state `provisioning`, with no error. Run the command again to continue it.
 
+### `tasker abort`
+
+Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+- `--force`: discards the uncommitted changes of the worktree before the abort.
+
+The command prints one line for each step that ran, then `cancelled <issue>`.
+
 ### `tasker show`
 
 Prints the details of the task of an issue: `tasker show <issue>`. The command shows the active task. If the issue has no active task, it shows the newest task.
