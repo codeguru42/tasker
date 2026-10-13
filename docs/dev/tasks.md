@@ -1,10 +1,10 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands. The code shows the steps. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
-`tasker start` makes a task for an issue and takes it to `workspace_ready`. The steps live in `src/tasks/`, not in the command file, because other commands run the same steps. The command file only parses the options, prints the output and maps the errors to exit codes.
+`tasker start` makes a task for an issue and takes it to `workspace_ready`.
 
 ## The order of the steps
 
@@ -26,7 +26,8 @@ The rule that each command that changes a task takes the task lock has one home:
 
 A second run continues a task that did not reach `workspace_ready`. It does not make a second task.
 
-- A failure before the clone steps changes no task. A busy repo lock is one such failure: the task stays as it was, and nothing is recorded.
+- A failure before the clone steps changes no state and records no error. A busy repo lock is one such failure. The task stays in `provisioning`.
+- A second run of a failed task first moves the task from `failed` to `provisioning`, and this move is on record. If the repo lock is then busy, the task stays in `provisioning` with no error on record. The next start continues it.
 - A failure in a clone step or in bootstrap moves the task to `failed` with the error. The next run moves it back and continues.
 - A task that is past this step is not changed. The command only prints it.
 - The stored base stays on a second run. A `--base` option or a `base:` label wins and is stored as the new base.
@@ -43,4 +44,4 @@ An agent reads stdout. It holds only the fields of the task, so the agent can pa
 
 - A new base on a second run does not move a task branch that already exists. The stored base can differ from the real start point of the branch.
 - An issue that closes after its task exists does not stop a second run. The closed check runs only when no task exists.
-- The start has no option to update the clone first, no option to take over a lock of a live process, and no stacked base.
+- The start does not assign the issue and does not mark it in progress. It has no option to take over a lock of a live process, and no stacked base.

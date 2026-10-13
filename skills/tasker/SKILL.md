@@ -84,7 +84,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - A step fails. The task goes to the state `failed` with the error. Fix the cause, then run the command again.
 - Bootstrap fails. The error names the number and the text of the command, then the exit code, the timeout or the signal, and the path of the log. The last 20 lines of the log follow. Fix the cause, then run the command again.
 
-Two starts for different issues of one repo run at the same time. They wait for each other only while they use the clone. A wait for the clone ends after 5 minutes with the lock error.
+Two starts for different issues of one repo run at the same time. They wait for each other only while they use the clone. A wait for the clone ends after 5 minutes with the lock error. The task then stays in the state `provisioning`, with no error. Run the command again to continue it.
 
 ### `tasker show`
 
