@@ -26,6 +26,7 @@ import {
   discardWorktreeChanges,
   listWorktrees,
   removeTaskWorktree,
+  taskBranchExists,
   taskBranchName,
   taskBranchRevision,
   taskWorktreePath,
@@ -461,6 +462,25 @@ describe("git fixture", () => {
       writeFileSync(join(path(), "file"), "file\n");
       await expectConflict(`something else is at the worktree path: ${path()}`);
     });
+  });
+
+  describe("taskBranchExists", () => {
+    it("gives true after create()", async () => {
+      await create();
+      expect(await taskBranchExists({ clone, env, branch: BRANCH })).toBe(true);
+    });
+
+    it("gives false for a missing branch", async () => {
+      expect(await taskBranchExists({ clone, env, branch: MISSING_BRANCH })).toBe(false);
+    });
+
+    it.each(["", "-x", "a..b", "HEAD"])(
+      "refuses the branch name %j before any git call",
+      async (branch) => {
+        const error = await failureOf(taskBranchExists({ clone, env: {}, branch }), Error);
+        expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
+      },
+    );
   });
 
   describe("deleteTaskBranch", () => {
