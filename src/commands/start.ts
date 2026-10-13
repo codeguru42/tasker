@@ -21,6 +21,7 @@ export const start: RegisterCommand = (program, io) => {
         startTask(store, {
           config,
           ref,
+          base: options.base,
           env: process.env,
           ask: () => Promise.reject(new Error(`no base branch for ${ref.repoKey}`)),
           note: (line) => io.stderr(`${line}\n`),

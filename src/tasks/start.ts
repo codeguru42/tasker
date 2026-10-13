@@ -11,6 +11,8 @@ import { createVcsProvider } from "../vcs/provider.js";
 export interface StartRequest {
   config: Config;
   ref: IssueRef;
+  // The raw --base.
+  base?: string;
   env: NodeJS.ProcessEnv;
   // Gives the base branch when no other source has one.
   ask: () => Promise<string>;
@@ -42,6 +44,7 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
   const resolved = await vcs.resolveBase(ctx, {
     memory: store,
     hint: issueProvider.baseBranchHint(issue),
+    explicit: request.base,
     defaultBase: repo.defaultBaseBranch,
     ask: request.ask,
   });
