@@ -9,6 +9,7 @@ import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { openStore } from "../src/store/store.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
+import { repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import {
   assertTaskBranchShape,
@@ -26,6 +27,7 @@ import {
   GIT_TEST_IDENTITY,
   greet,
   ghTokenAnswer,
+  gitCloneTokens,
   gitTestEnv,
   isAlive,
   issueKeyErrorMessage,
@@ -194,6 +196,18 @@ describe("makeGitClone", () => {
     expect(await git("rev-parse", "refs/remotes/origin/main")).toBe(
       await origin.branchHead("main"),
     );
+  });
+
+  it("puts the clone at the repo folder of tasker under the clone-data data root", async () => {
+    const clone = await makeGitClone(origin);
+    expect(clone).toBe(repoPaths(join(origin.dir, "clone-data"), "tasker").clone);
+  });
+
+  it("gives the publish tokens of that repo folder", async () => {
+    await makeGitClone(origin);
+    const { publishTokens } = repoPaths(join(origin.dir, "clone-data"), "tasker");
+    expect(gitCloneTokens(origin)).toBe(publishTokens);
+    expect(existsSync(publishTokens)).toBe(true);
   });
 });
 
