@@ -1,10 +1,14 @@
 import type { RegisterCommand } from "../cli.js";
 import { errorMessage } from "../error-message.js";
 import { BootstrapFailedError, startTask } from "../tasks/start.js";
-import { fail, formatFields, loadConfigOrFail, resolveIssueKeyOrFail, withStoreAsync } from "./shared.js";
-
-// Another start can hold the clone for a long first fetch.
-const REPO_LOCK_WAIT_MS = 300_000;
+import {
+  fail,
+  formatFields,
+  loadConfigOrFail,
+  REPO_LOCK_WAIT_MS,
+  resolveIssueKeyOrFail,
+  withStoreAsync,
+} from "./shared.js";
 
 export const start: RegisterCommand = (program, io) => {
   program
