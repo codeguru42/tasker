@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { bootstrapLogPath, bootstrapMarkerPath, runBootstrap } from "../../src/phases/bootstrap.js";
 import { phaseEnv } from "../../src/phases/env.js";
-import { useTempDir } from "../helpers.js";
+import { readPidFile, useTempDir, waitUntilGone } from "../helpers.js";
 
 const HEADER = /^=== bootstrap run \d{4}-.* ===$/m;
 const MINUTE_MS = 60_000;
@@ -69,5 +69,85 @@ describe("runBootstrap", () => {
     expect(log).toMatch(HEADER);
     expect(log).toContain("the repo has no bootstrap commands\n");
     expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(true);
+  });
+});
+
+describe("runBootstrap when a command fails", () => {
+  function readLog(logsDir: string): string {
+    return readFileSync(bootstrapLogPath(logsDir), "utf8");
+  }
+
+  it("stops at the first command that fails", async () => {
+    const dirs = setup();
+    const commands = ["true", "printf no-newline; exit 3", "touch later"];
+
+    const result = await bootstrap(commands, dirs);
+
+    expect(result).toStrictEqual({
+      status: "failed",
+      index: 2,
+      command: "printf no-newline; exit 3",
+      exitCode: 3,
+      timedOut: false,
+    });
+    expect(readLog(dirs.logsDir)).toContain("$ printf no-newline; exit 3\nno-newline\n--- exit code 3\n");
+    expect(readLog(dirs.logsDir)).not.toContain("touch later");
+    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
+    expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
+  });
+
+  it("reports the signal that stopped a command", async () => {
+    const dirs = setup();
+
+    const result = await bootstrap(["kill -TERM $$", "touch later"], dirs);
+
+    expect(result).toStrictEqual({
+      status: "failed",
+      index: 1,
+      command: "kill -TERM $$",
+      signal: "SIGTERM",
+      timedOut: false,
+    });
+    expect(readLog(dirs.logsDir)).toContain("$ kill -TERM $$\n--- signal SIGTERM\n");
+    expect(readLog(dirs.logsDir)).not.toContain("touch later");
+    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
+    expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
+  });
+
+  it("stops the second command when the one deadline of the list runs out", async () => {
+    const dirs = setup();
+    const second = "sleep 0.8; echo second-done";
+
+    const result = await bootstrap(["sleep 0.6", second, "touch later"], dirs, 1000);
+
+    expect(result).toStrictEqual({
+      status: "failed",
+      index: 2,
+      command: second,
+      signal: "SIGTERM",
+      timedOut: true,
+    });
+    const log = readLog(dirs.logsDir);
+    expect(log).toContain(`$ ${second}\n--- timed out: sent SIGTERM\n`);
+    expect(log).not.toContain("second-done\n");
+    expect(log).not.toContain("touch later");
+    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
+    expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
+  });
+
+  it("kills a child that ignores SIGTERM 5 s after the deadline", { timeout: 20_000 }, async () => {
+    const dirs = setup();
+    const command = '(trap "" TERM; exec sleep 30) & echo $! > child.pid; wait';
+    const running = bootstrap([command, "touch later"], dirs, 300);
+    const childPid = await readPidFile(join(dirs.cwd, "child.pid"), 5000);
+
+    const result = await running;
+
+    expect(result).toStrictEqual({ status: "failed", index: 1, command, signal: "SIGTERM", timedOut: true });
+    expect(readLog(dirs.logsDir)).toContain(`$ ${command}\n--- timed out: sent SIGTERM, then SIGKILL\n`);
+    expect(readLog(dirs.logsDir)).not.toContain("touch later");
+    await waitUntilGone(childPid, 5000);
+    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
+    expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
   });
 });
