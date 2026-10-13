@@ -129,7 +129,7 @@ describe("runBootstrap when a command fails", () => {
     });
     const log = readLog(dirs.logsDir);
     expect(log).toContain(`$ ${second}\n--- timed out: sent SIGTERM\n`);
-    expect(log).not.toContain("second-done\n");
+    expect(log).not.toContain("\nsecond-done\n");
     expect(log).not.toContain("touch later");
     expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
     expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);

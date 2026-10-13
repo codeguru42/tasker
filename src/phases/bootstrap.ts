@@ -1,6 +1,6 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { runInGroup } from "../process/run-group.js";
+import { type GroupResult, runInGroup } from "../process/run-group.js";
 
 export function bootstrapLogPath(logsDir: string): string {
   return join(logsDir, "bootstrap.log");
@@ -44,6 +44,12 @@ function endsWithNewline(path: string): boolean {
   }
 }
 
+function outcomeLine(result: GroupResult): string {
+  if (result.timedOut) return `--- timed out: sent SIGTERM${result.killed ? ", then SIGKILL" : ""}`;
+  if (result.signal !== null) return `--- signal ${result.signal}`;
+  return `--- exit code ${result.code}`;
+}
+
 // Runs the bootstrap commands one at a time under /bin/bash in cwd, with one deadline for the list.
 // The output and the outcome of each command go to the log. The marker records a finished run.
 export async function runBootstrap(options: BootstrapOptions): Promise<BootstrapResult> {
@@ -58,7 +64,7 @@ export async function runBootstrap(options: BootstrapOptions): Promise<Bootstrap
     return { status: "ok" };
   }
   const deadline = Date.now() + options.timeoutMs;
-  for (const command of options.commands) {
+  for (const [i, command] of options.commands.entries()) {
     appendFileSync(log, `$ ${command}\n`);
     const outputFd = openSync(log, "a");
     let result;
@@ -73,7 +79,17 @@ export async function runBootstrap(options: BootstrapOptions): Promise<Bootstrap
       closeSync(outputFd);
     }
     if (!endsWithNewline(log)) appendFileSync(log, "\n");
-    appendFileSync(log, `--- exit code ${result.code}\n`);
+    appendFileSync(log, `${outcomeLine(result)}\n`);
+    if (result.timedOut || result.code !== 0) {
+      return {
+        status: "failed",
+        index: i + 1,
+        command,
+        ...(result.code !== null && { exitCode: result.code }),
+        ...(result.signal !== null && { signal: result.signal }),
+        timedOut: result.timedOut,
+      };
+    }
   }
   writeFileSync(marker, `${new Date().toISOString()}\n`);
   return { status: "ok" };
