@@ -259,9 +259,8 @@ export function useProcessEnv(env: NodeJS.ProcessEnv): void {
 // Call it inside a test. After the test, it restores the env and removes the folder.
 export function useThreeRepoDataRoot(): { dir: string; path: string; dataRoot: string } {
   const written = writeDataRootConfig(threeRepoConfig());
-  vi.stubEnv("TASKER_CONFIG", written.path);
+  useProcessEnv({ TASKER_CONFIG: written.path });
   onTestFinished(() => {
-    vi.unstubAllEnvs();
     rmSync(written.dir, { recursive: true, force: true });
   });
   return written;
