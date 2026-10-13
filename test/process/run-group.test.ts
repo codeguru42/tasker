@@ -1,6 +1,6 @@
 import { closeSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 import { type GroupResult, runInGroup, signalGroup } from "../../src/process/run-group.js";
 import { readPidFile, useTempDir, waitUntilGone } from "../helpers.js";
 
@@ -81,16 +81,85 @@ describe("runInGroup", () => {
   });
 
   it.each([
-    { name: "exit 0", command: "exit 0", missingCwd: false },
-    { name: "exit 3", command: "exit 3", missingCwd: false },
-    { name: "a spawn error", command: "exit 0", missingCwd: true },
-  ])("leaves the SIGINT and SIGTERM listener counts as before after $name", async (row) => {
-    const before = [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
-    const cwd = row.missingCwd ? join(useTempDir("tasker-run-group-"), "missing") : undefined;
+    { name: "exit 0", command: "exit 0", missingCwd: false, deadlineMs: MINUTE_MS },
+    { name: "exit 3", command: "exit 3", missingCwd: false, deadlineMs: MINUTE_MS },
+    { name: "a spawn error", command: "exit 0", missingCwd: true, deadlineMs: MINUTE_MS },
+    { name: "a timeout", command: "sleep 30", missingCwd: false, deadlineMs: 300 },
+    { name: "a SIGKILL", command: 'trap "" TERM; sleep 30', missingCwd: false, deadlineMs: 300 },
+  ])(
+    "leaves the SIGINT and SIGTERM listener counts as before after $name",
+    { timeout: 20_000 },
+    async (row) => {
+      const before = [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
+      const cwd = row.missingCwd ? join(useTempDir("tasker-run-group-"), "missing") : undefined;
 
-    await runLogged(row.command, { cwd }).catch(() => undefined);
+      await runLogged(row.command, { cwd, deadline: Date.now() + row.deadlineMs }).catch(() => undefined);
 
-    expect([process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")]).toEqual(before);
+      expect([process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")]).toEqual(before);
+    },
+  );
+
+  it("sends SIGTERM to the whole group at the deadline", { timeout: 20_000 }, async () => {
+    const cwd = useTempDir("tasker-run-group-cwd-");
+    const running = runLogged("sleep 30 & echo $! > child.pid; wait", {
+      cwd,
+      deadline: Date.now() + 300,
+    });
+    const childPid = await readPidFile(join(cwd, "child.pid"), 5000);
+
+    const { result } = await running;
+
+    expect(result).toEqual({ code: null, signal: "SIGTERM", timedOut: true, killed: false });
+    await waitUntilGone(childPid, 5000);
+  });
+
+  it("kills a child that ignores SIGTERM 5 s after the deadline", { timeout: 20_000 }, async () => {
+    const cwd = useTempDir("tasker-run-group-cwd-");
+    const started = Date.now();
+    const running = runLogged('(trap "" TERM; exec sleep 30) & echo $! > child.pid; wait', {
+      cwd,
+      deadline: started + 300,
+    });
+    const childPid = await readPidFile(join(cwd, "child.pid"), 5000);
+
+    const { result } = await running;
+
+    expect(result.timedOut).toBe(true);
+    expect(result.killed).toBe(true);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(5000);
+    await waitUntilGone(childPid, 5000);
+  });
+
+  it("kills a leader that ignores SIGTERM 5 s after the deadline", { timeout: 20_000 }, async () => {
+    const cwd = useTempDir("tasker-run-group-cwd-");
+    const started = Date.now();
+    const running = runLogged('trap "" TERM; echo $$ > leader.pid; sleep 30', {
+      cwd,
+      deadline: started + 300,
+    });
+    const leaderPid = await readPidFile(join(cwd, "leader.pid"), 5000);
+
+    const { result } = await running;
+
+    expect(result.timedOut).toBe(true);
+    expect(result.killed).toBe(true);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(5000);
+    await waitUntilGone(leaderPid, 5000);
+  });
+
+  it("does not time out with a deadline beyond the timer limit", async () => {
+    const warnings: Error[] = [];
+    const onWarning = (warning: Error) => warnings.push(warning);
+    process.on("warning", onWarning);
+    onTestFinished(() => {
+      process.off("warning", onWarning);
+    });
+
+    const { result } = await runLogged("exit 0", { deadline: Date.now() + 2 ** 40 });
+    await new Promise((done) => setImmediate(done));
+
+    expect(result).toEqual({ code: 0, signal: null, timedOut: false, killed: false });
+    expect(warnings.map((warning) => warning.name)).not.toContain("TimeoutOverflowWarning");
   });
 });
 
