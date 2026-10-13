@@ -140,6 +140,8 @@ export function startLockHolder(dbPath: string, name: string, goPath?: string): 
   let stderr = "";
   const exited = new Promise<void>((resolve) => child.on("exit", () => resolve()));
   const attempt = new Promise<LockAttempt>((resolve, reject) => {
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
       stdout += chunk;
       const end = stdout.indexOf("\n");
@@ -166,6 +168,8 @@ export function spawnTasker(
     });
     let stdout = "";
     let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => (stdout += chunk));
     child.stderr.on("data", (chunk) => (stderr += chunk));
     child.on("error", reject);
