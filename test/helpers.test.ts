@@ -35,6 +35,7 @@ import {
   isAlive,
   issueKeyErrorMessage,
   localBranches,
+  lockNames,
   makeGitClone,
   makeGitOrigin,
   makeTempDir,
@@ -890,5 +891,23 @@ describe("githubIssueAnswer", () => {
     const issue = await readGithubIssue(ref, "octo", gh.env);
 
     expect(issue).toMatchObject({ title: "T", state: "closed", labels: ["bug"] });
+  });
+});
+
+describe("lockNames", () => {
+  it("gives the sorted names of the lock rows, and none after unlock", () => {
+    const dataRoot = useTempDir("tasker-lock-names-");
+    const store = openStore(createDataRoot(dataRoot).database);
+    try {
+      store.tryLock("repo:b");
+      store.tryLock("repo:a");
+      expect(lockNames(dataRoot)).toEqual(["repo:a", "repo:b"]);
+
+      store.unlock("repo:a");
+      store.unlock("repo:b");
+      expect(lockNames(dataRoot)).toEqual([]);
+    } finally {
+      store.close();
+    }
   });
 });
