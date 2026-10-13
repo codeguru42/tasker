@@ -12,9 +12,10 @@ export interface RepoPaths {
 const MAX_SLUG_BYTES = 255;
 
 // A folder name for a repo key: the path slug of the key, at most MAX_SLUG_BYTES long.
+// The slug has only ASCII characters, so one character is one byte.
 export function repoSlug(repoKey: string): string {
   const slug = pathSlug(repoKey);
-  if (Buffer.byteLength(slug) > MAX_SLUG_BYTES) {
+  if (slug.length > MAX_SLUG_BYTES) {
     throw new Error(`the repo key is too long for a folder name: ${repoKey}`);
   }
   return slug;
