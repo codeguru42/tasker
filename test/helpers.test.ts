@@ -43,6 +43,7 @@ import {
   runCommand,
   savePid,
   seedTasks,
+  spawnTasker,
   sshKeyArgs,
   taskNames,
   threeRepoConfig,
@@ -909,5 +910,25 @@ describe("lockNames", () => {
     } finally {
       store.close();
     }
+  });
+});
+
+describe("spawnTasker", () => {
+  const packageVersion: string = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  ).version;
+
+  it("gives the exit code and the output of tasker", async () => {
+    const result = await spawnTasker(["--version"]);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBe(`${packageVersion}\n`);
+  });
+
+  it("gives a code that is not 0 and the error text for a bad option", async () => {
+    const result = await spawnTasker(["--bogus"]);
+
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain("unknown option");
   });
 });
