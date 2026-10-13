@@ -44,6 +44,15 @@ Each new command must be in the skill and in the `--help` output. The test `test
 6. Give the doctor checks of the provider from `doctorChecks()`.
 7. Write the tests first (see "Tests").
 
+## Add an operation to the version control provider
+
+[version-control.md](version-control.md#the-provider-interface) gives the import boundary. A command ticket that needs a git function with no operation adds the operation in the same change.
+
+1. Add the operation to `VcsProvider` in `src/vcs/provider.ts`. Give it a neutral name. Use words such as workspace, task ref and revision, not git words such as worktree, branch and commit. Its first argument is `VcsContext`, as for each other operation.
+2. Put each new type of the operation in `src/vcs/provider.ts`. If a git module defines the type now, move the type. [version-control.md](version-control.md#the-provider-interface) gives the rule for the types.
+3. Map the operation to its git function in `src/vcs/git/provider.ts`. [version-control.md](version-control.md#the-provider-interface) gives the rule for the mapping.
+4. Write the test first (see "Tests"). Add it to `test/vcs/git/provider.test.ts`. If the operation changes nothing, the test compares the result of the operation with a direct call of the git function on the same fixture. If the operation changes state, the test checks the result and the side effect of the operation, as the existing tests in that file do.
+
 ## Add an issue tracker provider
 
 1. Add the id to the `issueTracker.provider` enum in `src/config/schema.ts`, and to the `provider` row of the `issueTracker` table in `docs/config.md`.
