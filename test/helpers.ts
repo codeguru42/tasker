@@ -154,6 +154,25 @@ export function startLockHolder(dbPath: string, name: string, goPath?: string): 
   return { pid, attempt, exited };
 }
 
+// Runs tasker (src/main.ts through tsx) in a child process with env on top of the process env.
+export function spawnTasker(
+  args: readonly string[],
+  env: NodeJS.ProcessEnv = {},
+): Promise<{ code: number | null; stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["--import", "tsx", "src/main.ts", ...args], {
+      cwd: repoRoot,
+      env: { ...process.env, ...env },
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("error", reject);
+    child.on("close", (code) => resolve({ code, stdout, stderr }));
+  });
+}
+
 // The names in the locks table of a data root, sorted.
 export function lockNames(dataRoot: string): string[] {
   const db = new DatabaseSync(createDataRoot(dataRoot).database);
