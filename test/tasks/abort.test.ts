@@ -2,12 +2,22 @@ import { symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
+import { LockBusyError, repoLockName } from "../../src/store/locks.js";
+import { createDataRoot } from "../../src/store/layout.js";
 import { canonicalPath } from "../../src/real-path.js";
 import { abortTask } from "../../src/tasks/abort.js";
 import { startTask } from "../../src/tasks/start.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
-import { useStartFixture, useTempDir, withDataRootStore } from "../helpers.js";
+import {
+  lockNames,
+  startLockHolder,
+  taskWorkspaceState,
+  useStartedTask,
+  useStartFixture,
+  useTempDir,
+  withDataRootStore,
+} from "../helpers.js";
 
 describe("abortTask", () => {
   it("removes the worktree when the data root goes through a symlink", async () => {
@@ -45,5 +55,30 @@ describe("abortTask", () => {
     });
     expect(entries.map((entry) => entry.path)).not.toContain(canonicalPath(task.worktree));
     expect(task.cancelled.state).toBe("cancelled");
+  });
+
+  it("leaves everything and releases the task lock when the repo lock is busy", async () => {
+    const started = await useStartedTask();
+    const before = await taskWorkspaceState(started);
+    const holder = startLockHolder(createDataRoot(started.dataRoot).database, repoLockName(started.repoKey));
+    await holder.attempt;
+    const ref = { key: started.key, repoKey: started.repoKey, shortRef: githubShortRef("5") };
+
+    const error = await withDataRootStore(started.dataRoot, (store) =>
+      abortTask(store, {
+        config: started.config,
+        ref,
+        taskId: store.findLatestTask(started.repoKey, started.key)!.id,
+        force: false,
+        env: process.env,
+        repoLockWaitMs: 300,
+        report: () => {},
+      }).catch((caught: unknown) => caught),
+    );
+
+    expect(error).toBeInstanceOf(LockBusyError);
+    expect((error as Error).message).toContain("the lock repo:codeguru42/tasker is busy");
+    expect(await taskWorkspaceState(started)).toEqual(before);
+    expect(lockNames(started.dataRoot)).toEqual([repoLockName(started.repoKey)]);
   });
 });

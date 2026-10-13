@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 import { abort } from "../../src/commands/abort.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { canonicalPath } from "../../src/real-path.js";
-import { taskLogsDir } from "../../src/store/layout.js";
+import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
+import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import {
@@ -12,6 +13,7 @@ import {
   lockNames,
   runCommand,
   seedTasks,
+  startLockHolder,
   taskWorkspaceState,
   useStartedTask,
   useStartFixture,
@@ -204,5 +206,21 @@ describe("abort", () => {
     expect(result.err).not.toBe("");
     expect(await taskWorkspaceState(started)).toEqual(before);
     expect(lockNames(started.dataRoot)).toEqual([]);
+  });
+
+  it("refuses at once when another process holds the task lock", async () => {
+    const started = await useStartedTask();
+    const before = await taskWorkspaceState(started);
+    const name = taskLockName(REPO, KEY);
+    const holder = startLockHolder(createDataRoot(started.dataRoot).database, name);
+    await holder.attempt;
+
+    const result = await runCommand(abort, "abort", KEY);
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe("");
+    expect(result.err).toMatch(new RegExp(`^the lock ${name} is busy: process ${holder.pid} took it at .+\\n$`));
+    expect(await taskWorkspaceState(started)).toEqual(before);
+    expect(lockNames(started.dataRoot)).toEqual([name]);
   });
 });
