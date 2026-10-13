@@ -46,6 +46,7 @@ import {
   seedTasks,
   spawnTasker,
   sshKeyArgs,
+  startFixture,
   taskNames,
   taskWorkspaceState,
   threeRepoConfig,
@@ -804,6 +805,24 @@ describe("readPidFile", () => {
     const path = join(useTempDir("tasker-pid-file-"), "pid");
 
     await expect(readPidFile(path, 150)).rejects.toThrow();
+  });
+});
+
+describe("startFixture", () => {
+  it("resolves with the first line of stdout", async () => {
+    const dbPath = join(useTempDir("tasker-fixture-"), "tasker.db");
+
+    await expect(startFixture("lock-holder.ts", [dbPath, "test-lock"]).firstLine).resolves.toBe(
+      JSON.stringify({ held: true }),
+    );
+  });
+
+  it("rejects with the stderr when the child ends first", async () => {
+    const dbPath = join(useTempDir("tasker-fixture-"), "missing", "tasker.db");
+
+    await expect(startFixture("lock-holder.ts", [dbPath, "test-lock"]).firstLine).rejects.toThrow(
+      "unable to open database file",
+    );
   });
 });
 
