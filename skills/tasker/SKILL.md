@@ -73,6 +73,8 @@ The command picks the base branch from the first source that has one:
 4. The `defaultBaseBranch` of the repo in the configuration.
 5. A question to you. The command asks only when stdin is a terminal.
 
+If you press Ctrl-C at the question, the command stops. The task goes to the state `failed` with the error `no answer: the question was cancelled`. Run the command again to continue it.
+
 The question and the notes of the base step go to stderr. As a result, stdout holds only the six lines.
 
 The command stops with exit code 1 and prints the error on stderr in these cases:
@@ -84,7 +86,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - A step fails. The task goes to the state `failed` with the error. Fix the cause, then run the command again.
 - Bootstrap fails. The error names the number and the text of the command, then the exit code, the timeout or the signal, and the path of the log. The last 20 lines of the log follow. Fix the cause, then run the command again.
 
-Two starts for different issues of one repo run at the same time. They wait for each other only while they use the clone. A wait for the clone ends after 5 minutes with the lock error. The task then stays in the state `provisioning`, with no error. Run the command again to continue it.
+Two starts for different issues of one repo run at the same time. They wait for each other only while one of them uses the clone or waits for your answer to the question for the base branch. A wait for the clone ends after 5 minutes with the lock error. The task then stays in the state `provisioning`, with no error. Run the command again to continue it.
 
 ### `tasker show`
 

@@ -18,7 +18,7 @@ The order follows what each step needs and what a failure can leave.
 
 Each start takes the task lock first and the repo lock second. No code takes a task lock while it holds a repo lock. As a result, two starts cannot wait for each other in a circle, so they cannot deadlock.
 
-The task lock does not wait. A second start of the same issue stops at once, because it would repeat the work of the first one. The repo lock waits, because another task of the same repo holds it only while it changes the clone. The wait is long enough for a first fetch of a large repo. It covers only the steps that change the clone.
+The task lock does not wait. A second start of the same issue stops at once, because it would repeat the work of the first one. The repo lock covers the steps that change the clone and the question for the base branch. The base step fetches first and asks only after the fetch, so the question falls inside the lock. The repo lock waits, because another task of the same repo usually holds it only for these short steps. The wait is long enough for a first fetch of a large repo.
 
 The rule that each command that changes a task takes the task lock has one home: [the locks table](data-root.md#locks-table).
 
@@ -44,4 +44,5 @@ An agent reads stdout. It holds only the fields of the task, so the agent can pa
 
 - A new base on a second run does not move a task branch that already exists. The stored base can differ from the real start point of the branch.
 - An issue that closes after its task exists does not stop a second run. The closed check runs only when no task exists.
+- A person who does not answer the question for the base branch holds the repo lock. Another start of the same repo then waits, and it stops with the lock error at the end of its wait.
 - The start does not assign the issue and does not mark it in progress. It has no option to take over a lock of a live process, and no stacked base.
