@@ -197,6 +197,8 @@ The code decides on a conflict only from the list of `git diff --name-only --dif
 
 ### A failed step
 
+After a failed git step, the code runs the abort only when some path is unmerged. Then it always runs the restore. It throws the conflict error only when the list of unmerged paths is not empty. Otherwise it throws the original git error again. An error that is not a git error passes through with no restore.
+
 - The code drops an error of the abort, because the restore runs next and checks the state.
 - An error of the restore wins over the other errors.
 
@@ -212,6 +214,7 @@ The code decides on a conflict only from the list of `git diff --name-only --dif
 - `checkout --force -B` puts the branch back at the start, also when the failed step moved it. The checkout also removes the merge state.
 - `git symbolic-ref -q HEAD` exits with 1 for a detached HEAD. Every other failure passes through.
 - Git has no plumbing command with an exit code that tells if a rebase or a merge is in progress, and the text of `git status` is not stable. So the code tests the paths from `git rev-parse --git-path <name>`.
+- A git error of a restore command does not stop the restore. The code keeps the stderr and runs the next command.
 - The caller must find the worktree clean first, because the restore deletes uncommitted work and untracked files.
 
 ### The restore error
