@@ -1,11 +1,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { run } from "../../src/cli.js";
 import { start } from "../../src/commands/start.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { openStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { lockNames, runCommand, taskNames, useStartFixture } from "../helpers.js";
+import { captureIo, lockNames, runCommand, taskNames, useStartFixture } from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -106,6 +107,36 @@ describe("start", () => {
     expect(result.out).toContain("base: dev\n");
     expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "dev", source: "explicit" });
     expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
+  it("asks for the base in a terminal and learns the answer", async () => {
+    const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
+    const io = captureIo({ answers: ["main"] });
+
+    const code = await run(["start", KEY], { commands: [start], io });
+
+    expect(code).toBe(0);
+    expect(io.questions).toEqual(["Base branch for codeguru42/tasker: "]);
+    expect(io.out.join("")).toContain("base: main\n");
+    expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "main", source: "ask" });
+    const store = openStore(createDataRoot(fixture.dataRoot).database);
+    try {
+      expect(store.getDefaultBaseBranch(fixture.repoKey)).toBe("main");
+    } finally {
+      store.close();
+    }
+    expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
+  it("fails with no base and no terminal", async () => {
+    await useStartFixture({ repo: { defaultBaseBranch: undefined } });
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toBe(
+      "no base branch for codeguru42/tasker: pass --base <branch>, or set repos.codeguru42/tasker.defaultBaseBranch\n",
+    );
   });
 
   it("prints the description of the command and of both options for --help", async () => {
