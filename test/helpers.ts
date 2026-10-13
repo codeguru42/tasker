@@ -351,6 +351,55 @@ export function useThreeRepoDataRoot(): { dir: string; path: string; dataRoot: s
   return written;
 }
 
+export interface StartFixture {
+  origin: GitOrigin;
+  dataRoot: string;
+  configPath: string;
+  gh: FakeGh;
+  repoKey: string;
+  config: Config;
+}
+
+// The setup of the tests of tasker start: a local origin with main, one repo codeguru42/tasker that
+// uses it as the remote, and a fake gh that answers the token call and the read of each issue.
+// The default issue is codeguru42/tasker#5. A key of options.repo that is undefined is removed.
+// The fake gh comes first on the PATH, so the real gh never runs and git still runs.
+// Call it inside a test. After the test, it removes the folders and restores the env.
+export async function useStartFixture(
+  options: {
+    issues?: Parameters<typeof githubIssueAnswer>[0][];
+    repo?: Record<string, unknown>;
+    remote?: string;
+  } = {},
+): Promise<StartFixture> {
+  const provider = await makeProviderFixture();
+  onTestFinished(() => provider.remove());
+  const { origin } = provider;
+  const repoKey = "codeguru42/tasker";
+  const raw = validConfig();
+  const repo: Record<string, unknown> = {
+    ...raw.repos.tasker,
+    remote: options.remote ?? origin.path,
+    defaultBaseBranch: "main",
+    ...options.repo,
+  };
+  for (const [name, value] of Object.entries(repo)) {
+    if (value === undefined) delete repo[name];
+  }
+  raw.repos = { [repoKey]: repo };
+  const written = writeDataRootConfig(raw);
+  onTestFinished(() => rmSync(written.dir, { recursive: true, force: true }));
+  const gh = fakeGh(written.dir, {}, [
+    ghTokenAnswer("codeguru42", "gho_test"),
+    ...(options.issues ?? [{ project: repoKey, number: 5 }]).map(githubIssueAnswer),
+  ]);
+  useProcessEnv({
+    TASKER_CONFIG: written.path,
+    PATH: `${gh.env.PATH}${delimiter}${process.env.PATH}`,
+  });
+  return { origin, dataRoot: written.dataRoot, configPath: written.path, gh, repoKey, config: loadConfig() };
+}
+
 // The message of the IssueKeyError that resolveIssueKey() throws for key with the
 // configuration at configPath. It fails the test when the key resolves.
 export function issueKeyErrorMessage(key: string, configPath: string): string {
