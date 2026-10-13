@@ -142,10 +142,10 @@ describe("run", () => {
 });
 
 describe("createDefaultIo", () => {
-  function streams(isTTY: boolean) {
+  function streams(isTTY: boolean, ttyOutput = false) {
     const stdin = Object.assign(new PassThrough(), { isTTY });
     const stdout = new PassThrough();
-    const stderr = new PassThrough();
+    const stderr = Object.assign(new PassThrough(), { isTTY: ttyOutput });
     return { stdin, stdout, stderr };
   }
 
@@ -181,5 +181,21 @@ describe("createDefaultIo", () => {
     s.stdin.end();
 
     await expect(answer).rejects.toThrow("no answer: the input closed");
+  });
+
+  it("rejects when the question is cancelled with Ctrl-C", async () => {
+    // A terminal output puts readline in terminal mode, where Ctrl-C is a key.
+    const s = streams(true, true);
+    const answer = createDefaultIo(s).prompt?.("Base branch: ");
+    // The test writes the raw byte to stdin.
+    s.stdin.write("\x03");
+    const unsettled = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("the prompt did not settle")), 1000).unref();
+    });
+
+    await expect(Promise.race([answer, unsettled])).rejects.toThrow(
+      "no answer: the question was cancelled",
+    );
+    expect(s.stdin.isPaused()).toBe(true);
   });
 });
