@@ -47,9 +47,11 @@ import {
   spawnTasker,
   sshKeyArgs,
   taskNames,
+  taskWorkspaceState,
   threeRepoConfig,
   useProcessEnv,
   useTempDir,
+  useStartedTask,
   useStartFixture,
   useThreeRepoDataRoot,
   validConfig,
@@ -1034,5 +1036,41 @@ describe("withDataRootStore", () => {
     );
 
     expect(task.createdAt).toBe(at.toISOString());
+  });
+});
+
+describe("useStartedTask", () => {
+  it("starts the task of issue 5 and gives its names", async () => {
+    const started = await useStartedTask();
+
+    expect(started.result.code).toBe(0);
+    expect(started.key).toBe("codeguru42/tasker#5");
+    expect(existsSync(started.worktree)).toBe(true);
+    expect(await localBranches(started.clone, started.env)).toContain(`refs/heads/${started.branch}`);
+  });
+});
+
+describe("taskWorkspaceState", () => {
+  it("gives the state of a started task", async () => {
+    const started = await useStartedTask();
+
+    expect(await taskWorkspaceState(started)).toEqual({
+      state: "workspace_ready",
+      worktree: true,
+      listed: true,
+      branch: true,
+    });
+  });
+
+  it("shows a folder that is gone, while git still lists the worktree", async () => {
+    const started = await useStartedTask();
+    rmSync(started.worktree, { recursive: true, force: true });
+
+    expect(await taskWorkspaceState(started)).toEqual({
+      state: "workspace_ready",
+      worktree: false,
+      listed: true,
+      branch: true,
+    });
   });
 });
