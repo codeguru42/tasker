@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 const KILL_GRACE_MS = 5_000;
 const POLL_MS = 100;
 const MAX_TIMER_MS = 2_147_483_647; // above this, setTimeout fires at once
+const FORWARDED_SIGNALS = ["SIGINT", "SIGTERM"] as const;
 
 export interface RunGroupOptions {
   cwd: string;
@@ -39,7 +40,7 @@ function groupRuns(pid: number): boolean {
 }
 
 // Runs file with args in a new process group and session. stdout and stderr go to outputFd, and stdin is /dev/null.
-// At the deadline, the group gets SIGTERM. Five seconds later, it gets SIGKILL.
+// While it runs, SIGINT and SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM. Five seconds later, it gets SIGKILL.
 export function runInGroup(
   file: string,
   args: readonly string[],
@@ -64,12 +65,15 @@ export function runInGroup(
     let deadlineTimer: NodeJS.Timeout | undefined;
     let graceTimer: NodeJS.Timeout | undefined;
     let pollTimer: NodeJS.Timeout | undefined;
+    const forwarders = FORWARDED_SIGNALS.map((signal) => [signal, () => signalGroup(pid, signal)] as const);
+    for (const [signal, handler] of forwarders) process.on(signal, handler);
     const settle = (finish: () => void) => {
       if (settled) return;
       settled = true;
       clearTimeout(deadlineTimer);
       clearTimeout(graceTimer);
       clearInterval(pollTimer);
+      for (const [signal, handler] of forwarders) process.off(signal, handler);
       finish();
     };
     const finishIfDone = () => {
