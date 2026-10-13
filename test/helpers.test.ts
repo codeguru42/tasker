@@ -9,7 +9,7 @@ import { parseConfig } from "../src/config/schema.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
-import { openStore } from "../src/store/store.js";
+import { openStore, type TaskStore } from "../src/store/store.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -56,6 +56,7 @@ import {
   writeTempConfig,
   waitUntil,
   waitUntilGone,
+  withDataRootStore,
   writeBootstrapLog,
   writeDataRootConfig,
   writeFakeGh,
@@ -972,5 +973,75 @@ describe("useStartFixture", () => {
     const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
 
     expect(fixture.config.repos[fixture.repoKey].defaultBaseBranch).toBeUndefined();
+  });
+});
+
+describe("withDataRootStore", () => {
+  it("gives the value of fn, and the store is closed after the call", () => {
+    const dataRoot = join(useTempDir("tasker-store-"), "data");
+    let captured: TaskStore | undefined;
+
+    const value = withDataRootStore(dataRoot, (store) => {
+      captured = store;
+      expect(store.listTasks()).toEqual([]);
+      return 42;
+    });
+
+    expect(value).toBe(42);
+    expect(() => captured?.listTasks()).toThrow();
+  });
+
+  it("keeps the store open across an await and closes it after the promise settles", async () => {
+    const dataRoot = join(useTempDir("tasker-store-"), "data");
+    let captured: TaskStore | undefined;
+
+    const value = await withDataRootStore(dataRoot, async (store) => {
+      captured = store;
+      await Promise.resolve();
+      expect(store.listTasks()).toEqual([]);
+      return "done";
+    });
+
+    expect(value).toBe("done");
+    expect(() => captured?.listTasks()).toThrow();
+  });
+
+  it("closes the store and throws again when fn throws", () => {
+    const dataRoot = join(useTempDir("tasker-store-"), "data");
+    let captured: TaskStore | undefined;
+
+    expect(() =>
+      withDataRootStore(dataRoot, (store) => {
+        captured = store;
+        throw new Error("boom");
+      }),
+    ).toThrow("boom");
+    expect(() => captured?.listTasks()).toThrow();
+  });
+
+  it("closes the store when the promise of fn rejects", async () => {
+    const dataRoot = join(useTempDir("tasker-store-"), "data");
+    let captured: TaskStore | undefined;
+
+    await expect(
+      withDataRootStore(dataRoot, async (store) => {
+        captured = store;
+        throw new Error("late boom");
+      }),
+    ).rejects.toThrow("late boom");
+    expect(() => captured?.listTasks()).toThrow();
+  });
+
+  it("uses options.now", () => {
+    const dataRoot = join(useTempDir("tasker-store-"), "data");
+    const at = new Date("2026-02-03T00:00:00.000Z");
+
+    const task = withDataRootStore(
+      dataRoot,
+      (store) => store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" }),
+      { now: () => at },
+    );
+
+    expect(task.createdAt).toBe(at.toISOString());
   });
 });
