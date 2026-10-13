@@ -1,4 +1,5 @@
 import type { Check, CheckResult } from "./check.js";
+import { errorMessage } from "./error-message.js";
 
 // A check body throws it when its own deadline passes. The wrapper gives the timeout result.
 export class DeadlineError extends Error {}
@@ -37,7 +38,7 @@ export function timedCheck(
         result =
           signal.aborted || error instanceof DeadlineError
             ? timedOut(spec.timeoutMs)
-            : { status: "error", detail: error instanceof Error ? error.message : String(error) };
+            : { status: "error", detail: errorMessage(error) };
       }
       if (signal.aborted && result.status !== "error") {
         result = timedOut(spec.timeoutMs);

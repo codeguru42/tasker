@@ -2,13 +2,10 @@ import { rmSync, statfs, writeFileSync } from "node:fs";
 import { promisify } from "node:util";
 import { createDataRoot, doctorProbePath } from "../store/layout.js";
 import type { Check } from "./check.js";
+import { errorMessage } from "./error-message.js";
 import { timedCheck } from "./timed-check.js";
 
 const WRITABLE = "Make sure that dataRoot names a folder that tasker can write in.";
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 // Makes the missing folders of dataRoot, then writes one new file there and deletes it again.
 export function dataRootCheck(dataRoot: string, timeoutMs = 5000): Check {
@@ -18,7 +15,7 @@ export function dataRootCheck(dataRoot: string, timeoutMs = 5000): Check {
     } catch (error) {
       return {
         status: "error",
-        detail: `cannot make the folders of the data root ${dataRoot}: ${messageOf(error)}`,
+        detail: `cannot make the folders of the data root ${dataRoot}: ${errorMessage(error)}`,
         remediation: WRITABLE,
       };
     }
@@ -28,7 +25,7 @@ export function dataRootCheck(dataRoot: string, timeoutMs = 5000): Check {
     } catch (error) {
       return {
         status: "error",
-        detail: `cannot write the file ${probe}: ${messageOf(error)}`,
+        detail: `cannot write the file ${probe}: ${errorMessage(error)}`,
         remediation: WRITABLE,
       };
     }
@@ -37,7 +34,7 @@ export function dataRootCheck(dataRoot: string, timeoutMs = 5000): Check {
     } catch (error) {
       return {
         status: "error",
-        detail: `cannot delete the file ${probe}: ${messageOf(error)}`,
+        detail: `cannot delete the file ${probe}: ${errorMessage(error)}`,
         remediation: `Delete the file ${probe}.`,
       };
     }
