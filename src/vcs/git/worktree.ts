@@ -7,7 +7,8 @@ import {
   realpathSync,
   statSync,
 } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { canonicalPath } from "../../real-path.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { isShortRef, LOWER_SLUG, SHORT_REF } from "../../issue-key/short-ref.js";
 import { refExists, refRevision } from "./refs.js";
@@ -112,18 +113,6 @@ export async function listWorktrees(options: {
     entries.push(entry);
   }
   return entries;
-}
-
-// The path as git lists it: the real parent folder, then the last part. It works for a missing
-// folder, because git lists the real path of the parent.
-function canonicalPath(path: string): string {
-  const full = resolve(path);
-  try {
-    return join(realpathSync(dirname(full)), basename(full));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return full;
-    throw error;
-  }
 }
 
 function isFile(path: string): boolean {
