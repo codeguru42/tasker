@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import { canonicalPath } from "../../real-path.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { isShortRef, LOWER_SLUG, SHORT_REF } from "../../issue-key/short-ref.js";
+import type { WorkspaceEntry } from "../provider.js";
 import { refExists, refRevision } from "./refs.js";
 import { runGit } from "./run.js";
 
@@ -79,31 +80,24 @@ export function taskWorktreePath(worktrees: string, shortRef: string): string {
   return join(worktrees, shortRef);
 }
 
-export interface WorktreeEntry {
-  path: string;
-  branch?: string;
-  // Set when the worktree is locked: "" for a lock with no reason.
-  lockReason?: string;
-}
-
 // The worktrees of the clone, without the bare clone itself.
 export async function listWorktrees(options: {
   clone: string;
   env: NodeJS.ProcessEnv;
-}): Promise<WorktreeEntry[]> {
+}): Promise<WorkspaceEntry[]> {
   const out = await runGit(["worktree", "list", "--porcelain", "-z"], {
     gitDir: options.clone,
     env: options.env,
   });
-  const entries: WorktreeEntry[] = [];
+  const entries: WorkspaceEntry[] = [];
   for (const record of out.split("\0\0")) {
     const fields = record.split("\0").filter((field) => field !== "");
     const worktree = fields.find((field) => field.startsWith("worktree "));
     if (worktree === undefined || fields.includes("bare")) continue;
-    const entry: WorktreeEntry = { path: worktree.slice("worktree ".length) };
+    const entry: WorkspaceEntry = { path: worktree.slice("worktree ".length) };
     for (const field of fields) {
       if (field.startsWith("branch refs/heads/")) {
-        entry.branch = field.slice("branch refs/heads/".length);
+        entry.taskRef = field.slice("branch refs/heads/".length);
       } else if (field === "locked") {
         entry.lockReason = "";
       } else if (field.startsWith("locked ")) {
@@ -157,16 +151,16 @@ export async function createTaskWorktree(options: {
   if (entry?.lockReason !== undefined) {
     // A stopped "git worktree add" locks the worktree with this reason (state 23d: the
     // checkout is partial). The folder holds no work of the task, so reset it and unlock it.
-    if (entry.lockReason === "initializing" && entry.branch === branch && hasGitFile(target)) {
+    if (entry.lockReason === "initializing" && entry.taskRef === branch && hasGitFile(target)) {
       await runGit(["reset", "--hard"], { cwd: target, env });
       await runGit(["worktree", "unlock", "--", target], { gitDir: clone, env });
       return "reused-worktree";
     }
     throw new Error(`the worktree is locked: ${target} (${entry.lockReason})`);
   }
-  if (entry !== undefined && entry.branch !== branch) {
+  if (entry !== undefined && entry.taskRef !== branch) {
     throw new Error(
-      `the worktree path has another branch: ${target} (${entry.branch ?? "detached"})`,
+      `the worktree path has another branch: ${target} (${entry.taskRef ?? "detached"})`,
     );
   }
   if (entry !== undefined) {
@@ -178,7 +172,7 @@ export async function createTaskWorktree(options: {
       throw new Error(`the worktree has no .git file: ${target}`);
     }
   }
-  const holder = entries.find((other) => other.path !== target && other.branch === branch);
+  const holder = entries.find((other) => other.path !== target && other.taskRef === branch);
   if (holder !== undefined) {
     throw new Error(`the branch ${branch} is in another worktree: ${holder.path}`);
   }

@@ -9,6 +9,13 @@ export interface VcsContext {
   env: NodeJS.ProcessEnv;
 }
 
+export interface WorkspaceEntry {
+  path: string;
+  taskRef?: string;
+  // Set when the workspace is locked: "" for a lock with no reason.
+  lockReason?: string;
+}
+
 export interface Workspace {
   path: string;
   taskRef: string;
