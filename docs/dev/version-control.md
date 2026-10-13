@@ -50,9 +50,9 @@ Limit: a program that git starts and that opens `/dev/tty` by itself, for exampl
 
 ## Provision
 
-The marker file is written before `git init` and removed after the first fetch of a fresh clone. While it exists, the next provision deletes the clone folder, with every file that a person put there, and clones again. The marker and the parent folder stay.
+The marker is the file `repo.git.incomplete` next to the clone folder `repo.git` (see [data-root.md](data-root.md#folders)). Provision writes it before `git init` and removes it after the first fetch of a fresh clone. While the marker exists, the next provision takes the recovery path: it deletes the clone folder, with every file that a person put there, and clones again. The marker and the parent folder stay.
 
-A complete clone is not cloned again. Provision applies the configuration and fetches. A change to `vcs.config` or to `remote` takes effect at the next provision.
+A complete clone has no marker and is not cloned again. This is the path of a complete clone. Provision applies the configuration and fetches. A change to `vcs.config` or to `remote` takes effect at the next provision.
 
 - `git ls-remote --exit-code` runs before any write, so a failed `ls-remote` on a fresh path leaves nothing on disk. Exit code 2 means that the remote answers and has no refs.
 - The cwd of `ls-remote` and `init` is the root of the file system, so a relative remote path resolves against `/` and names the same repo in `ls-remote` and in the fetch.
@@ -60,7 +60,7 @@ A complete clone is not cloned again. Provision applies the configuration and fe
 - `--object-format=sha1` overrides `init.defaultObjectFormat` and `GIT_DEFAULT_HASH`, because a sha256 clone cannot fetch from a sha1 remote. tasker reads only 40-hex revisions, so a sha256 remote is out of scope.
 - `--prune` removes the remote-tracking refs of branches that the remote deleted. The fetch brings the tags that point into the fetched branches, as git does by default.
 
-A failure leaves files on disk. If a step after the `init` fails, the parent folder, the marker and the clone folder stay, with the clone folder in the state that the failed step left it. If the removal of the marker fails, the clone is complete, but the marker stays. In each case, the next provision takes the recovery path. A failed hook write on the complete-clone path rejects before the fetch. That path has no marker, so the next provision takes it again, and the config writes of that run are already done.
+A failure leaves files on disk. If a step after the `init` fails, the parent folder, the marker and the clone folder stay, with the clone folder in the state that the failed step left it. If the removal of the marker fails, the clone is complete, but the marker stays. In each case, the next provision takes the recovery path. A failed hook write on the path of a complete clone rejects before the fetch. That path has no marker, so the next provision takes it again, and the config writes of that run are already done.
 
 A changed `remote` has these effects at the next provision:
 
@@ -216,7 +216,7 @@ The delete needs the lease, because a plain delete of a branch that origin does 
 
 - Each push, also a push that git then rejects, uses one token, because the hook deletes the token before git sends anything.
 - A failed push changes nothing on origin.
-- A successful push moves the matching `refs/remotes/origin/*` ref in the clone.
+- A successful publish or land moves the matching `refs/remotes/origin/*` ref in the clone, and a successful delete removes it.
 
 ## Doctor checks
 
