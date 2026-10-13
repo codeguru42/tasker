@@ -313,6 +313,51 @@ describe("start", () => {
     });
   });
 
+  describe("a task that is already started", () => {
+    it("prints the task again after a success and changes nothing", async () => {
+      const fixture = await useStartFixture();
+      const first = await runCommand(start, "start", KEY);
+      const count = eventsOf(fixture.dataRoot).length;
+
+      const second = await runCommand(start, "start", KEY);
+
+      expect(second.code).toBe(0);
+      expect(second.out).toBe(`task already started\n${first.out}`);
+      expect(eventsOf(fixture.dataRoot)).toHaveLength(count);
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+
+    it("leaves a task that failed after provisioning as it is", async () => {
+      const fixture = await useStartFixture();
+      seedTasks(fixture.dataRoot, [
+        {
+          issueKey: KEY,
+          repoKey: fixture.repoKey,
+          state: "workspace_ready",
+          at: dayAt(1),
+          title: "Issue 5",
+          failWith: "boom",
+        },
+      ]);
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result).toEqual({
+        code: 0,
+        err: "",
+        out:
+          "task already started\n" +
+          "issue: codeguru42/tasker#5\n" +
+          "repo: codeguru42/tasker\n" +
+          "state: failed\n" +
+          "base: -\n" +
+          "branch: -\n" +
+          "worktree: -\n",
+      });
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+  });
+
   it("prints the description of the command and of both options for --help", async () => {
     const { code, out } = await runCommand(start, "start", "--help");
 
