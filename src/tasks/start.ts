@@ -27,7 +27,8 @@ export interface StartOutcome {
 export async function startTask(store: TaskStore, request: StartRequest): Promise<StartOutcome> {
   const { config, ref, env } = request;
   const repo = config.repos[ref.repoKey];
-  const issue = await issueProviderFor(config, ref.repoKey).fetchIssue(ref, env);
+  const issueProvider = issueProviderFor(config, ref.repoKey);
+  const issue = await issueProvider.fetchIssue(ref, env);
   const task = store.createTask({
     issueKey: ref.key,
     repoKey: ref.repoKey,
@@ -40,6 +41,7 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
   await vcs.provision(ctx);
   const resolved = await vcs.resolveBase(ctx, {
     memory: store,
+    hint: issueProvider.baseBranchHint(issue),
     defaultBase: repo.defaultBaseBranch,
     ask: request.ask,
   });
