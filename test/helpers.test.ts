@@ -2,6 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
+import { readGithubIssue } from "../src/issues/github/issue.js";
 import { loadConfig } from "../src/config/load.js";
 import { parseConfig } from "../src/config/schema.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
@@ -28,6 +29,7 @@ import {
   GIT_TEST_IDENTITY,
   greet,
   ghTokenAnswer,
+  githubIssueAnswer,
   gitCloneTokens,
   gitTestEnv,
   isAlive,
@@ -852,5 +854,41 @@ describe("captureIo", () => {
     const io = captureIo({ answers: [] });
     await expect(io.prompt?.("more? ")).rejects.toThrow();
     expect(io.questions).toEqual(["more? "]);
+  });
+});
+
+describe("githubIssueAnswer", () => {
+  it("answers the view call of an issue with the JSON of gh", () => {
+    const answer = githubIssueAnswer({ project: "octo/repo", number: 7, labels: ["bug"] });
+
+    expect(answer.args).toEqual([
+      "issue",
+      "view",
+      "7",
+      "-R",
+      "octo/repo",
+      "--json",
+      "number,title,body,url,labels,state",
+    ]);
+    expect(JSON.parse(answer.stdout ?? "")).toMatchObject({
+      number: 7,
+      title: "Issue 7",
+      url: "https://github.com/octo/repo/issues/7",
+      labels: [{ name: "bug" }],
+      state: "OPEN",
+    });
+  });
+
+  it("gives an issue to readGithubIssue through the fake gh", async () => {
+    const dir = useTempDir("tasker-issue-answer-");
+    const gh = fakeGh(dir, {}, [
+      ghTokenAnswer("octo", "gho_test"),
+      githubIssueAnswer({ project: "octo/repo", number: 7, title: "T", state: "CLOSED", labels: ["bug"] }),
+    ]);
+    const ref = { key: "octo/repo#7", repoKey: "repo", shortRef: "octo-repo-7" };
+
+    const issue = await readGithubIssue(ref, "octo", gh.env);
+
+    expect(issue).toMatchObject({ title: "T", state: "closed", labels: ["bug"] });
   });
 });
