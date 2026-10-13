@@ -1,6 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { showBootstrap, taskBootstrapLogPath } from "../../src/commands/show-bootstrap.js";
+import { showBootstrap } from "../../src/commands/show-bootstrap.js";
+import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
+import { taskLogsDir } from "../../src/store/layout.js";
 import { dayAt, runCommand, seedTasks, useThreeRepoDataRoot, writeBootstrapLog } from "../helpers.js";
 
 const TASKER = "codeguru42/tasker";
@@ -54,7 +56,7 @@ describe("show-bootstrap", () => {
     const [task] = seedTasks(dataRoot, [
       { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "workspace_ready", at: dayAt(2) },
     ]);
-    mkdirSync(taskBootstrapLogPath(dataRoot, task), { recursive: true });
+    mkdirSync(bootstrapLogPath(taskLogsDir(dataRoot, task)), { recursive: true });
 
     const result = await runCommand(showBootstrap, "show-bootstrap", `${TASKER}#5`, "--repo", TASKER);
 

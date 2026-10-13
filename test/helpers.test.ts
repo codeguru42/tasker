@@ -8,7 +8,7 @@ import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { openStore } from "../src/store/store.js";
-import { createDataRoot, taskArtifactsDir } from "../src/store/layout.js";
+import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { createTaskWorktree } from "../src/vcs/git/worktree.js";
 import {
@@ -769,7 +769,7 @@ describe("writeBootstrapLog", () => {
 
     writeBootstrapLog(dataRoot, task, "=== bootstrap run ===\n");
 
-    const expected = bootstrapLogPath(join(taskArtifactsDir(dataRoot, task), "logs"));
+    const expected = bootstrapLogPath(taskLogsDir(dataRoot, task));
     expect(readFileSync(expected, "utf8")).toBe("=== bootstrap run ===\n");
   });
 });
