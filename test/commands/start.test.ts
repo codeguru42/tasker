@@ -76,6 +76,26 @@ describe("start", () => {
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
+  it("uses the base label of the issue and does not learn it", async () => {
+    const fixture = await useStartFixture({
+      issues: [{ project: "codeguru42/tasker", number: 5, labels: ["base: dev"] }],
+    });
+    await fixture.origin.createBranch("dev");
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result).toMatchObject({ code: 0, err: "" });
+    expect(result.out).toContain("base: dev\n");
+    expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "dev", source: "hint" });
+    const store = openStore(createDataRoot(fixture.dataRoot).database);
+    try {
+      expect(store.getDefaultBaseBranch(fixture.repoKey)).toBeUndefined();
+    } finally {
+      store.close();
+    }
+    expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
   it("prints the description of the command and of both options for --help", async () => {
     const { code, out } = await runCommand(start, "start", "--help");
 
