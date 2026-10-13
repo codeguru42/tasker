@@ -9,8 +9,8 @@ import { parseConfig } from "../src/config/schema.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
-import { openStore, type TaskStore } from "../src/store/store.js";
-import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
+import { type TaskStore } from "../src/store/store.js";
+import { taskLogsDir } from "../src/store/layout.js";
 import { repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import {
@@ -562,14 +562,11 @@ describe("seedTasks", () => {
       ["2026-01-02T00:00:00.000Z", "2026-01-02T00:00:00.000Z"],
       ["2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.000Z"],
     ]);
-    const store = openStore(createDataRoot(dataRoot).database);
-    try {
+    withDataRootStore(dataRoot, (store) => {
       expect(store.listTasks({ states: ["planning", "finished"] }).map((t) => t.id)).toEqual(
         tasks.map((t) => t.id),
       );
-    } finally {
-      store.close();
-    }
+    });
   });
 });
 
@@ -625,17 +622,14 @@ describe("seedTasks with more fields", () => {
 
     expect(task.state).toBe("failed");
     expect(task.updatedAt).toBe(at);
-    const store = openStore(createDataRoot(dataRoot).database);
-    try {
+    withDataRootStore(dataRoot, (store) => {
       const last = store.listEvents(task.id).at(-1);
       expect(last).toMatchObject({
         at,
         type: "transition",
         data: { error: "git push failed", from: "executing", to: "failed" },
       });
-    } finally {
-      store.close();
-    }
+    });
   });
 });
 
@@ -902,8 +896,7 @@ describe("githubIssueAnswer", () => {
 describe("lockNames", () => {
   it("gives the sorted names of the lock rows, and none after unlock", () => {
     const dataRoot = useTempDir("tasker-lock-names-");
-    const store = openStore(createDataRoot(dataRoot).database);
-    try {
+    withDataRootStore(dataRoot, (store) => {
       store.tryLock("repo:b");
       store.tryLock("repo:a");
       expect(lockNames(dataRoot)).toEqual(["repo:a", "repo:b"]);
@@ -911,9 +904,7 @@ describe("lockNames", () => {
       store.unlock("repo:a");
       store.unlock("repo:b");
       expect(lockNames(dataRoot)).toEqual([]);
-    } finally {
-      store.close();
-    }
+    });
   });
 });
 

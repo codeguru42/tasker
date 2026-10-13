@@ -6,29 +6,34 @@ import { start } from "../../src/commands/start.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
-import { openStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import {
   captureIo,
+  dayAt,
   ghTokenAnswer,
+  lockNames,
+  runCommand,
+  seedTasks,
   spawnTasker,
   startLockHolder,
+  taskNames,
+  useStartFixture,
+  useTempDir,
   waitUntil,
   waitUntilGone,
-  writeFakeGh, dayAt, lockNames, runCommand, seedTasks, taskNames, useStartFixture, useTempDir } from "../helpers.js";
+  withDataRootStore,
+  writeFakeGh,
+} from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
 
 // The events of the only task of the issue, as { type, data }.
 function eventsOf(dataRoot: string): { type: string; data: unknown }[] {
-  const store = openStore(createDataRoot(dataRoot).database);
-  try {
+  return withDataRootStore(dataRoot, (store) => {
     const task = store.findLatestTask("codeguru42/tasker", KEY);
     if (task === undefined) throw new Error("no task");
     return store.listEvents(task.id).map(({ type, data }) => ({ type, data }));
-  } finally {
-    store.close();
-  }
+  });
 }
 
 // Makes sure that the task failed in provisioning with an error, and that stderr holds the notes
@@ -36,8 +41,7 @@ function eventsOf(dataRoot: string): { type: string; data: unknown }[] {
 // Gives the error.
 function expectFailed(dataRoot: string, result: { code: number; err: string }, notes = ""): string {
   expect(result.code).toBe(1);
-  const store = openStore(createDataRoot(dataRoot).database);
-  try {
+  return withDataRootStore(dataRoot, (store) => {
     const task = store.findLatestTask("codeguru42/tasker", KEY);
     expect(task?.state).toBe("failed");
     const last = store.listEvents(task!.id).at(-1);
@@ -47,18 +51,13 @@ function expectFailed(dataRoot: string, result: { code: number; err: string }, n
     expect(result.err).toBe(`${notes}${data.error}\n`);
     expect(lockNames(dataRoot)).toEqual([]);
     return data.error;
-  } finally {
-    store.close();
-  }
+  });
 }
 
 function taskState(dataRoot: string, key = KEY): string | undefined {
-  const store = openStore(createDataRoot(dataRoot).database);
-  try {
+  return withDataRootStore(dataRoot, (store) => {
     return store.findLatestTask("codeguru42/tasker", key)?.state;
-  } finally {
-    store.close();
-  }
+  });
 }
 
 function hasTask(dataRoot: string): boolean {
@@ -105,12 +104,9 @@ describe("start", () => {
   it("uses the learned default base when the configuration has none", async () => {
     const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
     await fixture.origin.createBranch("dev");
-    const store = openStore(createDataRoot(fixture.dataRoot).database);
-    try {
+    withDataRootStore(fixture.dataRoot, (store) => {
       store.setDefaultBaseBranch(fixture.repoKey, "dev");
-    } finally {
-      store.close();
-    }
+    });
 
     const result = await runCommand(start, "start", KEY);
 
@@ -131,12 +127,9 @@ describe("start", () => {
     expect(result).toMatchObject({ code: 0, err: "" });
     expect(result.out).toContain("base: dev\n");
     expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "dev", source: "hint" });
-    const store = openStore(createDataRoot(fixture.dataRoot).database);
-    try {
+    withDataRootStore(fixture.dataRoot, (store) => {
       expect(store.getDefaultBaseBranch(fixture.repoKey)).toBeUndefined();
-    } finally {
-      store.close();
-    }
+    });
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
@@ -162,12 +155,9 @@ describe("start", () => {
     expect(io.questions).toEqual(["Base branch for codeguru42/tasker: "]);
     expect(io.out.join("")).toContain("base: main\n");
     expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "main", source: "ask" });
-    const store = openStore(createDataRoot(fixture.dataRoot).database);
-    try {
+    withDataRootStore(fixture.dataRoot, (store) => {
       expect(store.getDefaultBaseBranch(fixture.repoKey)).toBe("main");
-    } finally {
-      store.close();
-    }
+    });
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
@@ -294,15 +284,12 @@ describe("start", () => {
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
-      const store = openStore(createDataRoot(fixture.dataRoot).database);
-      try {
+      withDataRootStore(fixture.dataRoot, (store) => {
         expect(store.findLatestTask(fixture.repoKey, KEY)).toMatchObject({
           id: seeded.id,
           state: "workspace_ready",
         });
-      } finally {
-        store.close();
-      }
+      });
       expect(eventsOf(fixture.dataRoot).filter((event) => event.type === "created")).toHaveLength(1);
       expect(lockNames(fixture.dataRoot)).toEqual([]);
     });

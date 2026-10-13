@@ -3,10 +3,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import { createDataRoot } from "../../src/store/layout.js";
-import { openStore } from "../../src/store/store.js";
 import { BootstrapFailedError, bootstrapFailureMessage, bootstrapLogTail, startTask } from "../../src/tasks/start.js";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
-import { lockNames, startLockHolder, useStartFixture, useTempDir } from "../helpers.js";
+import { lockNames, startLockHolder, useStartFixture, useTempDir, withDataRootStore } from "../helpers.js";
 
 describe("bootstrapFailureMessage", () => {
   const failed = { status: "failed", index: 2, command: "npm ci", timedOut: false } as const;
@@ -69,8 +68,7 @@ describe("bootstrapLogTail", () => {
 describe("startTask with a held repo lock", () => {
   it("waits for the lock, then leaves the task in provisioning with no new event", async () => {
     const fixture = await useStartFixture();
-    const store = openStore(createDataRoot(fixture.dataRoot).database);
-    try {
+    await withDataRootStore(fixture.dataRoot, async (store) => {
       const holder = startLockHolder(createDataRoot(fixture.dataRoot).database, repoLockName(fixture.repoKey));
       await holder.attempt;
 
@@ -89,15 +87,12 @@ describe("startTask with a held repo lock", () => {
       expect(task?.state).toBe("provisioning");
       expect(store.listEvents(task!.id).map((event) => event.type)).toEqual(["created"]);
       expect(lockNames(fixture.dataRoot)).toEqual([repoLockName(fixture.repoKey)]);
-    } finally {
-      store.close();
-    }
+    });
   });
 
   it("leaves a task that failed in bootstrap in provisioning when the repo lock is busy", async () => {
     const fixture = await useStartFixture({ repo: { bootstrap: { commands: ["exit 3"], env: [] } } });
-    const store = openStore(createDataRoot(fixture.dataRoot).database);
-    try {
+    await withDataRootStore(fixture.dataRoot, async (store) => {
       const request = {
         config: fixture.config,
         ref: { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: githubShortRef("5") },
@@ -127,8 +122,6 @@ describe("startTask with a held repo lock", () => {
       const toFailed = events.filter((event) => (event.data as { to?: string }).to === "failed");
       expect(toFailed).toHaveLength(1);
       expect(lockNames(fixture.dataRoot)).toEqual([repoLockName(fixture.repoKey)]);
-    } finally {
-      store.close();
-    }
+    });
   });
 });

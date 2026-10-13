@@ -435,24 +435,24 @@ export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) =>
 // Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
 export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] {
   let at = new Date(0);
-  const store = openStore(createDataRoot(dataRoot).database, { now: () => at });
-  try {
-    return tasks.map((task) => {
-      at = new Date(task.at);
-      const created = store.createTask({
-        issueKey: task.issueKey,
-        repoKey: task.repoKey,
-        state: task.state,
-        title: task.title,
-        base: task.base,
-        branch: task.branch,
-        worktreePath: task.worktreePath,
-      });
-      return task.failWith === undefined ? created : failTask(store, created.id, task.failWith);
-    });
-  } finally {
-    store.close();
-  }
+  return withDataRootStore(
+    dataRoot,
+    (store) =>
+      tasks.map((task) => {
+        at = new Date(task.at);
+        const created = store.createTask({
+          issueKey: task.issueKey,
+          repoKey: task.repoKey,
+          state: task.state,
+          title: task.title,
+          base: task.base,
+          branch: task.branch,
+          worktreePath: task.worktreePath,
+        });
+        return task.failWith === undefined ? created : failTask(store, created.id, task.failWith);
+      }),
+    { now: () => at },
+  );
 }
 
 // Writes text as the bootstrap log of the attempt of task under dataRoot.
