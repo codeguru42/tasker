@@ -44,6 +44,14 @@ Prints the configuration as JSON, with the defaults filled in.
 
 If the key does not exist, or the configuration is missing or invalid, the command prints an error and exits with code 1.
 
+### `tasker start`
+
+Makes a task for an issue and takes it to the state `workspace_ready`: `tasker start <issue>`. The command reads the issue, makes the clone, resolves the base branch, makes the worktree and runs bootstrap.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+- `--base <branch>`: the base branch of this task only. Give a branch on origin, or `refs/heads/<branch>` for a local branch of the clone.
+
 ### `tasker show`
 
 Prints the details of the task of an issue: `tasker show <issue>`. The command shows the active task. If the issue has no active task, it shows the newest task.

@@ -33,7 +33,7 @@ describe("start", () => {
 
     expect(result).toEqual({
       code: 0,
-      err: "",
+      err: "tasker saved main as the default base branch of codeguru42/tasker.\n",
       out:
         "issue: codeguru42/tasker#5\n" +
         "repo: codeguru42/tasker\n" +
