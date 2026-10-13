@@ -23,6 +23,7 @@ import { loadConfig } from "../src/config/load.js";
 import { type Config, parseConfig } from "../src/config/schema.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
+import { githubShortRef } from "../src/issue-key/short-ref.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { failTask } from "../src/state/machine.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
@@ -30,6 +31,7 @@ import { openStore, type Task } from "../src/store/store.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
+import { taskBranchName, taskWorktreePath } from "../src/vcs/git/worktree.js";
 import type { VcsContext } from "../src/vcs/provider.js";
 
 export interface CapturedIo extends Io {
@@ -554,6 +556,19 @@ export const NOT_TASK_BRANCHES = [
 
 // The text that the pre-push hook prints for a push with no valid publish token.
 export const NO_TOKEN = "tasker: the push has no valid publish token";
+
+// The task branch and the worktree folder of a GitHub issue number, as tasker makes them.
+export function taskNames(
+  worktrees: string,
+  issueNumber: number,
+  title = "x",
+): { branch: string; worktree: string } {
+  const shortRef = githubShortRef(String(issueNumber));
+  return {
+    branch: taskBranchName(shortRef, title),
+    worktree: taskWorktreePath(worktrees, shortRef),
+  };
+}
 
 // The folder of the publish tokens of the clone that makeGitClone() makes.
 export function gitCloneTokens(origin: GitOrigin): string {
