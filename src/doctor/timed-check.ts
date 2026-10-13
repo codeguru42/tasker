@@ -1,5 +1,5 @@
 import type { Check, CheckResult } from "./check.js";
-import { errorMessage } from "./error-message.js";
+import { errorMessage } from "../error-message.js";
 
 // A check body throws it when its own deadline passes. The wrapper gives the timeout result.
 export class DeadlineError extends Error {}

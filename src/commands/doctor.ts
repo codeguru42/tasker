@@ -3,7 +3,7 @@ import type { RegisterCommand } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import type { Check } from "../doctor/check.js";
 import { dataRootCheck, freeSpaceCheck } from "../doctor/data-root.js";
-import { errorMessage } from "../doctor/error-message.js";
+import { errorMessage } from "../error-message.js";
 import { runChecks } from "../doctor/run-checks.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { createVcsProvider } from "../vcs/provider.js";

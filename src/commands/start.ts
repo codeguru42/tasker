@@ -1,5 +1,5 @@
 import type { RegisterCommand } from "../cli.js";
-import { errorMessage } from "../doctor/error-message.js";
+import { errorMessage } from "../error-message.js";
 import { BootstrapFailedError, startTask } from "../tasks/start.js";
 import { fail, formatFields, loadConfigOrFail, resolveIssueKeyOrFail, withStoreAsync } from "./shared.js";
 

@@ -4,7 +4,7 @@ import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { type BootstrapResult, bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
 import { phaseEnv } from "../phases/env.js";
-import { errorMessage } from "../doctor/error-message.js";
+import { errorMessage } from "../error-message.js";
 import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
 import { repoLockName, taskLockName, withLock } from "../store/locks.js";
