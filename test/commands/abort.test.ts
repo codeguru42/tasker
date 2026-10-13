@@ -1,10 +1,12 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { abort } from "../../src/commands/abort.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { canonicalPath } from "../../src/real-path.js";
 import { taskLogsDir } from "../../src/store/layout.js";
+import { runGit } from "../../src/vcs/git/run.js";
+import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import {
   localBranches,
   lockNames,
@@ -141,5 +143,66 @@ describe("abort", () => {
       expect(await taskWorkspaceState(started)).toMatchObject({ state: "cancelled", worktree: false });
       expect(lockNames(started.dataRoot)).toEqual([]);
     });
+  });
+
+  describe("after a stop between two steps", () => {
+    it("finishes an abort when the folder is gone and git still lists the worktree", async () => {
+      const started = await useStartedTask();
+      rmSync(started.worktree, { recursive: true, force: true });
+      expect(await taskWorkspaceState(started)).toMatchObject({ worktree: false, listed: true });
+
+      const result = await runCommand(abort, "abort", KEY);
+
+      expect(result).toEqual({
+        code: 0,
+        out: `removed the worktree ${canonicalPath(started.worktree)}\ndeleted the branch ${started.branch}\ncancelled ${KEY}\n`,
+        err: "",
+      });
+      expect(await taskWorkspaceState(started)).toEqual({
+        state: "cancelled",
+        worktree: false,
+        listed: false,
+        branch: false,
+      });
+    });
+
+    it("finishes an abort when the worktree is gone and the branch exists", async () => {
+      const started = await useStartedTask();
+      await removeTaskWorktree({ clone: started.clone, env: started.env, path: started.worktree });
+
+      const result = await runCommand(abort, "abort", KEY);
+
+      expect(result).toEqual({
+        code: 0,
+        out: `deleted the branch ${started.branch}\ncancelled ${KEY}\n`,
+        err: "",
+      });
+      expect(await taskWorkspaceState(started)).toMatchObject({ state: "cancelled", listed: false, branch: false });
+    });
+
+    it("finishes an abort when the worktree and the branch are gone", async () => {
+      const started = await useStartedTask();
+      await removeTaskWorktree({ clone: started.clone, env: started.env, path: started.worktree });
+      await deleteTaskBranch({ clone: started.clone, env: started.env, branch: started.branch });
+
+      const result = await runCommand(abort, "abort", KEY);
+
+      expect(result).toEqual({ code: 0, out: `cancelled ${KEY}\n`, err: "" });
+      expect((await taskWorkspaceState(started)).state).toBe("cancelled");
+    });
+  });
+
+  it("keeps the worktree, the branch and the state when the remove fails", async () => {
+    const started = await useStartedTask();
+    await runGit(["worktree", "lock", "--", started.worktree], { gitDir: started.clone, env: started.env });
+    const before = await taskWorkspaceState(started);
+
+    const result = await runCommand(abort, "abort", KEY);
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe("");
+    expect(result.err).not.toBe("");
+    expect(await taskWorkspaceState(started)).toEqual(before);
+    expect(lockNames(started.dataRoot)).toEqual([]);
   });
 });

@@ -1,0 +1,49 @@
+import { symlinkSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { githubShortRef } from "../../src/issue-key/short-ref.js";
+import { canonicalPath } from "../../src/real-path.js";
+import { abortTask } from "../../src/tasks/abort.js";
+import { startTask } from "../../src/tasks/start.js";
+import { repoPaths } from "../../src/vcs/git/repo-paths.js";
+import { listWorktrees } from "../../src/vcs/git/worktree.js";
+import { useStartFixture, useTempDir, withDataRootStore } from "../helpers.js";
+
+describe("abortTask", () => {
+  it("removes the worktree when the data root goes through a symlink", async () => {
+    const fixture = await useStartFixture();
+    const dataRoot = join(useTempDir("tasker-link-"), "link");
+    symlinkSync(useTempDir("tasker-real-"), dataRoot);
+    const config = { ...fixture.config, dataRoot };
+    const ref = { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: githubShortRef("5") };
+
+    const task = await withDataRootStore(dataRoot, async (store) => {
+      const started = await startTask(store, {
+        config,
+        ref,
+        env: process.env,
+        repoLockWaitMs: 300,
+        ask: () => Promise.reject(new Error("no question expected")),
+        note: () => {},
+      });
+      const worktree = started.task.worktreePath!;
+      const cancelled = await abortTask(store, {
+        config,
+        ref,
+        taskId: started.task.id,
+        force: false,
+        env: process.env,
+        repoLockWaitMs: 300,
+        report: () => {},
+      });
+      return { cancelled, worktree };
+    });
+
+    const entries = await listWorktrees({
+      clone: repoPaths(dataRoot, fixture.repoKey).clone,
+      env: fixture.origin.env,
+    });
+    expect(entries.map((entry) => entry.path)).not.toContain(canonicalPath(task.worktree));
+    expect(task.cancelled.state).toBe("cancelled");
+  });
+});
