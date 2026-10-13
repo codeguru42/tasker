@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
@@ -7,7 +7,7 @@ import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { openStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { captureIo, lockNames, runCommand, taskNames, useStartFixture, useTempDir } from "../helpers.js";
+import { captureIo, dayAt, lockNames, runCommand, seedTasks, taskNames, useStartFixture, useTempDir } from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -232,6 +232,85 @@ describe("start", () => {
     expect(events[4].data).toMatchObject({ from: "provisioning", to: "failed", error });
     expect(result.code).toBe(1);
     expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
+  describe("a second run", () => {
+    // A repo with a bootstrap that fails until the file <tmp>/ok exists.
+    async function failingFixture() {
+      const tmp = useTempDir("tasker-second-run-");
+      const command = `test -f ${tmp}/ok || exit 3`;
+      const fixture = await useStartFixture({ repo: { bootstrap: { commands: [command], env: [] } } });
+      return { fixture, ok: join(tmp, "ok") };
+    }
+
+    it("continues a task that failed in bootstrap", async () => {
+      const { fixture, ok } = await failingFixture();
+      expect((await runCommand(start, "start", KEY)).code).toBe(1);
+      writeFileSync(ok, "");
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain("state: workspace_ready\n");
+      const events = eventsOf(fixture.dataRoot);
+      expect(events.filter((event) => event.type === "created")).toHaveLength(1);
+      expect(events.find((event) => event.type === "transition" && (event.data as { from: string }).from === "failed")?.data)
+        .toMatchObject({ from: "failed", to: "provisioning" });
+      expect(events.filter((event) => event.type === "workspace").at(-1)?.data).toMatchObject({
+        state: "reused-workspace",
+      });
+      const log = bootstrapLogPath(taskLogsDir(fixture.dataRoot, { issueKey: KEY, attempt: 1 }));
+      expect(readFileSync(log, "utf8").match(/=== bootstrap run /g)).toHaveLength(2);
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+
+    it("continues a task that is still in provisioning", async () => {
+      const fixture = await useStartFixture();
+      const [seeded] = seedTasks(fixture.dataRoot, [
+        { issueKey: KEY, repoKey: fixture.repoKey, state: "provisioning", at: dayAt(1), title: "Issue 5" },
+      ]);
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      const store = openStore(createDataRoot(fixture.dataRoot).database);
+      try {
+        expect(store.findLatestTask(fixture.repoKey, KEY)).toMatchObject({
+          id: seeded.id,
+          state: "workspace_ready",
+        });
+      } finally {
+        store.close();
+      }
+      expect(eventsOf(fixture.dataRoot).filter((event) => event.type === "created")).toHaveLength(1);
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+
+    it("keeps the stored base when the second run has no --base", async () => {
+      const { fixture, ok } = await failingFixture();
+      await fixture.origin.createBranch("dev");
+      expect((await runCommand(start, "start", KEY, "--base", "dev")).code).toBe(1);
+      writeFileSync(ok, "");
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain("base: dev\n");
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+
+    it("takes a new --base on the second run", async () => {
+      const { fixture, ok } = await failingFixture();
+      await fixture.origin.createBranch("dev");
+      expect((await runCommand(start, "start", KEY, "--base", "dev")).code).toBe(1);
+      writeFileSync(ok, "");
+
+      const result = await runCommand(start, "start", KEY, "--base", "main");
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain("base: main\n");
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
   });
 
   it("prints the description of the command and of both options for --help", async () => {
