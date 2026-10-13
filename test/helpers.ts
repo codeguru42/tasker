@@ -38,17 +38,30 @@ import type { VcsContext } from "../src/vcs/provider.js";
 export interface CapturedIo extends Io {
   out: string[];
   err: string[];
+  questions: string[];
 }
 
-export function captureIo(): CapturedIo {
+// With answers, the io has a prompt that gives the next answer, and rejects when none is left.
+export function captureIo(options: { answers?: string[] } = {}): CapturedIo {
   const out: string[] = [];
   const err: string[] = [];
-  return {
+  const questions: string[] = [];
+  const answers = options.answers === undefined ? undefined : [...options.answers];
+  const io: CapturedIo = {
     out,
     err,
+    questions,
     stdout: (text) => out.push(text),
     stderr: (text) => err.push(text),
   };
+  if (answers !== undefined) {
+    io.prompt = (question) => {
+      questions.push(question);
+      const answer = answers.shift();
+      return answer === undefined ? Promise.reject(new Error("no answer left")) : Promise.resolve(answer);
+    };
+  }
+  return io;
 }
 
 export const greet: RegisterCommand = (program) => {

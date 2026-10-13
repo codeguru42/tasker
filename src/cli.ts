@@ -5,6 +5,8 @@ import { readVersion } from "./version.js";
 export interface Io {
   stdout(text: string): void;
   stderr(text: string): void;
+  // Asks one question and gives the answer line. Set only when a person can answer.
+  prompt?(question: string): Promise<string>;
 }
 
 export type RegisterCommand = (program: Command, io: Io) => void;
