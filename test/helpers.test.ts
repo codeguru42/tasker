@@ -53,6 +53,7 @@ import {
   useStartFixture,
   useThreeRepoDataRoot,
   validConfig,
+  writeTempConfig,
   waitUntil,
   waitUntilGone,
   writeBootstrapLog,
@@ -916,22 +917,27 @@ describe("lockNames", () => {
 });
 
 describe("spawnTasker", () => {
-  const packageVersion: string = JSON.parse(
-    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-  ).version;
+  it("passes the env to the child and gives its stdout whole", async () => {
+    const text = "€".repeat(50_000);
+    const raw = validConfig();
+    raw.repos.tasker.bootstrap = { commands: [text], env: [] };
+    const { dir, path } = writeTempConfig(raw);
+    onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("gives the exit code and the output of tasker", async () => {
-    const result = await spawnTasker(["--version"]);
+    const result = await spawnTasker(["show-config"], { TASKER_CONFIG: path });
 
     expect(result.code).toBe(0);
-    expect(result.stdout).toBe(`${packageVersion}\n`);
+    expect(JSON.parse(result.stdout).repos.tasker.bootstrap.commands).toEqual([text]);
   });
 
-  it("gives a code that is not 0 and the error text for a bad option", async () => {
-    const result = await spawnTasker(["--bogus"]);
+  it("gives the stderr of the child", async () => {
+    const path = join(useTempDir("tasker-spawn-missing-"), "missing.json");
 
-    expect(result.code).not.toBe(0);
-    expect(result.stderr).toContain("unknown option");
+    const result = await spawnTasker(["show-config"], { TASKER_CONFIG: path });
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain(`config file not found: ${path}`);
   });
 });
 
