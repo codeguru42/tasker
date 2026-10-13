@@ -171,15 +171,16 @@ function isBusy(error: unknown): boolean {
 }
 
 // On a new file, the switch to WAL upgrades a read lock to a write lock, and SQLite does not call
-// the busy handler for that upgrade. So the switch tries again when the database is busy.
+// the busy handler for that upgrade. So the switch tries again until the busy timeout ends.
 function switchToWal(db: DatabaseSync): void {
+  const end = Date.now() + BUSY_TIMEOUT_MS;
   const pause = new Int32Array(new SharedArrayBuffer(4));
   for (;;) {
     try {
       db.exec("PRAGMA journal_mode = WAL");
       return;
     } catch (error) {
-      if (!isBusy(error)) throw error;
+      if (!isBusy(error) || Date.now() >= end) throw error;
       Atomics.wait(pause, 0, 0, 10);
     }
   }
