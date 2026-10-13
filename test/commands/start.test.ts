@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
 import { start } from "../../src/commands/start.js";
@@ -17,6 +17,26 @@ function eventsOf(dataRoot: string): { type: string; data: unknown }[] {
     const task = store.findLatestTask("codeguru42/tasker", KEY);
     if (task === undefined) throw new Error("no task");
     return store.listEvents(task.id).map(({ type, data }) => ({ type, data }));
+  } finally {
+    store.close();
+  }
+}
+
+// Makes sure that the task failed in provisioning with an error, and that stderr holds that error.
+// Gives the error.
+function expectFailed(dataRoot: string, result: { code: number; err: string }): string {
+  expect(result.code).toBe(1);
+  const store = openStore(createDataRoot(dataRoot).database);
+  try {
+    const task = store.findLatestTask("codeguru42/tasker", KEY);
+    expect(task?.state).toBe("failed");
+    const last = store.listEvents(task!.id).at(-1);
+    expect(last?.type).toBe("transition");
+    const data = last?.data as { from: string; to: string; error: string };
+    expect(data).toMatchObject({ from: "provisioning", to: "failed" });
+    expect(result.err).toBe(`${data.error}\n`);
+    expect(lockNames(dataRoot)).toEqual([]);
+    return data.error;
   } finally {
     store.close();
   }
@@ -129,14 +149,59 @@ describe("start", () => {
   });
 
   it("fails with no base and no terminal", async () => {
-    await useStartFixture({ repo: { defaultBaseBranch: undefined } });
+    const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
 
     const result = await runCommand(start, "start", KEY);
 
-    expect(result.code).toBe(1);
-    expect(result.err).toBe(
-      "no base branch for codeguru42/tasker: pass --base <branch>, or set repos.codeguru42/tasker.defaultBaseBranch\n",
+    expect(expectFailed(fixture.dataRoot, result)).toBe(
+      "no base branch for codeguru42/tasker: pass --base <branch>, or set repos.codeguru42/tasker.defaultBaseBranch",
     );
+  });
+
+  it("fails the task when the provision fails", async () => {
+    const fixture = await useStartFixture({ remote: "/nonexistent/origin.git" });
+
+    const result = await runCommand(start, "start", KEY);
+
+    expectFailed(fixture.dataRoot, result);
+  });
+
+  it("fails the task for a base that does not exist", async () => {
+    const fixture = await useStartFixture();
+
+    const result = await runCommand(start, "start", KEY, "--base", "nope");
+
+    expect(expectFailed(fixture.dataRoot, result)).toBe(
+      "the base branch does not exist: nope (from --base)",
+    );
+  });
+
+  it("fails the task for two base labels", async () => {
+    const fixture = await useStartFixture({
+      issues: [{ project: "codeguru42/tasker", number: 5, labels: ["base: dev", "base: main"] }],
+    });
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(expectFailed(fixture.dataRoot, result)).toContain(
+      "the issue codeguru42/tasker#5 has more than one base: label",
+    );
+  });
+
+  it("fails the task when the workspace cannot be made", async () => {
+    const fixture = await useStartFixture();
+    const { worktree } = taskNames(repoPaths(fixture.dataRoot, fixture.repoKey).worktrees, 5, "Issue 5");
+    mkdirSync(dirname(worktree), { recursive: true });
+    writeFileSync(worktree, "in the way");
+
+    const result = await runCommand(start, "start", KEY);
+
+    expectFailed(fixture.dataRoot, result);
+    expect(eventsOf(fixture.dataRoot).map((event) => event.type)).toEqual([
+      "created",
+      "base",
+      "transition",
+    ]);
   });
 
   it("prints the description of the command and of both options for --help", async () => {
