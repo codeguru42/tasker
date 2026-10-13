@@ -114,3 +114,23 @@ The command prints an error and exits with code 1 in these cases:
 - The state does not exist. The error lists the states.
 - The issue key does not resolve.
 - The configuration is missing or invalid.
+
+### `tasker doctor`
+
+Makes sure that the configuration, the data root, git, `gh` and the accounts work before you start a task. The command has no options.
+
+The command runs these checks one at a time, in this order:
+
+- `data root`: makes the missing folders of `dataRoot`, then writes one temporary file there and deletes it.
+- `free space`: warns when the free space of the file system of `dataRoot` is below `dataRootMinFreeBytes`.
+- For each repo, in the order of the configuration: the git checks, then the GitHub checks.
+
+The command prints one line for each check, with the status (`ok`, `warn` or `error`), the name and the first line of the detail. The other lines of the detail and the remediation follow with an indent. The command prints the lines of a check before the next check starts.
+
+The command exits with these codes:
+
+- 1 when the configuration does not load or the list of checks cannot be built. No check runs.
+- 1 when a required check gives `error`. The later checks still run.
+- 0 in all other cases. A `warn` never changes the exit code.
+
+The checks never change the remote, GitHub or the clone. The only write is one temporary file in `dataRoot`, which the check deletes.
