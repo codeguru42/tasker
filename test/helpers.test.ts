@@ -36,7 +36,6 @@ import {
   useTempDir,
   useThreeRepoDataRoot,
   validConfig,
-  waitForFile,
   waitUntil,
   waitUntilGone,
   writeDataRootConfig,
@@ -722,21 +721,6 @@ describe("waitUntilGone", () => {
   });
 });
 
-describe("waitForFile", () => {
-  it("resolves when the file appears", async () => {
-    const path = join(useTempDir("tasker-wait-file-"), "later");
-    setTimeout(() => writeFileSync(path, "x"), 100);
-
-    await expect(waitForFile(path, 5000)).resolves.toBeUndefined();
-  });
-
-  it("rejects when no file appears", async () => {
-    const path = join(useTempDir("tasker-wait-file-"), "never");
-
-    await expect(waitForFile(path, 150)).rejects.toThrow();
-  });
-});
-
 describe("savePid", () => {
   let pid = 0;
 
@@ -760,6 +744,7 @@ describe("readPidFile", () => {
   it("waits for the pid, returns it and saves it", async () => {
     const path = join(useTempDir("tasker-pid-file-"), "pid");
     const child = spawn("sleep", ["30"], { stdio: "ignore" });
+    savePid(child.pid!);
     setTimeout(() => writeFileSync(path, `${child.pid}\n`), 100);
 
     await expect(readPidFile(path, 5000)).resolves.toBe(child.pid);

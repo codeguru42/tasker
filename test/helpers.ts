@@ -127,20 +127,7 @@ export async function waitUntil(predicate: () => boolean, timeoutMs: number, mes
 
 // Resolves when the process is gone. Rejects with the pid when it still runs after timeoutMs.
 export async function waitUntilGone(pid: number, timeoutMs: number): Promise<void> {
-  const end = Date.now() + timeoutMs;
-  while (isAlive(pid)) {
-    if (Date.now() >= end) throw new Error(`process ${pid} still runs after ${timeoutMs} ms`);
-    await new Promise((done) => setTimeout(done, 50));
-  }
-}
-
-// Resolves when the file exists. Rejects when it does not appear within timeoutMs.
-export async function waitForFile(path: string, timeoutMs: number): Promise<void> {
-  const end = Date.now() + timeoutMs;
-  while (!existsSync(path)) {
-    if (Date.now() >= end) throw new Error(`no file ${path} after ${timeoutMs} ms`);
-    await new Promise((done) => setTimeout(done, 50));
-  }
+  await waitUntil(() => !isAlive(pid), timeoutMs, `process ${pid} still runs after ${timeoutMs} ms`);
 }
 
 // Sends SIGKILL to pid after the test, when it still runs. Use it only for a pid that the test started.
@@ -152,17 +139,19 @@ export function savePid(pid: number): void {
 
 // Waits until the file holds a pid and a newline, saves the pid with savePid and returns it.
 export async function readPidFile(path: string, timeoutMs: number): Promise<number> {
-  const end = Date.now() + timeoutMs;
-  for (;;) {
-    const text = existsSync(path) ? readFileSync(path, "utf8") : "";
-    if (/^\d+\n$/.test(text)) {
-      const pid = Number(text);
-      savePid(pid);
-      return pid;
-    }
-    if (Date.now() >= end) throw new Error(`no pid in ${path} after ${timeoutMs} ms`);
-    await new Promise((done) => setTimeout(done, 50));
-  }
+  let pid = 0;
+  await waitUntil(
+    () => {
+      const text = existsSync(path) ? readFileSync(path, "utf8") : "";
+      if (!/^\d+\n$/.test(text)) return false;
+      pid = Number(text);
+      return true;
+    },
+    timeoutMs,
+    `no pid in ${path} after ${timeoutMs} ms`,
+  );
+  savePid(pid);
+  return pid;
 }
 
 // The error that promise rejects with. It throws, so the test fails, when promise resolves
