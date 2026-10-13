@@ -736,6 +736,27 @@ export function ghTokenAnswer(account: string, token: string): FakeGhAnswer {
   };
 }
 
+// The answer of the call that reads one GitHub issue (see readGithubIssue()).
+export function githubIssueAnswer(issue: {
+  project: string;
+  number: number;
+  title?: string;
+  state?: "OPEN" | "CLOSED";
+  labels?: readonly string[];
+}): FakeGhAnswer {
+  return {
+    args: ["issue", "view", String(issue.number), "-R", issue.project, "--json", "number,title,body,url,labels,state"],
+    stdout: JSON.stringify({
+      number: issue.number,
+      title: issue.title ?? `Issue ${issue.number}`,
+      body: "",
+      url: `https://github.com/${issue.project}/issues/${issue.number}`,
+      labels: (issue.labels ?? []).map((name) => ({ name })),
+      state: issue.state ?? "OPEN",
+    }),
+  };
+}
+
 const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const signalNamePattern = /^[A-Z0-9]+$/;
 
