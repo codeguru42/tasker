@@ -9,17 +9,17 @@ import {
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { pathSlug } from "../../issue-key/path-slug.js";
-import { isShortRef, SHORT_REF } from "../../issue-key/short-ref.js";
+import { isShortRef, LOWER_SLUG, SHORT_REF } from "../../issue-key/short-ref.js";
 import { refExists, refRevision } from "./refs.js";
 import { runGit } from "./run.js";
 
 const MAX_BRANCH_LENGTH = 100;
 
-// The title slug: lower case, as taskBranchName() makes it. pathSlug() strips "-" and "." at the ends.
-const TITLE_SLUG = "[a-z0-9_](?:[a-z0-9._-]*[a-z0-9_])?";
-const TASK_BRANCH_PATTERN = new RegExp(`^${SHORT_REF}(?:-${TITLE_SLUG})?$`);
+// A short ref alone, or a short ref, "-" and the title slug in lower case, as taskBranchName() makes it.
+const TASK_BRANCH_PATTERN = new RegExp(`^${SHORT_REF}(?:-${LOWER_SLUG})?$`);
 
 // pathSlug(), but undefined when no character is left. Any other error passes through.
+// It matches the start of the message of pathSlug(). A change to one must change the other.
 function slugOrUndefined(value: string): string | undefined {
   try {
     return pathSlug(value);
@@ -56,9 +56,8 @@ export function assertTaskBranch(name: string): void {
 
 // The task branch: the short ref, then the issue title as a lower-case slug.
 // The result is always a valid branch name:
-// - The short ref ends with no "-" or ".", and the slug starts with none.
-//   So the join makes no "--" and no "..".
-// - The slug ends clean, so the result has no ".lock" end.
+// - The short ref and the slug have only letters, digits and single "-" inside.
+//   So the result has no "--" and no ".", and as a result no ".." and no ".lock" end.
 // - A result with a slug has a "-", so it is never "HEAD".
 // - The length is at most MAX_BRANCH_LENGTH.
 export function taskBranchName(shortRef: string, title: string): string {
@@ -67,7 +66,6 @@ export function taskBranchName(shortRef: string, title: string): string {
   }
   const room = MAX_BRANCH_LENGTH - shortRef.length - 1;
   if (room <= 0) return shortRef;
-  // Lower case first, so a trailing ".LOCK" becomes ".lock" and pathSlug strips it.
   const first = slugOrUndefined(title.toLowerCase());
   if (first === undefined) return shortRef;
   // The cut keeps the first character of first, so this call cannot throw.
