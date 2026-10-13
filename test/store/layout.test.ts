@@ -1,13 +1,14 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createDataRoot,
   dataRootLayout,
+  doctorProbePath,
   taskArtifactsDir,
   taskLogsDir,
 } from "../../src/store/layout.js";
-import { makeTempDir } from "../helpers.js";
+import { makeTempDir, useTempDir } from "../helpers.js";
 
 describe("dataRootLayout", () => {
   it("puts the folders and the database directly under the data root", () => {
@@ -100,5 +101,23 @@ describe("createDataRoot", () => {
     expect(() => createDataRoot(root)).not.toThrow();
     expect(readFileSync(join(layout.clones, "keep.txt"), "utf8")).toBe("kept");
     expect(statSync(join(layout.clones, "repo")).isDirectory()).toBe(true);
+  });
+});
+
+describe("doctorProbePath", () => {
+  it("puts a file with the pid and a uuid in its name directly under the data root", () => {
+    const path = doctorProbePath("/d");
+    expect(dirname(path)).toBe("/d");
+    expect(basename(path)).toMatch(new RegExp(`^\\.doctor-probe-${process.pid}-[0-9a-f-]{36}$`));
+  });
+
+  it("gives a different path for each call", () => {
+    expect(doctorProbePath("/d")).not.toBe(doctorProbePath("/d"));
+  });
+
+  it("makes no file", () => {
+    const dir = useTempDir("tasker-probe-path-");
+    doctorProbePath(dir);
+    expect(readdirSync(dir)).toEqual([]);
   });
 });
