@@ -18,6 +18,17 @@ function bootstrap(commands: string[], dirs: ReturnType<typeof setup>, timeoutMs
   return runBootstrap({ commands, env: phaseEnv(process.env, []), timeoutMs, ...dirs });
 }
 
+function readLog(logsDir: string): string {
+  return readFileSync(bootstrapLogPath(logsDir), "utf8");
+}
+
+// The checks that each failure-path test shares: no later command ran, and no marker exists.
+function expectStoppedBeforeLater(dirs: ReturnType<typeof setup>): void {
+  expect(readLog(dirs.logsDir)).not.toContain("touch later");
+  expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
+  expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
+}
+
 describe("the bootstrap paths", () => {
   it("puts the log and the marker in the logs folder", () => {
     expect(bootstrapLogPath("/some/logs")).toBe("/some/logs/bootstrap.log");
@@ -34,7 +45,7 @@ describe("runBootstrap", () => {
 
     expect(result).toEqual({ status: "ok" });
     expect(readFileSync(join(dirs.cwd, "order"), "utf8")).toBe("one\ntwo\nthree\n");
-    const log = readFileSync(bootstrapLogPath(dirs.logsDir), "utf8");
+    const log = readLog(dirs.logsDir);
     expect(log).toMatch(HEADER);
     const lines = commands.map((command) => `$ ${command}\n--- exit code 0\n`);
     expect(log.indexOf(lines[0]!)).toBeGreaterThan(-1);
@@ -55,7 +66,7 @@ describe("runBootstrap", () => {
 
     await bootstrap(["echo out; echo err >&2"], dirs);
 
-    const log = readFileSync(bootstrapLogPath(dirs.logsDir), "utf8");
+    const log = readLog(dirs.logsDir);
     expect(log).toContain("$ echo out; echo err >&2\nout\nerr\n--- exit code 0\n");
   });
 
@@ -65,7 +76,7 @@ describe("runBootstrap", () => {
     const result = await bootstrap([], dirs);
 
     expect(result).toEqual({ status: "ok" });
-    const log = readFileSync(bootstrapLogPath(dirs.logsDir), "utf8");
+    const log = readLog(dirs.logsDir);
     expect(log).toMatch(HEADER);
     expect(log).toContain("the repo has no bootstrap commands\n");
     expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(true);
@@ -73,10 +84,6 @@ describe("runBootstrap", () => {
 });
 
 describe("runBootstrap when a command fails", () => {
-  function readLog(logsDir: string): string {
-    return readFileSync(bootstrapLogPath(logsDir), "utf8");
-  }
-
   it("stops at the first command that fails", async () => {
     const dirs = setup();
     const commands = ["true", "printf no-newline; exit 3", "touch later"];
@@ -91,9 +98,7 @@ describe("runBootstrap when a command fails", () => {
       timedOut: false,
     });
     expect(readLog(dirs.logsDir)).toContain("$ printf no-newline; exit 3\nno-newline\n--- exit code 3\n");
-    expect(readLog(dirs.logsDir)).not.toContain("touch later");
-    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
-    expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
+    expectStoppedBeforeLater(dirs);
   });
 
   it("reports the signal that stopped a command", async () => {
@@ -109,9 +114,7 @@ describe("runBootstrap when a command fails", () => {
       timedOut: false,
     });
     expect(readLog(dirs.logsDir)).toContain("$ kill -TERM $$\n--- signal SIGTERM\n");
-    expect(readLog(dirs.logsDir)).not.toContain("touch later");
-    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
-    expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
+    expectStoppedBeforeLater(dirs);
   });
 
   it("stops the second command when the one deadline of the list runs out", async () => {
@@ -130,9 +133,7 @@ describe("runBootstrap when a command fails", () => {
     const log = readLog(dirs.logsDir);
     expect(log).toContain(`$ ${second}\n--- timed out: sent SIGTERM\n`);
     expect(log).not.toContain("\nsecond-done\n");
-    expect(log).not.toContain("touch later");
-    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
-    expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
+    expectStoppedBeforeLater(dirs);
   });
 
   it("kills a child that ignores SIGTERM 5 s after the deadline", { timeout: 20_000 }, async () => {
@@ -145,10 +146,8 @@ describe("runBootstrap when a command fails", () => {
 
     expect(result).toStrictEqual({ status: "failed", index: 1, command, signal: "SIGTERM", timedOut: true });
     expect(readLog(dirs.logsDir)).toContain(`$ ${command}\n--- timed out: sent SIGTERM, then SIGKILL\n`);
-    expect(readLog(dirs.logsDir)).not.toContain("touch later");
+    expectStoppedBeforeLater(dirs);
     await waitUntilGone(childPid, 5000);
-    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
-    expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
   });
 });
 
@@ -176,7 +175,7 @@ describe("runBootstrap run again", () => {
     expect(first).toMatchObject({ status: "failed", index: 2, exitCode: 1 });
     expect(second).toEqual({ status: "ok" });
     expect(readFileSync(join(dirs.cwd, "count"), "utf8")).toBe("run\nrun\n");
-    const log = readFileSync(bootstrapLogPath(dirs.logsDir), "utf8");
+    const log = readLog(dirs.logsDir);
     expect(log.match(/^=== bootstrap run /gm)).toHaveLength(2);
     expect(log).toContain("$ exit 1\n--- exit code 1\n");
   });
