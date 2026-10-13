@@ -20,12 +20,14 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, onTestFinished, vi } from "vitest";
 import { type Io, type RegisterCommand, run } from "../src/cli.js";
+import { start } from "../src/commands/start.js";
 import { loadConfig } from "../src/config/load.js";
 import { type Config, parseConfig } from "../src/config/schema.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { githubShortRef } from "../src/issue-key/short-ref.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
+import { canonicalPath } from "../src/real-path.js";
 import { failTask } from "../src/state/machine.js";
 import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
@@ -34,7 +36,7 @@ import { provisionClone } from "../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
-import { taskBranchName, taskWorktreePath } from "../src/vcs/git/worktree.js";
+import { listWorktrees, taskBranchName, taskWorktreePath } from "../src/vcs/git/worktree.js";
 import type { VcsContext } from "../src/vcs/provider.js";
 
 export interface CapturedIo extends Io {
@@ -402,6 +404,43 @@ export async function useStartFixture(
     PATH: `${gh.env.PATH}${delimiter}${process.env.PATH}`,
   });
   return { origin, dataRoot: written.dataRoot, configPath: written.path, gh, repoKey, config: loadConfig() };
+}
+
+export interface StartedTask extends StartFixture {
+  key: string;
+  // The result of tasker start for the key.
+  result: { code: number; out: string; err: string };
+  branch: string;
+  worktree: string;
+  clone: string;
+  env: NodeJS.ProcessEnv;
+}
+
+// Runs useStartFixture(options), then tasker start for issue 5. It makes no assertion, so a test
+// with a failing bootstrap can use it. Call it inside a test.
+export async function useStartedTask(options: Parameters<typeof useStartFixture>[0] = {}): Promise<StartedTask> {
+  const fixture = await useStartFixture(options);
+  const key = "codeguru42/tasker#5";
+  const result = await runCommand(start, "start", key);
+  const { clone, worktrees } = repoPaths(fixture.dataRoot, fixture.repoKey);
+  const { branch, worktree } = taskNames(worktrees, 5, "Issue 5");
+  return { ...fixture, key, result, branch, worktree, clone, env: fixture.origin.env };
+}
+
+// What a test compares before and after a command: the state of the latest task, whether the
+// worktree folder exists, whether git lists the worktree, and whether the task branch exists.
+export async function taskWorkspaceState(
+  started: Pick<StartedTask, "dataRoot" | "repoKey" | "key" | "worktree" | "branch" | "clone" | "env">,
+): Promise<{ state: string | undefined; worktree: boolean; listed: boolean; branch: boolean }> {
+  const { clone, env } = started;
+  const state = withDataRootStore(started.dataRoot, (store) => store.findLatestTask(started.repoKey, started.key)?.state);
+  const listedPaths = (await listWorktrees({ clone, env })).map((entry) => entry.path);
+  return {
+    state,
+    worktree: existsSync(started.worktree),
+    listed: listedPaths.includes(canonicalPath(started.worktree)),
+    branch: (await localBranches(clone, env)).includes(`refs/heads/${started.branch}`),
+  };
 }
 
 // The message of the IssueKeyError that resolveIssueKey() throws for key with the
