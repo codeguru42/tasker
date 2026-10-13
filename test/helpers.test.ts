@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, join, sep } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { readGithubIssue } from "../src/issues/github/issue.js";
 import { issueProviderFor } from "../src/issues/provider.js";
@@ -47,6 +48,7 @@ import {
   spawnTasker,
   sshKeyArgs,
   startFixture,
+  startWriteLockHolder,
   taskNames,
   taskWorkspaceState,
   threeRepoConfig,
@@ -823,6 +825,25 @@ describe("startFixture", () => {
     await expect(startFixture("lock-holder.ts", [dbPath, "test-lock"]).firstLine).rejects.toThrow(
       "unable to open database file",
     );
+  });
+});
+
+describe("startWriteLockHolder", () => {
+  it("resolves when the child holds the write lock", async () => {
+    const dbPath = join(useTempDir("tasker-write-lock-"), "tasker.db");
+    await startWriteLockHolder(dbPath, 60_000);
+    const db = new DatabaseSync(dbPath);
+    try {
+      expect(() => db.exec("BEGIN IMMEDIATE")).toThrow("database is locked");
+    } finally {
+      db.close();
+    }
+  });
+
+  it("rejects with the stderr when the child ends first", async () => {
+    const dbPath = join(useTempDir("tasker-write-lock-"), "missing", "tasker.db");
+
+    await expect(startWriteLockHolder(dbPath, 0)).rejects.toThrow("unable to open database file");
   });
 });
 
