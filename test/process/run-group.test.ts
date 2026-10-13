@@ -3,10 +3,15 @@ import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { type GroupResult, runInGroup, signalGroup } from "../../src/process/run-group.js";
-import { isAlive, readPidFile, repoRoot, savePid, useTempDir, waitUntilGone } from "../helpers.js";
+import { isAlive, readPidFile, repoRoot, savePid, useTempDir, waitUntil, waitUntilGone } from "../helpers.js";
 
 const MINUTE_MS = 60_000;
 const IGNORE_TERM = 'trap "" TERM; sleep 30';
+
+// The numbers of SIGINT and SIGTERM listeners on this process.
+function listenerCounts(): number[] {
+  return [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
+}
 
 interface Run {
   result: GroupResult;
@@ -87,17 +92,17 @@ describe("runInGroup", () => {
     { name: "exit 3", command: "exit 3", missingCwd: false, deadlineMs: MINUTE_MS },
     { name: "a spawn error", command: "exit 0", missingCwd: true, deadlineMs: MINUTE_MS },
     { name: "a timeout", command: "sleep 30", missingCwd: false, deadlineMs: 300 },
-    { name: "a SIGKILL", command: 'trap "" TERM; sleep 30', missingCwd: false, deadlineMs: 300 },
+    { name: "a SIGKILL", command: IGNORE_TERM, missingCwd: false, deadlineMs: 300 },
   ])(
     "leaves the SIGINT and SIGTERM listener counts as before after $name",
     { timeout: 20_000 },
     async (row) => {
-      const before = [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
+      const before = listenerCounts();
       const cwd = row.missingCwd ? join(useTempDir("tasker-run-group-"), "missing") : undefined;
 
       await runLogged(row.command, { cwd, deadline: Date.now() + row.deadlineMs }).catch(() => undefined);
 
-      expect([process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")]).toEqual(before);
+      expect(listenerCounts()).toEqual(before);
     },
   );
 
@@ -222,10 +227,13 @@ function startFixture(command: string, deadlineMs: number, holdMs: number): Fixt
   let stderr = "";
   child.stdout.on("data", (chunk) => (stdout += chunk));
   child.stderr.on("data", (chunk) => (stderr += chunk));
+  let exited = false;
   const exit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
-    child.on("exit", (code, signal) => resolve({ code, signal }));
+    child.on("exit", (code, signal) => {
+      exited = true;
+      resolve({ code, signal });
+    });
   });
-  const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
   return {
     pid,
     dir,
@@ -235,23 +243,23 @@ function startFixture(command: string, deadlineMs: number, holdMs: number): Fixt
     exit,
     send: (signal) => child.kill(signal),
     line: async () => {
-      const end = Date.now() + 15_000;
-      while (!stdout.includes("\n")) {
-        if (Date.now() > end) throw new Error(`the fixture printed no line: ${stderr}`);
-        await sleep(50);
-      }
+      await waitUntil(() => stdout.includes("\n"), 15_000, "the fixture printed no line");
       return JSON.parse(stdout);
     },
-    exitsWithin: (ms) => Promise.race([exit.then(() => "exited" as const), sleep(ms).then(() => "hung" as const)]),
+    exitsWithin: (ms) =>
+      waitUntil(() => exited, ms, "the fixture still runs").then(
+        () => "exited" as const,
+        () => "hung" as const,
+      ),
   };
 }
 
 async function waitForLines(path: string, count: number): Promise<void> {
-  const end = Date.now() + 10_000;
-  while (!existsSync(path) || readFileSync(path, "utf8").split("\n").length - 1 < count) {
-    if (Date.now() > end) throw new Error(`${path} has fewer than ${count} lines`);
-    await new Promise((done) => setTimeout(done, 50));
-  }
+  await waitUntil(
+    () => existsSync(path) && readFileSync(path, "utf8").split("\n").length - 1 >= count,
+    10_000,
+    `${path} has fewer than ${count} lines`,
+  );
 }
 
 describe("runInGroup with the signals of tasker", () => {

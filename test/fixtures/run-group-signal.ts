@@ -12,7 +12,11 @@ const [cwd, logPath, deadlineMs, holdMs, command] = process.argv.slice(2) as [
   string,
 ];
 
-const before = [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
+function listenerCounts(): number[] {
+  return [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
+}
+
+const before = listenerCounts();
 const outputFd = openSync(logPath, "a");
 const result = await runInGroup("/bin/bash", ["-c", command], {
   cwd,
@@ -21,7 +25,7 @@ const result = await runInGroup("/bin/bash", ["-c", command], {
   deadline: Date.now() + Number(deadlineMs),
 });
 closeSync(outputFd);
-const after = [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
+const after = listenerCounts();
 console.log(JSON.stringify({ result, before, after }));
 
 if (Number(holdMs) > 0) setTimeout(() => {}, Number(holdMs));
