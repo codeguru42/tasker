@@ -7,6 +7,7 @@ import { phaseEnv } from "../phases/env.js";
 import { errorMessage } from "../doctor/error-message.js";
 import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
+import { repoLockName, taskLockName, withLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { createVcsProvider } from "../vcs/provider.js";
 
@@ -16,6 +17,8 @@ export interface StartRequest {
   // The raw --base.
   base?: string;
   env: NodeJS.ProcessEnv;
+  // How long the start waits for the lock of the clone.
+  repoLockWaitMs: number;
   // Gives the base branch when no other source has one.
   ask: () => Promise<string>;
   // Prints one note of the base resolve.
@@ -66,8 +69,14 @@ export function bootstrapLogTail(log: string, count: number): string {
   return `the last ${last.length} lines of the log:\n${last.map((line) => `${line}\n`).join("")}`;
 }
 
-// Makes a task for the issue and takes it to workspace_ready.
+// Makes a task for the issue and takes it to workspace_ready. The task lock covers all the steps.
+// It does not wait: a second start of the same issue stops at once.
 export async function startTask(store: TaskStore, request: StartRequest): Promise<StartOutcome> {
+  const { repoKey, key } = request.ref;
+  return withLock(store, taskLockName(repoKey, key), { waitMs: 0 }, () => startLocked(store, request));
+}
+
+async function startLocked(store: TaskStore, request: StartRequest): Promise<StartOutcome> {
   const { config, ref, env } = request;
   const repo = config.repos[ref.repoKey];
   const issueProvider = issueProviderFor(config, ref.repoKey);
@@ -102,32 +111,36 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
   };
   const vcs = createVcsProvider(repo);
   const ctx = { dataRoot: config.dataRoot, repoKey: ref.repoKey, env };
-  const workspace = await failOnError(async () => {
-    await vcs.provision(ctx);
-    const hint = issueProvider.baseBranchHint(issue);
-    const resolved = await vcs.resolveBase(ctx, {
-      memory: store,
-      hint,
-      explicit: request.base ?? (hint === undefined ? (task.base ?? undefined) : undefined),
-      defaultBase: repo.defaultBaseBranch,
-      ask: request.ask,
-    });
-    store.updateTask(task.id, { base: resolved.base }, () => ({
-      type: "base",
-      data: { base: resolved.base, revision: resolved.revision, source: resolved.source },
-    }));
-    resolved.notes.forEach(request.note);
-    const created = await vcs.createWorkspace(ctx, {
-      shortRef: task.shortRef ?? ref.shortRef,
-      title: task.title ?? issue.title,
-      baseRevision: resolved.revision,
-    });
-    store.updateTask(task.id, { branch: created.taskRef, worktreePath: created.path }, () => ({
-      type: "workspace",
-      data: { path: created.path, taskRef: created.taskRef, state: created.state },
-    }));
-    return created;
-  });
+  // The repo lock covers only the steps that use the clone. A busy lock changes no task, so it
+  // wraps failOnError and not the other way round. Bootstrap runs after the lock is free.
+  const workspace = await withLock(store, repoLockName(ref.repoKey), { waitMs: request.repoLockWaitMs }, () =>
+    failOnError(async () => {
+      await vcs.provision(ctx);
+      const hint = issueProvider.baseBranchHint(issue);
+      const resolved = await vcs.resolveBase(ctx, {
+        memory: store,
+        hint,
+        explicit: request.base ?? (hint === undefined ? (task.base ?? undefined) : undefined),
+        defaultBase: repo.defaultBaseBranch,
+        ask: request.ask,
+      });
+      store.updateTask(task.id, { base: resolved.base }, () => ({
+        type: "base",
+        data: { base: resolved.base, revision: resolved.revision, source: resolved.source },
+      }));
+      resolved.notes.forEach(request.note);
+      const created = await vcs.createWorkspace(ctx, {
+        shortRef: task.shortRef ?? ref.shortRef,
+        title: task.title ?? issue.title,
+        baseRevision: resolved.revision,
+      });
+      store.updateTask(task.id, { branch: created.taskRef, worktreePath: created.path }, () => ({
+        type: "workspace",
+        data: { path: created.path, taskRef: created.taskRef, state: created.state },
+      }));
+      return created;
+    }),
+  );
   await failOnError(async () => {
     const logsDir = taskLogsDir(config.dataRoot, task);
     const log = bootstrapLogPath(logsDir);

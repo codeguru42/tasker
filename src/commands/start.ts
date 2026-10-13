@@ -3,6 +3,9 @@ import { errorMessage } from "../doctor/error-message.js";
 import { BootstrapFailedError, startTask } from "../tasks/start.js";
 import { fail, formatFields, loadConfigOrFail, resolveIssueKeyOrFail, withStoreAsync } from "./shared.js";
 
+// Another start can hold the clone for a long first fetch.
+const REPO_LOCK_WAIT_MS = 300_000;
+
 export const start: RegisterCommand = (program, io) => {
   program
     .command("start")
@@ -34,6 +37,7 @@ export const start: RegisterCommand = (program, io) => {
             ref,
             base: options.base,
             env: process.env,
+            repoLockWaitMs: REPO_LOCK_WAIT_MS,
             ask,
             note: (line) => io.stderr(`${line}\n`),
           }),
