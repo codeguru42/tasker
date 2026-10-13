@@ -59,7 +59,7 @@ The key names the repo. It can contain `/`, for example `codeguru42/tasker`. An 
 | `issueTracker` | object | required | See [`issueTracker`](#issuetracker). |
 | `assistant` | object | required | See [`assistant`](#assistant). |
 | `verify` | object | required | `commands`: list of non-empty strings with at least one item (required). `env`: list of names (default `[]`). |
-| `bootstrap` | object | `{ "commands": [], "env": [] }` | `commands`: list of strings (default `[]`). `env`: list of names (default `[]`). |
+| `bootstrap` | object | `{ "commands": [], "env": [] }` | `commands`: list of strings (default `[]`). Each command runs under `/bin/bash` in the worktree of the task, one at a time in the list order. One deadline, `limits.bootstrapTimeoutMin`, covers the whole list. The first command that fails stops the list. The output goes to the bootstrap log, not to the terminal. `env`: list of names (default `[]`). |
 | `defaultBaseBranch` | non-empty string | optional | The name of a branch on `origin` that tasks start from. tasker uses the value as it is and does not strip `origin/`. The form `refs/heads/<x>` fails with `repos.<key>.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>`. tasker uses the value only when no default is learned for the repo. If the branch exists, tasker saves it as the learned default. If not, the resolve fails. See [workspaces.md](dev/workspaces.md#base-branch). |
 | `overagePolicy` | `"decline"` or `"ask"` | `"decline"` | What to do when a task goes over the quota. |
 | `quotaApprovalThreshold` | number above 0 and at most 1 | `0.9` | The share of the quota at which approval is needed. |
@@ -75,6 +75,8 @@ The key names the repo. It can contain `/`, for example `codeguru42/tasker`. An 
 - It does not start with `TASKER_`. A `TASKER_` variable belongs to tasker and tasker never hands it to a phase.
 - It is not a name that every phase already receives. Those names are:
   `PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TERM`, `SHELL`, `TMPDIR`, `TZ`, `USER`, `LOGNAME`, `CLAUDE_CONFIG_DIR`, `NVM_DIR`, `ASDF_DIR`, `ASDF_DATA_DIR`, `VOLTA_HOME`, `FNM_DIR`, `N_PREFIX`, `PYENV_ROOT`, `RBENV_ROOT`, `SDKMAN_DIR`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`.
+
+Tasker always drops `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the environment of a phase, also when a list names them.
 
 ## `issueTracker`
 
