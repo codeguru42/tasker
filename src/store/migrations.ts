@@ -34,4 +34,9 @@ ALTER TABLE tasks ADD COLUMN base TEXT;
 ALTER TABLE tasks ADD COLUMN attempt INTEGER NOT NULL DEFAULT 1;
 CREATE UNIQUE INDEX tasks_active_repo_issue ON tasks (repo_key, issue_key)
   WHERE state NOT IN ('finished', 'cancelled');`,
+  `CREATE TABLE locks (
+  name TEXT PRIMARY KEY,
+  pid INTEGER NOT NULL,
+  acquired_at TEXT NOT NULL
+);`,
 ];
