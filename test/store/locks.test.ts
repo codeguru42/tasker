@@ -15,6 +15,7 @@ import { openStore, type TaskStore } from "../../src/store/store.js";
 import { failureOf, repoRoot, savePid, useTempDir, waitUntil } from "../helpers.js";
 
 const CLOCK = "2026-01-01T00:00:00.000Z";
+const NAME = "repo:alpha";
 const now = () => new Date(CLOCK);
 
 interface LockRow {
@@ -113,10 +114,10 @@ describe("named locks", () => {
     });
 
     it("throws when this process takes the same name two times", () => {
-      store.tryLock("a");
-      const before = readRow(dbPath, "a");
-      expect(() => store.tryLock("a")).toThrow(/\ba\b/);
-      expect(readRow(dbPath, "a")).toEqual(before);
+      store.tryLock(NAME);
+      const before = readRow(dbPath, NAME);
+      expect(() => store.tryLock(NAME)).toThrow("this process already holds the lock repo:alpha");
+      expect(readRow(dbPath, NAME)).toEqual(before);
     });
 
     it("deletes the own row with unlock", () => {
@@ -195,16 +196,16 @@ describe("named locks", () => {
       const { fake, calls } = fakeStore([BUSY]);
       let ran = false;
       const error = await failureOf(
-        withLock(fake, "a", { waitMs: 0 }, () => {
+        withLock(fake, NAME, { waitMs: 0 }, () => {
           ran = true;
         }),
         LockBusyError,
       );
       expect(calls.tryLock).toHaveLength(1);
-      expect(error.lockName).toBe("a");
+      expect(error.lockName).toBe(NAME);
       expect(error.pid).toBe(4242);
       expect(error.acquiredAt).toBe(CLOCK);
-      expect(error.message).toContain("a");
+      expect(error.message).toContain(NAME);
       expect(error.message).toContain("4242");
       expect(error.message).toContain(CLOCK);
       expect(ran).toBe(false);
@@ -236,7 +237,7 @@ describe("named locks", () => {
         throw new Error("unlock failed");
       });
       const error = await failureOf(
-        withLock(fake, "a", { waitMs: 0 }, () => {
+        withLock(fake, NAME, { waitMs: 0 }, () => {
           throw new Error("fn failed");
         }),
         Error,
@@ -249,7 +250,7 @@ describe("named locks", () => {
       const { fake, calls } = fakeStore([{ held: true }], () => {
         throw new Error("unlock failed");
       });
-      const error = await failureOf(withLock(fake, "a", { waitMs: 0 }, () => 1), Error);
+      const error = await failureOf(withLock(fake, NAME, { waitMs: 0 }, () => 1), Error);
       expect(error.message).toBe("unlock failed");
       expect(calls.unlock).toBe(1);
     });
@@ -260,12 +261,12 @@ describe("named locks", () => {
         const { fake, calls } = fakeStore([{ held: true }]);
         let ran = false;
         const error = await failureOf(
-          withLock(fake, "a", { waitMs }, () => {
+          withLock(fake, NAME, { waitMs }, () => {
             ran = true;
           }),
           RangeError,
         );
-        expect(error.message).toContain("a");
+        expect(error.message).toContain(NAME);
         expect(error.message).toContain(String(waitMs));
         expect(calls.tryLock).toHaveLength(0);
         expect(ran).toBe(false);
@@ -289,20 +290,20 @@ describe("named locks", () => {
     it(
       "rejects with LockBusyError while a child holds the lock",
       async () => {
-        const child = startLockChild(dbPath, "a");
+        const child = startLockChild(dbPath, NAME);
         expect(await child.attempt).toEqual({ held: true });
-        const row = readRow(dbPath, "a")!;
+        const row = readRow(dbPath, NAME)!;
         expect(row.pid).toBe(child.pid);
         let ran = false;
         const error = await failureOf(
-          withLock(store, "a", { waitMs: 0 }, () => {
+          withLock(store, NAME, { waitMs: 0 }, () => {
             ran = true;
           }),
           LockBusyError,
         );
         expect(error.pid).toBe(child.pid);
         expect(error.acquiredAt).toBe(row.acquired_at);
-        expect(error.message).toContain("a");
+        expect(error.message).toContain(NAME);
         expect(error.message).toContain(String(child.pid));
         expect(error.message).toContain(row.acquired_at);
         expect(ran).toBe(false);
@@ -313,13 +314,13 @@ describe("named locks", () => {
     it(
       "takes the lock of a child that was killed",
       async () => {
-        const child = startLockChild(dbPath, "a");
+        const child = startLockChild(dbPath, NAME);
         expect(await child.attempt).toEqual({ held: true });
-        expect(readRow(dbPath, "a")?.pid).toBe(child.pid);
+        expect(readRow(dbPath, NAME)?.pid).toBe(child.pid);
         process.kill(child.pid, "SIGKILL");
         await child.exited;
         let ran = false;
-        await withLock(store, "a", { waitMs: 0 }, () => {
+        await withLock(store, NAME, { waitMs: 0 }, () => {
           ran = true;
         });
         expect(ran).toBe(true);
