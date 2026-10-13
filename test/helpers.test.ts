@@ -37,6 +37,7 @@ import {
   useThreeRepoDataRoot,
   validConfig,
   waitForFile,
+  waitUntil,
   waitUntilGone,
   writeDataRootConfig,
   writeFakeGh,
@@ -690,6 +691,21 @@ describe("isAlive", () => {
 
     expect(finished.pid).toBeGreaterThan(0);
     expect(isAlive(finished.pid)).toBe(false);
+  });
+});
+
+describe("waitUntil", () => {
+  it("resolves when the predicate becomes true", async () => {
+    let flag = false;
+    setTimeout(() => {
+      flag = true;
+    }, 100);
+
+    await expect(waitUntil(() => flag, 5000, "never")).resolves.toBeUndefined();
+  });
+
+  it("rejects with the message when the predicate stays false", async () => {
+    await expect(waitUntil(() => false, 150, "the flag stayed false")).rejects.toThrow("the flag stayed false");
   });
 });
 
