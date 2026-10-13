@@ -14,6 +14,16 @@ export interface GroupResult {
   killed: boolean;
 }
 
+// Sends signal to the process group of pid. A group that is gone (ESRCH) is not an error.
+// It is exported only for its direct test.
+export function signalGroup(pid: number, signal: NodeJS.Signals): void {
+  try {
+    process.kill(-pid, signal);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+  }
+}
+
 // Runs file with args in a new process group and session. stdout and stderr go to outputFd, and stdin is /dev/null.
 export function runInGroup(
   file: string,
