@@ -13,7 +13,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { makeTempDir, repoRoot, tableNames } from "../helpers.js";
+import { makeTempDir, repoRoot, startWriteLockHolder, tableNames } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -786,5 +786,27 @@ describe("task store", () => {
       }
     },
     60_000,
+  );
+});
+
+describe("open of a new database", () => {
+  it(
+    "waits for another process that holds the write lock of a new database",
+    async () => {
+      const path = join(makeTempDir("tasker-open-"), "tasker.db");
+      await startWriteLockHolder(path, 500);
+
+      const store = openStore(path);
+      store.close();
+
+      const db = new DatabaseSync(path);
+      try {
+        expect(db.prepare("PRAGMA journal_mode").get()).toEqual({ journal_mode: "wal" });
+        expect(schemaVersion(db)).toBe(migrations.length);
+      } finally {
+        db.close();
+      }
+    },
+    20_000,
   );
 });
