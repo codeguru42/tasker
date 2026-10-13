@@ -3,9 +3,16 @@ import { existsSync, writeFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, onTestFinished } from "vitest";
-import { type LockAttempt, repoLockName, taskLockName } from "../../src/store/locks.js";
+import {
+  type LockAttempt,
+  LockBusyError,
+  type LockStore,
+  repoLockName,
+  taskLockName,
+  withLock,
+} from "../../src/store/locks.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { repoRoot, savePid, useTempDir, waitUntil } from "../helpers.js";
+import { failureOf, repoRoot, savePid, useTempDir, waitUntil } from "../helpers.js";
 
 const CLOCK = "2026-01-01T00:00:00.000Z";
 const now = () => new Date(CLOCK);
@@ -131,6 +138,194 @@ describe("named locks", () => {
       expect(repoLockName("tasker")).toBe("repo:tasker");
       expect(taskLockName("tasker", "codeguru42/tasker#51")).toBe("task:tasker:codeguru42/tasker#51");
     });
+  });
+
+  describe("withLock", () => {
+    const BUSY: LockAttempt = { held: false, pid: 4242, acquiredAt: CLOCK };
+
+    // A fake store. It gives the attempts in order and repeats the last one.
+    function fakeStore(attempts: LockAttempt[], unlock: () => void = () => {}) {
+      const calls = { tryLock: [] as number[], unlock: 0 };
+      const fake: LockStore = {
+        tryLock() {
+          calls.tryLock.push(Date.now());
+          return attempts[Math.min(calls.tryLock.length, attempts.length) - 1];
+        },
+        unlock() {
+          calls.unlock += 1;
+          unlock();
+        },
+      };
+      return { fake, calls };
+    }
+
+    function timerCount(): number {
+      return process.getActiveResourcesInfo().filter((name) => name === "Timeout").length;
+    }
+
+    it("runs fn on a free lock, gives its value and deletes the row", async () => {
+      const value = await withLock(store, "a", { waitMs: 0 }, () => {
+        expect(readRow(dbPath, "a")?.pid).toBe(process.pid);
+        return 7;
+      });
+      expect(value).toBe(7);
+      expect(readRow(dbPath, "a")).toBeUndefined();
+    });
+
+    it("rejects with the error of fn and unlocks one time", async () => {
+      const calls = { unlock: 0 };
+      const counting: LockStore = {
+        tryLock: (name) => store.tryLock(name),
+        unlock: (name) => {
+          calls.unlock += 1;
+          store.unlock(name);
+        },
+      };
+      const failure = new Error("fn failed");
+      await expect(
+        withLock(counting, "a", { waitMs: 0 }, () => {
+          throw failure;
+        }),
+      ).rejects.toBe(failure);
+      expect(calls.unlock).toBe(1);
+      expect(readRow(dbPath, "a")).toBeUndefined();
+    });
+
+    it("rejects with LockBusyError after one try when waitMs is 0", async () => {
+      const { fake, calls } = fakeStore([BUSY]);
+      let ran = false;
+      const error = await failureOf(
+        withLock(fake, "a", { waitMs: 0 }, () => {
+          ran = true;
+        }),
+        LockBusyError,
+      );
+      expect(calls.tryLock).toHaveLength(1);
+      expect(error.lockName).toBe("a");
+      expect(error.pid).toBe(4242);
+      expect(error.acquiredAt).toBe(CLOCK);
+      expect(error.message).toContain("a");
+      expect(error.message).toContain("4242");
+      expect(error.message).toContain(CLOCK);
+      expect(ran).toBe(false);
+      expect(calls.unlock).toBe(0);
+    });
+
+    it("tries again every 250 ms until the lock is free", async () => {
+      const { fake, calls } = fakeStore([BUSY, BUSY, { held: true }]);
+      let ran = false;
+      await withLock(fake, "a", { waitMs: 5000 }, () => {
+        ran = true;
+      });
+      expect(ran).toBe(true);
+      expect(calls.tryLock).toHaveLength(3);
+      expect(calls.tryLock[2] - calls.tryLock[0]).toBeGreaterThanOrEqual(450);
+    });
+
+    it("rejects with LockBusyError after waitMs", async () => {
+      const { fake, calls } = fakeStore([BUSY]);
+      const start = Date.now();
+      await failureOf(withLock(fake, "a", { waitMs: 600 }, () => {}), LockBusyError);
+      expect(Date.now() - start).toBeGreaterThanOrEqual(600);
+      expect(calls.tryLock.length).toBeGreaterThanOrEqual(2);
+      expect(calls.tryLock.length).toBeLessThanOrEqual(4);
+    });
+
+    it("keeps the error of fn when unlock also fails", async () => {
+      const { fake, calls } = fakeStore([{ held: true }], () => {
+        throw new Error("unlock failed");
+      });
+      const error = await failureOf(
+        withLock(fake, "a", { waitMs: 0 }, () => {
+          throw new Error("fn failed");
+        }),
+        Error,
+      );
+      expect(error.message).toBe("fn failed");
+      expect(calls.unlock).toBe(1);
+    });
+
+    it("rejects with the error of unlock when fn succeeds", async () => {
+      const { fake, calls } = fakeStore([{ held: true }], () => {
+        throw new Error("unlock failed");
+      });
+      const error = await failureOf(withLock(fake, "a", { waitMs: 0 }, () => 1), Error);
+      expect(error.message).toBe("unlock failed");
+      expect(calls.unlock).toBe(1);
+    });
+
+    it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])(
+      "rejects a waitMs of %s before the first try",
+      async (waitMs) => {
+        const { fake, calls } = fakeStore([{ held: true }]);
+        let ran = false;
+        const error = await failureOf(
+          withLock(fake, "a", { waitMs }, () => {
+            ran = true;
+          }),
+          RangeError,
+        );
+        expect(error.message).toContain("a");
+        expect(error.message).toContain(String(waitMs));
+        expect(calls.tryLock).toHaveLength(0);
+        expect(ran).toBe(false);
+      },
+    );
+
+    it("leaves no timer behind after a wait that ends with the lock", async () => {
+      const before = timerCount();
+      const { fake } = fakeStore([BUSY, { held: true }]);
+      await withLock(fake, "a", { waitMs: 5000 }, () => {});
+      expect(timerCount()).toBe(before);
+    });
+
+    it("leaves no timer behind after LockBusyError", async () => {
+      const before = timerCount();
+      const { fake } = fakeStore([BUSY]);
+      await failureOf(withLock(fake, "a", { waitMs: 300 }, () => {}), LockBusyError);
+      expect(timerCount()).toBe(before);
+    });
+
+    it(
+      "rejects with LockBusyError while a child holds the lock",
+      async () => {
+        const child = startLockChild(dbPath, "a");
+        expect(await child.attempt).toEqual({ held: true });
+        const row = readRow(dbPath, "a")!;
+        expect(row.pid).toBe(child.pid);
+        let ran = false;
+        const error = await failureOf(
+          withLock(store, "a", { waitMs: 0 }, () => {
+            ran = true;
+          }),
+          LockBusyError,
+        );
+        expect(error.pid).toBe(child.pid);
+        expect(error.acquiredAt).toBe(row.acquired_at);
+        expect(error.message).toContain("a");
+        expect(error.message).toContain(String(child.pid));
+        expect(error.message).toContain(row.acquired_at);
+        expect(ran).toBe(false);
+      },
+      30_000,
+    );
+
+    it(
+      "takes the lock of a child that was killed",
+      async () => {
+        const child = startLockChild(dbPath, "a");
+        expect(await child.attempt).toEqual({ held: true });
+        expect(readRow(dbPath, "a")?.pid).toBe(child.pid);
+        process.kill(child.pid, "SIGKILL");
+        await child.exited;
+        let ran = false;
+        await withLock(store, "a", { waitMs: 0 }, () => {
+          ran = true;
+        });
+        expect(ran).toBe(true);
+      },
+      30_000,
+    );
   });
 
   it(
