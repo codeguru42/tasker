@@ -19,6 +19,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, onTestFinished, vi } from "vitest";
 import { type Io, type RegisterCommand, run } from "../src/cli.js";
+import { taskBootstrapLogPath } from "../src/commands/show-bootstrap.js";
 import { loadConfig } from "../src/config/load.js";
 import { type Config, parseConfig } from "../src/config/schema.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
@@ -288,6 +289,13 @@ export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] 
   } finally {
     store.close();
   }
+}
+
+// Writes text as the bootstrap log of the attempt of task under dataRoot.
+export function writeBootstrapLog(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">, text: string): void {
+  const path = taskBootstrapLogPath(dataRoot, task);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, text);
 }
 
 // The fixed author and committer of every commit that a git test makes.
