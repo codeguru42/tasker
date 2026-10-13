@@ -1,8 +1,8 @@
 import { closeSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { type GroupResult, runInGroup } from "../../src/process/run-group.js";
-import { useTempDir } from "../helpers.js";
+import { type GroupResult, runInGroup, signalGroup } from "../../src/process/run-group.js";
+import { readPidFile, useTempDir, waitUntilGone } from "../helpers.js";
 
 const MINUTE_MS = 60_000;
 
@@ -91,5 +91,32 @@ describe("runInGroup", () => {
     await runLogged(row.command, { cwd }).catch(() => undefined);
 
     expect([process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")]).toEqual(before);
+  });
+});
+
+describe("signalGroup", () => {
+  it("ignores a group that is gone", async () => {
+    const cwd = useTempDir("tasker-run-group-cwd-");
+    await runLogged("echo $$ > leader.pid", { cwd });
+    const leaderPid = await readPidFile(join(cwd, "leader.pid"), 5000);
+
+    expect(() => signalGroup(leaderPid, "SIGTERM")).not.toThrow();
+  });
+
+  it("reaches each process of a live group", async () => {
+    const cwd = useTempDir("tasker-run-group-cwd-");
+    const running = runLogged("echo $$ > leader.pid; sleep 30 & echo $! > child.pid; wait", { cwd });
+    const leaderPid = await readPidFile(join(cwd, "leader.pid"), 5000);
+    const childPid = await readPidFile(join(cwd, "child.pid"), 5000);
+
+    signalGroup(leaderPid, "SIGTERM");
+
+    const { result } = await running;
+    expect(result.signal).toBe("SIGTERM");
+    await waitUntilGone(childPid, 5000);
+  });
+
+  it("passes an error other than ESRCH through", () => {
+    expect(() => signalGroup(process.pid, "SIGNOPE" as NodeJS.Signals)).toThrow();
   });
 });
