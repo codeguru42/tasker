@@ -1,5 +1,5 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { loadConfig } from "../src/config/load.js";
@@ -21,17 +21,23 @@ import {
   greet,
   ghTokenAnswer,
   gitTestEnv,
+  isAlive,
   issueKeyErrorMessage,
   localBranches,
   makeGitClone,
   makeGitOrigin,
   makeTempDir,
+  readPidFile,
   runCommand,
+  savePid,
   seedTasks,
   sshKeyArgs,
   threeRepoConfig,
+  useTempDir,
   useThreeRepoDataRoot,
   validConfig,
+  waitForFile,
+  waitUntilGone,
   writeDataRootConfig,
   writeFakeGh,
   type GitOrigin,
@@ -655,5 +661,98 @@ describe("issueKeyErrorMessage", () => {
     const { path } = useThreeRepoDataRoot();
 
     expect(() => issueKeyErrorMessage("codeguru42/other#1", path)).toThrow();
+  });
+});
+
+describe("useTempDir", () => {
+  let saved = "";
+
+  it("makes a folder that exists", () => {
+    saved = useTempDir("tasker-use-temp-");
+
+    expect(saved).not.toBe("");
+    expect(existsSync(saved)).toBe(true);
+  });
+
+  it("removes the folder after the test", () => {
+    expect(saved).not.toBe("");
+    expect(existsSync(saved)).toBe(false);
+  });
+});
+
+describe("isAlive", () => {
+  it("is true for the running test process", () => {
+    expect(isAlive(process.pid)).toBe(true);
+  });
+
+  it("is false for a process that finished", () => {
+    const finished = spawnSync("true");
+
+    expect(finished.pid).toBeGreaterThan(0);
+    expect(isAlive(finished.pid)).toBe(false);
+  });
+});
+
+describe("waitUntilGone", () => {
+  it("resolves when the process ends", async () => {
+    const child = spawn("sleep", ["0.2"], { stdio: "ignore" });
+    savePid(child.pid!);
+
+    await expect(waitUntilGone(child.pid!, 5000)).resolves.toBeUndefined();
+  });
+
+  it("rejects with the pid when the process stays", async () => {
+    await expect(waitUntilGone(process.pid, 100)).rejects.toThrow(String(process.pid));
+  });
+});
+
+describe("waitForFile", () => {
+  it("resolves when the file appears", async () => {
+    const path = join(useTempDir("tasker-wait-file-"), "later");
+    setTimeout(() => writeFileSync(path, "x"), 100);
+
+    await expect(waitForFile(path, 5000)).resolves.toBeUndefined();
+  });
+
+  it("rejects when no file appears", async () => {
+    const path = join(useTempDir("tasker-wait-file-"), "never");
+
+    await expect(waitForFile(path, 150)).rejects.toThrow();
+  });
+});
+
+describe("savePid", () => {
+  let pid = 0;
+
+  it("saves a pid that the test started", () => {
+    const child = spawn("sleep", ["30"], { stdio: "ignore" });
+    expect(child.pid).toBeDefined();
+    pid = child.pid!;
+    savePid(pid);
+
+    expect(isAlive(pid)).toBe(true);
+  });
+
+  it("kills the saved pid after the test", async () => {
+    expect(pid).toBeGreaterThan(0);
+
+    await expect(waitUntilGone(pid, 2000)).resolves.toBeUndefined();
+  });
+});
+
+describe("readPidFile", () => {
+  it("waits for the pid, returns it and saves it", async () => {
+    const path = join(useTempDir("tasker-pid-file-"), "pid");
+    const child = spawn("sleep", ["30"], { stdio: "ignore" });
+    setTimeout(() => writeFileSync(path, `${child.pid}\n`), 100);
+
+    await expect(readPidFile(path, 5000)).resolves.toBe(child.pid);
+    expect(isAlive(child.pid!)).toBe(true);
+  });
+
+  it("rejects when no file appears", async () => {
+    const path = join(useTempDir("tasker-pid-file-"), "pid");
+
+    await expect(readPidFile(path, 150)).rejects.toThrow();
   });
 });
