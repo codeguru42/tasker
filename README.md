@@ -6,9 +6,11 @@ This repo is a rebuild of tasker. Work is tracked on the [project board](https:/
 
 ## Requirements
 
-- Node.js 22.13 or later
+- Node.js 26 or later
 - npm
 - git (the tests run git)
+
+The `.nvmrc` file sets the Node version for local work and for CI.
 
 ## Install from source
 
