@@ -1,8 +1,12 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { bootstrapFailureMessage, bootstrapLogTail } from "../../src/tasks/start.js";
-import { useTempDir } from "../helpers.js";
+import { LockBusyError, repoLockName } from "../../src/store/locks.js";
+import { createDataRoot } from "../../src/store/layout.js";
+import { openStore } from "../../src/store/store.js";
+import { bootstrapFailureMessage, bootstrapLogTail, startTask } from "../../src/tasks/start.js";
+import { githubShortRef } from "../../src/issue-key/short-ref.js";
+import { lockNames, startLockHolder, useStartFixture, useTempDir } from "../helpers.js";
 
 describe("bootstrapFailureMessage", () => {
   const failed = { status: "failed", index: 2, command: "npm ci", timedOut: false } as const;
@@ -59,5 +63,34 @@ describe("bootstrapLogTail", () => {
     const log = join(useTempDir("tasker-tail-"), "folder");
     mkdirSync(log);
     expect(bootstrapLogTail(log, 20)).toBe(`cannot read the log ${log}: EISDIR\n`);
+  });
+});
+
+describe("startTask with a held repo lock", () => {
+  it("waits for the lock, then leaves the task in provisioning with no new event", async () => {
+    const fixture = await useStartFixture();
+    const store = openStore(createDataRoot(fixture.dataRoot).database);
+    try {
+      const holder = startLockHolder(createDataRoot(fixture.dataRoot).database, repoLockName(fixture.repoKey));
+      await holder.attempt;
+
+      const error = await startTask(store, {
+        config: fixture.config,
+        ref: { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: githubShortRef("5") },
+        env: process.env,
+        repoLockWaitMs: 300,
+        ask: () => Promise.reject(new Error("no question expected")),
+        note: () => {},
+      }).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(LockBusyError);
+      expect((error as Error).message).toContain("the lock repo:codeguru42/tasker is busy");
+      const task = store.findLatestTask(fixture.repoKey, "codeguru42/tasker#5");
+      expect(task?.state).toBe("provisioning");
+      expect(store.listEvents(task!.id).map((event) => event.type)).toEqual(["created"]);
+      expect(lockNames(fixture.dataRoot)).toEqual([repoLockName(fixture.repoKey)]);
+    } finally {
+      store.close();
+    }
   });
 });

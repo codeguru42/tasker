@@ -4,10 +4,18 @@ import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
 import { start } from "../../src/commands/start.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
+import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { openStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { captureIo, ghTokenAnswer, writeFakeGh, dayAt, lockNames, runCommand, seedTasks, taskNames, useStartFixture, useTempDir } from "../helpers.js";
+import {
+  captureIo,
+  ghTokenAnswer,
+  spawnTasker,
+  startLockHolder,
+  waitUntil,
+  waitUntilGone,
+  writeFakeGh, dayAt, lockNames, runCommand, seedTasks, taskNames, useStartFixture, useTempDir } from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -44,13 +52,17 @@ function expectFailed(dataRoot: string, result: { code: number; err: string }, n
   }
 }
 
-function hasTask(dataRoot: string): boolean {
+function taskState(dataRoot: string, key = KEY): string | undefined {
   const store = openStore(createDataRoot(dataRoot).database);
   try {
-    return store.findLatestTask("codeguru42/tasker", KEY) !== undefined;
+    return store.findLatestTask("codeguru42/tasker", key)?.state;
   } finally {
     store.close();
   }
+}
+
+function hasTask(dataRoot: string): boolean {
+  return taskState(dataRoot) !== undefined;
 }
 
 describe("start", () => {
@@ -402,6 +414,85 @@ describe("start", () => {
       expect(hasTask(fixture.dataRoot)).toBe(false);
       expect(lockNames(fixture.dataRoot)).toEqual([]);
     });
+  });
+
+  describe("locks", () => {
+    const REPO = "codeguru42/tasker";
+
+    it("refuses at once when another process holds the task lock", async () => {
+      const fixture = await useStartFixture();
+      const name = taskLockName(REPO, KEY);
+      const holder = startLockHolder(createDataRoot(fixture.dataRoot).database, name);
+      await holder.attempt;
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(1);
+      expect(result.err).toContain(`the lock ${name} is busy: process ${holder.pid}`);
+      expect(hasTask(fixture.dataRoot)).toBe(false);
+      expect(fixture.gh.calls().some((call) => call.args.includes("view"))).toBe(false);
+      expect(lockNames(fixture.dataRoot)).toEqual([name]);
+    });
+
+    it("waits for the repo lock and goes on when the holder dies", async () => {
+      const fixture = await useStartFixture();
+      const holder = startLockHolder(createDataRoot(fixture.dataRoot).database, repoLockName(REPO));
+      await holder.attempt;
+
+      const running = runCommand(start, "start", KEY);
+      await waitUntil(() => taskState(fixture.dataRoot) === "provisioning", 30_000, "the task did not appear");
+      await new Promise((done) => setTimeout(done, 500));
+      process.kill(holder.pid, "SIGKILL");
+      await waitUntilGone(holder.pid, 10_000);
+
+      const result = await running;
+      expect(result.code).toBe(0);
+      expect(taskState(fixture.dataRoot)).toBe("workspace_ready");
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    }, 60_000);
+
+    it("runs bootstrap with only the task lock held", async () => {
+      const tmp = useTempDir("tasker-lock-bootstrap-");
+      const command =
+        `touch ${tmp}/started; i=0; while [ ! -f ${tmp}/go ] && [ $i -lt 600 ]; do sleep 0.1; i=$((i+1)); done; ` +
+        `test -f ${tmp}/go`;
+      const fixture = await useStartFixture({ repo: { bootstrap: { commands: [command], env: [] } } });
+
+      const running = runCommand(start, "start", KEY);
+      await waitUntil(() => existsSync(join(tmp, "started")), 30_000, "bootstrap did not start");
+      expect(lockNames(fixture.dataRoot)).toEqual([taskLockName(REPO, KEY)]);
+      writeFileSync(join(tmp, "go"), "");
+
+      const result = await running;
+      expect(result.code).toBe(0);
+      expect(taskState(fixture.dataRoot)).toBe("workspace_ready");
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    }, 60_000);
+
+    it("runs two issues at the same time", async () => {
+      const barrier = useTempDir("tasker-barrier-");
+      const count = `$(ls ${barrier} | wc -l)`;
+      const command =
+        `touch ${barrier}/$$; i=0; while [ ${count} -lt 2 ] && [ $i -lt 600 ]; do sleep 0.1; i=$((i+1)); done; ` +
+        `[ ${count} -ge 2 ]`;
+      const fixture = await useStartFixture({
+        issues: [
+          { project: REPO, number: 5 },
+          { project: REPO, number: 6 },
+        ],
+        repo: { bootstrap: { commands: [command], env: [] } },
+      });
+
+      const results = await Promise.all([
+        spawnTasker(["start", `${REPO}#5`]),
+        spawnTasker(["start", `${REPO}#6`]),
+      ]);
+
+      expect(results.map((result) => result.code)).toEqual([0, 0]);
+      expect(taskState(fixture.dataRoot, `${REPO}#5`)).toBe("workspace_ready");
+      expect(taskState(fixture.dataRoot, `${REPO}#6`)).toBe("workspace_ready");
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    }, 120_000);
   });
 
   it("prints the description of the command and of both options for --help", async () => {
