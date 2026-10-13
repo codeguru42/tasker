@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
+import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
-import { type RegisterCommand, run } from "../src/cli.js";
+import { createDefaultIo, type RegisterCommand, run } from "../src/cli.js";
 import { captureIo, greet } from "./helpers.js";
 
 const packageVersion: string = JSON.parse(
@@ -137,5 +138,48 @@ describe("run", () => {
     await run([], { commands: [greet], io: bareIo });
 
     expect(bareIo.err.join("")).not.toContain("operands");
+  });
+});
+
+describe("createDefaultIo", () => {
+  function streams(isTTY: boolean) {
+    const stdin = Object.assign(new PassThrough(), { isTTY });
+    const stdout = new PassThrough();
+    const stderr = new PassThrough();
+    return { stdin, stdout, stderr };
+  }
+
+  it("has no prompt when stdin is not a terminal", () => {
+    expect(createDefaultIo(streams(false)).prompt).toBeUndefined();
+  });
+
+  it("writes the question to stderr and resolves the line", async () => {
+    const s = streams(true);
+    const io = createDefaultIo(s);
+    const chunks: string[] = [];
+    s.stderr.on("data", (chunk) => chunks.push(String(chunk)));
+
+    const answer = io.prompt?.("Base branch: ");
+    s.stdin.write("dev\n");
+
+    await expect(answer).resolves.toBe("dev");
+    expect(chunks.join("")).toContain("Base branch: ");
+    expect(s.stdin.isPaused()).toBe(true);
+  });
+
+  it("holds no input listener until a prompt runs", () => {
+    const s = streams(true);
+    createDefaultIo(s);
+
+    expect(s.stdin.listenerCount("data")).toBe(0);
+    expect(s.stdin.listenerCount("keypress")).toBe(0);
+  });
+
+  it("rejects when the input closes with no line", async () => {
+    const s = streams(true);
+    const answer = createDefaultIo(s).prompt?.("Base branch: ");
+    s.stdin.end();
+
+    await expect(answer).rejects.toThrow("no answer: the input closed");
   });
 });
