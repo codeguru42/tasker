@@ -14,5 +14,5 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/workspaces.md](docs/dev/workspaces.md): the base branch and the workspace of a task: the forms, the source order of the resolve, the learned default, the guard, the branch name, and the reasons for the git flags of the diff and the reconcile.
 - [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code: the gh boundary, the gh token and environment, the gh and GitHub facts that the code guards against, and the doctor checks.
 - [docs/dev/issue-keys.md](docs/dev/issue-keys.md): the issue key forms, the short refs, the resolve of a key to its repo and the stored spelling.
-- [docs/dev/tasks.md](docs/dev/tasks.md): the task commands: the purpose of start, the order of its steps, the locks and the lock order, the rules of a second run and the limits.
+- [docs/dev/tasks.md](docs/dev/tasks.md): the task commands start and abort: the purpose of start, the order of its steps, the locks and the lock order, the rules of a second run, the reasons of abort and the limits.
 - [docs/dev/phases.md](docs/dev/phases.md): the phases: the environment of a phase, the deadline, the stop rules, the log and the marker.

@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start and abort. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -16,9 +16,9 @@ The order follows what each step needs and what a failure can leave.
 
 ## The locks
 
-Each start takes the task lock first and the repo lock second. No code takes a task lock while it holds a repo lock. As a result, two starts cannot wait for each other in a circle, so they cannot deadlock.
+Each start and each abort takes the task lock first and the repo lock second. No code takes a task lock while it holds a repo lock. As a result, two commands cannot wait for each other in a circle, so they cannot deadlock.
 
-The task lock does not wait. A second start of the same issue stops at once, because it would repeat the work of the first one. The repo lock covers the steps that change the clone and the question for the base branch. The base step fetches first and asks only after the fetch, so the question falls inside the lock. The repo lock waits, because another task of the same repo usually holds it only for these short steps. The wait is long enough for a first fetch of a large repo.
+The task lock does not wait. A second command for the same issue stops at once, because it would repeat the work of the first one. The repo lock covers the steps that change the clone and the question for the base branch. The base step fetches first and asks only after the fetch, so the question falls inside the lock. The repo lock waits, because another task of the same repo usually holds it only for these short steps. The wait is long enough for a first fetch of a large repo.
 
 The rule that each command that changes a task takes the task lock has one home: [the locks table](data-root.md#locks-table).
 
@@ -31,6 +31,20 @@ A second run continues a task that did not reach `workspace_ready`. It does not 
 - A failure in a clone step or in bootstrap moves the task to `failed` with the error. The next run moves it back and continues.
 - A task that is past this step is not changed. The command only prints it.
 - The stored base stays on a second run. A `--base` option or a `base:` label wins and is stored as the new base.
+
+## Abort
+
+A dirty worktree needs `--force`, because the abort cannot bring the work back. The check runs before any change, so a refused abort changes nothing.
+
+A task that is `finished` or `cancelled` is an error, because it has nothing to abort.
+
+An abort can stop between two steps, for example after a crash. A second run must finish it. As a result, each step first checks that its target still exists, and a step with no target does nothing.
+
+The compare of the stored worktree path uses the real path. The data root can go through a symlink, and git lists real paths.
+
+The abort removes its own worktree entry. It never prunes, because a prune drops the entries of other tasks too.
+
+The worktree goes before the branch. Git refuses to delete a branch that a worktree entry holds, also when the folder of the entry is gone.
 
 ## Why the events are separate
 
@@ -46,3 +60,5 @@ An agent reads stdout. It holds only the fields of the task, so the agent can pa
 - An issue that closes after its task exists does not stop a second run. The closed check runs only when no task exists.
 - A person who does not answer the question for the base branch holds the repo lock. Another start of the same repo then waits, and it stops with the lock error at the end of its wait.
 - The start does not assign the issue and does not mark it in progress. It has no option to take over a lock of a live process, and no stacked base.
+- The abort does not delete the task branch on `origin`. No command publishes a task branch before M10.
+- A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
