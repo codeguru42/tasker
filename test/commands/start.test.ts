@@ -7,7 +7,7 @@ import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { openStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { captureIo, dayAt, lockNames, runCommand, seedTasks, taskNames, useStartFixture, useTempDir } from "../helpers.js";
+import { captureIo, ghTokenAnswer, writeFakeGh, dayAt, lockNames, runCommand, seedTasks, taskNames, useStartFixture, useTempDir } from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -39,6 +39,15 @@ function expectFailed(dataRoot: string, result: { code: number; err: string }, n
     expect(result.err).toBe(`${notes}${data.error}\n`);
     expect(lockNames(dataRoot)).toEqual([]);
     return data.error;
+  } finally {
+    store.close();
+  }
+}
+
+function hasTask(dataRoot: string): boolean {
+  const store = openStore(createDataRoot(dataRoot).database);
+  try {
+    return store.findLatestTask("codeguru42/tasker", KEY) !== undefined;
   } finally {
     store.close();
   }
@@ -354,6 +363,43 @@ describe("start", () => {
           "branch: -\n" +
           "worktree: -\n",
       });
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+  });
+
+  describe("an issue that cannot be started", () => {
+    it("refuses a closed issue and makes no task", async () => {
+      const fixture = await useStartFixture({
+        issues: [{ project: "codeguru42/tasker", number: 5, state: "CLOSED" }],
+      });
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result).toEqual({ code: 1, out: "", err: "the issue is closed: codeguru42/tasker#5\n" });
+      expect(hasTask(fixture.dataRoot)).toBe(false);
+      expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+
+    it("gives the error of an issue that does not exist and makes no task", async () => {
+      const fixture = await useStartFixture();
+      const stderr = "GraphQL: Could not resolve to an issue or pull request with the number of 5.\n";
+      writeFakeGh(join(dirname(fixture.gh.logPath), "bin"), fixture.gh.logPath, [
+        ghTokenAnswer("codeguru42", "gho_test"),
+        {
+          args: ["issue", "view", "5", "-R", "codeguru42/tasker", "--json", "number,title,body,url,labels,state"],
+          stderr,
+          exitCode: 1,
+        },
+      ]);
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result).toEqual({
+        code: 1,
+        out: "",
+        err: `the issue ${KEY} does not exist: ${stderr.trim()}\n`,
+      });
+      expect(hasTask(fixture.dataRoot)).toBe(false);
       expect(lockNames(fixture.dataRoot)).toEqual([]);
     });
   });
