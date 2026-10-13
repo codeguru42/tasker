@@ -3,7 +3,8 @@ import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
 import { phaseEnv } from "../phases/env.js";
-import { transitionTask } from "../state/machine.js";
+import { errorMessage } from "../doctor/error-message.js";
+import { failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { createVcsProvider } from "../vcs/provider.js";
@@ -38,30 +39,42 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
     title: issue.title,
     shortRef: ref.shortRef,
   });
+  // Fails the task with the error of fn, then throws the error again.
+  const failOnError = async <T>(fn: () => Promise<T>): Promise<T> => {
+    try {
+      return await fn();
+    } catch (error) {
+      failTask(store, task.id, errorMessage(error));
+      throw error;
+    }
+  };
   const vcs = createVcsProvider(repo);
   const ctx = { dataRoot: config.dataRoot, repoKey: ref.repoKey, env };
-  await vcs.provision(ctx);
-  const resolved = await vcs.resolveBase(ctx, {
-    memory: store,
-    hint: issueProvider.baseBranchHint(issue),
-    explicit: request.base,
-    defaultBase: repo.defaultBaseBranch,
-    ask: request.ask,
+  const workspace = await failOnError(async () => {
+    await vcs.provision(ctx);
+    const resolved = await vcs.resolveBase(ctx, {
+      memory: store,
+      hint: issueProvider.baseBranchHint(issue),
+      explicit: request.base,
+      defaultBase: repo.defaultBaseBranch,
+      ask: request.ask,
+    });
+    store.updateTask(task.id, { base: resolved.base }, () => ({
+      type: "base",
+      data: { base: resolved.base, revision: resolved.revision, source: resolved.source },
+    }));
+    resolved.notes.forEach(request.note);
+    const created = await vcs.createWorkspace(ctx, {
+      shortRef: ref.shortRef,
+      title: issue.title,
+      baseRevision: resolved.revision,
+    });
+    store.updateTask(task.id, { branch: created.taskRef, worktreePath: created.path }, () => ({
+      type: "workspace",
+      data: { path: created.path, taskRef: created.taskRef, state: created.state },
+    }));
+    return created;
   });
-  store.updateTask(task.id, { base: resolved.base }, () => ({
-    type: "base",
-    data: { base: resolved.base, revision: resolved.revision, source: resolved.source },
-  }));
-  resolved.notes.forEach(request.note);
-  const workspace = await vcs.createWorkspace(ctx, {
-    shortRef: ref.shortRef,
-    title: issue.title,
-    baseRevision: resolved.revision,
-  });
-  store.updateTask(task.id, { branch: workspace.taskRef, worktreePath: workspace.path }, () => ({
-    type: "workspace",
-    data: { path: workspace.path, taskRef: workspace.taskRef, state: workspace.state },
-  }));
   const logsDir = taskLogsDir(config.dataRoot, task);
   const result = await runBootstrap({
     commands: repo.bootstrap.commands,

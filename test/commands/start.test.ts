@@ -22,9 +22,10 @@ function eventsOf(dataRoot: string): { type: string; data: unknown }[] {
   }
 }
 
-// Makes sure that the task failed in provisioning with an error, and that stderr holds that error.
+// Makes sure that the task failed in provisioning with an error, and that stderr holds the notes
+// that came before the error, then that error.
 // Gives the error.
-function expectFailed(dataRoot: string, result: { code: number; err: string }): string {
+function expectFailed(dataRoot: string, result: { code: number; err: string }, notes = ""): string {
   expect(result.code).toBe(1);
   const store = openStore(createDataRoot(dataRoot).database);
   try {
@@ -34,7 +35,7 @@ function expectFailed(dataRoot: string, result: { code: number; err: string }): 
     expect(last?.type).toBe("transition");
     const data = last?.data as { from: string; to: string; error: string };
     expect(data).toMatchObject({ from: "provisioning", to: "failed" });
-    expect(result.err).toBe(`${data.error}\n`);
+    expect(result.err).toBe(`${notes}${data.error}\n`);
     expect(lockNames(dataRoot)).toEqual([]);
     return data.error;
   } finally {
@@ -196,7 +197,7 @@ describe("start", () => {
 
     const result = await runCommand(start, "start", KEY);
 
-    expectFailed(fixture.dataRoot, result);
+    expectFailed(fixture.dataRoot, result, "tasker saved main as the default base branch of codeguru42/tasker.\n");
     expect(eventsOf(fixture.dataRoot).map((event) => event.type)).toEqual([
       "created",
       "base",
