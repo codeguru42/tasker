@@ -15,6 +15,7 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/vcs/` holds the version control layer. See [version-control.md](version-control.md).
 - `src/vcs/git/` holds the git code. See [version-control.md](version-control.md).
 - `src/issue-key/` holds the issue key parsers and the resolve of a key to its repo. See [issue-keys.md](issue-keys.md).
+- `src/tasks/` holds the steps of the task commands. See [tasks.md](tasks.md).
 - `src/state/` holds the state machine. See [statemachine.md](../statemachine.md).
 - `AGENTS.md` is an index that links to the docs. It gives no rules itself. Each assistant session reads it first.
 - `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.
