@@ -151,3 +151,33 @@ describe("runBootstrap when a command fails", () => {
     expect(existsSync(bootstrapMarkerPath(dirs.logsDir))).toBe(false);
   });
 });
+
+describe("runBootstrap run again", () => {
+  it("skips the run and writes nothing when the marker exists", async () => {
+    const dirs = setup();
+    await bootstrap(["true"], dirs);
+    const log = readFileSync(bootstrapLogPath(dirs.logsDir));
+    const marker = readFileSync(bootstrapMarkerPath(dirs.logsDir));
+
+    const result = await bootstrap(["touch touched"], dirs);
+
+    expect(result).toEqual({ status: "skipped" });
+    expect(existsSync(join(dirs.cwd, "touched"))).toBe(false);
+    expect(readFileSync(bootstrapLogPath(dirs.logsDir)).equals(log)).toBe(true);
+    expect(readFileSync(bootstrapMarkerPath(dirs.logsDir)).equals(marker)).toBe(true);
+  });
+
+  it("runs every command again from the first when the marker is missing", async () => {
+    const dirs = setup();
+
+    const first = await bootstrap(["echo run >> count", "exit 1"], dirs);
+    const second = await bootstrap(["echo run >> count"], dirs);
+
+    expect(first).toMatchObject({ status: "failed", index: 2, exitCode: 1 });
+    expect(second).toEqual({ status: "ok" });
+    expect(readFileSync(join(dirs.cwd, "count"), "utf8")).toBe("run\nrun\n");
+    const log = readFileSync(bootstrapLogPath(dirs.logsDir), "utf8");
+    expect(log.match(/^=== bootstrap run /gm)).toHaveLength(2);
+    expect(log).toContain("$ exit 1\n--- exit code 1\n");
+  });
+});
