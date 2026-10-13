@@ -1,5 +1,9 @@
 import { spawn } from "node:child_process";
 
+const KILL_GRACE_MS = 5_000;
+const POLL_MS = 100;
+const MAX_TIMER_MS = 2_147_483_647; // above this, setTimeout fires at once
+
 export interface RunGroupOptions {
   cwd: string;
   env: NodeJS.ProcessEnv;
@@ -24,7 +28,18 @@ export function signalGroup(pid: number, signal: NodeJS.Signals): void {
   }
 }
 
+function groupRuns(pid: number): boolean {
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ESRCH") return false;
+    throw error;
+  }
+}
+
 // Runs file with args in a new process group and session. stdout and stderr go to outputFd, and stdin is /dev/null.
+// At the deadline, the group gets SIGTERM. Five seconds later, it gets SIGKILL.
 export function runInGroup(
   file: string,
   args: readonly string[],
@@ -37,8 +52,52 @@ export function runInGroup(
       detached: true,
       stdio: ["ignore", options.outputFd, options.outputFd],
     });
-    child.once("error", reject);
-    if (child.pid === undefined) return; // no group exists, so the error event rejects
-    child.once("exit", (code, signal) => resolve({ code, signal, timedOut: false, killed: false }));
+    const pid = child.pid;
+    if (pid === undefined) {
+      child.once("error", reject); // no group exists, so no signal and no timer
+      return;
+    }
+    let settled = false;
+    let timedOut = false;
+    let killed = false;
+    let exited: { code: number | null; signal: NodeJS.Signals | null } | undefined;
+    let deadlineTimer: NodeJS.Timeout | undefined;
+    let graceTimer: NodeJS.Timeout | undefined;
+    let pollTimer: NodeJS.Timeout | undefined;
+    const settle = (finish: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(deadlineTimer);
+      clearTimeout(graceTimer);
+      clearInterval(pollTimer);
+      finish();
+    };
+    const finishIfDone = () => {
+      if (exited === undefined) return;
+      if (timedOut && !killed && groupRuns(pid)) return; // wait for the group, or for the SIGKILL
+      const result = { ...exited, timedOut, killed };
+      settle(() => resolve(result));
+    };
+    const armDeadline = () => {
+      const left = options.deadline - Date.now();
+      if (left > 0) {
+        deadlineTimer = setTimeout(armDeadline, Math.min(left, MAX_TIMER_MS));
+        return;
+      }
+      timedOut = true;
+      signalGroup(pid, "SIGTERM");
+      graceTimer = setTimeout(() => {
+        killed = true;
+        signalGroup(pid, "SIGKILL");
+        finishIfDone();
+      }, KILL_GRACE_MS);
+      pollTimer = setInterval(finishIfDone, POLL_MS);
+    };
+    child.on("error", (error) => settle(() => reject(error)));
+    child.on("exit", (code, signal) => {
+      exited = { code, signal };
+      finishIfDone();
+    });
+    armDeadline();
   });
 }
