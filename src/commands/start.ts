@@ -1,6 +1,7 @@
 import type { RegisterCommand } from "../cli.js";
+import { errorMessage } from "../doctor/error-message.js";
 import { startTask } from "../tasks/start.js";
-import { formatFields, loadConfigOrFail, resolveIssueKeyOrFail, withStoreAsync } from "./shared.js";
+import { fail, formatFields, loadConfigOrFail, resolveIssueKeyOrFail, withStoreAsync } from "./shared.js";
 
 export const start: RegisterCommand = (program, io) => {
   program
@@ -17,16 +18,29 @@ export const start: RegisterCommand = (program, io) => {
     .action(async (issue: string, options: { repo?: string; base?: string }) => {
       const config = loadConfigOrFail(io);
       const ref = resolveIssueKeyOrFail(io, issue, config, { repo: options.repo });
-      const { task } = await withStoreAsync(config, (store) =>
-        startTask(store, {
-          config,
-          ref,
-          base: options.base,
-          env: process.env,
-          ask: () => Promise.reject(new Error(`no base branch for ${ref.repoKey}`)),
-          note: (line) => io.stderr(`${line}\n`),
-        }),
-      );
+      const ask = () =>
+        io.prompt === undefined
+          ? Promise.reject(
+              new Error(
+                `no base branch for ${ref.repoKey}: pass --base <branch>, or set repos.${ref.repoKey}.defaultBaseBranch`,
+              ),
+            )
+          : io.prompt(`Base branch for ${ref.repoKey}: `);
+      let task;
+      try {
+        ({ task } = await withStoreAsync(config, (store) =>
+          startTask(store, {
+            config,
+            ref,
+            base: options.base,
+            env: process.env,
+            ask,
+            note: (line) => io.stderr(`${line}\n`),
+          }),
+        ));
+      } catch (error) {
+        fail(io, errorMessage(error));
+      }
       io.stdout(
         formatFields([
           ["issue", task.issueKey],
