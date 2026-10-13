@@ -178,6 +178,24 @@ describe("createGitProvider", () => {
       expect(await git.taskRefExists(fixture.context, { taskRef: missing })).toBe(false);
     });
 
+    it("deletes a task ref after the workspace is removed", async () => {
+      const { git, path, taskRef } = await workspace();
+      await git.removeWorkspace(fixture.context, { path });
+      await git.deleteTaskRef(fixture.context, { taskRef });
+      expect(await localBranches(paths().clone, fixture.context.env)).not.toContain(
+        `refs/heads/${taskRef}`,
+      );
+    });
+
+    it("discards the changes of a workspace", async () => {
+      const { git, path } = await workspace();
+      writeFileSync(join(path, "README.md"), "changed\n");
+      writeFileSync(join(path, "new.txt"), "new\n");
+      expect((await git.uncommittedChanges(fixture.context, { path })).length).toBeGreaterThan(0);
+      await git.discardWorkspaceChanges(fixture.context, { path });
+      expect(await git.uncommittedChanges(fixture.context, { path })).toEqual([]);
+    });
+
     it("reconciles the workspace onto the new base and gives its head", async () => {
       const { git, path } = await workspace();
       await commitInWorktree(path, fixture.context.env, { file: "a.txt" });
