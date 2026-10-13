@@ -24,11 +24,11 @@ The project of a repo is its `issueTracker.project`. The [`project` row of the c
 
 tasker does not guess the provider from the shape of a key. It tries the key against each repo, with the key parser of the provider of that repo. One provider object serves many repos, so the parser takes the project. The resolve uses the key parsers directly, not the provider registry. As a result, a jira repo still gives the parser error, and not the error of the registry.
 
-No file in `src/issue-key/` imports from `src/issues/`, because that import pulls in the registry and the gh code. A boundary test enforces this rule.
-
 A github repo matches when the `owner/repo` part of the key equals the project. The compare folds only the ASCII letters `A` to `Z` to lower case. `toLowerCase()` is not safe, because the Kelvin sign U+212A lowers to `k`. With the ASCII fold, a match means that the project has the same ASCII characters as the key. As a result, the stored key is always a GitHub key.
 
 A jira repo never matches, because the Jira project match does not exist yet. Its parser runs only to give the parser error.
+
+No file in `src/issue-key/` imports from `src/issues/`, because that import pulls in the registry and the gh code. A boundary test enforces this rule.
 
 The unknown repo check of `--repo` uses the own keys of the configuration only, so `constructor` and `__proto__` are unknown repo keys.
 
