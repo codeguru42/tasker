@@ -100,6 +100,7 @@ The steps to land a ticket are in "Run one ticket". This section gives the rules
 - If the task was in `reviewed`, the review before `tasker update-branch` and the review after it count as one loop of "Review findings".
 - If the task is in `awaiting_plan_review` (a refine of step 4), `tasker update-branch` keeps the task in `awaiting_plan_review`. Then the agent runs the refine of step 4.
 - If `tasker update-branch` reports a rebase conflict, the agent follows [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent does not copy that procedure.
+- Before the orchestrator sends added work or an answer to an agent, the orchestrator reads the state of the task with `tasker show <issue>`. The orchestrator runs this command itself. It does not send a message to the agent only to learn the state, because a message to an agent that has ended starts the agent again (see "Terms" in "Quota"). The message with the work or the answer names the state that the orchestrator found. The state can change while a message waits, and the next command then depends on the new state.
 
 ## Quota
 
