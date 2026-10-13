@@ -5,7 +5,7 @@ import { issueProviderFor } from "../issues/provider.js";
 import { type BootstrapResult, bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
 import { phaseEnv } from "../phases/env.js";
 import { errorMessage } from "../doctor/error-message.js";
-import { failTask, transitionTask } from "../state/machine.js";
+import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { createVcsProvider } from "../vcs/provider.js";
@@ -73,6 +73,11 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
   const issueProvider = issueProviderFor(config, ref.repoKey);
   const issue = await issueProvider.fetchIssue(ref, env);
   const active = store.findActiveTask(ref.repoKey, ref.key);
+  const continues =
+    active !== undefined &&
+    (active.state === "provisioning" ||
+      (active.state === "failed" && failedFrom(store, active.id) === "provisioning"));
+  if (active !== undefined && !continues) return { started: false, task: active };
   const task =
     active === undefined
       ? store.createTask({

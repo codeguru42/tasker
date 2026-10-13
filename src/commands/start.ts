@@ -26,9 +26,9 @@ export const start: RegisterCommand = (program, io) => {
               ),
             )
           : io.prompt(`Base branch for ${ref.repoKey}: `);
-      let task;
+      let outcome;
       try {
-        ({ task } = await withStoreAsync(config, (store) =>
+        outcome = await withStoreAsync(config, (store) =>
           startTask(store, {
             config,
             ref,
@@ -37,12 +37,14 @@ export const start: RegisterCommand = (program, io) => {
             ask,
             note: (line) => io.stderr(`${line}\n`),
           }),
-        ));
+        );
       } catch (error) {
         // The bootstrap error comes first, then the tail of the log.
         if (error instanceof BootstrapFailedError) fail(io, `${error.message}\n${error.tail.trimEnd()}`);
         fail(io, errorMessage(error));
       }
+      const { task } = outcome;
+      if (!outcome.started) io.stdout("task already started\n");
       io.stdout(
         formatFields([
           ["issue", task.issueKey],
