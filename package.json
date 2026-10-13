@@ -7,7 +7,7 @@
     "tasker": "dist/main.js"
   },
   "engines": {
-    "node": ">=22.13"
+    "node": ">=26"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
