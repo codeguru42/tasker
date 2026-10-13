@@ -44,7 +44,7 @@ The environment of the token call is in [The environment](#the-environment).
 
 ## The environment
 
-- tasker removes each token variable, `GH_HOST` and `GH_REPO` of the caller. As a result, only the token of the account counts, and each call names its repo.
+- tasker removes each token variable, `GH_HOST` and `GH_REPO` of the caller. As a result, only the token of the account counts, and each call must name its repo (see [runGh()](#rungh)).
 - gh gets no prompt, no update notice and no color.
 - Other names pass as they are, for example `GH_CONFIG_DIR`.
 - tasker does not add `process.env`.
