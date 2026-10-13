@@ -72,13 +72,19 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
   const repo = config.repos[ref.repoKey];
   const issueProvider = issueProviderFor(config, ref.repoKey);
   const issue = await issueProvider.fetchIssue(ref, env);
-  const task = store.createTask({
-    issueKey: ref.key,
-    repoKey: ref.repoKey,
-    state: "provisioning",
-    title: issue.title,
-    shortRef: ref.shortRef,
-  });
+  const active = store.findActiveTask(ref.repoKey, ref.key);
+  const task =
+    active === undefined
+      ? store.createTask({
+          issueKey: ref.key,
+          repoKey: ref.repoKey,
+          state: "provisioning",
+          title: issue.title,
+          shortRef: ref.shortRef,
+        })
+      : active.state === "failed"
+        ? transitionTask(store, active.id, "provisioning")
+        : active;
   // Fails the task with the error of fn, then throws the error again.
   const failOnError = async <T>(fn: () => Promise<T>): Promise<T> => {
     try {
@@ -92,10 +98,11 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
   const ctx = { dataRoot: config.dataRoot, repoKey: ref.repoKey, env };
   const workspace = await failOnError(async () => {
     await vcs.provision(ctx);
+    const hint = issueProvider.baseBranchHint(issue);
     const resolved = await vcs.resolveBase(ctx, {
       memory: store,
-      hint: issueProvider.baseBranchHint(issue),
-      explicit: request.base,
+      hint,
+      explicit: request.base ?? (hint === undefined ? (task.base ?? undefined) : undefined),
       defaultBase: repo.defaultBaseBranch,
       ask: request.ask,
     });
@@ -105,8 +112,8 @@ export async function startTask(store: TaskStore, request: StartRequest): Promis
     }));
     resolved.notes.forEach(request.note);
     const created = await vcs.createWorkspace(ctx, {
-      shortRef: ref.shortRef,
-      title: issue.title,
+      shortRef: task.shortRef ?? ref.shortRef,
+      title: task.title ?? issue.title,
       baseRevision: resolved.revision,
     });
     store.updateTask(task.id, { branch: created.taskRef, worktreePath: created.path }, () => ({
