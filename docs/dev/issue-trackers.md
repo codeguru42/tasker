@@ -12,7 +12,7 @@ Each member of the provider maps to one GitHub function and adds no behavior.
 
 - The caller reads `updateOnStart` and `updateOnFinish` to decide if it calls a write at all. The provider does not read them.
 - `parse` takes the project, because one provider object serves many repos. It is the key parser itself, not a wrapper. [Issue keys](issue-keys.md) gives the rules.
-- The doctor checks are asked once for each tracker id, with all the repos of that id. As a result, the `gh version` check runs once, and the order of [Doctor checks](#doctor-checks) holds.
+- `tasker doctor` asks the provider of each repo for its doctor checks. As a result, `gh version` and `gh auth` run once for each repo. This is a limit, the same as the git version limit in [version-control.md](version-control.md#the-provider-interface).
 
 ### The registry
 
@@ -104,7 +104,7 @@ The compare of the login with the account uses the ASCII-only fold of GitHub nam
 
 For the timeout and signal rules, see [doctor.md](doctor.md#the-shared-wrapper). The signal also covers the token call of each check.
 
-The `gh version` check runs once, and only when a repo uses the github tracker.
+`tasker doctor` runs the `gh version` and `gh auth` checks once for each repo that uses the github tracker. This is a limit.
 
 ### Version
 
