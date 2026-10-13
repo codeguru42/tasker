@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
@@ -806,6 +806,32 @@ describe("open of a new database", () => {
       } finally {
         db.close();
       }
+    },
+    20_000,
+  );
+
+  it(
+    "throws database is locked after the busy timeout when the write lock of a new database stays taken",
+    async () => {
+      const path = join(makeTempDir("tasker-open-"), "tasker.db");
+      await startWriteLockHolder(path, 8000);
+
+      const start = Date.now();
+      expect(() => openStore(path)).toThrow("database is locked");
+      expect(Date.now() - start).toBeGreaterThanOrEqual(4500);
+    },
+    20_000,
+  );
+
+  it(
+    "fails at once on an error that is not SQLITE_BUSY on the switch to WAL",
+    () => {
+      const path = join(makeTempDir("tasker-open-"), "tasker.db");
+      writeFileSync(path, "x".repeat(4096));
+
+      const start = Date.now();
+      expect(() => openStore(path)).toThrow("file is not a database");
+      expect(Date.now() - start).toBeLessThan(1000);
     },
     20_000,
   );
