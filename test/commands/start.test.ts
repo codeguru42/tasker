@@ -3,10 +3,11 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
 import { start } from "../../src/commands/start.js";
-import { createDataRoot } from "../../src/store/layout.js";
+import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
+import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { openStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { captureIo, lockNames, runCommand, taskNames, useStartFixture } from "../helpers.js";
+import { captureIo, lockNames, runCommand, taskNames, useStartFixture, useTempDir } from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -203,6 +204,34 @@ describe("start", () => {
       "base",
       "transition",
     ]);
+  });
+
+  it("fails the task when bootstrap fails and prints the tail of the log", async () => {
+    const tmp = useTempDir("tasker-bootstrap-");
+    const command = `seq 1 30; test -f ${tmp}/ok || exit 3`;
+    const fixture = await useStartFixture({ repo: { bootstrap: { commands: [command], env: [] } } });
+
+    const result = await runCommand(start, "start", KEY);
+
+    const log = bootstrapLogPath(taskLogsDir(fixture.dataRoot, { issueKey: KEY, attempt: 1 }));
+    const error = `bootstrap command 1 failed: ${command}: exit code 3. The log is ${log}.`;
+    const tail = Array.from({ length: 19 }, (_, i) => `${i + 12}\n`).join("");
+    expect(result.err).toBe(
+      "tasker saved main as the default base branch of codeguru42/tasker.\n" +
+        `${error}\nthe last 20 lines of the log:\n${tail}--- exit code 3\n`,
+    );
+    const events = eventsOf(fixture.dataRoot);
+    expect(events.map((event) => event.type)).toEqual([
+      "created",
+      "base",
+      "workspace",
+      "bootstrap",
+      "transition",
+    ]);
+    expect(events[3].data).toMatchObject({ status: "failed", index: 1, exitCode: 3, log });
+    expect(events[4].data).toMatchObject({ from: "provisioning", to: "failed", error });
+    expect(result.code).toBe(1);
+    expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
   it("prints the description of the command and of both options for --help", async () => {
