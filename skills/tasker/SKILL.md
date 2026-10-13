@@ -77,6 +77,23 @@ The command prints an error and exits with code 1 in these cases:
 - The issue has no task. The error names the issue and the repo.
 - The configuration is missing or invalid.
 
+### `tasker show-bootstrap`
+
+Prints the bootstrap log of the task of an issue: `tasker show-bootstrap <issue>`. The command uses the same task as `tasker show`: the active task, else the newest task.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+The command prints the log as it is, with no change. The log holds every bootstrap run of the attempt of the task, in order. Each run starts with a line `=== bootstrap run <time> ===`. An empty log prints nothing.
+
+The command prints an error and exits with code 1 in these cases:
+
+- The issue key does not resolve.
+- The issue has no task. The error names the issue and the repo.
+- The task has no bootstrap log. The error is `no bootstrap log for <issue key>`.
+- tasker cannot read the bootstrap log. The error is `cannot read the bootstrap log for <issue key>: <error code>`.
+- The configuration is missing or invalid.
+
 ### `tasker status`
 
 Lists the tasks by issue key and state. With no option, it lists the active tasks of all repos. A task is active when its state is not `finished` and not `cancelled`.
