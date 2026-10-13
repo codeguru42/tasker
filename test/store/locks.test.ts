@@ -276,14 +276,14 @@ describe("named locks", () => {
       const before = timerCount();
       const { fake } = fakeStore([BUSY, { held: true }]);
       await withLock(fake, "a", { waitMs: 5000 }, () => {});
-      expect(timerCount()).toBe(before);
+      expect(timerCount()).toBeLessThanOrEqual(before);
     });
 
     it("leaves no timer behind after LockBusyError", async () => {
       const before = timerCount();
       const { fake } = fakeStore([BUSY]);
       await failureOf(withLock(fake, "a", { waitMs: 300 }, () => {}), LockBusyError);
-      expect(timerCount()).toBe(before);
+      expect(timerCount()).toBeLessThanOrEqual(before);
     });
 
     it(

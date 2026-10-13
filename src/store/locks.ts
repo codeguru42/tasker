@@ -58,3 +58,53 @@ export function unlockIn(db: DatabaseSync, name: string): void {
     db.prepare("DELETE FROM locks WHERE name = ? AND pid = ?").run(name, process.pid);
   });
 }
+
+export class LockBusyError extends Error {
+  constructor(
+    readonly lockName: string,
+    readonly pid: number,
+    readonly acquiredAt: string,
+  ) {
+    super(`the lock ${lockName} is busy: process ${pid} took it at ${acquiredAt}`);
+    this.name = "LockBusyError";
+  }
+}
+
+const RETRY_MS = 250;
+
+// Tries the lock every RETRY_MS for at most waitMs. waitMs 0 means one try.
+// An error of fn wins over an error of unlock.
+export async function withLock<T>(
+  store: LockStore,
+  name: string,
+  options: { waitMs: number },
+  fn: () => T | Promise<T>,
+): Promise<T> {
+  const { waitMs } = options;
+  if (!Number.isFinite(waitMs) || waitMs < 0) {
+    throw new RangeError(
+      `the wait for the lock ${name} must be a finite number of 0 or more ms, not ${waitMs}`,
+    );
+  }
+  const deadline = Date.now() + waitMs;
+  for (;;) {
+    const attempt = store.tryLock(name);
+    if (attempt.held) break;
+    const left = deadline - Date.now();
+    if (left <= 0) throw new LockBusyError(name, attempt.pid, attempt.acquiredAt);
+    await new Promise((done) => setTimeout(done, Math.min(RETRY_MS, left)));
+  }
+  let result: T;
+  try {
+    result = await fn();
+  } catch (error) {
+    try {
+      store.unlock(name);
+    } catch {
+      // Keep the error of fn.
+    }
+    throw error;
+  }
+  store.unlock(name);
+  return result;
+}
