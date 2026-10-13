@@ -3,6 +3,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { readGithubIssue } from "../src/issues/github/issue.js";
+import { issueProviderFor } from "../src/issues/provider.js";
 import { loadConfig } from "../src/config/load.js";
 import { parseConfig } from "../src/config/schema.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
@@ -49,6 +50,7 @@ import {
   threeRepoConfig,
   useProcessEnv,
   useTempDir,
+  useStartFixture,
   useThreeRepoDataRoot,
   validConfig,
   waitUntil,
@@ -930,5 +932,39 @@ describe("spawnTasker", () => {
 
     expect(result.code).not.toBe(0);
     expect(result.stderr).toContain("unknown option");
+  });
+});
+
+describe("useStartFixture", () => {
+  it("gives a configuration with the origin as the remote and main as the base", async () => {
+    const fixture = await useStartFixture();
+    const repo = fixture.config.repos[fixture.repoKey];
+
+    expect(fixture.repoKey).toBe("codeguru42/tasker");
+    expect(repo.remote).toBe(fixture.origin.path);
+    expect(repo.defaultBaseBranch).toBe("main");
+  });
+
+  it("sets TASKER_CONFIG and puts the fake gh first on the PATH", async () => {
+    const fixture = await useStartFixture();
+
+    expect(process.env.TASKER_CONFIG).toBe(fixture.configPath);
+    expect(process.env.PATH?.startsWith(`${fixture.gh.env.PATH}${delimiter}`)).toBe(true);
+  });
+
+  it("answers the read of issue 5 through the fake gh", async () => {
+    const fixture = await useStartFixture();
+    const provider = issueProviderFor(fixture.config, fixture.repoKey);
+    const ref = { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: "codeguru42-tasker-5" };
+
+    const issue = await provider.fetchIssue(ref, process.env);
+
+    expect(issue.title).toBe("Issue 5");
+  });
+
+  it("removes a repo key that is set to undefined", async () => {
+    const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
+
+    expect(fixture.config.repos[fixture.repoKey].defaultBaseBranch).toBeUndefined();
   });
 });
