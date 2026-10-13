@@ -37,6 +37,17 @@ export function resolveIssueKeyOrFail(
   }
 }
 
+// The text of a field value on one line: each line end is written as the two characters \n.
+// A field with no value is -.
+function fieldValue(value: string | number | null | undefined): string {
+  return value === null || value === undefined ? "-" : String(value).replace(/\r\n|\r|\n/g, "\\n");
+}
+
+// The lines `field: value`, each ending in a line end.
+export function formatFields(fields: [string, string | number | null | undefined][]): string {
+  return fields.map(([field, value]) => `${field}: ${fieldValue(value)}\n`).join("");
+}
+
 // Opens the store of dataRoot, runs fn and closes the store, also after an error.
 export function withStore<T>(config: Config, fn: (store: TaskStore) => T): T {
   const store = openStore(createDataRoot(config.dataRoot).database);

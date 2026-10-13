@@ -1,13 +1,7 @@
 import type { RegisterCommand } from "../cli.js";
 import { failedFrom } from "../state/machine.js";
 import type { Task, TaskEvent, TaskStore } from "../store/store.js";
-import { loadConfigOrFail, withIssueTask } from "./shared.js";
-
-// The text of a field value on one line: each line end is written as the two characters \n.
-// A field with no value is -.
-function fieldValue(value: string | number | null | undefined): string {
-  return value === null || value === undefined ? "-" : String(value).replace(/\r\n|\r|\n/g, "\\n");
-}
+import { formatFields, loadConfigOrFail, withIssueTask } from "./shared.js";
 
 // The error of the last transition event, when it is a string.
 function lastError(events: TaskEvent[]): string | undefined {
@@ -36,7 +30,7 @@ function formatTask(store: TaskStore, task: Task): string {
   if (task.state === "failed") {
     fields.push(["failed in", failedFrom(store, task.id)], ["error", lastError(events)]);
   }
-  return fields.map(([field, value]) => `${field}: ${fieldValue(value)}\n`).join("");
+  return formatFields(fields);
 }
 
 export const show: RegisterCommand = (program, io) => {
