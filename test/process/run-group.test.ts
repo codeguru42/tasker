@@ -34,7 +34,7 @@ async function runLogged(
 
 describe("runInGroup", () => {
   it("runs the command in a new group with no terminal", async () => {
-    const { log } = await runLogged('echo "$$ $(ps -o pgid= -p $$)"; exec 3</dev/tty || echo no-tty');
+    const { log } = await runLogged('echo "$$ $(ps -o pgid= -p $$)"; { exec 3</dev/tty; } 2>/dev/null || echo no-tty');
 
     const [line, second] = log.split("\n");
     const [pid, pgid] = (line ?? "").trim().split(/\s+/);
