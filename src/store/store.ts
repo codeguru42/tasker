@@ -400,6 +400,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     unlock(name) {
       unlockIn(db, name);
     },
+
     close() {
       db.close();
     },
