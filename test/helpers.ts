@@ -1,6 +1,7 @@
 import {
   accessSync,
   constants,
+  existsSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
@@ -90,6 +91,69 @@ export function validConfig(): Record<string, any> {
 // A new empty folder under the system temp folder. The caller removes it.
 export function makeTempDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix));
+}
+
+// A new temp folder that is removed after the test. Call it inside a test.
+export function useTempDir(prefix: string): string {
+  const dir = makeTempDir(prefix);
+  onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
+
+// True when the process runs. A zombie (state Z, not yet reaped) counts as gone.
+export function isAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+  } catch {
+    return false;
+  }
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+    // The state follows the last ")" of the line, because the command name can hold ")".
+    return stat.slice(stat.lastIndexOf(")") + 2, stat.lastIndexOf(")") + 3) !== "Z";
+  } catch {
+    return true;
+  }
+}
+
+// Resolves when the process is gone. Rejects with the pid when it still runs after timeoutMs.
+export async function waitUntilGone(pid: number, timeoutMs: number): Promise<void> {
+  const end = Date.now() + timeoutMs;
+  while (isAlive(pid)) {
+    if (Date.now() >= end) throw new Error(`process ${pid} still runs after ${timeoutMs} ms`);
+    await new Promise((done) => setTimeout(done, 50));
+  }
+}
+
+// Resolves when the file exists. Rejects when it does not appear within timeoutMs.
+export async function waitForFile(path: string, timeoutMs: number): Promise<void> {
+  const end = Date.now() + timeoutMs;
+  while (!existsSync(path)) {
+    if (Date.now() >= end) throw new Error(`no file ${path} after ${timeoutMs} ms`);
+    await new Promise((done) => setTimeout(done, 50));
+  }
+}
+
+// Sends SIGKILL to pid after the test, when it still runs. Use it only for a pid that the test started.
+export function savePid(pid: number): void {
+  onTestFinished(() => {
+    if (isAlive(pid)) process.kill(pid, "SIGKILL");
+  });
+}
+
+// Waits until the file holds a pid and a newline, saves the pid with savePid and returns it.
+export async function readPidFile(path: string, timeoutMs: number): Promise<number> {
+  const end = Date.now() + timeoutMs;
+  for (;;) {
+    const text = existsSync(path) ? readFileSync(path, "utf8") : "";
+    if (/^\d+\n$/.test(text)) {
+      const pid = Number(text);
+      savePid(pid);
+      return pid;
+    }
+    if (Date.now() >= end) throw new Error(`no pid in ${path} after ${timeoutMs} ms`);
+    await new Promise((done) => setTimeout(done, 50));
+  }
 }
 
 // The error that promise rejects with. It throws, so the test fails, when promise resolves
