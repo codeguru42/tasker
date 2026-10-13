@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { pathSlug } from "../../issue-key/path-slug.js";
 import { dataRootLayout } from "../../store/layout.js";
 
 export interface RepoPaths {
@@ -10,18 +11,9 @@ export interface RepoPaths {
 // The usual limit for a file name, in bytes.
 const MAX_SLUG_BYTES = 255;
 
-// A folder name for a repo key. Each byte of the key that is a-z, 0-9 or "-" stays.
-// Each other byte becomes "_" and two lower-case hex digits. As a result, no two keys
-// share a slug, also on a case-insensitive file system.
+// A folder name for a repo key: the path slug of the key, at most MAX_SLUG_BYTES long.
 export function repoSlug(repoKey: string): string {
-  if (repoKey === "") {
-    throw new Error("cannot make a repo slug from an empty repo key");
-  }
-  let slug = "";
-  for (const byte of Buffer.from(repoKey, "utf8")) {
-    const char = String.fromCharCode(byte);
-    slug += /[a-z0-9-]/.test(char) ? char : `_${byte.toString(16).padStart(2, "0")}`;
-  }
+  const slug = pathSlug(repoKey);
   if (Buffer.byteLength(slug) > MAX_SLUG_BYTES) {
     throw new Error(`the repo key is too long for a folder name: ${repoKey}`);
   }
