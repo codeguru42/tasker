@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathSlug } from "../issue-key/path-slug.js";
@@ -46,4 +47,10 @@ export function taskLogsDir(
   task: Pick<Task, "issueKey" | "attempt">,
 ): string {
   return join(taskArtifactsDir(dataRoot, task), "logs");
+}
+
+// The path of the file that tasker doctor writes and deletes in dataRoot. The name is new for
+// each call, so two doctors that run at the same time do not use the same file. It makes no file.
+export function doctorProbePath(dataRoot: string): string {
+  return join(dataRoot, `.doctor-probe-${process.pid}-${randomUUID()}`);
 }
