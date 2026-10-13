@@ -244,6 +244,17 @@ export function dayAt(day: number): string {
   return `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
 }
 
+// Sets each name of env in process.env for this test. A value of undefined removes the name.
+// After the test, it restores process.env. Call it inside a test.
+export function useProcessEnv(env: NodeJS.ProcessEnv): void {
+  for (const [name, value] of Object.entries(env)) {
+    vi.stubEnv(name, value);
+  }
+  onTestFinished(() => {
+    vi.unstubAllEnvs();
+  });
+}
+
 // Writes threeRepoConfig() with writeDataRootConfig() and points TASKER_CONFIG at it.
 // Call it inside a test. After the test, it restores the env and removes the folder.
 export function useThreeRepoDataRoot(): { dir: string; path: string; dataRoot: string } {
