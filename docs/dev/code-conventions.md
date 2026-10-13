@@ -10,7 +10,8 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/store/` holds the task store. See [data-root.md](data-root.md).
 - `src/doctor/` holds the code that all doctor checks share. See [doctor.md](doctor.md).
 - `src/issues/` holds the issue tracker code. See [issue-trackers.md](issue-trackers.md).
-- `src/process/` holds the one helper that starts a child process. The git, gh and ssh code start their processes through it.
+- `src/process/` holds the code that starts a child process. Every child process starts from a module in this folder. The git, gh and ssh code start their processes through its shared helper.
+- `src/phases/` holds the code that runs the commands of a phase. See [phases.md](phases.md).
 - `src/vcs/` holds the version control layer. See [version-control.md](version-control.md).
 - `src/vcs/git/` holds the git code. See [version-control.md](version-control.md).
 - `src/issue-key/` holds the issue key parsers and the resolve of a key to its repo. See [issue-keys.md](issue-keys.md).
