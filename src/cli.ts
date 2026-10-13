@@ -1,3 +1,4 @@
+import { createInterface } from "node:readline";
 import { Command, CommanderError } from "commander";
 import { commands as defaultCommands } from "./commands/index.js";
 import { readVersion } from "./version.js";
@@ -16,10 +17,40 @@ export interface RunOptions {
   io?: Io;
 }
 
-const defaultIo: Io = {
-  stdout: (text) => process.stdout.write(text),
-  stderr: (text) => process.stderr.write(text),
-};
+interface IoStreams {
+  stdin: NodeJS.ReadableStream & { isTTY?: boolean };
+  stdout: NodeJS.WritableStream;
+  stderr: NodeJS.WritableStream;
+}
+
+// The Io of a process. The question goes to stderr, so stdout holds only the result.
+// The readline interface exists only while one prompt runs.
+export function createDefaultIo(
+  streams: IoStreams = { stdin: process.stdin, stdout: process.stdout, stderr: process.stderr },
+): Io {
+  const io: Io = {
+    stdout: (text) => streams.stdout.write(text),
+    stderr: (text) => streams.stderr.write(text),
+  };
+  if (streams.stdin.isTTY) {
+    io.prompt = (question) =>
+      new Promise<string>((resolve, reject) => {
+        const rl = createInterface({ input: streams.stdin, output: streams.stderr });
+        let answered = false;
+        rl.once("close", () => {
+          if (!answered) reject(new Error("no answer: the input closed"));
+        });
+        rl.question(question, (line) => {
+          answered = true;
+          rl.close();
+          resolve(line);
+        });
+      });
+  }
+  return io;
+}
+
+const defaultIo: Io = createDefaultIo();
 
 export function buildProgram(commands: readonly RegisterCommand[], io: Io): Command {
   const program = new Command("tasker")
