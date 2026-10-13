@@ -648,7 +648,7 @@ describe("task store", () => {
       const check = new DatabaseSync(oldPath);
       try {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(4);
+        expect(migrations.length).toBe(5);
       } finally {
         check.close();
       }
@@ -714,6 +714,20 @@ describe("task store", () => {
       }
       const check = new DatabaseSync(oldPath);
       try {
+        expect(schemaVersion(check)).toBe(migrations.length);
+      } finally {
+        check.close();
+      }
+    });
+
+    it("upgrades a version-4 database when it opens", () => {
+      const oldPath = join(dir, "old4.db");
+      makeOldDatabase(oldPath, 4);
+      const upgraded = openStore(oldPath, { now });
+      upgraded.close();
+      const check = new DatabaseSync(oldPath);
+      try {
+        expect(tableNames(check)).toContain("locks");
         expect(schemaVersion(check)).toBe(migrations.length);
       } finally {
         check.close();
