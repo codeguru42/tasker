@@ -724,7 +724,11 @@ describe("task store", () => {
       const oldPath = join(dir, "old4.db");
       makeOldDatabase(oldPath, 4);
       const upgraded = openStore(oldPath, { now });
-      upgraded.close();
+      try {
+        expect(upgraded.tryLock("x")).toEqual({ held: true });
+      } finally {
+        upgraded.close();
+      }
       const check = new DatabaseSync(oldPath);
       try {
         expect(tableNames(check)).toContain("locks");
