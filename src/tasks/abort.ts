@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { canonicalPath } from "../real-path.js";
@@ -31,6 +32,20 @@ export async function abortTask(store: TaskStore, request: AbortRequest): Promis
     const ctx = { dataRoot: config.dataRoot, repoKey: ref.repoKey, env: request.env };
     if (task.worktreePath !== null) {
       const path = canonicalPath(task.worktreePath);
+      const entry = (await vcs.listWorkspaces(ctx)).find((e) => e.path === path);
+      const changes = entry !== undefined && existsSync(entry.path)
+        ? await vcs.uncommittedChanges(ctx, { path: entry.path })
+        : [];
+      if (changes.length > 0 && !request.force) {
+        const lines = changes.map((change) => `${change.status} ${change.path}`);
+        throw new Error(
+          [`the worktree has uncommitted changes: ${path}`, ...lines, "tasker abort --force discards them"].join("\n"),
+        );
+      }
+      if (changes.length > 0) {
+        await vcs.discardWorkspaceChanges(ctx, { path });
+        report(`discarded the uncommitted changes of ${path}`);
+      }
       await vcs.removeWorkspace(ctx, { path });
       report(`removed the worktree ${path}`);
     }
