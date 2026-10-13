@@ -116,6 +116,15 @@ export function isAlive(pid: number): boolean {
   }
 }
 
+// Resolves when predicate gives true. It polls every 50 ms and rejects with message after timeoutMs.
+export async function waitUntil(predicate: () => boolean, timeoutMs: number, message: string): Promise<void> {
+  const end = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() >= end) throw new Error(message);
+    await new Promise((done) => setTimeout(done, 50));
+  }
+}
+
 // Resolves when the process is gone. Rejects with the pid when it still runs after timeoutMs.
 export async function waitUntilGone(pid: number, timeoutMs: number): Promise<void> {
   const end = Date.now() + timeoutMs;
