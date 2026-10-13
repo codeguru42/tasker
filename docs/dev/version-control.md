@@ -20,6 +20,8 @@ One factory is the only place that picks a provider. It reads `vcs.provider`. Gi
 
 Import boundary: no file under `src/` outside `src/vcs/` imports from `src/vcs/git/`. A boundary test enforces this rule. Files under `test/` are out of scope, because the tests of the git code import it. The test cannot find a module name that the code builds at run time.
 
+[code-conventions.md](code-conventions.md#add-an-operation-to-the-version-control-provider) gives the steps to add an operation.
+
 ## How tasker uses git
 
 This section describes the design.
