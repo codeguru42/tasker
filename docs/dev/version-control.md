@@ -12,7 +12,7 @@ No folder of `src/` outside `src/vcs/git/` starts git. A boundary test enforces 
 
 One factory is the only place that picks a provider. It reads `vcs.provider`. Git is the only provider. The git provider maps names only and adds no behavior.
 
-- The interface owns the types of its operations. The git modules import them from the interface.
+- The interface owns the types of its operations. The git modules import them from the interface. No module re-exports them.
 - The doctor check type stays in `src/doctor/`, because it is not a version control type.
 - Reconcile does not fetch. The caller resolves the base first, which fetches.
 - Push guard rule: a provider that cannot guard a push refuses to provision, and it never runs with a weaker guard. The git provider guards a push with the pre-push hook that provision writes (see [Push guard](#push-guard)).
