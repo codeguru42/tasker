@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { TERMINAL_STATES } from "../state/machine.js";
+import { type LockStore, tryLockIn, unlockIn } from "./locks.js";
 import { migrate } from "./migrate.js";
 import { migrations } from "./migrations.js";
 import { immediateTransaction } from "./transaction.js";
@@ -80,7 +81,7 @@ export interface StoreOptions {
   now?: () => Date;
 }
 
-export interface TaskStore {
+export interface TaskStore extends LockStore {
   createTask(task: NewTask): Task;
   getTask(id: number): Task | undefined;
   // With no `states`, only the active tasks. An empty `states` array matches no task.
@@ -393,6 +394,12 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       });
     },
 
+    tryLock(name) {
+      return tryLockIn(db, name, now().toISOString());
+    },
+    unlock(name) {
+      unlockIn(db, name);
+    },
     close() {
       db.close();
     },
