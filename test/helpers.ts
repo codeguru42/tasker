@@ -121,41 +121,57 @@ export function useTempDir(prefix: string): string {
   return dir;
 }
 
-export interface LockHolder {
+export interface FixtureChild {
   pid: number;
-  // The JSON line of the child. It rejects, with the stderr of the child, when the child exits first.
-  attempt: Promise<LockAttempt>;
+  // The first line of stdout, without the newline. It rejects, with the stderr of the child, when
+  // the child ends first.
+  firstLine: Promise<string>;
   // Resolves on the exit event. Node reaps the child before it emits exit, so the pid is gone.
   exited: Promise<void>;
 }
 
-// Starts test/fixtures/lock-holder.ts and saves its pid with savePid.
-export function startLockHolder(dbPath: string, name: string, goPath?: string): LockHolder {
-  const child = spawn(
-    process.execPath,
-    ["--import", "tsx", "test/fixtures/lock-holder.ts", dbPath, name, ...(goPath ? [goPath] : [])],
-    { cwd: repoRoot },
-  );
+// Starts test/fixtures/<fixture> through tsx and saves its pid with savePid.
+export function startFixture(fixture: string, args: readonly string[]): FixtureChild {
+  const child = spawn(process.execPath, ["--import", "tsx", `test/fixtures/${fixture}`, ...args], {
+    cwd: repoRoot,
+  });
   const pid = child.pid!;
   savePid(pid);
   let stdout = "";
   let stderr = "";
   const exited = new Promise<void>((resolve) => child.on("exit", () => resolve()));
-  const attempt = new Promise<LockAttempt>((resolve, reject) => {
+  const firstLine = new Promise<string>((resolve, reject) => {
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
       stdout += chunk;
       const end = stdout.indexOf("\n");
-      if (end !== -1) resolve(JSON.parse(stdout.slice(0, end)) as LockAttempt);
+      if (end !== -1) resolve(stdout.slice(0, end));
     });
     child.stderr.on("data", (chunk) => (stderr += chunk));
     child.on("error", reject);
-    child.on("exit", () => reject(new Error(`the lock child exited first: ${stderr}`)));
+    // close comes after the stdio streams end, so the stderr is complete here.
+    child.on("close", () => reject(new Error(`the child ${fixture} exited first: ${stderr}`)));
   });
   // The rejection after a resolve does nothing. This stops an unhandled rejection of a killed child.
+  firstLine.catch(() => {});
+  return { pid, firstLine, exited };
+}
+
+export interface LockHolder {
+  pid: number;
+  // The JSON line of the child. It rejects, with the stderr of the child, when the child ends first.
+  attempt: Promise<LockAttempt>;
+  // Resolves on the exit event. Node reaps the child before it emits exit, so the pid is gone.
+  exited: Promise<void>;
+}
+
+// Starts test/fixtures/lock-holder.ts.
+export function startLockHolder(dbPath: string, name: string, goPath?: string): LockHolder {
+  const child = startFixture("lock-holder.ts", [dbPath, name, ...(goPath ? [goPath] : [])]);
+  const attempt = child.firstLine.then((line) => JSON.parse(line) as LockAttempt);
   attempt.catch(() => {});
-  return { pid, attempt, exited };
+  return { pid: child.pid, attempt, exited: child.exited };
 }
 
 // Runs tasker (src/main.ts through tsx) in a child process with env on top of the process env.
