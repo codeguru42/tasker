@@ -11,11 +11,11 @@ describe("parseJiraKey", () => {
     });
   });
 
-  it("accepts digits and _ in the project", () => {
+  it("accepts digits and _ in the project, and gives - in the short ref", () => {
     expect(parseJiraKey("AB_2-1", "r")).toStrictEqual({
       key: "AB_2-1",
       repoKey: "r",
-      shortRef: "AB_2-1",
+      shortRef: "AB-2-1",
     });
   });
 
@@ -51,7 +51,7 @@ describe("parseJiraKey", () => {
     ).toStrictEqual({
       key: "example.atlassian.net/browse/PROJ-7",
       repoKey: "r",
-      shortRef: "example.atlassian.net-browse-PROJ-7",
+      shortRef: "example-atlassian-net-browse-PROJ-7",
     });
   });
 
@@ -61,7 +61,25 @@ describe("parseJiraKey", () => {
     ).toStrictEqual({
       key: "example.atlassian.net/browse/PROJ-7",
       repoKey: "r",
-      shortRef: "example.atlassian.net-browse-PROJ-7",
+      shortRef: "example-atlassian-net-browse-PROJ-7",
+    });
+  });
+
+  it("gives - for each _ in the project of a site key", () => {
+    expect(
+      parseJiraKey("jira.example.com/browse/PROJ_X-12", "r"),
+    ).toStrictEqual({
+      key: "jira.example.com/browse/PROJ_X-12",
+      repoKey: "r",
+      shortRef: "jira-example-com-browse-PROJ-X-12",
+    });
+  });
+
+  it("gives one - for a -- in the site", () => {
+    expect(parseJiraKey("xn--d.example.com/browse/Q-1", "r")).toStrictEqual({
+      key: "xn--d.example.com/browse/Q-1",
+      repoKey: "r",
+      shortRef: "xn-d-example-com-browse-Q-1",
     });
   });
 

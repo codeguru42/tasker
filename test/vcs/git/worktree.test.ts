@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { jiraShortRef } from "../../../src/issue-key/short-ref.js";
 import { sandboxWritePaths } from "../../../src/vcs/git/assistant-surface.js";
 import {
   fetchTips,
@@ -44,13 +45,14 @@ describe("taskBranchName", () => {
     ["PROJ-3", "Fix it", "PROJ-3-fix-it"],
     ["issue-17", "Fix it", "issue-17-fix-it"],
     ["PROJ-12", "Fix it", "PROJ-12-fix-it"],
-    ["A_B9-3", "Fix it", "A_B9-3-fix-it"],
+    ["A-B9-3", "Fix it", "A-B9-3-fix-it"],
+    ["PROJ-X-12", "Fix it", "PROJ-X-12-fix-it"],
     [
-      "acme.atlassian.net-browse-PROJ-12",
+      "acme-atlassian-net-browse-PROJ-12",
       "Fix it",
-      "acme.atlassian.net-browse-PROJ-12-fix-it",
+      "acme-atlassian-net-browse-PROJ-12-fix-it",
     ],
-    ["x-y.example.com-browse-Q-1", "Fix it", "x-y.example.com-browse-Q-1-fix-it"],
+    ["x-y-example-com-browse-Q-1", "Fix it", "x-y-example-com-browse-Q-1-fix-it"],
   ])("joins %s and the title %j into %s", (shortRef, title, expected) => {
     expect(taskBranchName(shortRef, title)).toBe(expected);
   });
@@ -70,6 +72,9 @@ describe("taskBranchName with a bad short ref", () => {
     "issue-0",
     "feature",
     "proj-12",
+    "A_B9-3",
+    "PROJ_X-12",
+    "acme.atlassian.net-browse-PROJ-12",
   ])(
     "refuses the short ref %j",
     (shortRef) => {
@@ -83,6 +88,29 @@ describe("taskBranchName with a bad short ref", () => {
     const shortRef = `${"a".repeat(86)}-browse-PROJ-1`;
     expect(shortRef).toHaveLength(100);
     expect(taskBranchName(shortRef, "Fix it")).toBe(shortRef);
+  });
+});
+
+describe("assertTaskBranchShape", () => {
+  it.each([
+    "issue-7",
+    "issue-7-fix-it",
+    "PROJ-X-12-fix-it",
+    "jira-example-com-browse-PROJ-X-12-fix-it",
+  ])("accepts %s", (branch) => {
+    expect(() => assertTaskBranchShape(branch)).not.toThrow();
+  });
+
+  it.each([
+    "issue-7-fix_it",
+    "issue-7-v1.2",
+    "A_B9-3-fix-it",
+    "acme.atlassian.net-browse-PROJ-12-fix-it",
+    "issue-7--x",
+  ])("refuses %s", (branch) => {
+    expect(() => assertTaskBranchShape(branch)).toThrow(
+      `not a task branch: ${JSON.stringify(branch)}`,
+    );
   });
 });
 
@@ -471,7 +499,12 @@ describe("git fixture", () => {
       },
     );
 
-    describe.each(["issue-17", "PROJ-12", "acme.atlassian.net-browse-PROJ-12"])(
+    describe.each([
+      "issue-17",
+      "PROJ-12",
+      jiraShortRef("acme.atlassian.net/browse/PROJ-12"),
+      jiraShortRef("A_B9-3"),
+    ])(
       "the result of taskBranchName() for %s",
       (shortRef) => {
         it.each(["Fix it", "", "word ".repeat(100)])("has the shape for the title %j", (title) => {
@@ -690,9 +723,12 @@ describe("git fixture", () => {
       ["an empty title", "", "issue-7"],
       ["only slashes", "///", "issue-7"],
       ["only spaces", "   ", "issue-7"],
-      ["an upper-case .LOCK end", "Use X.LOCK", "issue-7-use-x"],
-      ["repeated .lock ends", "a.lock.lock", "issue-7-a"],
-      ["two dots", "a..b", "issue-7-a.b"],
+      ["an upper-case .LOCK end", "Use X.LOCK", "issue-7-use-x-lock"],
+      ["repeated .lock ends", "a.lock.lock", "issue-7-a-lock-lock"],
+      ["two dots", "a..b", "issue-7-a-b"],
+      ["a double dash", "a--b", "issue-7-a-b"],
+      ["an underscore", "snake_case", "issue-7-snake-case"],
+      ["a cut that lands on an underscore", `${"a".repeat(91)}_bbb`, `issue-7-${"a".repeat(91)}`],
       ["a leading dash", "-leading dash", "issue-7-leading-dash"],
       ["leading and trailing dots", "..dots..", "issue-7-dots"],
       ["a trailing dot", "trailing.", "issue-7-trailing"],

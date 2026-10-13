@@ -549,7 +549,7 @@ export const NOT_TASK_BRANCHES = [
   "issue-17-Fix",
   "proj-12-x",
   "PROJ-012-x",
-  "release-1.2",
+  "release-1-2",
 ];
 
 // The text that the pre-push hook prints for a push with no valid publish token.
