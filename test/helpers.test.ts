@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join, sep } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { loadConfig } from "../src/config/load.js";
 import { parseConfig } from "../src/config/schema.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
@@ -588,10 +588,8 @@ describe("dayAt", () => {
 });
 
 describe("useThreeRepoDataRoot", () => {
-  let written: ReturnType<typeof useThreeRepoDataRoot>;
-
   it("points TASKER_CONFIG at the written configuration", () => {
-    written = useThreeRepoDataRoot();
+    const written = useThreeRepoDataRoot();
 
     expect(process.env.TASKER_CONFIG).toBe(written.path);
     expect(written.dataRoot).toBe(join(written.dir, "data"));
@@ -602,8 +600,20 @@ describe("useThreeRepoDataRoot", () => {
   });
 
   it("removes the folder and the env stub after the test", () => {
-    expect(existsSync(written.dir)).toBe(false);
-    expect(process.env.TASKER_CONFIG).not.toBe(written.path);
+    // onTestFinished callbacks run in reverse order, so this check runs after the cleanup of the helper.
+    const holder: { written?: ReturnType<typeof useThreeRepoDataRoot> } = {};
+    onTestFinished(() => {
+      const { written } = holder;
+      expect(written).toBeDefined();
+      if (!written) return;
+      expect(existsSync(written.dir)).toBe(false);
+      expect(process.env.TASKER_CONFIG).not.toBe(written.path);
+    });
+
+    const written = useThreeRepoDataRoot();
+    holder.written = written;
+
+    expect(existsSync(written.dir)).toBe(true);
   });
 });
 

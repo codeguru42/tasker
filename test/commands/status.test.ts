@@ -215,8 +215,7 @@ describe("status", () => {
     "prints the error of the issue key %s",
     async (key) => {
       const written = useThreeRepoDataRoot();
-      const expected = `${issueKeyErrorMessage(key, written.path)}
-`;
+      const expected = `${issueKeyErrorMessage(key, written.path)}\n`;
 
       const result = await runCommand(status, "status", "--issue", key);
 

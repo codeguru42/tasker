@@ -86,8 +86,7 @@ describe("show", () => {
     "prints the error of the issue key %s and opens no store",
     async (key) => {
       const written = useThreeRepoDataRoot();
-      const expected = `${issueKeyErrorMessage(key, written.path)}
-`;
+      const expected = `${issueKeyErrorMessage(key, written.path)}\n`;
 
       const result = await runCommand(show, "show", key);
 
