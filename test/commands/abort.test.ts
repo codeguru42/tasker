@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { abort } from "../../src/commands/abort.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
@@ -98,5 +99,47 @@ describe("abort", () => {
       err: `no task for the issue ${KEY} in the repo ${REPO}\n`,
     });
     expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
+  describe("with uncommitted changes", () => {
+    async function dirtyTask() {
+      const started = await useStartedTask();
+      expect(started.result.code).toBe(0);
+      writeFileSync(join(started.worktree, "README.md"), "changed\n");
+      writeFileSync(join(started.worktree, "new.txt"), "new\n");
+      return started;
+    }
+
+    it("refuses a dirty worktree without --force and changes nothing", async () => {
+      const started = await dirtyTask();
+      const before = await taskWorkspaceState(started);
+
+      const result = await runCommand(abort, "abort", KEY);
+
+      expect(result).toEqual({
+        code: 1,
+        out: "",
+        err: `the worktree has uncommitted changes: ${canonicalPath(started.worktree)}\n M README.md\n?? new.txt\ntasker abort --force discards them\n`,
+      });
+      expect(await taskWorkspaceState(started)).toEqual(before);
+      expect(readFileSync(join(started.worktree, "README.md"), "utf8")).toBe("changed\n");
+      expect(readFileSync(join(started.worktree, "new.txt"), "utf8")).toBe("new\n");
+      expect(lockNames(started.dataRoot)).toEqual([]);
+    });
+
+    it("discards the changes of a dirty worktree with --force", async () => {
+      const started = await dirtyTask();
+      const real = canonicalPath(started.worktree);
+
+      const result = await runCommand(abort, "abort", KEY, "--force");
+
+      expect(result).toEqual({
+        code: 0,
+        out: `discarded the uncommitted changes of ${real}\nremoved the worktree ${real}\ndeleted the branch ${started.branch}\ncancelled ${KEY}\n`,
+        err: "",
+      });
+      expect(await taskWorkspaceState(started)).toMatchObject({ state: "cancelled", worktree: false });
+      expect(lockNames(started.dataRoot)).toEqual([]);
+    });
   });
 });
