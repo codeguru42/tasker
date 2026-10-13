@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
@@ -12,7 +12,7 @@ import {
   withLock,
 } from "../../src/store/locks.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { failureOf, repoRoot, savePid, useTempDir, waitUntil } from "../helpers.js";
+import { failureOf, startLockHolder, useTempDir, waitUntil } from "../helpers.js";
 
 const CLOCK = "2026-01-01T00:00:00.000Z";
 const NAME = "repo:alpha";
@@ -21,41 +21,6 @@ const now = () => new Date(CLOCK);
 interface LockRow {
   pid: number;
   acquired_at: string;
-}
-
-interface LockChild {
-  pid: number;
-  // The JSON line of the child. It rejects, with the stderr of the child, when the child exits first.
-  attempt: Promise<LockAttempt>;
-  // Resolves on the exit event. Node reaps the child before it emits exit, so the pid is gone.
-  exited: Promise<void>;
-}
-
-// Starts test/fixtures/lock-holder.ts and saves its pid with savePid.
-function startLockChild(dbPath: string, name: string, goPath?: string): LockChild {
-  const child = spawn(
-    process.execPath,
-    ["--import", "tsx", "test/fixtures/lock-holder.ts", dbPath, name, ...(goPath ? [goPath] : [])],
-    { cwd: repoRoot },
-  );
-  const pid = child.pid!;
-  savePid(pid);
-  let stdout = "";
-  let stderr = "";
-  const exited = new Promise<void>((resolve) => child.on("exit", () => resolve()));
-  const attempt = new Promise<LockAttempt>((resolve, reject) => {
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-      const end = stdout.indexOf("\n");
-      if (end !== -1) resolve(JSON.parse(stdout.slice(0, end)) as LockAttempt);
-    });
-    child.stderr.on("data", (chunk) => (stderr += chunk));
-    child.on("error", reject);
-    child.on("exit", () => reject(new Error(`the lock child exited first: ${stderr}`)));
-  });
-  // The rejection after a resolve does nothing. This stops an unhandled rejection of a killed child.
-  attempt.catch(() => {});
-  return { pid, attempt, exited };
 }
 
 function readRow(dbPath: string, name: string): LockRow | undefined {
@@ -290,7 +255,7 @@ describe("named locks", () => {
     it(
       "rejects with LockBusyError while a child holds the lock",
       async () => {
-        const child = startLockChild(dbPath, NAME);
+        const child = startLockHolder(dbPath, NAME);
         expect(await child.attempt).toEqual({ held: true });
         const row = readRow(dbPath, NAME)!;
         expect(row.pid).toBe(child.pid);
@@ -314,7 +279,7 @@ describe("named locks", () => {
     it(
       "takes the lock of a child that was killed",
       async () => {
-        const child = startLockChild(dbPath, NAME);
+        const child = startLockHolder(dbPath, NAME);
         expect(await child.attempt).toEqual({ held: true });
         expect(readRow(dbPath, NAME)?.pid).toBe(child.pid);
         process.kill(child.pid, "SIGKILL");
@@ -336,8 +301,8 @@ describe("named locks", () => {
         const name = `race-${round}`;
         const goPath = join(dir, `go-${round}`);
         const children = [
-          startLockChild(dbPath, name, goPath),
-          startLockChild(dbPath, name, goPath),
+          startLockHolder(dbPath, name, goPath),
+          startLockHolder(dbPath, name, goPath),
         ];
         await waitUntil(
           () => children.every((child) => existsSync(`${goPath}.ready.${child.pid}`)),

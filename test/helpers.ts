@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import {
   accessSync,
   constants,
@@ -26,6 +27,7 @@ import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { githubShortRef } from "../src/issue-key/short-ref.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { failTask } from "../src/state/machine.js";
+import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { openStore, type Task } from "../src/store/store.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
@@ -115,6 +117,41 @@ export function useTempDir(prefix: string): string {
   const dir = makeTempDir(prefix);
   onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
+}
+
+export interface LockHolder {
+  pid: number;
+  // The JSON line of the child. It rejects, with the stderr of the child, when the child exits first.
+  attempt: Promise<LockAttempt>;
+  // Resolves on the exit event. Node reaps the child before it emits exit, so the pid is gone.
+  exited: Promise<void>;
+}
+
+// Starts test/fixtures/lock-holder.ts and saves its pid with savePid.
+export function startLockHolder(dbPath: string, name: string, goPath?: string): LockHolder {
+  const child = spawn(
+    process.execPath,
+    ["--import", "tsx", "test/fixtures/lock-holder.ts", dbPath, name, ...(goPath ? [goPath] : [])],
+    { cwd: repoRoot },
+  );
+  const pid = child.pid!;
+  savePid(pid);
+  let stdout = "";
+  let stderr = "";
+  const exited = new Promise<void>((resolve) => child.on("exit", () => resolve()));
+  const attempt = new Promise<LockAttempt>((resolve, reject) => {
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+      const end = stdout.indexOf("\n");
+      if (end !== -1) resolve(JSON.parse(stdout.slice(0, end)) as LockAttempt);
+    });
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("error", reject);
+    child.on("exit", () => reject(new Error(`the lock child exited first: ${stderr}`)));
+  });
+  // The rejection after a resolve does nothing. This stops an unhandled rejection of a killed child.
+  attempt.catch(() => {});
+  return { pid, attempt, exited };
 }
 
 // The names in the locks table of a data root, sorted.
