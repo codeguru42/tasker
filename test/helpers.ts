@@ -15,7 +15,7 @@ import {
 } from "node:fs";
 import { tmpdir, userInfo } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, onTestFinished, vi } from "vitest";
 import { type Io, type RegisterCommand, run } from "../src/cli.js";
@@ -115,6 +115,19 @@ export function useTempDir(prefix: string): string {
   const dir = makeTempDir(prefix);
   onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
+}
+
+// The names in the locks table of a data root, sorted.
+export function lockNames(dataRoot: string): string[] {
+  const db = new DatabaseSync(createDataRoot(dataRoot).database);
+  try {
+    return db
+      .prepare("SELECT name FROM locks ORDER BY name")
+      .all()
+      .map((row) => String(row.name));
+  } finally {
+    db.close();
+  }
 }
 
 // True when the process runs. A zombie (state Z, not yet reaped) counts as gone.
