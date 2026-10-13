@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { delimiter, join, sep } from "node:path";
+import { delimiter, dirname, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { loadConfig } from "../src/config/load.js";
 import { parseConfig } from "../src/config/schema.js";
@@ -207,7 +207,7 @@ describe("makeGitClone", () => {
     await makeGitClone(origin);
     const { publishTokens } = repoPaths(join(origin.dir, "clone-data"), "tasker");
     expect(gitCloneTokens(origin)).toBe(publishTokens);
-    expect(existsSync(publishTokens)).toBe(true);
+    expect(existsSync(dirname(publishTokens))).toBe(true);
   });
 });
 

@@ -29,6 +29,7 @@ import { failTask } from "../src/state/machine.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { openStore, type Task } from "../src/store/store.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
+import { type RepoPaths, repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
 import { taskBranchName, taskWorktreePath } from "../src/vcs/git/worktree.js";
@@ -570,14 +571,20 @@ export function taskNames(
   };
 }
 
-// The folder of the publish tokens of the clone that makeGitClone() makes.
-export function gitCloneTokens(origin: GitOrigin): string {
-  return join(origin.dir, "clone", "publish-tokens");
+// The repo folders of the key "tasker" under the clone-data data root inside the origin folder.
+function gitCloneFolders(origin: GitOrigin): RepoPaths {
+  return repoPaths(join(origin.dir, "clone-data"), "tasker");
 }
 
-// A bare clone of origin, made by provisionClone(). origin.remove() deletes it.
+// The folder of the publish tokens of the clone that makeGitClone() makes.
+export function gitCloneTokens(origin: GitOrigin): string {
+  return gitCloneFolders(origin).publishTokens;
+}
+
+// A bare clone of origin, made by provisionClone() at the repo folder of the key "tasker"
+// under <origin>/clone-data. origin.remove() deletes it.
 export async function makeGitClone(origin: GitOrigin): Promise<string> {
-  const clone = join(origin.dir, "clone", "repo.git");
+  const clone = gitCloneFolders(origin).clone;
   await provisionClone({
     remote: origin.path,
     clone,
