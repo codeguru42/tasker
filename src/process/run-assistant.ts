@@ -21,17 +21,22 @@ export interface RunAssistantOptions {
 // The line end is "\n" only. The text after the last line end goes out when the stream closes.
 function lineSplitter(onLine: (line: string) => void) {
   const decoder = new StringDecoder("utf8");
-  let rest = "";
+  let open: string[] = []; // the pieces of the line that has no line end yet
   const take = (text: string) => {
-    const pieces = (rest + text).split("\n");
-    rest = pieces.pop() ?? "";
-    for (const line of pieces) onLine(line);
+    let start = 0;
+    for (let end = text.indexOf("\n"); end !== -1; end = text.indexOf("\n", start)) {
+      open.push(text.slice(start, end));
+      onLine(open.join(""));
+      open = [];
+      start = end + 1;
+    }
+    if (start < text.length) open.push(text.slice(start));
   };
   return {
     write: (chunk: Buffer) => take(decoder.write(chunk)),
     end: () => {
       take(decoder.end());
-      if (rest !== "") onLine(rest);
+      if (open.length > 0) onLine(open.join(""));
     },
   };
 }
