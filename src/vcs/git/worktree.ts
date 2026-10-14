@@ -13,7 +13,7 @@ import { canonicalPath } from "../../real-path.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { isShortRef, LOWER_SLUG, SHORT_REF } from "../../issue-key/short-ref.js";
 import type { WorkspaceEntry } from "../provider.js";
-import { refExists, refRevision } from "./refs.js";
+import { LOCAL_PREFIX, refExists, refRevision } from "./refs.js";
 import { runGit } from "./run.js";
 
 const MAX_BRANCH_LENGTH = 100;
@@ -102,9 +102,10 @@ export async function listWorktrees(options: {
     const worktree = fields.find((field) => field.startsWith("worktree "));
     if (worktree === undefined || fields.includes("bare")) continue;
     const entry: WorkspaceEntry = { path: worktree.slice("worktree ".length) };
+    const branchField = `branch ${LOCAL_PREFIX}`;
     for (const field of fields) {
-      if (field.startsWith("branch refs/heads/")) {
-        entry.taskRef = field.slice("branch refs/heads/".length);
+      if (field.startsWith(branchField)) {
+        entry.taskRef = field.slice(branchField.length);
       } else if (field === "locked") {
         entry.lockReason = "";
       } else if (field.startsWith("locked ")) {
@@ -186,7 +187,7 @@ export async function createTaskWorktree(options: {
   if (!isMissingOrEmptyFolder(target)) {
     throw new Error(`something else is at the worktree path: ${target}`);
   }
-  if (await refExists({ clone, env, ref: `refs/heads/${branch}` })) {
+  if (await refExists({ clone, env, ref: `${LOCAL_PREFIX}${branch}` })) {
     await runGit(["worktree", "add", "--", target, branch], { gitDir: clone, env });
     return "reused-branch";
   }
@@ -301,7 +302,7 @@ export async function taskBranchRevision(options: {
 }): Promise<string> {
   const { clone, env, branch } = options;
   assertTaskBranch(branch);
-  const revision = await refRevision({ clone, env, ref: `refs/heads/${branch}` });
+  const revision = await refRevision({ clone, env, ref: `${LOCAL_PREFIX}${branch}` });
   if (revision === undefined) throw new Error(`cannot resolve the task branch: ${branch}`);
   return revision;
 }
@@ -314,5 +315,5 @@ export async function taskBranchExists(options: {
 }): Promise<boolean> {
   const { clone, env, branch } = options;
   assertTaskBranch(branch);
-  return refExists({ clone, env, ref: `refs/heads/${branch}` });
+  return refExists({ clone, env, ref: `${LOCAL_PREFIX}${branch}` });
 }

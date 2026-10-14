@@ -6,6 +6,9 @@ interface RefOptions {
   ref: string;
 }
 
+// The start of the full name of a local branch.
+export const LOCAL_PREFIX = "refs/heads/";
+
 // True when value is a full revision of the clone: 40 lower-case hex characters.
 export function isFullRevision(value: string): boolean {
   return /^[0-9a-f]{40}$/.test(value);

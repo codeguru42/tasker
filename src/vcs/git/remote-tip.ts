@@ -1,3 +1,4 @@
+import { LOCAL_PREFIX } from "./refs.js";
 import { GitError } from "./run.js";
 import { remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
 
@@ -15,7 +16,7 @@ export async function remoteTip(options: {
   if (branch === "") {
     throw new Error("the branch name is empty");
   }
-  const ref = `refs/heads/${branch}`;
+  const ref = `${LOCAL_PREFIX}${branch}`;
   let output: string;
   try {
     output = await runRemoteGit(

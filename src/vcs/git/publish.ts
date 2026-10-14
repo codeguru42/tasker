@@ -1,8 +1,7 @@
 import { detailSuffix } from "../../detail-suffix.js";
 import type { RemoteTaskRefDeletion } from "../provider.js";
-import { LOCAL_PREFIX } from "./base-branch.js";
 import { pushWithToken } from "./push-guard.js";
-import { assertRevision } from "./refs.js";
+import { assertRevision, LOCAL_PREFIX } from "./refs.js";
 import { GitError } from "./run.js";
 import { type RemoteTip, remoteTip } from "./remote-tip.js";
 import { assertTaskBranchNameAndShape, taskBranchRevision } from "./worktree.js";
@@ -76,9 +75,9 @@ export async function publishTaskBranch(
   try {
     await pushWithToken(
       [
-        `--force-with-lease=refs/heads/${branch}:${published ?? ""}`,
+        `--force-with-lease=${LOCAL_PREFIX}${branch}:${published ?? ""}`,
         "origin",
-        `refs/heads/${branch}:refs/heads/${branch}`,
+        `${LOCAL_PREFIX}${branch}:${LOCAL_PREFIX}${branch}`,
       ],
       { location: { gitDir: clone }, publishTokens, sshKey, env },
     );
@@ -114,7 +113,7 @@ export async function landOnBase(
     throw landError(revision, base, "the base branch does not exist on origin");
   }
   try {
-    await pushWithToken(["origin", `${revision}:refs/heads/${base}`], {
+    await pushWithToken(["origin", `${revision}:${LOCAL_PREFIX}${base}`], {
       location: { gitDir: clone },
       publishTokens,
       sshKey,
@@ -145,7 +144,7 @@ export async function deleteRemoteTaskBranch(
   }
   try {
     await pushWithToken(
-      [`--force-with-lease=refs/heads/${branch}:${published}`, "origin", `:refs/heads/${branch}`],
+      [`--force-with-lease=${LOCAL_PREFIX}${branch}:${published}`, "origin", `:${LOCAL_PREFIX}${branch}`],
       { location: { gitDir: clone }, publishTokens, sshKey, env },
     );
   } catch (error) {

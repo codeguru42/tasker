@@ -11,7 +11,7 @@ import {
   worktreeChanges,
   worktreeHead,
 } from "./changes.js";
-import { assertRevision, assertRevisionInput, resolveRevision } from "./refs.js";
+import { assertRevision, assertRevisionInput, LOCAL_PREFIX, resolveRevision } from "./refs.js";
 import { GitError, isGitExit, runGit } from "./run.js";
 import { assertTaskBranchNameAndShape, assertTaskWorktree } from "./worktree.js";
 
@@ -75,7 +75,7 @@ async function stateAt(target: string, env: NodeJS.ProcessEnv): Promise<Worktree
   let branch: string | undefined;
   try {
     const ref = (await runGit(["symbolic-ref", "-q", "HEAD"], { cwd: target, env })).trim();
-    branch = ref.replace(/^refs\/heads\//, "");
+    branch = ref.startsWith(LOCAL_PREFIX) ? ref.slice(LOCAL_PREFIX.length) : ref;
   } catch (error) {
     if (!isGitExit(error, 1)) throw error;
   }

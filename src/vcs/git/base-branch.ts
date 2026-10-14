@@ -1,9 +1,8 @@
 import type { BaseBranchMemory, ResolvedBase } from "../provider.js";
-import { refExists } from "./refs.js";
+import { LOCAL_PREFIX, refExists } from "./refs.js";
 import { runRemoteGit } from "./ssh.js";
 
 const REMOTE_PREFIXES = ["refs/remotes/origin/", "origin/"];
-export const LOCAL_PREFIX = "refs/heads/";
 
 // Parses the base branch that a user types. The result is the stored form:
 // the name of an origin branch, or refs/heads/<x> for a local branch of the clone.
