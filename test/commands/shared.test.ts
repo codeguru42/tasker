@@ -2,10 +2,37 @@ import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { CommanderError } from "commander";
 import { afterEach, describe, expect, it } from "vitest";
-import { withIssueTaskAsync, withStore, withStoreAsync } from "../../src/commands/shared.js";
+import { orFail, withIssueTaskAsync, withStore, withStoreAsync } from "../../src/commands/shared.js";
 import { parseConfig } from "../../src/config/schema.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
 import { captureIo, makeTempDir, seedTasks, validConfig } from "../helpers.js";
+
+describe("orFail", () => {
+  it("returns the value of fn and writes nothing", () => {
+    const io = captureIo();
+
+    expect(orFail(io, () => 42)).toBe(42);
+    expect(io.out).toEqual([]);
+    expect(io.err).toEqual([]);
+  });
+
+  it("writes the message of the error to stderr and exits with code 1", () => {
+    const io = captureIo();
+    let error: unknown;
+    try {
+      orFail(io, () => {
+        throw new Error("boom");
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(CommanderError);
+    expect((error as CommanderError).exitCode).toBe(1);
+    expect(io.err.join("")).toBe("boom\n");
+    expect(io.out).toEqual([]);
+  });
+});
 
 describe("withStore", () => {
   let dataRoot: string;
