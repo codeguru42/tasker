@@ -65,6 +65,7 @@ import {
   waitUntil,
   waitUntilGone,
   withDataRootStore,
+  withStoreFile,
   writeBootstrapLog,
   writeDataRootConfig,
   writeFakeGh,
@@ -1079,6 +1080,87 @@ describe("useStartFixture", () => {
     const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
 
     expect(fixture.config.repos[fixture.repoKey].defaultBaseBranch).toBeUndefined();
+  });
+});
+
+describe("withStoreFile", () => {
+  it("gives the value of fn, and the store is closed after the call", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    let captured: TaskStore | undefined;
+
+    const value = withStoreFile(path, (store) => {
+      captured = store;
+      expect(store.listTasks()).toEqual([]);
+      return 42;
+    });
+
+    expect(value).toBe(42);
+    expect(() => captured?.listTasks()).toThrow();
+    expect(existsSync(path)).toBe(true);
+  });
+
+  it("keeps the store open across an await and closes it after the promise settles", async () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    let captured: TaskStore | undefined;
+
+    const value = await withStoreFile(path, async (store) => {
+      captured = store;
+      await Promise.resolve();
+      expect(store.listTasks()).toEqual([]);
+      return "done";
+    });
+
+    expect(value).toBe("done");
+    expect(() => captured?.listTasks()).toThrow();
+  });
+
+  it("closes the store and throws again when fn throws", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    let captured: TaskStore | undefined;
+
+    expect(() =>
+      withStoreFile(path, (store) => {
+        captured = store;
+        throw new Error("boom");
+      }),
+    ).toThrow("boom");
+    expect(() => captured?.listTasks()).toThrow();
+  });
+
+  it("closes the store when the promise of fn rejects", async () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    let captured: TaskStore | undefined;
+
+    await expect(
+      withStoreFile(path, async (store) => {
+        captured = store;
+        throw new Error("late boom");
+      }),
+    ).rejects.toThrow("late boom");
+    expect(() => captured?.listTasks()).toThrow();
+  });
+
+  it("uses options.now", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    const at = new Date("2026-02-03T00:00:00.000Z");
+
+    const task = withStoreFile(
+      path,
+      (store) => store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" }),
+      { now: () => at },
+    );
+
+    expect(task.createdAt).toBe(at.toISOString());
+  });
+
+  it("opens the database at path", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+
+    const task = withStoreFile(path, (store) =>
+      store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" }),
+    );
+
+    expect(withStoreFile(path, (store) => store.getTask(task.id))).toEqual(task);
   });
 });
 
