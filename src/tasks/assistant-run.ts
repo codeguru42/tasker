@@ -42,6 +42,14 @@ interface StartInput {
   onEvent?: (event: AssistantEvent) => void;
 }
 
+export interface PreparedExecuteRun {
+  sessionId: string;
+  session: RecordedSession;
+  // The commit text for the prompt of the run. It holds the {{BASE_REF}} placeholder.
+  executeCommitText: string;
+  start(input: Omit<StartInput, "jsonSchema">): Promise<RunOutcome>;
+}
+
 export interface PreparedPlanModeRun {
   sessionId: string;
   session: RecordedSession;
@@ -120,6 +128,58 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
   return {
     sessionId: common.sessionId,
     session: common.session,
+    start: (input) => common.run(limits, input),
+  };
+}
+
+// Prepares the run of the assistant of a task in the execute role. This role does steps that the plan
+// and review roles do not do: the path rules, the sandbox and the commit text.
+// The caller must move the task into a spawning state before start().
+// The caller must record sessionId and session before start().
+// The caller must replace {{BASE_REF}} in executeCommitText before it puts the text in the prompt.
+export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<PreparedExecuteRun> {
+  const common = prepareCommonRun(req, "execute");
+  const { surface, worktree: wt } = common;
+  const clone = await surface.sharedFolder(wt);
+  // The path is absolute. The // prefix marks an absolute path in the rule syntax of claude.
+  const rule = (tool: string, absolutePath: string) => `${tool}(/${absolutePath})`;
+  const limits: RoleLimits = {
+    // Under dontAsk, a tool call that no allow rule covers is denied.
+    permissionMode: "dontAsk",
+    timeoutMs: req.config.limits.executeTimeoutMin * 60_000,
+    // The path rules keep Read, Glob and Grep in the worktree.
+    allowedTools: [
+      rule("Read", `${wt}/**`),
+      rule("Glob", `${wt}/**`),
+      rule("Grep", `${wt}/**`),
+      rule("Edit", `${wt}/**`),
+      rule("Write", `${wt}/**`),
+      "Bash",
+    ],
+    // A deny wins over an allow, so git data changes only through git in the sandboxed shell.
+    disallowedTools: [
+      ...surface.denyRules,
+      ...["Edit", "Write"].flatMap((tool) => [
+        rule(tool, `${wt}/.git`),
+        rule(tool, `${wt}/.git/**`),
+        rule(tool, `${clone}/**`),
+      ]),
+    ],
+    sandbox: {
+      allowWrite: await surface.sandboxWritePaths(wt),
+      denyRead: executeReadDenyPaths({
+        env: req.env,
+        surfaceDenyReadPaths: surface.denyReadPaths,
+        publishTokensPath: surface.publishTokensPath,
+      }),
+      trackedPaths: (paths) => surface.trackedPaths(wt, paths),
+      sharedFolder: clone,
+    },
+  };
+  return {
+    sessionId: common.sessionId,
+    session: common.session,
+    executeCommitText: surface.executeCommitText,
     start: (input) => common.run(limits, input),
   };
 }
