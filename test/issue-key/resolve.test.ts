@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { parseGithubKey } from "../../src/issue-key/github.js";
 import { IssueKeyError, type IssueRef } from "../../src/issue-key/ref.js";
-import { resolveIssueKey, type ResolveOptions } from "../../src/issue-key/resolve.js";
-import { configWithTrackers, failureOf, type Trackers } from "../helpers.js";
+import { issueKeyMatches, resolveIssueKey, type ResolveOptions } from "../../src/issue-key/resolve.js";
+import { parseConfig } from "../../src/config/schema.js";
+import { configWithTrackers, failureOf, threeRepoConfig, type Trackers } from "../helpers.js";
 
 type RefRow = [
   label: string,
@@ -239,4 +240,26 @@ describe("resolveIssueKey", () => {
       expect(error.message).toBe(message);
     },
   );
+});
+
+describe("issueKeyMatches", () => {
+  const config = parseConfig(threeRepoConfig(), {}, "/home/test");
+
+  it("gives the ref of each repo that has the project of the key, in the order of the configuration", () => {
+    expect(issueKeyMatches("codeguru42/tasker#5", config)).toStrictEqual([
+      { key: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", shortRef: "issue-5" },
+      { key: "codeguru42/tasker#5", repoKey: "fork", shortRef: "issue-5" },
+    ]);
+  });
+
+  it("gives no ref for a key of an unknown project", () => {
+    expect(issueKeyMatches("codeguru42/unknown#5", config)).toEqual([]);
+  });
+
+  it("throws the error of the parser when no parser accepts the key", () => {
+    const message = GITHUB_MESSAGE("nonsense");
+    expect(() => issueKeyMatches("nonsense", config)).toThrow(IssueKeyError);
+    expect(() => issueKeyMatches("nonsense", config)).toThrow(message);
+    expect(() => resolveIssueKey("nonsense", config)).toThrow(message);
+  });
 });
