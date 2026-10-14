@@ -12,6 +12,12 @@ export type PermissionMode = "plan" | "dontAsk" | "auto";
 export interface SandboxLimits {
   allowWrite: string[];
   denyRead: string[];
+  // The subset of paths (relative to cwd) that the version control tracks, from one call.
+  // The caller builds it from vcs.assistantSurface(ctx).trackedPaths.
+  trackedPaths(paths: readonly string[]): Promise<string[]>;
+  // The absolute path of the folder that the workspaces of the clone share.
+  // The caller fills it from vcs.assistantSurface(ctx).sharedFolder(cwd).
+  sharedFolder: string;
 }
 
 // What the provider removed after a sandboxed run: relative paths, sorted, or the error.

@@ -1,10 +1,18 @@
+import { tmpdir } from "node:os";
 import { errorMessage } from "../../error-message.js";
 import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
 import { claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
-import { LINUX_SANDBOX_PROGRAMS } from "./sandbox.js";
+import { removePlaceholders } from "./placeholders.js";
+import {
+  LINUX_SANDBOX_PROGRAMS,
+  sandboxHostRefusal,
+  sandboxSettings,
+  sandboxSocketFolder,
+  sharedFolderRefusal,
+} from "./sandbox.js";
 import { parseLine, readStream, type StreamFacts } from "./stream.js";
 
 type Failure = Extract<RunOutcome, { kind: "failure" }>;
@@ -60,18 +68,39 @@ export function createClaudeCodeProvider(
   return {
     id: "claude-code",
     async run(input) {
-      if (input.sandbox !== undefined) {
-        return failureWithNoExit(input, "the claude-code provider cannot enforce a sandbox in this version", []);
+      const env = childEnv(input.env, []);
+      const { sandbox } = input;
+      if (sandbox !== undefined) {
+        const refusal = sandboxHostRefusal(platform, env) ?? sharedFolderRefusal(sandbox.sharedFolder);
+        if (refusal !== undefined) return failureWithNoExit(input, refusal, []);
       }
       if (input.overageStop !== undefined) {
         return failureWithNoExit(input, "the claude-code provider cannot enforce an overage stop in this version", []);
       }
+      let settings: Record<string, unknown> | undefined;
+      if (sandbox !== undefined) {
+        try {
+          const folder = sandboxSocketFolder({
+            uid: process.getuid?.(),
+            tmpRoot: options.tmpRoot ?? "/tmp",
+            sharedTemps: ["/tmp", "/private/tmp", "/var/tmp", tmpdir(), ...(env["TMPDIR"] ? [env["TMPDIR"]] : [])],
+          });
+          settings = sandboxSettings(sandbox, folder);
+        } catch (error) {
+          return failureWithNoExit(input, errorMessage(error), []);
+        }
+      }
+      // After a sandboxed run, the leftover placeholders go. The cleanup never changes the kind.
+      const finish = async (outcome: RunOutcome): Promise<RunOutcome> =>
+        sandbox === undefined
+          ? outcome
+          : { ...outcome, sandboxCleanup: await removePlaceholders(input.cwd, sandbox.trackedPaths) };
       const events: AssistantEvent[] = [];
       let run: AssistantResult;
       try {
-        run = await runAssistant("claude", claudeArgs(input), {
+        run = await runAssistant("claude", claudeArgs(input, settings), {
           cwd: input.cwd,
-          env: childEnv(input.env, []),
+          env,
           prompt: input.prompt,
           deadline: Date.now() + input.timeoutMs,
           onLine: (line) => {
@@ -87,12 +116,14 @@ export function createClaudeCodeProvider(
           onSpawn: input.onSpawn ?? (() => {}),
         });
       } catch (error) {
-        return failureWithNoExit(input, errorMessage(error), events);
+        return finish(failureWithNoExit(input, errorMessage(error), events));
       }
       if (!run.started) {
-        return failureWithNoExit(input, run.notFound ? "claude is not installed or not on PATH" : run.error, events);
+        return finish(
+          failureWithNoExit(input, run.notFound ? "claude is not installed or not on PATH" : run.error, events),
+        );
       }
-      return outcomeOf(input, run, events, readStream(events));
+      return finish(outcomeOf(input, run, events, readStream(events)));
     },
     doctorChecks: (repos) =>
       repos.length === 0

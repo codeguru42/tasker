@@ -10,7 +10,12 @@ import {
 } from "../../../src/assistant/claude-code/sandbox.js";
 import { useFakeSandboxBin, useTempDir } from "../../helpers.js";
 
-const limits = { allowWrite: ["/work/wt", "/work/clone/objects"], denyRead: ["/home/test/key"] };
+const limits = {
+  allowWrite: ["/work/wt", "/work/clone/objects"],
+  denyRead: ["/home/test/key"],
+  trackedPaths: async () => [] as string[],
+  sharedFolder: "/work/clones/owner-repo/bare-repo",
+};
 
 describe("sandboxSettings", () => {
   it("gives the exact settings, with the socket folder as the only Unix socket", () => {
@@ -46,7 +51,7 @@ describe("sandboxSettings", () => {
   });
 
   it("copies the lists, so a later change does not reach the settings", () => {
-    const own = { allowWrite: ["/a"], denyRead: ["/b"] };
+    const own = { ...limits, allowWrite: ["/a"], denyRead: ["/b"] };
     const settings = sandboxSettings(own, undefined);
     own.allowWrite.push("/c");
 
