@@ -636,7 +636,92 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(7);
+        expect(migrations.length).toBe(8);
+      });
+    });
+  });
+
+  describe("sessions table", () => {
+    const insertRawSession = (db: DatabaseSync, taskId: number, role: string, sessionId: string) =>
+      db
+        .prepare(
+          "INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at) VALUES (?, ?, ?, 'claude-code', 'opus', 'high', 't')",
+        )
+        .run(taskId, role, sessionId);
+
+    it("has the sessions table", () => {
+      withRawDatabase(dbPath, (db) => {
+        expect(tableNames(db)).toContain("sessions");
+      });
+    });
+
+    it("upgrades a version-7 database and keeps the old rows", () => {
+      const oldPath = join(dir, "old7.db");
+      makeOldDatabase(oldPath, 7);
+      withRawDatabase(oldPath, (raw) => {
+        insertRawTask(raw, "tasker", "planning");
+        raw
+          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'note', NULL)")
+          .run();
+        raw
+          .prepare(
+            "INSERT INTO plan_revisions (task_id, version, source, answer, prompt, created_at) VALUES (1, 1, 'plan', '{}', 'plan@000000000000', 't')",
+          )
+          .run();
+      });
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          expect(upgraded.getTask(1)).toMatchObject({
+            id: 1,
+            issueKey: "a/b#1",
+            repoKey: "tasker",
+            state: "planning",
+          });
+          expect(upgraded.listEvents(1)).toMatchObject([{ taskId: 1, at: "t", type: "note" }]);
+        },
+        { now },
+      );
+      withRawDatabase(oldPath, (check) => {
+        expect(schemaVersion(check)).toBe(migrations.length);
+        expect(check.prepare("SELECT task_id, version, source FROM plan_revisions").all()).toEqual([
+          { task_id: 1, version: 1, source: "plan" },
+        ]);
+        check.exec("PRAGMA foreign_keys = ON");
+        insertRawSession(check, 1, "plan", "s-1");
+      });
+    });
+
+    it("allows one plan session for each task", () => {
+      withRawDatabase(dbPath, (db) => {
+        insertRawTask(db, "one", "planning");
+        insertRawTask(db, "two", "planning");
+        insertRawSession(db, 1, "plan", "s-1");
+        const message = "UNIQUE constraint failed: sessions.task_id, sessions.role";
+        const error = thrownBy(() => insertRawSession(db, 1, "plan", "s-2"), message);
+        expect((error as Error).message).toBe(message);
+        insertRawSession(db, 2, "plan", "s-3");
+      });
+    });
+
+    it("allows many execute rows for one task", () => {
+      withRawDatabase(dbPath, (db) => {
+        insertRawTask(db, "one", "planning");
+        insertRawSession(db, 1, "execute", "s-1");
+        insertRawSession(db, 1, "execute", "s-2");
+        const row = db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number };
+        expect(row.n).toBe(2);
+      });
+    });
+
+    it("refuses a session id that another row uses", () => {
+      withRawDatabase(dbPath, (db) => {
+        insertRawTask(db, "one", "planning");
+        insertRawTask(db, "two", "planning");
+        insertRawSession(db, 1, "plan", "s-1");
+        const message = "UNIQUE constraint failed: sessions.session_id";
+        const error = thrownBy(() => insertRawSession(db, 2, "plan", "s-1"), message);
+        expect((error as Error).message).toBe(message);
       });
     });
   });
