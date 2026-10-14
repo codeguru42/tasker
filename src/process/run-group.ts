@@ -43,6 +43,7 @@ export interface SuperviseOptions {
   deadline: number;
   signal?: AbortSignal;
   stopOnExit?: boolean;
+  onStart?: () => void;
 }
 
 // Watches child, the leader of its own process group with pid pid, until it closes.
@@ -52,9 +53,12 @@ export interface SuperviseOptions {
 // With stopOnExit, the exit of the leader stops the group in the same way.
 // After a stop, when the leader has exited and the group is gone (or the SIGKILL was sent), it closes the pipes
 // of the child that are still open, so a process outside the group cannot hold the run open.
+// onStart runs once, after the watch starts. If it throws, the group is stopped in the same way,
+// and the promise rejects with that error after the group is gone.
 export function superviseGroup(child: ChildProcess, pid: number, options: SuperviseOptions): Promise<GroupResult> {
   return new Promise((resolve, reject) => {
     let settled = false;
+    let startError: { error: unknown } | undefined;
     let timedOut = false;
     let stopping = false;
     let killed = false;
@@ -84,7 +88,7 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
       }
       if (waitsForGroup()) return;
       const result = { ...exited, timedOut, killed };
-      settle(() => resolve(result));
+      settle(() => (startError ? reject(startError.error) : resolve(result)));
     };
     const stop = () => {
       if (stopping) return;
@@ -119,6 +123,12 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
     armDeadline();
     if (options.signal?.aborted) stop();
     else options.signal?.addEventListener("abort", stop, { once: true });
+    try {
+      options.onStart?.();
+    } catch (error) {
+      startError = { error };
+      stop();
+    }
   });
 }
 

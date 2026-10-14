@@ -13,6 +13,8 @@ export interface RunAssistantOptions {
   deadline: number;
   // Called once for each line of stdout, in order. It must not throw.
   onLine: (line: string) => void;
+  // Called once with the pid of the leader, before the prompt goes to stdin. If it throws, the group stops
+  // as for onStart of superviseGroup, and the run rejects with that error.
   onSpawn: (pid: number) => void;
   signal?: AbortSignal;
 }
@@ -91,12 +93,13 @@ export async function runAssistant(
   child.stderr.on("data", (chunk: Buffer) => {
     tail = Buffer.concat([tail, chunk]).subarray(-STDERR_TAIL_BYTES);
   });
-  options.onSpawn(pid);
-  child.stdin.end(options.prompt, "utf8");
-  const result = await superviseGroup(child, pid, {
+  const supervised = superviseGroup(child, pid, {
     deadline: options.deadline,
     signal: options.signal,
     stopOnExit: true,
+    onStart: () => options.onSpawn(pid),
   });
+  child.stdin.end(options.prompt, "utf8");
+  const result = await supervised;
   return { started: true, ...result, stderrTail: decodeTail(tail) };
 }
