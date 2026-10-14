@@ -1,7 +1,7 @@
 import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { canonicalPath } from "../src/real-path.js";
+import { canonicalPath, isInside } from "../src/real-path.js";
 import { useTempDir } from "./helpers.js";
 
 describe("canonicalPath", () => {
@@ -31,5 +31,26 @@ describe("canonicalPath", () => {
     const path = join(dir, "no", "such", "wt");
 
     expect(canonicalPath(path)).toBe(resolve(path));
+  });
+});
+
+describe("isInside", () => {
+  it("gives true for the folder itself and for a path inside it", () => {
+    expect(isInside("/a/b", "/a/b")).toBe(true);
+    expect(isInside("/a/b/c", "/a/b")).toBe(true);
+  });
+
+  it("gives false for a sibling that starts with the folder name, and for the parent", () => {
+    expect(isInside("/a/bc", "/a/b")).toBe(false);
+    expect(isInside("/a", "/a/b")).toBe(false);
+  });
+
+  it("counts a child named ..x as inside", () => {
+    expect(isInside("/a/b/..x", "/a/b")).toBe(true);
+  });
+
+  it("works for a folder that ends in the separator", () => {
+    expect(isInside("/a", "/")).toBe(true);
+    expect(isInside("/a/b", "/a/")).toBe(true);
   });
 });
