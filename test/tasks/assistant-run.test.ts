@@ -2,7 +2,8 @@ import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { taskSessionsDir } from "../../src/store/layout.js";
-import { executeReadDenyPaths, prepareTaskPlanModeRun } from "../../src/tasks/assistant-run.js";
+import { vcsForRepo } from "../../src/vcs/provider.js";
+import { executeReadDenyPaths, prepareTaskExecuteRun, prepareTaskPlanModeRun } from "../../src/tasks/assistant-run.js";
 import {
   claudeSample,
   readRunMarker,
@@ -152,6 +153,87 @@ describe("prepareTaskPlanModeRun", () => {
     const { outcome } = await prepareAndStart("plan", {
       claude: { stream: claudeSample("json-schema"), untilStopped: true },
       limits: { planTimeoutMin: 0.001 },
+    });
+
+    expect(outcome.kind).toBe("timeout");
+  });
+});
+
+describe("prepareTaskExecuteRun", () => {
+  // The rule form of claude: // marks an absolute path. It is computed here, apart from the code under test.
+  const expectedRule = (tool: string, path: string) => `${tool}(/${path})`;
+
+  const prepareAndStart = async (options: Parameters<typeof useAssistantRunFixture>[0]) => {
+    const fixture = await useAssistantRunFixture({ state: "executing", ...options });
+    const { config, task, env, started } = fixture;
+    const result = await withDataRootStore(started.dataRoot, async (store) => {
+      const prepared = await prepareTaskExecuteRun({ config, store, task, session: { resume: false }, env });
+      const outcome = await prepared.start({ prompt: "p" });
+      return { prepared, outcome };
+    });
+    const { vcs, ctx } = vcsForRepo(config, started.repoKey, env);
+    return {
+      ...fixture,
+      ...result,
+      surface: vcs.assistantSurface(ctx),
+      models: config.repos[started.repoKey]!.assistant.models,
+    };
+  };
+
+  it("runs the assistant under dontAsk with the execute model and the file tools of the worktree", async () => {
+    const { claude, models, started } = await prepareAndStart({ claude: { stream: claudeSample("plain") } });
+
+    const { argv } = claude.calls()[0]!;
+    const wt = started.worktree;
+    expect(flagValues(argv, "--permission-mode")).toEqual(["dontAsk"]);
+    expect(flagValues(argv, "--model")).toEqual([models.execute.model]);
+    expect(flagValues(argv, "--effort")).toEqual([models.execute.effort]);
+    expect(argv).not.toContain("--json-schema");
+    expect(flagValues(argv, "--allowedTools")).toEqual([
+      expectedRule("Read", `${wt}/**`),
+      expectedRule("Glob", `${wt}/**`),
+      expectedRule("Grep", `${wt}/**`),
+      expectedRule("Edit", `${wt}/**`),
+      expectedRule("Write", `${wt}/**`),
+      "Bash",
+    ]);
+    expect(flagValues(argv, "--disallowedTools")).toEqual([
+      "Bash(git push:*)",
+      ...["Edit", "Write"].flatMap((tool) => [
+        expectedRule(tool, `${wt}/.git`),
+        expectedRule(tool, `${wt}/.git/**`),
+        expectedRule(tool, `${started.clone}/**`),
+      ]),
+    ]);
+  });
+
+  it("runs the shell in the sandbox with the write paths and the read deny list", async () => {
+    const { claude, env, started, surface } = await prepareAndStart({ claude: { stream: claudeSample("plain") } });
+
+    expect(claude.calls()[0]!.settings).toMatchObject({
+      sandbox: {
+        filesystem: {
+          allowWrite: await surface.sandboxWritePaths(started.worktree),
+          denyRead: executeReadDenyPaths({
+            env,
+            surfaceDenyReadPaths: surface.denyReadPaths,
+            publishTokensPath: surface.publishTokensPath,
+          }),
+        },
+      },
+    });
+  });
+
+  it("gives the commit text of the surface", async () => {
+    const { prepared, surface } = await prepareAndStart({ claude: { stream: claudeSample("plain") } });
+
+    expect(prepared.executeCommitText).toBe(surface.executeCommitText);
+  });
+
+  it("stops the run at the execute deadline, not the plan deadline", async () => {
+    const { outcome } = await prepareAndStart({
+      claude: { stream: claudeSample("plain"), untilStopped: true },
+      limits: { executeTimeoutMin: 0.001, planTimeoutMin: 60 },
     });
 
     expect(outcome.kind).toBe("timeout");
