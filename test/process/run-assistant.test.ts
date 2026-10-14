@@ -239,7 +239,7 @@ describe("runAssistant", () => {
 
     const { result, pids } = await runCollected("exit 0", { cwd });
 
-    expect(result).toEqual({ started: false, error: `cannot start /bin/bash: the folder ${cwd} does not exist` });
+    expect(result).toEqual({ started: false, notFound: false, error: `cannot start /bin/bash: the folder ${cwd} does not exist` });
     expect(pids).toEqual([]);
   });
 
@@ -249,7 +249,7 @@ describe("runAssistant", () => {
 
     const { result, pids } = await runCollected("exit 0", { cwd });
 
-    expect(result).toEqual({ started: false, error: `cannot start /bin/bash: the folder ${cwd} does not exist` });
+    expect(result).toEqual({ started: false, notFound: false, error: `cannot start /bin/bash: the folder ${cwd} does not exist` });
     expect(pids).toEqual([]);
   });
 
@@ -258,7 +258,7 @@ describe("runAssistant", () => {
 
     const { result, pids } = await runCollected("exit 0", { file });
 
-    expect(result).toEqual({ started: false, error: new CommandNotFoundError(file, "not-on-path").message });
+    expect(result).toEqual({ started: false, notFound: true, error: new CommandNotFoundError(file, "not-on-path").message });
     expect(pids).toEqual([]);
   });
 
@@ -269,14 +269,14 @@ describe("runAssistant", () => {
 
     const { result, pids } = await runCollected("exit 0", { file });
 
-    expect(result).toEqual({ started: false, error: `cannot start ${file}: spawn ${file} EACCES` });
+    expect(result).toEqual({ started: false, notFound: false, error: `cannot start ${file}: spawn ${file} EACCES` });
     expect(pids).toEqual([]);
   });
 
   it("gives the no-path error when the env has no PATH", async () => {
     const { result, pids } = await runCollected("exit 0", { file: "bash", env: {} });
 
-    expect(result).toEqual({ started: false, error: new CommandNotFoundError("bash", "no-path").message });
+    expect(result).toEqual({ started: false, notFound: true, error: new CommandNotFoundError("bash", "no-path").message });
     expect(pids).toEqual([]);
   });
 
