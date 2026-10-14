@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
-import { taskSessionsDir } from "../../src/store/layout.js";
+import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { vcsForRepo } from "../../src/vcs/provider.js";
 import { executeReadDenyPaths, prepareTaskExecuteRun, prepareTaskPlanModeRun } from "../../src/tasks/assistant-run.js";
 import {
@@ -107,7 +107,7 @@ describe("prepareTaskPlanModeRun", () => {
     expect(call.envNames).not.toContain("GH_TOKEN");
     expect(call.envNames).not.toContain("SSH_AUTH_SOCK");
     expect(existsSync(taskSessionsDir(config.dataRoot, task))).toBe(true);
-    expect(readRunMarker(`${started.dataRoot}/tasker.db`, task.id)?.child_pid).toBeGreaterThan(0);
+    expect(readRunMarker(dataRootLayout(started.dataRoot).database, task.id)?.child_pid).toBeGreaterThan(0);
     expect(events).toEqual(outcome.kind === "success" ? outcome.events : []);
     expect(events.length).toBeGreaterThan(0);
     expect(prepared.session).toEqual({

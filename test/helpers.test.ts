@@ -13,7 +13,7 @@ import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { checkPlanAnswer } from "../src/plan/answer.js";
 import { childEnv } from "../src/process/child-env.js";
 import { type TaskStore } from "../src/store/store.js";
-import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
+import { dataRootLayout, taskLogsDir } from "../src/store/layout.js";
 import { repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import {
@@ -1217,7 +1217,7 @@ describe("useAssistantRunFixture", () => {
     const fixture = await useAssistantRunFixture({ claude: {}, state: "executing" });
 
     expect(fixture.task.state).toBe("executing");
-    expect(readRunMarker(createDataRoot(fixture.config.dataRoot).database, fixture.task.id)).toMatchObject({
+    expect(readRunMarker(dataRootLayout(fixture.config.dataRoot).database, fixture.task.id)).toMatchObject({
       state: "executing",
       pid: process.pid,
     });
