@@ -178,6 +178,10 @@ An untrusted value, such as the text of an issue, stands in its own tag in the p
 
 The fill makes the closing tag of that tag harmless inside the value. Without this step, the value ends the block early and puts its own instructions after it.
 
+The plan and the feedback of a refine run also stand in a tag, and the fill treats them in the same way. They are not text of a third party, but the tag keeps each block clear.
+
+The open questions of a refine run also stand in an untrusted tag. The plan session writes them after it reads the issue text of a third party, so a question can carry injected text.
+
 ### What the plan prompt asks for
 
 The plan must be complete on its own. The execute run is a new session. It sees only the plan, its todos and the answers to the questions, not the planning conversation.
@@ -187,6 +191,18 @@ The list `files_changed` must name each file that the plan touches. Tasker compa
 The todos come as red and green steps. The commit rules ask for a commit with the failing test, and then a commit with the code.
 
 A todo never runs the full check of the repository. Tasker runs the verify commands itself after the execute run, and that run is the one that counts.
+
+### The refine prompt
+
+Tasker reads the plan back from its plan file. As a result, the revision does not depend on how much of a long session the assistant still remembers.
+
+The branch commits go in the prompt. An execute run is a separate session, so the refine session has not seen them. Their work is done, and the revision plans only the work that is still needed. The commits are untrusted, because an execute run wrote them from the issue text of a third party.
+
+The answer is a complete revision, never a list of changes. A change list leaves the execute run with only part of the plan. The list `files_changed` covers the whole revision, for the same reason as in "What the plan prompt asks for".
+
+The open questions keep their ids across rounds. As a result, an answered question drops out, and an open question stays trackable.
+
+The two prompts share their common rules in one place in the code. As a result, one change updates both.
 
 ### The prompt version and the archive
 
