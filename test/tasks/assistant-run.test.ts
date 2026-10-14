@@ -3,10 +3,18 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
+import type { Task } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { vcsForRepo } from "../../src/vcs/provider.js";
-import { executeReadDenyPaths, prepareTaskExecuteRun, prepareTaskPlanModeRun } from "../../src/tasks/assistant-run.js";
 import {
+  type AssistantSessionRequest,
+  executeReadDenyPaths,
+  prepareTaskExecuteRun,
+  prepareTaskPlanModeRun,
+  type RepoReadDenyPaths,
+} from "../../src/tasks/assistant-run.js";
+import {
+  type AssistantRunFixture,
   claudeOverageEvent,
   claudeSample,
   readRunMarker,
@@ -25,20 +33,71 @@ function flagValues(argv: string[], flag: string): string[] | undefined {
   return next === -1 ? rest : rest.slice(0, next);
 }
 
-describe("executeReadDenyPaths", () => {
-  // Every path here is fake. None exists on disk, and each still goes in the list.
-  const denyPaths = (env: NodeJS.ProcessEnv) =>
-    executeReadDenyPaths({ env, repos: [{ denyReadPaths: ["/k/id"], publishTokensPath: "/p" }] });
+// The one fake repo of most deny-list tests. None of its paths exists on disk, and each still goes in the list.
+const ONE_REPO: readonly RepoReadDenyPaths[] = [{ denyReadPaths: ["/k/id"], publishTokensPath: "/p" }];
 
+// The call helper of executeReadDenyPaths().
+const denyPaths = (env: NodeJS.ProcessEnv, repos: readonly RepoReadDenyPaths[] = ONE_REPO) =>
+  executeReadDenyPaths({ env, repos });
+
+// The models of the task repo in the configuration of a fixture.
+const modelsOf = (fixture: AssistantRunFixture) => fixture.config.repos[fixture.started.repoKey]!.assistant.models;
+
+// The call helper of prepareTaskPlanModeRun(). The test builds the fixture, so that it can still read the
+// fake claude when the prepare throws. task changes the task of the fixture, for example to drop its worktree.
+const runPlanMode = async (
+  fixture: AssistantRunFixture,
+  options: {
+    role?: "plan" | "review";
+    session?: AssistantSessionRequest;
+    task?: (task: Task) => Task;
+    jsonSchema?: Record<string, unknown>;
+    approvedResetsAt?: number;
+  } = {},
+) => {
+  const { config, env, started } = fixture;
+  const task = options.task ? options.task(fixture.task) : fixture.task;
+  const events: AssistantEvent[] = [];
+  return withDataRootStore(started.dataRoot, async (store) => {
+    const prepared = await prepareTaskPlanModeRun({
+      config,
+      store,
+      task,
+      role: options.role ?? "plan",
+      session: options.session ?? { resume: false },
+      env,
+      approvedResetsAt: options.approvedResetsAt,
+    });
+    const outcome = await prepared.start({
+      prompt: "p",
+      jsonSchema: options.jsonSchema,
+      onEvent: (e) => events.push(e),
+    });
+    return { prepared, outcome, events };
+  });
+};
+
+// The call helper of prepareTaskExecuteRun(): the fixture in the executing state, the prepare, the start,
+// and the surface of the task repo.
+const prepareAndStartExecute = async (options: Parameters<typeof useAssistantRunFixture>[0]) => {
+  const fixture = await useAssistantRunFixture({ state: "executing", ...options });
+  const { config, task, env, started } = fixture;
+  const result = await withDataRootStore(started.dataRoot, async (store) => {
+    const prepared = await prepareTaskExecuteRun({ config, store, task, session: { resume: false }, env });
+    const outcome = await prepared.start({ prompt: "p" });
+    return { prepared, outcome };
+  });
+  const { vcs, ctx } = vcsForRepo(config, started.repoKey, env);
+  return { ...fixture, ...result, surface: vcs.assistantSurface(ctx), models: modelsOf(fixture) };
+};
+
+describe("executeReadDenyPaths", () => {
   it("gives the keys of every repo first and the publish tokens of every repo after the env paths", () => {
     expect(
-      executeReadDenyPaths({
-        env: { HOME: "/h", TASKER_CONFIG: "/t/config.json" },
-        repos: [
-          { denyReadPaths: ["/k/a"], publishTokensPath: "/p/a" },
-          { denyReadPaths: ["/k/b"], publishTokensPath: "/p/b" },
-        ],
-      }),
+      denyPaths({ HOME: "/h", TASKER_CONFIG: "/t/config.json" }, [
+        { denyReadPaths: ["/k/a"], publishTokensPath: "/p/a" },
+        { denyReadPaths: ["/k/b"], publishTokensPath: "/p/b" },
+      ]),
     ).toEqual([
       "/k/a",
       "/k/b",
@@ -108,23 +167,11 @@ describe("executeReadDenyPaths", () => {
 describe("prepareTaskPlanModeRun", () => {
   const schema = { type: "object" };
 
-  const prepareAndStart = async (
-    role: "plan" | "review",
-    options: Parameters<typeof useAssistantRunFixture>[0] = { claude: { stream: claudeSample("json-schema") } },
-  ) => {
-    const fixture = await useAssistantRunFixture(options);
-    const { config, task, env, started } = fixture;
-    const events: AssistantEvent[] = [];
-    const outcome = await withDataRootStore(started.dataRoot, async (store) => {
-      const prepared = await prepareTaskPlanModeRun({ config, store, task, role, session: { resume: false }, env });
-      const outcome = await prepared.start({ prompt: "p", jsonSchema: schema, onEvent: (e) => events.push(e) });
-      return { prepared, outcome };
-    });
-    return { ...fixture, ...outcome, events, models: config.repos[started.repoKey]!.assistant.models };
-  };
-
   it("runs the assistant in the plan mode with the plan model and no other limit", async () => {
-    const { claude, prepared, outcome, models, events, config, task, started } = await prepareAndStart("plan");
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+    const { claude, config, task, started } = fixture;
+    const models = modelsOf(fixture);
+    const { prepared, outcome, events } = await runPlanMode(fixture, { jsonSchema: schema });
 
     expect(outcome.kind).toBe("success");
     const call = claude.calls()[0]!;
@@ -153,7 +200,10 @@ describe("prepareTaskPlanModeRun", () => {
   });
 
   it("runs the review role with the review model and the same limits", async () => {
-    const { claude, models } = await prepareAndStart("review");
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+    const models = modelsOf(fixture);
+    await runPlanMode(fixture, { role: "review", jsonSchema: schema });
+    const { claude } = fixture;
 
     const call = claude.calls()[0]!;
     expect(flagValues(call.argv, "--model")).toEqual([models.review.model]);
@@ -165,52 +215,32 @@ describe("prepareTaskPlanModeRun", () => {
   });
 
   it("refuses a task that has no worktree, and starts no child", async () => {
-    const { config, task, env, claude, started } = await useAssistantRunFixture({
-      claude: { stream: claudeSample("json-schema") },
-    });
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
 
-    await withDataRootStore(started.dataRoot, async (store) => {
-      await expect(
-        prepareTaskPlanModeRun({
-          config,
-          store,
-          task: { ...task, worktreePath: null },
-          role: "plan",
-          session: { resume: false },
-          env,
-        }),
-      ).rejects.toThrow(`task ${task.id}`);
-    });
-    expect(claude.calls()).toEqual([]);
+    await expect(runPlanMode(fixture, { task: (t) => ({ ...t, worktreePath: null }) })).rejects.toThrow(
+      `task ${fixture.task.id}`,
+    );
+    expect(fixture.claude.calls()).toEqual([]);
   });
 
   it("stops the run at the plan deadline", async () => {
-    const { outcome } = await prepareAndStart("plan", {
+    const fixture = await useAssistantRunFixture({
       claude: { stream: claudeSample("json-schema"), untilStopped: true },
       limits: { planTimeoutMin: 0.001 },
     });
+    const { outcome } = await runPlanMode(fixture, { jsonSchema: schema });
 
     expect(outcome.kind).toBe("timeout");
   });
 
   it("continues a recorded session with its recorded model and effort, not the configured ones", async () => {
-    const { config, task, env, started, claude } = await useAssistantRunFixture({
-      claude: { stream: claudeSample("resume") },
-    });
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("resume") } });
+    const { started, claude } = fixture;
     const recorded = { repoKey: started.repoKey, provider: "claude-code", model: "haiku", effort: "low" } as const;
-    expect(config.repos[started.repoKey]!.assistant.models.plan).not.toMatchObject({ model: "haiku" });
+    expect(modelsOf(fixture).plan).not.toMatchObject({ model: "haiku" });
 
-    const prepared = await withDataRootStore(started.dataRoot, async (store) => {
-      const prepared = await prepareTaskPlanModeRun({
-        config,
-        store,
-        task,
-        role: "plan",
-        session: { resume: true, sessionId: TEST_SESSION_ID, recorded },
-        env,
-      });
-      await prepared.start({ prompt: "p" });
-      return prepared;
+    const { prepared } = await runPlanMode(fixture, {
+      session: { resume: true, sessionId: TEST_SESSION_ID, recorded },
     });
 
     const { argv } = claude.calls()[0]!;
@@ -228,43 +258,30 @@ describe("prepareTaskPlanModeRun with an overage event", () => {
   const resetsAt = (overage["rate_limit_info"] as { resetsAt: number }).resetsAt;
   const withOverage = () => [JSON.stringify(overage), ...claudeSample("plain")];
 
-  const runWith = async (
-    options: Pick<Parameters<typeof useAssistantRunFixture>[0], "claude" | "repo" | "limits">,
-    approvedResetsAt?: number,
-  ) => {
-    const { config, task, env, started } = await useAssistantRunFixture(options);
-    return withDataRootStore(started.dataRoot, async (store) => {
-      const prepared = await prepareTaskPlanModeRun({
-        config,
-        store,
-        task,
-        role: "plan",
-        session: { resume: false },
-        env,
-        approvedResetsAt,
-      });
-      return prepared.start({ prompt: "p" });
-    });
-  };
-
   it("stops the run at paid usage under the decline policy", async () => {
     // The short deadline ends the child at once when the stop does not work.
-    const outcome = await runWith({
+    const fixture = await useAssistantRunFixture({
       claude: { stream: [JSON.stringify(overage)], untilStopped: true },
       limits: { planTimeoutMin: 0.01 },
     });
+    const { outcome } = await runPlanMode(fixture);
 
     expect(outcome).toMatchObject({ kind: "quota", cause: "overage", resetsAt });
   });
 
   it("does not stop the run under the ask policy, also when a window is approved", async () => {
-    const outcome = await runWith({ claude: { stream: withOverage() }, repo: { overagePolicy: "ask" } }, resetsAt);
+    const fixture = await useAssistantRunFixture({
+      claude: { stream: withOverage() },
+      repo: { overagePolicy: "ask" },
+    });
+    const { outcome } = await runPlanMode(fixture, { approvedResetsAt: resetsAt });
 
     expect(outcome.kind).toBe("success");
   });
 
   it("does not stop the run when the approved window is the window of the event", async () => {
-    const outcome = await runWith({ claude: { stream: withOverage() } }, resetsAt);
+    const fixture = await useAssistantRunFixture({ claude: { stream: withOverage() } });
+    const { outcome } = await runPlanMode(fixture, { approvedResetsAt: resetsAt });
 
     expect(outcome.kind).toBe("success");
   });
@@ -274,25 +291,8 @@ describe("prepareTaskExecuteRun", () => {
   // The rule form of claude: // marks an absolute path. It is computed here, apart from the code under test.
   const expectedRule = (tool: string, path: string) => `${tool}(/${path})`;
 
-  const prepareAndStart = async (options: Parameters<typeof useAssistantRunFixture>[0]) => {
-    const fixture = await useAssistantRunFixture({ state: "executing", ...options });
-    const { config, task, env, started } = fixture;
-    const result = await withDataRootStore(started.dataRoot, async (store) => {
-      const prepared = await prepareTaskExecuteRun({ config, store, task, session: { resume: false }, env });
-      const outcome = await prepared.start({ prompt: "p" });
-      return { prepared, outcome };
-    });
-    const { vcs, ctx } = vcsForRepo(config, started.repoKey, env);
-    return {
-      ...fixture,
-      ...result,
-      surface: vcs.assistantSurface(ctx),
-      models: config.repos[started.repoKey]!.assistant.models,
-    };
-  };
-
   it("runs the assistant under dontAsk with the execute model and the file tools of the worktree", async () => {
-    const { claude, models, started } = await prepareAndStart({ claude: { stream: claudeSample("plain") } });
+    const { claude, models, started } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
 
     const { argv } = claude.calls()[0]!;
     const wt = started.worktree;
@@ -319,13 +319,13 @@ describe("prepareTaskExecuteRun", () => {
   });
 
   it("runs the shell in the sandbox with the write paths and the read deny list", async () => {
-    const { claude, env, started, surface } = await prepareAndStart({ claude: { stream: claudeSample("plain") } });
+    const { claude, env, started, surface } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
 
     expect(claude.calls()[0]!.settings).toMatchObject({
       sandbox: {
         filesystem: {
           allowWrite: await surface.sandboxWritePaths(started.worktree),
-          denyRead: executeReadDenyPaths({ env, repos: [surface] }),
+          denyRead: denyPaths(env, [surface]),
         },
       },
     });
@@ -333,7 +333,7 @@ describe("prepareTaskExecuteRun", () => {
 
   it("denies the ssh keys and the publish tokens of every configured repo in the shell", async () => {
     const keys = useTempDir("tasker-keys-");
-    const { claude, started } = await prepareAndStart({
+    const { claude, started } = await prepareAndStartExecute({
       claude: { stream: claudeSample("plain") },
       sshKey: join(keys, "a_key"),
       otherRepo: { key: "codeguru42/other", sshKey: join(keys, "b_key") },
@@ -352,13 +352,13 @@ describe("prepareTaskExecuteRun", () => {
   });
 
   it("gives the commit text of the surface", async () => {
-    const { prepared, surface } = await prepareAndStart({ claude: { stream: claudeSample("plain") } });
+    const { prepared, surface } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
 
     expect(prepared.executeCommitText).toBe(surface.executeCommitText);
   });
 
   it("stops the run at the execute deadline, not the plan deadline", async () => {
-    const { outcome } = await prepareAndStart({
+    const { outcome } = await prepareAndStartExecute({
       claude: { stream: claudeSample("plain"), untilStopped: true },
       limits: { executeTimeoutMin: 0.001, planTimeoutMin: 60 },
     });
