@@ -186,7 +186,10 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
       allowWrite: await surface.sandboxWritePaths(wt),
       denyRead: executeReadDenyPaths({
         env: req.env,
-        repos: Object.keys(req.config.repos).map((key) => assistantSurfaceOf(req.config, key, req.env)),
+        // The shared steps already built the surface of the task repo, so only the other repos get a new one.
+        repos: Object.keys(req.config.repos).map((key) =>
+          key === req.task.repoKey ? surface : assistantSurfaceOf(req.config, key, req.env),
+        ),
       }),
       trackedPaths: (paths) => surface.trackedPaths(wt, paths),
       sharedFolder: clone,
