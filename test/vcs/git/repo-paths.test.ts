@@ -2,7 +2,7 @@ import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { pathSlug } from "../../../src/issue-key/path-slug.js";
 import { repoPaths, repoSlug } from "../../../src/vcs/git/repo-paths.js";
-import { isInside } from "../../helpers.js";
+import { isInside } from "../../../src/real-path.js";
 
 describe("repoPaths", () => {
   it("gives the clone, publish token and worktree folders of a repo", () => {

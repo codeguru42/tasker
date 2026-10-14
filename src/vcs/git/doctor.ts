@@ -2,6 +2,7 @@ import { existsSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
 import { relative } from "node:path";
 import type { Check, CheckResult } from "../../doctor/check.js";
+import { isInside } from "../../real-path.js";
 import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import type { GitVcsConfig } from "./config.js";
@@ -9,7 +10,6 @@ import { GitError, GitNotInstalledError, runGit } from "./run.js";
 import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
 import {
   findStaleLocks,
-  isInside,
   onceProcView,
   type ProcView,
 } from "./stale-locks.js";

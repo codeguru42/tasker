@@ -33,6 +33,7 @@ import { failTask } from "../src/state/machine.js";
 import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { openStore, type StoreOptions, type Task, type TaskStore } from "../src/store/store.js";
+import { isInside } from "../src/real-path.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -637,11 +638,6 @@ async function writeAndCommit(
   await runGit(["add", "-A"], { cwd: folder, env });
   await runGit(["commit", ...commitArgs, "-m", message], { cwd: folder, env });
   return (await runGit(["rev-parse", "HEAD"], { cwd: folder, env })).trim();
-}
-
-// True when path is folder or inside it.
-export function isInside(path: string, folder: string): boolean {
-  return path === folder || path.startsWith(folder + sep);
 }
 
 // The absolute path of file in work. It throws with refusal as the text before the file

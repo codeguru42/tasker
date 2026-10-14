@@ -1,5 +1,5 @@
 import { lstatSync, readdirSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
-import { join, sep } from "node:path";
+import { join } from "node:path";
 import { DeadlineError } from "../../doctor/timed-check.js";
 import { withoutLineEnd } from "./worktree.js";
 
@@ -10,11 +10,6 @@ export interface StaleLock {
   // The absolute real path of the lock file.
   path: string;
   ageMs: number;
-}
-
-// True when path is folder or inside it.
-export function isInside(path: string, folder: string): boolean {
-  return path === folder || path.startsWith(folder + sep);
 }
 
 function isMissing(error: unknown): boolean {

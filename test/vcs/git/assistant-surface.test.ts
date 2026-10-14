@@ -21,12 +21,12 @@ import {
   sandboxWritePaths,
 } from "../../../src/vcs/git/assistant-surface.js";
 import { runGit } from "../../../src/vcs/git/run.js";
+import { isInside } from "../../../src/real-path.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import {
   commitInWorktree,
   failureOf,
   gitCloneTokens,
-  isInside,
   makeGitClone,
   makeGitOrigin,
   useTempDir,
