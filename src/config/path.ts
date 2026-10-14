@@ -1,7 +1,8 @@
 import { homedir as osHomedir } from "node:os";
 import { join } from "node:path";
 
-function isSet(value: string | undefined): value is string {
+// The one home of the "is set" rule of an env value: undefined and a blank string count as unset.
+export function isSet(value: string | undefined): value is string {
   return value !== undefined && value.trim() !== "";
 }
 
