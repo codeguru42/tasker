@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import {
   type AssistantEvent,
   type AssistantRole,
@@ -231,10 +231,12 @@ export function executeReadDenyPaths(o: {
     isSet(env.TASKER_CONFIG) || isSet(env.XDG_CONFIG_HOME) || home !== undefined
       ? [resolveConfigPath(env, home ?? "")]
       : [];
+  // The shell runs in the worktree, so a relative path from the env would name a different file there.
+  const absolute = (paths: readonly string[]) => paths.map((path) => resolve(path));
   return [
     ...repos.flatMap((repo) => repo.denyReadPaths),
-    ...fromEnv,
+    ...absolute(fromEnv),
     ...repos.map((repo) => repo.publishTokensPath),
-    ...configFile,
+    ...absolute(configFile),
   ];
 }
