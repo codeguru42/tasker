@@ -55,6 +55,18 @@ describe("runAssistant", () => {
     expect(lines).toEqual(["a", "", "b"]);
   });
 
+  it("joins a line that is larger than a chunk and gives the last line with no line end", async () => {
+    const { lines } = await runCollected("head -c 3000000 /dev/zero | tr '\\0' x; echo; printf tail");
+
+    expect(lines).toEqual(["x".repeat(3_000_000), "tail"]);
+  });
+
+  it("keeps a multi-byte character whole when it crosses a chunk border", async () => {
+    const { lines } = await runCollected('s=é; for i in {1..17}; do s=$s$s; done; printf a; echo "$s"');
+
+    expect(lines).toEqual(["a" + "é".repeat(131072)]);
+  });
+
   it("stops the group at the deadline", { timeout: 20_000 }, async () => {
     const { result } = await runCollected("sleep 30", { deadline: Date.now() + 300 });
 
