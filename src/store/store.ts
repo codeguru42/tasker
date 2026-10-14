@@ -114,6 +114,13 @@ export interface TaskStore extends LockStore {
     state: string,
     check?: (current: Task) => NewEvent | void,
   ): Task;
+  // Moves the task out of its spawning state and deletes its run marker, in one transaction.
+  // The marker of any process goes, and a missing marker is not an error.
+  endRun(
+    id: number,
+    state: string,
+    check?: (current: Task) => NewEvent | void,
+  ): Task;
   // Adds the pid of the child to the run marker of this process.
   setRunChildPid(id: number, childPid: number): void;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
@@ -247,6 +254,7 @@ function setUp(db: DatabaseSync) {
     setRunChildPid: db.prepare(
       "UPDATE run_markers SET child_pid = ? WHERE task_id = ? AND pid = ?",
     ),
+    deleteRunMarker: db.prepare("DELETE FROM run_markers WHERE task_id = ?"),
     insertEvent: db.prepare(
       "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *",
     ),
@@ -443,6 +451,27 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         const at = now().toISOString();
         const task = writeChanges(current, { state }, at);
         statements.insertRunMarker.run(id, state, process.pid, at);
+        if (event !== undefined) writeEvent(id, at, event.type, event.data);
+        return task;
+      });
+    },
+
+    endRun(id, state, check) {
+      return immediateTransaction(db, () => {
+        const current = readTask(id);
+        if (current === undefined) {
+          throw new Error(`task not found: ${id}`);
+        }
+        const event = check?.(current);
+        if (!isSpawningState(current.state)) {
+          throw new Error(`task ${id} is not in a spawning state: ${current.state}`);
+        }
+        if (isSpawningState(state)) {
+          throw new Error(`${state} is a spawning state`);
+        }
+        const at = now().toISOString();
+        const task = writeChanges(current, { state }, at);
+        statements.deleteRunMarker.run(id);
         if (event !== undefined) writeEvent(id, at, event.type, event.data);
         return task;
       });
