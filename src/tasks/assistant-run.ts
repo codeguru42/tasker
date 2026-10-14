@@ -31,6 +31,8 @@ export interface TaskRunRequest {
   session: AssistantSessionRequest;
   // The env of tasker, passed on unchanged.
   env: NodeJS.ProcessEnv;
+  // The end of the approved quota window, in Unix seconds. The run uses it only under overagePolicy "decline".
+  approvedResetsAt?: number;
 }
 
 export interface PlanModeRunRequest extends TaskRunRequest {
@@ -111,6 +113,11 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
         model: selected.model,
         effort: selected.effort,
         sessionDir,
+        // Under "ask", the caller handles paid usage, so the run has no overage stop.
+        overageStop:
+          config.repos[task.repoKey]!.overagePolicy === "decline"
+            ? { approvedResetsAt: req.approvedResetsAt }
+            : undefined,
         onSpawn: (pid) => store.setRunChildPid(task.id, pid),
         onEvent: input.onEvent,
       });
