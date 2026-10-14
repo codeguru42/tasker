@@ -42,12 +42,14 @@ function groupRuns(pid: number): boolean {
 export interface SuperviseOptions {
   deadline: number;
   signal?: AbortSignal;
+  stopOnExit?: boolean;
 }
 
 // Watches child, the leader of its own process group with pid pid, until it closes.
 // While it runs, SIGINT and SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM.
 // Five seconds later, it gets SIGKILL. After such a stop, it waits until the group is gone.
 // An abort of signal stops the group in the same way, but it does not set timedOut.
+// With stopOnExit, the exit of the leader stops the group in the same way.
 // After a stop, when the leader has exited and the group is gone (or the SIGKILL was sent), it closes the pipes
 // of the child that are still open, so a process outside the group cannot hold the run open.
 export function superviseGroup(child: ChildProcess, pid: number, options: SuperviseOptions): Promise<GroupResult> {
@@ -108,6 +110,7 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
     child.on("error", (error) => settle(() => reject(error)));
     child.on("exit", () => {
       leaderExited = true;
+      if (options.stopOnExit) stop();
     });
     child.on("close", (code, signal) => {
       exited = { code, signal };
