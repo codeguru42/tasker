@@ -2,7 +2,15 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { model } from "../../src/commands/model.js";
 import { loadConfig } from "../../src/config/load.js";
-import { issueKeyErrorMessage, runCommand, useConfigFile, validConfig } from "../helpers.js";
+import {
+  dayAt,
+  issueKeyErrorMessage,
+  runCommand,
+  seedTasks,
+  threeRepoConfig,
+  useConfigFile,
+  validConfig,
+} from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -87,6 +95,54 @@ describe("model", () => {
 
       expect(result.code).not.toBe(0);
       expect(result.out).toBe("");
+    });
+  });
+
+  describe("repo pick", () => {
+    const FORK_REPORT = "plan: haiku (effort low)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n";
+    const TASKER_REPORT = "plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n";
+
+    // The config of two repos with the project of KEY: codeguru42/tasker and fork. Fork has another plan model.
+    function useForkConfig(): { path: string; dataRoot: string } {
+      return useConfigFile((dataRoot) => {
+        const raw = threeRepoConfig();
+        raw.repos.fork.assistant = {
+          ...raw.repos.fork.assistant,
+          models: { ...raw.repos.fork.assistant.models, plan: { model: "haiku", effort: "low" } },
+        };
+        return JSON.stringify({ ...raw, dataRoot });
+      });
+    }
+
+    function seedForkTask(dataRoot: string): void {
+      seedTasks(dataRoot, [{ issueKey: KEY, repoKey: "fork", state: "workspace_ready", at: dayAt(2) }]);
+    }
+
+    it("uses the repo of the active task when the key matches more than one repo", async () => {
+      const { dataRoot } = useForkConfig();
+      seedForkTask(dataRoot);
+
+      const result = await runCommand(model, "model", KEY);
+
+      expect(result).toEqual({ code: 0, out: FORK_REPORT, err: "" });
+    });
+
+    it("fails when the key matches more than one repo and no task is active", async () => {
+      const { path } = useForkConfig();
+
+      const result = await runCommand(model, "model", KEY);
+
+      expect(result).toEqual({ code: 1, out: "", err: `${issueKeyErrorMessage(KEY, path)}\n` });
+      expect(result.err).toContain("matches more than one repo");
+    });
+
+    it("uses the repo that --repo names, also when another repo has the active task", async () => {
+      const { dataRoot } = useForkConfig();
+      seedForkTask(dataRoot);
+
+      const result = await runCommand(model, "model", KEY, "--repo", "codeguru42/tasker");
+
+      expect(result).toEqual({ code: 0, out: TASKER_REPORT, err: "" });
     });
   });
 });
