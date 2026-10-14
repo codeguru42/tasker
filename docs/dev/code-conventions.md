@@ -18,6 +18,8 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/issue-key/` holds the issue key parsers and the resolve of a key to its repo. See [issue-keys.md](issue-keys.md).
 - `src/tasks/` holds the steps of the task commands. See [tasks.md](tasks.md).
 - `src/state/` holds the state machine. See [statemachine.md](../statemachine.md).
+- `src/plan/` holds the plan answer: its shape and its checks. See [assistants.md](assistants.md).
+- `src/prompts/` holds the prompt templates, their fill, their version and the archive. See [assistants.md](assistants.md).
 - `AGENTS.md` is an index that links to the docs. It gives no rules itself. Each assistant session reads it first.
 - `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.
 - `docs/` holds the docs. `AGENTS.md` links to each of them.
