@@ -5,6 +5,7 @@ import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/pro
 import type { AssistantEvent, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
 import {
   claudeSample,
+  claudeSampleEvents,
   claudeSampleWithResult,
   type FakeClaude,
   type FakeClaudeControl,
@@ -303,6 +304,32 @@ describe("createClaudeCodeProvider run", () => {
     );
 
     expect(failureOf(outcome)).toMatchObject({ reason: "spawn listener broke" });
+  });
+});
+
+// quota-stop.jsonl: the lines of plain.jsonl and the capture of rate-limit-warning.jsonl. The rate_limit_event
+// differs from the capture in status, rateLimitType, utilization, resetsAt and unifiedWindows.five_hour. The
+// result differs from plain.jsonl in subtype, stop_reason, is_error, terminal_reason and api_error_status.
+describe("createClaudeCodeProvider run with a quota stop", () => {
+  it("gives quota with the reset time when the rate limit stopped claude", async () => {
+    const { outcome, fake } = await run({ stream: claudeSample("quota-stop"), exitCode: 1 });
+
+    expect(outcome).toMatchObject({ kind: "quota", cause: "rate_limit", resetsAt: 1791906000 });
+    expect(outcome.events).toEqual(claudeSampleEvents("quota-stop"));
+    expect(fake.calls()).toHaveLength(1);
+  });
+
+  it("gives failure for a plain run that exits 1", async () => {
+    const { outcome, fake } = await run({ stream: claudeSample("plain"), exitCode: 1 });
+
+    expect(failureOf(outcome).exitCode).toBe(1);
+    expect(fake.calls()).toHaveLength(1);
+  });
+
+  it("does not give quota when claude exits 0", async () => {
+    const { outcome } = await run({ stream: claudeSample("quota-stop"), exitCode: 0 });
+
+    expect(outcome.kind).not.toBe("quota");
   });
 });
 

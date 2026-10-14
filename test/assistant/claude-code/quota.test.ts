@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunOutcome } from "../../../src/assistant/provider.js";
+import { quotaStopOf } from "../../../src/assistant/claude-code/quota.js";
 import { claudeRateLimitEvent, claudeSampleEvents, TEST_SESSION_ID } from "../../helpers.js";
 
 function outcomeWith(events: AssistantEvent[]): RunOutcome {
@@ -197,5 +198,92 @@ describe("shouldSuppressQuotaApprovalPause", () => {
 
   it("is false when the warning has no reset time", () => {
     expect(suppress({ utilization: 0.9 }, 5)).toBe(false);
+  });
+});
+
+// quota-stop.jsonl: the lines of plain.jsonl and the capture of rate-limit-warning.jsonl. The rate_limit_event
+// differs from the capture in status, rateLimitType, utilization, resetsAt and unifiedWindows.five_hour. The
+// result differs from plain.jsonl in subtype, stop_reason, is_error, terminal_reason and api_error_status.
+describe("quotaStopOf", () => {
+  const rejected = (resetsAt: unknown) =>
+    claudeRateLimitEvent((info) => {
+      info["status"] = "rejected";
+      info["resetsAt"] = resetsAt;
+    });
+  const stopEvents = (edit: (result: AssistantEvent) => void = () => {}) => {
+    const events = claudeSampleEvents("quota-stop");
+    edit(events.at(-1)!);
+    return events;
+  };
+
+  it("gives the reset time of the rejected event for exit code 1", () => {
+    expect(quotaStopOf(claudeSampleEvents("quota-stop"), 1)).toEqual({ resetsAt: 1791906000 });
+  });
+
+  it("gives the same for a null exit code", () => {
+    expect(quotaStopOf(claudeSampleEvents("quota-stop"), null)).toEqual({ resetsAt: 1791906000 });
+  });
+
+  it("gives nothing for exit code 0", () => {
+    expect(quotaStopOf(claudeSampleEvents("quota-stop"), 0)).toBeUndefined();
+  });
+
+  it("gives nothing for the plain sample with exit code 1", () => {
+    expect(quotaStopOf(claudeSampleEvents("plain"), 1)).toBeUndefined();
+  });
+
+  it.each<[string, (result: AssistantEvent) => void]>([
+    ["api_error_status is 500", (r) => void (r["api_error_status"] = 500)],
+    ["terminal_reason is completed", (r) => void (r["terminal_reason"] = "completed")],
+  ])("gives nothing when %s", (_name, edit) => {
+    expect(quotaStopOf(stopEvents(edit), 1)).toBeUndefined();
+  });
+
+  it("still gives a stop when is_error is false, and the sample keeps its decoys", () => {
+    const events = stopEvents((r) => void (r["is_error"] = false));
+
+    expect(events.at(-1)).toMatchObject({ subtype: "success", stop_reason: "stop_sequence" });
+    expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 1791906000 });
+  });
+
+  it("gives the flat resetsAt when the unified entry differs", () => {
+    const events = stopEvents();
+    const info = events[2]!["rate_limit_info"] as Record<string, unknown>;
+    info["resetsAt"] = 42;
+
+    expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 42 });
+  });
+
+  it("gives the last rejected event, and a later allowed event does not count", () => {
+    const events = stopEvents();
+    events.splice(2, 0, rejected(1), rejected(2), claudeRateLimitEvent((info) => void (info["status"] = "allowed")));
+
+    expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 1791906000 });
+    events.splice(2, 1);
+    events.splice(3, 1);
+    expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 2 });
+  });
+
+  it("gives no resetsAt key when no event is rejected", () => {
+    const events = stopEvents();
+    events.splice(2, 1);
+
+    expect(quotaStopOf(events, 1)).toEqual({});
+    expect(quotaStopOf(events, 1)).not.toHaveProperty("resetsAt");
+  });
+
+  it("gives no resetsAt key when the rejected resetsAt is a string", () => {
+    const events = stopEvents();
+    events.splice(2, 1, rejected("soon"));
+
+    expect(quotaStopOf(events, 1)).not.toHaveProperty("resetsAt");
+    expect(quotaStopOf(events, 1)).toEqual({});
+  });
+
+  it("gives nothing when the 429 result is not the last event", () => {
+    const events = stopEvents();
+    events.push(claudeRateLimitEvent());
+
+    expect(quotaStopOf(events, 1)).toBeUndefined();
   });
 });
