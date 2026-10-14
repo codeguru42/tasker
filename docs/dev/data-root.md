@@ -17,6 +17,8 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | `<dataRoot>/clones/<slug>/worktrees/<shortRef>/` | The worktree of one task. |
 | `<dataRoot>/artifacts/` | The files that tasks produce. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/` | The files of one attempt of a task. The issue slug comes from the issue key. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/` | The plan files of one attempt. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/v<N>.md` | The plan text of revision N, a copy of the plan for people. |
 | `<dataRoot>/prompts/` | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks. |
 | `<dataRoot>/prompts/<version>.md` | One file for each prompt version. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
@@ -40,6 +42,28 @@ If a database of version 3 holds two active rows for one pair, the upgrade to ve
 The table is an append-only log. Each event belongs to one task. See [Writes from more than one process](#writes-from-more-than-one-process).
 
 Two triggers make the table append-only. An `UPDATE` or a `DELETE` on `events` fails. This holds for raw SQL too, not only for the store functions. A later cleanup of old events (`retentionDays`) must drop or replace these triggers in a new schema version.
+
+## `plan_revisions` table
+
+The table has one row for each plan that the assistant returned for a task. A revision is one such plan. A later revision comes from the feedback of the operator on an earlier one.
+
+These rules hold:
+
+- No store function deletes a row. After the insert, only the approval of a row changes.
+- The newest revision is the revision with the highest version.
+- A task can have many approved revisions over its life. The pinned revision is the approved revision with the highest version.
+- Only the newest revision can be approved. The approve and the clear of an approval share one transaction with the state move and the event, so a refused move leaves no approval behind.
+- A question is resolved when the next revision has no question with the same id. The answer is the feedback of that next revision. A question of the newest revision is open.
+
+The table has no check on the source of a revision, because later tickets add sources.
+
+### Plan files
+
+Each revision keeps its own file, so a later revision never overwrites an earlier plan. The row is the record. The file is a copy of the plan text for people to open in an editor.
+
+tasker writes the file before it adds the row. As a result, each row has its file. A file with no row comes only from a run that stopped between the two writes. The next run replaces that file. This is safe because the caller holds the task lock, and the next version is always one more than the highest row.
+
+tasker never changes or deletes the file of a revision that has a row.
 
 ## `default_base_branches` table
 
