@@ -2,11 +2,13 @@ import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  SPAWNING_STATES,
   STATES,
   TERMINAL_STATES,
   canTransition,
   failTask,
   failedFrom,
+  isSpawningState,
   isTaskState,
   transitionTask,
   type TaskState,
@@ -14,6 +16,31 @@ import {
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
 import { makeTempDir } from "../helpers.js";
+
+describe("spawning states", () => {
+  it("has the ten spawning states", () => {
+    expect([...SPAWNING_STATES].sort()).toEqual(
+      [
+        "planning",
+        "refining",
+        "executing",
+        "verifying",
+        "reviewing",
+        "pushing",
+        "opening_pr",
+        "merging",
+        "finishing",
+        "updating_branch",
+      ].sort(),
+    );
+  });
+
+  it("tells a spawning state from another state", () => {
+    expect(isSpawningState("executing")).toBe(true);
+    expect(isSpawningState("approved")).toBe(false);
+    expect(isSpawningState("nope")).toBe(false);
+  });
+});
 
 describe("task states", () => {
   it("declares the 28 states in order", () => {
