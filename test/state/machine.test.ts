@@ -8,6 +8,7 @@ import {
   failTask,
   failedFrom,
   isSpawningState,
+  isTerminalState,
   isTaskState,
   transitionTask,
   type TaskState,
@@ -38,6 +39,12 @@ describe("spawning states", () => {
     expect(isSpawningState("executing")).toBe(true);
     expect(isSpawningState("approved")).toBe(false);
     expect(isSpawningState("nope")).toBe(false);
+  });
+
+  it("tells a terminal state from another state", () => {
+    for (const state of TERMINAL_STATES) expect(isTerminalState(state)).toBe(true);
+    expect(isTerminalState("provisioning")).toBe(false);
+    expect(isTerminalState("nope")).toBe(false);
   });
 });
 

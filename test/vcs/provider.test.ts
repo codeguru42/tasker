@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../src/vcs/git/run.js";
-import { createVcsProvider } from "../../src/vcs/provider.js";
-import { makeProviderFixture, type ProviderFixture } from "../helpers.js";
+import { parseConfig } from "../../src/config/schema.js";
+import { createVcsProvider, vcsForRepo } from "../../src/vcs/provider.js";
+import { makeProviderFixture, type ProviderFixture, validConfig } from "../helpers.js";
 
 describe("createVcsProvider", () => {
   let fixture: ProviderFixture;
@@ -29,5 +30,18 @@ describe("createVcsProvider", () => {
     expect(
       (await runGit(["config", "--get", "remote.origin.url"], { gitDir: clone, env })).trim(),
     ).toBe(fixture.origin.path);
+  });
+});
+
+describe("vcsForRepo", () => {
+  it("gives the provider and the context of one repo", () => {
+    const config = parseConfig(validConfig(), {}, "/home/test");
+    const [key] = Object.keys(config.repos);
+    const env = { PATH: "/bin" };
+
+    const { vcs, ctx } = vcsForRepo(config, key, env);
+
+    expect(ctx).toEqual({ dataRoot: config.dataRoot, repoKey: key, env });
+    expect(vcs.provision).toBeTypeOf("function");
   });
 });

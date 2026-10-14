@@ -8,9 +8,11 @@ import {
   repoLockName,
   taskLockName,
   withLock,
+  withRepoLock,
+  withTaskLock,
 } from "../../src/store/locks.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { deadPid, failureOf, startLockHolder, useTempDir, waitUntil, withRawDatabase } from "../helpers.js";
+import { deadPid, failureOf, lockNames, startLockHolder, useTempDir, waitUntil, withRawDatabase } from "../helpers.js";
 
 const CLOCK = "2026-01-01T00:00:00.000Z";
 const NAME = "repo:alpha";
@@ -284,6 +286,49 @@ describe("named locks", () => {
       },
       30_000,
     );
+
+    describe("withTaskLock", () => {
+      it("holds the task lock with no wait and deletes it after fn", async () => {
+        const name = taskLockName("alpha", "o/r#1");
+        const value = await withTaskLock(store, "alpha", "o/r#1", () => {
+          expect(() => store.tryLock(name)).toThrow(`this process already holds the lock ${name}`);
+          return 7;
+        });
+        expect(value).toBe(7);
+        expect(lockNames(dir)).toEqual([]);
+      });
+
+      it("rejects with LockBusyError after one try", async () => {
+        const { fake, calls } = fakeStore([BUSY]);
+        let ran = false;
+        const error = await failureOf(
+          withTaskLock(fake, "alpha", "o/r#1", () => {
+            ran = true;
+          }),
+          LockBusyError,
+        );
+        expect(error.lockName).toBe(taskLockName("alpha", "o/r#1"));
+        expect(calls.tryLock).toHaveLength(1);
+        expect(ran).toBe(false);
+      });
+    });
+
+    describe("withRepoLock", () => {
+      it("holds the repo lock and deletes it after fn", async () => {
+        const name = repoLockName("alpha");
+        await withRepoLock(store, "alpha", 0, () => {
+          expect(() => store.tryLock(name)).toThrow(`this process already holds the lock ${name}`);
+        });
+        expect(lockNames(dir)).toEqual([]);
+      });
+
+      it("waits for the lock and gives the value of fn", async () => {
+        const { fake, calls } = fakeStore([BUSY, { held: true }]);
+        const value = await withRepoLock(fake, "alpha", 1000, () => 9);
+        expect(value).toBe(9);
+        expect(calls.tryLock).toHaveLength(2);
+      });
+    });
   });
 
   it(
