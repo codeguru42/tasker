@@ -116,13 +116,23 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 
 | Key | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `provider` | `"claude-code"`, `"copilot"` or `"pi"` | required | The assistant to run. |
+| `provider` | `"claude-code"`, `"copilot"` or `"pi"` | required | The assistant to run. The loader accepts `copilot` and `pi`, but they are not available in this version. |
 | `models` | object | required | Has the keys `plan`, `execute` and `review`. All three are required. |
 | `trustedExtensions` | list of non-empty strings | `[]` | The extensions that the assistant can trust. |
 | `account` | non-empty string | optional | The account to use. |
 | `correctiveTurns` | integer, 0 or more | `1` | How many corrective turns the assistant can take. |
 
 Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"` or `"high"`).
+
+The model and the effort of a role apply to new sessions only. A continued session keeps the provider, the model and the effort that it started with.
+
+For the `claude-code` provider, `model` must have one of these forms:
+
+- An alias: `sonnet`, `opus`, `haiku`, `opusplan` or `fable`.
+- A full id: `claude-` followed by lowercase letters, digits, `.` and `-`. For example, `claude-opus-5-5`.
+- Either form with the suffix `[1m]`. For example, `opus[1m]`.
+
+Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`. The providers `copilot` and `pi` have no model check.
 
 ## `forge`
 
