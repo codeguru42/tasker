@@ -1,6 +1,7 @@
-import { lstatSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, lstatSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { errnoCode } from "../src/errno.js";
 import { replaceFile } from "../src/replace-file.js";
 import { useTempDir } from "./helpers.js";
 
@@ -50,5 +51,66 @@ describe("replaceFile", () => {
 
     expect(readdirSync(dir).sort()).toEqual(["link", "target"]);
     expect(readdirSync(join(dir, "target"))).toEqual([]);
+  });
+
+  it("writes a new file when nothing is at the path", () => {
+    const dir = useTempDir("tasker-replace-");
+    const path = join(dir, "new.json");
+
+    replaceFile(path, "new");
+
+    expect(readFileSync(path, "utf8")).toBe("new");
+    expect(readdirSync(dir)).toEqual(["new.json"]);
+  });
+
+  it("gives a new file the mode of the option, also when the umask removes bits", () => {
+    const dir = useTempDir("tasker-replace-");
+    const path = join(dir, "hook");
+    const before = process.umask(0o077);
+    try {
+      replaceFile(path, "new", { mode: 0o755 });
+    } finally {
+      process.umask(before);
+    }
+
+    expect(statSync(path).mode & 0o7777).toBe(0o755);
+  });
+
+  it("gives an existing file the mode of the option", () => {
+    const dir = useTempDir("tasker-replace-");
+    const path = join(dir, "hook");
+    writeFileSync(path, "old", { mode: 0o600 });
+    chmodSync(path, 0o600);
+
+    replaceFile(path, "new", { mode: 0o755 });
+
+    expect(statSync(path).mode & 0o7777).toBe(0o755);
+  });
+
+  it("gives a new file with no mode the mode that the umask gives", () => {
+    const dir = useTempDir("tasker-replace-");
+    const path = join(dir, "plain");
+    const before = process.umask(0o022);
+    try {
+      replaceFile(path, "new");
+    } finally {
+      process.umask(before);
+    }
+
+    expect(statSync(path).mode & 0o7777).toBe(0o644);
+  });
+
+  it("throws ENOENT and leaves no file when the parent folder of a new file is missing", () => {
+    const dir = useTempDir("tasker-replace-");
+    let thrown: unknown;
+
+    try {
+      replaceFile(join(dir, "missing", "file"), "new");
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(errnoCode(thrown)).toBe("ENOENT");
+    expect(readdirSync(dir)).toEqual([]);
   });
 });
