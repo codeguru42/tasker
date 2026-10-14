@@ -119,6 +119,7 @@ These are the version-control values for an assistant run.
 - A key path that tasker cannot resolve (`~name/`, `~` or a relative path) throws, because a deny path that tasker cannot resolve leaves the key open.
 - For a symlinked key, the real path is denied too, because ssh opens the real file.
 - A missing key file gives the path alone, because ssh cannot open it either.
+- The surface gives the folder of the publish tokens, so that the assistant layer can deny reads of it.
 - The tracked paths of a workspace tell the assistant layer which of its candidate paths git tracks. One `git ls-files -z` call covers all candidates. Each candidate gets the `:(literal)` magic, because a name must not act as a pattern. A folder counts as tracked when it holds a tracked entry.
 - The shared folder of a workspace is the folder that all workspaces of the clone share. For git, this is the common git dir, read after the worktree guard.
 

@@ -18,6 +18,60 @@ A provider must send the prompt on stdin, never in argv. A prompt can be longer 
 
 A new session uses the provider, the model and the effort of the configuration. A continued session must use the provider, the model and the effort that it recorded when it started, also after the configuration changed. The session and its context belong to that assistant and that model. A change of the configuration applies to new sessions only.
 
+## The limits of each role
+
+A task runs the assistant in one of three roles: plan, execute or review. The plan and review roles share one set of limits and differ only in their model. The execute role has its own limits, because it does more steps than the other two.
+
+### The plan and review roles
+
+These roles run in the plan mode. They get no sandbox and no tool rule, except the deny rule that blocks `git push` for the shell. The deadline is the plan deadline of the configuration.
+
+The plan mode blocks `Edit` and `Write`, but it does not block a shell command that writes. A host test on `claude` 2.1.300 showed this. Tasker relies on the plan mode for the plan and review roles for now.
+
+### The execute role
+
+The execute role runs under the `dontAsk` permission mode. Under this mode, a tool call that no allow rule covers is denied. The deadline is the execute deadline of the configuration.
+
+The allow list holds these rules, in this order:
+
+- `Read`, `Glob` and `Grep`, each limited to the worktree.
+- `Edit` and `Write`, each limited to the worktree.
+- The shell, which runs in the sandbox.
+
+`Read`, `Glob` and `Grep` need a path rule. A plain `Glob` or `Grep` lists and searches files outside the worktree. A host test showed this. With a path rule, a call outside the worktree is denied. Without any `Glob` or `Grep` rule, the tools are not available at all.
+
+The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and for the shared git folder of the clone. A deny wins over an allow. As a result, git data changes only through `git` commands in the sandboxed shell.
+
+The sandbox follows the rules in [Sandbox](#sandbox). Its write paths and its shared folder come from the version control. Its read deny list holds these paths:
+
+- The ssh key of the repo. The version control gives it.
+- The `.ssh` folder of the operator.
+- The folder of the `gh` configuration.
+- The git credentials file and the `.netrc` file.
+- The credentials file of Claude Code.
+- The folder of the publish tokens of the repo. The version control gives it.
+- The configuration of tasker.
+
+Each entry goes in only when the variables that name it are set. A path that does not exist still goes in the list. The `claude` program reads its own credentials outside the sandbox, so the list denies only the shell.
+
+### The environment of the shell
+
+The shell of the assistant gets no GitHub token and no ssh agent. The filter of the phases drops them (see [phases.md](phases.md)). As a result, the assistant cannot push as the operator.
+
+### The limits of these roles
+
+- The network stays open.
+- The assistant can read files that the lists do not name.
+- The plan mode does not block a shell command that writes.
+- The plan mode lets the assistant write its plan file under the configuration folder of `claude`, outside the worktree.
+- Under `dontAsk`, an execute run cannot use a tool that the allow list does not hold, for example `WebFetch`.
+
+### The rules for the caller
+
+- The caller must move the task into a spawning state before the run starts.
+- The caller must record the session before the run starts.
+- For the execute role, the caller must build the prompt with the commit text that the run gives, and must replace the base ref placeholder in it.
+
 ## The claude-code provider
 
 The provider runs Claude Code in print mode. It sends the prompt on stdin and reads one event from each line of stdout. It makes no budget in money, because a money budget means nothing on a subscription.

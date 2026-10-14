@@ -19,6 +19,7 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/` | The files of one attempt of a task. The issue slug comes from the issue key. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/` | The plan files of one attempt. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/v<N>.md` | The plan text of revision N, a copy of the plan for people. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/sessions/` | The folder of the assistant sessions of one attempt. |
 | `<dataRoot>/prompts/` | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks. |
 | `<dataRoot>/prompts/<version>.md` | One file for each prompt version. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
