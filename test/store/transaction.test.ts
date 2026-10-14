@@ -3,7 +3,7 @@ import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { immediateTransaction, rollbackQuietly } from "../../src/store/transaction.js";
-import { makeTempDir, tableNames } from "../helpers.js";
+import { makeTempDir, tableNames, withRawDatabase } from "../helpers.js";
 
 describe("transaction", () => {
   let dir: string;
@@ -31,12 +31,7 @@ describe("transaction", () => {
       return 42;
     });
     expect(result).toBe(42);
-    const other = new DatabaseSync(path);
-    try {
-      expect(tableNames(other)).toEqual(["a"]);
-    } finally {
-      other.close();
-    }
+    withRawDatabase(path, (other) => expect(tableNames(other)).toEqual(["a"]));
   });
 
   it("rolls back and rethrows the same error when fn throws", () => {

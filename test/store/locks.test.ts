@@ -1,5 +1,4 @@
 import { existsSync, writeFileSync } from "node:fs";
-import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import {
@@ -11,7 +10,7 @@ import {
   withLock,
 } from "../../src/store/locks.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { deadPid, failureOf, startLockHolder, useTempDir, waitUntil } from "../helpers.js";
+import { deadPid, failureOf, startLockHolder, useTempDir, waitUntil, withRawDatabase } from "../helpers.js";
 
 const CLOCK = "2026-01-01T00:00:00.000Z";
 const NAME = "repo:alpha";
@@ -23,23 +22,17 @@ interface LockRow {
 }
 
 function readRow(dbPath: string, name: string): LockRow | undefined {
-  const db = new DatabaseSync(dbPath);
-  try {
-    return db.prepare("SELECT pid, acquired_at FROM locks WHERE name = ?").get(name) as
-      | LockRow
-      | undefined;
-  } finally {
-    db.close();
-  }
+  return withRawDatabase(
+    dbPath,
+    (db) =>
+      db.prepare("SELECT pid, acquired_at FROM locks WHERE name = ?").get(name) as LockRow | undefined,
+  );
 }
 
 function writeRow(dbPath: string, name: string, pid: number, acquiredAt: string): void {
-  const db = new DatabaseSync(dbPath);
-  try {
+  withRawDatabase(dbPath, (db) => {
     db.prepare("INSERT INTO locks (name, pid, acquired_at) VALUES (?, ?, ?)").run(name, pid, acquiredAt);
-  } finally {
-    db.close();
-  }
+  });
 }
 
 describe("named locks", () => {
