@@ -76,6 +76,12 @@ interface CommonRun {
   run(limits: RoleLimits, input: StartInput): Promise<RunOutcome>;
 }
 
+// The assistant surface of one configured repo.
+function assistantSurfaceOf(config: Config, repoKey: string, env: NodeJS.ProcessEnv): AssistantSurface {
+  const { vcs, ctx } = vcsForRepo(config, repoKey, env);
+  return vcs.assistantSurface(ctx);
+}
+
 // The one home of the steps that both entry points share. Neither entry point repeats one of them.
 function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
   const { config, store, task, env, session: request } = req;
@@ -87,10 +93,9 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
     ? createSessionProvider(request.recorded)
     : createAssistantProvider(task.repoKey, config.repos[task.repoKey]!, role);
   const sessionId = request.resume ? request.sessionId : randomUUID();
-  const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   return {
     worktree,
-    surface: vcs.assistantSurface(ctx),
+    surface: assistantSurfaceOf(config, task.repoKey, env),
     sessionId,
     session: {
       repoKey: task.repoKey,
@@ -181,8 +186,7 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
       allowWrite: await surface.sandboxWritePaths(wt),
       denyRead: executeReadDenyPaths({
         env: req.env,
-        surfaceDenyReadPaths: surface.denyReadPaths,
-        publishTokensPath: surface.publishTokensPath,
+        repos: Object.keys(req.config.repos).map((key) => assistantSurfaceOf(req.config, key, req.env)),
       }),
       trackedPaths: (paths) => surface.trackedPaths(wt, paths),
       sharedFolder: clone,
@@ -196,30 +200,41 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
   };
 }
 
+// The paths that one configured repo gives for the read deny list. AssistantSurface has both fields.
+export interface RepoReadDenyPaths {
+  denyReadPaths: readonly string[];
+  publishTokensPath: string;
+}
+
 // The one home of the read deny list of the shell of the execute role. No other code builds a part of it.
+// The list covers every configured repo, because with the key of any repo the shell can push to that repo.
 // Each entry goes in only when the variables that it needs are set. Every value comes from env, never from
 // the home folder of the host. A path that does not exist still goes in the list.
 export function executeReadDenyPaths(o: {
   env: NodeJS.ProcessEnv;
-  surfaceDenyReadPaths: readonly string[];
-  publishTokensPath: string;
+  repos: readonly RepoReadDenyPaths[];
 }): string[] {
-  const { env } = o;
+  const { env, repos } = o;
   const home = isSet(env.HOME) ? env.HOME : undefined;
-  const paths = [...o.surfaceDenyReadPaths];
-  if (home) paths.push(join(home, ".ssh"));
-  if (isSet(env.GH_CONFIG_DIR)) paths.push(env.GH_CONFIG_DIR);
-  else if (isSet(env.XDG_CONFIG_HOME)) paths.push(join(env.XDG_CONFIG_HOME, "gh"));
-  else if (home) paths.push(join(home, ".config", "gh"));
-  if (home) paths.push(join(home, ".git-credentials"), join(home, ".netrc"));
-  if (isSet(env.CLAUDE_CONFIG_DIR)) paths.push(join(env.CLAUDE_CONFIG_DIR, ".credentials.json"));
-  else if (home) paths.push(join(home, ".claude", ".credentials.json"));
-  paths.push(o.publishTokensPath);
+  const fromEnv: string[] = [];
+  if (home) fromEnv.push(join(home, ".ssh"));
+  if (isSet(env.GH_CONFIG_DIR)) fromEnv.push(env.GH_CONFIG_DIR);
+  else if (isSet(env.XDG_CONFIG_HOME)) fromEnv.push(join(env.XDG_CONFIG_HOME, "gh"));
+  else if (home) fromEnv.push(join(home, ".config", "gh"));
+  if (home) fromEnv.push(join(home, ".git-credentials"), join(home, ".netrc"));
+  if (isSet(env.CLAUDE_CONFIG_DIR)) fromEnv.push(join(env.CLAUDE_CONFIG_DIR, ".credentials.json"));
+  else if (home) fromEnv.push(join(home, ".claude", ".credentials.json"));
   // resolveConfigPath() reads its homedir argument only when TASKER_CONFIG and XDG_CONFIG_HOME are
   // unset, and the default of that argument is the home folder of the host. So the entry goes in
   // only when the env names the file or a folder for it, and the call never passes undefined.
-  if (isSet(env.TASKER_CONFIG) || isSet(env.XDG_CONFIG_HOME) || home !== undefined) {
-    paths.push(resolveConfigPath(env, home ?? ""));
-  }
-  return paths;
+  const configFile =
+    isSet(env.TASKER_CONFIG) || isSet(env.XDG_CONFIG_HOME) || home !== undefined
+      ? [resolveConfigPath(env, home ?? "")]
+      : [];
+  return [
+    ...repos.flatMap((repo) => repo.denyReadPaths),
+    ...fromEnv,
+    ...repos.map((repo) => repo.publishTokensPath),
+    ...configFile,
+  ];
 }
