@@ -5,7 +5,7 @@ import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
-import { claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
+import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
 import { removePlaceholders } from "./placeholders.js";
 import {
   LINUX_SANDBOX_PROGRAMS,
@@ -120,7 +120,7 @@ export function createClaudeCodeProvider(
       }
       if (!run.started) {
         return finish(
-          failureWithNoExit(input, run.notFound ? "claude is not installed or not on PATH" : run.error, events),
+          failureWithNoExit(input, run.notFound ? CLAUDE_NOT_INSTALLED : run.error, events),
         );
       }
       return finish(outcomeOf(input, run, events, readStream(events)));

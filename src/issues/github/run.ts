@@ -85,6 +85,11 @@ interface TokenRead {
 
 const tokens = new Map<string, TokenRead>();
 
+// Deletes the token read of account from tokens, but only when entry is still that read.
+function forgetToken(account: string, entry: TokenRead): void {
+  if (tokens.get(account) === entry) tokens.delete(account);
+}
+
 // The same error that runChild() gives when a signal aborts.
 function abortError(): Error {
   return Object.assign(new Error("The operation was aborted"), { name: "AbortError" });
@@ -181,9 +186,7 @@ function accountToken(
       leave();
       if (entry.waiters === 0 && !entry.settled) {
         entry.stop.abort();
-        if (tokens.get(account) === entry) {
-          tokens.delete(account);
-        }
+        forgetToken(account, entry);
       }
       reject(abortError());
     };
@@ -213,9 +216,7 @@ function startRead(account: string, env: NodeJS.ProcessEnv): TokenRead {
   };
   read.then(settle, settle);
   read.catch(() => {
-    if (tokens.get(account) === entry) {
-      tokens.delete(account);
-    }
+    forgetToken(account, entry);
   });
   return entry;
 }

@@ -50,6 +50,11 @@ function outcomeLine(result: GroupResult): string {
   return `--- exit code ${result.code}`;
 }
 
+// The marker holds the time of the finished run.
+function writeMarker(marker: string): void {
+  writeFileSync(marker, `${new Date().toISOString()}\n`);
+}
+
 // Runs the bootstrap commands one at a time under /bin/bash in cwd, with one deadline for the list.
 // The output and the outcome of each command go to the log. The marker records a finished run.
 export async function runBootstrap(options: BootstrapOptions): Promise<BootstrapResult> {
@@ -60,7 +65,7 @@ export async function runBootstrap(options: BootstrapOptions): Promise<Bootstrap
   appendFileSync(log, `=== bootstrap run ${new Date().toISOString()} ===\n`);
   if (options.commands.length === 0) {
     appendFileSync(log, "the repo has no bootstrap commands\n");
-    writeFileSync(marker, `${new Date().toISOString()}\n`);
+    writeMarker(marker);
     return { status: "ok" };
   }
   const deadline = Date.now() + options.timeoutMs;
@@ -91,6 +96,6 @@ export async function runBootstrap(options: BootstrapOptions): Promise<Bootstrap
       };
     }
   }
-  writeFileSync(marker, `${new Date().toISOString()}\n`);
+  writeMarker(marker);
   return { status: "ok" };
 }

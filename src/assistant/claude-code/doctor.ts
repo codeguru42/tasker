@@ -7,6 +7,9 @@ import { CommandNotFoundError, runChild } from "../../process/run-child.js";
 import { modelIssue } from "../models.js";
 import { isOnPath } from "./sandbox.js";
 
+// The detail when claude cannot start because it is missing or not on PATH.
+export const CLAUDE_NOT_INSTALLED = "claude is not installed or not on PATH";
+
 // Only a missing claude gets the fix, because only an install fixes that cause.
 export function claudeVersionCheck(timeoutMs = 5000): Check {
   return timedCheck({ name: "claude version", required: true, timeoutMs }, async (env, { signal }) => {
@@ -17,7 +20,7 @@ export function claudeVersionCheck(timeoutMs = 5000): Check {
       if (error instanceof CommandNotFoundError) {
         return {
           status: "error",
-          detail: "claude is not installed or not on PATH",
+          detail: CLAUDE_NOT_INSTALLED,
           remediation: "Install Claude Code and put claude on PATH.",
         };
       }
