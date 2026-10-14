@@ -774,6 +774,124 @@ describe("task store", () => {
       });
     });
 
+    describe("approval", () => {
+      const approvalEvent = (version: number) => ({ type: "approval", data: { version } });
+
+      const approve = (taskId: number, version: number, state = "approved") =>
+        store.approvePlanRevision(taskId, version, state, () => approvalEvent(version));
+
+      const clear = (taskId: number, state = "awaiting_plan_review") =>
+        store.clearPlanApproval(taskId, state, () => ({ type: "unapproval" }));
+
+      const reviewTask = () => store.createTask({ ...newTask, state: "awaiting_plan_review" });
+
+      it("approves the newest revision with the time of the clock", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        clock = new Date("2026-01-02T00:00:00.000Z");
+        const moved = approve(task.id, 1);
+        expect(moved.state).toBe("approved");
+        expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBe(clock.toISOString());
+        expect(store.listEvents(task.id).at(-1)).toMatchObject({
+          type: "approval",
+          at: clock.toISOString(),
+          data: { version: 1 },
+        });
+      });
+
+      it("sets the new time on a second approve", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        approve(task.id, 1);
+        clock = new Date("2026-01-03T00:00:00.000Z");
+        approve(task.id, 1, "approved");
+        expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBe(clock.toISOString());
+      });
+
+      it("refuses an older revision", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        seedPlanRevision(store, task.id);
+        expectNothingChanged(
+          task.id,
+          () => approve(task.id, 1),
+          `task ${task.id}: plan revision 1 is not the newest revision (2)`,
+        );
+      });
+
+      it("refuses a task with no revision", () => {
+        const task = reviewTask();
+        expectNothingChanged(task.id, () => approve(task.id, 1), `task ${task.id} has no plan revision 1`);
+      });
+
+      it("refuses a version that does not exist", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        expectNothingChanged(task.id, () => approve(task.id, 5), `task ${task.id} has no plan revision 5`);
+      });
+
+      it("writes nothing when check throws", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        expectNothingChanged(
+          task.id,
+          () =>
+            store.approvePlanRevision(task.id, 1, "approved", () => {
+              throw new Error("check refused");
+            }),
+          "check refused",
+        );
+      });
+
+      it("refuses a spawning state", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        expectNothingChanged(task.id, () => approve(task.id, 1, "planning"), "planning is a spawning state");
+      });
+
+      it("refuses a task that does not exist", () => {
+        const error = thrownBy(() => approve(9999, 1));
+        expect((error as Error).message).toBe("task not found: 9999");
+      });
+
+      it("refuses a clear when no revision is approved", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        expectNothingChanged(task.id, () => clear(task.id), `task ${task.id} has no approved plan revision`);
+      });
+
+      it("clears the approval, moves the state and writes the event", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        approve(task.id, 1);
+        clock = new Date("2026-01-04T00:00:00.000Z");
+        const moved = clear(task.id);
+        expect(moved.state).toBe("awaiting_plan_review");
+        expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBeNull();
+        expect(store.pinnedPlanRevision(task.id)).toBeUndefined();
+        expect(store.listEvents(task.id).at(-1)).toMatchObject({
+          type: "unapproval",
+          at: clock.toISOString(),
+        });
+      });
+
+      it("pins the approved revision with the highest version, also after a clear", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        approve(task.id, 1);
+        const firstTime = store.getPlanRevision(task.id, 1)?.approvedAt;
+        seedPlanRevision(store, task.id);
+        clock = new Date("2026-01-05T00:00:00.000Z");
+        seedPlanRevision(store, task.id);
+        approve(task.id, 3);
+        expect(store.pinnedPlanRevision(task.id)?.version).toBe(3);
+        clear(task.id);
+        expect(store.getPlanRevision(task.id, 3)?.approvedAt).toBeNull();
+        expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBe(firstTime);
+        expect(store.pinnedPlanRevision(task.id)?.version).toBe(1);
+      });
+    });
+
     it("keeps any source text, because the table has no check on it", () => {
       const task = store.createTask(newTask);
       withRawDatabase(dbPath, (db) => {
