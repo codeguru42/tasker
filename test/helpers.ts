@@ -1478,6 +1478,15 @@ export function claudeRateLimitEvent(edit: (info: Record<string, unknown>) => vo
   return event;
 }
 
+// The capture of claudeRateLimitEvent() with isUsingOverage true: an event that shows the start of paid usage.
+// Then edit changes its rate_limit_info. A test names each field that edit changes in its test name.
+export function claudeOverageEvent(edit: (info: Record<string, unknown>) => void = () => {}): AssistantEvent {
+  return claudeRateLimitEvent((info) => {
+    info["isUsingOverage"] = true;
+    edit(info);
+  });
+}
+
 export const TEST_SESSION_ID = "e5f6ebac-a40e-48af-befc-f9a7d1af4c5b";
 
 // A run input with the defaults of the assistant provider tests, new for each call. Later tickets use it

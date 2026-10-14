@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunOutcome } from "../../../src/assistant/provider.js";
 import { overageStopOf, quotaStopOf } from "../../../src/assistant/claude-code/quota.js";
-import { claudeRateLimitEvent, claudeSampleEvents, TEST_SESSION_ID } from "../../helpers.js";
+import {
+  claudeOverageEvent,
+  claudeRateLimitEvent,
+  claudeSampleEvents,
+  claudeSampleWithResult,
+  TEST_SESSION_ID,
+} from "../../helpers.js";
 
 function outcomeWith(events: AssistantEvent[]): RunOutcome {
   return { kind: "success", sessionId: TEST_SESSION_ID, events, permissionDenials: [], usage: "unavailable" };
@@ -210,11 +216,6 @@ describe("quotaStopOf", () => {
       info["status"] = "rejected";
       info["resetsAt"] = resetsAt;
     });
-  const stopEvents = (edit: (result: AssistantEvent) => void = () => {}) => {
-    const events = claudeSampleEvents("quota-stop");
-    edit(events.at(-1)!);
-    return events;
-  };
 
   it("gives the reset time of the rejected event for exit code 1", () => {
     expect(quotaStopOf(claudeSampleEvents("quota-stop"), 1)).toEqual({ resetsAt: 1791906000 });
@@ -236,18 +237,18 @@ describe("quotaStopOf", () => {
     ["api_error_status is 500", (r) => void (r["api_error_status"] = 500)],
     ["terminal_reason is completed", (r) => void (r["terminal_reason"] = "completed")],
   ])("gives nothing when %s", (_name, edit) => {
-    expect(quotaStopOf(stopEvents(edit), 1)).toBeUndefined();
+    expect(quotaStopOf(claudeSampleWithResult("quota-stop", edit), 1)).toBeUndefined();
   });
 
   it("still gives a stop when is_error is false, and the sample keeps its decoys", () => {
-    const events = stopEvents((r) => void (r["is_error"] = false));
+    const events = claudeSampleWithResult("quota-stop", (r) => void (r["is_error"] = false));
 
     expect(events.at(-1)).toMatchObject({ subtype: "success", stop_reason: "stop_sequence" });
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 1791906000 });
   });
 
   it("gives the flat resetsAt when the unified entry differs", () => {
-    const events = stopEvents();
+    const events = claudeSampleEvents("quota-stop");
     const info = events[2]!["rate_limit_info"] as Record<string, unknown>;
     info["resetsAt"] = 42;
 
@@ -255,21 +256,21 @@ describe("quotaStopOf", () => {
   });
 
   it("gives the last rejected event", () => {
-    const events = stopEvents();
+    const events = claudeSampleEvents("quota-stop");
     events.splice(2, 1, rejected(1), rejected(2));
 
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 2 });
   });
 
   it("does not count a later allowed event", () => {
-    const events = stopEvents();
+    const events = claudeSampleEvents("quota-stop");
     events.splice(3, 0, claudeRateLimitEvent((info) => void (info["status"] = "allowed")));
 
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 1791906000 });
   });
 
   it("gives no resetsAt key when no event is rejected", () => {
-    const events = stopEvents();
+    const events = claudeSampleEvents("quota-stop");
     events.splice(2, 1);
 
     expect(quotaStopOf(events, 1)).toEqual({});
@@ -277,7 +278,7 @@ describe("quotaStopOf", () => {
   });
 
   it("gives no resetsAt key when the rejected resetsAt is a string", () => {
-    const events = stopEvents();
+    const events = claudeSampleEvents("quota-stop");
     events.splice(2, 1, rejected("soon"));
 
     expect(quotaStopOf(events, 1)).not.toHaveProperty("resetsAt");
@@ -285,7 +286,7 @@ describe("quotaStopOf", () => {
   });
 
   it("gives nothing when the 429 result is not the last event", () => {
-    const events = stopEvents();
+    const events = claudeSampleEvents("quota-stop");
     events.push(claudeRateLimitEvent());
 
     expect(quotaStopOf(events, 1)).toBeUndefined();
@@ -293,29 +294,26 @@ describe("quotaStopOf", () => {
 });
 
 describe("overageStopOf", () => {
-  const using = (info: Info) => {
-    info["isUsingOverage"] = true;
-  };
   const windows = (info: Info) => info["unifiedWindows"] as Info;
 
-  it.each<[string, (info: Info) => void]>([
-    ["isUsingOverage is true", using],
+  it.each<[string, AssistantEvent]>([
+    ["isUsingOverage is true", claudeOverageEvent()],
     [
       "status is rejected and overageStatus is allowed",
-      (info) => {
+      claudeRateLimitEvent((info) => {
         info["status"] = "rejected";
         info["overageStatus"] = "allowed";
-      },
+      }),
     ],
     [
       "status is rejected and overageStatus is allowed_warning",
-      (info) => {
+      claudeRateLimitEvent((info) => {
         info["status"] = "rejected";
         info["overageStatus"] = "allowed_warning";
-      },
+      }),
     ],
-  ])("gives a stop when %s", (_name, edit) => {
-    expect(overageStopOf(claudeRateLimitEvent(edit), {})).toEqual({ resetsAt: 1792206000 });
+  ])("gives a stop when %s", (_name, event) => {
+    expect(overageStopOf(event, {})).toEqual({ resetsAt: 1792206000 });
   });
 
   it.each<[string, (info: Info) => void]>([
@@ -344,8 +342,7 @@ describe("overageStopOf", () => {
   });
 
   it("takes the unified resetsAt over a different flat one", () => {
-    const event = claudeRateLimitEvent((info) => {
-      using(info);
+    const event = claudeOverageEvent((info) => {
       info["resetsAt"] = 7;
     });
 
@@ -366,8 +363,7 @@ describe("overageStopOf", () => {
       },
     ],
   ])("takes the flat resetsAt when %s", (_name, edit) => {
-    const event = claudeRateLimitEvent((info) => {
-      using(info);
+    const event = claudeOverageEvent((info) => {
       info["resetsAt"] = 7;
       edit(info);
     });
@@ -376,8 +372,7 @@ describe("overageStopOf", () => {
   });
 
   it("takes the window with the highest use when rateLimitType is overage", () => {
-    const event = claudeRateLimitEvent((info) => {
-      using(info);
+    const event = claudeOverageEvent((info) => {
       info["rateLimitType"] = "overage";
       info["resetsAt"] = 7;
       (windows(info)["five_hour"] as Info)["utilization"] = 0.95;
@@ -387,8 +382,7 @@ describe("overageStopOf", () => {
   });
 
   it("skips a window whose use is a string", () => {
-    const event = claudeRateLimitEvent((info) => {
-      using(info);
+    const event = claudeOverageEvent((info) => {
       info["rateLimitType"] = "overage";
       (windows(info)["five_hour"] as Info)["utilization"] = "0.95";
     });
@@ -397,8 +391,7 @@ describe("overageStopOf", () => {
   });
 
   it("gives no resetsAt key when rateLimitType is overage and unifiedWindows is deleted", () => {
-    const event = claudeRateLimitEvent((info) => {
-      using(info);
+    const event = claudeOverageEvent((info) => {
       info["rateLimitType"] = "overage";
       delete info["unifiedWindows"];
     });
@@ -410,8 +403,7 @@ describe("overageStopOf", () => {
   });
 
   it("takes the window with the highest use when rateLimitType is deleted", () => {
-    const event = claudeRateLimitEvent((info) => {
-      using(info);
+    const event = claudeOverageEvent((info) => {
       delete info["rateLimitType"];
       (windows(info)["five_hour"] as Info)["utilization"] = 0.95;
     });
@@ -420,16 +412,15 @@ describe("overageStopOf", () => {
   });
 
   it("gives nothing when the window is the approved one", () => {
-    expect(overageStopOf(claudeRateLimitEvent(using), { approvedResetsAt: 1792206000 })).toBeUndefined();
+    expect(overageStopOf(claudeOverageEvent(), { approvedResetsAt: 1792206000 })).toBeUndefined();
   });
 
   it("gives a stop when the approved window is another one", () => {
-    expect(overageStopOf(claudeRateLimitEvent(using), { approvedResetsAt: 1 })).toEqual({ resetsAt: 1792206000 });
+    expect(overageStopOf(claudeOverageEvent(), { approvedResetsAt: 1 })).toEqual({ resetsAt: 1792206000 });
   });
 
   it("gives a stop when the event has no reset time and a window is approved", () => {
-    const event = claudeRateLimitEvent((info) => {
-      using(info);
+    const event = claudeOverageEvent((info) => {
       info["rateLimitType"] = "overage";
       delete info["unifiedWindows"];
     });

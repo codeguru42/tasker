@@ -24,6 +24,7 @@ import {
 import {
   addCloneCommit,
   captureIo,
+  claudeOverageEvent,
   claudeRateLimitEvent,
   claudeSample,
   claudeSampleEvents,
@@ -1486,6 +1487,32 @@ describe("claudeRateLimitEvent", () => {
     });
 
     expect(claudeRateLimitEvent()["rate_limit_info"]).toMatchObject({ utilization: 0.8 });
+  });
+});
+
+describe("claudeOverageEvent", () => {
+  it("gives the capture with isUsingOverage true and no other change", () => {
+    const expected = claudeRateLimitEvent((info) => {
+      info["isUsingOverage"] = true;
+    });
+
+    expect(claudeOverageEvent()).toEqual(expected);
+  });
+
+  it("runs the edit after the change", () => {
+    const event = claudeOverageEvent((info) => {
+      info["rateLimitType"] = "overage";
+    });
+
+    expect(event["rate_limit_info"]).toMatchObject({ isUsingOverage: true, rateLimitType: "overage" });
+  });
+
+  it("gives a new object for each call, so an edit does not leak", () => {
+    claudeOverageEvent((info) => {
+      info["utilization"] = 0.5;
+    });
+
+    expect(claudeOverageEvent()["rate_limit_info"]).toMatchObject({ utilization: 0.8 });
   });
 });
 

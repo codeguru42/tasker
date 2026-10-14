@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
 import {
+  claudeOverageEvent,
   claudeRateLimitEvent,
   claudeSample,
   claudeSampleEvents,
@@ -30,6 +31,15 @@ function run(
     .run(input(fake, overrides))
     .then((outcome) => ({ outcome, fake }));
 }
+
+// The first two lines of plain.jsonl: init and assistant.
+const head = () => claudeSample("plain").slice(0, 2);
+
+// A fake that writes head(), then event, and keeps running until it is stopped.
+const stopped = (event: AssistantEvent = claudeOverageEvent()): FakeClaudeControl => ({
+  stream: [...head(), JSON.stringify(event)],
+  untilStopped: true,
+});
 
 const lines = (events: AssistantEvent[]) => events.map((event) => JSON.stringify(event));
 
@@ -329,12 +339,12 @@ describe("createClaudeCodeProvider run with a quota stop", () => {
 });
 
 describe("createClaudeCodeProvider run with an overage stop", () => {
-  const overageEvent = (edit: (info: Record<string, unknown>) => void = (info) => void (info["isUsingOverage"] = true)) =>
-    JSON.stringify(claudeRateLimitEvent(edit));
-  const head = () => claudeSample("plain").slice(0, 2);
   // The full plain stream with the overage event before the result.
-  const fullWith = (event: string) => [...claudeSample("plain").slice(0, -1), event, claudeSample("plain").at(-1)!];
-  const stopped = (event = overageEvent()) => ({ stream: [...head(), event], untilStopped: true });
+  const fullWith = (event: AssistantEvent) => [
+    ...claudeSample("plain").slice(0, -1),
+    JSON.stringify(event),
+    claudeSample("plain").at(-1)!,
+  ];
   const overage = { kind: "quota", cause: "overage", resetsAt: 1792206000 };
 
   it("stops the child at once and gives overage, not timeout", { timeout: 15_000 }, async () => {
@@ -346,7 +356,7 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
   });
 
   it("stops when the status is rejected and overageStatus is allowed", { timeout: 15_000 }, async () => {
-    const event = overageEvent((info) => {
+    const event = claudeRateLimitEvent((info) => {
       info["status"] = "rejected";
       info["overageStatus"] = "allowed";
     });
@@ -357,31 +367,31 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
   });
 
   it("gives success when the approved window is the one that is spent", async () => {
-    const { outcome } = await run({ stream: fullWith(overageEvent()) }, { overageStop: { approvedResetsAt: 1792206000 } });
+    const { outcome } = await run({ stream: fullWith(claudeOverageEvent()) }, { overageStop: { approvedResetsAt: 1792206000 } });
 
     expect(outcome.kind).toBe("success");
   });
 
   it("gives overage when the approved window is another one", async () => {
-    const { outcome } = await run({ stream: fullWith(overageEvent()) }, { overageStop: { approvedResetsAt: 1 } });
+    const { outcome } = await run({ stream: fullWith(claudeOverageEvent()) }, { overageStop: { approvedResetsAt: 1 } });
 
     expect(outcome).toMatchObject(overage);
   });
 
   it("gives success when the run has no overage stop", async () => {
-    const { outcome } = await run({ stream: fullWith(overageEvent()) });
+    const { outcome } = await run({ stream: fullWith(claudeOverageEvent()) });
 
     expect(outcome.kind).toBe("success");
   });
 
   it("gives overage when claude exits 0 right after the event", async () => {
-    const { outcome } = await run({ stream: fullWith(overageEvent()) }, { overageStop: {} });
+    const { outcome } = await run({ stream: fullWith(claudeOverageEvent()) }, { overageStop: {} });
 
     expect(outcome).toMatchObject(overage);
   });
 
   it("gives success when overageStatus is rejected", async () => {
-    const event = overageEvent((info) => {
+    const event = claudeRateLimitEvent((info) => {
       info["status"] = "rejected";
     });
 
@@ -403,7 +413,7 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
   });
 
   it("keeps the events before a cut line", { timeout: 15_000 }, async () => {
-    const control = { stream: [...head(), overageEvent(), '{"type":"res'], untilStopped: true };
+    const control = { stream: [...head(), JSON.stringify(claudeOverageEvent()), '{"type":"res'], untilStopped: true };
 
     const { outcome } = await run(control, { overageStop: {}, timeoutMs: 10_000 });
 
@@ -412,7 +422,7 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
   });
 
   describe("when the deadline fires first", () => {
-    const control = () => ({ stream: head(), sigtermStream: [overageEvent()], untilStopped: true });
+    const control = () => ({ stream: head(), sigtermStream: [JSON.stringify(claudeOverageEvent())], untilStopped: true });
 
     it("gives overage, because the outcome rests on the event", { timeout: 20_000 }, async () => {
       const { outcome } = await run(control(), { overageStop: {}, timeoutMs: 3000 });
@@ -477,12 +487,7 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
   });
 
   it("keeps the cleanup for an overage stop", { timeout: 15_000 }, async () => {
-    const stream = [...claudeSample("plain").slice(0, 2), JSON.stringify(claudeRateLimitEvent((info) => void (info["isUsingOverage"] = true)))];
-
-    const { outcome } = await sandboxed(
-      { stream, untilStopped: true },
-      { timeoutMs: 10_000, overrides: { overageStop: {} } },
-    );
+    const { outcome } = await sandboxed(stopped(), { timeoutMs: 10_000, overrides: { overageStop: {} } });
 
     expect(outcome).toMatchObject({ kind: "quota", cause: "overage", sandboxCleanup: { removed: [] } });
   });
