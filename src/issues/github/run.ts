@@ -1,4 +1,10 @@
-import { type ChildResult, CommandNotFoundError, runChild } from "../../process/run-child.js";
+import {
+  ChildCommandError,
+  type ChildResult,
+  childFailureMessage,
+  CommandNotFoundError,
+  runChild,
+} from "../../process/run-child.js";
 
 export interface RunGhOptions {
   account: string;
@@ -7,12 +13,7 @@ export interface RunGhOptions {
   signal?: AbortSignal;
 }
 
-export class GhError extends Error {
-  readonly subcommand: string;
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number | null;
-
+export class GhError extends ChildCommandError {
   constructor(
     message: string,
     subcommand: string,
@@ -20,12 +21,8 @@ export class GhError extends Error {
     stderr: string,
     exitCode: number | null,
   ) {
-    super(message);
+    super(message, subcommand, stdout, stderr, exitCode);
     this.name = "GhError";
-    this.subcommand = subcommand;
-    this.stdout = stdout;
-    this.stderr = stderr;
-    this.exitCode = exitCode;
   }
 }
 
@@ -272,22 +269,5 @@ async function spawnGh(
   const subcommand = subcommandOf(args);
   const shownStdout = mode.dropStdout ? "" : hide(stdout);
   const stderr = hide(result.stderr);
-  if (code === null) {
-    throw new GhError(
-      `gh ${subcommand} was stopped by signal ${signal}`,
-      subcommand,
-      shownStdout,
-      stderr,
-      null,
-    );
-  }
-  const detail = stderr.trim();
-  const reason = detail === "" ? "" : `: ${detail}`;
-  throw new GhError(
-    `gh ${subcommand} failed with exit code ${code}${reason}`,
-    subcommand,
-    shownStdout,
-    stderr,
-    code,
-  );
+  throw new GhError(childFailureMessage("gh", subcommand, code, signal, stderr), subcommand, shownStdout, stderr, code);
 }

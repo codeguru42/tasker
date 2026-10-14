@@ -1,7 +1,14 @@
 import { existsSync, statSync } from "node:fs";
 import { errnoCode } from "../../errno.js";
 import { errorMessage } from "../../error-message.js";
-import { assertPathSet, type ChildResult, CommandNotFoundError, runChild } from "../../process/run-child.js";
+import {
+  assertPathSet,
+  ChildCommandError,
+  type ChildResult,
+  childFailureMessage,
+  CommandNotFoundError,
+  runChild,
+} from "../../process/run-child.js";
 
 // Where git runs. cwd: a folder in a work tree, for any command that needs one.
 // gitDir: the bare clone that tasker made, and nothing else. Git runs with
@@ -15,12 +22,7 @@ export type GitLocation = { cwd: string } | { gitDir: string };
 // signal stops git with SIGTERM and rejects with an AbortError. An ssh child of git can keep running.
 export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv; signal?: AbortSignal };
 
-export class GitError extends Error {
-  readonly subcommand: string;
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number | null;
-
+export class GitError extends ChildCommandError {
   constructor(
     message: string,
     subcommand: string,
@@ -28,12 +30,8 @@ export class GitError extends Error {
     stderr: string,
     exitCode: number | null,
   ) {
-    super(message);
+    super(message, subcommand, stdout, stderr, exitCode);
     this.name = "GitError";
-    this.subcommand = subcommand;
-    this.stdout = stdout;
-    this.stderr = stderr;
-    this.exitCode = exitCode;
   }
 }
 
@@ -177,24 +175,7 @@ async function spawnGit(
   if (code === 0) {
     return stdout;
   }
-  if (code === null) {
-    throw new GitError(
-      `git ${subcommand} was stopped by signal ${stopSignal}`,
-      subcommand,
-      stdout,
-      stderr,
-      null,
-    );
-  }
-  const detail = stderr.trim();
-  const reason = detail === "" ? "" : `: ${detail}`;
-  throw new GitError(
-    `git ${subcommand} failed with exit code ${code}${reason}`,
-    subcommand,
-    stdout,
-    stderr,
-    code,
-  );
+  throw new GitError(childFailureMessage("git", subcommand, code, stopSignal, stderr), subcommand, stdout, stderr, code);
 }
 
 function isFolder(path: string): boolean {

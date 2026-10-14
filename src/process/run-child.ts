@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { detailSuffix } from "../detail-suffix.js";
 
 export interface RunChildOptions {
   cwd?: string;
@@ -87,4 +88,38 @@ export function runChild(command: string, args: readonly string[], options: RunC
       });
     });
   });
+}
+
+// The error of a child command that stopped with a failure. A tool, such as git, extends it and sets its own name.
+export class ChildCommandError extends Error {
+  readonly subcommand: string;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly exitCode: number | null;
+
+  constructor(
+    message: string,
+    subcommand: string,
+    stdout: string,
+    stderr: string,
+    exitCode: number | null,
+  ) {
+    super(message);
+    this.subcommand = subcommand;
+    this.stdout = stdout;
+    this.stderr = stderr;
+    this.exitCode = exitCode;
+  }
+}
+
+// The message for a child that did not exit with code 0. code is null when a signal stopped it.
+export function childFailureMessage(
+  tool: string,
+  subcommand: string,
+  code: number | null,
+  signal: NodeJS.Signals | null,
+  stderr: string,
+): string {
+  if (code === null) return `${tool} ${subcommand} was stopped by signal ${signal}`;
+  return `${tool} ${subcommand} failed with exit code ${code}${detailSuffix(stderr.trim())}`;
 }
