@@ -3,23 +3,19 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
-import { claudeSample, type FakeClaude, type FakeClaudeControl, useFakeClaude, useTempDir } from "../../helpers.js";
-
-const SESSION_ID = "e5f6ebac-a40e-48af-befc-f9a7d1af4c5b";
+import {
+  claudeSample,
+  claudeSampleWithResult,
+  type FakeClaude,
+  type FakeClaudeControl,
+  runInput,
+  TEST_SESSION_ID,
+  useFakeClaude,
+  useTempDir,
+} from "../../helpers.js";
 
 function input(fake: FakeClaude, overrides: Partial<RunInput> = {}): RunInput {
-  return {
-    sessionId: SESSION_ID,
-    resume: false,
-    prompt: "say hello",
-    cwd: useTempDir("tasker-claude-cwd-"),
-    env: fake.env,
-    timeoutMs: 20_000,
-    sessionDir: "/sessions",
-    model: "haiku",
-    effort: "low",
-    ...overrides,
-  };
+  return runInput({ cwd: useTempDir("tasker-claude-cwd-"), env: fake.env, ...overrides });
 }
 
 function run(
@@ -32,13 +28,7 @@ function run(
     .then((outcome) => ({ outcome, fake }));
 }
 
-// The sample lines, with the last line (the result) changed by edit.
-function withResult(name: string, edit: (result: Record<string, unknown>) => void): string[] {
-  const lines = claudeSample(name);
-  const result = JSON.parse(lines.pop()!) as Record<string, unknown>;
-  edit(result);
-  return [...lines, JSON.stringify(result)];
-}
+const lines = (events: AssistantEvent[]) => events.map((event) => JSON.stringify(event));
 
 function failureOf(outcome: RunOutcome): Extract<RunOutcome, { kind: "failure" }> {
   expect(outcome.kind).toBe("failure");
@@ -63,7 +53,7 @@ describe("createClaudeCodeProvider run", () => {
       "stream-json",
       "--verbose",
       "--session-id",
-      SESSION_ID,
+      TEST_SESSION_ID,
       "--model",
       "haiku",
       "--effort",
@@ -72,7 +62,7 @@ describe("createClaudeCodeProvider run", () => {
     expect(calls[0]!.stdin).toBe("say hello");
     expect(outcome).toEqual({
       kind: "success",
-      sessionId: SESSION_ID,
+      sessionId: TEST_SESSION_ID,
       events,
       permissionDenials: [],
       usage: { inputTokens: 2, outputTokens: 4, cacheCreationInputTokens: 14964, cacheReadInputTokens: 10978 },
@@ -122,7 +112,7 @@ describe("createClaudeCodeProvider run", () => {
   });
 
   it("fails when a schema was given and the result has no structured output", async () => {
-    const stream = withResult("json-schema", (result) => delete result["structured_output"]);
+    const stream = lines(claudeSampleWithResult("json-schema", (result) => delete result["structured_output"]));
 
     const { outcome } = await run({ stream }, { jsonSchema: { type: "object" } });
 
@@ -164,10 +154,12 @@ describe("createClaudeCodeProvider run", () => {
   });
 
   it("fails with the text of a result that has is_error true, before the exit code", async () => {
-    const stream = withResult("plain", (result) => {
+    const stream = lines(
+      claudeSampleWithResult("plain", (result) => {
       result["is_error"] = true;
       result["result"] = "Credit balance is too low";
-    });
+      }),
+    );
 
     const { outcome } = await run({ stream, exitCode: 1, stderr: "ignored" });
 
@@ -179,11 +171,13 @@ describe("createClaudeCodeProvider run", () => {
   });
 
   it("falls back to the subtype when an error result has no text", async () => {
-    const stream = withResult("plain", (result) => {
+    const stream = lines(
+      claudeSampleWithResult("plain", (result) => {
       result["is_error"] = true;
       result["subtype"] = "error_during_execution";
       delete result["result"];
-    });
+      }),
+    );
 
     const { outcome } = await run({ stream, exitCode: 1 });
 
@@ -191,11 +185,13 @@ describe("createClaudeCodeProvider run", () => {
   });
 
   it("falls back to a general text when an error result has no text and no subtype", async () => {
-    const stream = withResult("plain", (result) => {
+    const stream = lines(
+      claudeSampleWithResult("plain", (result) => {
       result["is_error"] = true;
       delete result["result"];
       delete result["subtype"];
-    });
+      }),
+    );
 
     const { outcome } = await run({ stream });
 
@@ -203,9 +199,11 @@ describe("createClaudeCodeProvider run", () => {
   });
 
   it("gives the denials of a result that has is_error true", async () => {
-    const stream = withResult("denied-tool", (result) => {
+    const stream = lines(
+      claudeSampleWithResult("denied-tool", (result) => {
       result["is_error"] = true;
-    });
+      }),
+    );
 
     const { outcome } = await run({ stream });
 
@@ -258,7 +256,7 @@ describe("createClaudeCodeProvider run", () => {
 
     expect(outcome).toEqual({
       kind: "failure",
-      sessionId: SESSION_ID,
+      sessionId: TEST_SESSION_ID,
       events: [],
       permissionDenials: [],
       usage: "unavailable",

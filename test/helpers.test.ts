@@ -25,6 +25,8 @@ import {
   addCloneCommit,
   captureIo,
   claudeSample,
+  claudeSampleEvents,
+  claudeSampleWithResult,
   commitInWorktree,
   configIssuesOf,
   dayAt,
@@ -46,6 +48,7 @@ import {
   makeGitOrigin,
   readPidFile,
   runCommand,
+  runInput,
   savePid,
   seedTasks,
   signalListenerCounts,
@@ -54,6 +57,7 @@ import {
   startFixture,
   startWriteLockHolder,
   taskNames,
+  TEST_SESSION_ID,
   taskWorkspaceState,
   threeRepoConfig,
   useConfigFile,
@@ -1347,6 +1351,77 @@ describe("claudeSample", () => {
     expect(lines).toHaveLength(4);
     expect(JSON.parse(lines[0]!)).toMatchObject({ type: "system", subtype: "init" });
     expect(JSON.parse(lines.at(-1)!)).toMatchObject({ type: "result" });
+  });
+});
+
+describe("runInput", () => {
+  it("gives the defaults, with the shared session id", () => {
+    expect(runInput()).toEqual({
+      sessionId: TEST_SESSION_ID,
+      resume: false,
+      prompt: "say hello",
+      cwd: "/work",
+      env: {},
+      timeoutMs: 20_000,
+      sessionDir: "/sessions",
+      model: "haiku",
+      effort: "low",
+    });
+  });
+
+  it("lets an override win and keeps the other defaults", () => {
+    const input = runInput({ resume: true, model: "opus" });
+
+    expect(input).toMatchObject({ resume: true, model: "opus", effort: "low", prompt: "say hello" });
+  });
+
+  it("gives a new object for each call", () => {
+    const first = runInput();
+    first.prompt = "changed";
+    (first.env as Record<string, string>)["X"] = "1";
+
+    expect(runInput().prompt).toBe("say hello");
+    expect(runInput().env).toEqual({});
+  });
+});
+
+describe("claudeSampleEvents", () => {
+  it("gives each line of a sample as a parsed event", () => {
+    const events = claudeSampleEvents("plain");
+
+    expect(events).toHaveLength(4);
+    expect(events).toEqual(claudeSample("plain").map((line) => JSON.parse(line)));
+  });
+
+  it("gives new objects for each call", () => {
+    claudeSampleEvents("plain")[0]!["type"] = "changed";
+
+    expect(claudeSampleEvents("plain")[0]!["type"]).toBe("system");
+  });
+});
+
+describe("claudeSampleWithResult", () => {
+  it("gives the events with the last one edited", () => {
+    const events = claudeSampleWithResult("plain", (result) => {
+      result["is_error"] = true;
+    });
+
+    expect(events).toHaveLength(4);
+    expect(events.at(-1)).toMatchObject({ type: "result", is_error: true });
+    expect(events.slice(0, -1)).toEqual(claudeSampleEvents("plain").slice(0, -1));
+  });
+
+  it("does not change the sample file or a later read", () => {
+    const lines = claudeSample("plain");
+    const events = claudeSampleEvents("plain");
+
+    claudeSampleWithResult("plain", (result) => {
+      result["is_error"] = true;
+      delete result["usage"];
+    });
+
+    expect(claudeSample("plain")).toEqual(lines);
+    expect(claudeSampleEvents("plain")).toEqual(events);
   });
 });
 

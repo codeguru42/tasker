@@ -19,6 +19,7 @@ import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "no
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, onTestFinished, vi } from "vitest";
+import type { AssistantEvent, RunInput } from "../src/assistant/provider.js";
 import { type Io, type RegisterCommand, run } from "../src/cli.js";
 import { start } from "../src/commands/start.js";
 import { loadConfig } from "../src/config/load.js";
@@ -1441,6 +1442,38 @@ export interface FakeClaude {
 export function claudeSample(name: string): string[] {
   const path = fileURLToPath(new URL(`fixtures/claude-streams/${name}.jsonl`, import.meta.url));
   return readFileSync(path, "utf8").split("\n").filter((line) => line !== "");
+}
+
+// Each line of a sample, parsed. Each call parses again, so each call gives new objects.
+export function claudeSampleEvents(name: string): AssistantEvent[] {
+  return claudeSample(name).map((line) => JSON.parse(line) as AssistantEvent);
+}
+
+// The events of a sample, with the last event (the result) changed by edit.
+// The events come from a new parse, so the edit never reaches the sample file or a later read.
+export function claudeSampleWithResult(name: string, edit: (result: AssistantEvent) => void): AssistantEvent[] {
+  const events = claudeSampleEvents(name);
+  edit(events.at(-1)!);
+  return events;
+}
+
+export const TEST_SESSION_ID = "e5f6ebac-a40e-48af-befc-f9a7d1af4c5b";
+
+// A run input with the defaults of the assistant provider tests, new for each call. Later tickets use it
+// for each provider. A test that starts a child passes a real cwd and env.
+export function runInput(overrides: Partial<RunInput> = {}): RunInput {
+  return {
+    sessionId: TEST_SESSION_ID,
+    resume: false,
+    prompt: "say hello",
+    cwd: "/work",
+    env: {},
+    timeoutMs: 20_000,
+    sessionDir: "/sessions",
+    model: "haiku",
+    effort: "low",
+    ...overrides,
+  };
 }
 
 // Makes a fake claude on a new temp folder, and removes it after the test. Call it inside a test.
