@@ -939,13 +939,13 @@ describe("task store", () => {
         expect(store.endRun(task.id, "executed").state).toBe("executed");
       });
 
-      it("refuses a task that is not in a spawning state", () => {
+      it("moves a task that is not in a spawning state and deletes a stale marker", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
-        expectNothingChanged(
-          task.id,
-          () => store.endRun(task.id, "executed"),
-          `task ${task.id} is not in a spawning state: approved`,
-        );
+        writeRunPid(task.id, "executing", deadPid());
+        const moved = store.endRun(task.id, "executed", transition);
+        expect(moved).toMatchObject({ id: task.id, state: "executed" });
+        expect(readRun(task.id)).toBeUndefined();
+        expect(store.listEvents(task.id).at(-1)).toMatchObject({ type: "transition", data: { to: "executed" } });
       });
 
       it("refuses a spawning state as the target", () => {
