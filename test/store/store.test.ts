@@ -892,6 +892,54 @@ describe("task store", () => {
       });
     });
 
+    describe("questions", () => {
+      const questionsOf = (taskId: number, version: number) => store.planQuestions(taskId, version);
+
+      const a = { id: "a", question: "Which branch?", context: "No base is named." };
+      const b = { id: "b", question: "Which test runner?", context: "Two exist." };
+
+      it("resolves a question that the next revision drops, with the feedback as the answer", () => {
+        const task = store.createTask(newTask);
+        seedPlanRevision(store, task.id, { answer: validPlanAnswer({ questions: [a, b] }) });
+        seedPlanRevision(store, task.id, {
+          source: "refine",
+          feedback: "use main",
+          answer: validPlanAnswer({ questions: [a] }),
+        });
+        expect(questionsOf(task.id, 1)).toEqual([
+          { question: a, state: "open" },
+          { question: b, state: "resolved", version: 2, answer: "use main" },
+        ]);
+      });
+
+      it("keeps a question open when the next revision keeps its id with new text", () => {
+        const task = store.createTask(newTask);
+        seedPlanRevision(store, task.id, { answer: validPlanAnswer({ questions: [a] }) });
+        const reworded = { ...a, question: "Which branch is the base?" };
+        seedPlanRevision(store, task.id, {
+          source: "refine",
+          feedback: "unclear",
+          answer: validPlanAnswer({ questions: [reworded] }),
+        });
+        expect(questionsOf(task.id, 1)).toEqual([{ question: a, state: "open" }]);
+      });
+
+      it("opens every question of the newest revision", () => {
+        const task = store.createTask(newTask);
+        seedPlanRevision(store, task.id, { answer: validPlanAnswer({ questions: [a, b] }) });
+        expect(questionsOf(task.id, 1)).toEqual([
+          { question: a, state: "open" },
+          { question: b, state: "open" },
+        ]);
+      });
+
+      it("refuses a revision that does not exist", () => {
+        const task = store.createTask(newTask);
+        const error = thrownBy(() => questionsOf(task.id, 5));
+        expect((error as Error).message).toBe(`task ${task.id} has no plan revision 5`);
+      });
+    });
+
     it("keeps any source text, because the table has no check on it", () => {
       const task = store.createTask(newTask);
       withRawDatabase(dbPath, (db) => {
