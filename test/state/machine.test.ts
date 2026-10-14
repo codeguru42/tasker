@@ -6,8 +6,10 @@ import {
   STATES,
   TERMINAL_STATES,
   canTransition,
+  enterSpawningState,
   failTask,
   failedFrom,
+  leaveSpawningState,
   isSpawningState,
   isTaskState,
   transitionTask,
@@ -320,6 +322,56 @@ describe("task transitions", () => {
         "illegal state transition: planning -> finished",
       );
       expect(store.getTask(task.id)!.state).toBe("planning");
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("enterSpawningState and leaveSpawningState", () => {
+    it("enters a spawning state, writes the run marker and a transition event", () => {
+      const task = store.createTask(newTask("approved"));
+      const moved = enterSpawningState(store, task.id, "executing");
+      expect(moved.state).toBe("executing");
+      expect(store.getTask(task.id)!.state).toBe("executing");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.listEvents(task.id).at(-1)).toMatchObject({
+        type: "transition",
+        data: { from: "approved", to: "executing" },
+      });
+    });
+
+    it("refuses an illegal edge into a spawning state and writes no marker", () => {
+      const task = store.createTask(newTask("workspace_ready"));
+      const before = store.listEvents(task.id);
+      expect(() => enterSpawningState(store, task.id, "executing")).toThrow(
+        "illegal state transition: workspace_ready -> executing",
+      );
+      expect(store.getTask(task.id)!.state).toBe("workspace_ready");
+      expect(store.listEvents(task.id)).toEqual(before);
+      expect(enterSpawningState(store, task.id, "planning").state).toBe("planning");
+    });
+
+    it("leaves a spawning state, deletes the run marker and writes a transition event", () => {
+      const task = store.createTask(newTask("approved"));
+      enterSpawningState(store, task.id, "executing");
+      const moved = leaveSpawningState(store, task.id, "executed");
+      expect(moved.state).toBe("executed");
+      expect(store.getTask(task.id)!.state).toBe("executed");
+      expect(store.listEvents(task.id).at(-1)).toMatchObject({
+        type: "transition",
+        data: { from: "executing", to: "executed" },
+      });
+      expect(enterSpawningState(store, task.id, "verifying").state).toBe("verifying");
+    });
+
+    it("refuses an illegal edge out of a spawning state and keeps the run marker", () => {
+      const task = store.createTask(newTask("approved"));
+      enterSpawningState(store, task.id, "executing");
+      const before = store.listEvents(task.id);
+      expect(() => leaveSpawningState(store, task.id, "approved")).toThrow(
+        "illegal state transition: executing -> approved",
+      );
+      expect(store.getTask(task.id)!.state).toBe("executing");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
       expect(store.listEvents(task.id)).toEqual(before);
     });
   });
