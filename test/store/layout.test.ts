@@ -6,10 +6,12 @@ import {
   dataRootLayout,
   doctorProbePath,
   planRevisionPath,
+  planTranscriptPath,
   taskArtifactsDir,
   taskLogsDir,
   taskPlansDir,
   taskSessionsDir,
+  taskTranscriptsDir,
 } from "../../src/store/layout.js";
 import { useTempDir } from "../helpers.js";
 
@@ -98,6 +100,36 @@ describe("planRevisionPath", () => {
   it("makes no file and no folder", () => {
     const root = useTempDir("tasker-data-");
     const path = planRevisionPath(root, { issueKey: "PROJ-7", attempt: 1 }, 1);
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("taskTranscriptsDir", () => {
+  it("puts the transcripts in the transcripts folder of the files of the attempt", () => {
+    expect(taskTranscriptsDir("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 })).toBe(
+      "/d/artifacts/codeguru42-tasker-10/attempt-2/transcripts",
+    );
+  });
+
+  it("makes no folder", () => {
+    const root = useTempDir("tasker-data-");
+    const path = taskTranscriptsDir(root, { issueKey: "PROJ-7", attempt: 1 });
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("planTranscriptPath", () => {
+  it("names the transcript of a plan version plan-v<N>.jsonl in the transcripts folder", () => {
+    expect(planTranscriptPath("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 }, 3)).toBe(
+      "/d/artifacts/codeguru42-tasker-10/attempt-2/transcripts/plan-v3.jsonl",
+    );
+  });
+
+  it("makes no file and no folder", () => {
+    const root = useTempDir("tasker-data-");
+    const path = planTranscriptPath(root, { issueKey: "PROJ-7", attempt: 1 }, 1);
     expect(existsSync(path)).toBe(false);
     expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
   });
