@@ -10,6 +10,7 @@ import { ConfigError, parseConfig } from "../src/config/schema.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
+import { childEnv } from "../src/process/child-env.js";
 import { type TaskStore } from "../src/store/store.js";
 import { taskLogsDir } from "../src/store/layout.js";
 import { repoPaths } from "../src/vcs/git/repo-paths.js";
@@ -23,6 +24,7 @@ import {
 import {
   addCloneCommit,
   captureIo,
+  claudeSample,
   commitInWorktree,
   configIssuesOf,
   dayAt,
@@ -55,6 +57,7 @@ import {
   taskWorkspaceState,
   threeRepoConfig,
   useConfigFile,
+  useFakeClaude,
   useProcessEnv,
   useTempDir,
   useStartedTask,
@@ -1327,5 +1330,95 @@ describe("taskWorkspaceState", () => {
       listed: true,
       branch: true,
     });
+  });
+});
+
+// Runs the fake claude with the env of the caller and the given stdin.
+function runClaude(env: NodeJS.ProcessEnv, args: string[], input = "") {
+  return spawnSync("claude", args, { env, input, encoding: "utf8" });
+}
+
+describe("claudeSample", () => {
+  it("gives the lines of a recorded stream, with no empty last item", () => {
+    const lines = claudeSample("plain");
+
+    expect(lines).toHaveLength(4);
+    expect(JSON.parse(lines[0]!)).toMatchObject({ type: "system", subtype: "init" });
+    expect(JSON.parse(lines.at(-1)!)).toMatchObject({ type: "result" });
+  });
+});
+
+describe("useFakeClaude", () => {
+  it("plays back a sample on stdout and logs argv, stdin and env names", () => {
+    const stream = claudeSample("plain");
+    const fake = useFakeClaude({ stream });
+
+    const result = runClaude(fake.env, ["-p", "--model", "opus"], "say hello");
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`${stream.join("\n")}\n`);
+    const calls = fake.calls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.argv).toEqual(["-p", "--model", "opus"]);
+    expect(calls[0]!.stdin).toBe("say hello");
+    expect(calls[0]!.envNames).toEqual(expect.arrayContaining(["HOME", "PATH"]));
+  });
+
+  it("gives [] before the fake runs, and one call for each run", () => {
+    const fake = useFakeClaude({});
+    expect(fake.calls()).toEqual([]);
+
+    runClaude(fake.env, ["a"]);
+    runClaude(fake.env, ["b"]);
+
+    expect(fake.calls().map((call) => call.argv)).toEqual([["a"], ["b"]]);
+  });
+
+  it("writes stderr and exits with the exit code", () => {
+    const fake = useFakeClaude({ stderr: "bad\n", exitCode: 3 });
+
+    const result = runClaude(fake.env, ["-p"]);
+
+    expect(result.status).toBe(3);
+    expect(result.stderr).toBe("bad\n");
+    expect(fake.calls()).toHaveLength(1);
+  });
+
+  it("answers --version from the version control, and not a run", () => {
+    const fake = useFakeClaude({
+      stream: claudeSample("plain"),
+      version: { stdout: "2.1.299 (Claude Code)\n", exitCode: 0 },
+    });
+
+    const result = runClaude(fake.env, ["--version"]);
+
+    expect(result.stdout).toBe("2.1.299 (Claude Code)\n");
+    expect(result.status).toBe(0);
+  });
+
+  it("ends with the signal of killWith after the output", () => {
+    const fake = useFakeClaude({ stream: ["{}"], killWith: "SIGKILL" });
+
+    const result = runClaude(fake.env, ["-p"]);
+
+    expect(result.signal).toBe("SIGKILL");
+    expect(result.stdout).toBe("{}\n");
+  });
+
+  it("does not read a control name from the env", () => {
+    const fake = useFakeClaude({ stream: ["{}"] });
+    const env = childEnv(
+      { ...fake.env, TASKER_FAKE_CLAUDE_EXIT: "9", FAKE_CLAUDE_EXIT: "9", ANTHROPIC_API_KEY: "k" },
+      [],
+    );
+
+    const result = runClaude(env, ["-p"]);
+
+    expect(result.status).toBe(0);
+    const names = fake.calls()[0]!.envNames;
+    expect(names).toEqual(expect.arrayContaining(["HOME", "PATH"]));
+    expect(names).not.toContain("TASKER_FAKE_CLAUDE_EXIT");
+    expect(names).not.toContain("FAKE_CLAUDE_EXIT");
+    expect(names).not.toContain("ANTHROPIC_API_KEY");
   });
 });

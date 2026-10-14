@@ -1385,3 +1385,70 @@ export function configWithTrackers(trackers: Trackers): Config {
   );
   return parseConfig(raw, {}, "/home/test");
 }
+
+// What the fake claude does (see useFakeClaude()).
+export interface FakeClaudeControl {
+  // The stdout lines. Each line gets a newline.
+  stream?: string[];
+  stderr?: string;
+  exitCode?: number;
+  // After the output is flushed, the fake sends this signal to itself.
+  killWith?: NodeJS.Signals;
+  // The wait after the output and before the exit.
+  sleepMs?: number;
+  // The fake ignores SIGTERM.
+  ignoreSigterm?: boolean;
+  // The answer when the only argument is --version.
+  version?: { stdout: string; stderr?: string; exitCode?: number; sleepMs?: number };
+}
+
+// One call that the fake claude logged.
+export interface FakeClaudeCall {
+  argv: string[];
+  stdin: string;
+  // The sorted names of the env of the fake.
+  envNames: string[];
+}
+
+export interface FakeClaude {
+  // The folder with the claude program. Put it on PATH.
+  binDir: string;
+  // A minimal env that finds the fake: PATH and HOME.
+  env: { PATH: string; HOME: string };
+  // The calls so far, in order. It gives [] when the fake never ran.
+  calls(): FakeClaudeCall[];
+}
+
+// The lines of test/fixtures/claude-streams/<name>.jsonl, with no empty last item.
+export function claudeSample(name: string): string[] {
+  const path = fileURLToPath(new URL(`fixtures/claude-streams/${name}.jsonl`, import.meta.url));
+  return readFileSync(path, "utf8").split("\n").filter((line) => line !== "");
+}
+
+// Makes a fake claude on a new temp folder, and removes it after the test. Call it inside a test.
+// The fake gets its control only from a file, because childEnv() drops every other control name.
+export function useFakeClaude(control: FakeClaudeControl): FakeClaude {
+  const dir = useTempDir("tasker-fake-claude-");
+  const binDir = join(dir, "bin");
+  const logPath = join(dir, "calls.log");
+  const controlPath = join(dir, "control.json");
+  writeFileSync(controlPath, JSON.stringify({ ...control, logPath }));
+  const fixture = fileURLToPath(new URL("fixtures/fake-claude.ts", import.meta.url));
+  const loader = import.meta.resolve("tsx");
+  writeFakeCommand(
+    binDir,
+    "claude",
+    `exec ${[process.execPath, "--import", loader, fixture, controlPath].map(shellQuote).join(" ")} "$@"`,
+  );
+  return {
+    binDir,
+    env: { PATH: binDir, HOME: dir },
+    calls: () =>
+      existsSync(logPath)
+        ? readFileSync(logPath, "utf8")
+            .split("\n")
+            .filter((line) => line !== "")
+            .map((line) => JSON.parse(line) as FakeClaudeCall)
+        : [],
+  };
+}
