@@ -20,6 +20,8 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/` | The plan files of one attempt. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/v<N>.md` | The plan text of revision N, a copy of the plan for people. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/sessions/` | The folder of the assistant sessions of one attempt. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/` | The transcripts of one attempt. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/plan-v<N>.jsonl` | The transcript of the planning run of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker plan` writes it. |
 | `<dataRoot>/prompts/` | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks. |
 | `<dataRoot>/prompts/<version>.md` | One file for each prompt version. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
@@ -65,6 +67,18 @@ Each revision keeps its own file, so a later revision never overwrites an earlie
 tasker writes the file before it adds the row. As a result, each row has its file. A file with no row comes only from a run that stopped between the two writes. The next run replaces that file. This is safe because the caller holds the task lock, and the next version is always one more than the highest row.
 
 tasker never changes or deletes the file of a revision that has a row.
+
+## `sessions` table
+
+The table has one row for each assistant session of a task. A session is one conversation of the assistant. Today the only role is plan.
+
+tasker writes the record before the run. [assistants.md](assistants.md#the-session-id) gives the reason. A continued session reads its provider, model and effort from the record. [assistants.md](assistants.md#new-and-continued-sessions) gives the reason.
+
+These rules hold:
+
+- The record is written once. A second record with the same id writes nothing, also when the model or the effort differ. A second record with another id is an error that names both ids. A second id hides the conversation that the task must continue.
+- A task has one plan session at most. The unique rule covers only the plan role, because execute sessions (M7) follow other rules.
+- No store function deletes a row.
 
 ## `default_base_branches` table
 
