@@ -5,8 +5,10 @@ import {
   createDataRoot,
   dataRootLayout,
   doctorProbePath,
+  planRevisionPath,
   taskArtifactsDir,
   taskLogsDir,
+  taskPlansDir,
 } from "../../src/store/layout.js";
 import { useTempDir } from "../helpers.js";
 
@@ -52,6 +54,35 @@ describe("taskLogsDir", () => {
   it("makes no folder", () => {
     const root = useTempDir("tasker-data-");
     const path = taskLogsDir(root, { issueKey: "PROJ-7", attempt: 1 });
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("taskPlansDir", () => {
+  it("puts the plan files in the plans folder of the files of the attempt", () => {
+    expect(taskPlansDir("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 })).toBe(
+      "/d/artifacts/codeguru42-tasker-10/attempt-2/plans",
+    );
+  });
+
+  it("makes no folder", () => {
+    const root = useTempDir("tasker-data-");
+    const path = taskPlansDir(root, { issueKey: "PROJ-7", attempt: 1 });
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("planRevisionPath", () => {
+  it("names the file of a revision v<N>.md in the plans folder", () => {
+    const task = { issueKey: "codeguru42/tasker#10", attempt: 2 };
+    expect(planRevisionPath("/d", task, 3)).toBe(join(taskPlansDir("/d", task), "v3.md"));
+  });
+
+  it("makes no file and no folder", () => {
+    const root = useTempDir("tasker-data-");
+    const path = planRevisionPath(root, { issueKey: "PROJ-7", attempt: 1 }, 1);
     expect(existsSync(path)).toBe(false);
     expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
   });
