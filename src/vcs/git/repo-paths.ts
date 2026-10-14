@@ -26,7 +26,8 @@ export function repoPaths(dataRoot: string, repoKey: string): RepoPaths {
   const layout = dataRootLayout(dataRoot);
   const slug = repoSlug(repoKey);
   return {
-    clone: join(layout.clones, slug, "repo.git"),
+    // The name must not end in .git. docs/dev/version-control.md (Sandbox write paths) gives the reason.
+    clone: join(layout.clones, slug, "bare-repo"),
     publishTokens: join(layout.clones, slug, "publish-tokens"),
     worktrees: join(layout.clones, slug, "worktrees"),
   };
