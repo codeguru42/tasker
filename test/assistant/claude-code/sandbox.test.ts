@@ -4,6 +4,7 @@ import { describe, expect, it, onTestFinished } from "vitest";
 import {
   isOnPath,
   sandboxHostRefusal,
+  sharedFolderRefusal,
   sandboxSettings,
   sandboxSocketFolder,
 } from "../../../src/assistant/claude-code/sandbox.js";
@@ -192,5 +193,29 @@ describe("sandboxHostRefusal", () => {
     expect(sandboxHostRefusal("linux", { PATH: "" })).toBe(
       "the claude-code sandbox needs bwrap, and bwrap is not on PATH",
     );
+  });
+});
+
+describe("sharedFolderRefusal", () => {
+  const reason =
+    "the shared git folder of the worktree has a name that ends in .git, and claude then makes all of it writable";
+
+  it("refuses a shared folder with a name that ends in .git, with no path in the reason", () => {
+    const refusal = sharedFolderRefusal("/data/clones/x.git");
+
+    expect(refusal).toBe(reason);
+    expect(refusal).not.toContain("/data");
+  });
+
+  it("refuses a shared folder that ends in .git and in the separator", () => {
+    expect(sharedFolderRefusal("/data/clones/x.git/")).toBe(reason);
+  });
+
+  it("passes a shared folder named bare-repo", () => {
+    expect(sharedFolderRefusal("/data/clones/owner-repo/bare-repo")).toBeUndefined();
+  });
+
+  it("passes a shared folder whose parent, and not the folder, ends in .git", () => {
+    expect(sharedFolderRefusal("/data/x.git/bare-repo")).toBeUndefined();
   });
 });
