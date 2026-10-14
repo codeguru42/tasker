@@ -804,18 +804,18 @@ describe("task store", () => {
       expect(readRun(task.id)).toMatchObject({ task_id: task.id, pid: process.pid });
     });
 
-    describe("startRun", () => {
-      // Checks that a failed call changed no state, no marker row and no event.
-      const expectNothingChanged = (id: number, run: () => unknown, message: string | RegExp) => {
-        const state = store.getTask(id)?.state;
-        const marker = readRun(id);
-        const events = eventCount();
-        expect(run).toThrow(message);
-        expect(store.getTask(id)?.state).toBe(state);
-        expect(readRun(id)).toEqual(marker);
-        expect(eventCount()).toBe(events);
-      };
+    // Checks that a failed call changed no state, no marker row and no event.
+    const expectNothingChanged = (id: number, run: () => unknown, message: string | RegExp) => {
+      const state = store.getTask(id)?.state;
+      const marker = readRun(id);
+      const events = eventCount();
+      expect(run).toThrow(message);
+      expect(store.getTask(id)?.state).toBe(state);
+      expect(readRun(id)).toEqual(marker);
+      expect(eventCount()).toBe(events);
+    };
 
+    describe("startRun", () => {
       it("moves the task into the spawning state and writes the marker", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
         const moved = store.startRun(task.id, "executing");
@@ -878,6 +878,34 @@ describe("task store", () => {
 
       it("throws for a missing task", () => {
         expect(() => store.startRun(9999, "executing")).toThrow("task not found: 9999");
+      });
+    });
+
+    describe("setRunChildPid", () => {
+      it("adds the child pid to the marker of this process", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        store.startRun(task.id, "executing");
+        store.setRunChildPid(task.id, 4242);
+        expect(readRun(task.id)?.child_pid).toBe(4242);
+      });
+
+      it("throws when the task has no marker", () => {
+        const task = store.createTask({ ...newTask, state: "executing" });
+        expectNothingChanged(
+          task.id,
+          () => store.setRunChildPid(task.id, 4242),
+          `task ${task.id} has no run marker of this process`,
+        );
+      });
+
+      it("throws when the marker belongs to another process", () => {
+        const task = store.createTask({ ...newTask, state: "executing" });
+        writeRunPid(task.id, "executing", deadPid());
+        expectNothingChanged(
+          task.id,
+          () => store.setRunChildPid(task.id, 4242),
+          `task ${task.id} has no run marker of this process`,
+        );
       });
     });
   });
