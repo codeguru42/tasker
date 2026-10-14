@@ -1,9 +1,9 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join, resolve } from "node:path";
+import { replaceFile } from "../../replace-file.js";
 import type { GitLocation } from "./run.js";
 import { runRemoteGit, shellQuote } from "./ssh.js";
-import { writeThroughTemp } from "./temp-write.js";
 
 // The pre-push hook. It accepts a push that has a valid token and deletes the token file.
 function hookScript(publishTokens: string): string {
@@ -30,7 +30,9 @@ export function installPushHook(clone: string, publishTokens: string): void {
   const hooks = join(clone, "hooks");
   try {
     mkdirSync(hooks, { recursive: true });
-    writeThroughTemp(join(hooks, "pre-push"), hookScript(publishTokens), 0o755);
+    // An older tasker wrote its temp file under this fixed name.
+    rmSync(join(hooks, "pre-push.tmp"), { force: true });
+    replaceFile(join(hooks, "pre-push"), hookScript(publishTokens), { mode: 0o755 });
   } catch (error) {
     throw new Error(`cannot install the pre-push hook in the clone: ${clone}`, { cause: error });
   }

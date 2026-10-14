@@ -1,10 +1,10 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { replaceFile } from "../../replace-file.js";
 import { fetchOrigin } from "./changes.js";
 import type { GitVcsConfig } from "./config.js";
 import { installPushHook } from "./push-guard.js";
 import { GitError, isGitExit, runGit } from "./run.js";
-import { writeThroughTemp } from "./temp-write.js";
 import { cloneUrl, remoteCwd, remoteNotAnswering, runRemoteGit, sshCommand } from "./ssh.js";
 
 const INCLUDE_FILE = "tasker-ssh.config";
@@ -117,7 +117,7 @@ function writeIncludeFile(clone: string, sshKey: string | undefined): void {
       .replaceAll("\n", "\\n");
     content = `[core]\n\tsshCommand = "${value}"\n`;
   }
-  writeThroughTemp(join(clone, INCLUDE_FILE), content);
+  replaceFile(join(clone, INCLUDE_FILE), content);
 }
 
 async function setOrUnset(
