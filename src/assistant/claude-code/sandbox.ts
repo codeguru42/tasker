@@ -1,5 +1,5 @@
 import { accessSync, constants, realpathSync, statSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { basename, delimiter, join } from "node:path";
 import { canonicalPath, isInside } from "../../real-path.js";
 import type { SandboxLimits } from "../provider.js";
 
@@ -90,4 +90,13 @@ export function sandboxHostRefusal(platform: NodeJS.Platform, env: NodeJS.Proces
     if (!isOnPath(program, env)) return `the claude-code sandbox needs ${program}, and ${program} is not on PATH`;
   }
   return undefined;
+}
+
+// claude 2.1.299 reads the .git file of its cwd. When the shared git folder of the worktree has a name
+// that ends in ".git", claude adds all of that folder to its sandbox write list. The version control
+// layer gives the shared folder. This guard applies only the rule of claude. The reason holds no path.
+export function sharedFolderRefusal(sharedFolder: string): string | undefined {
+  return basename(sharedFolder).endsWith(".git")
+    ? "the shared git folder of the worktree has a name that ends in .git, and claude then makes all of it writable"
+    : undefined;
 }
