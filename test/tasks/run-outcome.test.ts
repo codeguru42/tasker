@@ -70,3 +70,43 @@ describe("applyRunOutcome with a success", () => {
     expect(events).toEqual([{ type: "usage", data: { usage: "unavailable" } }]);
   });
 });
+
+describe("applyRunOutcome with a failure or a timeout", () => {
+  const failure: RunOutcome = {
+    kind: "failure",
+    ...base(),
+    exitCode: 2,
+    signal: null,
+    reason: "claude exited with code 2",
+  };
+  const timeout: RunOutcome = { kind: "timeout", ...base() };
+
+  it.each([
+    ["a failure", failure, "planning failed: claude exited with code 2"],
+    ["a timeout", timeout, "planning timed out after 30 min"],
+  ])("fails the task for %s", (_name, outcome, error) => {
+    const { result, state, marker, events, io } = applyTo(outcome);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(state).toBe("failed");
+    expect(marker).toBeUndefined();
+    expect(events).toEqual([
+      { type: "usage", data: { usage: USAGE } },
+      { type: "transition", data: { from: "planning", to: "failed", error } },
+    ]);
+    expect(io.err).toEqual([`${error}\n`]);
+    expect(io.out).toEqual([]);
+  });
+
+  it("records the usage of a failure when it is unavailable", () => {
+    const { events } = applyTo({ ...failure, usage: "unavailable" });
+
+    expect(events).toEqual([
+      { type: "usage", data: { usage: "unavailable" } },
+      {
+        type: "transition",
+        data: { from: "planning", to: "failed", error: "planning failed: claude exited with code 2" },
+      },
+    ]);
+  });
+});
