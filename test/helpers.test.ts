@@ -47,6 +47,7 @@ import {
   runCommand,
   savePid,
   seedTasks,
+  signalListenerCounts,
   spawnTasker,
   sshKeyArgs,
   startFixture,
@@ -881,6 +882,21 @@ describe("readPidFile", () => {
     const path = join(useTempDir("tasker-pid-file-"), "pid");
 
     await expect(readPidFile(path, 150)).rejects.toThrow();
+  });
+});
+
+describe("signalListenerCounts", () => {
+  it("counts the SIGINT and SIGTERM listeners of this process", () => {
+    const before = signalListenerCounts();
+    const noop = () => {};
+    process.on("SIGINT", noop);
+    process.on("SIGTERM", noop);
+    onTestFinished(() => {
+      process.off("SIGINT", noop);
+      process.off("SIGTERM", noop);
+    });
+
+    expect(signalListenerCounts()).toEqual([before[0]! + 1, before[1]! + 1]);
   });
 });
 
