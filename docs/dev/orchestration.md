@@ -18,6 +18,7 @@ The orchestrator does all the steps of this section.
 
 - Take tickets only from the Todo column of the project board, and only from the current milestone. Do not start a ticket from a later milestone.
 - Start a ticket only when all the issues that block it are closed.
+- Each time a ticket lands, read the board again: the open issues of the milestone and the issues that block them. A new issue can join a milestone while a run is in progress. In one milestone, a new issue stayed in Todo for hours, because the orchestrator read the board only at the start.
 - Run at most 3 agents at the same time, one ticket for each agent.
 - Do not run two tickets at the same time when both edit the same shared file, for example `test/helpers.ts` or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands.
 - When a ticket starts, the orchestrator moves its card to In progress. `tasker start` does not move the card. The board moves the card to Done when `tasker finish` closes the issue.
