@@ -10,6 +10,7 @@ import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import {
   captureIo,
   dayAt,
+  eventsOf,
   ghTokenAnswer,
   lockNames,
   runCommand,
@@ -26,15 +27,6 @@ import {
 } from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
-
-// The events of the only task of the issue, as { type, data }.
-function eventsOf(dataRoot: string): { type: string; data: unknown }[] {
-  return withDataRootStore(dataRoot, (store) => {
-    const task = store.findLatestTask("codeguru42/tasker", KEY);
-    if (task === undefined) throw new Error("no task");
-    return store.listEvents(task.id).map(({ type, data }) => ({ type, data }));
-  });
-}
 
 // Makes sure that the task failed in provisioning with an error, and that stderr holds the notes
 // that came before the error, then that error.
@@ -86,7 +78,7 @@ describe("start", () => {
         `worktree: ${names.worktree}\n`,
     });
     expect(existsSync(join(names.worktree, "bootstrap.ran"))).toBe(true);
-    const events = eventsOf(dataRoot);
+    const events = eventsOf(dataRoot, KEY);
     expect(events.map((event) => event.type)).toEqual([
       "created",
       "base",
@@ -112,7 +104,7 @@ describe("start", () => {
 
     expect(result.code).toBe(0);
     expect(result.out).toContain("base: dev\n");
-    expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "dev", source: "learned" });
+    expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "dev", source: "learned" });
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
@@ -126,7 +118,7 @@ describe("start", () => {
 
     expect(result).toMatchObject({ code: 0, err: "" });
     expect(result.out).toContain("base: dev\n");
-    expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "dev", source: "hint" });
+    expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "dev", source: "hint" });
     withDataRootStore(fixture.dataRoot, (store) => {
       expect(store.getDefaultBaseBranch(fixture.repoKey)).toBeUndefined();
     });
@@ -141,7 +133,7 @@ describe("start", () => {
 
     expect(result.code).toBe(0);
     expect(result.out).toContain("base: dev\n");
-    expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "dev", source: "explicit" });
+    expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "dev", source: "explicit" });
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
@@ -154,7 +146,7 @@ describe("start", () => {
     expect(code).toBe(0);
     expect(io.questions).toEqual(["Base branch for codeguru42/tasker: "]);
     expect(io.out.join("")).toContain("base: main\n");
-    expect(eventsOf(fixture.dataRoot)[1].data).toMatchObject({ base: "main", source: "ask" });
+    expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "main", source: "ask" });
     withDataRootStore(fixture.dataRoot, (store) => {
       expect(store.getDefaultBaseBranch(fixture.repoKey)).toBe("main");
     });
@@ -210,7 +202,7 @@ describe("start", () => {
     const result = await runCommand(start, "start", KEY);
 
     expectFailed(fixture.dataRoot, result, "tasker saved main as the default base branch of codeguru42/tasker.\n");
-    expect(eventsOf(fixture.dataRoot).map((event) => event.type)).toEqual([
+    expect(eventsOf(fixture.dataRoot, KEY).map((event) => event.type)).toEqual([
       "created",
       "base",
       "transition",
@@ -231,7 +223,7 @@ describe("start", () => {
       "tasker saved main as the default base branch of codeguru42/tasker.\n" +
         `${error}\nthe last 20 lines of the log:\n${tail}--- exit code 3\n`,
     );
-    const events = eventsOf(fixture.dataRoot);
+    const events = eventsOf(fixture.dataRoot, KEY);
     expect(events.map((event) => event.type)).toEqual([
       "created",
       "base",
@@ -263,7 +255,7 @@ describe("start", () => {
 
       expect(result.code).toBe(0);
       expect(result.out).toContain("state: workspace_ready\n");
-      const events = eventsOf(fixture.dataRoot);
+      const events = eventsOf(fixture.dataRoot, KEY);
       expect(events.filter((event) => event.type === "created")).toHaveLength(1);
       expect(events.find((event) => event.type === "transition" && (event.data as { from: string }).from === "failed")?.data)
         .toMatchObject({ from: "failed", to: "provisioning" });
@@ -290,7 +282,7 @@ describe("start", () => {
           state: "workspace_ready",
         });
       });
-      expect(eventsOf(fixture.dataRoot).filter((event) => event.type === "created")).toHaveLength(1);
+      expect(eventsOf(fixture.dataRoot, KEY).filter((event) => event.type === "created")).toHaveLength(1);
       expect(lockNames(fixture.dataRoot)).toEqual([]);
     });
 
@@ -325,13 +317,13 @@ describe("start", () => {
     it("prints the task again after a success and changes nothing", async () => {
       const fixture = await useStartFixture();
       const first = await runCommand(start, "start", KEY);
-      const count = eventsOf(fixture.dataRoot).length;
+      const count = eventsOf(fixture.dataRoot, KEY).length;
 
       const second = await runCommand(start, "start", KEY);
 
       expect(second.code).toBe(0);
       expect(second.out).toBe(`task already started\n${first.out}`);
-      expect(eventsOf(fixture.dataRoot)).toHaveLength(count);
+      expect(eventsOf(fixture.dataRoot, KEY)).toHaveLength(count);
       expect(lockNames(fixture.dataRoot)).toEqual([]);
     });
 

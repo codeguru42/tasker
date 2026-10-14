@@ -34,6 +34,7 @@ import {
   configIssuesOf,
   dayAt,
   deadPid,
+  eventsOf,
   failureOf,
   fakeGh,
   fakeSsh,
@@ -634,6 +635,35 @@ describe("seedTasks", () => {
         tasks.map((t) => t.id),
       );
     });
+  });
+});
+
+describe("eventsOf", () => {
+  it("gives the events of the task in order", () => {
+    const dataRoot = join(useTempDir("tasker-events-"), "data");
+    seedTasks(dataRoot, [
+      {
+        issueKey: "codeguru42/tasker#9",
+        repoKey: "codeguru42/tasker",
+        state: "provisioning",
+        at: dayAt(1),
+        failWith: "boom",
+      },
+    ]);
+
+    expect(eventsOf(dataRoot, "codeguru42/tasker#9")).toEqual([
+      { type: "created", data: { state: "provisioning" } },
+      { type: "transition", data: { from: "provisioning", to: "failed", error: "boom" } },
+    ]);
+  });
+
+  it("throws for an issue key with no task", () => {
+    const dataRoot = join(useTempDir("tasker-events-"), "data");
+    withDataRootStore(dataRoot, () => {});
+
+    expect((thrownBy(() => eventsOf(dataRoot, "codeguru42/tasker#9")) as Error).message).toBe(
+      "no task of codeguru42/tasker#9",
+    );
   });
 });
 

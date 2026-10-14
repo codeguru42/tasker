@@ -628,6 +628,15 @@ export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) =>
   return withStoreFile(createDataRoot(dataRoot).database, fn, options);
 }
 
+// The events of the latest task of issueKey in the repo codeguru42/tasker, as { type, data }.
+export function eventsOf(dataRoot: string, issueKey: string): { type: string; data: unknown }[] {
+  return withDataRootStore(dataRoot, (store) => {
+    const task = store.findLatestTask("codeguru42/tasker", issueKey);
+    if (task === undefined) throw new Error(`no task of ${issueKey}`);
+    return store.listEvents(task.id).map(({ type, data }) => ({ type, data }));
+  });
+}
+
 // Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
 export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] {
   let at = new Date(0);
