@@ -108,6 +108,7 @@ export interface TaskStore extends LockStore {
   findActiveTask(repoKey: string, issueKey: string): Task | undefined;
   // The active task when one exists, else the task with the highest id.
   findLatestTask(repoKey: string, issueKey: string): Task | undefined;
+  // A low-level write with no run marker rule. A state move goes through transitionTask.
   // The event that check returns is appended in the same transaction as the row write.
   updateTask(
     id: number,

@@ -199,15 +199,18 @@ function transitionCheck(to: TaskState, detail?: TransitionDetail) {
   };
 }
 
-// Writes the new state and one transition event { ...detail, from, to } in one transaction.
-// An illegal edge writes nothing: no state change and no event.
+// Writes the new state, the run marker change and one transition event { ...detail, from, to } in
+// one transaction. A move into a spawning state writes the marker, and each other move deletes it.
+// The target alone picks the store function, so no read of the task happens outside the transaction.
+// An illegal edge writes nothing: no state change, no marker change and no event.
 export function transitionTask(
   store: TaskStore,
   id: number,
   to: TaskState,
   detail?: TransitionDetail,
 ): Task {
-  return store.updateTask(id, { state: to }, transitionCheck(to, detail));
+  const check = transitionCheck(to, detail);
+  return isSpawningState(to) ? store.startRun(id, to, check) : store.endRun(id, to, check);
 }
 
 // transitionTask for a move into a spawning state. The move writes the run marker too.
