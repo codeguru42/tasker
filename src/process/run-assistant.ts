@@ -2,6 +2,8 @@ import { spawn } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
 import { type GroupResult, superviseGroup } from "./run-group.js";
 
+const STDERR_TAIL_BYTES = 64 * 1024;
+
 export interface RunAssistantOptions {
   cwd: string;
   env: NodeJS.ProcessEnv;
@@ -33,24 +35,30 @@ function lineSplitter(onLine: (line: string) => void) {
 
 // Runs file with args as an assistant child in a new process group and session.
 // The prompt goes to stdin, and stdin closes after it. Each line of stdout goes to onLine.
-// The group, the deadline and the signals follow superviseGroup.
-export function runAssistant(
+// The group, the deadline and the signals follow superviseGroup. Stderr never goes to the terminal.
+// The result holds the last 64 KiB of stderr.
+export async function runAssistant(
   file: string,
   args: readonly string[],
   options: RunAssistantOptions,
-): Promise<GroupResult> {
+): Promise<GroupResult & { stderrTail: string }> {
   const child = spawn(file, [...args], {
     cwd: options.cwd,
     env: options.env,
     detached: true,
-    stdio: ["pipe", "pipe", "ignore"],
+    stdio: ["pipe", "pipe", "pipe"],
   });
   const pid = child.pid!;
   child.stdin.on("error", () => {}); // the result comes from the exit, and an EPIPE only means that the child exited before it read the whole prompt
   const splitter = lineSplitter(options.onLine);
   child.stdout.on("data", splitter.write);
   child.stdout.on("end", splitter.end);
+  let tail = Buffer.alloc(0);
+  child.stderr.on("data", (chunk: Buffer) => {
+    tail = Buffer.concat([tail, chunk]).subarray(-STDERR_TAIL_BYTES);
+  });
   options.onSpawn(pid);
   child.stdin.end(options.prompt, "utf8");
-  return superviseGroup(child, pid, { deadline: options.deadline });
+  const result = await superviseGroup(child, pid, { deadline: options.deadline });
+  return { ...result, stderrTail: tail.toString("utf8") };
 }
