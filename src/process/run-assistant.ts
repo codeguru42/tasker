@@ -37,6 +37,7 @@ function lineSplitter(onLine: (line: string) => void) {
 // Runs file with args as an assistant child in a new process group and session.
 // The prompt goes to stdin, and stdin closes after it. Each line of stdout goes to onLine.
 // The group, the deadline and the signals follow superviseGroup. Stderr never goes to the terminal.
+// When the leader exits, the group is stopped as on an abort.
 // The result holds the last 64 KiB of stderr.
 export async function runAssistant(
   file: string,
@@ -60,6 +61,9 @@ export async function runAssistant(
   });
   options.onSpawn(pid);
   child.stdin.end(options.prompt, "utf8");
-  const result = await superviseGroup(child, pid, { deadline: options.deadline, signal: options.signal });
+  const leaderExit = new AbortController();
+  child.once("exit", () => leaderExit.abort());
+  const signal = options.signal ? AbortSignal.any([options.signal, leaderExit.signal]) : leaderExit.signal;
+  const result = await superviseGroup(child, pid, { deadline: options.deadline, signal });
   return { ...result, stderrTail: tail.toString("utf8") };
 }
