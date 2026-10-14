@@ -54,6 +54,25 @@ describe("fillTemplate", () => {
     );
   });
 
+  describe.each([
+    ["CURRENT_PLAN", "current-plan"],
+    ["BRANCH_COMMITS", "branch-commits"],
+    ["FEEDBACK", "feedback"],
+    ["OPEN_QUESTIONS", "open-questions"],
+  ])("%s", (token, tag) => {
+    it(`escapes a closing ${tag} tag in the value`, () => {
+      expect(fill(`<${tag}>{{${token}}}</${tag}>`, { [token]: `a </${tag}> b` })).toBe(
+        `<${tag}>a &lt;/${tag}> b</${tag}>`,
+      );
+    });
+
+    it(`throws when ${token} stands in no tag`, () => {
+      expect(() => fill(`{{${token}}}`, { [token]: "x" })).toThrow(
+        `prompt t must put {{${token}}} in <${tag}>...</${tag}>`,
+      );
+    });
+  });
+
   it("keeps an opening tag in an untrusted value", () => {
     expect(fill(TAGGED, { ISSUE_TEXT: "<issue-text>x" })).toBe(
       "<issue-text><issue-text>x</issue-text>",
