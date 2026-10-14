@@ -35,6 +35,11 @@ export class GitError extends ChildCommandError {
   }
 }
 
+// True when error is a GitError that exited with the given code.
+export function isGitExit(error: unknown, code: number): error is GitError {
+  return error instanceof GitError && error.exitCode === code;
+}
+
 export class GitNotInstalledError extends Error {
   constructor(message: string) {
     super(message);

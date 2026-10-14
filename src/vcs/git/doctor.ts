@@ -6,7 +6,7 @@ import { isInside } from "../../real-path.js";
 import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import type { GitVcsConfig } from "./config.js";
-import { GitError, GitNotInstalledError, runGit } from "./run.js";
+import { GitError, GitNotInstalledError, isGitExit, runGit } from "./run.js";
 import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
 import {
   findStaleLocks,
@@ -111,7 +111,7 @@ async function configValue(
   try {
     return withoutLineEnd(await runGit(["config", "--get", key], { gitDir: clone, env, signal }));
   } catch (error) {
-    if (error instanceof GitError && error.exitCode === 1) {
+    if (isGitExit(error, 1)) {
       return "";
     }
     throw error;

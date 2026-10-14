@@ -1,4 +1,4 @@
-import { GitError, runGit } from "./run.js";
+import { isGitExit, runGit } from "./run.js";
 
 interface RefOptions {
   clone: string;
@@ -11,13 +11,20 @@ export function isFullRevision(value: string): boolean {
   return /^[0-9a-f]{40}$/.test(value);
 }
 
+// Throws unless value is a full revision of the clone: 40 lower-case hex characters.
+export function assertRevision(name: string, value: string): void {
+  if (!isFullRevision(value)) {
+    throw new Error(`${name} is not a full revision: ${JSON.stringify(value)}`);
+  }
+}
+
 // True when the exact ref exists in the clone. Exit 1 of show-ref means that the ref is missing.
 export async function refExists({ clone, env, ref }: RefOptions): Promise<boolean> {
   try {
     await runGit(["show-ref", "--verify", "--quiet", "--", ref], { gitDir: clone, env });
     return true;
   } catch (error) {
-    if (error instanceof GitError && error.exitCode === 1) return false;
+    if (isGitExit(error, 1)) return false;
     throw error;
   }
 }

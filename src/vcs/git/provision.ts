@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { GitVcsConfig } from "./config.js";
 import { installPushHook } from "./push-guard.js";
-import { GitError, runGit } from "./run.js";
+import { GitError, isGitExit, runGit } from "./run.js";
+import { writeThroughTemp } from "./temp-write.js";
 import { cloneUrl, remoteCwd, remoteNotAnswering, runRemoteGit, sshCommand } from "./ssh.js";
 
 const INCLUDE_FILE = "tasker-ssh.config";
@@ -115,9 +116,7 @@ function writeIncludeFile(clone: string, sshKey: string | undefined): void {
       .replaceAll("\n", "\\n");
     content = `[core]\n\tsshCommand = "${value}"\n`;
   }
-  const temp = join(clone, `${INCLUDE_FILE}.tmp`);
-  writeFileSync(temp, content);
-  renameSync(temp, join(clone, INCLUDE_FILE));
+  writeThroughTemp(join(clone, INCLUDE_FILE), content);
 }
 
 async function setOrUnset(
@@ -134,7 +133,7 @@ async function setOrUnset(
     await setConfig(clone, ["--unset-all", key], env);
   } catch (error) {
     // Exit code 5 of --unset-all means that the key is missing.
-    if (!(error instanceof GitError && error.exitCode === 5)) {
+    if (!isGitExit(error, 5)) {
       throw error;
     }
   }

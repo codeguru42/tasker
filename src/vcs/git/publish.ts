@@ -2,10 +2,10 @@ import { detailSuffix } from "../../detail-suffix.js";
 import type { RemoteTaskRefDeletion } from "../provider.js";
 import { LOCAL_PREFIX } from "./base-branch.js";
 import { pushWithToken } from "./push-guard.js";
-import { isFullRevision } from "./refs.js";
+import { assertRevision } from "./refs.js";
 import { GitError } from "./run.js";
 import { type RemoteTip, remoteTip } from "./remote-tip.js";
-import { assertTaskBranch, assertTaskBranchShape, taskBranchRevision } from "./worktree.js";
+import { assertTaskBranchNameAndShape, taskBranchRevision } from "./worktree.js";
 
 interface RemoteOptions {
   // The bare clone that provisionClone() made.
@@ -24,13 +24,6 @@ export interface PublishResult {
   branch: string;
   revision: string;
   lease: boolean;
-}
-
-// Throws unless value is a full revision of the clone: 40 lower-case hex characters.
-function assertRevision(name: string, value: string): void {
-  if (!isFullRevision(value)) {
-    throw new Error(`${name} is not a full revision: ${JSON.stringify(value)}`);
-  }
 }
 
 // The error to throw for a failure: a new Error with the summary and the detail for a person to read, and no cause.
@@ -66,8 +59,7 @@ export async function publishTaskBranch(
   options: RemoteOptions & { branch: string; published: string | undefined },
 ): Promise<PublishResult> {
   const { clone, remote, publishTokens, sshKey, env, branch, published } = options;
-  assertTaskBranch(branch);
-  assertTaskBranchShape(branch);
+  assertTaskBranchNameAndShape(branch);
   if (published !== undefined) assertRevision("the published revision", published);
   const summary = `cannot publish the task branch: ${branch}`;
   const revision = await taskBranchRevision({ clone, env, branch });
@@ -138,8 +130,7 @@ export async function deleteRemoteTaskBranch(
   options: RemoteOptions & { branch: string; published: string },
 ): Promise<RemoteTaskRefDeletion> {
   const { clone, remote, publishTokens, sshKey, env, branch, published } = options;
-  assertTaskBranch(branch);
-  assertTaskBranchShape(branch);
+  assertTaskBranchNameAndShape(branch);
   assertRevision("the published revision", published);
   const summary = `cannot delete the task branch on origin: ${branch}`;
   const readTip = async (): Promise<RemoteTip> => {

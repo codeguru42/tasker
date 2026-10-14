@@ -1,6 +1,6 @@
 import type { UncommittedChange } from "../provider.js";
 import { assertRevisionInput, resolveRevision } from "./refs.js";
-import { GitError, runGit } from "./run.js";
+import { isGitExit, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
 import { assertTaskWorktree, taskBranchRevision } from "./worktree.js";
 
@@ -171,7 +171,7 @@ export async function isAncestor(o: {
     await runGit(["merge-base", "--is-ancestor", ancestor, descendant], { gitDir: clone, env });
     return true;
   } catch (error) {
-    if (error instanceof GitError && error.exitCode === 1) return false;
+    if (isGitExit(error, 1)) return false;
     throw error;
   }
 }

@@ -50,6 +50,12 @@ export function assertTaskBranchShape(name: string): void {
   }
 }
 
+// Throws unless name is a task branch with the shape of taskBranchName(). The name check runs first.
+export function assertTaskBranchNameAndShape(name: string): void {
+  assertTaskBranch(name);
+  assertTaskBranchShape(name);
+}
+
 // Throws unless name passes isTaskBranch(). Run it before any git call that takes a branch.
 export function assertTaskBranch(name: string): void {
   if (!isTaskBranch(name)) {
@@ -143,8 +149,7 @@ export async function createTaskWorktree(options: {
   baseRevision: string;
 }): Promise<"created" | "reused-branch" | "reused-worktree"> {
   const { clone, env, path, branch, baseRevision } = options;
-  assertTaskBranch(branch);
-  assertTaskBranchShape(branch);
+  assertTaskBranchNameAndShape(branch);
   mkdirSync(dirname(resolve(path)), { recursive: true });
   const target = canonicalPath(path);
   const entries = await listWorktrees({ clone, env });
@@ -212,8 +217,7 @@ export async function deleteTaskBranch(options: {
   env: NodeJS.ProcessEnv;
   branch: string;
 }): Promise<void> {
-  assertTaskBranch(options.branch);
-  assertTaskBranchShape(options.branch);
+  assertTaskBranchNameAndShape(options.branch);
   await runGit(["branch", "-D", "--", options.branch], {
     gitDir: options.clone,
     env: options.env,

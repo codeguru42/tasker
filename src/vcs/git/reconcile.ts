@@ -11,9 +11,9 @@ import {
   worktreeChanges,
   worktreeHead,
 } from "./changes.js";
-import { assertRevisionInput, isFullRevision, resolveRevision } from "./refs.js";
-import { GitError, runGit } from "./run.js";
-import { assertTaskBranch, assertTaskBranchShape, assertTaskWorktree } from "./worktree.js";
+import { assertRevision, assertRevisionInput, resolveRevision } from "./refs.js";
+import { GitError, isGitExit, runGit } from "./run.js";
+import { assertTaskBranchNameAndShape, assertTaskWorktree } from "./worktree.js";
 
 // The options of every rebase. They stop the configuration of the user from changing the rebase.
 // --merge forces rebase-merge/, --no-autostash and --no-update-refs stop rebase.autoStash and
@@ -77,7 +77,7 @@ async function stateAt(target: string, env: NodeJS.ProcessEnv): Promise<Worktree
     const ref = (await runGit(["symbolic-ref", "-q", "HEAD"], { cwd: target, env })).trim();
     branch = ref.replace(/^refs\/heads\//, "");
   } catch (error) {
-    if (!(error instanceof GitError && error.exitCode === 1)) throw error;
+    if (!isGitExit(error, 1)) throw error;
   }
   const changes = await worktreeChanges(target, env);
   return { head, branch, changes };
@@ -179,8 +179,7 @@ export function restoreCommands(start: StartState, found: FoundState): string[] 
 // first, then the shape check. A detached start (no branch) passes.
 function assertStartBranch(branch: string | undefined): void {
   if (branch === undefined) return;
-  assertTaskBranch(branch);
-  assertTaskBranchShape(branch);
+  assertTaskBranchNameAndShape(branch);
 }
 
 // Puts the task worktree back at the start. The caller must find the worktree clean before the
@@ -193,9 +192,7 @@ export async function restoreWorktree(o: {
   start: StartState;
 }): Promise<void> {
   const { clone, env, path, start } = o;
-  if (!isFullRevision(start.head)) {
-    throw new Error(`the start revision is not a full revision: ${JSON.stringify(start.head)}`);
-  }
+  assertRevision("the start revision", start.head);
   assertStartBranch(start.branch);
   const target = await assertTaskWorktree({ clone, env, path });
   await restoreAt(target, env, start);

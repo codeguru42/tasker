@@ -1,8 +1,9 @@
-import { chmodSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join, resolve } from "node:path";
 import type { GitLocation } from "./run.js";
 import { runRemoteGit, shellQuote } from "./ssh.js";
+import { writeThroughTemp } from "./temp-write.js";
 
 // The pre-push hook. It accepts a push that has a valid token and deletes the token file.
 function hookScript(publishTokens: string): string {
@@ -27,13 +28,9 @@ function hookScript(publishTokens: string): string {
 // A failed write throws an error with the fs error as its cause.
 export function installPushHook(clone: string, publishTokens: string): void {
   const hooks = join(clone, "hooks");
-  const temp = join(hooks, "pre-push.tmp");
   try {
     mkdirSync(hooks, { recursive: true });
-    writeFileSync(temp, hookScript(publishTokens), { mode: 0o755 });
-    // The umask can remove bits from the mode of writeFileSync.
-    chmodSync(temp, 0o755);
-    renameSync(temp, join(hooks, "pre-push"));
+    writeThroughTemp(join(hooks, "pre-push"), hookScript(publishTokens), 0o755);
   } catch (error) {
     throw new Error(`cannot install the pre-push hook in the clone: ${clone}`, { cause: error });
   }
