@@ -82,4 +82,22 @@ describe("claudeArgs", () => {
 
     expect(args).not.toContain("--max-budget-usd");
   });
+
+  it("gives the settings as inline JSON after the permission mode and before the tool rules", () => {
+    const settings = { sandbox: { enabled: true } };
+
+    const args = claudeArgs(
+      runInput({ permissionMode: "dontAsk", allowedTools: ["Edit"], disallowedTools: ["Write"] }),
+      settings,
+    );
+
+    const at = args.indexOf("--settings");
+    expect(args[at + 1]).toBe(JSON.stringify(settings));
+    expect(args.slice(at - 2, at)).toEqual(["--permission-mode", "dontAsk"]);
+    expect(args[at + 2]).toBe("--allowedTools");
+  });
+
+  it("gives no --settings with no settings", () => {
+    expect(claudeArgs(runInput({ permissionMode: "dontAsk" }))).not.toContain("--settings");
+  });
 });
