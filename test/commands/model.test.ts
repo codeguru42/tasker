@@ -2,7 +2,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { model } from "../../src/commands/model.js";
 import { loadConfig } from "../../src/config/load.js";
+import { ConfigError, parseConfig } from "../../src/config/schema.js";
 import {
+  configIssuesOf,
   dayAt,
   issueKeyErrorMessage,
   runCommand,
@@ -187,6 +189,44 @@ describe("model", () => {
 
       expect(result.code).toBe(0);
       expectNothingChanged(file, pretty(expected).trimEnd());
+    });
+  });
+
+  describe("refusals", () => {
+    it("fails before it reads the file or opens the store when a set names no role", async () => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "opus");
+
+      expect(result).toEqual({ code: 1, out: "", err: "name the role with --role\n" });
+      expectNothingChanged(file, before);
+      expect(existsSync(file.dataRoot)).toBe(false);
+    });
+
+    it("prints the loader errors and changes nothing for a model that the provider refuses", async () => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+      const badRaw = rawFile(file.dataRoot);
+      badRaw.repos.tasker.assistant.models.plan.model = "gpt-5";
+      const message = new ConfigError(configIssuesOf(() => parseConfig(badRaw, {}, "/home/test"))).message;
+
+      const result = await runCommand(model, "model", KEY, "--role", "plan", "gpt-5");
+
+      expect(result).toEqual({ code: 1, out: "", err: `${message}\n` });
+      expect(result.err).toContain("repos.tasker.assistant.models.plan.model: is not a claude-code model: gpt-5");
+      expectNothingChanged(file, before);
+    });
+
+    it("fails for an effort that does not exist", async () => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "--role", "plan", "--effort", "extreme");
+
+      expect(result.code).not.toBe(0);
+      expect(result.out).toBe("");
+      expectNothingChanged(file, before);
     });
   });
 });
