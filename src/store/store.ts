@@ -201,6 +201,11 @@ function rowToTask(row: TaskRow): Task {
 const BUSY_TIMEOUT_MS = 5000;
 const SQLITE_BUSY = 5;
 
+// The error of a task id that the store does not hold.
+export function taskNotFound(id: number): Error {
+  return new Error(`task not found: ${id}`);
+}
+
 // errcode can be an extended code, and its low byte is the primary code.
 function isBusy(error: unknown): boolean {
   const code = (error as { errcode?: unknown }).errcode;
@@ -359,7 +364,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     return immediateTransaction(db, () => {
       const current = readTask(id);
       if (current === undefined) {
-        throw new Error(`task not found: ${id}`);
+        throw taskNotFound(id);
       }
       const event = check?.(current);
       const at = now().toISOString();
@@ -492,7 +497,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           | { state: string; pid: number | null; child_pid: number | null }
           | undefined;
         if (row === undefined) {
-          throw new Error(`task not found: ${id}`);
+          throw taskNotFound(id);
         }
         if (!isSpawningState(row.state)) return { status: "none" };
         if (row.pid === null) return { status: "dead", childPid: null };
