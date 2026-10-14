@@ -52,13 +52,13 @@ The sandbox follows the rules in [Sandbox](#sandbox). Its write paths and its sh
 - The folder of the publish tokens of every configured repo. The version control gives it.
 - The configuration of tasker.
 
-With the key of any repo, the shell can push to that repo, because the network stays open. So the list denies the keys and the publish tokens of every configured repo, not only those of the repo of the task. Each path of the list is absolute, because the shell runs in the worktree.
+With the key of any repo, the shell can push to that repo, because the network stays open. This is the reason for the items of every configured repo in the list. Each path of the list is absolute, because the shell runs in the worktree.
 
 Each entry goes in only when the variables that name it are set. A path that does not exist still goes in the list. The `claude` program reads its own credentials outside the sandbox, so the list denies only the shell.
 
 ### The environment of the shell
 
-The shell of the assistant gets no GitHub token and no ssh agent. The filter of the phases drops them (see [phases.md](phases.md)). As a result, the shell of the assistant has no GitHub token and no ssh agent of the operator, and it cannot read the ssh key or the publish tokens of any configured repo.
+The filter of the phases drops the GitHub token and the ssh agent of the operator (see [phases.md](phases.md)). As a result, the shell of the assistant has no GitHub token and no ssh agent of the operator. The read deny list adds the ssh key and the publish tokens of every configured repo, so the shell cannot read them either.
 
 ### The limits of these roles
 
