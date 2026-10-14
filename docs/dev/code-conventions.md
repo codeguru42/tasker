@@ -6,7 +6,7 @@ This page describes how the code of tasker is laid out and how to test it.
 
 - `src/` holds the source of the `tasker` command.
 - `src/commands/` holds one file for each command. "Add a command" gives the steps.
-- `src/config/` holds the configuration loader. See [docs/config.md](../config.md).
+- `src/config/` holds the configuration loader and the edit of the configuration file. See [docs/config.md](../config.md).
 - `src/store/` holds the task store. See [data-root.md](data-root.md).
 - `src/doctor/` holds the code that all doctor checks share. See [doctor.md](doctor.md).
 - `src/issues/` holds the issue tracker code. See [issue-trackers.md](issue-trackers.md).
