@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { abort } from "../../src/commands/abort.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { canonicalPath } from "../../src/real-path.js";
+import { transitionTask } from "../../src/state/machine.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
@@ -60,6 +61,26 @@ describe("abort", () => {
     const state = withDataRootStore(fixture.dataRoot, (store) => store.findLatestTask(REPO, KEY)?.state);
     expect(state).toBe("cancelled");
     expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
+  it("deletes the run marker of a task in a spawning state", async () => {
+    const fixture = await useStartFixture();
+    const [task] = seedTasks(fixture.dataRoot, [
+      { issueKey: KEY, repoKey: REPO, state: "workspace_ready", at: "2026-01-01T00:00:00.000Z" },
+    ]);
+    withDataRootStore(fixture.dataRoot, (store) => {
+      transitionTask(store, task.id, "planning");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+    });
+
+    const result = await runCommand(abort, "abort", KEY);
+
+    expect(result).toEqual({ code: 0, out: `cancelled ${KEY}\n`, err: "" });
+    withDataRootStore(fixture.dataRoot, (store) => {
+      expect(store.getTask(task.id)?.state).toBe("cancelled");
+      // startRun refuses a task that still has a marker, so a pass shows that the abort deleted it.
+      expect(store.startRun(task.id, "planning").state).toBe("planning");
+    });
   });
 
   it("cleans up and cancels a task in failed", async () => {

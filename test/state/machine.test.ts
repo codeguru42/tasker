@@ -324,6 +324,55 @@ describe("task transitions", () => {
       expect(store.getTask(task.id)!.state).toBe("planning");
       expect(store.listEvents(task.id)).toEqual(before);
     });
+
+    it("writes the run marker on a move into a spawning state", () => {
+      const task = store.createTask(newTask("approved"));
+      expect(transitionTask(store, task.id, "executing").state).toBe("executing");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.listEvents(task.id).at(-1)).toMatchObject({
+        type: "transition",
+        data: { from: "approved", to: "executing" },
+      });
+    });
+
+    it("deletes the run marker on a move out of a spawning state", () => {
+      const task = store.createTask(newTask("approved"));
+      transitionTask(store, task.id, "executing");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(transitionTask(store, task.id, "executed").state).toBe("executed");
+      expect(store.listEvents(task.id).at(-1)).toMatchObject({
+        type: "transition",
+        data: { from: "executing", to: "executed" },
+      });
+      // A marker that stays makes the next move into a spawning state fail.
+      expect(transitionTask(store, task.id, "verifying").state).toBe("verifying");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+    });
+
+    it("refuses an illegal edge into a spawning state and writes no marker", () => {
+      const task = store.createTask(newTask("workspace_ready"));
+      const before = store.listEvents(task.id);
+      expect(() => transitionTask(store, task.id, "executing")).toThrow(
+        "illegal state transition: workspace_ready -> executing",
+      );
+      expect(store.getTask(task.id)!.state).toBe("workspace_ready");
+      expect(store.runStatus(task.id)).toEqual({ status: "none" });
+      expect(store.listEvents(task.id)).toEqual(before);
+      transitionTask(store, task.id, "planning");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+    });
+
+    it("refuses an illegal edge out of a spawning state and keeps the marker", () => {
+      const task = store.createTask(newTask("approved"));
+      transitionTask(store, task.id, "executing");
+      const before = store.listEvents(task.id);
+      expect(() => transitionTask(store, task.id, "approved")).toThrow(
+        "illegal state transition: executing -> approved",
+      );
+      expect(store.getTask(task.id)!.state).toBe("executing");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
   });
 
   describe("enterSpawningState and leaveSpawningState", () => {
@@ -386,6 +435,15 @@ describe("task transitions", () => {
         to: "failed",
         error: "boom",
       });
+    });
+
+    it("deletes the run marker of a task in a spawning state, so a retry can run", () => {
+      const task = store.createTask(newTask("approved"));
+      transitionTask(store, task.id, "executing");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(failTask(store, task.id, "boom").state).toBe("failed");
+      expect(transitionTask(store, task.id, "refining").state).toBe("refining");
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
     });
 
     it("refuses a task that is already failed", () => {
