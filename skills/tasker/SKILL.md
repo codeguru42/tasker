@@ -205,6 +205,8 @@ Prints the model and the effort of each assistant role for the repo of an issue:
 - `--role <role>`: prints only this role. The roles are `plan`, `execute` and `review`.
 - `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
 
+If the key fits more than one repo and you do not give `--repo`, the active task of the issue picks the repo. If no repo, or more than one repo, has an active task for the issue, the command prints an error.
+
 The command prints one line for each role, in the order plan, execute, review, as `<role>: <model> (effort <effort>)`, for example `plan: opus (effort high)`.
 
 The command prints an error and exits with code 1 in these cases:
