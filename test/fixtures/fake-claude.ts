@@ -7,6 +7,10 @@ const [controlPath, ...args] = process.argv.slice(2);
 const control = JSON.parse(readFileSync(controlPath!, "utf8")) as FakeClaudeControl & { logPath: string };
 
 if (control.ignoreSigterm) process.on("SIGTERM", () => {});
+if (control.sigtermStream) {
+  const text = control.sigtermStream.map((line) => `${line}\n`).join("");
+  process.on("SIGTERM", () => process.stdout.write(text));
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -45,5 +49,6 @@ if (!isVersion) for (const path of control.placeholders ?? []) writePlaceholder(
 if (answer.stdout) await write(process.stdout, answer.stdout);
 if (answer.stderr) await write(process.stderr, answer.stderr);
 if (answer.sleepMs) await sleep(answer.sleepMs);
+if (!isVersion && control.untilStopped) await new Promise(() => setInterval(() => {}, 60_000));
 if (!isVersion && control.killWith) process.kill(process.pid, control.killWith);
 process.exitCode = answer.exitCode ?? 0;

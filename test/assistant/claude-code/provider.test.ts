@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
 import {
+  claudeRateLimitEvent,
   claudeSample,
   claudeSampleEvents,
   claudeSampleWithResult,
@@ -250,17 +251,11 @@ describe("createClaudeCodeProvider run", () => {
     expect(outcome.kind).toBe("timeout");
   });
 
-  it("refuses an overage stop before it starts claude", async () => {
+  it("starts claude for a run with an overage stop", async () => {
     const { outcome, fake } = await run({ stream: claudeSample("plain") }, { overageStop: {} });
 
-    expect(failureOf(outcome)).toMatchObject({
-      reason: "the claude-code provider cannot enforce an overage stop in this version",
-      exitCode: null,
-      signal: null,
-      events: [],
-      usage: "unavailable",
-    });
-    expect(fake.calls()).toEqual([]);
+    expect(outcome.kind).toBe("success");
+    expect(fake.calls()).toHaveLength(1);
   });
 
   it("fails when claude is not on PATH", async () => {
@@ -333,6 +328,107 @@ describe("createClaudeCodeProvider run with a quota stop", () => {
   });
 });
 
+describe("createClaudeCodeProvider run with an overage stop", () => {
+  const overageEvent = (edit: (info: Record<string, unknown>) => void = (info) => void (info["isUsingOverage"] = true)) =>
+    JSON.stringify(claudeRateLimitEvent(edit));
+  const head = () => claudeSample("plain").slice(0, 2);
+  // The full plain stream with the overage event before the result.
+  const fullWith = (event: string) => [...claudeSample("plain").slice(0, -1), event, claudeSample("plain").at(-1)!];
+  const stopped = (event = overageEvent()) => ({ stream: [...head(), event], untilStopped: true });
+  const overage = { kind: "quota", cause: "overage", resetsAt: 1792206000 };
+
+  it("stops the child at once and gives overage, not timeout", { timeout: 15_000 }, async () => {
+    const { outcome, fake } = await run(stopped(), { overageStop: {}, timeoutMs: 10_000 });
+
+    expect(outcome).toMatchObject(overage);
+    expect(outcome.events).toHaveLength(3);
+    expect(fake.calls()).toHaveLength(1);
+  });
+
+  it("stops when the status is rejected and overageStatus is allowed", { timeout: 15_000 }, async () => {
+    const event = overageEvent((info) => {
+      info["status"] = "rejected";
+      info["overageStatus"] = "allowed";
+    });
+
+    const { outcome } = await run(stopped(event), { overageStop: {}, timeoutMs: 10_000 });
+
+    expect(outcome).toMatchObject(overage);
+  });
+
+  it("gives success when the approved window is the one that is spent", async () => {
+    const { outcome } = await run({ stream: fullWith(overageEvent()) }, { overageStop: { approvedResetsAt: 1792206000 } });
+
+    expect(outcome.kind).toBe("success");
+  });
+
+  it("gives overage when the approved window is another one", async () => {
+    const { outcome } = await run({ stream: fullWith(overageEvent()) }, { overageStop: { approvedResetsAt: 1 } });
+
+    expect(outcome).toMatchObject(overage);
+  });
+
+  it("gives success when the run has no overage stop", async () => {
+    const { outcome } = await run({ stream: fullWith(overageEvent()) });
+
+    expect(outcome.kind).toBe("success");
+  });
+
+  it("gives overage when claude exits 0 right after the event", async () => {
+    const { outcome } = await run({ stream: fullWith(overageEvent()) }, { overageStop: {} });
+
+    expect(outcome).toMatchObject(overage);
+  });
+
+  it("gives success when overageStatus is rejected", async () => {
+    const event = overageEvent((info) => {
+      info["status"] = "rejected";
+    });
+
+    const { outcome } = await run({ stream: fullWith(event) }, { overageStop: {} });
+
+    expect(outcome.kind).toBe("success");
+  });
+
+  it("still stops when onEvent throws on every event", { timeout: 15_000 }, async () => {
+    const { outcome } = await run(stopped(), {
+      overageStop: {},
+      timeoutMs: 10_000,
+      onEvent: () => {
+        throw new Error("listener broke");
+      },
+    });
+
+    expect(outcome).toMatchObject(overage);
+  });
+
+  it("keeps the events before a cut line", { timeout: 15_000 }, async () => {
+    const control = { stream: [...head(), overageEvent(), '{"type":"res'], untilStopped: true };
+
+    const { outcome } = await run(control, { overageStop: {}, timeoutMs: 10_000 });
+
+    expect(outcome).toMatchObject(overage);
+    expect(outcome.events.slice(0, 3)).toHaveLength(3);
+  });
+
+  describe("when the deadline fires first", () => {
+    const control = () => ({ stream: head(), sigtermStream: [overageEvent()], untilStopped: true });
+
+    it("gives overage, because the outcome rests on the event", { timeout: 20_000 }, async () => {
+      const { outcome } = await run(control(), { overageStop: {}, timeoutMs: 3000 });
+
+      expect(outcome).toMatchObject(overage);
+    });
+
+    it("gives timeout when the run has no overage stop", { timeout: 20_000 }, async () => {
+      const { outcome } = await run(control(), { timeoutMs: 3000 });
+
+      expect(outcome.kind).toBe("timeout");
+      expect(outcome.events.at(-1)).toMatchObject({ type: "rate_limit_event" });
+    });
+  });
+});
+
 describe("createClaudeCodeProvider run with a sandbox", () => {
   const tracked = async () => [] as string[];
   const limits = {
@@ -345,14 +441,20 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
   // A sandboxed run on a fake linux host. The fake has bwrap and socat, except the names in except.
   async function sandboxed(
     control: FakeClaudeControl,
-    options: { platform?: NodeJS.Platform; except?: string[]; sharedFolder?: string; timeoutMs?: number } = {},
+    options: {
+      platform?: NodeJS.Platform;
+      except?: string[];
+      sharedFolder?: string;
+      timeoutMs?: number;
+      overrides?: Partial<RunInput>;
+    } = {},
   ) {
     const fake = useFakeClaude(control);
     writeFakeSandboxPrograms(fake.binDir, options.except ?? []);
     const tmpRoot = realpathSync(useTempDir("tasker-claude-tmp-"));
     const cwd = useTempDir("tasker-claude-cwd-");
     const outcome = await createClaudeCodeProvider({ platform: options.platform ?? "linux", tmpRoot }).run(
-      runInput({ cwd, env: fake.env, sandbox: { ...limits, ...(options.sharedFolder ? { sharedFolder: options.sharedFolder } : {}) }, ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}) }),
+      runInput({ cwd, env: fake.env, sandbox: { ...limits, ...(options.sharedFolder ? { sharedFolder: options.sharedFolder } : {}) }, ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}), ...options.overrides }),
     );
     return { outcome, fake, tmpRoot, cwd };
   }
@@ -372,6 +474,17 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
       },
     });
     expect(call.argv).toContain("--settings");
+  });
+
+  it("keeps the cleanup for an overage stop", { timeout: 15_000 }, async () => {
+    const stream = [...claudeSample("plain").slice(0, 2), JSON.stringify(claudeRateLimitEvent((info) => void (info["isUsingOverage"] = true)))];
+
+    const { outcome } = await sandboxed(
+      { stream, untilStopped: true },
+      { timeoutMs: 10_000, overrides: { overageStop: {} } },
+    );
+
+    expect(outcome).toMatchObject({ kind: "quota", cause: "overage", sandboxCleanup: { removed: [] } });
   });
 
   it("gives a cleanup with nothing removed for a run with no placeholder", async () => {

@@ -1370,6 +1370,22 @@ function runClaude(env: NodeJS.ProcessEnv, args: string[], input = "") {
   return spawnSync("claude", args, { env, input, encoding: "utf8" });
 }
 
+// Starts the fake claude with the async spawn and ends stdin. It saves the pid. stdout() gives the text so far,
+// and exited gives the signal that ended the child.
+function startClaude(env: NodeJS.ProcessEnv) {
+  const child = spawn("claude", [], { env, stdio: ["pipe", "pipe", "ignore"] });
+  const pid = child.pid!;
+  savePid(pid);
+  let out = "";
+  child.stdout.setEncoding("utf8");
+  child.stdout.on("data", (chunk: string) => {
+    out += chunk;
+  });
+  child.stdin.end();
+  const exited = new Promise<NodeJS.Signals | null>((resolve) => child.on("exit", (_code, signal) => resolve(signal)));
+  return { pid, stdout: () => out, exited };
+}
+
 describe("claudeSample", () => {
   it("gives the lines of a recorded stream, with no empty last item", () => {
     const lines = claudeSample("plain");
@@ -1470,6 +1486,32 @@ describe("claudeRateLimitEvent", () => {
     });
 
     expect(claudeRateLimitEvent()["rate_limit_info"]).toMatchObject({ utilization: 0.8 });
+  });
+});
+
+describe("useFakeClaude controls untilStopped and sigtermStream", () => {
+  it("keeps running after the output until a signal stops it", { timeout: 15_000 }, async () => {
+    const fake = useFakeClaude({ stream: ["one"], untilStopped: true });
+    const child = startClaude(fake.env);
+
+    await waitUntil(() => child.stdout().includes("one\n"), 10_000, "the fake wrote no line");
+    expect(isAlive(child.pid)).toBe(true);
+    process.kill(child.pid, "SIGTERM");
+
+    expect(await child.exited).toBe("SIGTERM");
+  });
+
+  it("writes its lines on SIGTERM and does not exit", { timeout: 15_000 }, async () => {
+    const fake = useFakeClaude({ stream: ["one"], sigtermStream: ["two"], untilStopped: true });
+    const child = startClaude(fake.env);
+
+    await waitUntil(() => child.stdout().includes("one\n"), 10_000, "the fake wrote no line");
+    process.kill(child.pid, "SIGTERM");
+    await waitUntil(() => child.stdout().includes("two\n"), 10_000, "the fake wrote no sigtermStream line");
+    expect(isAlive(child.pid)).toBe(true);
+    process.kill(child.pid, "SIGKILL");
+
+    expect(await child.exited).toBe("SIGKILL");
   });
 });
 

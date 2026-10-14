@@ -1420,6 +1420,11 @@ export interface FakeClaudeControl {
   sleepMs?: number;
   // The fake ignores SIGTERM.
   ignoreSigterm?: boolean;
+  // After the output, the fake keeps running until a signal stops it.
+  untilStopped?: boolean;
+  // Lines that the fake writes to stdout on SIGTERM. The fake then does not exit, so with untilStopped only
+  // SIGKILL stops it. The lines come after the deadline of a run by construction.
+  sigtermStream?: string[];
   // The answer when the only argument is --version.
   version?: { stdout: string; stderr?: string; exitCode?: number; sleepMs?: number };
   // Paths relative to the cwd of the fake. Before the output, the fake makes each one with writePlaceholder().
