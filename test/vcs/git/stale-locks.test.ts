@@ -7,6 +7,7 @@ import {
   readProcView,
 } from "../../../src/vcs/git/stale-locks.js";
 import { DeadlineError } from "../../../src/doctor/timed-check.js";
+import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { ageFile, useTempDir, writeFakeProc } from "../../helpers.js";
 
 const HOUR = 3_600_000;
@@ -17,7 +18,7 @@ describe("findStaleLocks", () => {
 
   beforeEach(() => {
     dir = useTempDir("tasker-stale-locks-");
-    clone = join(dir, "repo.git");
+    clone = repoPaths(dir, "tasker").clone;
     mkdirSync(join(clone, "refs", "heads"), { recursive: true });
     mkdirSync(join(clone, "objects"));
   });

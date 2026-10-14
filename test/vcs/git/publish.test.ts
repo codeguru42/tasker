@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
+import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "../../../src/vcs/git/publish.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { taskBranchName } from "../../../src/vcs/git/worktree.js";
@@ -119,8 +120,7 @@ describe("publish, land and delete", () => {
   async function sshClone() {
     const fake = fakeSsh(join(origin.dir, "ssh"), origin.env, "serve");
     const key = join(origin.dir, "id key");
-    const sshPath = join(origin.dir, "clone-ssh", "repo.git");
-    const sshTokens = join(origin.dir, "clone-ssh", "publish-tokens");
+    const { clone: sshPath, publishTokens: sshTokens } = repoPaths(join(origin.dir, "clone-ssh"), "tasker");
     await provisionClone({
       remote: fake.remote(origin.path),
       clone: sshPath,

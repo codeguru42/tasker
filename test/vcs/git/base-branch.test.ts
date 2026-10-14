@@ -8,6 +8,7 @@ import {
   resolveBaseBranch,
 } from "../../../src/vcs/git/base-branch.js";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
+import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import {
   type FakeSsh,
@@ -92,13 +93,14 @@ describe("resolveBaseBranch", () => {
       env = ssh.env;
     }
     tmp = useTempDir("tasker-base-");
-    clone = join(tmp, "repo.git");
+    const paths = repoPaths(join(tmp, "data"), "tasker");
+    clone = paths.clone;
     await provisionClone({
       remote,
       clone,
       config: {},
       env,
-      publishTokens: join(tmp, "publish-tokens"),
+      publishTokens: paths.publishTokens,
     });
     store = openStore(join(tmp, "tasker.db"));
     askCalls = 0;

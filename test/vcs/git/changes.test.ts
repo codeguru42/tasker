@@ -14,6 +14,7 @@ import {
   worktreeDiff,
 } from "../../../src/vcs/git/changes.js";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
+import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree, removeTaskWorktree, taskBranchName } from "../../../src/vcs/git/worktree.js";
 import {
@@ -359,13 +360,13 @@ describe("git changes", () => {
 
     it("fetches with the ssh key of the repo", async () => {
       const ssh = fakeSsh(origin.dir, env, "serve");
-      const sshClone = join(origin.dir, "ssh-clone", "repo.git");
+      const { clone: sshClone, publishTokens } = repoPaths(join(origin.dir, "ssh-clone"), "tasker");
       await provisionClone({
         remote: ssh.remote(origin.path),
         clone: sshClone,
         config: {},
         env: ssh.env,
-        publishTokens: join(origin.dir, "ssh-clone", "publish-tokens"),
+        publishTokens,
       });
       rmSync(ssh.logPath, { force: true });
       const key = join(origin.dir, "id key");
@@ -414,13 +415,13 @@ describe("git changes", () => {
 
     it("fetches with the ssh key of the repo", async () => {
       const ssh = fakeSsh(origin.dir, env, "serve");
-      const sshClone = join(origin.dir, "ssh-clone", "repo.git");
+      const { clone: sshClone, publishTokens } = repoPaths(join(origin.dir, "ssh-clone"), "tasker");
       await provisionClone({
         remote: ssh.remote(origin.path),
         clone: sshClone,
         config: {},
         env: ssh.env,
-        publishTokens: join(origin.dir, "ssh-clone", "publish-tokens"),
+        publishTokens,
       });
       const sshNames = taskNames(join(origin.dir, "ssh-worktrees"), 15);
       await createTaskWorktree({
