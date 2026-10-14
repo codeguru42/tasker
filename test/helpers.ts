@@ -33,7 +33,14 @@ import type { PlanAnswer } from "../src/plan/answer.js";
 import { failTask } from "../src/state/machine.js";
 import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
-import { openStore, type StoreOptions, type Task, type TaskStore } from "../src/store/store.js";
+import {
+  type NewPlanRevision,
+  openStore,
+  type PlanRevision,
+  type StoreOptions,
+  type Task,
+  type TaskStore,
+} from "../src/store/store.js";
 import { isInside } from "../src/real-path.js";
 import { provisionClone } from "../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../src/vcs/git/repo-paths.js";
@@ -1582,4 +1589,19 @@ export function validPlanAnswer(change: Partial<PlanAnswer> = {}): PlanAnswer {
     ],
     ...change,
   };
+}
+
+// Inserts the next plan revision of the task, with a valid answer unless change gives one. It writes no plan file.
+export function seedPlanRevision(
+  store: TaskStore,
+  taskId: number,
+  change: Partial<Omit<NewPlanRevision, "version">> = {},
+): PlanRevision {
+  return store.insertPlanRevision(taskId, {
+    source: "plan",
+    answer: validPlanAnswer(),
+    prompt: "plan@000000000000",
+    ...change,
+    version: store.nextPlanVersion(taskId),
+  });
 }

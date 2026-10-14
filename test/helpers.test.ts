@@ -53,6 +53,7 @@ import {
   runCommand,
   runInput,
   savePid,
+  seedPlanRevision,
   seedTasks,
   signalListenerCounts,
   spawnTasker,
@@ -1757,5 +1758,37 @@ describe("validPlanAnswer", () => {
 
     expect(validPlanAnswer().todos[0]!.title).toBe("Add the a module");
     expect(validPlanAnswer().files_changed).toEqual(["src/a.ts", "test/a.test.ts"]);
+  });
+});
+
+describe("seedPlanRevision", () => {
+  const seedTask = (store: TaskStore) =>
+    store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
+
+  it("gives the versions 1 and 2 for consecutive calls", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      expect(seedPlanRevision(store, task.id).version).toBe(1);
+      expect(seedPlanRevision(store, task.id).version).toBe(2);
+    });
+  });
+
+  it("gives a valid answer unless the call changes it", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      expect(seedPlanRevision(store, task.id).answer).toEqual(validPlanAnswer());
+    });
+  });
+
+  it("keeps a given feedback and source", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      const revision = seedPlanRevision(store, task.id, { feedback: "use main", source: "refine" });
+
+      expect(revision).toMatchObject({ feedback: "use main", source: "refine" });
+    });
   });
 });

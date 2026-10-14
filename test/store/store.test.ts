@@ -14,7 +14,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, useTempDir, repoRoot, startFixture, startWriteLockHolder, tableNames, withRawDatabase, withStoreFile } from "../helpers.js";
+import { deadPid, useTempDir, repoRoot, seedPlanRevision, startFixture, startWriteLockHolder, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -65,6 +65,26 @@ describe("task store", () => {
           | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
           | undefined,
     );
+
+  // The plan revision rows of a task, as raw rows.
+  const readPlanRows = (taskId: number) =>
+    withRawDatabase(dbPath, (db) =>
+      db.prepare("SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version").all(taskId),
+    );
+
+  // Checks that a failed call threw message and changed no state, no marker row, no event and no plan revision row.
+  const expectNothingChanged = (id: number, run: () => unknown, message: string) => {
+    const state = store.getTask(id)?.state;
+    const marker = readRun(id);
+    const events = eventCount();
+    const plans = readPlanRows(id);
+    const error = thrownBy(run, message);
+    expect((error as Error).message).toBe(message);
+    expect(store.getTask(id)?.state).toBe(state);
+    expect(readRun(id)).toEqual(marker);
+    expect(eventCount()).toBe(events);
+    expect(readPlanRows(id)).toEqual(plans);
+  };
 
   // Writes a raw run marker row for a task.
   const writeRunPid = (taskId: number, state: string, pid: number, childPid: number | null = null) => {
@@ -675,6 +695,85 @@ describe("task store", () => {
       });
     });
 
+    const insert = (taskId: number, version: number) =>
+      store.insertPlanRevision(taskId, {
+        version,
+        source: "plan",
+        answer: validPlanAnswer(),
+        prompt: "plan@000000000000",
+      });
+
+    describe("insert and read", () => {
+      it("gives next version 1 for a new task and 2 after one revision", () => {
+        const task = store.createTask(newTask);
+        expect(store.nextPlanVersion(task.id)).toBe(1);
+        seedPlanRevision(store, task.id);
+        expect(store.nextPlanVersion(task.id)).toBe(2);
+      });
+
+      it("stores the answer, no feedback, no approval and the time of the clock", () => {
+        const task = store.createTask(newTask);
+        const revision = seedPlanRevision(store, task.id);
+        expect(revision).toEqual({
+          taskId: task.id,
+          version: 1,
+          source: "plan",
+          feedback: null,
+          answer: validPlanAnswer(),
+          prompt: "plan@000000000000",
+          approvedAt: null,
+          createdAt: clock.toISOString(),
+        });
+        expect(store.getPlanRevision(task.id, 1)).toEqual(revision);
+      });
+
+      it("gives undefined for a missing version", () => {
+        const task = store.createTask(newTask);
+        seedPlanRevision(store, task.id);
+        expect(store.getPlanRevision(task.id, 2)).toBeUndefined();
+      });
+
+      it("gives the highest version as the latest, and undefined with no rows", () => {
+        const task = store.createTask(newTask);
+        expect(store.latestPlanRevision(task.id)).toBeUndefined();
+        seedPlanRevision(store, task.id);
+        const second = seedPlanRevision(store, task.id, { feedback: "use main", source: "refine" });
+        expect(store.latestPlanRevision(task.id)).toEqual(second);
+        expect(second.feedback).toBe("use main");
+      });
+
+      it("keeps separate versions for two tasks", () => {
+        const a = store.createTask(newTask);
+        const b = store.createTask({ ...newTask, issueKey: "codeguru42/tasker#7" });
+        seedPlanRevision(store, a.id);
+        seedPlanRevision(store, a.id);
+        expect(store.nextPlanVersion(b.id)).toBe(1);
+        expect(seedPlanRevision(store, b.id).version).toBe(1);
+      });
+
+      it("writes no event", () => {
+        const task = store.createTask(newTask);
+        const before = store.listEvents(task.id);
+        seedPlanRevision(store, task.id);
+        expect(store.listEvents(task.id)).toEqual(before);
+      });
+
+      it("refuses a version that is not the next one", () => {
+        const task = store.createTask(newTask);
+        seedPlanRevision(store, task.id);
+        expectNothingChanged(
+          task.id,
+          () => insert(task.id, 3),
+          `task ${task.id}: plan revision 3 is not the next version (2)`,
+        );
+      });
+
+      it("refuses a task that does not exist", () => {
+        const error = thrownBy(() => insert(9999, 1));
+        expect((error as Error).message).toBe("task not found: 9999");
+      });
+    });
+
     it("keeps any source text, because the table has no check on it", () => {
       const task = store.createTask(newTask);
       withRawDatabase(dbPath, (db) => {
@@ -790,17 +889,6 @@ describe("task store", () => {
       expect(insert).toThrow("UNIQUE constraint failed");
       expect(readRun(task.id)).toMatchObject({ task_id: task.id, pid: process.pid });
     });
-
-    // Checks that a failed call changed no state, no marker row and no event.
-    const expectNothingChanged = (id: number, run: () => unknown, message: string | RegExp) => {
-      const state = store.getTask(id)?.state;
-      const marker = readRun(id);
-      const events = eventCount();
-      expect(run).toThrow(message);
-      expect(store.getTask(id)?.state).toBe(state);
-      expect(readRun(id)).toEqual(marker);
-      expect(eventCount()).toBe(events);
-    };
 
     describe("startRun", () => {
       it("moves the task into the spawning state and writes the marker", () => {
