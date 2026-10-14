@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
@@ -12,6 +12,7 @@ import {
   TEST_SESSION_ID,
   useFakeClaude,
   useTempDir,
+  writeFakeSandboxPrograms,
 } from "../../helpers.js";
 
 function input(fake: FakeClaude, overrides: Partial<RunInput> = {}): RunInput {
@@ -248,25 +249,6 @@ describe("createClaudeCodeProvider run", () => {
     expect(outcome.kind).toBe("timeout");
   });
 
-  it("refuses a sandbox before it starts claude", async () => {
-    const { outcome, fake } = await run(
-      { stream: claudeSample("plain") },
-      { sandbox: { allowWrite: ["/work"], denyRead: [] } },
-    );
-
-    expect(outcome).toEqual({
-      kind: "failure",
-      sessionId: TEST_SESSION_ID,
-      events: [],
-      permissionDenials: [],
-      usage: "unavailable",
-      exitCode: null,
-      signal: null,
-      reason: "the claude-code provider cannot enforce a sandbox in this version",
-    });
-    expect(fake.calls()).toEqual([]);
-  });
-
   it("refuses an overage stop before it starts claude", async () => {
     const { outcome, fake } = await run({ stream: claudeSample("plain") }, { overageStop: {} });
 
@@ -321,5 +303,132 @@ describe("createClaudeCodeProvider run", () => {
     );
 
     expect(failureOf(outcome)).toMatchObject({ reason: "spawn listener broke" });
+  });
+});
+
+describe("createClaudeCodeProvider run with a sandbox", () => {
+  const tracked = async () => [] as string[];
+  const limits = {
+    allowWrite: ["/work/wt"],
+    denyRead: ["/home/test/key"],
+    trackedPaths: tracked,
+    sharedFolder: "/work/clones/owner-repo/bare-repo",
+  };
+
+  // A sandboxed run on a fake linux host. The fake has bwrap and socat, except the names in except.
+  async function sandboxed(
+    control: FakeClaudeControl,
+    options: { platform?: NodeJS.Platform; except?: string[]; cwd?: string; sharedFolder?: string; timeoutMs?: number } = {},
+  ) {
+    const fake = useFakeClaude(control);
+    writeFakeSandboxPrograms(fake.binDir, options.except ?? []);
+    const tmpRoot = realpathSync(useTempDir("tasker-claude-tmp-"));
+    const cwd = options.cwd ?? useTempDir("tasker-claude-cwd-");
+    const outcome = await createClaudeCodeProvider({ platform: options.platform ?? "linux", tmpRoot }).run(
+      runInput({ cwd, env: fake.env, sandbox: { ...limits, ...(options.sharedFolder ? { sharedFolder: options.sharedFolder } : {}) }, ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}) }),
+    );
+    return { outcome, fake, tmpRoot, cwd };
+  }
+
+  it("gives claude the settings, with no way out of the sandbox and the one socket folder", async () => {
+    const { outcome, fake, tmpRoot } = await sandboxed({ stream: claudeSample("plain") });
+
+    expect(outcome.kind).toBe("success");
+    const call = fake.calls()[0]!;
+    expect(call.settings).toEqual({
+      sandbox: {
+        enabled: true,
+        failIfUnavailable: true,
+        allowUnsandboxedCommands: false,
+        filesystem: { allowWrite: ["/work/wt"], denyRead: ["/home/test/key"] },
+        network: { allowedDomains: ["*"], allowUnixSockets: [join(tmpRoot, `claude-${process.getuid!()}`)] },
+      },
+    });
+    expect(call.argv).toContain("--settings");
+  });
+
+  it("gives a cleanup with nothing removed for a run with no placeholder", async () => {
+    const { outcome } = await sandboxed({ stream: claudeSample("plain") });
+
+    expect(outcome).toMatchObject({ sandboxCleanup: { removed: [] } });
+  });
+
+  it("gives no settings and no cleanup for a run with no sandbox", async () => {
+    const { outcome, fake } = await run({ stream: claudeSample("plain") });
+
+    expect(fake.calls()[0]!.argv).not.toContain("--settings");
+    expect(fake.calls()[0]!).not.toHaveProperty("settings");
+    expect(outcome).not.toHaveProperty("sandboxCleanup");
+  });
+
+  it("removes the placeholders of a killed claude and reports them sorted", async () => {
+    const { outcome, cwd } = await sandboxed({
+      stream: claudeSample("plain").slice(0, 2),
+      placeholders: [".zshrc", ".bashrc", ".claude/settings.json"],
+      killWith: "SIGKILL",
+    });
+
+    const failure = failureOf(outcome);
+    expect(failure.signal).toBe("SIGKILL");
+    expect(failure.sandboxCleanup).toEqual({ removed: [".bashrc", ".claude", ".claude/settings.json", ".zshrc"] });
+    for (const name of [".zshrc", ".bashrc", ".claude"]) expect(existsSync(join(cwd, name))).toBe(false);
+  });
+
+  it("gives the cleanup for a timeout too", { timeout: 20_000 }, async () => {
+    const { outcome, cwd } = await sandboxed(
+      { stream: [], placeholders: [".bashrc"], sleepMs: 15_000 },
+      { timeoutMs: 3000 },
+    );
+
+    expect(outcome.kind).toBe("timeout");
+    expect(outcome).toMatchObject({ sandboxCleanup: { removed: [".bashrc"] } });
+    expect(existsSync(join(cwd, ".bashrc"))).toBe(false);
+  });
+
+  it("refuses a platform that is not linux or darwin before it starts claude", async () => {
+    const { outcome, fake } = await sandboxed({ stream: claudeSample("plain") }, { platform: "win32" });
+
+    expect(outcome).toEqual({
+      kind: "failure",
+      sessionId: TEST_SESSION_ID,
+      events: [],
+      permissionDenials: [],
+      usage: "unavailable",
+      exitCode: null,
+      signal: null,
+      reason: "the claude-code provider cannot enforce a sandbox on win32",
+    });
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it("refuses when bwrap is missing, with no cleanup", async () => {
+    const { outcome, fake } = await sandboxed({ stream: claudeSample("plain") }, { except: ["bwrap"] });
+
+    expect(failureOf(outcome).reason).toBe("the claude-code sandbox needs bwrap, and bwrap is not on PATH");
+    expect(outcome).not.toHaveProperty("sandboxCleanup");
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it("refuses a shared git folder with a name that ends in .git, with no cleanup", async () => {
+    const { outcome, fake } = await sandboxed(
+      { stream: claudeSample("plain") },
+      { sharedFolder: "/work/clones/x.git" },
+    );
+
+    expect(failureOf(outcome).reason).toBe(
+      "the shared git folder of the worktree has a name that ends in .git, and claude then makes all of it writable",
+    );
+    expect(outcome).not.toHaveProperty("sandboxCleanup");
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it("runs when the name of the shared folder holds .git but does not end in it", async () => {
+    const { outcome, fake } = await sandboxed(
+      { stream: claudeSample("plain") },
+      { sharedFolder: "/work/clones/owner-repo/x.git-old" },
+    );
+
+    expect(outcome.kind).toBe("success");
+    expect(fake.calls()).toHaveLength(1);
   });
 });
