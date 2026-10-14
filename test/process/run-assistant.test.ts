@@ -1,9 +1,12 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runAssistant } from "../../src/process/run-assistant.js";
-import { useTempDir } from "../helpers.js";
+import { readPidFile, signalListenerCounts, startFixture, useTempDir } from "../helpers.js";
+
+const MINUTE_MS = 60_000;
 
 // Runs command under bash as an assistant child. It collects each line and each pid that the runner reports.
-async function runCollected(command: string, opts: { cwd?: string; prompt?: string } = {}) {
+async function runCollected(command: string, opts: { cwd?: string; prompt?: string; deadline?: number } = {}) {
   const dir = useTempDir("tasker-run-assistant-");
   const lines: string[] = [];
   const pids: number[] = [];
@@ -11,6 +14,7 @@ async function runCollected(command: string, opts: { cwd?: string; prompt?: stri
     cwd: opts.cwd ?? dir,
     env: { PATH: process.env.PATH },
     prompt: opts.prompt ?? "",
+    deadline: opts.deadline ?? Date.now() + MINUTE_MS,
     onLine: (line) => lines.push(line),
     onSpawn: (pid) => pids.push(pid),
   });
@@ -50,4 +54,45 @@ describe("runAssistant", () => {
 
     expect(lines).toEqual(["a", "", "b"]);
   });
+
+  it("stops the group at the deadline", { timeout: 20_000 }, async () => {
+    const { result } = await runCollected("sleep 30", { deadline: Date.now() + 300 });
+
+    expect(result).toMatchObject({ code: null, signal: "SIGTERM", timedOut: true, killed: false });
+  });
+
+  it("removes its signal listeners after a normal run", async () => {
+    const before = signalListenerCounts();
+
+    await runCollected("exit 0");
+
+    expect(signalListenerCounts()).toEqual(before);
+  });
+
+  it("removes its signal listeners after a timeout", { timeout: 20_000 }, async () => {
+    const before = signalListenerCounts();
+
+    await runCollected("sleep 30", { deadline: Date.now() + 300 });
+
+    expect(signalListenerCounts()).toEqual(before);
+  });
+});
+
+describe("runAssistant with the signals of tasker", () => {
+  it.each(["SIGINT", "SIGTERM"] as const)(
+    "forwards %s to the group and keeps tasker alive",
+    { timeout: 20_000 },
+    async (signal) => {
+      const dir = useTempDir("tasker-run-assistant-");
+      const fixture = startFixture("run-assistant-signal.ts", [dir, "60000", "echo noise >&2; echo $$ > started; sleep 30"]);
+      await readPidFile(join(dir, "started"), 10_000);
+
+      process.kill(fixture.pid, signal);
+
+      const { result, before, after } = JSON.parse(await fixture.firstLine);
+      expect(result).toMatchObject({ signal, timedOut: false, killed: false });
+      expect(after).toEqual(before);
+      await fixture.exited;
+    },
+  );
 });
