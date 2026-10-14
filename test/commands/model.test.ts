@@ -33,6 +33,12 @@ function rawWithProject(dataRoot: string): Record<string, any> {
   return { ...raw, dataRoot };
 }
 
+// The raw file of the set and refusal tests, with a key that the schema does not list first.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rawFile(dataRoot: string): Record<string, any> {
+  return { ...rawWithProject(dataRoot), retentionDays: 7 };
+}
+
 describe("model", () => {
   describe("report", () => {
     it("prints the model and the effort of each role", async () => {
@@ -143,6 +149,44 @@ describe("model", () => {
       const result = await runCommand(model, "model", KEY, "--repo", "codeguru42/tasker");
 
       expect(result).toEqual({ code: 0, out: TASKER_REPORT, err: "" });
+    });
+  });
+
+  describe("set", () => {
+    const NOTE =
+      "note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.\n";
+
+    it("sets the model and the effort of the role and prints the new line and the note", async () => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.assistant.models.plan = { model: "claude-opus-5-5", effort: "low" };
+
+      const result = await runCommand(model, "model", KEY, "--role", "plan", "claude-opus-5-5", "--effort", "low");
+
+      expect(result).toEqual({ code: 0, out: "plan: claude-opus-5-5 (effort low)\n", err: NOTE });
+      expectNothingChanged(file, pretty(expected));
+    });
+
+    it("keeps the model when only the effort is given", async () => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.assistant.models.review.effort = "low";
+
+      const result = await runCommand(model, "model", KEY, "--role", "review", "--effort", "low");
+
+      expect(result).toEqual({ code: 0, out: "review: opus (effort low)\n", err: NOTE });
+      expectNothingChanged(file, pretty(expected));
+    });
+
+    it("keeps a file without a final line end without one", async () => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)).trimEnd());
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.assistant.models.execute.effort = "high";
+
+      const result = await runCommand(model, "model", KEY, "--role", "execute", "--effort", "high");
+
+      expect(result.code).toBe(0);
+      expectNothingChanged(file, pretty(expected).trimEnd());
     });
   });
 });
