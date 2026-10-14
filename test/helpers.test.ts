@@ -66,6 +66,7 @@ import {
   waitUntil,
   waitUntilGone,
   withDataRootStore,
+  withRawDatabase,
   withStoreFile,
   writeBootstrapLog,
   writeDataRootConfig,
@@ -1096,6 +1097,73 @@ describe("useStartFixture", () => {
     const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
 
     expect(fixture.config.repos[fixture.repoKey].defaultBaseBranch).toBeUndefined();
+  });
+});
+
+describe("withRawDatabase", () => {
+  it("gives the value of fn and closes the database", () => {
+    const path = join(useTempDir("tasker-raw-db-"), "t.db");
+    let captured: DatabaseSync | undefined;
+
+    const value = withRawDatabase(path, (db) => {
+      captured = db;
+      return db.prepare("SELECT 1 AS n").get();
+    });
+
+    expect(value).toEqual({ n: 1 });
+    expect(captured?.isOpen).toBe(false);
+  });
+
+  it("keeps the database open across an await and closes it after the promise resolves", async () => {
+    const path = join(useTempDir("tasker-raw-db-"), "t.db");
+    let captured: DatabaseSync | undefined;
+    let openInside: boolean | undefined;
+
+    const value = await withRawDatabase(path, async (db) => {
+      captured = db;
+      await new Promise((done) => setTimeout(done, 5));
+      openInside = db.isOpen;
+      return 7;
+    });
+
+    expect(openInside).toBe(true);
+    expect(value).toBe(7);
+    expect(captured?.isOpen).toBe(false);
+  });
+
+  it("closes the database after the promise rejects and passes the rejection on", async () => {
+    const path = join(useTempDir("tasker-raw-db-"), "t.db");
+    const error = new Error("late boom");
+    let captured: DatabaseSync | undefined;
+
+    await expect(
+      withRawDatabase(path, async (db) => {
+        captured = db;
+        await new Promise((done) => setTimeout(done, 5));
+        throw error;
+      }),
+    ).rejects.toBe(error);
+
+    expect(captured?.isOpen).toBe(false);
+  });
+
+  it("closes the database when fn throws and passes the error on", () => {
+    const path = join(useTempDir("tasker-raw-db-"), "t.db");
+    const error = new Error("boom");
+    let captured: DatabaseSync | undefined;
+    let caught: unknown;
+
+    try {
+      withRawDatabase(path, (db) => {
+        captured = db;
+        throw error;
+      });
+    } catch (thrown) {
+      caught = thrown;
+    }
+
+    expect(caught).toBe(error);
+    expect(captured?.isOpen).toBe(false);
   });
 });
 
