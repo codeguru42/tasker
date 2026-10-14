@@ -76,6 +76,14 @@ describe("runAssistant", () => {
     expect(result).toMatchObject({ code, signal: null });
   });
 
+  it("keeps the last 64 KiB of stderr and gives it no line", async () => {
+    const { result, lines } = await runCollected("head -c 100000 /dev/zero | tr '\\0' e >&2; printf END >&2");
+
+    expect(result.stderrTail).toHaveLength(65536);
+    expect(result.stderrTail).toMatch(/^e+END$/);
+    expect(lines).toEqual([]);
+  });
+
   it("stops the group at the deadline", { timeout: 20_000 }, async () => {
     const { result } = await runCollected("sleep 30", { deadline: Date.now() + 300 });
 
