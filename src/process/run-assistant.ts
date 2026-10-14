@@ -41,6 +41,13 @@ function lineSplitter(onLine: (line: string) => void) {
   };
 }
 
+// The tail can start inside a UTF-8 character. A character has at most 3 bytes after its first byte.
+function decodeTail(tail: Buffer): string {
+  let start = 0;
+  while (start < 3 && start < tail.length && (tail[start]! & 0xc0) === 0x80) start++;
+  return tail.subarray(start).toString("utf8");
+}
+
 export type AssistantResult =
   | (GroupResult & { started: true; stderrTail: string })
   | { started: false; error: string };
@@ -90,5 +97,5 @@ export async function runAssistant(
   child.once("exit", () => leaderExit.abort());
   const signal = options.signal ? AbortSignal.any([options.signal, leaderExit.signal]) : leaderExit.signal;
   const result = await superviseGroup(child, pid, { deadline: options.deadline, signal });
-  return { started: true, ...result, stderrTail: tail.toString("utf8") };
+  return { started: true, ...result, stderrTail: decodeTail(tail) };
 }
