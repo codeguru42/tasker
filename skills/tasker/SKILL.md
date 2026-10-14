@@ -217,3 +217,5 @@ The command prints an error and exits with code 1 in these cases:
 
 - The issue key does not resolve.
 - The configuration is missing or invalid.
+- You give `<model>` or `--effort` without `--role`. The error is `name the role with --role`. The command stops before it reads the configuration.
+- The new configuration is not valid, for example when the model fails the model check of the provider. The error lists the problems, and the file does not change.

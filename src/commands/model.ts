@@ -54,10 +54,12 @@ export const model: RegisterCommand = (program, io) => {
     .option("--repo <key>", "Use the repo with this key when two repos share the project of the issue")
     .addOption(new Option("--effort <effort>", "The new effort of the role").choices(EFFORTS))
     .action((issue: string, newModel: string | undefined, options: ModelOptions) => {
+      const { role, effort } = options;
+      const set = newModel !== undefined || effort !== undefined;
+      if (set && role === undefined) fail(io, "name the role with --role");
       const { path, text, config } = orFail(io, () => loadConfigFile());
       const repoKey = pickRepo(io, issue, config, options.repo);
-      const { role, effort } = options;
-      if (role === undefined || (newModel === undefined && effort === undefined)) {
+      if (role === undefined || !set) {
         const { models } = config.repos[repoKey].assistant;
         for (const each of role === undefined ? ASSISTANT_ROLES : [role]) {
           io.stdout(roleLine(each, models[each]));
