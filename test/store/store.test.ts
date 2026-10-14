@@ -65,6 +65,18 @@ describe("task store", () => {
     }
   };
 
+  // The raw run marker row of a task, or undefined.
+  const readRun = (taskId: number) => {
+    const db = rawDb();
+    try {
+      return db.prepare("SELECT * FROM run_markers WHERE task_id = ?").get(taskId) as
+        | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
+        | undefined;
+    } finally {
+      db.close();
+    }
+  };
+
   const insertRawTask = (db: DatabaseSync, repoKey: string, state: string) =>
     db
       .prepare(
@@ -736,6 +748,47 @@ describe("task store", () => {
       } finally {
         check.close();
       }
+    });
+  });
+
+  describe("run markers", () => {
+    it("has the run_markers table", () => {
+      const db = rawDb();
+      try {
+        expect(tableNames(db)).toContain("run_markers");
+      } finally {
+        db.close();
+      }
+    });
+
+    it("upgrades a version-5 database when it opens", () => {
+      const oldPath = join(dir, "old5.db");
+      makeOldDatabase(oldPath, 5);
+      openStore(oldPath, { now }).close();
+      const check = new DatabaseSync(oldPath);
+      try {
+        expect(schemaVersion(check)).toBe(migrations.length);
+        expect(tableNames(check)).toContain("run_markers");
+      } finally {
+        check.close();
+      }
+    });
+
+    it("keeps one marker for each task, also for raw SQL", () => {
+      const task = store.createTask(newTask);
+      const insert = () => {
+        const db = rawDb();
+        try {
+          db.prepare(
+            "INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, 'executing', ?, NULL, 't')",
+          ).run(task.id, process.pid);
+        } finally {
+          db.close();
+        }
+      };
+      insert();
+      expect(insert).toThrow("UNIQUE constraint failed");
+      expect(readRun(task.id)).toMatchObject({ task_id: task.id, pid: process.pid });
     });
   });
 
