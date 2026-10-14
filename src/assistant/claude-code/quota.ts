@@ -1,11 +1,7 @@
 // The quota facts of the claude stream. Each rule of the rate-limit events has one function here.
 import { isObject } from "../../object.js";
 import type { AssistantEvent, OverageStop, QuotaApprovalWarning, RunOutcome } from "../provider.js";
-
-// A number field. A value that is not a finite number counts as missing.
-function numberOf(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
+import { numberOf } from "./stream.js";
 
 // The rate_limit_info of a rate_limit_event, or undefined for any other event or a bad info.
 function rateLimitInfoOf(event: AssistantEvent): Record<string, unknown> | undefined {

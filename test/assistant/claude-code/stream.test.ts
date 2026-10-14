@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AssistantEvent } from "../../../src/assistant/provider.js";
-import { parseLine, readStream } from "../../../src/assistant/claude-code/stream.js";
+import { numberOf, parseLine, readStream } from "../../../src/assistant/claude-code/stream.js";
 import { claudeSample, claudeSampleEvents, claudeSampleWithResult } from "../../helpers.js";
 
 function copyOf(event: AssistantEvent | undefined): AssistantEvent {
@@ -10,6 +10,16 @@ function copyOf(event: AssistantEvent | undefined): AssistantEvent {
 function messageOf(event: AssistantEvent): Record<string, unknown> {
   return event["message"] as Record<string, unknown>;
 }
+
+describe("numberOf", () => {
+  it.each([0, 1.5, -2])("gives the finite number %s", (value) => {
+    expect(numberOf(value)).toBe(value);
+  });
+
+  it.each([NaN, Infinity, "4", null, undefined, {}])("gives undefined for %s", (value) => {
+    expect(numberOf(value)).toBeUndefined();
+  });
+});
 
 describe("parseLine", () => {
   it("parses a line that holds an object", () => {

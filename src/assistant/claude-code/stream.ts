@@ -20,8 +20,9 @@ export function parseLine(line: string): AssistantEvent | undefined {
   return isObject(value) ? value : undefined;
 }
 
-function count(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+// A number field of an event. A value that is not a finite number counts as missing.
+export function numberOf(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 function denialsOf(result: Record<string, unknown> | undefined): PermissionDenial[] {
@@ -59,10 +60,10 @@ function usageOf(result: Record<string, unknown> | undefined): Usage {
   const usage = result?.["usage"];
   if (!isObject(usage)) return "unavailable";
   return {
-    inputTokens: count(usage["input_tokens"]),
-    outputTokens: count(usage["output_tokens"]),
-    cacheCreationInputTokens: count(usage["cache_creation_input_tokens"]),
-    cacheReadInputTokens: count(usage["cache_read_input_tokens"]),
+    inputTokens: numberOf(usage["input_tokens"]) ?? 0,
+    outputTokens: numberOf(usage["output_tokens"]) ?? 0,
+    cacheCreationInputTokens: numberOf(usage["cache_creation_input_tokens"]) ?? 0,
+    cacheReadInputTokens: numberOf(usage["cache_read_input_tokens"]) ?? 0,
   };
 }
 
