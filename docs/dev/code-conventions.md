@@ -22,7 +22,7 @@ This page describes how the code of tasker is laid out and how to test it.
 - `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.
 - `docs/` holds the docs. `AGENTS.md` links to each of them.
 - `test/` holds the tests.
-- `test/fixtures/` holds scripts that tests spawn as child processes.
+- `test/fixtures/` holds scripts that tests spawn as child processes. It also holds the recorded streams that the tests play back.
 - `test/helpers.ts` holds the shared test helpers.
 - `dist/` holds the build output. Git ignores it.
 

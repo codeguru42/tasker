@@ -6,7 +6,7 @@ This page describes the phases of a task. A phase is a step in which tasker runs
 
 The environment of a phase starts empty. A command of a repo gets only the names that tasker allows and the names that the repo lists. A command gets only what it needs.
 
-The same filter serves each phase.
+The same filter serves each phase and the assistant child.
 
 Three rules apply to the environment:
 
