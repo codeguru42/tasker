@@ -18,7 +18,7 @@ export interface RunAssistantOptions {
 }
 
 // Joins the chunks of one UTF-8 stream and gives each line, an empty line too, to onLine.
-// The line end is "\n" only. The text after the last line end goes out when the stream ends.
+// The line end is "\n" only. The text after the last line end goes out when the stream closes.
 function lineSplitter(onLine: (line: string) => void) {
   const decoder = new StringDecoder("utf8");
   let rest = "";
@@ -74,7 +74,7 @@ export async function runAssistant(
   child.stdin.on("error", () => {}); // the result comes from the exit, and an EPIPE only means that the child exited before it read the whole prompt
   const splitter = lineSplitter(options.onLine);
   child.stdout.on("data", splitter.write);
-  child.stdout.on("end", splitter.end);
+  child.stdout.once("close", splitter.end);
   let tail = Buffer.alloc(0);
   child.stderr.on("data", (chunk: Buffer) => {
     tail = Buffer.concat([tail, chunk]).subarray(-STDERR_TAIL_BYTES);

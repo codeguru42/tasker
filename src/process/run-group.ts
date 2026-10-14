@@ -48,12 +48,15 @@ export interface SuperviseOptions {
 // While it runs, SIGINT and SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM.
 // Five seconds later, it gets SIGKILL. After such a stop, it waits until the group is gone.
 // An abort of signal stops the group in the same way, but it does not set timedOut.
+// After a stop, when the leader has exited and the group is gone (or the SIGKILL was sent), it closes the pipes
+// of the child that are still open, so a process outside the group cannot hold the run open.
 export function superviseGroup(child: ChildProcess, pid: number, options: SuperviseOptions): Promise<GroupResult> {
   return new Promise((resolve, reject) => {
     let settled = false;
     let timedOut = false;
     let stopping = false;
     let killed = false;
+    let leaderExited = false;
     let exited: { code: number | null; signal: NodeJS.Signals | null } | undefined;
     let deadlineTimer: NodeJS.Timeout | undefined;
     let graceTimer: NodeJS.Timeout | undefined;
@@ -70,9 +73,14 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
       options.signal?.removeEventListener("abort", stop);
       finish();
     };
+    const waitsForGroup = () => stopping && !killed && groupRuns(pid); // wait for the group, or for the SIGKILL
     const finishIfDone = () => {
-      if (exited === undefined) return;
-      if (stopping && !killed && groupRuns(pid)) return; // wait for the group, or for the SIGKILL
+      if (exited === undefined) {
+        // A process outside the group can hold a pipe of the child open, and then no close comes.
+        if (stopping && leaderExited && !waitsForGroup()) for (const stream of child.stdio) stream?.destroy();
+        return;
+      }
+      if (waitsForGroup()) return;
       const result = { ...exited, timedOut, killed };
       settle(() => resolve(result));
     };
@@ -98,6 +106,9 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
       stop();
     };
     child.on("error", (error) => settle(() => reject(error)));
+    child.on("exit", () => {
+      leaderExited = true;
+    });
     child.on("close", (code, signal) => {
       exited = { code, signal };
       finishIfDone();
