@@ -13,7 +13,7 @@ import {
   type GitOrigin,
   localBranches,
   makeGitOrigin,
-  makeTempDir,
+  useTempDir,
   readArgLog,
   sshKeyArgs,
   taskNames,
@@ -28,13 +28,12 @@ describe("provisionClone", () => {
 
   beforeEach(async () => {
     origin = await makeGitOrigin();
-    tmp = makeTempDir("tasker-provision-");
+    tmp = useTempDir("tasker-provision-");
     ({ clone, publishTokens: tokens } = repoPaths(join(tmp, "data"), "x"));
   });
 
   afterEach(() => {
     origin.remove();
-    rmSync(tmp, { recursive: true, force: true });
   });
 
   // provisionClone() with the usual options of this file. overrides replaces single values.

@@ -1,12 +1,11 @@
-import { rmSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { sshAccount, sshTarget } from "../../../src/vcs/git/ssh-account.js";
 import {
   type FakeSsh,
   type FakeSshMode,
   fakeSsh,
   gitTestEnv,
-  makeTempDir,
+  useTempDir,
   readArgLog,
   sshKeyArgs,
 } from "../../helpers.js";
@@ -43,12 +42,8 @@ describe("sshAccount", () => {
   let baseEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-ssh-account-");
+    dir = useTempDir("tasker-ssh-account-");
     baseEnv = gitTestEnv(dir);
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   function setup(mode: FakeSshMode): FakeSsh {

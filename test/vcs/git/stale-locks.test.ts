@@ -1,13 +1,13 @@
-import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   findStaleLocks,
   onceProcView,
   readProcView,
 } from "../../../src/vcs/git/stale-locks.js";
 import { DeadlineError } from "../../../src/doctor/timed-check.js";
-import { ageFile, makeTempDir, writeFakeProc } from "../../helpers.js";
+import { ageFile, useTempDir, writeFakeProc } from "../../helpers.js";
 
 const HOUR = 3_600_000;
 
@@ -16,14 +16,10 @@ describe("findStaleLocks", () => {
   let clone: string;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-stale-locks-");
+    dir = useTempDir("tasker-stale-locks-");
     clone = join(dir, "repo.git");
     mkdirSync(join(clone, "refs", "heads"), { recursive: true });
     mkdirSync(join(clone, "objects"));
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   function lock(relative: string, ageMs: number): void {
@@ -90,11 +86,7 @@ describe("readProcView", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-proc-view-");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    dir = useTempDir("tasker-proc-view-");
   });
 
   it("gives the open files and the folders of git processes", () => {
@@ -137,11 +129,7 @@ describe("onceProcView", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-once-proc-");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    dir = useTempDir("tasker-once-proc-");
   });
 
   it("gives undefined on a platform that is not Linux", () => {

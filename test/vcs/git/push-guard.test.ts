@@ -3,7 +3,6 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
-  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -18,7 +17,7 @@ import {
   fakeSsh,
   type GitOrigin,
   makeGitOrigin,
-  makeTempDir,
+  useTempDir,
   NO_TOKEN,
   readArgLog,
   sshKeyArgs,
@@ -46,7 +45,7 @@ describe("the pre-push hook", () => {
   beforeEach(async () => {
     origin = await makeGitOrigin();
     // The quote and the dollar sign test the shell quoting of the tokens path.
-    tmp = makeTempDir("tasker-push-'$x-");
+    tmp = useTempDir("tasker-push-'$x-");
     const paths = repoPaths(join(tmp, "data"), "x");
     clone = paths.clone;
     tokens = paths.publishTokens;
@@ -63,7 +62,6 @@ describe("the pre-push hook", () => {
 
   afterEach(() => {
     origin.remove();
-    rmSync(tmp, { recursive: true, force: true });
   });
 
   it("rejects a push from a worktree without a token", async () => {

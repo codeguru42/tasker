@@ -1,21 +1,17 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { GitError, GitNotInstalledError, gitSshCommand, runGit } from "../../../src/vcs/git/run.js";
-import { failureOf, gitTestEnv, makeTempDir, repoRoot, writeFakeGit } from "../../helpers.js";
+import { failureOf, gitTestEnv, useTempDir, repoRoot, writeFakeGit } from "../../helpers.js";
 
 describe("runGit", () => {
   let dir: string;
   let env: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-run-git-");
+    dir = useTempDir("tasker-run-git-");
     env = gitTestEnv(dir);
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   it("runs in cwd and resolves with stdout", async () => {
@@ -206,13 +202,9 @@ describe("runGit keeps git from asking questions", () => {
   let env: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-run-git-tty-");
+    dir = useTempDir("tasker-run-git-tty-");
     bin = join(dir, "bin");
     env = { ...gitTestEnv(dir), PATH: bin, GIT_TERMINAL_PROMPT: "1" };
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   const envScript = [

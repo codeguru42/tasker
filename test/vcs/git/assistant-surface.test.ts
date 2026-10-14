@@ -29,7 +29,7 @@ import {
   isInside,
   makeGitClone,
   makeGitOrigin,
-  makeTempDir,
+  useTempDir,
   taskNames,
   type GitOrigin,
 } from "../../helpers.js";
@@ -113,11 +113,7 @@ describe("assistant surface values", () => {
 
     beforeEach(() => {
       // The real path, so the expected paths hold also when the temp folder is under a symlink.
-      dir = realpathSync(makeTempDir("tasker-key-"));
-    });
-
-    afterEach(() => {
-      rmSync(dir, { recursive: true, force: true });
+      dir = realpathSync(useTempDir("tasker-key-"));
     });
 
     it("gives one path for a key file with no symlink", () => {

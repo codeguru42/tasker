@@ -14,7 +14,7 @@ import {
   fakeSsh,
   type GitOrigin,
   makeGitOrigin,
-  makeTempDir,
+  useTempDir,
   readArgLog,
   sshKeyArgs,
 } from "../../helpers.js";
@@ -91,7 +91,7 @@ describe("resolveBaseBranch", () => {
       remote = ssh.remote(origin.path);
       env = ssh.env;
     }
-    tmp = makeTempDir("tasker-base-");
+    tmp = useTempDir("tasker-base-");
     clone = join(tmp, "repo.git");
     await provisionClone({
       remote,
@@ -131,7 +131,6 @@ describe("resolveBaseBranch", () => {
   afterEach(() => {
     store.close();
     origin.remove();
-    rmSync(tmp, { recursive: true, force: true });
   });
 
   describe("fetch", () => {

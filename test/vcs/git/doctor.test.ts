@@ -1,4 +1,4 @@
-import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { userInfo } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -21,7 +21,7 @@ import {
   gitTestEnv,
   makeGitClone,
   makeGitOrigin,
-  makeTempDir,
+  useTempDir,
   readArgLog,
   sshKeyArgs,
   treeSnapshot,
@@ -34,12 +34,8 @@ describe("gitVersionCheck", () => {
   let env: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-doctor-version-");
+    dir = useTempDir("tasker-doctor-version-");
     env = gitTestEnv(dir);
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   // Runs the check with a fake git that prints output as its version.

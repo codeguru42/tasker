@@ -1,7 +1,6 @@
-import { rmSync } from "node:fs";
 import { userInfo } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { GitError } from "../../../src/vcs/git/run.js";
 import {
   cloneUrl,
@@ -17,7 +16,7 @@ import {
   failureOf,
   fakeSsh,
   gitTestEnv,
-  makeTempDir,
+  useTempDir,
   readArgLog,
   sshKeyArgs,
 } from "../../helpers.js";
@@ -94,12 +93,8 @@ describe("runRemoteGit", () => {
   let ssh: FakeSsh;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-ssh-");
+    dir = useTempDir("tasker-ssh-");
     ssh = fakeSsh(dir, gitTestEnv(dir), "refuse");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   async function failure(sshKey: string): Promise<GitError> {

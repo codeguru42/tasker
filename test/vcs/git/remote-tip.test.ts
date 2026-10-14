@@ -1,4 +1,3 @@
-import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type RemoteTip, remoteTip, tipMoved } from "../../../src/vcs/git/remote-tip.js";
@@ -8,7 +7,7 @@ import {
   fakeSsh,
   type GitOrigin,
   makeGitOrigin,
-  makeTempDir,
+  useTempDir,
   readArgLog,
   sshKeyArgs,
 } from "../../helpers.js";
@@ -40,16 +39,12 @@ describe("remoteTip", () => {
   });
 
   it("gives absent for a remote with no refs", async () => {
-    const empty = makeTempDir("tasker-empty-");
-    try {
-      await runGit(["init", "--bare", "--initial-branch=main", "--", empty], {
-        cwd: empty,
-        env: origin.env,
-      });
-      expect(await tip("main", empty)).toEqual({ state: "absent" });
-    } finally {
-      rmSync(empty, { recursive: true, force: true });
-    }
+    const empty = useTempDir("tasker-empty-");
+    await runGit(["init", "--bare", "--initial-branch=main", "--", empty], {
+      cwd: empty,
+      env: origin.env,
+    });
+    expect(await tip("main", empty)).toEqual({ state: "absent" });
   });
 
   it("gives absent when the name is only the tail of another branch", async () => {
