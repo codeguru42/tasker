@@ -5,6 +5,7 @@ import type { Check } from "../doctor/check.js";
 import { dataRootCheck, freeSpaceCheck } from "../doctor/data-root.js";
 import { errorMessage } from "../error-message.js";
 import { runChecks } from "../doctor/run-checks.js";
+import { assistantDoctorChecks } from "../assistant/provider.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { createVcsProvider } from "../vcs/provider.js";
 import { fail, loadConfigOrFail } from "./shared.js";
@@ -21,13 +22,14 @@ function doctorChecks(config: Config, env: NodeJS.ProcessEnv): Check[] {
       ),
       ...issueProviderFor(config, key).doctorChecks([{ key, issueTracker: repo.issueTracker }]),
     ]),
+    ...assistantDoctorChecks(config),
   ];
 }
 
 export const doctor: RegisterCommand = (program, io) => {
   program
     .command("doctor")
-    .description("Make sure that the configuration, the data root, git, gh and the accounts work")
+    .description("Make sure that the configuration, the data root, git, gh, claude and the accounts work")
     .action(async () => {
       const config = loadConfigOrFail(io);
       const env = process.env;
