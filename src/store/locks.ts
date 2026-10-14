@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { pidIsLive } from "./pid.js";
 import { immediateTransaction } from "./transaction.js";
 
 export type LockAttempt =
@@ -19,19 +20,6 @@ export function repoLockName(repoKey: string): string {
 
 export function taskLockName(repoKey: string, issueKey: string): string {
   return `task:${repoKey}:${issueKey}`;
-}
-
-// EPERM means that the process exists but belongs to another user.
-function pidIsLive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === "EPERM") return true;
-    if (code === "ESRCH") return false;
-    throw error;
-  }
 }
 
 export function tryLockIn(db: DatabaseSync, name: string, at: string): LockAttempt {
