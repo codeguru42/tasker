@@ -44,19 +44,21 @@ The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and
 
 The sandbox follows the rules in [Sandbox](#sandbox). Its write paths and its shared folder come from the version control. Its read deny list holds these paths:
 
-- The ssh key of the repo. The version control gives it.
+- The ssh key of every configured repo. The version control gives it.
 - The `.ssh` folder of the operator.
 - The folder of the `gh` configuration.
 - The git credentials file and the `.netrc` file.
 - The credentials file of Claude Code.
-- The folder of the publish tokens of the repo. The version control gives it.
+- The folder of the publish tokens of every configured repo. The version control gives it.
 - The configuration of tasker.
+
+With the key of any repo, the shell can push to that repo, because the network stays open. So the list denies the keys and the publish tokens of every configured repo, not only those of the repo of the task. Each path of the list is absolute, because the shell runs in the worktree.
 
 Each entry goes in only when the variables that name it are set. A path that does not exist still goes in the list. The `claude` program reads its own credentials outside the sandbox, so the list denies only the shell.
 
 ### The environment of the shell
 
-The shell of the assistant gets no GitHub token and no ssh agent. The filter of the phases drops them (see [phases.md](phases.md)). As a result, the assistant cannot push as the operator.
+The shell of the assistant gets no GitHub token and no ssh agent. The filter of the phases drops them (see [phases.md](phases.md)). As a result, the shell of the assistant has no GitHub token and no ssh agent of the operator, and it cannot read the ssh key or the publish tokens of any configured repo.
 
 ### The limits of these roles
 
