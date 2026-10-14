@@ -8,6 +8,7 @@ import {
   statSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { errnoCode } from "../../errno.js";
 import { canonicalPath } from "../../real-path.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { isShortRef, LOWER_SLUG, SHORT_REF } from "../../issue-key/short-ref.js";
@@ -113,7 +114,7 @@ function isFile(path: string): boolean {
   try {
     return statSync(path).isFile();
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    if (errnoCode(error) === "ENOENT") return false;
     throw error;
   }
 }
@@ -128,7 +129,7 @@ function isMissingOrEmptyFolder(path: string): boolean {
   try {
     return lstatSync(path).isDirectory() && readdirSync(path).length === 0;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return true;
+    if (errnoCode(error) === "ENOENT") return true;
     throw error;
   }
 }
@@ -229,7 +230,7 @@ function readGuardFile(file: string): string | undefined {
   try {
     return withoutLineEnd(readFileSync(file, "utf8"));
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    if (errnoCode(error) === "ENOENT") return undefined;
     throw error;
   }
 }

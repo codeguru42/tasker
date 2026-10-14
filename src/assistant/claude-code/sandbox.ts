@@ -1,5 +1,6 @@
 import { accessSync, constants, realpathSync, statSync } from "node:fs";
 import { basename, delimiter, join } from "node:path";
+import { errnoCode } from "../../errno.js";
 import { canonicalPath, isInside } from "../../real-path.js";
 import type { SandboxLimits } from "../provider.js";
 
@@ -29,13 +30,13 @@ function realPath(path: string): string {
   try {
     return realpathSync(path);
   } catch (error) {
-    code = (error as NodeJS.ErrnoException).code;
+    code = errnoCode(error);
   }
   if (code === "ENOENT") {
     try {
       return canonicalPath(path);
     } catch (error) {
-      code = (error as NodeJS.ErrnoException).code;
+      code = errnoCode(error);
     }
   }
   throw new Error(`cannot resolve the sandbox temp folder: ${code ?? "unknown"}`);

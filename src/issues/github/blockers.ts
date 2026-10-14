@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { detailSuffix } from "../../detail-suffix.js";
 import { asciiFold, splitGithubKey } from "../../issue-key/github.js";
 import { IssueKeyError, type IssueRef } from "../../issue-key/ref.js";
 import { isObject } from "../../object.js";
@@ -111,8 +112,7 @@ export async function readGithubBlockers(
     const messages = (errors ?? []).map((error) => error.message).join("; ");
     const repository = field(data, "repository");
     if (repository === null || field(repository, "issue") === null) {
-      const detail = messages === "" ? "" : `: ${messages}`;
-      throw new IssueReadError(ref.key, `the issue ${ref.key} does not exist${detail}`);
+      throw new IssueReadError(ref.key, `the issue ${ref.key} does not exist${detailSuffix(messages)}`);
     }
     if (errors && errors.length > 0) {
       throw new IssueReadError(ref.key, `gh api graphql gave errors for ${ref.key}: ${messages}`);

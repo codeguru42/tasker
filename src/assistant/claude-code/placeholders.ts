@@ -1,5 +1,6 @@
 import { lstatSync, rmdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { errnoCode, hasErrnoCode } from "../../errno.js";
 import { errorMessage } from "../../error-message.js";
 import type { SandboxCleanup } from "../provider.js";
 
@@ -38,17 +39,13 @@ const CLAUDE_DIR = ".claude";
 
 type Kind = "file" | "file-or-folder" | "folder";
 
-function hasCode(error: unknown, codes: readonly string[]): boolean {
-  return codes.includes((error as NodeJS.ErrnoException).code ?? "");
-}
-
 // ENOTDIR counts as missing too: a regular file in the place of a parent folder, such as a .claude file,
 // or a .claude that changes after the parent check.
 function statOrNothing(path: string) {
   try {
     return lstatSync(path);
   } catch (error) {
-    if (hasCode(error, ["ENOENT", "ENOTDIR"])) return undefined;
+    if (hasErrnoCode(error, ["ENOENT", "ENOTDIR"])) return undefined;
     throw error;
   }
 }
@@ -93,7 +90,7 @@ export async function removePlaceholders(
         try {
           rmSync(full);
         } catch (error) {
-          if (hasCode(error, ["ENOENT", "ENOTDIR"])) continue;
+          if (hasErrnoCode(error, ["ENOENT", "ENOTDIR"])) continue;
           throw error;
         }
         removed.push(path);
@@ -102,7 +99,7 @@ export async function removePlaceholders(
         try {
           rmdirSync(full);
         } catch (error) {
-          if (hasCode(error, ["ENOTEMPTY", "EEXIST", "ENOENT", "ENOTDIR"])) continue;
+          if (hasErrnoCode(error, ["ENOTEMPTY", "EEXIST", "ENOENT", "ENOTDIR"])) continue;
           throw error;
         }
         removed.push(path);
@@ -110,7 +107,7 @@ export async function removePlaceholders(
     }
     return { removed: removed.sort() };
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    return { error: typeof code === "string" ? `cannot remove the sandbox placeholders: ${code}` : errorMessage(error) };
+    const code = errnoCode(error);
+    return { error: code !== undefined ? `cannot remove the sandbox placeholders: ${code}` : errorMessage(error) };
   }
 }

@@ -1,5 +1,6 @@
 import { realpathSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { errnoCode } from "./errno.js";
 
 // The path as git lists it: the real parent folder, then the last part. It works for a missing
 // folder, because git lists the real path of the parent.
@@ -8,7 +9,7 @@ export function canonicalPath(path: string): string {
   try {
     return join(realpathSync(dirname(full)), basename(full));
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return full;
+    if (errnoCode(error) === "ENOENT") return full;
     throw error;
   }
 }

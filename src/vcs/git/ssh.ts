@@ -1,5 +1,6 @@
 import { userInfo } from "node:os";
 import { isAbsolute, parse } from "node:path";
+import { detailSuffix } from "../../detail-suffix.js";
 import { GitError, runGit, type RunGitOptions } from "./run.js";
 
 const HIDDEN = "<sshKey>";
@@ -104,6 +105,5 @@ export function cloneUrl(remote: string): string {
 // The error for a remote that does not answer.
 // It sets no cause, because the text of git can hold secrets.
 export function remoteNotAnswering(remote: string, failure: GitError): Error {
-  const detail = failure.stderr.trim();
-  return new Error(`the remote does not answer: ${remote}${detail === "" ? "" : `: ${detail}`}`);
+  return new Error(`the remote does not answer: ${remote}${detailSuffix(failure.stderr.trim())}`);
 }

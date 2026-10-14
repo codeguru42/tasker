@@ -1,4 +1,5 @@
 import { tmpdir } from "node:os";
+import { detailSuffix } from "../../detail-suffix.js";
 import { errorMessage } from "../../error-message.js";
 import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
@@ -51,8 +52,7 @@ function outcomeOf(
   const { result } = facts;
   if (result?.["is_error"] === true) return fail(errorResultReason(result));
   if (run.code !== 0) {
-    const tail = run.stderrTail.trim();
-    return fail(`claude exited ${run.code}${tail === "" ? "" : `: ${tail}`}`);
+    return fail(`claude exited ${run.code}${detailSuffix(run.stderrTail.trim())}`);
   }
   if (result === undefined) return fail("the assistant ended with no result");
   if (input.jsonSchema === undefined) return { kind: "success", ...base };

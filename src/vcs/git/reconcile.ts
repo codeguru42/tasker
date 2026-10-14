@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { detailSuffix } from "../../detail-suffix.js";
 import { ReconcileConflictError } from "../errors.js";
 import type { ReconcileStrategy, UncommittedChange } from "../provider.js";
 import {
@@ -137,14 +138,13 @@ async function restoreAt(target: string, env: NodeJS.ProcessEnv, start: StartSta
   if (right) return;
   const n = found.changes.length;
   const where = found.branch === undefined ? "detached" : `on the branch ${found.branch}`;
-  const stderr = stderrs[0] === undefined || stderrs[0] === "" ? "" : `: ${stderrs[0]}`;
   throw new Error(
     `cannot restore the worktree: ${target}: HEAD is at ${found.head}, ${where}` +
       `${found.rebase ? ", a rebase is in progress" : ""}` +
       `${found.merge ? ", a merge is in progress" : ""}` +
       `${n > 0 ? `, ${n} uncommitted changes` : ""}. ` +
       `Run these git commands in the worktree, in this order: ` +
-      `${restoreCommands(start, found).join(", then ")}${stderr}`,
+      `${restoreCommands(start, found).join(", then ")}${detailSuffix(stderrs[0] ?? "")}`,
   );
 }
 

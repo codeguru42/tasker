@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { Io, RegisterCommand } from "../cli.js";
+import { errnoCode } from "../errno.js";
 import { bootstrapLogPath } from "../phases/bootstrap.js";
 import { taskLogsDir } from "../store/layout.js";
 import type { Task } from "../store/store.js";
@@ -10,7 +11,7 @@ function readBootstrapLog(io: Io, dataRoot: string, task: Task): string {
   try {
     return readFileSync(bootstrapLogPath(taskLogsDir(dataRoot, task)), "utf8");
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
+    const code = errnoCode(error);
     if (code === "ENOENT") fail(io, `no bootstrap log for ${task.issueKey}`);
     fail(io, `cannot read the bootstrap log for ${task.issueKey}: ${code}`);
   }

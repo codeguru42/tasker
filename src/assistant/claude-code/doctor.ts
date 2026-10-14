@@ -1,3 +1,4 @@
+import { detailSuffix } from "../../detail-suffix.js";
 import type { Check } from "../../doctor/check.js";
 import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
@@ -29,7 +30,7 @@ export function claudeVersionCheck(timeoutMs = 5000): Check {
       const stderr = firstLine(child.stderr);
       return {
         status: "error",
-        detail: `claude --version exited ${child.code}${stderr === "" ? "" : `: ${stderr}`}`,
+        detail: `claude --version exited ${child.code}${detailSuffix(stderr)}`,
       };
     }
     return { status: "ok", detail: firstLine(child.stdout) };

@@ -1,6 +1,8 @@
 import { lstatSync, readdirSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { DeadlineError } from "../../doctor/timed-check.js";
+import { errnoCode, hasErrnoCode } from "../../errno.js";
+import { errorMessage } from "../../error-message.js";
 import { withoutLineEnd } from "./worktree.js";
 
 // A lock file is stale when nobody has written it for this long.
@@ -10,10 +12,6 @@ export interface StaleLock {
   // The absolute real path of the lock file.
   path: string;
   ageMs: number;
-}
-
-function isMissing(error: unknown): boolean {
-  return (error as NodeJS.ErrnoException).code === "ENOENT";
 }
 
 // The lock files in the clone that are older than a minute, sorted by path.
@@ -27,7 +25,7 @@ export function findStaleLocks(clone: string, nowMs: number, deadline: number): 
     try {
       entries = readdirSync(folder, { withFileTypes: true });
     } catch (error) {
-      if (isMissing(error)) return;
+      if (hasErrnoCode(error, ["ENOENT"])) return;
       throw error;
     }
     for (const entry of entries) {
@@ -46,7 +44,7 @@ export function findStaleLocks(clone: string, nowMs: number, deadline: number): 
             found.push({ path, ageMs });
           }
         } catch (error) {
-          if (!isMissing(error)) throw error;
+          if (!hasErrnoCode(error, ["ENOENT"])) throw error;
         }
       }
     }
@@ -66,8 +64,7 @@ export function readProcView(procRoot: string): ProcView {
   try {
     names = readdirSync(procRoot);
   } catch (error) {
-    const failure = error as NodeJS.ErrnoException;
-    return { readable: false, reason: failure.code ?? failure.message };
+    return { readable: false, reason: errnoCode(error) ?? errorMessage(error) };
   }
   const openFiles = new Set<string>();
   const gitCwds: string[] = [];

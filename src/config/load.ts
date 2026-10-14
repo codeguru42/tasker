@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { homedir as osHomedir } from "node:os";
+import { errnoCode } from "../errno.js";
 import { resolveConfigPath } from "./path.js";
 import { parseConfig, type Config } from "./schema.js";
 
@@ -7,7 +8,7 @@ function readConfigText(path: string): string {
   try {
     return readFileSync(path, "utf8");
   } catch (cause) {
-    const code = (cause as NodeJS.ErrnoException).code;
+    const code = errnoCode(cause);
     if (code === "ENOENT") {
       throw new Error(`config file not found: ${path}`, { cause });
     }

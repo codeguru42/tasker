@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
+import { errnoCode } from "../errno.js";
 
 const KILL_GRACE_MS = 5_000;
 const POLL_MS = 100;
@@ -25,7 +26,7 @@ export function signalGroup(pid: number, signal: NodeJS.Signals): void {
   try {
     process.kill(-pid, signal);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+    if (errnoCode(error) !== "ESRCH") throw error;
   }
 }
 
@@ -34,7 +35,7 @@ function groupRuns(pid: number): boolean {
     process.kill(-pid, 0);
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ESRCH") return false;
+    if (errnoCode(error) === "ESRCH") return false;
     throw error;
   }
 }

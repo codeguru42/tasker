@@ -1,3 +1,4 @@
+import { detailSuffix } from "../detail-suffix.js";
 import type { Check, CheckResult } from "./check.js";
 
 const INDENT = "      "; // the width of "error" and one space
@@ -6,7 +7,7 @@ const INDENT = "      "; // the width of "error" and one space
 // The other lines of the detail follow, then the lines of the remediation, each with INDENT.
 export function formatResult(check: Pick<Check, "name">, result: CheckResult): string {
   const [first, ...rest] = result.detail.split("\n");
-  const head = `${result.status.padEnd(5)} ${check.name}${first === "" ? "" : `: ${first}`}`;
+  const head = `${result.status.padEnd(5)} ${check.name}${detailSuffix(first)}`;
   const more = [...rest, ...(result.remediation?.split("\n") ?? [])].map((line) => `${INDENT}${line}`);
   return [head, ...more].map((line) => `${line}\n`).join("");
 }

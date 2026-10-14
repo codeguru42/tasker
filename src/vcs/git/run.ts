@@ -1,4 +1,5 @@
 import { existsSync, statSync } from "node:fs";
+import { errnoCode } from "../../errno.js";
 import { assertPathSet, type ChildResult, CommandNotFoundError, runChild } from "../../process/run-child.js";
 
 // Where git runs. cwd: a folder in a work tree, for any command that needs one.
@@ -162,7 +163,7 @@ async function spawnGit(
     result = await runChild("git", fullArgs, { cwd: location.path, env, signal });
   } catch (error) {
     const notFound = error instanceof CommandNotFoundError;
-    if ((notFound || (error as NodeJS.ErrnoException).code === "ENOTDIR") && !isFolder(location.path)) {
+    if ((notFound || errnoCode(error) === "ENOTDIR") && !isFolder(location.path)) {
       // Node reports a missing cwd as ENOENT and a cwd that is a file as ENOTDIR.
       throw folderError(location);
     }

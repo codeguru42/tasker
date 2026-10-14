@@ -1,6 +1,7 @@
 import { mkdirSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
+import { errnoCode } from "../../errno.js";
 import type { GitVcsConfig } from "./config.js";
 import { runGit } from "./run.js";
 import { homeKeyPath } from "./ssh.js";
@@ -35,7 +36,7 @@ export function readDenyPaths(config: GitVcsConfig): string[] {
   try {
     real = realpathSync(path);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [path];
+    if (errnoCode(error) === "ENOENT") return [path];
     throw error;
   }
   return real === path ? [path] : [path, real];

@@ -1,3 +1,4 @@
+import { detailSuffix } from "../../detail-suffix.js";
 import type { RemoteTaskRefDeletion } from "../provider.js";
 import { LOCAL_PREFIX } from "./base-branch.js";
 import { pushWithToken } from "./push-guard.js";
@@ -32,16 +33,11 @@ function assertRevision(name: string, value: string): void {
   }
 }
 
-// ": <detail>" for a person to read, or "" when there is no detail. No code reads it.
-function detail(error: Error): string {
-  const text = (error instanceof GitError ? error.stderr : error.message).trim();
-  return text === "" ? "" : `: ${text}`;
-}
-
-// The error to throw for a failure: a new Error with the summary and the detail, and no cause.
+// The error to throw for a failure: a new Error with the summary and the detail for a person to read, and no cause.
 // A value that is not an Error passes through.
 function failed(summary: string, error: unknown): unknown {
-  return error instanceof Error ? new Error(`${summary}${detail(error)}`) : error;
+  if (!(error instanceof Error)) return error;
+  return new Error(`${summary}${detailSuffix((error instanceof GitError ? error.stderr : error.message).trim())}`);
 }
 
 // The one copy of the moved error.

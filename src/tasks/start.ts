@@ -4,6 +4,7 @@ import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { type BootstrapResult, bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
 import { childEnv } from "../process/child-env.js";
+import { errnoCode } from "../errno.js";
 import { errorMessage } from "../error-message.js";
 import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
@@ -60,7 +61,7 @@ export function bootstrapLogTail(log: string, count: number): string {
   try {
     text = readFileSync(log, "utf8");
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
+    const code = errnoCode(error);
     return code === "ENOENT" ? `the log is missing: ${log}\n` : `cannot read the log ${log}: ${code}\n`;
   }
   const lines = text.split("\n");
