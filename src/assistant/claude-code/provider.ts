@@ -7,7 +7,7 @@ import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "..
 import { claudeArgs } from "./args.js";
 import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
 import { removePlaceholders } from "./placeholders.js";
-import { detectQuotaApprovalWarning, quotaStopOf, shouldSuppressQuotaApprovalPause } from "./quota.js";
+import { detectQuotaApprovalWarning, overageStopOf, quotaStopOf, shouldSuppressQuotaApprovalPause } from "./quota.js";
 import {
   LINUX_SANDBOX_PROGRAMS,
   sandboxHostRefusal,
@@ -39,6 +39,9 @@ function errorResultReason(result: Record<string, unknown>): string {
 }
 
 // The outcome of a run that started. The first match wins:
+// - An overage stop (the provider recorded an event that shows the start of paid usage) gives quota with
+//   cause "overage". It wins over every other outcome, also the timeout, because it rests on the parsed
+//   event, not on whether the stop beat the exit of the child.
 // - The deadline gives timeout.
 // - A quota stop (the last event is a result with terminal_reason "api_error" and api_error_status 429,
 //   and the exit code is not 0) gives quota with cause "rate_limit". It wins over each failure below,
@@ -54,9 +57,11 @@ function outcomeOf(
   run: Extract<AssistantResult, { started: true }>,
   events: AssistantEvent[],
   facts: StreamFacts,
+  overage: { resetsAt?: number } | undefined,
 ): RunOutcome {
   const base = { sessionId: input.sessionId, ...outcomeFacts(events, facts) };
   const fail = (reason: string): Failure => ({ kind: "failure", ...base, exitCode: run.code, signal: run.signal, reason });
+  if (overage !== undefined) return { kind: "quota", cause: "overage", ...base, ...overage };
   if (run.timedOut) return { kind: "timeout", ...base };
   const quotaStop = quotaStopOf(events, run.code);
   if (quotaStop !== undefined) return { kind: "quota", cause: "rate_limit", ...base, ...quotaStop };
@@ -86,9 +91,6 @@ export function createClaudeCodeProvider(
         const refusal = sandboxHostRefusal(platform, env) ?? sharedFolderRefusal(sandbox.sharedFolder);
         if (refusal !== undefined) return failureWithNoExit(input, refusal, []);
       }
-      if (input.overageStop !== undefined) {
-        return failureWithNoExit(input, "the claude-code provider cannot enforce an overage stop in this version", []);
-      }
       let settings: Record<string, unknown> | undefined;
       if (sandbox !== undefined) {
         try {
@@ -108,6 +110,8 @@ export function createClaudeCodeProvider(
           ? outcome
           : { ...outcome, sandboxCleanup: await removePlaceholders(input.cwd, sandbox.trackedPaths) };
       const events: AssistantEvent[] = [];
+      const stop = new AbortController();
+      let overage: { resetsAt?: number } | undefined;
       let run: AssistantResult;
       try {
         run = await runAssistant("claude", claudeArgs(input, settings), {
@@ -115,10 +119,15 @@ export function createClaudeCodeProvider(
           env,
           prompt: input.prompt,
           deadline: Date.now() + input.timeoutMs,
+          signal: stop.signal,
           onLine: (line) => {
             const event = parseLine(line);
             if (event === undefined) return;
             events.push(event);
+            if (input.overageStop !== undefined && overage === undefined) {
+              overage = overageStopOf(event, input.overageStop);
+              if (overage !== undefined) stop.abort();
+            }
             try {
               input.onEvent?.(event);
             } catch {
@@ -135,7 +144,7 @@ export function createClaudeCodeProvider(
           failureWithNoExit(input, run.notFound ? CLAUDE_NOT_INSTALLED : run.error, events),
         );
       }
-      return finish(outcomeOf(input, run, events, readStream(events)));
+      return finish(outcomeOf(input, run, events, readStream(events), overage));
     },
     doctorChecks: (repos) =>
       repos.length === 0

@@ -1,6 +1,6 @@
 // The quota facts of the claude stream. Each rule of the rate-limit events has one function here.
 import { isObject } from "../../object.js";
-import type { AssistantEvent, QuotaApprovalWarning, RunOutcome } from "../provider.js";
+import type { AssistantEvent, OverageStop, QuotaApprovalWarning, RunOutcome } from "../provider.js";
 
 // A number field. A value that is not a finite number counts as missing.
 function numberOf(value: unknown): number | undefined {
@@ -37,6 +37,39 @@ function relevantWindow(info: Record<string, unknown>): QuotaApprovalWarning | u
   if (utilization === undefined) return undefined;
   const resetsAt = numberOf(source["resetsAt"]);
   return resetsAt === undefined ? { utilization } : { utilization, resetsAt };
+}
+
+// The reset time of the spent window, for an overage stop. Never the cap of paid usage.
+function spentResetsAt(info: Record<string, unknown>): number | undefined {
+  const type = info["rateLimitType"];
+  if (typeof type === "string" && type !== "overage") {
+    return numberOf(unifiedEntry(info, type)?.["resetsAt"]) ?? numberOf(info["resetsAt"]);
+  }
+  const windows = info["unifiedWindows"];
+  if (!isObject(windows)) return undefined;
+  let best: { utilization: number; resetsAt: number } | undefined;
+  for (const entry of Object.values(windows)) {
+    if (!isObject(entry)) continue;
+    const utilization = numberOf(entry["utilization"]);
+    const resetsAt = numberOf(entry["resetsAt"]);
+    if (utilization === undefined || resetsAt === undefined) continue;
+    if (best === undefined || utilization > best.utilization) best = { utilization, resetsAt };
+  }
+  return best?.resetsAt;
+}
+
+// The facts of an overage stop when the event shows the start of paid usage in a window that the operator did not approve.
+export function overageStopOf(event: AssistantEvent, overageStop: OverageStop): { resetsAt?: number } | undefined {
+  const info = rateLimitInfoOf(event);
+  if (info === undefined) return undefined;
+  const status = info["overageStatus"];
+  const paid =
+    info["isUsingOverage"] === true ||
+    (info["status"] === "rejected" && (status === "allowed" || status === "allowed_warning"));
+  if (!paid) return undefined;
+  const resetsAt = spentResetsAt(info);
+  if (resetsAt !== undefined && overageStop.approvedResetsAt === resetsAt) return undefined;
+  return resetsAt === undefined ? {} : { resetsAt };
 }
 
 // The facts of a quota stop when the rate limit stopped the run, else undefined.
