@@ -41,6 +41,21 @@ export function readDenyPaths(config: GitVcsConfig): string[] {
   return real === path ? [path] : [path, real];
 }
 
+// The common git dir of the worktree at target, as an absolute path. The caller runs the worktree guard first.
+// --path-format=absolute needs git 2.31, so each rev-parse path in this file resolves against the worktree.
+async function commonGitDir(target: string, env: NodeJS.ProcessEnv): Promise<string> {
+  return resolve(target, withoutLineEnd(await runGit(["rev-parse", "--git-common-dir"], { cwd: target, env })));
+}
+
+// The folder that the workspaces of the clone share: the common git dir of the task worktree.
+export async function sharedFolder(options: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+}): Promise<string> {
+  return commonGitDir(await assertTaskWorktree(options), options.env);
+}
+
 // The folders that a git commit in the task worktree writes to, as absolute paths:
 // objects/, refs/ and logs/ of the clone, and the admin dir of the worktree.
 // Not the whole clone, and not hooks/ or config, because tasker's later git calls run them.
@@ -54,11 +69,7 @@ export async function sandboxWritePaths(options: {
   // The guard also makes sure that the worktree uses its own git dir in the clone.
   const target = await assertTaskWorktree(options);
   // Two calls, not one: one call prints two paths on two lines, and a path can hold a newline.
-  // --path-format=absolute needs git 2.31, so resolve each path against the worktree.
-  const common = resolve(
-    target,
-    withoutLineEnd(await runGit(["rev-parse", "--git-common-dir"], { cwd: target, env })),
-  );
+  const common = await commonGitDir(target, env);
   const admin = resolve(
     target,
     withoutLineEnd(await runGit(["rev-parse", "--git-dir"], { cwd: target, env })),
@@ -66,4 +77,21 @@ export async function sandboxWritePaths(options: {
   const logs = join(common, "logs");
   mkdirSync(logs, { recursive: true });
   return [join(common, "objects"), join(common, "refs"), logs, admin];
+}
+
+// The subset of paths (relative to path) that git tracks, in the input order, from one ls-files call.
+// Each path gets the :(literal) magic, because a name must not act as a pattern.
+// A folder counts when it holds a tracked entry.
+export async function trackedPaths(options: {
+  env: NodeJS.ProcessEnv;
+  path: string;
+  paths: readonly string[];
+}): Promise<string[]> {
+  if (options.paths.length === 0) return [];
+  const out = await runGit(["ls-files", "-z", "--", ...options.paths.map((p) => `:(literal)${p}`)], {
+    cwd: options.path,
+    env: options.env,
+  });
+  const entries = out.split("\0").filter((entry) => entry !== "");
+  return options.paths.filter((p) => entries.some((entry) => entry === p || entry.startsWith(`${p}/`)));
 }

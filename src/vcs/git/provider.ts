@@ -5,6 +5,8 @@ import {
   EXECUTE_COMMIT_TEXT,
   readDenyPaths,
   sandboxWritePaths,
+  sharedFolder,
+  trackedPaths,
 } from "./assistant-surface.js";
 import { resolveBaseBranch } from "./base-branch.js";
 import { ownCommitsText, uncommittedChanges, worktreeDiff } from "./changes.js";
@@ -151,6 +153,8 @@ export function createGitProvider({
         denyRules: DENY_RULES,
         denyReadPaths: readDenyPaths(config),
         sandboxWritePaths: (path) => sandboxWritePaths({ clone, env: ctx.env, path }),
+        sharedFolder: (path) => sharedFolder({ clone, env: ctx.env, path }),
+        trackedPaths: (path, paths) => trackedPaths({ env: ctx.env, path, paths }),
       };
     },
     doctorChecks(ctx, { procRoot, platform }) {

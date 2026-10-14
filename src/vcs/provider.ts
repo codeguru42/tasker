@@ -67,6 +67,11 @@ export interface AssistantSurface {
   denyRules: readonly string[];
   denyReadPaths: string[];
   sandboxWritePaths(path: string): Promise<string[]>;
+  // The absolute path of the folder that the workspaces of the clone share.
+  sharedFolder(path: string): Promise<string>;
+  // The subset of paths (relative to the workspace path) that the version control tracks, from one call.
+  // A folder counts when it holds a tracked entry. The input order stays.
+  trackedPaths(path: string, paths: readonly string[]): Promise<string[]>;
 }
 
 // The result of deleteRemoteTaskRef, and of deleteRemoteTaskBranch() in src/vcs/git/publish.ts.
