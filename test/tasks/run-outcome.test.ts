@@ -10,6 +10,7 @@ import {
   dayAt,
   eventsOf,
   readRunMarker,
+  seedPlanSession,
   seedTasks,
   TEST_SESSION_ID,
   useTempDir,
@@ -108,5 +109,50 @@ describe("applyRunOutcome with a failure or a timeout", () => {
         data: { from: "planning", to: "failed", error: "planning failed: claude exited with code 2" },
       },
     ]);
+  });
+});
+
+describe("applyRunOutcome with a quota stop", () => {
+  const resetsAt = Date.parse(dayAt(2)) / 1000;
+
+  it("blocks the task and names the reset time", () => {
+    const { result, state, marker, events, io } = applyTo({
+      kind: "quota",
+      ...base(),
+      cause: "rate_limit",
+      resetsAt,
+    });
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(state).toBe("quota_blocked");
+    expect(marker).toBeUndefined();
+    expect(events).toEqual([
+      { type: "usage", data: { usage: USAGE } },
+      { type: "transition", data: { from: "planning", to: "quota_blocked", cause: "rate_limit", resetsAt } },
+    ]);
+    expect(io.out).toEqual([`planning stopped by a quota limit; it resets at ${dayAt(2)}\n`]);
+    expect(io.err).toEqual([]);
+  });
+
+  it("blocks the task when the reset time is unknown", () => {
+    const { result, state, events, io } = applyTo({ kind: "quota", ...base(), cause: "overage" });
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(state).toBe("quota_blocked");
+    expect(events).toEqual([
+      { type: "usage", data: { usage: USAGE } },
+      { type: "transition", data: { from: "planning", to: "quota_blocked", cause: "overage" } },
+    ]);
+    expect(io.out).toEqual(["planning stopped by a quota limit; the reset time is unknown\n"]);
+    expect(io.err).toEqual([]);
+  });
+
+  it("keeps the plan session of the task", () => {
+    const { dataRoot, task } = applyTo({ kind: "quota", ...base(), cause: "rate_limit", resetsAt }, (store, seeded) => {
+      seedPlanSession(store, seeded.id);
+    });
+
+    const session = withDataRootStore(dataRoot, (store) => store.planSession(task.id));
+    expect(session?.sessionId).toBe(TEST_SESSION_ID);
   });
 });
