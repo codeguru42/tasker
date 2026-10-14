@@ -67,6 +67,15 @@ describe("runAssistant", () => {
     expect(lines).toEqual(["a" + "é".repeat(131072)]);
   });
 
+  it.each([
+    { name: "never reads the prompt", command: "exit 3", code: 3 },
+    { name: "reads one byte of the prompt", command: "head -c 1 >/dev/null; exit 4", code: 4 },
+  ])("gives the exit code of a child that $name", async ({ command, code }) => {
+    const { result } = await runCollected(command, { prompt: "x".repeat(4 * 1024 * 1024) });
+
+    expect(result).toMatchObject({ code, signal: null });
+  });
+
   it("stops the group at the deadline", { timeout: 20_000 }, async () => {
     const { result } = await runCollected("sleep 30", { deadline: Date.now() + 300 });
 
