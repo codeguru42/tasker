@@ -3,6 +3,7 @@ import { isSpawningState, TERMINAL_STATES } from "../state/machine.js";
 import { type LockStore, tryLockIn, unlockIn } from "./locks.js";
 import { migrate } from "./migrate.js";
 import { migrations } from "./migrations.js";
+import { pidIsLive } from "./pid.js";
 import { immediateTransaction } from "./transaction.js";
 
 // A task is active when its state is not terminal. The state names are fixed words with no quote.
@@ -21,6 +22,12 @@ export class ActiveTaskError extends Error {
     this.name = "ActiveTaskError";
   }
 }
+
+export type RunStatus =
+  | { status: "none" }
+  | { status: "running" }
+  // childPid is null when the marker is missing or has no child pid.
+  | { status: "dead"; childPid: number | null };
 
 export class RunMarkerExistsError extends Error {
   constructor(
@@ -121,6 +128,8 @@ export interface TaskStore extends LockStore {
     state: string,
     check?: (current: Task) => NewEvent | void,
   ): Task;
+  // Tells if the run of a task in a spawning state is alive. The process of tasker decides, never the child.
+  runStatus(id: number): RunStatus;
   // Adds the pid of the child to the run marker of this process.
   setRunChildPid(id: number, childPid: number): void;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
@@ -253,6 +262,11 @@ function setUp(db: DatabaseSync) {
     selectRunMarker: db.prepare("SELECT state, pid FROM run_markers WHERE task_id = ?"),
     setRunChildPid: db.prepare(
       "UPDATE run_markers SET child_pid = ? WHERE task_id = ? AND pid = ?",
+    ),
+    selectRunStatus: db.prepare(
+      `SELECT tasks.state, run_markers.pid, run_markers.child_pid
+       FROM tasks LEFT JOIN run_markers ON run_markers.task_id = tasks.id
+       WHERE tasks.id = ?`,
     ),
     deleteRunMarker: db.prepare("DELETE FROM run_markers WHERE task_id = ?"),
     insertEvent: db.prepare(
@@ -474,6 +488,23 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         statements.deleteRunMarker.run(id);
         if (event !== undefined) writeEvent(id, at, event.type, event.data);
         return task;
+      });
+    },
+
+    runStatus(id) {
+      // The read and the pid check share the write lock, so an endRun of another process cannot
+      // commit in between and make an ended run look dead.
+      return immediateTransaction(db, (): RunStatus => {
+        const row = statements.selectRunStatus.get(id) as
+          | { state: string; pid: number | null; child_pid: number | null }
+          | undefined;
+        if (row === undefined) {
+          throw new Error(`task not found: ${id}`);
+        }
+        if (!isSpawningState(row.state)) return { status: "none" };
+        if (row.pid === null) return { status: "dead", childPid: null };
+        if (pidIsLive(row.pid)) return { status: "running" };
+        return { status: "dead", childPid: row.child_pid };
       });
     },
 
