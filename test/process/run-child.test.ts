@@ -1,7 +1,12 @@
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { CommandNotFoundError, runChild } from "../../src/process/run-child.js";
+import {
+  ChildCommandError,
+  childFailureMessage,
+  CommandNotFoundError,
+  runChild,
+} from "../../src/process/run-child.js";
 import { failureOf, useTempDir, writeFakeCommand } from "../helpers.js";
 
 let dir: string;
@@ -100,5 +105,31 @@ describe("runChild", () => {
       (e: unknown) => e as Error,
     );
     expect(error?.name).toBe("AbortError");
+  });
+});
+
+describe("childFailureMessage", () => {
+  it("names the signal when the child has no exit code", () => {
+    expect(childFailureMessage("git", "fetch", null, "SIGTERM", "x")).toBe("git fetch was stopped by signal SIGTERM");
+  });
+
+  it("gives the exit code and the trimmed stderr", () => {
+    expect(childFailureMessage("git", "fetch", 128, null, "  bad\n")).toBe("git fetch failed with exit code 128: bad");
+  });
+
+  it("gives no suffix for an empty stderr", () => {
+    expect(childFailureMessage("git", "fetch", 1, null, "")).toBe("git fetch failed with exit code 1");
+  });
+});
+
+describe("ChildCommandError", () => {
+  it("is an Error with the fields set", () => {
+    const error = new ChildCommandError("boom", "fetch", "out", "err", 2);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe("boom");
+    expect(error.subcommand).toBe("fetch");
+    expect(error.stdout).toBe("out");
+    expect(error.stderr).toBe("err");
+    expect(error.exitCode).toBe(2);
   });
 });
