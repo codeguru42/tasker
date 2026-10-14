@@ -67,7 +67,10 @@ describe("assistantDoctorChecks", () => {
   it("gives one claude version check for two claude-code repos", () => {
     const checks = assistantDoctorChecks(configWith({ a: "claude-code", b: "claude-code" }));
 
-    expect(checks.map((check) => check.name)).toEqual(["claude version"]);
+    expect(checks.map((check) => check.name)).toEqual([
+      "claude version",
+      ...(process.platform === "linux" ? ["sandbox: bwrap", "sandbox: socat"] : []),
+    ]);
   });
 
   it("gives no checks for a configuration with no repo", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { claudeModelCheck, claudeVersionCheck } from "../../../src/assistant/claude-code/doctor.js";
+import { claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "../../../src/assistant/claude-code/doctor.js";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
-import { useFakeClaude, useTempDir, validConfig } from "../../helpers.js";
+import { useFakeClaude, useFakeSandboxBin, useTempDir, validConfig } from "../../helpers.js";
 
 const VERSION = "2.1.299 (Claude Code)";
 
@@ -60,6 +60,33 @@ describe("claudeVersionCheck", () => {
   });
 });
 
+describe("sandboxProgramCheck", () => {
+  it("has the name, required and timeoutMs of the check", () => {
+    const check = sandboxProgramCheck("bwrap", "bubblewrap");
+
+    expect({ name: check.name, required: check.required, timeoutMs: check.timeoutMs }).toEqual({
+      name: "sandbox: bwrap",
+      required: true,
+      timeoutMs: 1000,
+    });
+  });
+
+  it("gives ok when the program is on PATH of the env of the check", async () => {
+    expect(await sandboxProgramCheck("socat", "socat").run({ PATH: useFakeSandboxBin() })).toEqual({
+      status: "ok",
+      detail: "socat is on PATH",
+    });
+  });
+
+  it("gives the fix with the package when the program is not on PATH", async () => {
+    expect(await sandboxProgramCheck("bwrap", "bubblewrap").run({ PATH: useFakeSandboxBin(["bwrap"]) })).toEqual({
+      status: "error",
+      detail: "bwrap is not on PATH",
+      remediation: "Install the bubblewrap package and put bwrap on PATH.",
+    });
+  });
+});
+
 describe("claudeModelCheck", () => {
   it("has the name, required and timeoutMs of the model check", () => {
     const check = claudeModelCheck("opus");
@@ -93,10 +120,26 @@ describe("the claude-code provider checks", () => {
     expect(createClaudeCodeProvider().doctorChecks([])).toEqual([]);
   });
 
-  it("gives one version check for the repos", () => {
-    const checks = createClaudeCodeProvider().doctorChecks([...repos, { ...repos[0]!, key: "other" }]);
+  it("gives one version check for the repos on darwin", () => {
+    const checks = createClaudeCodeProvider({ platform: "darwin" }).doctorChecks([
+      ...repos,
+      { ...repos[0]!, key: "other" },
+    ]);
 
     expect(checks.map((check) => check.name)).toEqual(["claude version"]);
+  });
+
+  it("gives the two sandbox program checks once for the repos on linux", () => {
+    const checks = createClaudeCodeProvider({ platform: "linux" }).doctorChecks([
+      ...repos,
+      { ...repos[0]!, key: "other" },
+    ]);
+
+    expect(checks.map((check) => check.name)).toEqual(["claude version", "sandbox: bwrap", "sandbox: socat"]);
+  });
+
+  it("gives no check for no repo on linux", () => {
+    expect(createClaudeCodeProvider({ platform: "linux" }).doctorChecks([])).toEqual([]);
   });
 
   it("gives one model check for a model", () => {

@@ -16,6 +16,7 @@ import {
   usePathWithout,
   useTempDir,
   validConfig,
+  writeFakeSandboxPrograms,
   writeTempConfig,
 } from "../helpers.js";
 
@@ -36,6 +37,7 @@ async function setUp(
   onTestFinished(fixture.remove);
   const dir = useTempDir("tasker-doctor-");
   const fake = fakeGh(dir, {}, answers);
+  writeFakeSandboxPrograms(join(dir, "bin"));
   const raw = validConfig();
   raw.dataRoot = fixture.context.dataRoot;
   raw.dataRootMinFreeBytes = 1;
@@ -59,7 +61,7 @@ async function setUp(
 const statusLines = (out: string) => out.split("\n").filter((line) => line !== "" && !line.startsWith(" "));
 
 describe("doctor", () => {
-  it("gives 0 and eleven ok lines in order for a good setup", async () => {
+  it("gives 0 and one ok line for each check in order for a good setup", async () => {
     await setUp(GOOD_GH);
 
     const { code, out, err } = await runCommand(doctor, "doctor");
@@ -78,6 +80,7 @@ describe("doctor", () => {
       "gh project: tasker",
       "gh labels: tasker",
       "claude version",
+      ...(process.platform === "linux" ? ["sandbox: bwrap", "sandbox: socat"] : []),
     ];
     const lines = statusLines(out);
     expect(lines).toHaveLength(names.length);
@@ -94,7 +97,9 @@ describe("doctor", () => {
     const at = lines.findIndex((line) => line.startsWith("error claude version"));
     expect(at).toBeGreaterThan(-1);
     expect(lines[at + 1]).toMatch(/^ {6}.*Install Claude Code and put claude on PATH\./);
-    expect(statusLines(out).filter((line) => line.startsWith("ok "))).toHaveLength(10);
+    expect(statusLines(out).filter((line) => line.startsWith("ok "))).toHaveLength(
+      process.platform === "linux" ? 12 : 10,
+    );
   });
 
   it("gives 1, prints the loader error and runs no check when the configuration does not load", async () => {
