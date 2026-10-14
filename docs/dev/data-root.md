@@ -17,9 +17,11 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | `<dataRoot>/clones/<slug>/worktrees/<shortRef>/` | The worktree of one task. |
 | `<dataRoot>/artifacts/` | The files that tasks produce. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/` | The files of one attempt of a task. The issue slug comes from the issue key. |
+| `<dataRoot>/prompts/` | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks. |
+| `<dataRoot>/prompts/<version>.md` | One file for each prompt version. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
 
-`<slug>` comes from the repo key. [version-control.md](version-control.md) describes the slug. The setup of the data root does not make the folders of a repo. Provision makes them.
+`<slug>` comes from the repo key. [version-control.md](version-control.md) describes the slug. The setup of the data root does not make the folders of a repo. Provision makes them. tasker never changes or deletes a file in `prompts/`.
 
 SQLite runs in WAL mode (write-ahead log). It also makes `tasker.db-wal` and `tasker.db-shm` next to the database file. Do not delete these files while a tasker process runs.
 
