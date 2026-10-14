@@ -51,6 +51,23 @@ export function taskLogsDir(
   return join(taskArtifactsDir(dataRoot, task), "logs");
 }
 
+// The folder of the plan files of one attempt. It makes no folder.
+export function taskPlansDir(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+): string {
+  return join(taskArtifactsDir(dataRoot, task), "plans");
+}
+
+// The plan file of one revision. Each reader takes the path from here. It makes no file.
+export function planRevisionPath(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+  version: number,
+): string {
+  return join(taskPlansDir(dataRoot, task), `v${version}.md`);
+}
+
 // The path of the file that tasker doctor writes and deletes in dataRoot. The name is new for
 // each call, so two doctors that run at the same time do not use the same file. It makes no file.
 export function doctorProbePath(dataRoot: string): string {
