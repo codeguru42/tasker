@@ -392,15 +392,27 @@ export function useProcessEnv(env: NodeJS.ProcessEnv): void {
   });
 }
 
-// Writes threeRepoConfig() with writeDataRootConfig() and points TASKER_CONFIG at it.
-// Call it inside a test. After the test, it restores the env and removes the folder.
-export function useThreeRepoDataRoot(): { dir: string; path: string; dataRoot: string } {
-  const written = writeDataRootConfig(threeRepoConfig());
-  useProcessEnv({ TASKER_CONFIG: written.path });
+// Writes the text that build gives as config.json in a new temp dir, and points TASKER_CONFIG at it.
+// build gets the data root <dir>/data. Call it inside a test. After the test, it restores the env and removes the folder.
+export function useConfigFile(build: (dataRoot: string) => string): {
+  dir: string;
+  path: string;
+  dataRoot: string;
+} {
+  const dir = makeTempDir("tasker-config-");
   onTestFinished(() => {
-    rmSync(written.dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
   });
-  return written;
+  const path = join(dir, "config.json");
+  const dataRoot = join(dir, "data");
+  writeFileSync(path, build(dataRoot));
+  useProcessEnv({ TASKER_CONFIG: path });
+  return { dir, path, dataRoot };
+}
+
+// Writes threeRepoConfig() with useConfigFile(). Call it inside a test.
+export function useThreeRepoDataRoot(): { dir: string; path: string; dataRoot: string } {
+  return useConfigFile((dataRoot) => JSON.stringify({ ...threeRepoConfig(), dataRoot }));
 }
 
 export interface StartFixture {
