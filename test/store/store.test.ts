@@ -14,17 +14,14 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, makeTempDir, repoRoot, startFixture, startWriteLockHolder, tableNames, withStoreFile } from "../helpers.js";
+import { deadPid, makeTempDir, repoRoot, startFixture, startWriteLockHolder, tableNames, withRawDatabase, withStoreFile } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
-  const db = new DatabaseSync(path);
-  try {
+  withRawDatabase(path, (db) => {
     migrate(db, migrations.slice(0, version));
     expect(schemaVersion(db)).toBe(version);
-  } finally {
-    db.close();
-  }
+  });
 }
 
 describe("task store", () => {
@@ -52,42 +49,31 @@ describe("task store", () => {
     state: "new",
   };
 
-  const rawDb = () => new DatabaseSync(dbPath);
-
-  const eventCount = (): number => {
-    const db = rawDb();
-    try {
+  const eventCount = (): number =>
+    withRawDatabase(dbPath, (db) => {
       const row = db.prepare("SELECT COUNT(*) AS n FROM events").get() as {
         n: number;
       };
       return row.n;
-    } finally {
-      db.close();
-    }
-  };
+    });
 
   // The raw run marker row of a task, or undefined.
-  const readRun = (taskId: number) => {
-    const db = rawDb();
-    try {
-      return db.prepare("SELECT * FROM run_markers WHERE task_id = ?").get(taskId) as
-        | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
-        | undefined;
-    } finally {
-      db.close();
-    }
-  };
+  const readRun = (taskId: number) =>
+    withRawDatabase(
+      dbPath,
+      (db) =>
+        db.prepare("SELECT * FROM run_markers WHERE task_id = ?").get(taskId) as
+          | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
+          | undefined,
+    );
 
   // Writes a raw run marker row for a task.
   const writeRunPid = (taskId: number, state: string, pid: number, childPid: number | null = null) => {
-    const db = rawDb();
-    try {
+    withRawDatabase(dbPath, (db) => {
       db.prepare(
         "INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, ?, 't')",
       ).run(taskId, state, pid, childPid);
-    } finally {
-      db.close();
-    }
+    });
   };
 
   const insertRawTask = (db: DatabaseSync, repoKey: string, state: string) =>
@@ -186,15 +172,12 @@ describe("task store", () => {
 
   describe("one active task for each issue", () => {
     const rowCount = (): number => {
-      const db = rawDb();
-      try {
+      return withRawDatabase(dbPath, (db) => {
         const row = db.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
           n: number;
         };
         return row.n;
-      } finally {
-        db.close();
-      }
+      });
     };
 
     it("refuses a second active task for the same repo and issue", () => {
@@ -346,8 +329,7 @@ describe("task store", () => {
   describe("active task index", () => {
     it("rejects a second active row for one repo and issue", () => {
       const before = eventCount();
-      const db = rawDb();
-      try {
+      withRawDatabase(dbPath, (db) => {
         insertRawTask(db, "tasker", "new");
         expect(() => insertRawTask(db, "tasker", "planning")).toThrow(
           /UNIQUE constraint failed/,
@@ -356,36 +338,28 @@ describe("task store", () => {
           .prepare("SELECT COUNT(*) AS n FROM tasks WHERE repo_key = 'tasker'")
           .get() as { n: number };
         expect(row.n).toBe(1);
-      } finally {
-        db.close();
-      }
+      });
       expect(eventCount()).toBe(before);
     });
 
     it("permits one active row in each of two repos", () => {
-      const db = rawDb();
-      try {
+      withRawDatabase(dbPath, (db) => {
         insertRawTask(db, "tasker", "planning");
         expect(() => insertRawTask(db, "other", "planning")).not.toThrow();
-      } finally {
-        db.close();
-      }
+      });
     });
 
     it.each(["cancelled", "finished"])(
       "permits an active row after a %s row of the same repo and issue",
       (state) => {
-        const db = rawDb();
-        try {
+        withRawDatabase(dbPath, (db) => {
           insertRawTask(db, "tasker", state);
           expect(() => insertRawTask(db, "tasker", "planning")).not.toThrow();
           const row = db.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
             n: number;
           };
           expect(row.n).toBe(2);
-        } finally {
-          db.close();
-        }
+        });
       },
     );
 
@@ -403,14 +377,11 @@ describe("task store", () => {
     it("gives old rows attempt 1 and null fields", () => {
       const oldPath = join(dir, "old3.db");
       makeOldDatabase(oldPath, 3);
-      const raw = new DatabaseSync(oldPath);
-      try {
+      withRawDatabase(oldPath, (raw) => {
         raw.exec(
           "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES ('a/b#1', 'tasker', 'planning', 't', 't')",
         );
-      } finally {
-        raw.close();
-      }
+      });
       withStoreFile(
         oldPath,
         (upgraded) => {
@@ -423,35 +394,26 @@ describe("task store", () => {
         },
         { now },
       );
-      const check = new DatabaseSync(oldPath);
-      try {
+      withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-      } finally {
-        check.close();
-      }
+      });
     });
 
     it("fails and keeps version 3 when two active rows share a repo and issue", () => {
       const oldPath = join(dir, "dup3.db");
       makeOldDatabase(oldPath, 3);
-      const raw = new DatabaseSync(oldPath);
-      try {
+      withRawDatabase(oldPath, (raw) => {
         insertRawTask(raw, "tasker", "planning");
         insertRawTask(raw, "tasker", "new");
-      } finally {
-        raw.close();
-      }
+      });
       expect(() => openStore(oldPath, { now })).toThrow(/UNIQUE constraint failed/);
-      const check = new DatabaseSync(oldPath);
-      try {
+      withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(3);
         const row = check.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
           n: number;
         };
         expect(row.n).toBe(2);
-      } finally {
-        check.close();
-      }
+      });
     });
   });
 
@@ -551,19 +513,16 @@ describe("task store", () => {
     store.close();
     store = openStore(dbPath, { now });
     expect(store.getTask(task.id)).toEqual(task);
-    const db = new DatabaseSync(dbPath);
-    try {
+    withRawDatabase(dbPath, (db) => {
       expect(schemaVersion(db)).toBe(migrations.length);
-    } finally {
-      db.close();
-    }
+    });
   });
 
   it("closes the database when the file has a newer schema version", () => {
     const newerPath = join(dir, "newer.db");
-    const raw = new DatabaseSync(newerPath);
-    raw.exec(`PRAGMA user_version = ${migrations.length + 1}`);
-    raw.close();
+    withRawDatabase(newerPath, (raw) => {
+      raw.exec(`PRAGMA user_version = ${migrations.length + 1}`);
+    });
 
     expect(() => openStore(newerPath, { now })).toThrow(
       `database schema version ${migrations.length + 1} is newer than this tasker supports (${migrations.length})`,
@@ -571,13 +530,10 @@ describe("task store", () => {
     // SQLite deletes the WAL file when the last connection closes.
     expect(existsSync(`${newerPath}-wal`)).toBe(false);
 
-    const again = new DatabaseSync(newerPath);
-    try {
+    withRawDatabase(newerPath, (again) => {
       again.exec("CREATE TABLE after_failure (x)");
       expect(schemaVersion(again)).toBe(migrations.length + 1);
-    } finally {
-      again.close();
-    }
+    });
   });
 
   describe("events", () => {
@@ -647,17 +603,14 @@ describe("task store", () => {
       const task = store.createTask(newTask);
       store.appendEvent(task.id, "one");
       const before = store.listEvents(task.id);
-      const db = new DatabaseSync(dbPath);
-      try {
+      withRawDatabase(dbPath, (db) => {
         expect(() => db.exec("UPDATE events SET type = 'y'")).toThrow(
           "events are append-only",
         );
         expect(() => db.exec("DELETE FROM events")).toThrow(
           "events are append-only",
         );
-      } finally {
-        db.close();
-      }
+      });
       expect(store.listEvents(task.id)).toEqual(before);
     });
 
@@ -672,13 +625,10 @@ describe("task store", () => {
         },
         { now },
       );
-      const check = new DatabaseSync(oldPath);
-      try {
+      withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
         expect(migrations.length).toBe(6);
-      } finally {
-        check.close();
-      }
+      });
     });
   });
 
@@ -721,12 +671,9 @@ describe("task store", () => {
     });
 
     it("has the default_base_branches table", () => {
-      const db = new DatabaseSync(dbPath);
-      try {
+      withRawDatabase(dbPath, (db) => {
         expect(tableNames(db)).toContain("default_base_branches");
-      } finally {
-        db.close();
-      }
+      });
     });
 
     it("upgrades a version-2 database when it opens", () => {
@@ -740,12 +687,9 @@ describe("task store", () => {
         },
         { now },
       );
-      const check = new DatabaseSync(oldPath);
-      try {
+      withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-      } finally {
-        check.close();
-      }
+      });
     });
 
     it("upgrades a version-4 database when it opens", () => {
@@ -758,50 +702,38 @@ describe("task store", () => {
         },
         { now },
       );
-      const check = new DatabaseSync(oldPath);
-      try {
+      withRawDatabase(oldPath, (check) => {
         expect(tableNames(check)).toContain("locks");
         expect(schemaVersion(check)).toBe(migrations.length);
-      } finally {
-        check.close();
-      }
+      });
     });
   });
 
   describe("run markers", () => {
     it("has the run_markers table", () => {
-      const db = rawDb();
-      try {
+      withRawDatabase(dbPath, (db) => {
         expect(tableNames(db)).toContain("run_markers");
-      } finally {
-        db.close();
-      }
+      });
     });
 
     it("upgrades a version-5 database when it opens", () => {
       const oldPath = join(dir, "old5.db");
       makeOldDatabase(oldPath, 5);
       withStoreFile(oldPath, () => {}, { now });
-      const check = new DatabaseSync(oldPath);
-      try {
+      withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
         expect(tableNames(check)).toContain("run_markers");
-      } finally {
-        check.close();
-      }
+      });
     });
 
     it("keeps one marker for each task, also for raw SQL", () => {
       const task = store.createTask(newTask);
       const insert = () => {
-        const db = rawDb();
-        try {
+        withRawDatabase(dbPath, (db) => {
           db.prepare(
             "INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, 'executing', ?, NULL, 't')",
           ).run(task.id, process.pid);
-        } finally {
-          db.close();
-        }
+        });
       };
       insert();
       expect(insert).toThrow("UNIQUE constraint failed");
@@ -1062,8 +994,7 @@ describe("task store", () => {
       }
 
       withStoreFile(layout.database, (reader) => {
-        const db = new DatabaseSync(layout.database);
-        try {
+        withRawDatabase(layout.database, (db) => {
           const tasks = db.prepare("SELECT id FROM tasks").all() as { id: number }[];
           expect(tasks).toHaveLength(2);
           for (const { id } of tasks) {
@@ -1071,9 +1002,7 @@ describe("task store", () => {
             expect(reader.getTask(id)?.state).toBe(String(count - 1));
           }
           expect(schemaVersion(db)).toBe(migrations.length);
-        } finally {
-          db.close();
-        }
+        });
       });
     },
     60_000,
@@ -1089,13 +1018,10 @@ describe("open of a new database", () => {
 
       withStoreFile(path, () => {});
 
-      const db = new DatabaseSync(path);
-      try {
+      withRawDatabase(path, (db) => {
         expect(db.prepare("PRAGMA journal_mode").get()).toEqual({ journal_mode: "wal" });
         expect(schemaVersion(db)).toBe(migrations.length);
-      } finally {
-        db.close();
-      }
+      });
     },
     20_000,
   );
