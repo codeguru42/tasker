@@ -46,6 +46,7 @@ export function runAssistant(
     stdio: ["pipe", "pipe", "ignore"],
   });
   const pid = child.pid!;
+  child.stdin.on("error", () => {}); // the result comes from the exit, and an EPIPE only means that the child exited before it read the whole prompt
   const splitter = lineSplitter(options.onLine);
   child.stdout.on("data", splitter.write);
   child.stdout.on("end", splitter.end);
