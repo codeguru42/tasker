@@ -52,12 +52,46 @@ The model usage of the `result` event adds up each model of the session, also of
 
 Permission denials can come with the error flag set. A denied tool does not always end the run in an error.
 
+### Sandbox
+
+A run with a sandbox keeps the shell of the assistant inside limits. The shell can write only to the worktree, a temp folder and the write paths of the caller. It cannot read the deny paths of the caller. The provider passes these limits to `claude` as inline settings.
+
+Each setting has a reason:
+
+- `claude` must refuse to start when it cannot build the sandbox. A run with less confinement is the case that "refuse, never drop" forbids.
+- A command must never leave the sandbox. The setting that allows this is off. The schema of `claude` says that a command which asks to leave the sandbox is then ignored, and tasker relies on that text. No host test ran this case.
+- The network stays open to all domains, because the assistant must reach its own service and the package hosts.
+- The write and deny paths are those of the caller, and the provider adds none.
+
+The provider refuses a sandbox before it starts the program in three cases:
+
+- The platform is not Linux or macOS.
+- The platform is Linux, and `bwrap` or `socat` is not on the `PATH` of the child.
+- The shared git folder of the worktree has a name that ends in `.git`. The reason is in [version-control.md](version-control.md#sandbox-write-paths).
+
+On Linux, `bwrap` comes from the `bubblewrap` package, and `socat` has its own package. The setting that makes `claude` fail when the sandbox is not available is the second guard, behind the check of the provider.
+
+The only Unix socket that a command can use is the folder `claude-<uid>` in the temp root, as a real path. `claude` keeps its own sockets there. The provider never opens all Unix sockets, because that would open the sockets of the ssh agent and the keyring. When this folder is a shared temp folder, or holds one, the provider gives no socket rule. Then no command can use a Unix socket. When the provider cannot resolve the folder, the run fails before the start, and the reason holds the error code and no path. macOS uses this rule. Linux ignores it, because `seccomp` cannot filter by path.
+
+The sandbox leaves placeholder files in the worktree. `bwrap` makes an empty read-only file for each protected path that does not exist, for example `.bashrc`, `.mcp.json` and some entries of `.claude/`. A killed `claude` does not clean them, and a normal exit still leaves `.claude/.cc-writes` and `.claude`. Measures on `claude` 2.1.289 and 2.1.299 gave the same lists.
+
+After each sandboxed run that reached the start, the provider removes these placeholders. It removes a path only when git does not track it and the path is an empty file with a read-only mode and one link, or an empty folder. The cleanup follows no symlink, also not in a parent folder. When `.claude` is a symlink, the cleanup leaves it and each entry of its target. A file with data and any other name stay. The outcome lists the removed paths, or the error. The cleanup never changes the kind of the outcome. A refused run starts nothing, so it has no cleanup.
+
+The limits of the sandbox:
+
+- The network stays open.
+- Only the shell of the assistant is in the sandbox. The `claude` program is not.
+- A shell command can write `objects/`, `refs/` and `logs/` of the clone, because `git commit` needs them. See the known limit in [version-control.md](version-control.md#sandbox-write-paths).
+- While a sandboxed run is live, a placeholder `config.lock` in the bare clone makes the provision of another task in the same repo fail.
+- After a kill of `claude`, the bare clone keeps `config.lock`, `.mcp.json` and an empty `.claude/` folder. A later write to the configuration of the clone fails until a later change removes them. The cleanup covers the worktree only.
+- A later `claude` can widen the write list in a way that the guard of the `.git` name does not catch. The guard follows `claude` 2.1.299.
+
 ### Limits
 
-The provider has no sandbox and no quota detection yet. It refuses a sandbox and an overage stop before it starts `claude`. Tasker keeps the events itself, so the provider has no transcript path.
+The provider has no quota detection yet. It refuses an overage stop before it starts `claude`. Tasker keeps the events itself, so the provider has no transcript path.
 
 ### Doctor checks
 
-The version check is required. It runs once for all repos of the provider. Only a missing `claude` gets the fix "install Claude Code", because an install fixes only that cause. Other causes, such as a failed run of the program, get no fix.
+The version check is required. It runs once for all repos of the provider. On Linux, two more required checks make sure that `bwrap` and `socat` are on `PATH`. Each missing program (`claude`, `bwrap` or `socat`) gets the fix to install it, because only an install fixes that cause. Other causes, such as a failed run of the program, get no fix.
 
 The model check of a continued session uses the model forms of the configuration. It holds no second rule.
