@@ -5,7 +5,7 @@ import type { Check } from "../doctor/check.js";
 import { dataRootCheck, freeSpaceCheck } from "../doctor/data-root.js";
 import { runChecks } from "../doctor/run-checks.js";
 import { assistantDoctorChecks } from "../assistant/provider.js";
-import { issueProviderFor } from "../issues/provider.js";
+import { issueDoctorChecks } from "../issues/provider.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { loadConfigOrFail, orFail } from "./shared.js";
 
@@ -14,13 +14,11 @@ function doctorChecks(config: Config, env: NodeJS.ProcessEnv): Check[] {
   return [
     dataRootCheck(config.dataRoot),
     freeSpaceCheck(config.dataRoot, config.dataRootMinFreeBytes),
-    ...Object.entries(config.repos).flatMap(([key, repo]) => {
+    ...Object.keys(config.repos).flatMap((key) => {
       const { vcs, ctx } = vcsForRepo(config, key, env);
-      return [
-        ...vcs.doctorChecks(ctx, { procRoot: "/proc", platform: process.platform }),
-        ...issueProviderFor(config, key).doctorChecks([{ key, issueTracker: repo.issueTracker }]),
-      ];
+      return vcs.doctorChecks(ctx, { procRoot: "/proc", platform: process.platform });
     }),
+    ...issueDoctorChecks(config),
     ...assistantDoctorChecks(config),
   ];
 }
