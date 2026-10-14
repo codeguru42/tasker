@@ -41,15 +41,18 @@ function groupRuns(pid: number): boolean {
 
 export interface SuperviseOptions {
   deadline: number;
+  signal?: AbortSignal;
 }
 
 // Watches child, the leader of its own process group with pid pid, until it closes.
 // While it runs, SIGINT and SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM.
 // Five seconds later, it gets SIGKILL. After such a stop, it waits until the group is gone.
+// An abort of signal stops the group in the same way, but it does not set timedOut.
 export function superviseGroup(child: ChildProcess, pid: number, options: SuperviseOptions): Promise<GroupResult> {
   return new Promise((resolve, reject) => {
     let settled = false;
     let timedOut = false;
+    let stopping = false;
     let killed = false;
     let exited: { code: number | null; signal: NodeJS.Signals | null } | undefined;
     let deadlineTimer: NodeJS.Timeout | undefined;
@@ -64,21 +67,19 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
       clearTimeout(graceTimer);
       clearInterval(pollTimer);
       for (const [signal, handler] of forwarders) process.off(signal, handler);
+      options.signal?.removeEventListener("abort", stop);
       finish();
     };
     const finishIfDone = () => {
       if (exited === undefined) return;
-      if (timedOut && !killed && groupRuns(pid)) return; // wait for the group, or for the SIGKILL
+      if (stopping && !killed && groupRuns(pid)) return; // wait for the group, or for the SIGKILL
       const result = { ...exited, timedOut, killed };
       settle(() => resolve(result));
     };
-    const armDeadline = () => {
-      const left = options.deadline - Date.now();
-      if (left > 0) {
-        deadlineTimer = setTimeout(armDeadline, Math.min(left, MAX_TIMER_MS));
-        return;
-      }
-      timedOut = true;
+    const stop = () => {
+      if (stopping) return;
+      stopping = true;
+      clearTimeout(deadlineTimer);
       signalGroup(pid, "SIGTERM");
       graceTimer = setTimeout(() => {
         killed = true;
@@ -87,12 +88,23 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
       }, KILL_GRACE_MS);
       pollTimer = setInterval(finishIfDone, POLL_MS);
     };
+    const armDeadline = () => {
+      const left = options.deadline - Date.now();
+      if (left > 0) {
+        deadlineTimer = setTimeout(armDeadline, Math.min(left, MAX_TIMER_MS));
+        return;
+      }
+      timedOut = true;
+      stop();
+    };
     child.on("error", (error) => settle(() => reject(error)));
     child.on("close", (code, signal) => {
       exited = { code, signal };
       finishIfDone();
     });
     armDeadline();
+    if (options.signal?.aborted) stop();
+    else options.signal?.addEventListener("abort", stop, { once: true });
   });
 }
 

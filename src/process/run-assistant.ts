@@ -12,6 +12,7 @@ export interface RunAssistantOptions {
   // Called once for each line of stdout, in order. It must not throw.
   onLine: (line: string) => void;
   onSpawn: (pid: number) => void;
+  signal?: AbortSignal;
 }
 
 // Joins the chunks of one UTF-8 stream and gives each line, an empty line too, to onLine.
@@ -59,6 +60,6 @@ export async function runAssistant(
   });
   options.onSpawn(pid);
   child.stdin.end(options.prompt, "utf8");
-  const result = await superviseGroup(child, pid, { deadline: options.deadline });
+  const result = await superviseGroup(child, pid, { deadline: options.deadline, signal: options.signal });
   return { ...result, stderrTail: tail.toString("utf8") };
 }
