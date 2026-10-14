@@ -390,7 +390,7 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
     expect(outcome).toMatchObject(overage);
   });
 
-  it("gives success when overageStatus is rejected", async () => {
+  it("gives success when status and overageStatus are rejected", async () => {
     const event = claudeRateLimitEvent((info) => {
       info["status"] = "rejected";
     });
@@ -418,7 +418,7 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
     const { outcome } = await run(control, { overageStop: {}, timeoutMs: 10_000 });
 
     expect(outcome).toMatchObject(overage);
-    expect(outcome.events.slice(0, 3)).toHaveLength(3);
+    expect(outcome.events).toEqual([...claudeSampleEvents("plain").slice(0, 2), claudeOverageEvent()]);
   });
 
   describe("when the deadline fires first", () => {
