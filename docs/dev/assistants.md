@@ -64,9 +64,7 @@ The filter of the phases drops the GitHub token and the ssh agent of the operato
 
 - The network stays open.
 - The assistant can read files that the lists do not name.
-- The plan mode does not block a shell command that writes.
 - The plan mode lets the assistant write its plan file under the configuration folder of `claude`, outside the worktree.
-- Under `dontAsk`, an execute run cannot use a tool that the allow list does not hold, for example `WebFetch`.
 
 ### The rules for the caller
 
