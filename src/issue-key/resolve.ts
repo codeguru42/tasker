@@ -35,18 +35,10 @@ function projectOf(repoKey: string, repo: RepoConfig): string {
   return repo.issueTracker.project ?? repoKey;
 }
 
-export function resolveIssueKey(
-  rawKey: string,
-  config: Config,
-  options: ResolveOptions = {},
-): IssueRef {
-  const { repo } = options;
-  if (repo !== undefined && !Object.hasOwn(config.repos, repo)) {
-    throw new IssueKeyError(
-      rawKey,
-      `unknown repo ${JSON.stringify(repo)}: no repo with this key is in the configuration`,
-    );
-  }
+// The IssueRef of each repo that has the project of rawKey, in the order of the configuration.
+// It gives no ref when the parsers accept the key but no project matches. It throws the first
+// parser IssueKeyError when no parser accepts the key.
+export function issueKeyMatches(rawKey: string, config: Config): IssueRef[] {
   const matches: IssueRef[] = [];
   let accepted = false;
   let rejection: IssueKeyError | undefined;
@@ -67,6 +59,22 @@ export function resolveIssueKey(
     if (ref !== undefined) matches.push(ref);
   }
   if (!accepted && rejection !== undefined) throw rejection;
+  return matches;
+}
+
+export function resolveIssueKey(
+  rawKey: string,
+  config: Config,
+  options: ResolveOptions = {},
+): IssueRef {
+  const { repo } = options;
+  if (repo !== undefined && !Object.hasOwn(config.repos, repo)) {
+    throw new IssueKeyError(
+      rawKey,
+      `unknown repo ${JSON.stringify(repo)}: no repo with this key is in the configuration`,
+    );
+  }
+  const matches = issueKeyMatches(rawKey, config);
   if (repo !== undefined) {
     const chosen = matches.find((ref) => ref.repoKey === repo);
     if (chosen === undefined) {
