@@ -31,8 +31,8 @@ export const KEY_PARSERS: Record<Provider, KeyParser> = {
 };
 
 // The project of a repo: issueTracker.project, or the repo key when it is not set.
-function projectOf(repoKey: string, repo: RepoConfig): string {
-  return repo.issueTracker.project ?? repoKey;
+export function projectOf(repoKey: string, issueTracker: { project?: string }): string {
+  return issueTracker.project ?? repoKey;
 }
 
 // The IssueRef of each repo that has the project of rawKey, in the order of the configuration.
@@ -48,7 +48,7 @@ export function issueKeyMatches(rawKey: string, config: Config): IssueRef[] {
       ref = KEY_PARSERS[repoConfig.issueTracker.provider](
         rawKey,
         repoKey,
-        projectOf(repoKey, repoConfig),
+        projectOf(repoKey, repoConfig.issueTracker),
       );
     } catch (error) {
       if (!(error instanceof IssueKeyError)) throw error;

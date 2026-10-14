@@ -5,6 +5,7 @@ import type { Check, CheckResult } from "../../doctor/check.js";
 import { isInside } from "../../real-path.js";
 import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
+import { isOlderVersion } from "../../doctor/version-compare.js";
 import type { GitVcsConfig } from "./config.js";
 import { GitError, GitNotInstalledError, isGitExit, runGit } from "./run.js";
 import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
@@ -88,7 +89,7 @@ export function gitVersionCheck(timeoutMs = 5000): Check {
       const found = line.slice("git version ".length).split(" ")[0];
       const major = Number(match[1]);
       const minor = Number(match[2]);
-      if (major < MINIMUM_GIT.major || (major === MINIMUM_GIT.major && minor < MINIMUM_GIT.minor)) {
+      if (isOlderVersion([major, minor], [MINIMUM_GIT.major, MINIMUM_GIT.minor])) {
         return {
           status: "error",
           detail: `git ${found} is older than the minimum ${MINIMUM_TEXT}.`,

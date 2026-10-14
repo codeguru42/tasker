@@ -1,6 +1,8 @@
 import type { Check, CheckStatus } from "../../doctor/check.js";
 import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
+import { isOlderVersion } from "../../doctor/version-compare.js";
+import { projectOf } from "../../issue-key/resolve.js";
 import type { IssueDoctorRepo } from "../provider.js";
 import { authStatus } from "./auth.js";
 import { GhError, GhNotInstalledError, readGhVersion, runGh } from "./run.js";
@@ -8,11 +10,6 @@ import { GhError, GhNotInstalledError, readGhVersion, runGh } from "./run.js";
 // Before this version, gh auth token has no --user flag.
 const MINIMUM_GH = { major: 2, minor: 40, patch: 0 };
 const MINIMUM_TEXT = `${MINIMUM_GH.major}.${MINIMUM_GH.minor}.${MINIMUM_GH.patch}`;
-
-// The project is issueTracker.project, or the repo key when it is not set.
-function projectOf(repo: IssueDoctorRepo): string {
-  return repo.issueTracker.project ?? repo.key;
-}
 
 // The configuration schema requires the account for the github tracker.
 export function accountOf(repo: IssueDoctorRepo): string {
@@ -46,13 +43,7 @@ export function ghVersionCheck(timeoutMs = 5000): Check {
     }
     const found = line.slice("gh version ".length).split(" ")[0];
     const [major, minor, patch] = [match[1], match[2], match[3]].map(Number);
-    const older =
-      major !== MINIMUM_GH.major
-        ? major < MINIMUM_GH.major
-        : minor !== MINIMUM_GH.minor
-          ? minor < MINIMUM_GH.minor
-          : patch < MINIMUM_GH.patch;
-    if (older) {
+    if (isOlderVersion([major, minor, patch], [MINIMUM_GH.major, MINIMUM_GH.minor, MINIMUM_GH.patch])) {
       return {
         status: "error",
         detail: `gh ${found} is older than the minimum ${MINIMUM_TEXT}. Before ${MINIMUM_TEXT}, gh auth token has no --user flag.`,
@@ -88,7 +79,7 @@ export function ghProjectCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check 
     { name: `gh project: ${repo.key}`, required: true, timeoutMs },
     async (env, { signal }) => {
       const account = accountOf(repo);
-      const project = projectOf(repo);
+      const project = projectOf(repo.key, repo.issueTracker);
       try {
         await runGh(["repo", "view", project, "--json", "nameWithOwner"], {
           account,
@@ -164,7 +155,7 @@ export function ghLabelsCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
         return { status: "ok", detail: `${repo.key}: no label to check` };
       }
       const account = accountOf(repo);
-      const project = projectOf(repo);
+      const project = projectOf(repo.key, repo.issueTracker);
       let status: CheckStatus = "ok";
       const lines: string[] = [];
       const missingKeys: string[] = [];
