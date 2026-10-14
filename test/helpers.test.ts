@@ -12,7 +12,7 @@ import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { checkPlanAnswer } from "../src/plan/answer.js";
 import { childEnv } from "../src/process/child-env.js";
-import { type TaskStore } from "../src/store/store.js";
+import { type Task, type TaskStore } from "../src/store/store.js";
 import { dataRootLayout, taskLogsDir } from "../src/store/layout.js";
 import { repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
@@ -93,6 +93,11 @@ import {
   type GitOrigin,
   thrownBy,
 } from "./helpers.js";
+
+// Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.
+function seedTask(store: TaskStore): Task {
+  return store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
+}
 
 describe("makeGitOrigin", () => {
   let origin: GitOrigin;
@@ -1321,11 +1326,7 @@ describe("withStoreFile", () => {
     const path = join(useTempDir("tasker-store-"), "tasker.db");
     const at = new Date("2026-02-03T00:00:00.000Z");
 
-    const task = withStoreFile(
-      path,
-      (store) => store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" }),
-      { now: () => at },
-    );
+    const task = withStoreFile(path, seedTask, { now: () => at });
 
     expect(task.createdAt).toBe(at.toISOString());
   });
@@ -1333,9 +1334,7 @@ describe("withStoreFile", () => {
   it("opens the database at path", () => {
     const path = join(useTempDir("tasker-store-"), "tasker.db");
 
-    const task = withStoreFile(path, (store) =>
-      store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" }),
-    );
+    const task = withStoreFile(path, seedTask);
 
     expect(withStoreFile(path, (store) => store.getTask(task.id))).toEqual(task);
   });
@@ -1401,11 +1400,7 @@ describe("withDataRootStore", () => {
     const dataRoot = join(useTempDir("tasker-store-"), "data");
     const at = new Date("2026-02-03T00:00:00.000Z");
 
-    const task = withDataRootStore(
-      dataRoot,
-      (store) => store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" }),
-      { now: () => at },
-    );
+    const task = withDataRootStore(dataRoot, seedTask, { now: () => at });
 
     expect(task.createdAt).toBe(at.toISOString());
   });
@@ -1840,9 +1835,6 @@ describe("validPlanAnswer", () => {
 });
 
 describe("seedPlanRevision", () => {
-  const seedTask = (store: TaskStore) =>
-    store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
-
   it("gives the versions 1 and 2 for consecutive calls", () => {
     withDataRootStore(useTempDir("tasker-seed-"), (store) => {
       const task = seedTask(store);
@@ -1872,9 +1864,6 @@ describe("seedPlanRevision", () => {
 });
 
 describe("seedPlanSession", () => {
-  const seedTask = (store: TaskStore) =>
-    store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
-
   it("records TEST_SESSION_ID with the plan model of the test configurations", () => {
     withDataRootStore(useTempDir("tasker-seed-"), (store) => {
       const task = seedTask(store);
