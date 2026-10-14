@@ -74,7 +74,7 @@ describe("prepareTaskPlanModeRun", () => {
 
   const prepareAndStart = async (
     role: "plan" | "review",
-    options: Parameters<typeof useAssistantRunFixture>[0] = { claude: { stream: claudeSample("plain") } },
+    options: Parameters<typeof useAssistantRunFixture>[0] = { claude: { stream: claudeSample("json-schema") } },
   ) => {
     const fixture = await useAssistantRunFixture(options);
     const { config, task, env, started } = fixture;
@@ -130,7 +130,7 @@ describe("prepareTaskPlanModeRun", () => {
 
   it("refuses a task that has no worktree, and starts no child", async () => {
     const { config, task, env, claude, started } = await useAssistantRunFixture({
-      claude: { stream: claudeSample("plain") },
+      claude: { stream: claudeSample("json-schema") },
     });
 
     await withDataRootStore(started.dataRoot, async (store) => {
@@ -150,7 +150,7 @@ describe("prepareTaskPlanModeRun", () => {
 
   it("stops the run at the plan deadline", async () => {
     const { outcome } = await prepareAndStart("plan", {
-      claude: { stream: claudeSample("plain"), untilStopped: true },
+      claude: { stream: claudeSample("json-schema"), untilStopped: true },
       limits: { planTimeoutMin: 0.001 },
     });
 
