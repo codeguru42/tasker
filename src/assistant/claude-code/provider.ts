@@ -7,6 +7,7 @@ import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "..
 import { claudeArgs } from "./args.js";
 import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
 import { removePlaceholders } from "./placeholders.js";
+import { detectQuotaApprovalWarning, shouldSuppressQuotaApprovalPause } from "./quota.js";
 import {
   LINUX_SANDBOX_PROGRAMS,
   sandboxHostRefusal,
@@ -135,9 +136,8 @@ export function createClaudeCodeProvider(
               : []),
           ],
     modelChecks: (model) => [claudeModelCheck(model)],
-    // The quota ticket replaces these two.
-    detectQuotaApprovalWarning: () => undefined,
-    shouldSuppressQuotaApprovalPause: () => false,
+    detectQuotaApprovalWarning,
+    shouldSuppressQuotaApprovalPause,
   };
 }
 
