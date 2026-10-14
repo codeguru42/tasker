@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import type { PlanAnswer } from "../plan/answer.js";
 import { isSpawningState, isTerminalState, TERMINAL_STATES } from "../state/machine.js";
 import { type LockStore, tryLockIn, unlockIn } from "./locks.js";
 import { migrate } from "./migrate.js";
@@ -95,6 +96,30 @@ export interface TaskEvent {
   data: unknown;
 }
 
+// Later tickets add more sources, for example a review promotion. The table has no check on the values.
+export type PlanRevisionSource = "plan" | "refine";
+
+export interface NewPlanRevision {
+  version: number;
+  source: PlanRevisionSource;
+  // None for the first revision.
+  feedback?: string;
+  answer: PlanAnswer;
+  // The prompt version of the run, for example plan@3f9a1c04b2e7.
+  prompt: string;
+}
+
+export interface PlanRevision {
+  taskId: number;
+  version: number;
+  source: string;
+  feedback: string | null;
+  answer: PlanAnswer;
+  prompt: string;
+  approvedAt: string | null;
+  createdAt: string;
+}
+
 export interface StoreOptions {
   now?: () => Date;
 }
@@ -135,6 +160,14 @@ export interface TaskStore extends LockStore {
   setRunChildPid(id: number, childPid: number): void;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
   listEvents(taskId: number): TaskEvent[];
+  // The version that the next revision of the task must have. The caller holds the task lock,
+  // so the value stays valid until the insert.
+  nextPlanVersion(taskId: number): number;
+  // Inserts one plan revision and writes no event. The version must be the next version of the task.
+  insertPlanRevision(taskId: number, revision: NewPlanRevision): PlanRevision;
+  getPlanRevision(taskId: number, version: number): PlanRevision | undefined;
+  // The revision with the highest version.
+  latestPlanRevision(taskId: number): PlanRevision | undefined;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -195,6 +228,35 @@ function rowToTask(row: TaskRow): Task {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+interface PlanRevisionRow {
+  task_id: number;
+  version: number;
+  source: string;
+  feedback: string | null;
+  answer: string;
+  prompt: string;
+  approved_at: string | null;
+  created_at: string;
+}
+
+function rowToPlanRevision(row: PlanRevisionRow): PlanRevision {
+  return {
+    taskId: row.task_id,
+    version: row.version,
+    source: row.source,
+    feedback: row.feedback,
+    answer: JSON.parse(row.answer) as PlanAnswer,
+    prompt: row.prompt,
+    approvedAt: row.approved_at,
+    createdAt: row.created_at,
+  };
+}
+
+// The plan revision of a row, or undefined when the query found no row.
+function toPlanRevision(row: PlanRevisionRow | undefined): PlanRevision | undefined {
+  return row === undefined ? undefined : rowToPlanRevision(row);
 }
 
 // The time that a process waits for a lock that another process holds.
@@ -281,6 +343,25 @@ function setUp(db: DatabaseSync) {
     selectEvents: db.prepare(
       "SELECT * FROM events WHERE task_id = ? ORDER BY id",
     ),
+    insertPlanRevision: db.prepare(
+      `INSERT INTO plan_revisions
+         (task_id, version, source, feedback, answer, prompt, approved_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
+       RETURNING *`,
+    ),
+    selectPlanRevision: db.prepare(
+      "SELECT * FROM plan_revisions WHERE task_id = ? AND version = ?",
+    ),
+    selectLatestPlanRevision: db.prepare(
+      "SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version DESC LIMIT 1",
+    ),
+    selectNextPlanVersion: db.prepare(
+      "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
+    ),
+    selectPinnedPlanRevision: db.prepare(
+      `SELECT * FROM plan_revisions WHERE task_id = ? AND approved_at IS NOT NULL
+       ORDER BY version DESC LIMIT 1`,
+    ),
     selectDefaultBaseBranch: db.prepare(
       "SELECT branch FROM default_base_branches WHERE repo_key = ?",
     ),
@@ -309,6 +390,23 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
   function readTask(id: number): Task | undefined {
     return toTask(statements.selectTask.get(id) as TaskRow | undefined);
+  }
+
+  function readPlanRevision(taskId: number, version: number): PlanRevision | undefined {
+    return toPlanRevision(
+      statements.selectPlanRevision.get(taskId, version) as PlanRevisionRow | undefined,
+    );
+  }
+
+  function readLatestPlanRevision(taskId: number): PlanRevision | undefined {
+    return toPlanRevision(
+      statements.selectLatestPlanRevision.get(taskId) as PlanRevisionRow | undefined,
+    );
+  }
+
+  function readNextPlanVersion(taskId: number): number {
+    const { next } = statements.selectNextPlanVersion.get(taskId) as { next: number };
+    return next;
   }
 
   // Inserts one event. It starts no transaction, because immediateTransaction() is not reentrant.
@@ -525,6 +623,34 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       const rows = statements.selectEvents.all(taskId) as unknown as EventRow[];
       return rows.map(rowToEvent);
     },
+
+    nextPlanVersion: readNextPlanVersion,
+
+    insertPlanRevision(taskId, revision) {
+      return immediateTransaction(db, () => {
+        if (readTask(taskId) === undefined) throw taskNotFound(taskId);
+        const next = readNextPlanVersion(taskId);
+        if (revision.version !== next) {
+          throw new Error(
+            `task ${taskId}: plan revision ${revision.version} is not the next version (${next})`,
+          );
+        }
+        const row = statements.insertPlanRevision.get(
+          taskId,
+          revision.version,
+          revision.source,
+          revision.feedback ?? null,
+          JSON.stringify(revision.answer),
+          revision.prompt,
+          now().toISOString(),
+        ) as unknown as PlanRevisionRow;
+        return rowToPlanRevision(row);
+      });
+    },
+
+    getPlanRevision: readPlanRevision,
+
+    latestPlanRevision: readLatestPlanRevision,
 
     getDefaultBaseBranch(repoKey) {
       const row = statements.selectDefaultBaseBranch.get(repoKey) as
