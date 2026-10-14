@@ -20,7 +20,13 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 
 ## Code
 
-These rules apply to the code in `src/` and in `test/`.
+These rules apply to the code in `src/` and in `test/`. The one-home rule also applies to the docs.
+
+- The one-home rule: each rule and each fact has at most one home in the code and at most one home in the docs. Other places call the code or link to the doc. A change that moves a rule removes each old copy. An old copy can also be a sentence in a doc that states the same rule in other words. For the steps of the code, the helper rule in [Tests](#tests) gives the details.
+- A check of input reports all its problems in one run, not only the first one. Examples of input are the configuration and an answer of the assistant. A check that needs a valid shape can wait until the check of the shape passes. [code-conventions.md](code-conventions.md#zod) gives the zod facts for both kinds of check.
+- Each path in the data root that the code in `src/` uses comes from `src/store/layout.ts`. No other file in `src/` builds a data-root path. A test can build its expected path itself, as the expected-value exception in [Tests](#tests) allows.
+- Do not keep dead code: no unused return value, no unused export and no check that cannot fail.
+- A general helper keeps its promise for each input that its type accepts, not only for the inputs that its callers send today.
 
 A case is one kind of input that a function serves. Examples are a role of an assistant run (plan, execute or review), a provider id and a kind of task.
 
