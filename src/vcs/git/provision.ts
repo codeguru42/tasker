@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fetchOrigin } from "./changes.js";
 import type { GitVcsConfig } from "./config.js";
 import { installPushHook } from "./push-guard.js";
 import { GitError, isGitExit, runGit } from "./run.js";
@@ -35,7 +36,7 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
   // A complete clone gets the clone configuration, including remote.origin.url from remote, and a fetch.
   if (existsSync(clone)) {
     await applyConfig(clone, remote, config, env, publishTokens);
-    await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
+    await fetchOrigin({ clone, env, sshKey: config.sshKey });
     return;
   }
 
@@ -71,7 +72,7 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
   await runGit(["init", "--bare", "--object-format=sha1", "--", target], { cwd: remoteCwd(), env });
   await runGit(["remote", "add", "--", "origin", cloneUrl(remote)], { gitDir: clone, env });
   await applyConfig(clone, remote, config, env, publishTokens);
-  await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, config.sshKey);
+  await fetchOrigin({ clone, env, sshKey: config.sshKey });
   rmSync(marker, { force: true });
 }
 

@@ -1,6 +1,6 @@
 import type { BaseBranchMemory, ResolvedBase } from "../provider.js";
+import { fetchOrigin } from "./changes.js";
 import { LOCAL_PREFIX, refExists } from "./refs.js";
-import { runRemoteGit } from "./ssh.js";
 
 const REMOTE_PREFIXES = ["refs/remotes/origin/", "origin/"];
 
@@ -57,7 +57,7 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
   if (hint?.startsWith(LOCAL_PREFIX)) {
     throw new Error(`the base branch of the issue must name a remote branch: ${hint}`);
   }
-  await runRemoteGit(["fetch", "origin", "--prune"], { gitDir: clone, env }, options.sshKey);
+  await fetchOrigin({ clone, env, sshKey: options.sshKey });
 
   const notes: string[] = [];
   const found = (base: string, source: ResolvedBase["source"]): ResolvedBase => ({
