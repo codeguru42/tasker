@@ -1,4 +1,5 @@
 import type { Check, CheckStatus } from "../../doctor/check.js";
+import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import type { IssueDoctorRepo } from "../provider.js";
 import { authStatus } from "./auth.js";
@@ -38,12 +39,12 @@ export function ghVersionCheck(timeoutMs = 5000): Check {
       }
       throw error;
     }
-    const firstLine = output.split("\n")[0].replace(/\r$/, "");
-    const match = /^gh version (\d+)\.(\d+)\.(\d+)(\S*)/.exec(firstLine);
+    const line = firstLine(output);
+    const match = /^gh version (\d+)\.(\d+)\.(\d+)(\S*)/.exec(line);
     if (match === null) {
-      return { status: "error", detail: `cannot read the gh version from: ${firstLine}` };
+      return { status: "error", detail: `cannot read the gh version from: ${line}` };
     }
-    const found = firstLine.slice("gh version ".length).split(" ")[0];
+    const found = line.slice("gh version ".length).split(" ")[0];
     const [major, minor, patch] = [match[1], match[2], match[3]].map(Number);
     const older =
       major !== MINIMUM_GH.major

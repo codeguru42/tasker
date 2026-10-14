@@ -1,12 +1,9 @@
 import type { Check } from "../../doctor/check.js";
+import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import { childEnv } from "../../process/child-env.js";
 import { CommandNotFoundError, runChild } from "../../process/run-child.js";
 import { modelIssue } from "../models.js";
-
-function firstLine(text: string): string {
-  return text.trim().split("\n")[0]!.replace(/\r$/, "");
-}
 
 // Only a missing claude gets the fix, because only an install fixes that cause.
 export function claudeVersionCheck(timeoutMs = 5000): Check {

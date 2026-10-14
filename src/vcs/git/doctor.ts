@@ -2,6 +2,7 @@ import { existsSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
 import { relative } from "node:path";
 import type { Check, CheckResult } from "../../doctor/check.js";
+import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import type { GitVcsConfig } from "./config.js";
 import { GitError, GitNotInstalledError, runGit } from "./run.js";
@@ -79,12 +80,12 @@ export function gitVersionCheck(timeoutMs = 5000): Check {
         }
         throw error;
       }
-      const firstLine = output.split("\n")[0].replace(/\r$/, "");
-      const match = /^git version (\d+)\.(\d+)\S*/.exec(firstLine);
+      const line = firstLine(output);
+      const match = /^git version (\d+)\.(\d+)\S*/.exec(line);
       if (match === null) {
-        return { status: "error", detail: `cannot read the git version from: ${firstLine}` };
+        return { status: "error", detail: `cannot read the git version from: ${line}` };
       }
-      const found = firstLine.slice("git version ".length).split(" ")[0];
+      const found = line.slice("git version ".length).split(" ")[0];
       const major = Number(match[1]);
       const minor = Number(match[2]);
       if (major < MINIMUM_GIT.major || (major === MINIMUM_GIT.major && minor < MINIMUM_GIT.minor)) {
