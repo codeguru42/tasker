@@ -52,7 +52,9 @@ A command that succeeds can leave a child in the background. The child keeps run
 
 The runner of an assistant child follows the deadline, process group and signal rules of this page. An abort stops the group as the deadline does.
 
-One rule differs from a phase command. A phase command can leave a background child alive. The assistant runner stops the whole group when the assistant exits. A background child holds the output open, and the run must end when the assistant ends. The assistant wrote its lines before it exited, so no line is lost. No background process of the assistant stays in the worktree. A process that leaves the group can hold the output open, so after the stop the runner closes its side of the pipes, and the output that such a process writes later is lost.
+One rule differs from a phase command. A phase command can leave a background child alive. The assistant runner stops the whole group when the assistant exits. A background child holds the output open, and the run must end when the assistant ends. The assistant wrote its lines before it exited, so no line is lost. No background process of the assistant stays in the worktree.
+
+A process that leaves the group can hold the output open, so after the stop the runner closes its side of the pipes, and the output that such a process writes later is lost.
 
 The prompt goes on the input of the assistant. [assistants.md](assistants.md#the-prompt) gives the reason. The runner closes the input after the write, so the assistant sees the end of the input. An assistant can exit before it reads the whole prompt. The write then fails, and tasker ignores the failure, because the result of the run comes from the exit.
 
