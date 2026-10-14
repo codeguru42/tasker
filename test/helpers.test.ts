@@ -24,6 +24,7 @@ import {
 import {
   addCloneCommit,
   captureIo,
+  claudeRateLimitEvent,
   claudeSample,
   claudeSampleEvents,
   claudeSampleWithResult,
@@ -1447,6 +1448,28 @@ describe("claudeSampleWithResult", () => {
 
     expect(claudeSample("plain")).toEqual(lines);
     expect(claudeSampleEvents("plain")).toEqual(events);
+  });
+});
+
+describe("claudeRateLimitEvent", () => {
+  it("gives the parsed capture when it has no edit", () => {
+    expect(claudeRateLimitEvent()).toEqual(JSON.parse(claudeSample("rate-limit-warning")[0]!));
+  });
+
+  it("applies the edit to rate_limit_info", () => {
+    const event = claudeRateLimitEvent((info) => {
+      info["utilization"] = 0.5;
+    });
+
+    expect(event["rate_limit_info"]).toMatchObject({ utilization: 0.5, rateLimitType: "seven_day" });
+  });
+
+  it("gives a new object for each call, so an edit does not leak", () => {
+    claudeRateLimitEvent((info) => {
+      info["utilization"] = 0.5;
+    });
+
+    expect(claudeRateLimitEvent()["rate_limit_info"]).toMatchObject({ utilization: 0.8 });
   });
 });
 

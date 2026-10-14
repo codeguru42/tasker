@@ -1465,6 +1465,14 @@ export function claudeSampleWithResult(name: string, edit: (result: AssistantEve
   return events;
 }
 
+// The real rate_limit_event of the sample rate-limit-warning (a capture from claude), new for each call,
+// with its rate_limit_info changed by edit. A test names the changed field in its test name.
+export function claudeRateLimitEvent(edit: (info: Record<string, unknown>) => void = () => {}): AssistantEvent {
+  const event = claudeSampleEvents("rate-limit-warning")[0]!;
+  edit(event["rate_limit_info"] as Record<string, unknown>);
+  return event;
+}
+
 export const TEST_SESSION_ID = "e5f6ebac-a40e-48af-befc-f9a7d1af4c5b";
 
 // A run input with the defaults of the assistant provider tests, new for each call. Later tickets use it
