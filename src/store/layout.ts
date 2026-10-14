@@ -8,6 +8,7 @@ export interface DataRootLayout {
   root: string;
   clones: string;
   artifacts: string;
+  prompts: string;
   database: string;
 }
 
@@ -16,6 +17,7 @@ export function dataRootLayout(dataRoot: string): DataRootLayout {
     root: dataRoot,
     clones: join(dataRoot, "clones"),
     artifacts: join(dataRoot, "artifacts"),
+    prompts: join(dataRoot, "prompts"),
     database: join(dataRoot, "tasker.db"),
   };
 }
@@ -23,7 +25,7 @@ export function dataRootLayout(dataRoot: string): DataRootLayout {
 // Creates the folders that are missing. It does not create the database file.
 export function createDataRoot(dataRoot: string): DataRootLayout {
   const layout = dataRootLayout(dataRoot);
-  for (const path of [layout.root, layout.clones, layout.artifacts]) {
+  for (const path of [layout.root, layout.clones, layout.artifacts, layout.prompts]) {
     mkdirSync(path, { recursive: true });
   }
   return layout;
