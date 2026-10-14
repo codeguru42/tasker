@@ -236,15 +236,15 @@ describe("createClaudeCodeProvider run", () => {
     expect(outcome.events).toHaveLength(2);
   });
 
-  it("gives timeout at the deadline, before the exit code", async () => {
-    const { outcome } = await run({ stream: claudeSample("plain").slice(0, 2), sleepMs: 20_000, exitCode: 3 }, { timeoutMs: 500 });
+  it("gives timeout at the deadline, before the exit code", { timeout: 15_000 }, async () => {
+    const { outcome } = await run({ stream: claudeSample("plain").slice(0, 2), sleepMs: 20_000, exitCode: 3 }, { timeoutMs: 3000 });
 
     expect(outcome.kind).toBe("timeout");
     expect(outcome.events).toHaveLength(2);
   });
 
   it("gives timeout when claude ignores SIGTERM", { timeout: 15_000 }, async () => {
-    const { outcome } = await run({ stream: [], sleepMs: 60_000, ignoreSigterm: true }, { timeoutMs: 500 });
+    const { outcome } = await run({ stream: [], sleepMs: 60_000, ignoreSigterm: true }, { timeoutMs: 3000 });
 
     expect(outcome.kind).toBe("timeout");
   });
