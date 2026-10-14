@@ -1,13 +1,20 @@
 import type { RegisterCommand } from "../cli.js";
 import { abortTask } from "../tasks/abort.js";
-import { loadConfigOrFail, orFailAsync, REPO_LOCK_WAIT_MS, withIssueTaskAsync } from "./shared.js";
+import {
+  ISSUE_ARGUMENT_DESCRIPTION,
+  loadConfigOrFail,
+  orFailAsync,
+  REPO_LOCK_WAIT_MS,
+  REPO_OPTION_DESCRIPTION,
+  withIssueTaskAsync,
+} from "./shared.js";
 
 export const abort: RegisterCommand = (program, io) => {
   program
     .command("abort")
     .description("Remove the worktree and the task branch of an active task, and move the task to cancelled")
-    .argument("<issue>", "The issue key of the task")
-    .option("--repo <key>", "Use the repo with this key when two repos share the project of the issue")
+    .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
+    .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option("--force", "Discard the uncommitted changes of the worktree before the abort")
     .action(async (issue: string, options: { repo?: string; force?: boolean }) => {
       const config = loadConfigOrFail(io);

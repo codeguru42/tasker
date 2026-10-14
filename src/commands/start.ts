@@ -3,8 +3,10 @@ import { errorMessage } from "../error-message.js";
 import { BootstrapFailedError, startTask } from "../tasks/start.js";
 import {
   formatFields,
+  ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
   REPO_LOCK_WAIT_MS,
+  REPO_OPTION_DESCRIPTION,
   orFailAsync,
   resolveIssueKeyOrFail,
   withStoreAsync,
@@ -16,8 +18,8 @@ export const start: RegisterCommand = (program, io) => {
     .description(
       "Make a task for an issue and take it to workspace_ready: read the issue, make the clone, resolve the base, make the worktree and run bootstrap",
     )
-    .argument("<issue>", "The issue key of the task")
-    .option("--repo <key>", "Use the repo with this key when two repos share the project of the issue")
+    .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
+    .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option(
       "--base <branch>",
       "The base branch of this task only: a branch on origin, or refs/heads/<branch> for a local branch of the clone",

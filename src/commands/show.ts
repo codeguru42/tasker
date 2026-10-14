@@ -1,7 +1,13 @@
 import type { RegisterCommand } from "../cli.js";
 import { failedFrom } from "../state/machine.js";
 import type { Task, TaskEvent, TaskStore } from "../store/store.js";
-import { formatFields, loadConfigOrFail, withIssueTask } from "./shared.js";
+import {
+  formatFields,
+  ISSUE_ARGUMENT_DESCRIPTION,
+  loadConfigOrFail,
+  REPO_OPTION_DESCRIPTION,
+  withIssueTask,
+} from "./shared.js";
 
 // The error of the last transition event, when it is a string.
 function lastError(events: TaskEvent[]): string | undefined {
@@ -37,8 +43,8 @@ export const show: RegisterCommand = (program, io) => {
   program
     .command("show")
     .description("Print the details of the task of an issue: the active task, else the newest one")
-    .argument("<issue>", "The issue key of the task")
-    .option("--repo <key>", "Use the repo with this key when two repos share the project of the issue")
+    .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
+    .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .action((issue: string, options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
       io.stdout(withIssueTask(io, config, issue, { repo: options.repo }, formatTask));

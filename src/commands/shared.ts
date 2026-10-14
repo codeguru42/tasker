@@ -11,6 +11,10 @@ import { openStore, type Task, type TaskStore } from "../store/store.js";
 // Another command can hold the clone for a long first fetch.
 export const REPO_LOCK_WAIT_MS = 300_000;
 
+// The help texts of the --repo option and the <issue> argument of the commands that act on one task.
+export const REPO_OPTION_DESCRIPTION = "Use the repo with this key when two repos share the project of the issue";
+export const ISSUE_ARGUMENT_DESCRIPTION = "The issue key of the task";
+
 // Prints message to stderr and stops the command with exit code 1.
 export function fail(io: Io, message: string): never {
   io.stderr(`${message}\n`);

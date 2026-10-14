@@ -4,7 +4,13 @@ import { errnoCode } from "../errno.js";
 import { bootstrapLogPath } from "../phases/bootstrap.js";
 import { taskLogsDir } from "../store/layout.js";
 import type { Task } from "../store/store.js";
-import { fail, loadConfigOrFail, withIssueTask } from "./shared.js";
+import {
+  fail,
+  ISSUE_ARGUMENT_DESCRIPTION,
+  loadConfigOrFail,
+  REPO_OPTION_DESCRIPTION,
+  withIssueTask,
+} from "./shared.js";
 
 // The text of the bootstrap log of task. A read error stops the command with exit code 1.
 function readBootstrapLog(io: Io, dataRoot: string, task: Task): string {
@@ -21,8 +27,8 @@ export const showBootstrap: RegisterCommand = (program, io) => {
   program
     .command("show-bootstrap")
     .description("Print the bootstrap log of the task of an issue: the active task, else the newest one")
-    .argument("<issue>", "The issue key of the task")
-    .option("--repo <key>", "Use the repo with this key when two repos share the project of the issue")
+    .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
+    .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .action((issue: string, options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
       io.stdout(

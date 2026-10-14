@@ -6,7 +6,14 @@ import { loadConfigFile, parseConfigText } from "../config/load.js";
 import { ASSISTANT_ROLES, EFFORTS, type Config } from "../config/schema.js";
 import { replaceFile } from "../replace-file.js";
 import { issueKeyMatches } from "../issue-key/resolve.js";
-import { fail, issueKeyOrFail, orFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
+import {
+  fail,
+  issueKeyOrFail,
+  orFail,
+  REPO_OPTION_DESCRIPTION,
+  resolveIssueKeyOrFail,
+  withStore,
+} from "./shared.js";
 
 interface ModelOptions {
   role?: AssistantRole;
@@ -44,7 +51,7 @@ export const model: RegisterCommand = (program, io) => {
     .argument("<issue>", "The issue key: the command uses the repo of the issue")
     .argument("[model]", "The new model of the role. It must pass the model check of the provider")
     .addOption(new Option("--role <role>", "The role to print or to set").choices(ASSISTANT_ROLES))
-    .option("--repo <key>", "Use the repo with this key when two repos share the project of the issue")
+    .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .addOption(new Option("--effort <effort>", "The new effort of the role").choices(EFFORTS))
     .action((issue: string, newModel: string | undefined, options: ModelOptions) => {
       const { role, effort } = options;
