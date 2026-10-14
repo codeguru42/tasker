@@ -100,6 +100,28 @@ describe("runAssistant", () => {
     expect(lines).toEqual([]);
   });
 
+  it("starts the stderr tail at a whole UTF-8 character", async () => {
+    const TAIL_BYTES = 65536;
+    const CHARACTERS = 2 ** 15; // the é block: 2 bytes each, 65536 bytes in all
+    const X_BYTES = 1;
+    // The last TAIL_BYTES bytes start 1 byte into the first é of the block.
+    const CUT_BYTES = 1;
+    const expected = "é".repeat((TAIL_BYTES - X_BYTES - CUT_BYTES) / 2) + "X";
+    expect(CHARACTERS * 2).toBe(TAIL_BYTES);
+    // /bin/sh, because the bash of some hosts writes a startup warning to stderr.
+    const command =
+      "head -c 70000 /dev/zero | tr '\\0' e >&2; s=é; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do s=$s$s; done; " +
+      "printf '%s' \"$s\" >&2; printf X >&2";
+
+    const { result } = await runCollected(command, { file: "/bin/sh" });
+
+    expect(result).toMatchObject({ started: true });
+    const stderrTail = result.started ? result.stderrTail : "";
+    expect(stderrTail).not.toContain("�");
+    expect(stderrTail.endsWith("X")).toBe(true);
+    expect(stderrTail).toBe(expected);
+  });
+
   it("stops the group when the signal aborts", { timeout: 20_000 }, async () => {
     const dir = useTempDir("tasker-run-assistant-");
     const controller = new AbortController();
