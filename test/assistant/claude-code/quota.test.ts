@@ -254,14 +254,18 @@ describe("quotaStopOf", () => {
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 42 });
   });
 
-  it("gives the last rejected event, and a later allowed event does not count", () => {
+  it("gives the last rejected event", () => {
     const events = stopEvents();
-    events.splice(2, 0, rejected(1), rejected(2), claudeRateLimitEvent((info) => void (info["status"] = "allowed")));
+    events.splice(2, 1, rejected(1), rejected(2));
+
+    expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 2 });
+  });
+
+  it("does not count a later allowed event", () => {
+    const events = stopEvents();
+    events.splice(3, 0, claudeRateLimitEvent((info) => void (info["status"] = "allowed")));
 
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 1791906000 });
-    events.splice(2, 1);
-    events.splice(3, 1);
-    expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 2 });
   });
 
   it("gives no resetsAt key when no event is rejected", () => {

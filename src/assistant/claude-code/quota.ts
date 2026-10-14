@@ -39,6 +39,21 @@ function relevantWindow(info: Record<string, unknown>): QuotaApprovalWarning | u
   return resetsAt === undefined ? { utilization } : { utilization, resetsAt };
 }
 
+// The facts of a quota stop when the rate limit stopped the run, else undefined.
+export function quotaStopOf(events: readonly AssistantEvent[], exitCode: number | null): { resetsAt?: number } | undefined {
+  if (exitCode === 0) return undefined;
+  const last = events.at(-1);
+  if (last?.["type"] !== "result" || last["terminal_reason"] !== "api_error" || last["api_error_status"] !== 429) {
+    return undefined;
+  }
+  let resetsAt: number | undefined;
+  for (const event of events) {
+    const info = rateLimitInfoOf(event);
+    if (info?.["status"] === "rejected") resetsAt = numberOf(info["resetsAt"]);
+  }
+  return resetsAt === undefined ? {} : { resetsAt };
+}
+
 export function detectQuotaApprovalWarning(outcome: RunOutcome, threshold: number): QuotaApprovalWarning | undefined {
   let kept: QuotaApprovalWarning | undefined;
   for (const event of outcome.events) {

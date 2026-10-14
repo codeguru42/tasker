@@ -7,7 +7,7 @@ import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "..
 import { claudeArgs } from "./args.js";
 import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
 import { removePlaceholders } from "./placeholders.js";
-import { detectQuotaApprovalWarning, shouldSuppressQuotaApprovalPause } from "./quota.js";
+import { detectQuotaApprovalWarning, quotaStopOf, shouldSuppressQuotaApprovalPause } from "./quota.js";
 import {
   LINUX_SANDBOX_PROGRAMS,
   sandboxHostRefusal,
@@ -38,8 +38,17 @@ function errorResultReason(result: Record<string, unknown>): string {
   return "the assistant ended with an error";
 }
 
-// The outcome of a run that started, in this order: the deadline, a signal, an error result, an exit
-// code, a missing result, a missing structured answer.
+// The outcome of a run that started. The first match wins:
+// - The deadline gives timeout.
+// - A quota stop (the last event is a result with terminal_reason "api_error" and api_error_status 429,
+//   and the exit code is not 0) gives quota with cause "rate_limit". It wins over each failure below,
+//   because the next step is a resume, not a fix.
+// - A signal gives failure.
+// - A result with is_error true gives failure.
+// - An exit code other than 0 gives failure.
+// - A missing result gives failure.
+// - A missing structured answer (with a schema) gives failure.
+// - Else success.
 function outcomeOf(
   input: RunInput,
   run: Extract<AssistantResult, { started: true }>,
@@ -49,6 +58,8 @@ function outcomeOf(
   const base = { sessionId: input.sessionId, ...outcomeFacts(events, facts) };
   const fail = (reason: string): Failure => ({ kind: "failure", ...base, exitCode: run.code, signal: run.signal, reason });
   if (run.timedOut) return { kind: "timeout", ...base };
+  const quotaStop = quotaStopOf(events, run.code);
+  if (quotaStop !== undefined) return { kind: "quota", cause: "rate_limit", ...base, ...quotaStop };
   if (run.signal !== null) return fail(`claude was killed by ${run.signal}`);
   const { result } = facts;
   if (result?.["is_error"] === true) return fail(errorResultReason(result));
