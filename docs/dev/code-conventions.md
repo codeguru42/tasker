@@ -10,6 +10,7 @@ This page describes how the code of tasker is laid out and how to test it.
 - `src/store/` holds the task store. See [data-root.md](data-root.md).
 - `src/doctor/` holds the code that all doctor checks share. See [doctor.md](doctor.md).
 - `src/issues/` holds the issue tracker code. See [issue-trackers.md](issue-trackers.md).
+- `src/assistant/` holds the assistant provider interface, the pick of a provider and the model forms. See [assistants.md](assistants.md).
 - `src/process/` holds the code that starts a child process. Every child process starts from a module in this folder. The git, gh and ssh code start their processes through its shared helper.
 - `src/phases/` holds the code that runs the commands of a phase. See [phases.md](phases.md).
 - `src/vcs/` holds the version control layer. See [version-control.md](version-control.md).
@@ -65,6 +66,16 @@ Each new command must be in the skill and in the `--help` output. The test `test
 6. Give `undefined` from `baseBranchHint` when the issue has no hint.
 7. Give the doctor checks of the provider from `doctorChecks(repos)`. `issueDoctorChecks()` calls it once with all the repos of the id, so a check that runs once runs once.
 8. Write the tests first (see "Tests").
+
+## Add an assistant provider
+
+1. Add the id to the `assistant.provider` enum in `src/config/schema.ts`, and to the `provider` row of the `assistant` table in `docs/config.md`.
+2. Add the model forms of the id to `src/assistant/models.ts`. Give the forms to the user in `docs/config.md`.
+3. Create `src/assistant/<id>/provider.ts`. It implements the interface in `src/assistant/provider.ts`, and it imports the types of the interface from there.
+4. Add a branch for the id to the pick switch in `src/assistant/provider.ts`, in place of the "not available in this version" error.
+5. Follow the rule "refuse, never drop" in the doc comment of the interface.
+6. Give the doctor checks of the provider. The doctor gets them once for all the repos of the provider.
+7. Write the tests first (see "Tests").
 
 ## Imports
 

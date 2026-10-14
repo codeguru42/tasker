@@ -16,3 +16,4 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/issue-keys.md](docs/dev/issue-keys.md): the issue key forms, the short refs, the resolve of a key to its repo and the stored spelling.
 - [docs/dev/tasks.md](docs/dev/tasks.md): the task commands start and abort: the purpose of start, the order of its steps, the locks and the lock order, the rules of a second run, the reasons of abort and the limits.
 - [docs/dev/phases.md](docs/dev/phases.md): the phases: the environment of a phase, the deadline, the stop rules, the log and the marker.
+- [docs/dev/assistants.md](docs/dev/assistants.md): the assistant provider interface: its purpose, the rule "refuse, never drop", the session id, the prompt on stdin and the provider of a new and a continued session.
