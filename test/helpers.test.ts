@@ -50,6 +50,7 @@ import {
   makeGitClone,
   makeGitOrigin,
   readPidFile,
+  readRunMarker,
   runCommand,
   runInput,
   savePid,
@@ -1179,6 +1180,34 @@ describe("withRawDatabase", () => {
 
     expect(caught).toBe(error);
     expect(captured?.isOpen).toBe(false);
+  });
+});
+
+describe("readRunMarker", () => {
+  const newTask = { issueKey: "codeguru42/tasker#6", repoKey: "tasker", state: "approved" } as const;
+
+  it("gives the run marker row of a task that has a child pid", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    const id = withStoreFile(path, (store) => {
+      const task = store.createTask(newTask);
+      store.startRun(task.id, "executing");
+      store.setRunChildPid(task.id, 4242);
+      return task.id;
+    });
+
+    expect(readRunMarker(path, id)).toMatchObject({
+      task_id: id,
+      state: "executing",
+      pid: process.pid,
+      child_pid: 4242,
+    });
+  });
+
+  it("gives undefined for a task with no run marker", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    const id = withStoreFile(path, (store) => store.createTask(newTask).id);
+
+    expect(readRunMarker(path, id)).toBeUndefined();
   });
 });
 

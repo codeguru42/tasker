@@ -14,7 +14,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, useTempDir, repoRoot, seedPlanRevision, startFixture, startWriteLockHolder, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
+import { deadPid, useTempDir, repoRoot, seedPlanRevision, startFixture, startWriteLockHolder, readRunMarker, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -56,16 +56,6 @@ describe("task store", () => {
       return row.n;
     });
 
-  // The raw run marker row of a task, or undefined.
-  const readRun = (taskId: number) =>
-    withRawDatabase(
-      dbPath,
-      (db) =>
-        db.prepare("SELECT * FROM run_markers WHERE task_id = ?").get(taskId) as
-          | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
-          | undefined,
-    );
-
   // The plan revision rows of a task, as raw rows.
   const readPlanRows = (taskId: number) =>
     withRawDatabase(dbPath, (db) =>
@@ -75,13 +65,13 @@ describe("task store", () => {
   // Checks that a failed call threw message and changed no state, no marker row, no event and no plan revision row.
   const expectNothingChanged = (id: number, run: () => unknown, message: string) => {
     const state = store.getTask(id)?.state;
-    const marker = readRun(id);
+    const marker = readRunMarker(dbPath, id);
     const events = eventCount();
     const plans = readPlanRows(id);
     const error = thrownBy(run, message);
     expect((error as Error).message).toBe(message);
     expect(store.getTask(id)?.state).toBe(state);
-    expect(readRun(id)).toEqual(marker);
+    expect(readRunMarker(dbPath, id)).toEqual(marker);
     expect(eventCount()).toBe(events);
     expect(readPlanRows(id)).toEqual(plans);
   };
@@ -1053,7 +1043,7 @@ describe("task store", () => {
       };
       insert();
       expect(insert).toThrow("UNIQUE constraint failed");
-      expect(readRun(task.id)).toMatchObject({ task_id: task.id, pid: process.pid });
+      expect(readRunMarker(dbPath, task.id)).toMatchObject({ task_id: task.id, pid: process.pid });
     });
 
     describe("startRun", () => {
@@ -1062,7 +1052,7 @@ describe("task store", () => {
         const moved = store.startRun(task.id, "executing");
         expect(moved).toEqual({ ...task, state: "executing" });
         expect(store.getTask(task.id)).toEqual(moved);
-        expect(readRun(task.id)).toEqual({
+        expect(readRunMarker(dbPath, task.id)).toEqual({
           task_id: task.id,
           state: "executing",
           pid: process.pid,
@@ -1127,7 +1117,7 @@ describe("task store", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
         store.startRun(task.id, "executing");
         store.setRunChildPid(task.id, 4242);
-        expect(readRun(task.id)?.child_pid).toBe(4242);
+        expect(readRunMarker(dbPath, task.id)?.child_pid).toBe(4242);
       });
 
       it("throws when the task has no marker", () => {
@@ -1159,7 +1149,7 @@ describe("task store", () => {
         const moved = store.endRun(task.id, "executed", transition);
         expect(moved).toMatchObject({ id: task.id, state: "executed" });
         expect(store.getTask(task.id)).toEqual(moved);
-        expect(readRun(task.id)).toBeUndefined();
+        expect(readRunMarker(dbPath, task.id)).toBeUndefined();
         expect(store.listEvents(task.id).at(-1)).toMatchObject({
           type: "transition",
           at: "2026-01-01T00:00:00.000Z",
@@ -1172,7 +1162,7 @@ describe("task store", () => {
         writeRunPid(task.id, "executing", deadPid());
         store.endRun(task.id, "executed");
         expect(store.getTask(task.id)?.state).toBe("executed");
-        expect(readRun(task.id)).toBeUndefined();
+        expect(readRunMarker(dbPath, task.id)).toBeUndefined();
       });
 
       it("works for a task with no marker", () => {
@@ -1185,7 +1175,7 @@ describe("task store", () => {
         writeRunPid(task.id, "executing", deadPid());
         const moved = store.endRun(task.id, "executed", transition);
         expect(moved).toMatchObject({ id: task.id, state: "executed" });
-        expect(readRun(task.id)).toBeUndefined();
+        expect(readRunMarker(dbPath, task.id)).toBeUndefined();
         expect(store.listEvents(task.id).at(-1)).toMatchObject({ type: "transition", data: { to: "executed" } });
       });
 
@@ -1197,7 +1187,7 @@ describe("task store", () => {
           () => store.endRun(task.id, "planning"),
           "planning is a spawning state",
         );
-        expect(readRun(task.id)).toBeDefined();
+        expect(readRunMarker(dbPath, task.id)).toBeDefined();
       });
 
       it("writes nothing when check throws", () => {

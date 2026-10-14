@@ -557,6 +557,17 @@ export function withRawDatabase<T>(path: string, fn: (db: DatabaseSync) => T): T
   return closeAfter(new DatabaseSync(path), fn);
 }
 
+// The raw run marker row of a task in the database file at path, or undefined.
+export function readRunMarker(dbPath: string, taskId: number) {
+  return withRawDatabase(
+    dbPath,
+    (db) =>
+      db.prepare("SELECT * FROM run_markers WHERE task_id = ?").get(taskId) as
+        | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
+        | undefined,
+  );
+}
+
 // Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
 export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
   return withStoreFile(createDataRoot(dataRoot).database, fn, options);
