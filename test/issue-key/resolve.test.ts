@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseGithubKey } from "../../src/issue-key/github.js";
 import { IssueKeyError, type IssueRef } from "../../src/issue-key/ref.js";
-import { issueKeyMatches, resolveIssueKey, type ResolveOptions } from "../../src/issue-key/resolve.js";
+import { issueKeyMatches, projectOf, resolveIssueKey, type ResolveOptions } from "../../src/issue-key/resolve.js";
 import { parseConfig } from "../../src/config/schema.js";
 import { configWithTrackers, failureOf, threeRepoConfig, type Trackers } from "../helpers.js";
 
@@ -261,5 +261,15 @@ describe("issueKeyMatches", () => {
     expect(() => issueKeyMatches("nonsense", config)).toThrow(IssueKeyError);
     expect(() => issueKeyMatches("nonsense", config)).toThrow(message);
     expect(() => resolveIssueKey("nonsense", config)).toThrow(message);
+  });
+});
+
+describe("projectOf", () => {
+  it("gives the project of the issue tracker when it has one", () => {
+    expect(projectOf("alpha", { project: "o/r" })).toBe("o/r");
+  });
+
+  it("gives the repo key when the issue tracker has no project", () => {
+    expect(projectOf("alpha", {})).toBe("alpha");
   });
 });
