@@ -1,4 +1,5 @@
 import { ConfigError, type Config, type RepoConfig } from "../config/schema.js";
+import { reposByProvider } from "../config/repo-groups.js";
 import type { Check } from "../doctor/check.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { accountOf } from "./github/doctor.js";
@@ -99,17 +100,14 @@ export function issueProviderFor(config: Config, repoKey: string): IssueProvider
 }
 
 // The doctor checks of every repo of the configuration. It groups the repos by
-// issueTracker.provider, in the order of first use, and calls doctorChecks() once for each id
+// issueTracker.provider with reposByProvider(), and calls doctorChecks() once for each id
 // with all the repos of that id, in the order of the configuration. As a result, a check that
 // a provider gives once, such as gh version, runs once. A jira repo gives the ConfigError of
 // issueProviderFor(). A configuration with no repo gives [].
 export function issueDoctorChecks(config: Config): Check[] {
-  const groups = new Map<IssueTrackerId, IssueDoctorRepo[]>();
-  for (const [key, repo] of Object.entries(config.repos)) {
-    const id = repo.issueTracker.provider;
-    const group = groups.get(id) ?? [];
-    group.push({ key, issueTracker: repo.issueTracker });
-    groups.set(id, group);
-  }
-  return [...groups.values()].flatMap((repos) => issueProviderFor(config, repos[0].key).doctorChecks(repos));
+  return reposByProvider(
+    config,
+    (repo) => repo.issueTracker.provider,
+    (key, repo): IssueDoctorRepo => ({ key, issueTracker: repo.issueTracker }),
+  ).flatMap(([, repos]) => issueProviderFor(config, repos[0]!.key).doctorChecks(repos));
 }

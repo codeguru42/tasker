@@ -1,4 +1,5 @@
 import { type Config, ConfigError, type RepoConfig } from "../config/schema.js";
+import { reposByProvider } from "../config/repo-groups.js";
 import type { Check } from "../doctor/check.js";
 import { createClaudeCodeProvider } from "./claude-code/provider.js";
 
@@ -159,16 +160,13 @@ export function createSessionProvider(recorded: RecordedSession): SelectedAssist
 }
 
 // The doctor checks of the assistant providers that the configuration uses. It groups the repos by
-// provider id, in the order of first use, and calls doctorChecks() once for each id with all the repos
+// provider id with reposByProvider(), and calls doctorChecks() once for each id with all the repos
 // of that id. A repo with a provider that is not available gives the ConfigError of the pick.
 // A configuration with no repo gives [].
 export function assistantDoctorChecks(config: Config): Check[] {
-  const groups = new Map<AssistantProviderId, AssistantDoctorRepo[]>();
-  for (const [key, repo] of Object.entries(config.repos)) {
-    const id = repo.assistant.provider;
-    const group = groups.get(id) ?? [];
-    group.push({ key, assistant: repo.assistant });
-    groups.set(id, group);
-  }
-  return [...groups.entries()].flatMap(([id, repos]) => providerFor(repos[0]!.key, id).doctorChecks(repos));
+  return reposByProvider(
+    config,
+    (repo) => repo.assistant.provider,
+    (key, repo): AssistantDoctorRepo => ({ key, assistant: repo.assistant }),
+  ).flatMap(([id, repos]) => providerFor(repos[0]!.key, id).doctorChecks(repos));
 }
