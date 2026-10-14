@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { pathSlug } from "../../../src/issue-key/path-slug.js";
 import { repoPaths, repoSlug } from "../../../src/vcs/git/repo-paths.js";
@@ -7,10 +7,15 @@ import { isInside } from "../../helpers.js";
 describe("repoPaths", () => {
   it("gives the clone, publish token and worktree folders of a repo", () => {
     expect(repoPaths("/d", "tasker")).toEqual({
-      clone: "/d/clones/tasker/repo.git",
+      clone: "/d/clones/tasker/bare-repo",
       publishTokens: "/d/clones/tasker/publish-tokens",
       worktrees: "/d/clones/tasker/worktrees",
     });
+  });
+
+  // The name must not end in .git. docs/dev/version-control.md (Sandbox write paths) gives the reason.
+  it("gives a clone folder name that does not end in .git", () => {
+    expect(basename(repoPaths("/d", "tasker").clone).endsWith(".git")).toBe(false);
   });
 
   it("puts the worktrees next to the clone, outside the publish tokens and the clone", () => {
