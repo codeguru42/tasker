@@ -1,5 +1,6 @@
-import { ConfigError, type RepoConfig } from "../config/schema.js";
+import { type Config, ConfigError, type RepoConfig } from "../config/schema.js";
 import type { Check } from "../doctor/check.js";
+import { createClaudeCodeProvider } from "./claude-code/provider.js";
 
 // The id of an assistant: the value of assistant.provider.
 export type AssistantProviderId = RepoConfig["assistant"]["provider"];
@@ -128,10 +129,11 @@ export interface AssistantProvider {
   shouldSuppressQuotaApprovalPause(warning: QuotaApprovalWarning, approvedResetsAt: number | undefined): boolean;
 }
 
-// The one switch on the provider id. The claude-code provider ticket replaces its branch.
+// The one switch on the provider id. The copilot and pi providers are not available yet.
 function providerFor(repoKey: string, id: AssistantProviderId): AssistantProvider {
   switch (id) {
     case "claude-code":
+      return createClaudeCodeProvider();
     case "copilot":
     case "pi":
       throw new ConfigError([`repos.${repoKey}.assistant.provider: the ${id} assistant is not available in this version`]);
@@ -154,4 +156,19 @@ export function createAssistantProvider(
 export function createSessionProvider(recorded: RecordedSession): SelectedAssistant {
   const { repoKey, provider, model, effort } = recorded;
   return { provider: providerFor(repoKey, provider), model, effort };
+}
+
+// The doctor checks of the assistant providers that the configuration uses. It groups the repos by
+// provider id, in the order of first use, and calls doctorChecks() once for each id with all the repos
+// of that id. A repo with a provider that is not available gives the ConfigError of the pick.
+// A configuration with no repo gives [].
+export function assistantDoctorChecks(config: Config): Check[] {
+  const groups = new Map<AssistantProviderId, AssistantDoctorRepo[]>();
+  for (const [key, repo] of Object.entries(config.repos)) {
+    const id = repo.assistant.provider;
+    const group = groups.get(id) ?? [];
+    group.push({ key, assistant: repo.assistant });
+    groups.set(id, group);
+  }
+  return [...groups.entries()].flatMap(([id, repos]) => providerFor(repos[0]!.key, id).doctorChecks(repos));
 }
