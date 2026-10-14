@@ -1,8 +1,10 @@
 import { Option } from "commander";
 import type { Io, RegisterCommand } from "../cli.js";
-import type { AssistantRole } from "../assistant/provider.js";
-import { loadConfigFile } from "../config/load.js";
+import type { AssistantRole, ModelChoice } from "../assistant/provider.js";
+import { setRoleModel } from "../config/edit.js";
+import { loadConfigFile, parseConfigText } from "../config/load.js";
 import { ASSISTANT_ROLES, EFFORTS, type Config } from "../config/schema.js";
+import { replaceFile } from "../replace-file.js";
 import { IssueKeyError } from "../issue-key/ref.js";
 import { issueKeyMatches } from "../issue-key/resolve.js";
 import { fail, orFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
@@ -11,6 +13,14 @@ interface ModelOptions {
   role?: AssistantRole;
   repo?: string;
   effort?: (typeof EFFORTS)[number];
+}
+
+const NEW_SESSIONS_NOTE =
+  "note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.\n";
+
+// The report line of a role.
+function roleLine(role: AssistantRole, choice: ModelChoice): string {
+  return `${role}: ${choice.model} (effort ${choice.effort})\n`;
 }
 
 // The key of the repo of the issue. When the key matches more than one repo and repo is not given, the repo
@@ -43,12 +53,21 @@ export const model: RegisterCommand = (program, io) => {
     .addOption(new Option("--role <role>", "The role to print or to set").choices(ASSISTANT_ROLES))
     .option("--repo <key>", "Use the repo with this key when two repos share the project of the issue")
     .addOption(new Option("--effort <effort>", "The new effort of the role").choices(EFFORTS))
-    .action((issue: string, _model: string | undefined, options: ModelOptions) => {
-      const { config } = orFail(io, () => loadConfigFile());
+    .action((issue: string, newModel: string | undefined, options: ModelOptions) => {
+      const { path, text, config } = orFail(io, () => loadConfigFile());
       const repoKey = pickRepo(io, issue, config, options.repo);
-      const { models } = config.repos[repoKey].assistant;
-      for (const role of options.role === undefined ? ASSISTANT_ROLES : [options.role]) {
-        io.stdout(`${role}: ${models[role].model} (effort ${models[role].effort})\n`);
+      const { role, effort } = options;
+      if (role === undefined || (newModel === undefined && effort === undefined)) {
+        const { models } = config.repos[repoKey].assistant;
+        for (const each of role === undefined ? ASSISTANT_ROLES : [role]) {
+          io.stdout(roleLine(each, models[each]));
+        }
+        return;
       }
+      const next = setRoleModel(text, repoKey, role, { model: newModel, effort });
+      const updated = orFail(io, () => parseConfigText(next, path));
+      orFail(io, () => replaceFile(path, next));
+      io.stdout(roleLine(role, updated.repos[repoKey].assistant.models[role]));
+      io.stderr(NEW_SESSIONS_NOTE);
     });
 };

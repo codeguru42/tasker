@@ -199,15 +199,19 @@ The checks never change the remote, GitHub or the clone. The only write is one t
 
 ### `tasker model`
 
-Prints the model and the effort of each assistant role for the repo of an issue: `tasker model <issue> [--role <role>] [--repo <key>]`. The command needs no task and changes no task. For the configuration file, see the Configuration section.
+Prints or sets the model and the effort of each assistant role for the repo of an issue: `tasker model <issue> [<model>] [--role <role>] [--repo <key>] [--effort <effort>]`. The command needs no task and changes no task. For the configuration file, see the Configuration section.
 
 - `<issue>`: the issue key. The command uses the repo of the issue.
-- `--role <role>`: prints only this role. The roles are `plan`, `execute` and `review`.
+- `[<model>]`: the new model of the role. The command sets it only with `--role`.
+- `--role <role>`: the role to print or to set. The roles are `plan`, `execute` and `review`.
 - `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+- `--effort <effort>`: the new effort of the role: `low`, `medium` or `high`.
 
 If the key fits more than one repo and you do not give `--repo`, the active task of the issue picks the repo. If no repo, or more than one repo, has an active task for the issue, the command prints an error.
 
-The command prints one line for each role, in the order plan, execute, review, as `<role>: <model> (effort <effort>)`, for example `plan: opus (effort high)`.
+Without `<model>` and `--effort`, the command prints one line for each role, in the order plan, execute, review, as `<role>: <model> (effort <effort>)`, for example `plan: opus (effort high)`. With `--role`, it prints only that role.
+
+With `<model>`, `--effort` or both, the command changes the model, the effort or both of the role that `--role` names. The command makes sure that the new configuration is valid, with the model check of the provider, before it writes. If the new configuration is not valid, the command prints the errors and changes nothing. Then the command writes the new file in one step: a temporary file and a rename. It prints the new line of the role on stdout. It prints this note on stderr: `note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.`
 
 The command prints an error and exits with code 1 in these cases:
 
