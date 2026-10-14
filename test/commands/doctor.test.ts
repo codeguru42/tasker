@@ -87,6 +87,26 @@ describe("doctor", () => {
     names.forEach((name, index) => expect(lines[index]).toMatch(new RegExp(`^ok    ${name}`)));
   });
 
+  it("runs gh version and gh auth once for two repos of the github tracker", async () => {
+    const otherProject = { ...PROJECT, args: ["repo", "view", "codeguru42/other", "--json", "nameWithOwner"] };
+    const { fake } = await setUp([...GOOD_GH, otherProject], (raw) => {
+      raw.repos.other = {
+        ...raw.repos.tasker,
+        issueTracker: { ...raw.repos.tasker.issueTracker, project: "codeguru42/other" },
+      };
+    });
+
+    const { out } = await runCommand(doctor, "doctor");
+
+    const lines = statusLines(out);
+    expect(lines.filter((line) => / gh version/.test(line))).toHaveLength(1);
+    expect(lines.filter((line) => / gh auth: codeguru42/.test(line))).toHaveLength(1);
+    expect(fake.calls().filter((call) => call.args[0] === "--version")).toHaveLength(1);
+    const ghVersionAt = lines.findIndex((line) => / gh version/.test(line));
+    const gitAfterGh = lines.slice(ghVersionAt).filter((line) => / git /.test(line));
+    expect(gitAfterGh).toEqual([]);
+  });
+
   it("gives 1 and the fix when claude is not on PATH", async () => {
     await setUp(GOOD_GH, () => {}, false);
 
