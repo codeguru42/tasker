@@ -54,6 +54,8 @@ Limit: a program that git starts and that opens `/dev/tty` by itself, for exampl
 
 The marker is the file `bare-repo.incomplete` next to the clone folder `bare-repo` (see [data-root.md](data-root.md#folders)). Provision writes it before `git init` and removes it after the first fetch of a fresh clone. While the marker exists, the next provision takes the recovery path: it deletes the clone folder, with every file that a person put there, and clones again. The marker and the parent folder stay.
 
+A live sandboxed run can block a provision of another task in the same repo (see the limits in [assistants.md](assistants.md#sandbox)).
+
 A complete clone has no marker and is not cloned again. This is the path of a complete clone. Provision applies the configuration and fetches. A change to `vcs.config` or to `remote` takes effect at the next provision.
 
 - `git ls-remote --exit-code` runs before any write, so a failed `ls-remote` on a fresh path leaves nothing on disk. Exit code 2 means that the remote answers and has no refs.
@@ -117,6 +119,8 @@ These are the version-control values for an assistant run.
 - A key path that tasker cannot resolve (`~name/`, `~` or a relative path) throws, because a deny path that tasker cannot resolve leaves the key open.
 - For a symlinked key, the real path is denied too, because ssh opens the real file.
 - A missing key file gives the path alone, because ssh cannot open it either.
+- The tracked paths of a workspace tell the assistant layer which of its candidate paths git tracks. One `git ls-files -z` call covers all candidates. Each candidate gets the `:(literal)` magic, because a name must not act as a pattern. A folder counts as tracked when it holds a tracked entry.
+- The shared folder of a workspace is the folder that all workspaces of the clone share. For git, this is the common git dir, read after the worktree guard.
 
 ### Sandbox write paths
 

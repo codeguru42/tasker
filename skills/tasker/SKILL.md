@@ -186,7 +186,7 @@ The command runs these checks one at a time, in this order:
 - `data root`: makes the missing folders of `dataRoot`, then writes one temporary file there and deletes it.
 - `free space`: warns when the free space of the file system of `dataRoot` is below `dataRootMinFreeBytes`.
 - For each repo, in the order of the configuration: the git checks, then the GitHub checks.
-- Once for each assistant provider that the configuration uses, in the order of first use: the checks of the provider. For `claude-code`, this is `claude version`.
+- Once for each assistant provider that the configuration uses, in the order of first use: the checks of the provider. For `claude-code`, this is `claude version`, and on Linux also `sandbox: bwrap` and `sandbox: socat`.
 
 The command prints one line for each check, with the status (`ok`, `warn` or `error`), the name and the first line of the detail. The other lines of the detail and the remediation follow with an indent. The command prints the lines of a check before the next check starts.
 
