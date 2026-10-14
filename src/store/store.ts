@@ -114,6 +114,8 @@ export interface TaskStore extends LockStore {
     state: string,
     check?: (current: Task) => NewEvent | void,
   ): Task;
+  // Adds the pid of the child to the run marker of this process.
+  setRunChildPid(id: number, childPid: number): void;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
   listEvents(taskId: number): TaskEvent[];
   getDefaultBaseBranch(repoKey: string): string | undefined;
@@ -242,6 +244,9 @@ function setUp(db: DatabaseSync) {
       "INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, NULL, ?)",
     ),
     selectRunMarker: db.prepare("SELECT state, pid FROM run_markers WHERE task_id = ?"),
+    setRunChildPid: db.prepare(
+      "UPDATE run_markers SET child_pid = ? WHERE task_id = ? AND pid = ?",
+    ),
     insertEvent: db.prepare(
       "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *",
     ),
@@ -440,6 +445,15 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         statements.insertRunMarker.run(id, state, process.pid, at);
         if (event !== undefined) writeEvent(id, at, event.type, event.data);
         return task;
+      });
+    },
+
+    setRunChildPid(id, childPid) {
+      immediateTransaction(db, () => {
+        const { changes } = statements.setRunChildPid.run(childPid, id, process.pid);
+        if (changes === 0) {
+          throw new Error(`task ${id} has no run marker of this process`);
+        }
       });
     },
 
