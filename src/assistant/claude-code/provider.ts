@@ -3,7 +3,8 @@ import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
-import { claudeModelCheck, claudeVersionCheck } from "./doctor.js";
+import { claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
+import { LINUX_SANDBOX_PROGRAMS } from "./sandbox.js";
 import { parseLine, readStream, type StreamFacts } from "./stream.js";
 
 type Failure = Extract<RunOutcome, { kind: "failure" }>;
@@ -51,7 +52,11 @@ function outcomeOf(
   return { kind: "success", ...base, structuredOutput: result["structured_output"] };
 }
 
-export function createClaudeCodeProvider(): AssistantProvider {
+// platform and tmpRoot are for tests. The defaults are the platform of the host and "/tmp".
+export function createClaudeCodeProvider(
+  options: { platform?: NodeJS.Platform; tmpRoot?: string } = {},
+): AssistantProvider {
+  const platform = options.platform ?? process.platform;
   return {
     id: "claude-code",
     async run(input) {
@@ -89,7 +94,15 @@ export function createClaudeCodeProvider(): AssistantProvider {
       }
       return outcomeOf(input, run, events, readStream(events));
     },
-    doctorChecks: (repos) => (repos.length === 0 ? [] : [claudeVersionCheck()]),
+    doctorChecks: (repos) =>
+      repos.length === 0
+        ? []
+        : [
+            claudeVersionCheck(),
+            ...(platform === "linux"
+              ? LINUX_SANDBOX_PROGRAMS.map(({ program, pkg }) => sandboxProgramCheck(program, pkg))
+              : []),
+          ],
     modelChecks: (model) => [claudeModelCheck(model)],
     // The quota ticket replaces these two.
     detectQuotaApprovalWarning: () => undefined,
