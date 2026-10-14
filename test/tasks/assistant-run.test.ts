@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
@@ -89,6 +89,15 @@ describe("executeReadDenyPaths", () => {
 
   it("counts a blank HOME as unset", () => {
     expect(denyPaths({ HOME: "  " })).toEqual(["/k/id", "/p"]);
+  });
+
+  it("makes a relative path from the env absolute, against the cwd of tasker", () => {
+    const paths = denyPaths({ TASKER_CONFIG: "rel/tasker.json", GH_CONFIG_DIR: "rel/gh" });
+
+    expect(paths).toContain(resolve(process.cwd(), "rel/gh"));
+    expect(paths).toContain(resolve(process.cwd(), "rel/tasker.json"));
+    expect(paths).not.toContain("rel/gh");
+    expect(paths).not.toContain("rel/tasker.json");
   });
 
   it("gives the default configuration file under HOME", () => {
