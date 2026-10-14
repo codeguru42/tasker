@@ -29,7 +29,7 @@ describe("removePlaceholders", () => {
     const result = await removePlaceholders(cwd, none);
 
     expect(result).toEqual({
-      removed: [".bashrc", ".claude/loop.md", ".claude/settings.json", ".mcp.json"],
+      removed: [".bashrc", ".claude", ".claude/loop.md", ".claude/settings.json", ".mcp.json"],
     });
     for (const name of [".bashrc", ".mcp.json", ".claude/settings.json", ".claude/loop.md"]) {
       expect(existsSync(join(cwd, name))).toBe(false);

@@ -14,6 +14,9 @@ export interface SandboxLimits {
   denyRead: string[];
 }
 
+// What the provider removed after a sandboxed run: relative paths, sorted, or the error.
+export type SandboxCleanup = { removed: string[] } | { error: string };
+
 export interface OverageStop {
   approvedResetsAt?: number;
 }
@@ -71,6 +74,8 @@ interface OutcomeBase {
   usage: Usage;
   transcriptPath?: string;
   reportedModel?: string;
+  // Only a sandboxed run that got to the spawn step sets it.
+  sandboxCleanup?: SandboxCleanup;
 }
 
 export type RunOutcome =
