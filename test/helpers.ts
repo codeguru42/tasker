@@ -513,10 +513,11 @@ export function issueKeyErrorMessage(key: string, configPath: string): string {
   return expect.fail(`the issue key ${key} resolves`);
 }
 
-// Runs fn with the open store of dataRoot, then closes the store. When fn gives a promise, the
-// store closes after the promise settles. When fn throws, the store closes and the error goes on.
-export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
-  const store = openStore(createDataRoot(dataRoot).database, options);
+// Runs fn with the open store of the database file at path, then closes the store. When fn gives a
+// promise, the store closes after the promise settles. When fn throws, the store closes and the
+// error goes on.
+export function withStoreFile<T>(path: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
+  const store = openStore(path, options);
   let result: T;
   try {
     result = fn(store);
@@ -527,6 +528,11 @@ export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) =>
   if (result instanceof Promise) return result.finally(() => store.close()) as T;
   store.close();
   return result;
+}
+
+// Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
+export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
+  return withStoreFile(createDataRoot(dataRoot).database, fn, options);
 }
 
 // Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
