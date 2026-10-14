@@ -61,8 +61,8 @@ The key names the repo. It can contain `/`, for example `codeguru42/tasker`. An 
 | `verify` | object | required | `commands`: list of non-empty strings with at least one item (required). `env`: list of names (default `[]`). |
 | `bootstrap` | object | `{ "commands": [], "env": [] }` | `commands`: list of strings (default `[]`). Each command runs under `/bin/bash` in the worktree of the task, one at a time in the list order. One deadline, `limits.bootstrapTimeoutMin`, covers the whole list. The first command that fails stops the list. The output goes to the bootstrap log, not to the terminal. `env`: list of names (default `[]`). |
 | `defaultBaseBranch` | non-empty string | optional | The name of a branch on `origin` that tasks start from. tasker uses the value as it is and does not strip `origin/`. The form `refs/heads/<x>` fails with `repos.<key>.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>`. tasker uses the value only when no default is learned for the repo. If the branch exists, tasker saves it as the learned default. If not, the resolve fails. See [workspaces.md](dev/workspaces.md#base-branch). |
-| `overagePolicy` | `"decline"` or `"ask"` | `"decline"` | What to do when a task goes over the quota. |
-| `quotaApprovalThreshold` | number above 0 and at most 1 | `0.9` | The share of the quota at which approval is needed. |
+| `overagePolicy` | `"decline"` or `"ask"` | `"decline"` | What to do when a task goes over the quota. Only the `claude-code` assistant reports quota events. |
+| `quotaApprovalThreshold` | number above 0 and at most 1 | `0.9` | The share of the quota at which approval is needed. Only the `claude-code` assistant reports quota events. |
 | `updateBranchStrategy` | `"rebase"` or `"merge"` | `"rebase"` | How to bring a branch up to date. |
 | `forge` | object | optional | See [`forge`](#forge). |
 | `vcs` | object | `{ "provider": "git", "config": {} }` | See [`vcs`](#vcs). |

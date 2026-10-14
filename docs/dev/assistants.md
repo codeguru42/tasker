@@ -86,9 +86,27 @@ The limits of the sandbox:
 - After a kill of `claude`, the bare clone keeps `config.lock`, `.mcp.json` and an empty `.claude/` folder. A later write to the configuration of the clone fails until a later change removes them. The cleanup covers the worktree only.
 - A later `claude` can widen the write list in a way that the guard of the `.git` name does not catch. The guard follows `claude` 2.1.299.
 
+### Quota
+
+When a rate limit stops a run, the last event is a `result` with `terminal_reason: "api_error"` and `api_error_status: 429`. `claude` exits with a code other than 0. The `subtype` and `stop_reason` of that result say `"success"` and `"stop_sequence"`. These values are decoys, so the provider does not read them. The text of the last turn gives the reset in local time with no date, so the provider does not read it either. The reset time comes from the rejected rate-limit event.
+
+A quota outcome wins over a failure, because the next step is a resume, not a fix.
+
+Paid usage (overage) is usage past the subscription quota, and it costs money. The caller must pass the overage stop only under `overagePolicy: "decline"`. The caller must pass the reset time of each window that the operator approved. An overage stop ends the child at once. Its outcome wins over the timeout, because it rests on the parsed event, not on whether the stop beat the exit of the child.
+
+The events have these facts:
+
+- Under `rateLimitType: "overage"`, the flat use and reset time describe the cap of paid usage, not the spend of the subscription. A capture showed `utilization: 0.99` there while `isUsingOverage` was `false`.
+- `unifiedWindows` is missing in older captures. A real `allowed` event has no flat use, so the entry of the window must win.
+- The last warning window counts, not the highest. A run can pass into a new window, and the high use of the old window must not hide the new one.
+- A warning with no reset time never matches an approval, so the pause comes again.
+- A field can be missing or not a number. A bad event never throws.
+
 ### Limits
 
-The provider has no quota detection yet. It refuses an overage stop before it starts `claude`. Tasker keeps the events itself, so the provider has no transcript path.
+Tasker keeps the events itself, so the provider has no transcript path.
+
+No real capture shows the start of paid usage. The rule is the best known form. The stream can report paid usage only after the first paid request, so one paid request can pass before the stop.
 
 ### Doctor checks
 
