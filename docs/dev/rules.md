@@ -15,6 +15,18 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 - The code in `src/` can have its own helpers. These helpers must stay separate from the test helpers. `src/` must not import from `test/`, and `test/helpers.ts` must hold no code that `src/` uses.
 - Code in `src/` and in `test/` must call an existing helper for the job of that helper. It must not repeat the steps of a helper. When two or more places repeat the same steps and no helper exists, add one helper and call it from each place.
 
+## Code
+
+These rules apply to the code in `src/` and in `test/`.
+
+A case is one kind of input that a function serves. Examples are a role of an assistant run (plan, execute or review), a provider id and a kind of task.
+
+- When the cases of a function differ only in data, one shared function serves all of them. The data is, for example, a table or an object with one entry for each case. A check of the case that only picks the entry of the data is allowed. A switch on a provider id that only picks the provider of that id is such a check.
+- When the cases differ in code, each case gets its own function. An example of a difference in code is an `if` or a `switch` on the case that runs other steps. Steps that only some cases do are also a difference in code.
+- Separate functions share code only where the steps are truly the same. Find the shared steps during the work, when two functions show the same steps. Do not build a shared core for the cases at the start. Then the helper rule in [Tests](#tests) applies to the shared steps.
+- For example, one entry point runs the assistant in the roles plan, execute and review. While the roles differ only in a table of limits, the entry point stays one function. If one role needs other steps, that role gets its own entry point.
+- These rules do not split a function only because its cases differ in values, for example a limit, a message or a model. Such values are data.
+
 ## Commits
 
 - Each commit subject starts with a conventional prefix.
