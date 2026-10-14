@@ -52,13 +52,14 @@ function decodeTail(tail: Buffer): string {
 
 export type AssistantResult =
   | (GroupResult & { started: true; stderrTail: string })
-  | { started: false; error: string };
+  | { started: false; notFound: boolean; error: string };
 
 // Runs file with args as an assistant child in a new process group and session.
 // The prompt goes to stdin, and stdin closes after it. Each line of stdout goes to onLine.
 // The group, the deadline, the signals and the stop at the exit of the leader follow superviseGroup.
 // Stderr never goes to the terminal.
-// A start that fails gives started false and an error text. Otherwise, the result holds the last 64 KiB of stderr.
+// A start that fails gives started false and an error text. notFound is true when the program is missing or the env has no PATH.
+// Otherwise, the result holds the last 64 KiB of stderr.
 export async function runAssistant(
   file: string,
   args: readonly string[],
@@ -67,11 +68,11 @@ export async function runAssistant(
   try {
     assertPathSet(file, options.env);
   } catch (error) {
-    return { started: false, error: (error as Error).message };
+    return { started: false, notFound: true, error: (error as Error).message };
   }
   // Node gives the same ENOENT for a missing folder and a missing program, and it throws for a folder that is a file.
   if (statSync(options.cwd, { throwIfNoEntry: false })?.isDirectory() !== true) {
-    return { started: false, error: `cannot start ${file}: the folder ${options.cwd} does not exist` };
+    return { started: false, notFound: false, error: `cannot start ${file}: the folder ${options.cwd} does not exist` };
   }
   const child = spawn(file, [...args], {
     cwd: options.cwd,
@@ -82,8 +83,8 @@ export async function runAssistant(
   const pid = child.pid;
   if (pid === undefined) {
     const error = await new Promise<NodeJS.ErrnoException>((resolve) => child.once("error", resolve));
-    if (error.code === "ENOENT") return { started: false, error: new CommandNotFoundError(file, "not-on-path").message };
-    return { started: false, error: `cannot start ${file}: ${error.message}` };
+    if (error.code === "ENOENT") return { started: false, notFound: true, error: new CommandNotFoundError(file, "not-on-path").message };
+    return { started: false, notFound: false, error: `cannot start ${file}: ${error.message}` };
   }
   child.stdin.on("error", () => {}); // the result comes from the exit, and an EPIPE only means that the child exited before it read the whole prompt
   const splitter = lineSplitter(options.onLine);
