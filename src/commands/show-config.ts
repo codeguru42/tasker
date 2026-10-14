@@ -1,5 +1,5 @@
 import type { RegisterCommand } from "../cli.js";
-import { fail, loadConfigOrFail } from "./shared.js";
+import { loadConfigOrFail, repoKeyOrFail } from "./shared.js";
 
 export const showConfig: RegisterCommand = (program, io) => {
   program
@@ -13,9 +13,7 @@ export const showConfig: RegisterCommand = (program, io) => {
         io.stdout(`${JSON.stringify(config, null, 2)}\n`);
         return;
       }
-      if (!Object.hasOwn(config.repos, key)) {
-        fail(io, `repo key not found: ${key}`);
-      }
+      repoKeyOrFail(io, config, key);
       io.stdout(`${JSON.stringify(config.repos[key], null, 2)}\n`);
     });
 };

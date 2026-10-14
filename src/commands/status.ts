@@ -1,7 +1,7 @@
 import type { RegisterCommand } from "../cli.js";
 import { isTaskState, STATES } from "../state/machine.js";
 import type { TaskFilter } from "../store/store.js";
-import { fail, loadConfigOrFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
+import { fail, loadConfigOrFail, repoKeyOrFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
 
 const HEADERS = ["ISSUE", "REPO", "STATE", "UPDATED"];
 
@@ -25,9 +25,7 @@ export const status: RegisterCommand = (program, io) => {
       const config = loadConfigOrFail(io);
       const filter: TaskFilter = {};
       if (options.repo !== undefined) {
-        if (!Object.hasOwn(config.repos, options.repo)) {
-          fail(io, `repo key not found: ${options.repo}`);
-        }
+        repoKeyOrFail(io, config, options.repo);
         filter.repoKey = options.repo;
       }
       if (options.state !== undefined) {

@@ -1,8 +1,6 @@
-import { CommanderError } from "commander";
 import type { RegisterCommand } from "../cli.js";
-import { errorMessage } from "../error-message.js";
 import { abortTask } from "../tasks/abort.js";
-import { fail, loadConfigOrFail, REPO_LOCK_WAIT_MS, withIssueTaskAsync } from "./shared.js";
+import { loadConfigOrFail, orFailAsync, REPO_LOCK_WAIT_MS, withIssueTaskAsync } from "./shared.js";
 
 export const abort: RegisterCommand = (program, io) => {
   program
@@ -13,7 +11,7 @@ export const abort: RegisterCommand = (program, io) => {
     .option("--force", "Discard the uncommitted changes of the worktree before the abort")
     .action(async (issue: string, options: { repo?: string; force?: boolean }) => {
       const config = loadConfigOrFail(io);
-      try {
+      await orFailAsync(io, async () => {
         const task = await withIssueTaskAsync(io, config, issue, { repo: options.repo }, (store, found, ref) =>
           abortTask(store, {
             config,
@@ -26,9 +24,6 @@ export const abort: RegisterCommand = (program, io) => {
           }),
         );
         io.stdout(`cancelled ${task.issueKey}\n`);
-      } catch (error) {
-        if (error instanceof CommanderError) throw error;
-        fail(io, errorMessage(error));
-      }
+      });
     });
 };

@@ -2,6 +2,7 @@ import { CommanderError } from "commander";
 import type { Io } from "../cli.js";
 import { loadConfig } from "../config/load.js";
 import type { Config } from "../config/schema.js";
+import { errorMessage } from "../error-message.js";
 import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
 import { resolveIssueKey, type ResolveOptions } from "../issue-key/resolve.js";
 import { createDataRoot } from "../store/layout.js";
@@ -17,11 +18,44 @@ export function fail(io: Io, message: string): never {
 }
 
 // The value of fn. An error stops the command with exit code 1 and its message on stderr.
+// A CommanderError passes through, because fail() has already written its message.
 export function orFail<T>(io: Io, fn: () => T): T {
   try {
     return fn();
   } catch (error) {
-    fail(io, (error as Error).message);
+    if (error instanceof CommanderError) throw error;
+    fail(io, errorMessage(error));
+  }
+}
+
+// The value of fn, as orFail() gives it, for an async fn. message gives the text of an error.
+export async function orFailAsync<T>(
+  io: Io,
+  fn: () => Promise<T>,
+  message: (error: unknown) => string = errorMessage,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (error instanceof CommanderError) throw error;
+    fail(io, message(error));
+  }
+}
+
+// Stops the command with exit code 1 when key is not the key of a repo in config.
+export function repoKeyOrFail(io: Io, config: Config, key: string): void {
+  if (!Object.hasOwn(config.repos, key)) {
+    fail(io, `repo key not found: ${key}`);
+  }
+}
+
+// The value of fn. An IssueKeyError stops the command with exit code 1. Any other error passes through.
+export function issueKeyOrFail<T>(io: Io, fn: () => T): T {
+  try {
+    return fn();
+  } catch (error) {
+    if (!(error instanceof IssueKeyError)) throw error;
+    fail(io, error.message);
   }
 }
 
@@ -37,12 +71,7 @@ export function resolveIssueKeyOrFail(
   config: Config,
   options: ResolveOptions,
 ): IssueRef {
-  try {
-    return resolveIssueKey(rawKey, config, options);
-  } catch (error) {
-    if (!(error instanceof IssueKeyError)) throw error;
-    fail(io, error.message);
-  }
+  return issueKeyOrFail(io, () => resolveIssueKey(rawKey, config, options));
 }
 
 // The text of a field value on one line: each line end is written as the two characters \n.

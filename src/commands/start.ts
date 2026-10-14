@@ -2,10 +2,10 @@ import type { RegisterCommand } from "../cli.js";
 import { errorMessage } from "../error-message.js";
 import { BootstrapFailedError, startTask } from "../tasks/start.js";
 import {
-  fail,
   formatFields,
   loadConfigOrFail,
   REPO_LOCK_WAIT_MS,
+  orFailAsync,
   resolveIssueKeyOrFail,
   withStoreAsync,
 } from "./shared.js";
@@ -33,24 +33,26 @@ export const start: RegisterCommand = (program, io) => {
               ),
             )
           : io.prompt(`Base branch for ${ref.repoKey}: `);
-      let outcome;
-      try {
-        outcome = await withStoreAsync(config, (store) =>
-          startTask(store, {
-            config,
-            ref,
-            base: options.base,
-            env: process.env,
-            repoLockWaitMs: REPO_LOCK_WAIT_MS,
-            ask,
-            note: (line) => io.stderr(`${line}\n`),
-          }),
-        );
-      } catch (error) {
+      const outcome = await orFailAsync(
+        io,
+        () =>
+          withStoreAsync(config, (store) =>
+            startTask(store, {
+              config,
+              ref,
+              base: options.base,
+              env: process.env,
+              repoLockWaitMs: REPO_LOCK_WAIT_MS,
+              ask,
+              note: (line) => io.stderr(`${line}\n`),
+            }),
+          ),
         // The bootstrap error comes first, then the tail of the log.
-        if (error instanceof BootstrapFailedError) fail(io, `${error.message}\n${error.tail.trimEnd()}`);
-        fail(io, errorMessage(error));
-      }
+        (error) =>
+          error instanceof BootstrapFailedError
+            ? `${error.message}\n${error.tail.trimEnd()}`
+            : errorMessage(error),
+      );
       const { task } = outcome;
       if (!outcome.started) io.stdout("task already started\n");
       io.stdout(

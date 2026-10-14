@@ -3,12 +3,11 @@ import type { RegisterCommand } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import type { Check } from "../doctor/check.js";
 import { dataRootCheck, freeSpaceCheck } from "../doctor/data-root.js";
-import { errorMessage } from "../error-message.js";
 import { runChecks } from "../doctor/run-checks.js";
 import { assistantDoctorChecks } from "../assistant/provider.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { createVcsProvider } from "../vcs/provider.js";
-import { fail, loadConfigOrFail } from "./shared.js";
+import { loadConfigOrFail, orFail } from "./shared.js";
 
 // The checks of tasker doctor, in order. It only builds the checks. A provider can throw here.
 function doctorChecks(config: Config, env: NodeJS.ProcessEnv): Check[] {
@@ -33,12 +32,7 @@ export const doctor: RegisterCommand = (program, io) => {
     .action(async () => {
       const config = loadConfigOrFail(io);
       const env = process.env;
-      let checks: Check[];
-      try {
-        checks = doctorChecks(config, env);
-      } catch (error) {
-        fail(io, errorMessage(error));
-      }
+      const checks = orFail(io, () => doctorChecks(config, env));
       const code = await runChecks(checks, env, io.stdout);
       if (code !== 0) {
         throw new CommanderError(code, "tasker.doctor", "a required doctor check failed");

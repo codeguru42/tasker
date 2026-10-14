@@ -5,9 +5,8 @@ import { setRoleModel } from "../config/edit.js";
 import { loadConfigFile, parseConfigText } from "../config/load.js";
 import { ASSISTANT_ROLES, EFFORTS, type Config } from "../config/schema.js";
 import { replaceFile } from "../replace-file.js";
-import { IssueKeyError } from "../issue-key/ref.js";
 import { issueKeyMatches } from "../issue-key/resolve.js";
-import { fail, orFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
+import { fail, issueKeyOrFail, orFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
 
 interface ModelOptions {
   role?: AssistantRole;
@@ -27,13 +26,7 @@ function roleLine(role: AssistantRole, choice: ModelChoice): string {
 // with the active task of the issue wins. In every other case, the normal resolve picks the repo or fails.
 function pickRepo(io: Io, issue: string, config: Config, repo: string | undefined): string {
   if (repo === undefined) {
-    let matches;
-    try {
-      matches = issueKeyMatches(issue, config);
-    } catch (error) {
-      if (!(error instanceof IssueKeyError)) throw error;
-      fail(io, error.message);
-    }
+    const matches = issueKeyOrFail(io, () => issueKeyMatches(issue, config));
     if (matches.length > 1) {
       const active = withStore(config, (store) =>
         matches.filter((ref) => store.findActiveTask(ref.repoKey, ref.key) !== undefined),
