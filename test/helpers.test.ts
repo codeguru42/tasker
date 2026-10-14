@@ -26,6 +26,7 @@ import {
   commitInWorktree,
   configIssuesOf,
   dayAt,
+  deadPid,
   failureOf,
   fakeGh,
   fakeSsh,
@@ -765,6 +766,16 @@ describe("isAlive", () => {
 
     expect(finished.pid).toBeGreaterThan(0);
     expect(isAlive(finished.pid)).toBe(false);
+  });
+});
+
+describe("deadPid", () => {
+  it("gives the pid of a process that is gone", () => {
+    expect(isAlive(deadPid())).toBe(false);
+  });
+
+  it("never gives the pid of the test process", () => {
+    expect(deadPid()).not.toBe(process.pid);
   });
 });
 
