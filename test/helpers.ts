@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   accessSync,
   constants,
@@ -229,6 +229,15 @@ export function isAlive(pid: number): boolean {
   } catch {
     return true;
   }
+}
+
+// The pid of a real process that ran and ended. spawnSync waits for the end and reaps the child,
+// so the pid is gone when it returns.
+export function deadPid(): number {
+  const result = spawnSync("true");
+  if (result.error !== undefined) throw result.error;
+  if (result.pid === undefined || result.pid === 0) throw new Error("the short process got no pid");
+  return result.pid;
 }
 
 // Resolves when predicate gives true. It polls every 50 ms and rejects with message after timeoutMs.
