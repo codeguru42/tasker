@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fillTemplate } from "../../src/prompts/template.js";
 import { PLAN_PROMPT, PLAN_PROMPT_NAME, planIssueText } from "../../src/prompts/plan.js";
+import { SHARED_RULES } from "../../src/prompts/shared.js";
 
 const ISSUE = { key: "o/r#1", title: "Add a thing", body: "Line one.\nLine two." };
 
@@ -45,5 +46,9 @@ describe("PLAN_PROMPT", () => {
     "questions",
   ])("names %s", (name) => {
     expect(PLAN_PROMPT).toContain(name);
+  });
+
+  it.each(Object.entries(SHARED_RULES))("holds the shared rule %s", (_name, text) => {
+    expect(PLAN_PROMPT).toContain(text);
   });
 });
