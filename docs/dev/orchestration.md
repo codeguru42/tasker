@@ -228,8 +228,8 @@ When the job of a ticket fires, the orchestrator runs `tasker status --issue <is
 - If the task is in `quota_blocked` and its `resets at:` time is in the future, the stop is in a longer window, for example `seven_day`. The orchestrator does not resume the agent. The orchestrator tells the user. Then the orchestrator schedules a job for the job time of that `resets at:` time. The task stays in `quota_blocked`.
 - If the task is in `interrupted`, the orchestrator sends the agent a resume message, as in the first case. Then the orchestrator schedules the next job, as the paragraph after this list says. The task stays in `interrupted` until the agent runs `tasker resume`.
 - If the task is in `awaiting_quota_approval`, the quota use passed the approval threshold. The orchestrator tells the user and does not resume the task. The orchestrator does not run `tasker approve-credits` (see "Limits"). The orchestrator does not schedule another job for that task. The task stays in `awaiting_quota_approval` until the user decides.
-- If the task is in `failed`, the orchestrator reads the last report of the agent. If that report does not say that the agent stopped, the orchestrator schedules the next job, as the paragraph after this list says. If the agent stopped, the orchestrator schedules no new job and tells the user. The orchestrator frees the slot only in a case of "Delete the job".
-- If the task is in `landed`, `finishing`, `cleanup_failed`, `finished` or `cancelled`, or `tasker status --issue <issue>` lists no task, the orchestrator schedules no new job. The orchestrator frees the slot of the agent, as "Delete the job" says. By default, `tasker status` lists only the tasks in flight, so it does not list a `finished` or `cancelled` task.
+- If the task is in `failed` or `landed`, the orchestrator reads the last report of the agent. In `landed`, the agent does the CI wait of "Run one ticket". If the task is in `landed`, the agent has ended (see "Terms"), and its last report does not say that it stopped, the orchestrator sends the agent a resume message, as in the first case. If that report does not say that the agent stopped, the orchestrator schedules the next job, as the paragraph after this list says. The agent keeps its slot. If the agent stopped, the orchestrator schedules no new job and tells the user. The orchestrator frees the slot only in a case of "Delete the job".
+- If the task is in `finishing`, `cleanup_failed`, `finished` or `cancelled`, or `tasker status --issue <issue>` lists no task, the orchestrator schedules no new job. The orchestrator frees the slot of the agent, as "Delete the job" says. By default, `tasker status` lists only the tasks in flight, so it does not list a `finished` or `cancelled` task.
 - If the task is in a state that no other case names, the task did not stop for the quota. For example, the task is in `planning`, `executing`, `awaiting_plan_review` or `reviewed`. The orchestrator schedules the next job, as the paragraph after this list says. The agent keeps its slot.
 
 If a case says that the orchestrator schedules the next job, the orchestrator runs `tasker show-quota` and reads the reset time, as "Terms" says. If there is a reset time, the orchestrator schedules the next job for the job time of that agent. The orchestrator also follows the schedule-all rule in "When there is no reset time yet". If there is no reset time yet, the orchestrator tells the agent that it has no job. Then "When there is no reset time yet" applies to that agent.
@@ -244,10 +244,11 @@ If a case says that the orchestrator schedules the next job, the orchestrator ru
 
 ### Delete the job
 
-- When the ticket lands, the orchestrator must delete the job of that ticket with CronDelete.
+- When the agent reports that it ran `tasker finish`, for example in its final report, the orchestrator must delete the job of that ticket with CronDelete. A task in `landed` keeps its job and its slot until then, unless another bullet of this section applies, for example after a stop in the CI wait.
+- When the agent reports a CI failure in the CI wait, the orchestrator tells the user. Then the orchestrator must delete the job of that agent with CronDelete. The task stays in `landed`.
 - When the orchestrator cancels an agent, the orchestrator must delete the job of that agent with CronDelete.
 - If an agent stops for another reason and the orchestrator does not start it again, the orchestrator must delete the job of that agent with CronDelete.
-- In each of these cases, the orchestrator frees the slot of the agent. This also applies when the agent has no job.
+- In each of these cases, the orchestrator frees the slot of the agent. This also applies when the agent has no job. The schedule-all rule also leaves out this agent until the orchestrator starts it again, as "Schedule a job when an agent starts" says.
 
 ### Do not use these
 
