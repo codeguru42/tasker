@@ -1,5 +1,7 @@
+import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { CommandNotFoundError } from "../../src/process/run-child.js";
 import { runAssistant } from "../../src/process/run-assistant.js";
 import { readPidFile, signalListenerCounts, startFixture, useTempDir, waitUntilGone } from "../helpers.js";
 
@@ -7,13 +9,23 @@ const MINUTE_MS = 60_000;
 const GRACE_MS = 5000;
 
 // Runs command under bash as an assistant child. It collects each line and each pid that the runner reports.
-async function runCollected(command: string, opts: { cwd?: string; prompt?: string; deadline?: number; signal?: AbortSignal } = {}) {
+async function runCollected(
+  command: string,
+  opts: {
+    cwd?: string;
+    prompt?: string;
+    deadline?: number;
+    signal?: AbortSignal;
+    file?: string;
+    env?: NodeJS.ProcessEnv;
+  } = {},
+) {
   const dir = useTempDir("tasker-run-assistant-");
   const lines: string[] = [];
   const pids: number[] = [];
-  const result = await runAssistant("/bin/bash", ["-c", command], {
+  const result = await runAssistant(opts.file ?? "/bin/bash", ["-c", command], {
     cwd: opts.cwd ?? dir,
-    env: { PATH: process.env.PATH },
+    env: opts.env ?? { PATH: process.env.PATH },
     prompt: opts.prompt ?? "",
     deadline: opts.deadline ?? Date.now() + MINUTE_MS,
     signal: opts.signal,
@@ -162,6 +174,58 @@ describe("runAssistant", () => {
     expect(lines).toEqual(["done"]);
     expect(result).toMatchObject({ code: 0, timedOut: false, killed: false });
     expect(Date.now() - start).toBeLessThan(2000);
+  });
+
+  it("reports a started run with all result keys", async () => {
+    const { result } = await runCollected("exit 0");
+
+    expect(result).toEqual({ started: true, code: 0, signal: null, timedOut: false, killed: false, stderrTail: "" });
+  });
+
+  it("gives an error for a cwd that does not exist", async () => {
+    const cwd = join(useTempDir("tasker-run-assistant-"), "missing");
+
+    const { result, pids } = await runCollected("exit 0", { cwd });
+
+    expect(result).toEqual({ started: false, error: `cannot start /bin/bash: the folder ${cwd} does not exist` });
+    expect(pids).toEqual([]);
+  });
+
+  it("gives an error for a cwd that is a file", async () => {
+    const cwd = join(useTempDir("tasker-run-assistant-"), "file");
+    writeFileSync(cwd, "");
+
+    const { result, pids } = await runCollected("exit 0", { cwd });
+
+    expect(result).toEqual({ started: false, error: `cannot start /bin/bash: the folder ${cwd} does not exist` });
+    expect(pids).toEqual([]);
+  });
+
+  it("gives the not-found error for a program that does not exist", async () => {
+    const file = join(useTempDir("tasker-run-assistant-"), "missing-program");
+
+    const { result, pids } = await runCollected("exit 0", { file });
+
+    expect(result).toEqual({ started: false, error: new CommandNotFoundError(file, "not-on-path").message });
+    expect(pids).toEqual([]);
+  });
+
+  it("gives an error for a program that is not executable", async () => {
+    const file = join(useTempDir("tasker-run-assistant-"), "plain-file");
+    writeFileSync(file, "");
+    chmodSync(file, 0o644);
+
+    const { result, pids } = await runCollected("exit 0", { file });
+
+    expect(result).toEqual({ started: false, error: `cannot start ${file}: spawn ${file} EACCES` });
+    expect(pids).toEqual([]);
+  });
+
+  it("gives the no-path error when the env has no PATH", async () => {
+    const { result, pids } = await runCollected("exit 0", { file: "bash", env: {} });
+
+    expect(result).toEqual({ started: false, error: new CommandNotFoundError("bash", "no-path").message });
+    expect(pids).toEqual([]);
   });
 
   it("stops the group at the deadline", { timeout: 20_000 }, async () => {
