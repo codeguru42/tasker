@@ -3,6 +3,7 @@ import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
+import { claudeModelCheck, claudeVersionCheck } from "./doctor.js";
 import { parseLine, readStream, type StreamFacts } from "./stream.js";
 
 type Failure = Extract<RunOutcome, { kind: "failure" }>;
@@ -89,8 +90,8 @@ export function createClaudeCodeProvider(): AssistantProvider {
       }
       return outcomeOf(input, run, events, readStream(events));
     },
-    doctorChecks: () => [],
-    modelChecks: () => [],
+    doctorChecks: (repos) => (repos.length === 0 ? [] : [claudeVersionCheck()]),
+    modelChecks: (model) => [claudeModelCheck(model)],
     // The quota ticket replaces these two.
     detectQuotaApprovalWarning: () => undefined,
     shouldSuppressQuotaApprovalPause: () => false,

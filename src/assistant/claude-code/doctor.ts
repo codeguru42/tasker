@@ -1,0 +1,49 @@
+import type { Check } from "../../doctor/check.js";
+import { timedCheck } from "../../doctor/timed-check.js";
+import { childEnv } from "../../process/child-env.js";
+import { CommandNotFoundError, runChild } from "../../process/run-child.js";
+import { modelIssue } from "../models.js";
+
+function firstLine(text: string): string {
+  return text.trim().split("\n")[0]!.replace(/\r$/, "");
+}
+
+// Only a missing claude gets the fix, because only an install fixes that cause.
+export function claudeVersionCheck(timeoutMs = 5000): Check {
+  return timedCheck({ name: "claude version", required: true, timeoutMs }, async (env, { signal }) => {
+    let child;
+    try {
+      child = await runChild("claude", ["--version"], { env: childEnv(env, []), signal });
+    } catch (error) {
+      if (error instanceof CommandNotFoundError) {
+        return {
+          status: "error",
+          detail: "claude is not installed or not on PATH",
+          remediation: "Install Claude Code and put claude on PATH.",
+        };
+      }
+      throw error;
+    }
+    if (child.signal !== null) {
+      return { status: "error", detail: `claude --version was killed by ${child.signal}` };
+    }
+    if (child.code !== 0) {
+      const stderr = firstLine(child.stderr);
+      return {
+        status: "error",
+        detail: `claude --version exited ${child.code}${stderr === "" ? "" : `: ${stderr}`}`,
+      };
+    }
+    return { status: "ok", detail: firstLine(child.stdout) };
+  });
+}
+
+// The model forms have one home, modelIssue().
+export function claudeModelCheck(model: string): Check {
+  return timedCheck({ name: `claude model: ${model}`, required: true, timeoutMs: 1000 }, async () => {
+    const issue = modelIssue("claude-code", model);
+    return issue === undefined
+      ? { status: "ok", detail: `${model} is a claude-code model` }
+      : { status: "error", detail: issue };
+  });
+}
