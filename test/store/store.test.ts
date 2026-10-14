@@ -14,7 +14,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, makeTempDir, repoRoot, startWriteLockHolder, tableNames } from "../helpers.js";
+import { deadPid, makeTempDir, repoRoot, startFixture, startWriteLockHolder, tableNames } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -974,6 +974,54 @@ describe("task store", () => {
 
       it("throws for a missing task", () => {
         expect(() => store.endRun(9999, "executed")).toThrow("task not found: 9999");
+      });
+    });
+
+    describe("runStatus", () => {
+      it("gives none for a task that is not in a spawning state, also with a marker", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        expect(store.runStatus(task.id)).toEqual({ status: "none" });
+        writeRunPid(task.id, "executing", deadPid());
+        expect(store.runStatus(task.id)).toEqual({ status: "none" });
+      });
+
+      it("gives running when the process of the marker is alive", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        store.startRun(task.id, "executing");
+        expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      });
+
+      it("gives dead with no child pid when a spawning task has no marker", () => {
+        const task = store.createTask({ ...newTask, state: "executing" });
+        expect(store.runStatus(task.id)).toEqual({ status: "dead", childPid: null });
+      });
+
+      it("gives dead when the process of the marker is gone, also when the child is alive", () => {
+        const task = store.createTask({ ...newTask, state: "executing" });
+        writeRunPid(task.id, "executing", deadPid(), process.pid);
+        expect(store.runStatus(task.id)).toEqual({ status: "dead", childPid: process.pid });
+      });
+
+      it("sees a process of another tasker end", async () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        const child = startFixture("run-starter.ts", [dbPath, String(task.id), "executing"]);
+        expect(await child.firstLine).toBe("started");
+        expect(store.runStatus(task.id)).toEqual({ status: "running" });
+        process.kill(child.pid, "SIGKILL");
+        await child.exited;
+        expect(store.runStatus(task.id)).toEqual({ status: "dead", childPid: null });
+      }, 20_000);
+
+      it("waits for the write lock", async () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        await startWriteLockHolder(dbPath, 500);
+        const start = Date.now();
+        store.runStatus(task.id);
+        expect(Date.now() - start).toBeGreaterThanOrEqual(400);
+      }, 20_000);
+
+      it("throws for a missing task", () => {
+        expect(() => store.runStatus(9999)).toThrow("task not found: 9999");
       });
     });
   });
