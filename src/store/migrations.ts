@@ -46,4 +46,15 @@ CREATE UNIQUE INDEX tasks_active_repo_issue ON tasks (repo_key, issue_key)
   child_pid INTEGER,
   started_at TEXT NOT NULL
 );`,
+  `CREATE TABLE plan_revisions (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  version INTEGER NOT NULL,
+  source TEXT NOT NULL,
+  feedback TEXT,
+  answer TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  approved_at TEXT,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, version)
+);`,
 ];
