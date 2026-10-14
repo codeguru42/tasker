@@ -265,6 +265,11 @@ describe("createGitProvider", () => {
       expect(surface.denyReadPaths).toEqual(readDenyPaths(keyed()));
     });
 
+    it("gives the folder of the publish tokens of the repo", () => {
+      const surface = keyedProvider().assistantSurface(fixture.context);
+      expect(surface.publishTokensPath).toBe(paths().publishTokens);
+    });
+
     it("gives the write paths of a workspace like sandboxWritePaths", async () => {
       const { path } = await workspace();
       const surface = keyedProvider().assistantSurface(fixture.context);
