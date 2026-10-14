@@ -278,6 +278,11 @@ export async function readPidFile(path: string, timeoutMs: number): Promise<numb
   return pid;
 }
 
+// The numbers of SIGINT and SIGTERM listeners on this process.
+export function signalListenerCounts(): number[] {
+  return [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
+}
+
 // The issues of the ConfigError that fn throws. It throws, so the test fails, when fn returns
 // or when the error is not a ConfigError. It is the sync sibling of failureOf.
 export function configIssuesOf(fn: () => unknown): string[] {

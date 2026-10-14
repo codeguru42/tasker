@@ -3,15 +3,10 @@ import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { type GroupResult, runInGroup, signalGroup } from "../../src/process/run-group.js";
-import { isAlive, readPidFile, repoRoot, savePid, useTempDir, waitUntil, waitUntilGone } from "../helpers.js";
+import { isAlive, readPidFile, repoRoot, savePid, signalListenerCounts, useTempDir, waitUntil, waitUntilGone } from "../helpers.js";
 
 const MINUTE_MS = 60_000;
 const IGNORE_TERM = 'trap "" TERM; sleep 30';
-
-// The numbers of SIGINT and SIGTERM listeners on this process.
-function listenerCounts(): number[] {
-  return [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
-}
 
 interface Run {
   result: GroupResult;
@@ -107,12 +102,12 @@ describe("runInGroup", () => {
     "leaves the SIGINT and SIGTERM listener counts as before after $name",
     { timeout: 20_000 },
     async (row) => {
-      const before = listenerCounts();
+      const before = signalListenerCounts();
       const cwd = row.missingCwd ? join(useTempDir("tasker-run-group-"), "missing") : undefined;
 
       await runLogged(row.command, { cwd, deadline: Date.now() + row.deadlineMs }).catch(() => undefined);
 
-      expect(listenerCounts()).toEqual(before);
+      expect(signalListenerCounts()).toEqual(before);
     },
   );
 
