@@ -1,6 +1,6 @@
 # Rules of the repo
 
-This page gives the rules for each change to this repo. [Code conventions](code-conventions.md) gives the details of the layout, the steps to add a command, the imports and the tests.
+This page gives the rules for each change to this repo. [Code conventions](code-conventions.md) gives the details of the layout, the steps to add a command, the imports, the zod facts and the tests.
 
 ## Check
 
