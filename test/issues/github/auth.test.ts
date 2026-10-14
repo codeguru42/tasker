@@ -1,7 +1,7 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { failureOf, fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { failureOf, fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
 
 describe("authStatus", () => {
   // The module loads again before each test, so that each test starts with an empty token cache.
@@ -10,13 +10,9 @@ describe("authStatus", () => {
   let dir: string;
 
   beforeEach(async () => {
-    dir = makeTempDir("tasker-auth-status-");
+    dir = useTempDir("tasker-auth-status-");
     vi.resetModules();
     auth = await import("../../../src/issues/github/auth.js");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   const loginArgs = ["api", "user", "--jq", ".login"];

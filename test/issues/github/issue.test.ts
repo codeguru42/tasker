@@ -1,10 +1,9 @@
-import { rmSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { IssueKeyError, type IssueRef } from "../../../src/issue-key/ref.js";
 import { readGithubIssue } from "../../../src/issues/github/issue.js";
 import { GhError } from "../../../src/issues/github/run.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
-import { failureOf, fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
+import { failureOf, fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
 
 // The call of readGithubIssue(). The field list is a literal, so that the test checks the call on its own.
 const viewArgs = (number: string, project: string) => [
@@ -36,11 +35,7 @@ describe("readGithubIssue", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-read-issue-");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    dir = useTempDir("tasker-read-issue-");
   });
 
   // A fake gh with the answer of the token call and the answer of the view call.

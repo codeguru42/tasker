@@ -1,7 +1,7 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
 
 type Tracker = import("../../../src/config/schema.js").RepoConfig["issueTracker"];
 
@@ -25,13 +25,9 @@ describe("gh doctor checks", () => {
   let dir: string;
 
   beforeEach(async () => {
-    dir = makeTempDir("tasker-gh-doctor-");
+    dir = useTempDir("tasker-gh-doctor-");
     vi.resetModules();
     doctor = await import("../../../src/issues/github/doctor.js");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   describe("ghVersionCheck", () => {

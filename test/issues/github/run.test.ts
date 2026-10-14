@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
-import { mkdirSync, rmSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { failureOf, fakeGh, ghTokenAnswer, makeTempDir, repoRoot } from "../../helpers.js";
+import { mkdirSync } from "node:fs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { failureOf, fakeGh, ghTokenAnswer, useTempDir, repoRoot } from "../../helpers.js";
 
 // Fails when token is in the error: its text, its stack, any own property, or a cause.
 function expectNoToken(error: Error, token: string): void {
@@ -18,13 +18,9 @@ describe("runGh", () => {
   let dir: string;
 
   beforeEach(async () => {
-    dir = makeTempDir("tasker-run-gh-");
+    dir = useTempDir("tasker-run-gh-");
     vi.resetModules();
     gh = await import("../../../src/issues/github/run.js");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 
   const tokenArgs = (account: string) => [

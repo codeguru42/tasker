@@ -1,10 +1,9 @@
-import { rmSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { IssueKeyError, type IssueRef } from "../../../src/issue-key/ref.js";
 import { readGithubBlockers } from "../../../src/issues/github/blockers.js";
 import { GhError } from "../../../src/issues/github/run.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
-import { blockersGraphqlArgs as graphqlArgs, blockersNode as node, blockersPageJson as pageJson, failureOf, fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
+import { blockersGraphqlArgs as graphqlArgs, blockersNode as node, blockersPageJson as pageJson, failureOf, fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
 
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
 
@@ -12,11 +11,7 @@ describe("readGithubBlockers", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-read-blockers-");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    dir = useTempDir("tasker-read-blockers-");
   });
 
   // A fake gh with the answer of the token call and the answers of the graphql calls.

@@ -1,19 +1,15 @@
-import { existsSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { CommandNotFoundError, runChild } from "../../src/process/run-child.js";
-import { failureOf, makeTempDir, writeFakeCommand } from "../helpers.js";
+import { failureOf, useTempDir, writeFakeCommand } from "../helpers.js";
 
 let dir: string;
 let bin: string;
 
 beforeEach(() => {
-  dir = makeTempDir("tasker-run-child-");
+  dir = useTempDir("tasker-run-child-");
   bin = join(dir, "bin");
-});
-
-afterEach(() => {
-  rmSync(dir, { recursive: true, force: true });
 });
 
 describe("runChild", () => {

@@ -1,7 +1,6 @@
-import { rmSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssueRef } from "../../../src/issue-key/ref.js";
-import { failureOf, fakeGh, ghTokenAnswer, makeTempDir } from "../../helpers.js";
+import { failureOf, fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
 
 // The call of an issue edit. The args are a literal, so that the test checks the call on its own.
 const editArgs = (flag: string, value: string, number = "7", project = "octo/repo") => [
@@ -33,16 +32,12 @@ let issue: typeof import("../../../src/issues/issue.js");
 let dir: string;
 
 beforeEach(async () => {
-  dir = makeTempDir("tasker-write-issue-");
+  dir = useTempDir("tasker-write-issue-");
   vi.resetModules();
   write = await import("../../../src/issues/github/write.js");
   gh = await import("../../../src/issues/github/run.js");
   issue = await import("../../../src/issues/issue.js");
   keys = await import("../../../src/issue-key/ref.js");
-});
-
-afterEach(() => {
-  rmSync(dir, { recursive: true, force: true });
 });
 
 describe("assignGithubIssue", () => {

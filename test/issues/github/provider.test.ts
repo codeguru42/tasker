@@ -1,5 +1,4 @@
-import { rmSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssueRef } from "../../../src/issue-key/ref.js";
 import {
   blockersGraphqlArgs,
@@ -9,7 +8,7 @@ import {
   failureOf,
   fakeGh,
   ghTokenAnswer,
-  makeTempDir,
+  useTempDir,
 } from "../../helpers.js";
 
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
@@ -32,7 +31,7 @@ let resolve: typeof import("../../../src/issue-key/resolve.js");
 let dir: string;
 
 beforeEach(async () => {
-  dir = makeTempDir("tasker-github-provider-");
+  dir = useTempDir("tasker-github-provider-");
   vi.resetModules();
   providerModule = await import("../../../src/issues/github/provider.js");
   readModule = await import("../../../src/issues/github/issue.js");
@@ -42,10 +41,6 @@ beforeEach(async () => {
   doctorModule = await import("../../../src/issues/github/doctor.js");
   issue = await import("../../../src/issues/issue.js");
   resolve = await import("../../../src/issue-key/resolve.js");
-});
-
-afterEach(() => {
-  rmSync(dir, { recursive: true, force: true });
 });
 
 describe("createGithubProvider", () => {
