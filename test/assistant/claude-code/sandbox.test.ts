@@ -1,8 +1,13 @@
-import { chmodSync, mkdirSync, realpathSync, symlinkSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
-import { sandboxSettings, sandboxSocketFolder } from "../../../src/assistant/claude-code/sandbox.js";
-import { useTempDir } from "../../helpers.js";
+import {
+  isOnPath,
+  sandboxHostRefusal,
+  sandboxSettings,
+  sandboxSocketFolder,
+} from "../../../src/assistant/claude-code/sandbox.js";
+import { useFakeSandboxBin, useTempDir } from "../../helpers.js";
 
 const limits = { allowWrite: ["/work/wt", "/work/clone/objects"], denyRead: ["/home/test/key"] };
 
@@ -133,5 +138,59 @@ describe("sandboxSocketFolder", () => {
 
     expect(message).toBe("cannot resolve the sandbox temp folder: EACCES");
     expect(message).not.toContain(base);
+  });
+});
+
+describe("isOnPath", () => {
+  it("finds an executable file in a folder of PATH", () => {
+    expect(isOnPath("bwrap", { PATH: ["/nonexistent-folder", useFakeSandboxBin()].join(delimiter) })).toBe(true);
+  });
+
+  it("does not count a file that is not executable", () => {
+    const bin = useTempDir("tasker-bin-");
+    writeFileSync(join(bin, "bwrap"), "#!/bin/sh\n", { mode: 0o644 });
+
+    expect(isOnPath("bwrap", { PATH: bin })).toBe(false);
+  });
+
+  it("does not count a folder with the name", () => {
+    const bin = useTempDir("tasker-bin-");
+    mkdirSync(join(bin, "bwrap"));
+
+    expect(isOnPath("bwrap", { PATH: bin })).toBe(false);
+  });
+
+  it("gives false for an empty PATH, no PATH and a missing folder", () => {
+    expect(isOnPath("bwrap", { PATH: "" })).toBe(false);
+    expect(isOnPath("bwrap", {})).toBe(false);
+    expect(isOnPath("bwrap", { PATH: join(useTempDir("tasker-bin-"), "missing") })).toBe(false);
+  });
+});
+
+describe("sandboxHostRefusal", () => {
+  it("refuses a platform that is not linux or darwin", () => {
+    expect(sandboxHostRefusal("win32", { PATH: useFakeSandboxBin() })).toBe(
+      "the claude-code provider cannot enforce a sandbox on win32",
+    );
+  });
+
+  it("passes on darwin with no bwrap and no socat", () => {
+    expect(sandboxHostRefusal("darwin", { PATH: "" })).toBeUndefined();
+  });
+
+  it("passes on linux with bwrap and socat", () => {
+    expect(sandboxHostRefusal("linux", { PATH: useFakeSandboxBin() })).toBeUndefined();
+  });
+
+  it.each(["bwrap", "socat"])("refuses on linux with no %s", (program) => {
+    expect(sandboxHostRefusal("linux", { PATH: useFakeSandboxBin([program]) })).toBe(
+      `the claude-code sandbox needs ${program}, and ${program} is not on PATH`,
+    );
+  });
+
+  it("refuses on linux with an empty PATH, and names bwrap first", () => {
+    expect(sandboxHostRefusal("linux", { PATH: "" })).toBe(
+      "the claude-code sandbox needs bwrap, and bwrap is not on PATH",
+    );
   });
 });
