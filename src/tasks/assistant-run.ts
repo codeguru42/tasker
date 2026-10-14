@@ -5,6 +5,7 @@ import {
   type AssistantEvent,
   type AssistantRole,
   createAssistantProvider,
+  createSessionProvider,
   type PermissionMode,
   type RecordedSession,
   type RunOutcome,
@@ -75,11 +76,15 @@ interface CommonRun {
 
 // The one home of the steps that both entry points share. Neither entry point repeats one of them.
 function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
-  const { config, store, task, env } = req;
+  const { config, store, task, env, session: request } = req;
   const worktree = task.worktreePath;
   if (worktree === null) throw new Error(`task ${task.id} has no worktree`);
-  const selected = createAssistantProvider(task.repoKey, config.repos[task.repoKey]!, role);
-  const sessionId = randomUUID();
+  // A continued session keeps the provider, model and effort that it recorded, also after the configuration changed.
+  const resume = request.resume;
+  const selected = request.resume
+    ? createSessionProvider(request.recorded)
+    : createAssistantProvider(task.repoKey, config.repos[task.repoKey]!, role);
+  const sessionId = request.resume ? request.sessionId : randomUUID();
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   return {
     worktree,
@@ -102,7 +107,7 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
         prompt: input.prompt,
         jsonSchema: input.jsonSchema,
         sessionId,
-        resume: false,
+        resume,
         model: selected.model,
         effort: selected.effort,
         sessionDir,
