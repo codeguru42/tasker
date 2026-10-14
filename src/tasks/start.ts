@@ -8,9 +8,9 @@ import { errnoCode } from "../errno.js";
 import { errorMessage } from "../error-message.js";
 import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
-import { repoLockName, taskLockName, withLock } from "../store/locks.js";
+import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
-import { createVcsProvider } from "../vcs/provider.js";
+import { vcsForRepo } from "../vcs/provider.js";
 
 export interface StartRequest {
   config: Config;
@@ -74,7 +74,7 @@ export function bootstrapLogTail(log: string, count: number): string {
 // It does not wait: a second start of the same issue stops at once.
 export async function startTask(store: TaskStore, request: StartRequest): Promise<StartOutcome> {
   const { repoKey, key } = request.ref;
-  return withLock(store, taskLockName(repoKey, key), { waitMs: 0 }, () => startLocked(store, request));
+  return withTaskLock(store, repoKey, key, () => startLocked(store, request));
 }
 
 async function startLocked(store: TaskStore, request: StartRequest): Promise<StartOutcome> {
@@ -110,11 +110,10 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
       throw error;
     }
   };
-  const vcs = createVcsProvider(repo);
-  const ctx = { dataRoot: config.dataRoot, repoKey: ref.repoKey, env };
+  const { vcs, ctx } = vcsForRepo(config, ref.repoKey, env);
   // The repo lock covers only the steps that use the clone. A busy lock changes no task, so it
   // wraps failOnError and not the other way round. Bootstrap runs after the lock is free.
-  const workspace = await withLock(store, repoLockName(ref.repoKey), { waitMs: request.repoLockWaitMs }, () =>
+  const workspace = await withRepoLock(store, ref.repoKey, request.repoLockWaitMs, () =>
     failOnError(async () => {
       await vcs.provision(ctx);
       const hint = issueProvider.baseBranchHint(issue);

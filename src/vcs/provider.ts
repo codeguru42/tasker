@@ -1,4 +1,4 @@
-import type { RepoConfig } from "../config/schema.js";
+import type { Config, RepoConfig } from "../config/schema.js";
 import type { Check } from "../doctor/check.js";
 import { createGitProvider } from "./git/provider.js";
 
@@ -146,4 +146,16 @@ export function createVcsProvider(repo: Pick<RepoConfig, "remote" | "vcs">): Vcs
     case "git":
       return createGitProvider({ remote: repo.remote, config: repo.vcs.config });
   }
+}
+
+// The provider and the context of one repo of the configuration.
+export function vcsForRepo(
+  config: Config,
+  repoKey: string,
+  env: NodeJS.ProcessEnv,
+): { vcs: VcsProvider; ctx: VcsContext } {
+  return {
+    vcs: createVcsProvider(config.repos[repoKey]),
+    ctx: { dataRoot: config.dataRoot, repoKey, env },
+  };
 }

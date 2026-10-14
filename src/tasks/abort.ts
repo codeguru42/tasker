@@ -2,10 +2,10 @@ import { existsSync } from "node:fs";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { canonicalPath } from "../real-path.js";
-import { TERMINAL_STATES, transitionTask } from "../state/machine.js";
-import { repoLockName, taskLockName, withLock } from "../store/locks.js";
+import { isTerminalState, transitionTask } from "../state/machine.js";
+import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
-import { createVcsProvider } from "../vcs/provider.js";
+import { vcsForRepo } from "../vcs/provider.js";
 
 export interface AbortRequest {
   config: Config;
@@ -23,18 +23,17 @@ export interface AbortRequest {
 // Removes the worktree and the task branch of an active task and moves it to cancelled.
 export async function abortTask(store: TaskStore, request: AbortRequest): Promise<Task> {
   const { repoKey, key } = request.ref;
-  return withLock(store, taskLockName(repoKey, key), { waitMs: 0 }, () => abortLocked(store, request));
+  return withTaskLock(store, repoKey, key, () => abortLocked(store, request));
 }
 
 async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Task> {
   const { config, ref, report } = request;
   const task = store.getTask(request.taskId);
   if (task === undefined) throw new Error(`no task with the id ${request.taskId}`);
-  if ((TERMINAL_STATES as ReadonlySet<string>).has(task.state)) {
+  if (isTerminalState(task.state)) {
     throw new Error(`the task of ${task.issueKey} is ${task.state}: tasker abort works only on an active task`);
   }
-  const vcs = createVcsProvider(config.repos[ref.repoKey]);
-  const ctx = { dataRoot: config.dataRoot, repoKey: ref.repoKey, env: request.env };
+  const { vcs, ctx } = vcsForRepo(config, ref.repoKey, request.env);
   const entry =
     task.worktreePath === null
       ? undefined
@@ -53,7 +52,7 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
       ].join("\n"),
     );
   }
-  return withLock(store, repoLockName(ref.repoKey), { waitMs: request.repoLockWaitMs }, async () => {
+  return withRepoLock(store, ref.repoKey, request.repoLockWaitMs, async () => {
     if (entry !== undefined) {
       if (changes.length > 0) {
         await vcs.discardWorkspaceChanges(ctx, { path: entry.path });

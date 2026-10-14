@@ -60,6 +60,11 @@ export function isSpawningState(value: string): boolean {
   return (SPAWNING_STATES as ReadonlySet<string>).has(value);
 }
 
+// True when value is a state in TERMINAL_STATES.
+export function isTerminalState(value: string): boolean {
+  return (TERMINAL_STATES as ReadonlySet<string>).has(value);
+}
+
 // The specific edges. The rule edges (to failed and to cancelled) are added
 // in buildTransitions.
 const EDGES: Record<TaskState, readonly TaskState[]> = {

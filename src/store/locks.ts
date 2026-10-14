@@ -96,3 +96,23 @@ export async function withLock<T>(
   store.unlock(name);
   return result;
 }
+
+// Runs fn under the lock of one task, with no wait.
+export function withTaskLock<T>(
+  store: LockStore,
+  repoKey: string,
+  issueKey: string,
+  fn: () => T | Promise<T>,
+): Promise<T> {
+  return withLock(store, taskLockName(repoKey, issueKey), { waitMs: 0 }, fn);
+}
+
+// Runs fn under the lock of one repo. It waits at most waitMs for the lock.
+export function withRepoLock<T>(
+  store: LockStore,
+  repoKey: string,
+  waitMs: number,
+  fn: () => T | Promise<T>,
+): Promise<T> {
+  return withLock(store, repoLockName(repoKey), { waitMs }, fn);
+}

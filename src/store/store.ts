@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { isSpawningState, TERMINAL_STATES } from "../state/machine.js";
+import { isSpawningState, isTerminalState, TERMINAL_STATES } from "../state/machine.js";
 import { type LockStore, tryLockIn, unlockIn } from "./locks.js";
 import { migrate } from "./migrate.js";
 import { migrations } from "./migrations.js";
@@ -374,7 +374,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     createTask(task) {
       return immediateTransaction(db, () => {
         // A task that starts in a terminal state is not active, so it cannot clash.
-        const active = (TERMINAL_STATES as ReadonlySet<string>).has(task.state)
+        const active = isTerminalState(task.state)
           ? undefined
           : (statements.selectActiveTask.get(task.repoKey, task.issueKey) as
               | TaskRow
