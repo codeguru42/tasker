@@ -1,6 +1,6 @@
 # Code conventions
 
-This page describes how the code of tasker is laid out and how to test it.
+This page describes how the code of tasker is laid out and how to test it. [rules.md](rules.md#code) gives the rule for when one function serves several cases.
 
 ## Layout
 
