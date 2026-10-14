@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vit
 import { readGithubIssue } from "../src/issues/github/issue.js";
 import { issueProviderFor } from "../src/issues/provider.js";
 import { loadConfig } from "../src/config/load.js";
-import { parseConfig } from "../src/config/schema.js";
+import { ConfigError, parseConfig } from "../src/config/schema.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
@@ -24,6 +24,7 @@ import {
   addCloneCommit,
   captureIo,
   commitInWorktree,
+  configIssuesOf,
   dayAt,
   failureOf,
   fakeGh,
@@ -335,6 +336,28 @@ describe("failureOf", () => {
 
   it("rejects when the error has another type", async () => {
     await expect(failureOf(Promise.reject(new Error("m")), GitError)).rejects.toThrow("not a");
+  });
+});
+
+describe("configIssuesOf", () => {
+  it("gives the issues of a ConfigError", () => {
+    expect(
+      configIssuesOf(() => {
+        throw new ConfigError(["a: b"]);
+      }),
+    ).toEqual(["a: b"]);
+  });
+
+  it("throws when the function returns", () => {
+    expect(() => configIssuesOf(() => 1)).toThrow("returned");
+  });
+
+  it("throws when the error is not a ConfigError", () => {
+    expect(() =>
+      configIssuesOf(() => {
+        throw new Error("m");
+      }),
+    ).toThrow("not a ConfigError");
   });
 });
 
