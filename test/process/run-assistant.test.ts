@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CommandNotFoundError } from "../../src/process/run-child.js";
 import { runAssistant } from "../../src/process/run-assistant.js";
-import { readPidFile, signalListenerCounts, startFixture, useTempDir, waitUntilGone } from "../helpers.js";
+import { readPidFile, savePid, signalListenerCounts, startFixture, useTempDir, waitUntilGone } from "../helpers.js";
 
 const MINUTE_MS = 60_000;
 const GRACE_MS = 5000;
@@ -18,6 +18,7 @@ async function runCollected(
     signal?: AbortSignal;
     file?: string;
     env?: NodeJS.ProcessEnv;
+    onSpawn?: (pid: number) => void;
   } = {},
 ) {
   const dir = useTempDir("tasker-run-assistant-");
@@ -30,7 +31,10 @@ async function runCollected(
     deadline: opts.deadline ?? Date.now() + MINUTE_MS,
     signal: opts.signal,
     onLine: (line) => lines.push(line),
-    onSpawn: (pid) => pids.push(pid),
+    onSpawn: (pid) => {
+      pids.push(pid);
+      opts.onSpawn?.(pid);
+    },
   });
   return { result, lines, pids, dir };
 }
@@ -295,6 +299,26 @@ describe("runAssistant", () => {
 
     await runCollected("sleep 30", { deadline: Date.now() + 300 });
 
+    expect(signalListenerCounts()).toEqual(before);
+  });
+
+  it("stops the group and rejects with the error when onSpawn throws", { timeout: 20_000 }, async () => {
+    const before = signalListenerCounts();
+    const error = new Error("the pid write failed");
+    let spawned: number | undefined;
+
+    await expect(
+      runCollected("sleep 30", {
+        onSpawn: (pid) => {
+          spawned = pid;
+          savePid(pid);
+          throw error;
+        },
+      }),
+    ).rejects.toBe(error);
+
+    expect(spawned).toBeDefined();
+    await waitUntilGone(spawned!, 5000);
     expect(signalListenerCounts()).toEqual(before);
   });
 });
