@@ -196,3 +196,18 @@ The command exits with these codes:
 - 0 in all other cases. A `warn` never changes the exit code.
 
 The checks never change the remote, GitHub or the clone. The only write is one temporary file in `dataRoot`, which the check deletes.
+
+### `tasker model`
+
+Prints the model and the effort of each assistant role for the repo of an issue: `tasker model <issue> [--role <role>] [--repo <key>]`. The command needs no task and changes no task. For the configuration file, see the Configuration section.
+
+- `<issue>`: the issue key. The command uses the repo of the issue.
+- `--role <role>`: prints only this role. The roles are `plan`, `execute` and `review`.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+The command prints one line for each role, in the order plan, execute, review, as `<role>: <model> (effort <effort>)`, for example `plan: opus (effort high)`.
+
+The command prints an error and exits with code 1 in these cases:
+
+- The issue key does not resolve.
+- The configuration is missing or invalid.

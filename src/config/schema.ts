@@ -105,6 +105,12 @@ const RoleSchema = z.strictObject({
 
 const ModelsSchema = z.strictObject({ plan: RoleSchema, execute: RoleSchema, review: RoleSchema });
 
+// The assistant roles, in the order of the report of tasker model.
+export const ASSISTANT_ROLES = ModelsSchema.keyof().options;
+
+// The values of the effort of a role.
+export const EFFORTS = RoleSchema.shape.effort.options;
+
 const AssistantProviderSchema = z.enum(["claude-code", "copilot", "pi"]);
 
 const AssistantSchema = z.strictObject({
@@ -125,7 +131,7 @@ function checkModels(repo: unknown, ctx: z.RefinementCtx): void {
   const { assistant } = repo;
   const provider = AssistantProviderSchema.safeParse(assistant.provider);
   if (!provider.success || !isObject(assistant.models)) return;
-  for (const role of ModelsSchema.keyof().options) {
+  for (const role of ASSISTANT_ROLES) {
     const entry = assistant.models[role];
     if (!isObject(entry) || typeof entry.model !== "string" || entry.model === "") continue;
     const message = modelIssue(provider.data, entry.model);
