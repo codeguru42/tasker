@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
@@ -12,7 +11,7 @@ import {
   withLock,
 } from "../../src/store/locks.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { failureOf, startLockHolder, useTempDir, waitUntil } from "../helpers.js";
+import { deadPid, failureOf, startLockHolder, useTempDir, waitUntil } from "../helpers.js";
 
 const CLOCK = "2026-01-01T00:00:00.000Z";
 const NAME = "repo:alpha";
@@ -72,7 +71,7 @@ describe("named locks", () => {
     });
 
     it("takes a lock of a dead process", () => {
-      const dead = spawnSync("true").pid!;
+      const dead = deadPid();
       writeRow(dbPath, "a", dead, "2025-12-31T00:00:00.000Z");
       expect(store.tryLock("a")).toEqual({ held: true });
       expect(readRow(dbPath, "a")).toEqual({ pid: process.pid, acquired_at: CLOCK });
