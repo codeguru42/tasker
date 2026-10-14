@@ -16,6 +16,7 @@ import { errnoCode } from "./errno.js";
 // Replaces the file at path with text, or writes a new file there. It writes a temp file in the folder of the
 // target, then renames the temp file over the target. As a result, a reader sees the old file or the new file,
 // never a part of one. By default it follows a symlink at path, so the link stays and its target gets the text.
+// A broken symlink at path then throws the ENOENT error of realpathSync, and the link stays as it is.
 // With followSymlink false, the target is path itself, and a symlink there becomes a regular file.
 // The mode is options.mode, else the mode of the existing file. A new file with no mode gets the mode that the umask gives.
 export function replaceFile(
@@ -45,12 +46,13 @@ export function replaceFile(
   }
 }
 
-// The real path of path, or undefined when nothing is at path. Any other error passes through.
+// The real path of path, or undefined when nothing is at path. A broken symlink at path is not "nothing":
+// its ENOENT passes through, so the link stays as it is. Any other error passes through.
 function realPathOrNothing(path: string): string | undefined {
   try {
     return realpathSync(path);
   } catch (error) {
-    if (errnoCode(error) === "ENOENT") return undefined;
+    if (errnoCode(error) === "ENOENT" && lstatSync(path, { throwIfNoEntry: false }) === undefined) return undefined;
     throw error;
   }
 }
