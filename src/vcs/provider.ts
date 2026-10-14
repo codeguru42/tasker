@@ -66,6 +66,8 @@ export interface AssistantSurface {
   executeCommitText: string;
   denyRules: readonly string[];
   denyReadPaths: string[];
+  // The folder of the publish tokens of the repo.
+  publishTokensPath: string;
   sandboxWritePaths(path: string): Promise<string[]>;
   // The absolute path of the folder that the workspaces of the clone share.
   sharedFolder(path: string): Promise<string>;

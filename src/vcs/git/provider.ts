@@ -127,11 +127,12 @@ export function createGitProvider({
       return deleteRemoteTaskBranch({ ...remoteOptionsOf(ctx), branch: taskRef, published });
     },
     assistantSurface(ctx) {
-      const { clone } = pathsOf(ctx);
+      const { clone, publishTokens } = pathsOf(ctx);
       return {
         executeCommitText: EXECUTE_COMMIT_TEXT,
         denyRules: DENY_RULES,
         denyReadPaths: readDenyPaths(config),
+        publishTokensPath: publishTokens,
         sandboxWritePaths: (path) => sandboxWritePaths({ clone, env: ctx.env, path }),
         sharedFolder: (path) => sharedFolder({ clone, env: ctx.env, path }),
         trackedPaths: (path, paths) => trackedPaths({ env: ctx.env, path, paths }),
