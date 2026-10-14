@@ -347,6 +347,29 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     return rowToTask(row);
   }
 
+  // The one transaction frame of a task write: read the task, run check, take the clock once, run
+  // the marker step, write the row and append the event of check. A throw from check or from the
+  // marker step refuses the move, and then nothing is written.
+  function writeTask(
+    id: number,
+    changes: TaskChanges,
+    check: ((current: Task) => NewEvent | void) | undefined,
+    markerStep?: (at: string) => void,
+  ): Task {
+    return immediateTransaction(db, () => {
+      const current = readTask(id);
+      if (current === undefined) {
+        throw new Error(`task not found: ${id}`);
+      }
+      const event = check?.(current);
+      const at = now().toISOString();
+      markerStep?.(at);
+      const task = writeChanges(current, changes, at);
+      if (event !== undefined) writeEvent(id, at, event.type, event.data);
+      return task;
+    });
+  }
+
   return {
     createTask(task) {
       return immediateTransaction(db, () => {
@@ -433,26 +456,11 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     updateTask(id, changes, check) {
-      return immediateTransaction(db, () => {
-        const current = readTask(id);
-        if (current === undefined) {
-          throw new Error(`task not found: ${id}`);
-        }
-        const event = check?.(current);
-        const at = now().toISOString();
-        const task = writeChanges(current, changes, at);
-        if (event !== undefined) writeEvent(id, at, event.type, event.data);
-        return task;
-      });
+      return writeTask(id, changes, check);
     },
 
     startRun(id, state, check) {
-      return immediateTransaction(db, () => {
-        const current = readTask(id);
-        if (current === undefined) {
-          throw new Error(`task not found: ${id}`);
-        }
-        const event = check?.(current);
+      return writeTask(id, { state }, check, (at) => {
         if (!isSpawningState(state)) {
           throw new Error(`${state} is not a spawning state`);
         }
@@ -463,29 +471,16 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (marker !== undefined) {
           throw new RunMarkerExistsError(id, marker.state, marker.pid);
         }
-        const at = now().toISOString();
-        const task = writeChanges(current, { state }, at);
         statements.insertRunMarker.run(id, state, process.pid, at);
-        if (event !== undefined) writeEvent(id, at, event.type, event.data);
-        return task;
       });
     },
 
     endRun(id, state, check) {
-      return immediateTransaction(db, () => {
-        const current = readTask(id);
-        if (current === undefined) {
-          throw new Error(`task not found: ${id}`);
-        }
-        const event = check?.(current);
+      return writeTask(id, { state }, check, () => {
         if (isSpawningState(state)) {
           throw new Error(`${state} is a spawning state`);
         }
-        const at = now().toISOString();
-        const task = writeChanges(current, { state }, at);
         statements.deleteRunMarker.run(id);
-        if (event !== undefined) writeEvent(id, at, event.type, event.data);
-        return task;
       });
     },
 
