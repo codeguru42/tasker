@@ -126,6 +126,44 @@ describe("runAssistant", () => {
     await waitUntilGone(leaderPid, 5000);
   });
 
+  it("stops the group when the leader exits and keeps every line of the leader", { timeout: 20_000 }, async () => {
+    const dir = useTempDir("tasker-run-assistant-");
+    const start = Date.now();
+
+    const { result, lines } = await runCollected("echo one; sleep 30 & echo $! > child.pid; echo two; exit 3", {
+      cwd: dir,
+    });
+
+    expect(Date.now() - start).toBeLessThan(GRACE_MS);
+    expect(lines).toEqual(["one", "two"]);
+    expect(result).toMatchObject({ code: 3, signal: null, timedOut: false, killed: false });
+    await waitUntilGone(await readPidFile(join(dir, "child.pid"), 5000), 5000);
+  });
+
+  it("kills a background child that ignores SIGTERM 5 s after the leader exits", { timeout: 20_000 }, async () => {
+    const dir = useTempDir("tasker-run-assistant-");
+    const start = Date.now();
+
+    const { result } = await runCollected(
+      '(trap "" TERM; echo $BASHPID > child.pid; exec sleep 30) & while [ ! -s child.pid ]; do sleep 0.05; done; exit 0',
+      { cwd: dir },
+    );
+
+    expect(result).toMatchObject({ code: 0, signal: null, timedOut: false, killed: true });
+    expect(Date.now() - start).toBeGreaterThanOrEqual(GRACE_MS);
+    await waitUntilGone(await readPidFile(join(dir, "child.pid"), 5000), 5000);
+  });
+
+  it("does not wait for the grace when the leader leaves no other process", { timeout: 20_000 }, async () => {
+    const start = Date.now();
+
+    const { result, lines } = await runCollected("echo done; exit 0");
+
+    expect(lines).toEqual(["done"]);
+    expect(result).toMatchObject({ code: 0, timedOut: false, killed: false });
+    expect(Date.now() - start).toBeLessThan(2000);
+  });
+
   it("stops the group at the deadline", { timeout: 20_000 }, async () => {
     const { result } = await runCollected("sleep 30", { deadline: Date.now() + 300 });
 
