@@ -83,6 +83,7 @@ import {
   writeFakeSandboxPrograms,
   writePlaceholder,
   type GitOrigin,
+  thrownBy,
 } from "./helpers.js";
 
 describe("makeGitOrigin", () => {
@@ -352,6 +353,27 @@ describe("failureOf", () => {
 
   it("rejects when the error has another type", async () => {
     await expect(failureOf(Promise.reject(new Error("m")), GitError)).rejects.toThrow("not a");
+  });
+});
+
+describe("thrownBy", () => {
+  it("gives the error that fn throws", () => {
+    const error = new Error("m");
+    expect(
+      thrownBy(() => {
+        throw error;
+      }),
+    ).toBe(error);
+  });
+
+  it("throws when fn returns", () => {
+    expect(() => thrownBy(() => 1)).toThrow("the function returned, but the test needs a throw");
+  });
+
+  it("names what the test needs in the message when fn returns", () => {
+    expect(() => thrownBy(() => 1, "a ConfigError")).toThrow(
+      "the function returned, but the test needs a ConfigError",
+    );
   });
 });
 

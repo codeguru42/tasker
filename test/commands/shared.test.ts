@@ -15,17 +15,7 @@ import {
 import { parseConfig } from "../../src/config/schema.js";
 import { IssueKeyError } from "../../src/issue-key/ref.js";
 import type { TaskStore } from "../../src/store/store.js";
-import { captureIo, failureOf, useTempDir, seedTasks, validConfig, withDataRootStore } from "../helpers.js";
-
-// The error that fn throws. It throws, so the test fails, when fn returns.
-function thrownBy(fn: () => unknown): unknown {
-  try {
-    fn();
-  } catch (error) {
-    return error;
-  }
-  throw new Error("the function returned, but the test needs a throw");
-}
+import { captureIo, failureOf, useTempDir, seedTasks, thrownBy, validConfig, withDataRootStore } from "../helpers.js";
 
 describe("orFail", () => {
   it("returns the value of fn and writes nothing", () => {

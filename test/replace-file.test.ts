@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { errnoCode } from "../src/errno.js";
 import { replaceFile } from "../src/replace-file.js";
-import { useTempDir } from "./helpers.js";
+import { thrownBy, useTempDir } from "./helpers.js";
 
 describe("replaceFile", () => {
   it("writes the new text and leaves no other file in the folder", () => {
@@ -138,13 +138,7 @@ describe("replaceFile", () => {
 
   it("throws ENOENT and leaves no file when the parent folder of a new file is missing", () => {
     const dir = useTempDir("tasker-replace-");
-    let thrown: unknown;
-
-    try {
-      replaceFile(join(dir, "missing", "file"), "new");
-    } catch (error) {
-      thrown = error;
-    }
+    const thrown = thrownBy(() => replaceFile(join(dir, "missing", "file"), "new"));
 
     expect(errnoCode(thrown)).toBe("ENOENT");
     expect(readdirSync(dir)).toEqual([]);

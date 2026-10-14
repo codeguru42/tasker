@@ -2,17 +2,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { errnoCode, hasErrnoCode } from "../src/errno.js";
-import { useTempDir } from "./helpers.js";
+import { thrownBy, useTempDir } from "./helpers.js";
 
 describe("errnoCode", () => {
   it("gives ENOENT for the error of a read of a missing path", () => {
     const dir = useTempDir("tasker-errno-");
-    let caught: unknown;
-    try {
-      readFileSync(join(dir, "missing"));
-    } catch (error) {
-      caught = error;
-    }
+    const caught = thrownBy(() => readFileSync(join(dir, "missing")));
     expect(caught).toBeInstanceOf(Error);
     expect(errnoCode(caught)).toBe("ENOENT");
   });
