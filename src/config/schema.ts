@@ -7,6 +7,7 @@ import { expandPath } from "./expand.js";
 import { isObject } from "../object.js";
 import { errorMessage } from "../error-message.js";
 import { modelIssue } from "../assistant/models.js";
+import { formatIssues } from "../zod-issues.js";
 
 const positive = z.number().positive();
 
@@ -294,21 +295,6 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
 export type Config = z.output<ReturnType<typeof buildConfigSchema>>;
 export type RepoConfig = Config["repos"][string];
 
-export function formatIssues(issues: readonly z.core.$ZodIssue[]): string[] {
-  const lines: string[] = [];
-  for (const issue of issues) {
-    if (issue.code === "unrecognized_keys") {
-      for (const key of issue.keys) {
-        lines.push(`${[...issue.path, key].join(".")}: unrecognized key`);
-      }
-      continue;
-    }
-    const path = issue.path.join(".") || "(config)";
-    lines.push(`${path}: ${issue.message}`);
-  }
-  return lines;
-}
-
 export class ConfigError extends Error {
   readonly issues: string[];
 
@@ -322,7 +308,7 @@ export class ConfigError extends Error {
 export function parseConfig(raw: unknown, env: NodeJS.ProcessEnv, homedir: string): Config {
   const { input, issues } = prepareConfig(raw);
   const result = buildConfigSchema(env, homedir).safeParse(input);
-  if (!result.success) throw new ConfigError([...issues, ...formatIssues(result.error.issues)]);
+  if (!result.success) throw new ConfigError([...issues, ...formatIssues(result.error.issues, "(config)")]);
   if (issues.length > 0) throw new ConfigError(issues);
   return result.data;
 }
