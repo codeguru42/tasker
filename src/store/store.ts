@@ -121,8 +121,8 @@ export interface TaskStore extends LockStore {
     state: string,
     check?: (current: Task) => NewEvent | void,
   ): Task;
-  // Moves the task out of its spawning state and deletes its run marker, in one transaction.
-  // The marker of any process goes, and a missing marker is not an error.
+  // Moves the task to a state that is not spawning and deletes its run marker, in one transaction.
+  // The current state can be any state. The marker of any process goes, and a missing marker is not an error.
   endRun(
     id: number,
     state: string,
@@ -477,9 +477,6 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           throw new Error(`task not found: ${id}`);
         }
         const event = check?.(current);
-        if (!isSpawningState(current.state)) {
-          throw new Error(`task ${id} is not in a spawning state: ${current.state}`);
-        }
         if (isSpawningState(state)) {
           throw new Error(`${state} is a spawning state`);
         }
