@@ -113,18 +113,107 @@ describe("checkPlanAnswer: the schema", () => {
     const answer = {
       ...validPlanAnswer({
         todos: [
-          { ...validPlanAnswer().todos[0]!, id: "Bad_Id", title: "" },
+          { ...validPlanAnswer().todos[0]!, id: "Bad_Id", title: "", description: "  x  " },
           validPlanAnswer().todos[1]!,
         ],
       }),
       extra: 1,
     };
 
-    expect(problemsOf(answer)).toEqual([
+    const problems = problemsOf(answer);
+
+    expect(problems).toEqual([
       "todos.0.id: must be kebab-case",
       "todos.0.title: Too small: expected string to have >=1 characters",
       "extra: unrecognized key",
     ]);
+    expect(problems.filter((line) => /placeholder|duplicate/.test(line))).toEqual([]);
+  });
+});
+
+describe("checkPlanAnswer: the checks after the schema", () => {
+  function withTodo(change: Partial<PlanAnswer["todos"][number]>, index = 0): PlanAnswer {
+    const todos = validPlanAnswer().todos;
+    todos[index] = { ...todos[index]!, ...change };
+    return validPlanAnswer({ todos });
+  }
+
+  it("refuses a todo title that is a placeholder", () => {
+    expect(problemsOf(withTodo({ title: "ab" }))).toEqual([
+      "todos.0.title: is a placeholder, not real text",
+    ]);
+  });
+
+  it("refuses a todo description that is a placeholder", () => {
+    expect(problemsOf(withTodo({ description: "  x  " }, 1))).toEqual([
+      "todos.1.description: is a placeholder, not real text",
+    ]);
+  });
+
+  it("refuses a plan with 19 characters after the heading", () => {
+    const answer = validPlanAnswer({ plan_markdown: `## Summary\n\n${"a".repeat(19)}\n` });
+
+    expect(problemsOf(answer)).toEqual([
+      'plan_markdown: has no plan after the "## Summary" heading',
+    ]);
+  });
+
+  it("accepts a plan with 20 characters after the heading", () => {
+    const answer = validPlanAnswer({ plan_markdown: `## Summary\n\n${"a".repeat(20)}\n` });
+
+    expect(checkPlanAnswer(answer)).toEqual({ ok: true, answer });
+  });
+
+  it("refuses a plan with no todos", () => {
+    expect(problemsOf(validPlanAnswer({ todos: [] }))).toEqual([
+      "todos: a plan with no todos is not a plan",
+    ]);
+  });
+
+  it("refuses a duplicate todo id", () => {
+    expect(problemsOf(withTodo({ id: "write-test", depends_on: [] }, 1))).toEqual([
+      'todos.1.id: duplicate todo id "write-test"',
+    ]);
+  });
+
+  it("refuses a duplicate question id", () => {
+    const question = validPlanAnswer().questions[0]!;
+
+    expect(problemsOf(validPlanAnswer({ questions: [question, question] }))).toEqual([
+      'questions.1.id: duplicate question id "base-branch"',
+    ]);
+  });
+
+  it("refuses a depends_on entry that is not a todo id", () => {
+    expect(problemsOf(withTodo({ depends_on: ["write-test", "nope"] }, 1))).toEqual([
+      'todos.1.depends_on.1: todo "make-it-pass" depends on unknown todo id "nope"',
+    ]);
+  });
+
+  it("gives every problem of the checks, in the order of the checks", () => {
+    const answer = validPlanAnswer({
+      plan_markdown: "## Summary\n\nshort\n",
+      todos: [
+        { ...validPlanAnswer().todos[0]!, title: "ab" },
+        { ...validPlanAnswer().todos[1]!, id: "write-test", depends_on: ["nope"] },
+      ],
+    });
+
+    expect(problemsOf(answer)).toEqual([
+      "todos.0.title: is a placeholder, not real text",
+      'plan_markdown: has no plan after the "## Summary" heading',
+      'todos.1.id: duplicate todo id "write-test"',
+      'todos.1.depends_on.0: todo "write-test" depends on unknown todo id "nope"',
+    ]);
+  });
+
+  it("cleans the paths of files_changed", () => {
+    const answer = validPlanAnswer({ files_changed: [" ./src/a.ts ", "src/a.ts", "   ", "./b.md"] });
+
+    expect(checkPlanAnswer(answer)).toEqual({
+      ok: true,
+      answer: { ...answer, files_changed: ["src/a.ts", "b.md"] },
+    });
   });
 });
 
