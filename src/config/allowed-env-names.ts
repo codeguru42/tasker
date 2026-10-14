@@ -1,4 +1,4 @@
-// The later child-environment code must share this list.
+// The phases and the assistant child share this list through childEnv().
 export const ALLOWED_ENV_NAMES: readonly string[] = [
   "PATH",
   "HOME",

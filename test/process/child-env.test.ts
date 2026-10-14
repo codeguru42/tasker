@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ALLOWED_ENV_NAMES } from "../../src/config/allowed-env-names.js";
-import { phaseEnv } from "../../src/phases/env.js";
+import { childEnv } from "../../src/process/child-env.js";
 
 interface Row {
   name: string;
@@ -52,7 +52,7 @@ function isDropped(name: string): boolean {
   return name.startsWith("TASKER_") || name === "ANTHROPIC_API_KEY" || name === "ANTHROPIC_AUTH_TOKEN";
 }
 
-// The expected result, built without phaseEnv: each set name of the two lists, except a dropped name.
+// The expected result, built without childEnv: each set name of the two lists, except a dropped name.
 function expectedEnv(row: Row): NodeJS.ProcessEnv {
   const expected: NodeJS.ProcessEnv = {};
   for (const name of new Set([...ALLOWED_ENV_NAMES, ...row.extraNames])) {
@@ -75,9 +75,9 @@ function expectPromises(result: NodeJS.ProcessEnv, row: Row): void {
   expect(Object.keys(result).filter((name) => name.startsWith("TASKER_"))).toEqual([]);
 }
 
-describe("phaseEnv", () => {
-  it.each(rows)("phaseEnv for $name", (row) => {
-    const result = phaseEnv(row.env, row.extraNames);
+describe("childEnv", () => {
+  it.each(rows)("childEnv for $name", (row) => {
+    const result = childEnv(row.env, row.extraNames);
 
     expectPromises(result, row);
     expect(result).toEqual(expectedEnv(row));
@@ -87,7 +87,7 @@ describe("phaseEnv", () => {
     const env = { HOME: "/home/me", NPM_TOKEN: "npm-secret", ANTHROPIC_API_KEY: "key", TASKER_CONFIG: "x" };
     const before = structuredClone(env);
 
-    phaseEnv(env, ["NPM_TOKEN", "ANTHROPIC_API_KEY", "TASKER_CONFIG"]);
+    childEnv(env, ["NPM_TOKEN", "ANTHROPIC_API_KEY", "TASKER_CONFIG"]);
 
     expect(env).toEqual(before);
   });

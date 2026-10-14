@@ -3,7 +3,7 @@ import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { type BootstrapResult, bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
-import { phaseEnv } from "../phases/env.js";
+import { childEnv } from "../process/child-env.js";
 import { errorMessage } from "../error-message.js";
 import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
@@ -147,7 +147,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
     const timeoutMin = config.limits.bootstrapTimeoutMin;
     const result = await runBootstrap({
       commands: repo.bootstrap.commands,
-      env: phaseEnv(env, repo.bootstrap.env),
+      env: childEnv(env, repo.bootstrap.env),
       cwd: workspace.path,
       timeoutMs: timeoutMin * 60_000,
       logsDir,

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { bootstrapLogPath, bootstrapMarkerPath, runBootstrap } from "../../src/phases/bootstrap.js";
-import { phaseEnv } from "../../src/phases/env.js";
+import { childEnv } from "../../src/process/child-env.js";
 import { readPidFile, useTempDir, waitUntilGone } from "../helpers.js";
 
 const HEADER = /^=== bootstrap run \d{4}-.* ===$/m;
@@ -15,7 +15,7 @@ function setup() {
 }
 
 function bootstrap(commands: string[], dirs: ReturnType<typeof setup>, timeoutMs = MINUTE_MS) {
-  return runBootstrap({ commands, env: phaseEnv(process.env, []), timeoutMs, ...dirs });
+  return runBootstrap({ commands, env: childEnv(process.env, []), timeoutMs, ...dirs });
 }
 
 function readLog(logsDir: string): string {
