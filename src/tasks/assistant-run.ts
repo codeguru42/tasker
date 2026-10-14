@@ -218,8 +218,8 @@ export function executeReadDenyPaths(o: {
   // resolveConfigPath() reads its homedir argument only when TASKER_CONFIG and XDG_CONFIG_HOME are
   // unset, and the default of that argument is the home folder of the host. So the entry goes in
   // only when the env names the file or a folder for it, and the call never passes undefined.
-  if (isSet(env.TASKER_CONFIG) || isSet(env.XDG_CONFIG_HOME) || isSet(env.HOME)) {
-    paths.push(resolveConfigPath(env, env.HOME ?? ""));
+  if (isSet(env.TASKER_CONFIG) || isSet(env.XDG_CONFIG_HOME) || home !== undefined) {
+    paths.push(resolveConfigPath(env, home ?? ""));
   }
   return paths;
 }
