@@ -2,10 +2,30 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { CommanderError } from "commander";
 import { describe, expect, it } from "vitest";
-import { orFail, withIssueTaskAsync, withStore, withStoreAsync } from "../../src/commands/shared.js";
+import {
+  fail,
+  issueKeyOrFail,
+  orFail,
+  orFailAsync,
+  repoKeyOrFail,
+  withIssueTaskAsync,
+  withStore,
+  withStoreAsync,
+} from "../../src/commands/shared.js";
 import { parseConfig } from "../../src/config/schema.js";
+import { IssueKeyError } from "../../src/issue-key/ref.js";
 import type { TaskStore } from "../../src/store/store.js";
-import { captureIo, useTempDir, seedTasks, validConfig, withDataRootStore } from "../helpers.js";
+import { captureIo, failureOf, useTempDir, seedTasks, validConfig, withDataRootStore } from "../helpers.js";
+
+// The error that fn throws. It throws, so the test fails, when fn returns.
+function thrownBy(fn: () => unknown): unknown {
+  try {
+    fn();
+  } catch (error) {
+    return error;
+  }
+  throw new Error("the function returned, but the test needs a throw");
+}
 
 describe("orFail", () => {
   it("returns the value of fn and writes nothing", () => {
@@ -31,6 +51,138 @@ describe("orFail", () => {
     expect((error as CommanderError).exitCode).toBe(1);
     expect(io.err.join("")).toBe("boom\n");
     expect(io.out).toEqual([]);
+  });
+});
+
+describe("orFail with a CommanderError", () => {
+  it("rethrows the same error and writes the message one time only", () => {
+    const io = captureIo();
+    const error = thrownBy(() =>
+      orFail(io, () => {
+        fail(io, "boom");
+      }),
+    );
+
+    expect(error).toBeInstanceOf(CommanderError);
+    expect((error as CommanderError).exitCode).toBe(1);
+    expect(io.err).toEqual(["boom\n"]);
+  });
+});
+
+describe("orFailAsync", () => {
+  it("returns the value of fn and writes nothing", async () => {
+    const io = captureIo();
+
+    expect(await orFailAsync(io, async () => 42)).toBe(42);
+    expect(io.out).toEqual([]);
+    expect(io.err).toEqual([]);
+  });
+
+  it("writes the message of the error to stderr and exits with code 1", async () => {
+    const io = captureIo();
+    const error = await failureOf(
+      orFailAsync(io, async () => {
+        throw new Error("boom");
+      }),
+      CommanderError,
+    );
+
+    expect(error.exitCode).toBe(1);
+    expect(io.err).toEqual(["boom\n"]);
+    expect(io.out).toEqual([]);
+  });
+
+  it("writes the text of the message function", async () => {
+    const io = captureIo();
+    const error = await failureOf(
+      orFailAsync(
+        io,
+        async () => {
+          throw new Error("boom");
+        },
+        (cause) => `custom: ${(cause as Error).message}`,
+      ),
+      CommanderError,
+    );
+
+    expect(error.exitCode).toBe(1);
+    expect(io.err).toEqual(["custom: boom\n"]);
+  });
+
+  it("rethrows a CommanderError as the same object and writes the message one time only", async () => {
+    const io = captureIo();
+    let inner: unknown;
+    const error = await failureOf(
+      orFailAsync(io, async () => {
+        try {
+          fail(io, "boom");
+        } catch (caught) {
+          inner = caught;
+          throw caught;
+        }
+      }),
+      CommanderError,
+    );
+
+    expect(error).toBe(inner);
+    expect(io.err).toEqual(["boom\n"]);
+  });
+});
+
+describe("repoKeyOrFail", () => {
+  const config = parseConfig(validConfig(), {}, "/home/test");
+  const [key] = Object.keys(config.repos);
+
+  it("writes nothing for a known key", () => {
+    const io = captureIo();
+
+    repoKeyOrFail(io, config, key);
+    expect(io.err).toEqual([]);
+    expect(io.out).toEqual([]);
+  });
+
+  it("writes the message and exits with code 1 for an unknown key", () => {
+    const io = captureIo();
+    const error = thrownBy(() => repoKeyOrFail(io, config, "nope"));
+
+    expect(error).toBeInstanceOf(CommanderError);
+    expect((error as CommanderError).exitCode).toBe(1);
+    expect(io.err).toEqual(["repo key not found: nope\n"]);
+  });
+});
+
+describe("issueKeyOrFail", () => {
+  it("returns the value of fn", () => {
+    const io = captureIo();
+
+    expect(issueKeyOrFail(io, () => 42)).toBe(42);
+    expect(io.err).toEqual([]);
+  });
+
+  it("writes the message of an IssueKeyError one time and exits with code 1", () => {
+    const io = captureIo();
+    const error = thrownBy(() =>
+      issueKeyOrFail(io, () => {
+        throw new IssueKeyError("x", "bad key");
+      }),
+    );
+
+    expect(error).toBeInstanceOf(CommanderError);
+    expect((error as CommanderError).exitCode).toBe(1);
+    expect(io.err).toEqual(["bad key\n"]);
+  });
+
+  it("rethrows another error as the same object and writes nothing", () => {
+    const io = captureIo();
+    const original = new Error("boom");
+    const error = thrownBy(() =>
+      issueKeyOrFail(io, () => {
+        throw original;
+      }),
+    );
+
+    expect(error).toBe(original);
+    expect(io.err).toEqual([]);
   });
 });
 
