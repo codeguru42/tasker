@@ -1,4 +1,4 @@
-import { readdirSync, rmSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { doctor } from "../../src/commands/doctor.js";
@@ -11,6 +11,7 @@ import {
   makeProviderFixture,
   runCommand,
   treeSnapshot,
+  useFakeClaude,
   useProcessEnv,
   useTempDir,
   validConfig,
@@ -25,7 +26,19 @@ const GOOD_GH: FakeGhAnswer[] = [VERSION, ghTokenAnswer("codeguru42", "gho_test"
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RawConfig = Record<string, any>;
 
-async function setUp(answers: readonly FakeGhAnswer[], change: (raw: RawConfig) => void = () => {}) {
+// The PATH of the test, without the folders of a real claude of the host.
+function pathWithoutClaude(): string {
+  return (process.env.PATH ?? "")
+    .split(delimiter)
+    .filter((folder) => !existsSync(join(folder, "claude")))
+    .join(delimiter);
+}
+
+async function setUp(
+  answers: readonly FakeGhAnswer[],
+  change: (raw: RawConfig) => void = () => {},
+  withClaude = true,
+) {
   const fixture = await makeProviderFixture();
   onTestFinished(fixture.remove);
   const dir = useTempDir("tasker-doctor-");
@@ -38,9 +51,10 @@ async function setUp(answers: readonly FakeGhAnswer[], change: (raw: RawConfig) 
   change(raw);
   const written = writeTempConfig(raw);
   onTestFinished(() => rmSync(written.dir, { recursive: true, force: true }));
+  const claudeBins = withClaude ? [useFakeClaude({ version: { stdout: "2.1.299 (Claude Code)\n" } }).binDir] : [];
   useProcessEnv({
     ...fixture.origin.env,
-    PATH: join(dir, "bin") + delimiter + process.env.PATH,
+    PATH: [join(dir, "bin"), ...claudeBins, pathWithoutClaude()].join(delimiter),
     TASKER_CONFIG: written.path,
   });
   return { fixture, fake };
@@ -49,7 +63,7 @@ async function setUp(answers: readonly FakeGhAnswer[], change: (raw: RawConfig) 
 const statusLines = (out: string) => out.split("\n").filter((line) => line !== "" && !line.startsWith(" "));
 
 describe("doctor", () => {
-  it("gives 0 and ten ok lines in order for a good setup", async () => {
+  it("gives 0 and eleven ok lines in order for a good setup", async () => {
     await setUp(GOOD_GH);
 
     const { code, out, err } = await runCommand(doctor, "doctor");
@@ -67,10 +81,24 @@ describe("doctor", () => {
       "gh auth: codeguru42",
       "gh project: tasker",
       "gh labels: tasker",
+      "claude version",
     ];
     const lines = statusLines(out);
     expect(lines).toHaveLength(names.length);
     names.forEach((name, index) => expect(lines[index]).toMatch(new RegExp(`^ok    ${name}`)));
+  });
+
+  it("gives 1 and the fix when claude is not on PATH", async () => {
+    await setUp(GOOD_GH, () => {}, false);
+
+    const { code, out } = await runCommand(doctor, "doctor");
+
+    expect(code).toBe(1);
+    const lines = out.split("\n");
+    const at = lines.findIndex((line) => line.startsWith("error claude version"));
+    expect(at).toBeGreaterThan(-1);
+    expect(lines[at + 1]).toMatch(/^ {6}.*Install Claude Code and put claude on PATH\./);
+    expect(statusLines(out).filter((line) => line.startsWith("ok "))).toHaveLength(10);
   });
 
   it("gives 1, prints the loader error and runs no check when the configuration does not load", async () => {
