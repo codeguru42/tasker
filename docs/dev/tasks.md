@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start and abort. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start and abort, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -53,6 +53,22 @@ Each learned value has its own event: the base, the workspace and the bootstrap 
 ## Why stderr holds the question and the notes
 
 An agent reads stdout. It holds only the fields of the task, so the agent can parse it. The question for the base branch and the notes of the base step go to stderr.
+
+## The result of an assistant run
+
+One shared step maps the outcome of an assistant run to the next state of the task. Each command that runs the assistant (plan, refine, execute and review) must use it. As a result, each command moves the task and prints in the same way, and the rule has one home.
+
+The step records the usage of the run first, for every outcome. Then it acts on the outcome:
+
+- A success causes no move. The command that ran the assistant makes its own checks and its own move.
+- A failure and a timeout move the task to `failed`. The error goes to the event and to stderr, and the exit code is 1.
+- A quota stop moves the task to `quota_blocked`. The event holds the cause and the reset time when it is known. The command prints the reset time on stdout, or says that it is unknown, and the exit code is 1.
+
+A failed run also spends tokens, so the usage is recorded for a failure too. The record of usage must be complete.
+
+A quota stop is not a failure. The run can continue after the reset, and the task keeps its session for that. Until the resume command exists (M9), `tasker abort` is the only way out of `quota_blocked`.
+
+The usage event and the move are two writes, not one. A crash between them leaves the usage event and a task that is still in its spawning state. The run marker of the task stays, so tasker can find that the run died.
 
 ## Limits
 
