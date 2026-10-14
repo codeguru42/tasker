@@ -76,6 +76,24 @@ export function planRevisionPath(
   return join(taskPlansDir(dataRoot, task), `v${version}.md`);
 }
 
+// The folder of the transcripts of one attempt. It makes no folder.
+export function taskTranscriptsDir(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+): string {
+  return join(taskArtifactsDir(dataRoot, task), "transcripts");
+}
+
+// The transcript of the planning run of one plan version: one JSON event on each line, opened for
+// append. Each writer takes the path from here. It makes no file.
+export function planTranscriptPath(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+  version: number,
+): string {
+  return join(taskTranscriptsDir(dataRoot, task), `plan-v${version}.jsonl`);
+}
+
 // The path of the file that tasker doctor writes and deletes in dataRoot. The name is new for
 // each call, so two doctors that run at the same time do not use the same file. It makes no file.
 export function doctorProbePath(dataRoot: string): string {
