@@ -626,7 +626,59 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(6);
+        expect(migrations.length).toBe(7);
+      });
+    });
+  });
+
+  describe("plan revisions", () => {
+    const insertRawRevision = (db: DatabaseSync, taskId: number, source: string) =>
+      db
+        .prepare(
+          "INSERT INTO plan_revisions (task_id, version, source, answer, prompt, created_at) VALUES (?, 1, ?, '{}', 'plan@000000000000', 't')",
+        )
+        .run(taskId, source);
+
+    it("has the plan_revisions table", () => {
+      withRawDatabase(dbPath, (db) => {
+        expect(tableNames(db)).toContain("plan_revisions");
+      });
+    });
+
+    it("upgrades a version-6 database and keeps the old rows", () => {
+      const oldPath = join(dir, "old6.db");
+      makeOldDatabase(oldPath, 6);
+      withRawDatabase(oldPath, (raw) => {
+        insertRawTask(raw, "tasker", "planning");
+        raw
+          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'note', NULL)")
+          .run();
+      });
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          expect(upgraded.getTask(1)).toMatchObject({
+            id: 1,
+            issueKey: "a/b#1",
+            repoKey: "tasker",
+            state: "planning",
+          });
+          expect(upgraded.listEvents(1)).toMatchObject([{ taskId: 1, at: "t", type: "note" }]);
+        },
+        { now },
+      );
+      withRawDatabase(oldPath, (check) => {
+        expect(schemaVersion(check)).toBe(migrations.length);
+        expect(tableNames(check)).toContain("plan_revisions");
+        check.exec("PRAGMA foreign_keys = ON");
+        insertRawRevision(check, 1, "plan");
+      });
+    });
+
+    it("keeps any source text, because the table has no check on it", () => {
+      const task = store.createTask(newTask);
+      withRawDatabase(dbPath, (db) => {
+        insertRawRevision(db, task.id, "review");
       });
     });
   });
