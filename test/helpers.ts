@@ -518,21 +518,29 @@ export function issueKeyErrorMessage(key: string, configPath: string): string {
   return expect.fail(`the issue key ${key} resolves`);
 }
 
-// Runs fn with the open store of the database file at path, then closes the store. When fn gives a
-// promise, the store closes after the promise settles. When fn throws, the store closes and the
-// error goes on.
-export function withStoreFile<T>(path: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
-  const store = openStore(path, options);
+// Runs fn with resource, then closes resource. When fn gives a promise, resource closes after the
+// promise settles. When fn throws, resource closes and the error goes on.
+function closeAfter<R extends { close(): void }, T>(resource: R, fn: (resource: R) => T): T {
   let result: T;
   try {
-    result = fn(store);
+    result = fn(resource);
   } catch (error) {
-    store.close();
+    resource.close();
     throw error;
   }
-  if (result instanceof Promise) return result.finally(() => store.close()) as T;
-  store.close();
+  if (result instanceof Promise) return result.finally(() => resource.close()) as T;
+  resource.close();
   return result;
+}
+
+// Runs fn with the open store of the database file at path, then closes the store, as closeAfter does.
+export function withStoreFile<T>(path: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
+  return closeAfter(openStore(path, options), fn);
+}
+
+// Runs fn with a raw connection to the SQLite file at path, then closes it, as withStoreFile does.
+export function withRawDatabase<T>(path: string, fn: (db: DatabaseSync) => T): T {
+  return closeAfter(new DatabaseSync(path), fn);
 }
 
 // Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
