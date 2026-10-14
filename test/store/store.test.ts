@@ -8,12 +8,13 @@ import { migrations } from "../../src/store/migrations.js";
 import {
   ActiveTaskError,
   openStore,
+  RunMarkerExistsError,
   type Task,
   type TaskStore,
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { makeTempDir, repoRoot, startWriteLockHolder, tableNames } from "../helpers.js";
+import { deadPid, makeTempDir, repoRoot, startWriteLockHolder, tableNames } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -72,6 +73,18 @@ describe("task store", () => {
       return db.prepare("SELECT * FROM run_markers WHERE task_id = ?").get(taskId) as
         | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
         | undefined;
+    } finally {
+      db.close();
+    }
+  };
+
+  // Writes a raw run marker row for a task.
+  const writeRunPid = (taskId: number, state: string, pid: number, childPid: number | null = null) => {
+    const db = rawDb();
+    try {
+      db.prepare(
+        "INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, ?, 't')",
+      ).run(taskId, state, pid, childPid);
     } finally {
       db.close();
     }
@@ -789,6 +802,83 @@ describe("task store", () => {
       insert();
       expect(insert).toThrow("UNIQUE constraint failed");
       expect(readRun(task.id)).toMatchObject({ task_id: task.id, pid: process.pid });
+    });
+
+    describe("startRun", () => {
+      // Checks that a failed call changed no state, no marker row and no event.
+      const expectNothingChanged = (id: number, run: () => unknown, message: string | RegExp) => {
+        const state = store.getTask(id)?.state;
+        const marker = readRun(id);
+        const events = eventCount();
+        expect(run).toThrow(message);
+        expect(store.getTask(id)?.state).toBe(state);
+        expect(readRun(id)).toEqual(marker);
+        expect(eventCount()).toBe(events);
+      };
+
+      it("moves the task into the spawning state and writes the marker", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        const moved = store.startRun(task.id, "executing");
+        expect(moved).toEqual({ ...task, state: "executing" });
+        expect(store.getTask(task.id)).toEqual(moved);
+        expect(readRun(task.id)).toEqual({
+          task_id: task.id,
+          state: "executing",
+          pid: process.pid,
+          child_pid: null,
+          started_at: "2026-01-01T00:00:00.000Z",
+        });
+      });
+
+      it("appends the event that check gives, with the time of the clock", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        store.startRun(task.id, "executing", () => ({ type: "transition", data: { to: "executing" } }));
+        expect(store.listEvents(task.id).at(-1)).toMatchObject({
+          type: "transition",
+          at: "2026-01-01T00:00:00.000Z",
+          data: { to: "executing" },
+        });
+      });
+
+      it("appends no event when check gives nothing", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        const before = eventCount();
+        store.startRun(task.id, "executing", () => {});
+        expect(eventCount()).toBe(before);
+      });
+
+      it("refuses a state that is not a spawning state", () => {
+        const task = store.createTask({ ...newTask, state: "workspace_ready" });
+        expectNothingChanged(task.id, () => store.startRun(task.id, "approved"), "approved is not a spawning state");
+      });
+
+      it("throws RunMarkerExistsError when the task has a marker, also of a dead process", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        const dead = deadPid();
+        writeRunPid(task.id, "executing", dead);
+        expectNothingChanged(
+          task.id,
+          () => store.startRun(task.id, "planning"),
+          `task ${task.id} already has a run marker: state executing, process ${dead}`,
+        );
+        expect(() => store.startRun(task.id, "planning")).toThrow(RunMarkerExistsError);
+      });
+
+      it("writes nothing when check throws", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        expectNothingChanged(
+          task.id,
+          () =>
+            store.startRun(task.id, "executing", () => {
+              throw new Error("check refused");
+            }),
+          "check refused",
+        );
+      });
+
+      it("throws for a missing task", () => {
+        expect(() => store.startRun(9999, "executing")).toThrow("task not found: 9999");
+      });
     });
   });
 
