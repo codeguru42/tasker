@@ -1,15 +1,14 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { loadConfig, loadConfigFile, parseConfigText } from "../../src/config/load.js";
-import { configIssuesOf, validConfig } from "../helpers.js";
+import { configIssuesOf, makeTempDir, validConfig } from "../helpers.js";
 
 const home = "/home/me";
 let dir: string;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "tasker-config-"));
+  dir = makeTempDir("tasker-config-");
 });
 
 afterEach(() => {
