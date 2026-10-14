@@ -57,4 +57,14 @@ CREATE UNIQUE INDEX tasks_active_repo_issue ON tasks (repo_key, issue_key)
   created_at TEXT NOT NULL,
   PRIMARY KEY (task_id, version)
 );`,
+  `CREATE TABLE sessions (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  role TEXT NOT NULL,
+  session_id TEXT NOT NULL UNIQUE,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  effort TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX sessions_task_plan ON sessions (task_id, role) WHERE role = 'plan';`,
 ];
