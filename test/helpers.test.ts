@@ -1231,6 +1231,24 @@ describe("useAssistantRunFixture", () => {
     expect(fixture.started.config.limits.planTimeoutMin).not.toBe(7);
   });
 
+  it("sets the ssh keys and adds a second repo after the task repo in the copy only", async () => {
+    const fixture = await useAssistantRunFixture({
+      claude: {},
+      sshKey: "/keys/a_key",
+      otherRepo: { key: "codeguru42/other", sshKey: "/keys/b_key" },
+    });
+
+    const { repoKey } = fixture.started;
+    expect(Object.keys(fixture.config.repos)).toEqual([repoKey, "codeguru42/other"]);
+    expect(fixture.config.repos[repoKey]!.vcs).toEqual({ provider: "git", config: { sshKey: "/keys/a_key" } });
+    expect(fixture.config.repos["codeguru42/other"]!.vcs).toEqual({
+      provider: "git",
+      config: { sshKey: "/keys/b_key" },
+    });
+    expect(Object.keys(fixture.started.config.repos)).toEqual([repoKey]);
+    expect(fixture.started.config.repos[repoKey]!.vcs).toEqual({ provider: "git", config: {} });
+  });
+
   it("gives an env with the fake claude first and the secrets that the child must not get", async () => {
     const fixture = await useAssistantRunFixture({ claude: {} });
 

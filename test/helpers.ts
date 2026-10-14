@@ -582,11 +582,15 @@ export interface AssistantRunFixture {
 // The setup of the tests of an assistant run: a started task (see useStartedTask()) that startRun moved to
 // state, a fake claude with the control in claude, and fake bwrap and socat programs.
 // limits changes keys of config.limits on a copy of the loaded configuration. Call it inside a test.
+// sshKey sets the ssh key of the task repo in that copy. otherRepo adds a copy of the task repo after it, with
+// its own ssh key. Both change the copy only, after the start, so provision never sees them.
 export async function useAssistantRunFixture(options: {
   claude: FakeClaudeControl;
   repo?: Record<string, unknown>;
   limits?: Partial<Config["limits"]>;
   state?: string;
+  sshKey?: string;
+  otherRepo?: { key: string; sshKey: string };
 }): Promise<AssistantRunFixture> {
   const started = await useStartedTask({ repo: options.repo });
   const claude = useFakeClaude(options.claude);
@@ -604,7 +608,16 @@ export async function useAssistantRunFixture(options: {
     GH_TOKEN: "gho_secret",
     SSH_AUTH_SOCK: "/tmp/agent.sock",
   };
-  const config = { ...started.config, limits: { ...started.config.limits, ...options.limits } };
+  const taskRepo = started.config.repos[started.repoKey]!;
+  const withKey = (repo: typeof taskRepo, sshKey: string | undefined): typeof taskRepo =>
+    sshKey === undefined ? repo : { ...repo, vcs: { provider: "git", config: { sshKey } } };
+  const repos = { [started.repoKey]: withKey(taskRepo, options.sshKey) };
+  if (options.otherRepo) repos[options.otherRepo.key] = withKey(taskRepo, options.otherRepo.sshKey);
+  const config = {
+    ...started.config,
+    repos: { ...started.config.repos, ...repos },
+    limits: { ...started.config.limits, ...options.limits },
+  };
   return { started, task, config, claude, env };
 }
 

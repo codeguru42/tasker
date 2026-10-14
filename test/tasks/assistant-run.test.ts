@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
+import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { vcsForRepo } from "../../src/vcs/provider.js";
 import { executeReadDenyPaths, prepareTaskExecuteRun, prepareTaskPlanModeRun } from "../../src/tasks/assistant-run.js";
 import {
@@ -10,6 +12,7 @@ import {
   readRunMarker,
   TEST_SESSION_ID,
   useAssistantRunFixture,
+  useTempDir,
   withDataRootStore,
 } from "../helpers.js";
 
@@ -24,10 +27,31 @@ function flagValues(argv: string[], flag: string): string[] | undefined {
 
 describe("executeReadDenyPaths", () => {
   // Every path here is fake. None exists on disk, and each still goes in the list.
-  const surfaceDenyReadPaths = ["/k/id"];
-  const publishTokensPath = "/p";
   const denyPaths = (env: NodeJS.ProcessEnv) =>
-    executeReadDenyPaths({ env, surfaceDenyReadPaths, publishTokensPath });
+    executeReadDenyPaths({ env, repos: [{ denyReadPaths: ["/k/id"], publishTokensPath: "/p" }] });
+
+  it("gives the keys of every repo first and the publish tokens of every repo after the env paths", () => {
+    expect(
+      executeReadDenyPaths({
+        env: { HOME: "/h", TASKER_CONFIG: "/t/config.json" },
+        repos: [
+          { denyReadPaths: ["/k/a"], publishTokensPath: "/p/a" },
+          { denyReadPaths: ["/k/b"], publishTokensPath: "/p/b" },
+        ],
+      }),
+    ).toEqual([
+      "/k/a",
+      "/k/b",
+      "/h/.ssh",
+      "/h/.config/gh",
+      "/h/.git-credentials",
+      "/h/.netrc",
+      "/h/.claude/.credentials.json",
+      "/p/a",
+      "/p/b",
+      "/t/config.json",
+    ]);
+  });
 
   it("gives the paths in a fixed order", () => {
     expect(denyPaths({ HOME: "/h", XDG_CONFIG_HOME: "/x", TASKER_CONFIG: "/t/config.json" })).toEqual([
@@ -292,14 +316,30 @@ describe("prepareTaskExecuteRun", () => {
       sandbox: {
         filesystem: {
           allowWrite: await surface.sandboxWritePaths(started.worktree),
-          denyRead: executeReadDenyPaths({
-            env,
-            surfaceDenyReadPaths: surface.denyReadPaths,
-            publishTokensPath: surface.publishTokensPath,
-          }),
+          denyRead: executeReadDenyPaths({ env, repos: [surface] }),
         },
       },
     });
+  });
+
+  it("denies the ssh keys and the publish tokens of every configured repo in the shell", async () => {
+    const keys = useTempDir("tasker-keys-");
+    const { claude, started } = await prepareAndStart({
+      claude: { stream: claudeSample("plain") },
+      sshKey: join(keys, "a_key"),
+      otherRepo: { key: "codeguru42/other", sshKey: join(keys, "b_key") },
+    });
+
+    const denyRead = (claude.calls()[0]!.settings as { sandbox: { filesystem: { denyRead: string[] } } }).sandbox
+      .filesystem.denyRead;
+    expect(denyRead).toEqual(
+      expect.arrayContaining([
+        join(keys, "a_key"),
+        join(keys, "b_key"),
+        repoPaths(started.dataRoot, started.repoKey).publishTokens,
+        repoPaths(started.dataRoot, "codeguru42/other").publishTokens,
+      ]),
+    );
   });
 
   it("gives the commit text of the surface", async () => {
