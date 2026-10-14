@@ -54,6 +54,7 @@ import {
   taskNames,
   taskWorkspaceState,
   threeRepoConfig,
+  useConfigFile,
   useProcessEnv,
   useTempDir,
   useStartedTask,
@@ -666,6 +667,44 @@ describe("dayAt", () => {
   it("gives 00:00 UTC of a day in January 2026", () => {
     expect(dayAt(2)).toBe("2026-01-02T00:00:00.000Z");
     expect(dayAt(12)).toBe("2026-01-12T00:00:00.000Z");
+  });
+});
+
+describe("useConfigFile", () => {
+  it("writes the text of build as config.json and gives build the data root", () => {
+    const seen: string[] = [];
+    const written = useConfigFile((dataRoot) => {
+      seen.push(dataRoot);
+      return `{"dataRoot":"${dataRoot}"}\n`;
+    });
+
+    expect(written.path).toBe(join(written.dir, "config.json"));
+    expect(written.dataRoot).toBe(join(written.dir, "data"));
+    expect(seen).toEqual([written.dataRoot]);
+    expect(readFileSync(written.path, "utf8")).toBe(`{"dataRoot":"${written.dataRoot}"}\n`);
+  });
+
+  it("points TASKER_CONFIG at the file", () => {
+    const written = useConfigFile(() => "{}");
+
+    expect(process.env.TASKER_CONFIG).toBe(written.path);
+  });
+
+  it("removes the folder and the env stub after the test", () => {
+    // onTestFinished callbacks run in reverse order, so this check runs after the cleanup of the helper.
+    const holder: { written?: ReturnType<typeof useConfigFile> } = {};
+    onTestFinished(() => {
+      const { written } = holder;
+      expect(written).toBeDefined();
+      if (!written) return;
+      expect(existsSync(written.dir)).toBe(false);
+      expect(process.env.TASKER_CONFIG).not.toBe(written.path);
+    });
+
+    const written = useConfigFile(() => "{}");
+    holder.written = written;
+
+    expect(existsSync(written.dir)).toBe(true);
   });
 });
 
