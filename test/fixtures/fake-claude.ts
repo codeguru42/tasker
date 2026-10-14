@@ -1,6 +1,7 @@
 // A fake claude. argv is <controlPath> ...args. It logs each call and then plays back the control file.
 import { appendFileSync, readFileSync } from "node:fs";
 import type { FakeClaudeControl } from "../helpers.js";
+import { writePlaceholder } from "./placeholder.js";
 
 const [controlPath, ...args] = process.argv.slice(2);
 const control = JSON.parse(readFileSync(controlPath!, "utf8")) as FakeClaudeControl & { logPath: string };
@@ -23,9 +24,11 @@ async function readStdin(): Promise<string> {
 }
 
 const stdin = await readStdin();
+const settingsIndex = args.indexOf("--settings");
+const settings = settingsIndex === -1 ? undefined : (JSON.parse(args[settingsIndex + 1]!) as unknown);
 appendFileSync(
   control.logPath,
-  `${JSON.stringify({ argv: args, stdin, envNames: Object.keys(process.env).sort() })}\n`,
+  `${JSON.stringify({ argv: args, stdin, envNames: Object.keys(process.env).sort(), settings })}\n`,
 );
 
 const isVersion = args.length === 1 && args[0] === "--version" && control.version !== undefined;
@@ -38,6 +41,7 @@ const answer = isVersion
       sleepMs: control.sleepMs,
     };
 
+if (!isVersion) for (const path of control.placeholders ?? []) writePlaceholder(process.cwd(), path);
 if (answer.stdout) await write(process.stdout, answer.stdout);
 if (answer.stderr) await write(process.stderr, answer.stderr);
 if (answer.sleepMs) await sleep(answer.sleepMs);

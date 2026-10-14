@@ -1419,6 +1419,9 @@ export interface FakeClaudeControl {
   ignoreSigterm?: boolean;
   // The answer when the only argument is --version.
   version?: { stdout: string; stderr?: string; exitCode?: number; sleepMs?: number };
+  // Paths relative to the cwd of the fake. Before the output, the fake makes each one with writePlaceholder().
+  // With killWith, this plays a killed claude that leaves placeholders.
+  placeholders?: string[];
 }
 
 // One call that the fake claude logged.
@@ -1427,6 +1430,8 @@ export interface FakeClaudeCall {
   stdin: string;
   // The sorted names of the env of the fake.
   envNames: string[];
+  // The JSON of the argument after --settings, parsed. It is absent when the call has no --settings.
+  settings?: unknown;
 }
 
 export interface FakeClaude {
@@ -1502,4 +1507,23 @@ export function useFakeClaude(control: FakeClaudeControl): FakeClaude {
             .map((line) => JSON.parse(line) as FakeClaudeCall)
         : [],
   };
+}
+
+// Makes an empty file with mode 0o444, as bwrap leaves for a protected path. It lives in a fixture module
+// that imports only node: modules, so that the fake claude starts fast.
+export { writePlaceholder } from "./fixtures/placeholder.js";
+
+// Writes a fake bwrap and a fake socat (both exit 0) into binDir, except the names in except.
+export function writeFakeSandboxPrograms(binDir: string, except: readonly string[] = []): void {
+  for (const name of ["bwrap", "socat"]) {
+    if (!except.includes(name)) writeFakeCommand(binDir, name, "exit 0");
+  }
+}
+
+// A new temp folder (see useTempDir()) with a fake bwrap and a fake socat, except the names in except.
+// It gives the folder. Call it inside a test.
+export function useFakeSandboxBin(except: readonly string[] = []): string {
+  const bin = join(useTempDir("tasker-bin-"), "bin");
+  writeFakeSandboxPrograms(bin, except);
+  return bin;
 }

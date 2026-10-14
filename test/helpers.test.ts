@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, join, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
@@ -63,6 +63,7 @@ import {
   useConfigFile,
   useFakeClaude,
   useProcessEnv,
+  useFakeSandboxBin,
   useTempDir,
   usePathWithout,
   useStartedTask,
@@ -79,6 +80,8 @@ import {
   writeDataRootConfig,
   writeFakeCommand,
   writeFakeGh,
+  writeFakeSandboxPrograms,
+  writePlaceholder,
   type GitOrigin,
 } from "./helpers.js";
 
@@ -1500,9 +1503,86 @@ describe("useFakeClaude", () => {
   });
 });
 
-describe("usePathWithout", () => {
-  const runs = (program: string, path: string) => spawnSync(program, [], { env: { PATH: path } });
+describe("useFakeClaude with settings and placeholders", () => {
+  it("logs the parsed settings, and none when the call has no --settings", () => {
+    const fake = useFakeClaude({});
+    const settings = { sandbox: { enabled: true, filesystem: { allowWrite: ["/a"] } } };
 
+    runClaude(fake.env, ["-p", "--settings", JSON.stringify(settings), "--model", "x"]);
+    runClaude(fake.env, ["-p"]);
+
+    const calls = fake.calls();
+    expect(calls[0]!.settings).toEqual(settings);
+    expect(calls[1]).not.toHaveProperty("settings");
+  });
+
+  it("makes the placeholders in its cwd before it is killed", () => {
+    const fake = useFakeClaude({ placeholders: [".bashrc", ".claude/settings.json"], killWith: "SIGKILL" });
+    const cwd = useTempDir("tasker-fake-cwd-");
+
+    const result = spawnSync("claude", ["-p"], { env: fake.env, cwd, encoding: "utf8" });
+
+    expect(result.signal).toBe("SIGKILL");
+    for (const name of [".bashrc", ".claude/settings.json"]) {
+      const stat = lstatSync(join(cwd, name));
+      expect(stat.size).toBe(0);
+      expect(stat.mode & 0o777).toBe(0o444);
+    }
+  });
+});
+
+describe("writePlaceholder", () => {
+  it("makes the parent folders and an empty file with mode 0o444", () => {
+    const root = useTempDir("tasker-placeholder-");
+
+    writePlaceholder(root, ".claude/hooks");
+
+    const stat = lstatSync(join(root, ".claude", "hooks"));
+    expect(stat.isFile()).toBe(true);
+    expect(stat.size).toBe(0);
+    expect(stat.mode & 0o777).toBe(0o444);
+  });
+});
+
+const runs = (program: string, folder: string) => spawnSync(program, [], { env: { PATH: folder } });
+
+describe("writeFakeSandboxPrograms", () => {
+  it("writes bwrap and socat that exit 0", () => {
+    const bin = useTempDir("tasker-bin-");
+
+    writeFakeSandboxPrograms(bin);
+
+    expect(runs("bwrap", bin).status).toBe(0);
+    expect(runs("socat", bin).status).toBe(0);
+  });
+
+  it("skips the names in the except list", () => {
+    const bin = useTempDir("tasker-bin-");
+
+    writeFakeSandboxPrograms(bin, ["socat"]);
+
+    expect(runs("bwrap", bin).status).toBe(0);
+    expect(existsSync(join(bin, "socat"))).toBe(false);
+  });
+});
+
+describe("useFakeSandboxBin", () => {
+  it("gives a new folder with bwrap and socat that exit 0", () => {
+    const bin = useFakeSandboxBin();
+
+    expect(runs("bwrap", bin).status).toBe(0);
+    expect(runs("socat", bin).status).toBe(0);
+  });
+
+  it("leaves out the names in the except list", () => {
+    const bin = useFakeSandboxBin(["bwrap"]);
+
+    expect(existsSync(join(bin, "bwrap"))).toBe(false);
+    expect(runs("socat", bin).status).toBe(0);
+  });
+});
+
+describe("usePathWithout", () => {
   it("hides the program and keeps the other programs of its folder and of the other folders", () => {
     const withClaude = join(useTempDir("tasker-bin-"), "bin");
     const other = join(useTempDir("tasker-bin-"), "bin");
