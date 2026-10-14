@@ -178,6 +178,29 @@ describe("runAssistant", () => {
     expect(Date.now() - start).toBeLessThan(2000);
   });
 
+  it("ends the run when a process outside the group holds stdout", { timeout: 20_000 }, async () => {
+    const dir = useTempDir("tasker-run-assistant-");
+    const start = Date.now();
+
+    const { result, lines } = await runCollected("setsid sh -c 'echo $$ > child.pid; exec sleep 30' & while [ ! -s child.pid ]; do sleep 0.05; done; echo one; exit 0", { cwd: dir });
+
+    expect(Date.now() - start).toBeLessThan(GRACE_MS);
+    expect(lines).toEqual(["one"]);
+    expect(result).toMatchObject({ code: 0, signal: null, timedOut: false });
+    await readPidFile(join(dir, "child.pid"), 5000);
+  });
+
+  it("gives the last line with no line end when a process outside the group holds stdout", { timeout: 20_000 }, async () => {
+    const dir = useTempDir("tasker-run-assistant-");
+    const start = Date.now();
+
+    const { lines } = await runCollected("setsid sh -c 'echo $$ > child.pid; exec sleep 30' & while [ ! -s child.pid ]; do sleep 0.05; done; printf tail; exit 0", { cwd: dir });
+
+    expect(Date.now() - start).toBeLessThan(GRACE_MS);
+    expect(lines).toEqual(["tail"]);
+    await readPidFile(join(dir, "child.pid"), 5000);
+  });
+
   it("reports a started run with all result keys", async () => {
     // /bin/sh, because the bash of some hosts writes a startup warning to stderr.
     const { result } = await runCollected("exit 0", { file: "/bin/sh" });
