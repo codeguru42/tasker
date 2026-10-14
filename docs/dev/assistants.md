@@ -115,3 +115,37 @@ No real capture shows the start of paid usage. This rule of the start of paid us
 The version check is required. It runs once for all repos of the provider. On Linux, two more required checks make sure that `bwrap` and `socat` are on `PATH`. Each missing program (`claude`, `bwrap` or `socat`) gets the fix to install it, because only an install fixes that cause. Other causes, such as a failed run of the program, get no fix.
 
 The model check of a continued session uses the model forms of the configuration. It holds no second rule.
+
+## The plan answer and the prompts
+
+### The untrusted tag
+
+An untrusted value, such as the text of an issue, stands in its own tag in the prompt. The tag lets the assistant tell data from instructions. A third party wrote the value, so the value cannot give orders.
+
+The fill makes the closing tag of that tag harmless inside the value. Without this step, the value ends the block early and puts its own instructions after it.
+
+### What the plan prompt asks for
+
+The plan must be complete on its own. The execute run is a new session. It sees only the plan, its todos and the answers to the questions, not the planning conversation.
+
+The list `files_changed` must name each file that the plan touches. Tasker compares this list with the other tasks in flight to warn of merge conflicts. A missing file hides a conflict.
+
+The todos come as red and green steps. The commit rules ask for a commit with the failing test, and then a commit with the code.
+
+A todo never runs the full check of the repository. Tasker runs the verify commands itself after the execute run, and that run is the one that counts.
+
+### The prompt version and the archive
+
+Each step records the version of its prompt. The archive keeps each version. As a result, a prompt can change at any time, and the history of earlier tasks stays exact.
+
+The same version always has the same text. For this reason, a file that already exists counts as a success when the archive writes a version. The archive writes a temp file and links it into place. As a result, a cut write never leaves a partial version file, and a file that exists is always complete.
+
+A prompt name never holds `@`. As a result, a name never looks like a version.
+
+### The checks after the run
+
+The checks after the run are plain code after a successful parse of the schema. They are not zod refinements. A zod refinement still runs after an issue that does not abort, for example an unknown key or a failed pattern. As a result, a refinement breaks the rule that a failed schema stops the checks.
+
+### The JSON Schema
+
+The JSON Schema for `claude` comes from the zod schema, so the rules of the shape have one home. The program `claude` refuses a schema that holds `$schema`, so tasker removes that key.
