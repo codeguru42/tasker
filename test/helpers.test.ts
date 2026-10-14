@@ -42,7 +42,6 @@ import {
   lockNames,
   makeGitClone,
   makeGitOrigin,
-  makeTempDir,
   readPidFile,
   runCommand,
   savePid,
@@ -370,11 +369,7 @@ describe("fakeSsh", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-fake-ssh-");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    dir = useTempDir("tasker-fake-ssh-");
   });
 
   it("puts the bin folder first on the PATH", () => {
@@ -397,11 +392,7 @@ describe("fakeGh", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-fake-gh-");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    dir = useTempDir("tasker-fake-gh-");
   });
 
   const run = (env: NodeJS.ProcessEnv, ...args: string[]) =>
@@ -444,6 +435,8 @@ describe("fakeGh", () => {
     expect(run(gh.env, "b", "a").status).toBe(99);
     expect(run(gh.env, "a").status).toBe(99);
     expect(gh.unanswered()).toEqual([["a", "b", "c"], ["b", "a"], ["a"]]);
+    // Clear the log, so that the check of fakeGh() at the end of the test passes.
+    rmSync(`${gh.logPath}.unanswered`);
   });
 
   it("answers a call with no arguments", () => {
@@ -572,14 +565,8 @@ describe("writeDataRootConfig", () => {
 });
 
 describe("seedTasks", () => {
-  let dir: string;
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
-  });
-
   it("returns the tasks in input order with their times", () => {
-    dir = makeTempDir("tasker-seed-");
+    const dir = useTempDir("tasker-seed-");
     const dataRoot = join(dir, "data");
 
     const tasks = seedTasks(dataRoot, [
@@ -613,14 +600,8 @@ describe("threeRepoConfig", () => {
 });
 
 describe("seedTasks with more fields", () => {
-  let dir: string;
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
-  });
-
   it("stores the title, base, branch and worktreePath when given", () => {
-    dir = makeTempDir("tasker-seed-");
+    const dir = useTempDir("tasker-seed-");
     const names = taskNames("/tmp/wt", 1, "A title");
 
     const [task] = seedTasks(join(dir, "data"), [
@@ -645,7 +626,7 @@ describe("seedTasks with more fields", () => {
   });
 
   it("fails the task at its time with failWith", () => {
-    dir = makeTempDir("tasker-seed-");
+    const dir = useTempDir("tasker-seed-");
     const dataRoot = join(dir, "data");
     const at = "2026-01-04T00:00:00.000Z";
 

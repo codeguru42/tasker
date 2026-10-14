@@ -1,11 +1,11 @@
-import { existsSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { CommanderError } from "commander";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { orFail, withIssueTaskAsync, withStore, withStoreAsync } from "../../src/commands/shared.js";
 import { parseConfig } from "../../src/config/schema.js";
 import type { TaskStore } from "../../src/store/store.js";
-import { captureIo, makeTempDir, seedTasks, validConfig, withDataRootStore } from "../helpers.js";
+import { captureIo, useTempDir, seedTasks, validConfig, withDataRootStore } from "../helpers.js";
 
 describe("orFail", () => {
   it("returns the value of fn and writes nothing", () => {
@@ -37,17 +37,13 @@ describe("orFail", () => {
 describe("withStore", () => {
   let dataRoot: string;
 
-  afterEach(() => {
-    rmSync(dataRoot, { recursive: true, force: true });
-  });
-
   function configFor(dir: string) {
     dataRoot = dir;
     return parseConfig({ ...validConfig(), dataRoot: dir }, {}, "/home/test");
   }
 
   it("returns the value of fn and leaves the store closed", () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
 
     const task = withStore(config, (store) =>
       store.createTask({ issueKey: "codeguru42/tasker#1", repoKey: "tasker", state: "planning" }),
@@ -62,7 +58,7 @@ describe("withStore", () => {
   });
 
   it("closes the store when fn throws", () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
 
     expect(() =>
       withStore(config, (store) => {
@@ -76,19 +72,12 @@ describe("withStore", () => {
 });
 
 describe("withStoreAsync", () => {
-  let dataRoot: string;
-
-  afterEach(() => {
-    rmSync(dataRoot, { recursive: true, force: true });
-  });
-
   function configFor(dir: string) {
-    dataRoot = dir;
     return parseConfig({ ...validConfig(), dataRoot: dir }, {}, "/home/test");
   }
 
   it("keeps the store open across an await in fn", async () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
 
     const task = await withStoreAsync(config, async (store) => {
       await new Promise((resolve) => setTimeout(resolve, 5));
@@ -99,7 +88,7 @@ describe("withStoreAsync", () => {
   });
 
   it("closes the store after the promise resolves", async () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
 
     const store = await withStoreAsync(config, async (opened) => opened);
 
@@ -107,7 +96,7 @@ describe("withStoreAsync", () => {
   });
 
   it("closes the store after fn rejects and passes the rejection through", async () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
     let seen: TaskStore | undefined;
 
     await expect(
@@ -126,10 +115,6 @@ describe("withIssueTaskAsync", () => {
   const KEY = "codeguru42/tasker#1";
   let dataRoot: string;
 
-  afterEach(() => {
-    rmSync(dataRoot, { recursive: true, force: true });
-  });
-
   function configFor(dir: string) {
     dataRoot = dir;
     const raw = validConfig();
@@ -145,7 +130,7 @@ describe("withIssueTaskAsync", () => {
   }
 
   it("calls fn with the store, the task and the ref", async () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
     const seeded = seed();
 
     const seen = await withIssueTaskAsync(captureIo(), config, KEY, {}, async (store, task, ref) => ({
@@ -160,7 +145,7 @@ describe("withIssueTaskAsync", () => {
   });
 
   it("keeps the store open across an await and gives the value", async () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
     seed();
 
     const value = await withIssueTaskAsync(captureIo(), config, KEY, {}, async (store, task) => {
@@ -172,7 +157,7 @@ describe("withIssueTaskAsync", () => {
   });
 
   it("closes the store after the promise settles", async () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
     seed();
 
     const store = await withIssueTaskAsync(captureIo(), config, KEY, {}, async (opened) => opened);
@@ -181,7 +166,7 @@ describe("withIssueTaskAsync", () => {
   });
 
   it("fails with exit code 1 for an issue with no task", async () => {
-    const config = configFor(makeTempDir("tasker-store-"));
+    const config = configFor(useTempDir("tasker-store-"));
     const io = captureIo();
     let called = false;
 
