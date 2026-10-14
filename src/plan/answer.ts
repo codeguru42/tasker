@@ -20,6 +20,8 @@ export function planAnswerJsonSchema(): Record<string, unknown> {
   return schema;
 }
 
+const PLACEHOLDER = "is a placeholder, not real text";
+
 type PlanCheck = { ok: true; answer: PlanAnswer } | { ok: false; problems: string[] };
 
 export function checkPlanAnswer(output: unknown): PlanCheck {
@@ -28,5 +30,46 @@ export function checkPlanAnswer(output: unknown): PlanCheck {
   }
   const parsed = planAnswerSchema.safeParse(output);
   if (!parsed.success) return { ok: false, problems: formatIssues(parsed.error.issues, "(root)") };
-  return { ok: true, answer: parsed.data };
+  // The checks are not zod refinements. docs/dev/assistants.md gives the reason.
+  const answer = parsed.data;
+  const problems: string[] = [];
+
+  answer.todos.forEach((todo, i) => {
+    if (todo.title.trim().length < 3) problems.push(`todos.${i}.title: ${PLACEHOLDER}`);
+    if (todo.description.trim().length < 3) problems.push(`todos.${i}.description: ${PLACEHOLDER}`);
+  });
+  const newline = answer.plan_markdown.indexOf("\n");
+  const body = newline === -1 ? "" : answer.plan_markdown.slice(newline + 1);
+  if (body.trim().length < 20) {
+    problems.push('plan_markdown: has no plan after the "## Summary" heading');
+  }
+
+  if (answer.todos.length === 0) problems.push("todos: a plan with no todos is not a plan");
+  const todoIds = new Set<string>();
+  answer.todos.forEach((todo, i) => {
+    if (todoIds.has(todo.id)) problems.push(`todos.${i}.id: duplicate todo id "${todo.id}"`);
+    todoIds.add(todo.id);
+  });
+  const questionIds = new Set<string>();
+  answer.questions.forEach((question, i) => {
+    if (questionIds.has(question.id)) {
+      problems.push(`questions.${i}.id: duplicate question id "${question.id}"`);
+    }
+    questionIds.add(question.id);
+  });
+  answer.todos.forEach((todo, i) => {
+    todo.depends_on.forEach((dependency, j) => {
+      if (!todoIds.has(dependency)) {
+        problems.push(
+          `todos.${i}.depends_on.${j}: todo "${todo.id}" depends on unknown todo id "${dependency}"`,
+        );
+      }
+    });
+  });
+  if (problems.length > 0) return { ok: false, problems };
+
+  const files = answer.files_changed
+    .map((path) => path.trim().replace(/^\.\//, ""))
+    .filter((path) => path !== "");
+  return { ok: true, answer: { ...answer, files_changed: [...new Set(files)] } };
 }
