@@ -1,4 +1,4 @@
-import { LOCAL_PREFIX } from "./refs.js";
+import { LOCAL_PREFIX } from "../local-branch.js";
 import { GitError } from "./run.js";
 import { remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
 

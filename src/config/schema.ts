@@ -2,6 +2,7 @@ import { isAbsolute } from "node:path";
 import { z } from "zod";
 import { ALLOWED_ENV_NAMES } from "./allowed-env-names.js";
 import { vcsConfigSchema } from "../vcs/config-schema.js";
+import { LOCAL_PREFIX } from "../vcs/local-branch.js";
 import { expandPath } from "./expand.js";
 import { isObject } from "../object.js";
 import { errorMessage } from "../error-message.js";
@@ -149,7 +150,7 @@ const RepoSchema = z.strictObject({
   verify: VerifySchema,
   bootstrap: BootstrapSchema.default({ commands: [], env: [] }),
   defaultBaseBranch: nonEmpty
-    .refine((name) => !name.startsWith("refs/heads/"), {
+    .refine((name) => !name.startsWith(LOCAL_PREFIX), {
       message: "must name a remote branch, not a local branch in the form refs/heads/<x>",
     })
     .optional(),

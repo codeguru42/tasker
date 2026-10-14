@@ -1,6 +1,7 @@
+import { LOCAL_PREFIX } from "../local-branch.js";
 import type { BaseBranchMemory, ResolvedBase } from "../provider.js";
 import { fetchOrigin } from "./changes.js";
-import { LOCAL_PREFIX, refExists } from "./refs.js";
+import { refExists } from "./refs.js";
 
 const REMOTE_PREFIXES = ["refs/remotes/origin/", "origin/"];
 

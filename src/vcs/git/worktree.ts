@@ -12,8 +12,9 @@ import { errnoCode } from "../../errno.js";
 import { canonicalPath } from "../../real-path.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
 import { isShortRef, LOWER_SLUG, SHORT_REF } from "../../issue-key/short-ref.js";
+import { LOCAL_PREFIX } from "../local-branch.js";
 import type { WorkspaceEntry } from "../provider.js";
-import { LOCAL_PREFIX, refExists, refRevision } from "./refs.js";
+import { refExists, refRevision } from "./refs.js";
 import { runGit } from "./run.js";
 
 const MAX_BRANCH_LENGTH = 100;

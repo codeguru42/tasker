@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { detailSuffix } from "../../detail-suffix.js";
 import { ReconcileConflictError } from "../errors.js";
+import { LOCAL_PREFIX } from "../local-branch.js";
 import type { ReconcileStrategy, UncommittedChange } from "../provider.js";
 import {
   isAncestor,
@@ -11,7 +12,7 @@ import {
   worktreeChanges,
   worktreeHead,
 } from "./changes.js";
-import { assertRevision, assertRevisionInput, LOCAL_PREFIX, resolveRevision } from "./refs.js";
+import { assertRevision, assertRevisionInput, resolveRevision } from "./refs.js";
 import { GitError, isGitExit, runGit } from "./run.js";
 import { assertTaskBranchNameAndShape, assertTaskWorktree } from "./worktree.js";
 
