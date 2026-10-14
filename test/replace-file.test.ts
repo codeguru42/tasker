@@ -41,6 +41,42 @@ describe("replaceFile", () => {
     expect(readdirSync(dir).sort()).toEqual(["link.json", "target.json"]);
   });
 
+  it("replaces a symlink with a regular file when followSymlink is false", () => {
+    const dir = useTempDir("tasker-replace-");
+    const outside = useTempDir("tasker-replace-outside-");
+    const target = join(outside, "target.json");
+    const link = join(dir, "link.json");
+    writeFileSync(target, "old");
+    chmodSync(target, 0o600);
+    symlinkSync(target, link);
+
+    replaceFile(link, "new", { followSymlink: false });
+
+    expect(lstatSync(link).isFile()).toBe(true);
+    expect(lstatSync(link).isSymbolicLink()).toBe(false);
+    expect(readFileSync(link, "utf8")).toBe("new");
+    expect(readFileSync(target, "utf8")).toBe("old");
+    expect(statSync(target).mode & 0o7777).toBe(0o600);
+    expect(readdirSync(dir)).toEqual(["link.json"]);
+  });
+
+  it("gives the file that replaces a symlink the mode of the option and leaves the target alone", () => {
+    const dir = useTempDir("tasker-replace-");
+    const outside = useTempDir("tasker-replace-outside-");
+    const target = join(outside, "target.json");
+    const link = join(dir, "link.json");
+    writeFileSync(target, "old");
+    chmodSync(target, 0o600);
+    symlinkSync(target, link);
+
+    replaceFile(link, "new", { followSymlink: false, mode: 0o755 });
+
+    expect(lstatSync(link).isFile()).toBe(true);
+    expect(statSync(link).mode & 0o7777).toBe(0o755);
+    expect(readFileSync(target, "utf8")).toBe("old");
+    expect(statSync(target).mode & 0o7777).toBe(0o600);
+  });
+
   it("throws and leaves no temp file when the rename fails", () => {
     const dir = useTempDir("tasker-replace-");
     mkdirSync(join(dir, "target"));
