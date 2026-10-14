@@ -23,6 +23,14 @@ The orchestrator does all the steps of this section.
 - When a ticket starts, the orchestrator moves its card to In progress. `tasker start` does not move the card. The board moves the card to Done when `tasker finish` closes the issue.
 - When the Todo column of the milestone is empty, stop and tell the user. Do not write the issues of the next milestone.
 
+## The prompt of an agent
+
+The orchestrator writes the prompt of each agent.
+
+- The prompt of an agent gives only the context of its ticket. The context is the issue key, the landing order (see "Land the work"), the quota slot and whether the agent has a job (see "Quota"), the folder of the agent for its files (see "Limits"), and the hints for its first refine.
+- For all the rules, the prompt points to this page and to the docs that `AGENTS.md` names. No other base prompt exists.
+- When the orchestrator learns a new rule for agents, it does not put the rule only in a prompt. It adds the rule to the body of a ticket that has not started, where the rule fits. Or it proposes a docs issue to the user. A rule that only one ticket needs can go in the prompt of that ticket.
+
 ## Run one ticket
 
 The agent of the ticket runs steps 1 to 11. Each step gives the state of the task after its command succeeds.
@@ -46,7 +54,7 @@ The final report: at the end of its work on the ticket, the agent sends a final 
 - The edge cases that the agent left out (see "Review findings").
 - The lessons.
 
-The orchestrator sorts the lessons. A lesson that is a rule for the repo goes into a ticket or a docs issue.
+The orchestrator sorts the lessons. A lesson that is a rule for the repo or for agents goes where the new-rule bullet of "The prompt of an agent" says.
 
 The add-work rule: if the task is in `awaiting_work_review` and the agent must add work, the agent runs `tasker review <issue> "<feedback>"`. The agent adds the repo-files rule to the feedback text. The task reaches `awaiting_work_review` after a review with no findings in step 5 or step 9, or after the agent dismisses all the findings in step 7. In this state, `tasker refine` refuses to run. The work can come from the orchestrator, for example. After `tasker review <issue> "<feedback>"`, the task goes to `refining`, and tasker makes a new plan revision. Then the task goes to `awaiting_plan_review`. Then the agent does steps 3 and 4 for the new plan, and steps 5 to 8 again, starting with `tasker approve`.
 
