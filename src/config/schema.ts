@@ -4,6 +4,7 @@ import { ALLOWED_ENV_NAMES } from "./allowed-env-names.js";
 import { vcsConfigSchema } from "../vcs/config-schema.js";
 import { expandPath } from "./expand.js";
 import { isObject } from "../object.js";
+import { modelIssue } from "../assistant/models.js";
 
 const positive = z.number().positive();
 
@@ -102,13 +103,37 @@ const RoleSchema = z.strictObject({
   effort: z.enum(["low", "medium", "high"]),
 });
 
+const AssistantProviderSchema = z.enum(["claude-code", "copilot", "pi"]);
+
 const AssistantSchema = z.strictObject({
-  provider: z.enum(["claude-code", "copilot", "pi"]),
+  provider: AssistantProviderSchema,
   models: z.strictObject({ plan: RoleSchema, execute: RoleSchema, review: RoleSchema }),
   trustedExtensions: z.array(nonEmpty).default([]),
   account: nonEmpty.optional(),
   correctiveTurns: z.number().int().min(0).default(1),
 });
+
+const ROLES = ["plan", "execute", "review"] as const;
+
+// The model of each role must be a model of the provider. Without when, zod skips this check
+// when another key of the repo fails with a wrong type, a missing key or a bad enum value, so
+// the loader does not report every error in one run. With when, the check runs in all cases.
+// As a result, repo can be null, a string or a partly valid object, and the check reads each
+// field through a guard.
+function checkModels(repo: unknown, ctx: z.RefinementCtx): void {
+  if (!isObject(repo) || !isObject(repo.assistant)) return;
+  const { assistant } = repo;
+  const provider = AssistantProviderSchema.safeParse(assistant.provider);
+  if (!provider.success || !isObject(assistant.models)) return;
+  for (const role of ROLES) {
+    const entry = assistant.models[role];
+    if (!isObject(entry) || typeof entry.model !== "string" || entry.model === "") continue;
+    const message = modelIssue(provider.data, entry.model);
+    if (message !== undefined) {
+      ctx.addIssue({ code: "custom", path: ["assistant", "models", role, "model"], message });
+    }
+  }
+}
 
 const RepoSchema = z.strictObject({
   remote: nonEmpty,
@@ -126,7 +151,7 @@ const RepoSchema = z.strictObject({
   updateBranchStrategy: z.enum(["rebase", "merge"]).default("rebase"),
   forge: ForgeSchema.optional(),
   vcs: VcsSchema.default({ provider: "git", config: {} }),
-});
+}).superRefine(checkModels, { when: () => true });
 
 // A github tracker needs the account that runs gh. tasker checks the merged issueTracker,
 // so a definition under trackers can leave account out.
