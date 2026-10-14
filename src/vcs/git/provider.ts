@@ -1,4 +1,4 @@
-import type { VcsProvider } from "../provider.js";
+import type { VcsContext, VcsProvider } from "../provider.js";
 import type { GitVcsConfig } from "./config.js";
 import {
   DENY_RULES,
@@ -41,13 +41,20 @@ export function createGitProvider({
   remote: string;
   config: GitVcsConfig;
 }): VcsProvider {
+  // The paths of the repo of ctx in the data root.
+  const pathsOf = (ctx: VcsContext) => repoPaths(ctx.dataRoot, ctx.repoKey);
+  // The options that publish, land and the remote delete of a task ref share for ctx.
+  const remoteOptionsOf = (ctx: VcsContext) => {
+    const { clone, publishTokens } = pathsOf(ctx);
+    return { clone, remote, publishTokens, sshKey: config.sshKey, env: ctx.env };
+  };
   return {
     async provision(ctx) {
-      const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone, publishTokens } = pathsOf(ctx);
       await provisionClone({ remote, clone, config, env: ctx.env, publishTokens });
     },
     async createWorkspace(ctx, { shortRef, title, baseRevision }) {
-      const { clone, worktrees } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone, worktrees } = pathsOf(ctx);
       const taskRef = taskBranchName(shortRef, title);
       const path = taskWorktreePath(worktrees, shortRef);
       const state = await createTaskWorktree({
@@ -60,27 +67,27 @@ export function createGitProvider({
       return { path, taskRef, state: WORKSPACE_STATE[state] };
     },
     async removeWorkspace(ctx, { path }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       await removeTaskWorktree({ clone, env: ctx.env, path });
     },
     async listWorkspaces(ctx) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return listWorktrees({ clone, env: ctx.env });
     },
     async taskRefExists(ctx, { taskRef }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return taskBranchExists({ clone, env: ctx.env, branch: taskRef });
     },
     async deleteTaskRef(ctx, { taskRef }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       await deleteTaskBranch({ clone, env: ctx.env, branch: taskRef });
     },
     async discardWorkspaceChanges(ctx, { path }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       await discardWorktreeChanges({ clone, env: ctx.env, path });
     },
     async resolveBase(ctx, { memory, hint, explicit, defaultBase, ask }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return resolveBaseBranch({
         repoKey: ctx.repoKey,
         clone,
@@ -94,60 +101,33 @@ export function createGitProvider({
       });
     },
     async diffAgainstBase(ctx, { path, baseRevision }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return worktreeDiff({ clone, env: ctx.env, path, baseRevision });
     },
     async ownCommits(ctx, { taskRef, baseRevision }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return ownCommitsText({ clone, env: ctx.env, branch: taskRef, baseRevision });
     },
     async uncommittedChanges(ctx, { path }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return uncommittedChanges({ clone, env: ctx.env, path });
     },
     async reconcile(ctx, { path, baseRevision, strategy }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return reconcileWorktree({ clone, env: ctx.env, path, baseRevision, strategy });
     },
     async publish(ctx, { taskRef, published }) {
-      const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
-      const result = await publishTaskBranch({
-        clone,
-        remote,
-        publishTokens,
-        sshKey: config.sshKey,
-        env: ctx.env,
-        branch: taskRef,
-        published,
-      });
+      const result = await publishTaskBranch({ ...remoteOptionsOf(ctx), branch: taskRef, published });
       return { state: result.state, taskRef: result.branch, revision: result.revision, lease: result.lease };
     },
     async land(ctx, { base, revision }) {
-      const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
-      await landOnBase({
-        clone,
-        remote,
-        publishTokens,
-        sshKey: config.sshKey,
-        env: ctx.env,
-        base,
-        revision,
-      });
+      await landOnBase({ ...remoteOptionsOf(ctx), base, revision });
     },
     async deleteRemoteTaskRef(ctx, { taskRef, published }) {
-      const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
-      return deleteRemoteTaskBranch({
-        clone,
-        remote,
-        publishTokens,
-        sshKey: config.sshKey,
-        env: ctx.env,
-        branch: taskRef,
-        published,
-      });
+      return deleteRemoteTaskBranch({ ...remoteOptionsOf(ctx), branch: taskRef, published });
     },
     assistantSurface(ctx) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return {
         executeCommitText: EXECUTE_COMMIT_TEXT,
         denyRules: DENY_RULES,
@@ -158,7 +138,7 @@ export function createGitProvider({
       };
     },
     doctorChecks(ctx, { procRoot, platform }) {
-      const { clone } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone } = pathsOf(ctx);
       return gitDoctorChecks({
         repos: [{ key: ctx.repoKey, remote, clone, config }],
         procRoot,
@@ -166,7 +146,7 @@ export function createGitProvider({
       });
     },
     installPushGuard(ctx) {
-      const { clone, publishTokens } = repoPaths(ctx.dataRoot, ctx.repoKey);
+      const { clone, publishTokens } = pathsOf(ctx);
       installPushHook(clone, publishTokens);
     },
   };

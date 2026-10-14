@@ -32,6 +32,15 @@ function failed(summary: string, error: unknown): unknown {
   return new Error(`${summary}${detailSuffix((error instanceof GitError ? error.stderr : error.message).trim())}`);
 }
 
+// Runs one step. A failure of the step throws failed(summary, error).
+async function orFailed<T>(summary: string, step: () => Promise<T>): Promise<T> {
+  try {
+    return await step();
+  } catch (error) {
+    throw failed(summary, error);
+  }
+}
+
 // The one copy of the moved error.
 function movedError(branch: string, published: string | undefined, tip: RemoteTip): Error {
   const before =
@@ -62,28 +71,21 @@ export async function publishTaskBranch(
   if (published !== undefined) assertRevision("the published revision", published);
   const summary = `cannot publish the task branch: ${branch}`;
   const revision = await taskBranchRevision({ clone, env, branch });
-  let tip: RemoteTip;
-  try {
-    tip = await remoteTip({ remote, branch, sshKey, env });
-  } catch (error) {
-    throw failed(summary, error);
-  }
+  const tip = await orFailed(summary, () => remoteTip({ remote, branch, sshKey, env }));
   if (tip.state === "present" && tip.revision === revision) {
     return { state: "already-published", branch, revision, lease: false };
   }
   if (compareTip(branch, published, tip) === "absent") throw movedError(branch, published, tip);
-  try {
-    await pushWithToken(
+  await orFailed(summary, () =>
+    pushWithToken(
       [
         `--force-with-lease=${LOCAL_PREFIX}${branch}:${published ?? ""}`,
         "origin",
         `${LOCAL_PREFIX}${branch}:${LOCAL_PREFIX}${branch}`,
       ],
       { location: { gitDir: clone }, publishTokens, sshKey, env },
-    );
-  } catch (error) {
-    throw failed(summary, error);
-  }
+    ),
+  );
   return { state: "published", branch, revision, lease: true };
 }
 
@@ -102,26 +104,19 @@ export async function landOnBase(
     throw landError(revision, base, "the base is a local branch");
   }
   const summary = `cannot land ${revision} on the base branch: ${base}`;
-  let tip: RemoteTip;
   // The read refuses a base that origin does not have now. A base that someone deletes before the push is made again at revision.
-  try {
-    tip = await remoteTip({ remote, branch: base, sshKey, env });
-  } catch (error) {
-    throw failed(summary, error);
-  }
+  const tip = await orFailed(summary, () => remoteTip({ remote, branch: base, sshKey, env }));
   if (tip.state === "absent") {
     throw landError(revision, base, "the base branch does not exist on origin");
   }
-  try {
-    await pushWithToken(["origin", `${revision}:${LOCAL_PREFIX}${base}`], {
+  await orFailed(summary, () =>
+    pushWithToken(["origin", `${revision}:${LOCAL_PREFIX}${base}`], {
       location: { gitDir: clone },
       publishTokens,
       sshKey,
       env,
-    });
-  } catch (error) {
-    throw failed(summary, error);
-  }
+    }),
+  );
 }
 
 // Deletes the task branch on origin, when origin still has it at the published revision.
@@ -132,13 +127,7 @@ export async function deleteRemoteTaskBranch(
   assertTaskBranchNameAndShape(branch);
   assertRevision("the published revision", published);
   const summary = `cannot delete the task branch on origin: ${branch}`;
-  const readTip = async (): Promise<RemoteTip> => {
-    try {
-      return await remoteTip({ remote, branch, sshKey, env });
-    } catch (error) {
-      throw failed(summary, error);
-    }
-  };
+  const readTip = (): Promise<RemoteTip> => orFailed(summary, () => remoteTip({ remote, branch, sshKey, env }));
   if (compareTip(branch, published, await readTip()) === "absent") {
     return { state: "already-gone" };
   }
