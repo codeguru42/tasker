@@ -29,6 +29,7 @@ import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { githubShortRef } from "../src/issue-key/short-ref.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { canonicalPath } from "../src/real-path.js";
+import type { PlanAnswer } from "../src/plan/answer.js";
 import { failTask } from "../src/state/machine.js";
 import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
@@ -1551,4 +1552,34 @@ export function useFakeSandboxBin(except: readonly string[] = []): string {
   const bin = join(useTempDir("tasker-bin-"), "bin");
   writeFakeSandboxPrograms(bin, except);
   return bin;
+}
+
+export function validPlanAnswer(change: Partial<PlanAnswer> = {}): PlanAnswer {
+  return {
+    summary: ["Add the a module and its test."],
+    plan_markdown: "## Summary\n\nAdd the a module and its test, test first.\n",
+    files_changed: ["src/a.ts", "test/a.test.ts"],
+    todos: [
+      {
+        id: "write-test",
+        title: "Add the a module",
+        description: "Write the failing test of the a module.",
+        depends_on: [],
+      },
+      {
+        id: "make-it-pass",
+        title: "Add the a module",
+        description: "Write the a module so that the test passes.",
+        depends_on: ["write-test"],
+      },
+    ],
+    questions: [
+      {
+        id: "base-branch",
+        question: "Which branch is the base?",
+        context: "The issue names no base branch.",
+      },
+    ],
+    ...change,
+  };
 }

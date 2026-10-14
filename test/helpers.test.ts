@@ -10,6 +10,7 @@ import { ConfigError, parseConfig } from "../src/config/schema.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
+import { checkPlanAnswer } from "../src/plan/answer.js";
 import { childEnv } from "../src/process/child-env.js";
 import { type TaskStore } from "../src/store/store.js";
 import { taskLogsDir } from "../src/store/layout.js";
@@ -72,6 +73,7 @@ import {
   useStartFixture,
   useThreeRepoDataRoot,
   validConfig,
+  validPlanAnswer,
   writeTempConfig,
   waitUntil,
   waitUntilGone,
@@ -1733,5 +1735,27 @@ describe("usePathWithout", () => {
     const path = [other, "/no/such/folder"].join(delimiter);
 
     expect(usePathWithout("claude", path)).toBe(path);
+  });
+});
+
+describe("validPlanAnswer", () => {
+  it("gives an answer that passes the plan checks", () => {
+    expect(checkPlanAnswer(validPlanAnswer())).toEqual({ ok: true, answer: validPlanAnswer() });
+  });
+
+  it("replaces only the changed field", () => {
+    const answer = validPlanAnswer({ summary: ["Other."] });
+
+    expect(answer.summary).toEqual(["Other."]);
+    expect({ ...answer, summary: validPlanAnswer().summary }).toEqual(validPlanAnswer());
+  });
+
+  it("gives separate objects for each call", () => {
+    const first = validPlanAnswer();
+    first.todos[0]!.title = "changed";
+    first.files_changed.push("x");
+
+    expect(validPlanAnswer().todos[0]!.title).toBe("Add the a module");
+    expect(validPlanAnswer().files_changed).toEqual(["src/a.ts", "test/a.test.ts"]);
   });
 });
