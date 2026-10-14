@@ -103,17 +103,17 @@ const RoleSchema = z.strictObject({
   effort: z.enum(["low", "medium", "high"]),
 });
 
+const ModelsSchema = z.strictObject({ plan: RoleSchema, execute: RoleSchema, review: RoleSchema });
+
 const AssistantProviderSchema = z.enum(["claude-code", "copilot", "pi"]);
 
 const AssistantSchema = z.strictObject({
   provider: AssistantProviderSchema,
-  models: z.strictObject({ plan: RoleSchema, execute: RoleSchema, review: RoleSchema }),
+  models: ModelsSchema,
   trustedExtensions: z.array(nonEmpty).default([]),
   account: nonEmpty.optional(),
   correctiveTurns: z.number().int().min(0).default(1),
 });
-
-const ROLES = ["plan", "execute", "review"] as const;
 
 // The model of each role must be a model of the provider. Without when, zod skips this check
 // when another key of the repo fails with a wrong type, a missing key or a bad enum value, so
@@ -125,7 +125,7 @@ function checkModels(repo: unknown, ctx: z.RefinementCtx): void {
   const { assistant } = repo;
   const provider = AssistantProviderSchema.safeParse(assistant.provider);
   if (!provider.success || !isObject(assistant.models)) return;
-  for (const role of ROLES) {
+  for (const role of ModelsSchema.keyof().options) {
     const entry = assistant.models[role];
     if (!isObject(entry) || typeof entry.model !== "string" || entry.model === "") continue;
     const message = modelIssue(provider.data, entry.model);
