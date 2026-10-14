@@ -14,7 +14,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, makeTempDir, repoRoot, startFixture, startWriteLockHolder, tableNames } from "../helpers.js";
+import { deadPid, makeTempDir, repoRoot, startFixture, startWriteLockHolder, tableNames, withStoreFile } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -411,17 +411,18 @@ describe("task store", () => {
       } finally {
         raw.close();
       }
-      const upgraded = openStore(oldPath, { now });
-      try {
-        expect(upgraded.getTask(1)).toMatchObject({
-          attempt: 1,
-          title: null,
-          shortRef: null,
-          base: null,
-        });
-      } finally {
-        upgraded.close();
-      }
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          expect(upgraded.getTask(1)).toMatchObject({
+            attempt: 1,
+            title: null,
+            shortRef: null,
+            base: null,
+          });
+        },
+        { now },
+      );
       const check = new DatabaseSync(oldPath);
       try {
         expect(schemaVersion(check)).toBe(migrations.length);
@@ -663,13 +664,14 @@ describe("task store", () => {
     it("upgrades a version-1 database when it opens", () => {
       const oldPath = join(dir, "old.db");
       makeOldDatabase(oldPath, 1);
-      const upgraded = openStore(oldPath, { now });
-      try {
-        const task = upgraded.createTask(newTask);
-        expect(upgraded.appendEvent(task.id, "note").type).toBe("note");
-      } finally {
-        upgraded.close();
-      }
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          const task = upgraded.createTask(newTask);
+          expect(upgraded.appendEvent(task.id, "note").type).toBe("note");
+        },
+        { now },
+      );
       const check = new DatabaseSync(oldPath);
       try {
         expect(schemaVersion(check)).toBe(migrations.length);
@@ -730,13 +732,14 @@ describe("task store", () => {
     it("upgrades a version-2 database when it opens", () => {
       const oldPath = join(dir, "old2.db");
       makeOldDatabase(oldPath, 2);
-      const upgraded = openStore(oldPath, { now });
-      try {
-        upgraded.setDefaultBaseBranch("tasker", "main");
-        expect(upgraded.getDefaultBaseBranch("tasker")).toBe("main");
-      } finally {
-        upgraded.close();
-      }
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          upgraded.setDefaultBaseBranch("tasker", "main");
+          expect(upgraded.getDefaultBaseBranch("tasker")).toBe("main");
+        },
+        { now },
+      );
       const check = new DatabaseSync(oldPath);
       try {
         expect(schemaVersion(check)).toBe(migrations.length);
@@ -748,12 +751,13 @@ describe("task store", () => {
     it("upgrades a version-4 database when it opens", () => {
       const oldPath = join(dir, "old4.db");
       makeOldDatabase(oldPath, 4);
-      const upgraded = openStore(oldPath, { now });
-      try {
-        expect(upgraded.tryLock("x")).toEqual({ held: true });
-      } finally {
-        upgraded.close();
-      }
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          expect(upgraded.tryLock("x")).toEqual({ held: true });
+        },
+        { now },
+      );
       const check = new DatabaseSync(oldPath);
       try {
         expect(tableNames(check)).toContain("locks");
@@ -777,7 +781,7 @@ describe("task store", () => {
     it("upgrades a version-5 database when it opens", () => {
       const oldPath = join(dir, "old5.db");
       makeOldDatabase(oldPath, 5);
-      openStore(oldPath, { now }).close();
+      withStoreFile(oldPath, () => {}, { now });
       const check = new DatabaseSync(oldPath);
       try {
         expect(schemaVersion(check)).toBe(migrations.length);
@@ -1057,20 +1061,20 @@ describe("task store", () => {
         expect(result.code).toBe(0);
       }
 
-      const reader = openStore(layout.database);
-      const db = new DatabaseSync(layout.database);
-      try {
-        const tasks = db.prepare("SELECT id FROM tasks").all() as { id: number }[];
-        expect(tasks).toHaveLength(2);
-        for (const { id } of tasks) {
-          expect(reader.listEvents(id)).toHaveLength(count + 1);
-          expect(reader.getTask(id)?.state).toBe(String(count - 1));
+      withStoreFile(layout.database, (reader) => {
+        const db = new DatabaseSync(layout.database);
+        try {
+          const tasks = db.prepare("SELECT id FROM tasks").all() as { id: number }[];
+          expect(tasks).toHaveLength(2);
+          for (const { id } of tasks) {
+            expect(reader.listEvents(id)).toHaveLength(count + 1);
+            expect(reader.getTask(id)?.state).toBe(String(count - 1));
+          }
+          expect(schemaVersion(db)).toBe(migrations.length);
+        } finally {
+          db.close();
         }
-        expect(schemaVersion(db)).toBe(migrations.length);
-      } finally {
-        db.close();
-        reader.close();
-      }
+      });
     },
     60_000,
   );
@@ -1083,8 +1087,7 @@ describe("open of a new database", () => {
       const path = join(makeTempDir("tasker-open-"), "tasker.db");
       await startWriteLockHolder(path, 500);
 
-      const store = openStore(path);
-      store.close();
+      withStoreFile(path, () => {});
 
       const db = new DatabaseSync(path);
       try {
