@@ -14,6 +14,9 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 - Tests must cover the behavior of each helper that other code uses. As a result, a change to a helper that breaks that code makes a test fail.
 - The code in `src/` can have its own helpers. These helpers must stay separate from the test helpers. `src/` must not import from `test/`, and `test/helpers.ts` must hold no code that `src/` uses.
 - Code in `src/` and in `test/` must call an existing helper for the job of that helper. It must not repeat the steps of a helper. When two or more places repeat the same steps and no helper exists, add one helper and call it from each place.
+- The expected-value exception to the helper rule above: a test helper that computes the expected value of a test without the code under test is not a copy of a helper of `src/`. If the test called the helper of `src/`, a bug in that helper changes the expected value and the real value in the same way, and the test passes.
+- Give each function under test one call helper in the outer scope of its test file. Each test calls the function through that helper. If more than one test file needs the same call helper, put it in `test/helpers.ts`, as the rule on shared helpers says.
+- A test of a failure path proves that the failure happened, for example with a side effect or a count of the calls. A test that only checks that no error was thrown does not prove it.
 
 ## Code
 
