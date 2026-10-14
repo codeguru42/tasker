@@ -27,7 +27,7 @@ The orchestrator does all the steps of this section.
 
 The agent of the ticket runs steps 1 to 11. Each step gives the state of the task after its command succeeds.
 
-1. Run `tasker doctor`.
+1. Run `tasker doctor`. Then read the issue with `gh issue view <number>`, and compare the issue body with the prompt of the agent. If the body differs from the prompt, report each change to the orchestrator. The body can change while the agent works. Each `tasker` command of steps 1 to 11 follows the command rules (see below).
 2. Run `tasker start <issue>`. The task goes to `workspace_ready`. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
 3. Read the plan with `tasker show-plan` and `tasker show-questions`. Compare the plan with the Requirements and the Docs sections of the issue. Then apply the stop rule and do the quote check (see below).
 4. If the plan needs changes, run `tasker refine <issue> "<feedback>"`. Add the repo-files rule to the feedback text. The task goes to `awaiting_plan_review` again. Then do steps 3 and 4 again until the plan needs no changes. Put the answers to the plan questions in the feedback text. `tasker plan` takes no feedback.
