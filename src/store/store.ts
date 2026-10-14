@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { TERMINAL_STATES } from "../state/machine.js";
+import { isSpawningState, TERMINAL_STATES } from "../state/machine.js";
 import { type LockStore, tryLockIn, unlockIn } from "./locks.js";
 import { migrate } from "./migrate.js";
 import { migrations } from "./migrations.js";
@@ -19,6 +19,17 @@ export class ActiveTaskError extends Error {
       `the issue ${issueKey} already has an active task in the repo ${repoKey}: task ${taskId} is in ${state}`,
     );
     this.name = "ActiveTaskError";
+  }
+}
+
+export class RunMarkerExistsError extends Error {
+  constructor(
+    readonly taskId: number,
+    readonly state: string,
+    readonly pid: number,
+  ) {
+    super(`task ${taskId} already has a run marker: state ${state}, process ${pid}`);
+    this.name = "RunMarkerExistsError";
   }
 }
 
@@ -94,6 +105,13 @@ export interface TaskStore extends LockStore {
   updateTask(
     id: number,
     changes: TaskChanges,
+    check?: (current: Task) => NewEvent | void,
+  ): Task;
+  // Moves the task into a spawning state and writes its run marker with the pid of this process,
+  // in one transaction. The event that check returns is appended in the same transaction.
+  startRun(
+    id: number,
+    state: string,
     check?: (current: Task) => NewEvent | void,
   ): Task;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
@@ -220,6 +238,10 @@ function setUp(db: DatabaseSync) {
        WHERE id = ?
        RETURNING *`,
     ),
+    insertRunMarker: db.prepare(
+      "INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, NULL, ?)",
+    ),
+    selectRunMarker: db.prepare("SELECT state, pid FROM run_markers WHERE task_id = ?"),
     insertEvent: db.prepare(
       "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *",
     ),
@@ -271,6 +293,30 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       data === undefined ? null : JSON.stringify(data),
     ) as unknown as EventRow;
     return rowToEvent(row);
+  }
+
+  // Writes the changes of one task row. It starts no transaction. The caller runs it inside its own.
+  function writeChanges(current: Task, changes: TaskChanges, at: string): Task {
+    const next = { ...current };
+    if (changes.state !== undefined) next.state = changes.state;
+    if (changes.branch !== undefined) next.branch = changes.branch;
+    if (changes.worktreePath !== undefined) {
+      next.worktreePath = changes.worktreePath;
+    }
+    if (changes.title !== undefined) next.title = changes.title;
+    if (changes.shortRef !== undefined) next.shortRef = changes.shortRef;
+    if (changes.base !== undefined) next.base = changes.base;
+    const row = statements.updateTask.get(
+      next.state,
+      next.branch,
+      next.worktreePath,
+      next.title,
+      next.shortRef,
+      next.base,
+      at,
+      current.id,
+    ) as unknown as TaskRow;
+    return rowToTask(row);
   }
 
   return {
@@ -366,27 +412,34 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         }
         const event = check?.(current);
         const at = now().toISOString();
-        const next = { ...current };
-        if (changes.state !== undefined) next.state = changes.state;
-        if (changes.branch !== undefined) next.branch = changes.branch;
-        if (changes.worktreePath !== undefined) {
-          next.worktreePath = changes.worktreePath;
-        }
-        if (changes.title !== undefined) next.title = changes.title;
-        if (changes.shortRef !== undefined) next.shortRef = changes.shortRef;
-        if (changes.base !== undefined) next.base = changes.base;
-        const row = statements.updateTask.get(
-          next.state,
-          next.branch,
-          next.worktreePath,
-          next.title,
-          next.shortRef,
-          next.base,
-          at,
-          id,
-        ) as unknown as TaskRow;
+        const task = writeChanges(current, changes, at);
         if (event !== undefined) writeEvent(id, at, event.type, event.data);
-        return rowToTask(row);
+        return task;
+      });
+    },
+
+    startRun(id, state, check) {
+      return immediateTransaction(db, () => {
+        const current = readTask(id);
+        if (current === undefined) {
+          throw new Error(`task not found: ${id}`);
+        }
+        const event = check?.(current);
+        if (!isSpawningState(state)) {
+          throw new Error(`${state} is not a spawning state`);
+        }
+        // A dead process also keeps its marker. A later recovery clears it.
+        const marker = statements.selectRunMarker.get(id) as
+          | { state: string; pid: number }
+          | undefined;
+        if (marker !== undefined) {
+          throw new RunMarkerExistsError(id, marker.state, marker.pid);
+        }
+        const at = now().toISOString();
+        const task = writeChanges(current, { state }, at);
+        statements.insertRunMarker.run(id, state, process.pid, at);
+        if (event !== undefined) writeEvent(id, at, event.type, event.data);
+        return task;
       });
     },
 
