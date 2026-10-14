@@ -318,12 +318,12 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
   // A sandboxed run on a fake linux host. The fake has bwrap and socat, except the names in except.
   async function sandboxed(
     control: FakeClaudeControl,
-    options: { platform?: NodeJS.Platform; except?: string[]; cwd?: string; sharedFolder?: string; timeoutMs?: number } = {},
+    options: { platform?: NodeJS.Platform; except?: string[]; sharedFolder?: string; timeoutMs?: number } = {},
   ) {
     const fake = useFakeClaude(control);
     writeFakeSandboxPrograms(fake.binDir, options.except ?? []);
     const tmpRoot = realpathSync(useTempDir("tasker-claude-tmp-"));
-    const cwd = options.cwd ?? useTempDir("tasker-claude-cwd-");
+    const cwd = useTempDir("tasker-claude-cwd-");
     const outcome = await createClaudeCodeProvider({ platform: options.platform ?? "linux", tmpRoot }).run(
       runInput({ cwd, env: fake.env, sandbox: { ...limits, ...(options.sharedFolder ? { sharedFolder: options.sharedFolder } : {}) }, ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}) }),
     );
