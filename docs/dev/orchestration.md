@@ -73,7 +73,7 @@ The stop rule: each time before the agent runs `tasker approve` in step 5, the a
 - The plan has an open question that the issue does not answer.
 - The plan makes a design choice that the issue does not make.
 - The plan has a security gap.
-- The plan changes a file that the issue does not name, and another task in progress also changes that file. For example, `tasker refine` prints a warning for such a file (see "Land the work"). This case does not apply when the orchestrator already set a landing order for that file.
+- The plan changes a file that the issue does not name, and another task in progress also changes that file. For example, `tasker refine` prints a warning for such a file (see "Land the work"). This case does not apply when the orchestrator already set a landing order for that file. If the plan does not need the edit, the agent removes it in a refine of step 4, as "Land the work" says, and does not stop.
 
 In each case, the agent reports the case to the orchestrator. The orchestrator gets the answer, from the user if the decision belongs to the user. While the agent waits, the task stays in `awaiting_plan_review`. After the answer, the agent puts the answer in the feedback text of the refine of step 4. Then the agent continues with step 4 and runs `tasker approve` in step 5. An answer before `tasker approve` costs no review loop, but a later answer costs one or more review loops. The quote check gives one more case that stops before `tasker approve`.
 
