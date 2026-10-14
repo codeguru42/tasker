@@ -4,6 +4,7 @@ import { ALLOWED_ENV_NAMES } from "./allowed-env-names.js";
 import { vcsConfigSchema } from "../vcs/config-schema.js";
 import { expandPath } from "./expand.js";
 import { isObject } from "../object.js";
+import { errorMessage } from "../error-message.js";
 import { modelIssue } from "../assistant/models.js";
 
 const positive = z.number().positive();
@@ -264,7 +265,7 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
     try {
       expanded = expandPath(value, env, homedir);
     } catch (error) {
-      ctx.addIssue({ code: "custom", message: (error as Error).message });
+      ctx.addIssue({ code: "custom", message: errorMessage(error) });
       return z.NEVER;
     }
     if (!isAbsolute(expanded)) {

@@ -1,5 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import { errnoCode } from "../../errno.js";
+import { errorMessage } from "../../error-message.js";
 import { assertPathSet, type ChildResult, CommandNotFoundError, runChild } from "../../process/run-child.js";
 
 // Where git runs. cwd: a folder in a work tree, for any command that needs one.
@@ -129,7 +130,7 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
   try {
     assertPathSet("git", options.env);
   } catch (error) {
-    return Promise.reject(new GitNotInstalledError((error as Error).message));
+    return Promise.reject(new GitNotInstalledError(errorMessage(error)));
   }
   const location: Location =
     "gitDir" in options

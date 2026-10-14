@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { statSync } from "node:fs";
 import { StringDecoder } from "node:string_decoder";
+import { errorMessage } from "../error-message.js";
 import { CommandNotFoundError, assertPathSet } from "./run-child.js";
 import { type GroupResult, superviseGroup } from "./run-group.js";
 
@@ -68,7 +69,7 @@ export async function runAssistant(
   try {
     assertPathSet(file, options.env);
   } catch (error) {
-    return { started: false, notFound: true, error: (error as Error).message };
+    return { started: false, notFound: true, error: errorMessage(error) };
   }
   // Node gives the same ENOENT for a missing folder and a missing program, and it throws for a folder that is a file.
   if (statSync(options.cwd, { throwIfNoEntry: false })?.isDirectory() !== true) {
