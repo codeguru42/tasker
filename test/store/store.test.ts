@@ -908,6 +908,74 @@ describe("task store", () => {
         );
       });
     });
+
+    describe("endRun", () => {
+      const transition = () => ({ type: "transition", data: { to: "executed" } });
+
+      it("moves the task out of the spawning state and deletes the marker", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        store.startRun(task.id, "executing");
+        const moved = store.endRun(task.id, "executed", transition);
+        expect(moved).toMatchObject({ id: task.id, state: "executed" });
+        expect(store.getTask(task.id)).toEqual(moved);
+        expect(readRun(task.id)).toBeUndefined();
+        expect(store.listEvents(task.id).at(-1)).toMatchObject({
+          type: "transition",
+          at: "2026-01-01T00:00:00.000Z",
+          data: { to: "executed" },
+        });
+      });
+
+      it("deletes the marker of another process", () => {
+        const task = store.createTask({ ...newTask, state: "executing" });
+        writeRunPid(task.id, "executing", deadPid());
+        store.endRun(task.id, "executed");
+        expect(store.getTask(task.id)?.state).toBe("executed");
+        expect(readRun(task.id)).toBeUndefined();
+      });
+
+      it("works for a task with no marker", () => {
+        const task = store.createTask({ ...newTask, state: "executing" });
+        expect(store.endRun(task.id, "executed").state).toBe("executed");
+      });
+
+      it("refuses a task that is not in a spawning state", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        expectNothingChanged(
+          task.id,
+          () => store.endRun(task.id, "executed"),
+          `task ${task.id} is not in a spawning state: approved`,
+        );
+      });
+
+      it("refuses a spawning state as the target", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        store.startRun(task.id, "executing");
+        expectNothingChanged(
+          task.id,
+          () => store.endRun(task.id, "planning"),
+          "planning is a spawning state",
+        );
+        expect(readRun(task.id)).toBeDefined();
+      });
+
+      it("writes nothing when check throws", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        store.startRun(task.id, "executing");
+        expectNothingChanged(
+          task.id,
+          () =>
+            store.endRun(task.id, "executed", () => {
+              throw new Error("check refused");
+            }),
+          "check refused",
+        );
+      });
+
+      it("throws for a missing task", () => {
+        expect(() => store.endRun(9999, "executed")).toThrow("task not found: 9999");
+      });
+    });
   });
 
   it(
