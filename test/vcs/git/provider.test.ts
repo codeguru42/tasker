@@ -7,6 +7,8 @@ import {
   EXECUTE_COMMIT_TEXT,
   readDenyPaths,
   sandboxWritePaths,
+  sharedFolder,
+  trackedPaths,
 } from "../../../src/vcs/git/assistant-surface.js";
 import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
 import { ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
@@ -268,6 +270,26 @@ describe("createGitProvider", () => {
       const surface = keyedProvider().assistantSurface(fixture.context);
       expect(await surface.sandboxWritePaths(path)).toEqual(
         await sandboxWritePaths({ clone: paths().clone, env: fixture.context.env, path }),
+      );
+    });
+
+    it("gives the shared folder of a workspace like sharedFolder", async () => {
+      const { path } = await workspace();
+      const surface = keyedProvider().assistantSurface(fixture.context);
+      expect(await surface.sharedFolder(path)).toBe(
+        await sharedFolder({ clone: paths().clone, env: fixture.context.env, path }),
+      );
+    });
+
+    it("gives the tracked paths of a workspace like trackedPaths", async () => {
+      const { path } = await workspace();
+      writeFileSync(join(path, "kept.txt"), "x\n");
+      await runGit(["add", "kept.txt"], { cwd: path, env: fixture.context.env });
+      const surface = keyedProvider().assistantSurface(fixture.context);
+      const names = ["kept.txt", "other.txt"];
+      expect(await surface.trackedPaths(path, names)).toEqual(["kept.txt"]);
+      expect(await surface.trackedPaths(path, names)).toEqual(
+        await trackedPaths({ env: fixture.context.env, path, paths: names }),
       );
     });
 

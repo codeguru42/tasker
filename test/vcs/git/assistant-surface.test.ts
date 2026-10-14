@@ -12,13 +12,15 @@ import {
   writeFileSync,
 } from "node:fs";
 import { userInfo } from "node:os";
-import { join, relative } from "node:path";
+import { delimiter, join, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DENY_RULES,
   EXECUTE_COMMIT_TEXT,
   readDenyPaths,
   sandboxWritePaths,
+  sharedFolder,
+  trackedPaths,
 } from "../../../src/vcs/git/assistant-surface.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { isInside } from "../../../src/real-path.js";
@@ -29,8 +31,10 @@ import {
   gitCloneTokens,
   makeGitClone,
   makeGitOrigin,
+  readArgLog,
   useTempDir,
   taskNames,
+  writeGitRecorder,
   type GitOrigin,
 } from "../../helpers.js";
 
@@ -156,7 +160,7 @@ describe("assistant surface values", () => {
   });
 });
 
-describe("sandboxWritePaths", () => {
+describe("task worktree operations", () => {
   let origin: GitOrigin;
   let clone: string;
   let worktree: string;
@@ -181,113 +185,182 @@ describe("sandboxWritePaths", () => {
     origin.remove();
   });
 
-  const writePaths = (path = worktree) => sandboxWritePaths({ clone, env, path });
-  const adminDir = () =>
-    runGit(["rev-parse", "--git-dir"], { cwd: worktree, env }).then((out) =>
-      out.replace(/\r?\n$/, ""),
-    );
+  describe("sandboxWritePaths", () => {
+    const writePaths = (path = worktree) => sandboxWritePaths({ clone, env, path });
+    const adminDir = () =>
+      runGit(["rev-parse", "--git-dir"], { cwd: worktree, env }).then((out) =>
+        out.replace(/\r?\n$/, ""),
+      );
 
-  it("gives objects, refs, logs and the admin dir, in this order", async () => {
-    const real = realpathSync(clone);
-    expect(await writePaths()).toEqual([
-      join(real, "objects"),
-      join(real, "refs"),
-      join(real, "logs"),
-      await adminDir(),
-    ]);
-  });
-
-  it("creates logs when it is missing", async () => {
-    const logs = join(clone, "logs");
-    rmSync(logs, { recursive: true, force: true });
-    await writePaths();
-    expect(statSync(logs).isDirectory()).toBe(true);
-  });
-
-  it("does not cover the clone, hooks, config or the publish tokens", async () => {
-    const tokens = gitCloneTokens(origin);
-    mkdirSync(tokens, { recursive: true });
-    const real = realpathSync(clone);
-    const paths = await writePaths();
-    expect(paths).not.toContain(real);
-    for (const protectedPath of [
-      join(real, "hooks"),
-      join(real, "config"),
-      realpathSync(tokens),
-    ]) {
-      for (const path of paths) {
-        expect(isInside(path, protectedPath)).toBe(false);
-        expect(isInside(protectedPath, path)).toBe(false);
-      }
-    }
-  });
-
-  it("gives the same paths for a relative worktree path", async () => {
-    expect(await writePaths(relative(process.cwd(), worktree))).toEqual(await writePaths());
-  });
-
-  it("calls the worktree guard before it creates logs", async () => {
-    const logs = join(clone, "logs");
-    rmSync(logs, { recursive: true, force: true });
-    const folder = join(origin.dir, "not-a-worktree");
-    mkdirSync(folder);
-    const error = await failureOf(writePaths(folder), Error);
-    expect(error.message).toBe(`not a worktree of the clone: ${folder}`);
-    expect(existsSync(logs)).toBe(false);
-  });
-
-  it.skipIf(!bwrapWorks)("lets a sandboxed commit work and blocks other writes", async () => {
-    const real = realpathSync(clone);
-    const tokens = gitCloneTokens(origin);
-    mkdirSync(tokens, { recursive: true });
-    const realWorktree = realpathSync(worktree);
-    const writable = [realWorktree, ...(await writePaths())];
-    const tip = () =>
-      runGit(["rev-parse", `refs/heads/${branch}`], { gitDir: clone, env });
-    const before = await tip();
-    writeFileSync(join(worktree, "sandboxed.txt"), "sandboxed\n");
-    const add = inSandbox(writable, realWorktree, env, ["git", "add", "-A"]);
-    expect(add.status).toBe(0);
-    const commit = inSandbox(writable, realWorktree, env, [
-      "git",
-      "commit",
-      "-m",
-      "sandboxed commit",
-    ]);
-    expect(commit.status).toBe(0);
-    expect(await tip()).not.toBe(before);
-    const subject = await runGit(["log", "-1", "--format=%s"], { cwd: worktree, env });
-    expect(subject.trim()).toBe("sandboxed commit");
-    for (const file of [
-      join(real, "config"),
-      join(real, "hooks", "blocked"),
-      join(real, "packed-refs"),
-      join(realpathSync(tokens), "blocked"),
-    ]) {
-      const existed = existsSync(file);
-      const content = existed ? readFileSync(file) : undefined;
-      const write = inSandbox(writable, realWorktree, env, [
-        "sh",
-        "-c",
-        'printf x >> "$1"',
-        "sh",
-        file,
+    it("gives objects, refs, logs and the admin dir, in this order", async () => {
+      const real = realpathSync(clone);
+      expect(await writePaths()).toEqual([
+        join(real, "objects"),
+        join(real, "refs"),
+        join(real, "logs"),
+        await adminDir(),
       ]);
-      expect(write.status).not.toBe(0);
-      expect(existsSync(file)).toBe(existed);
-      if (content !== undefined) expect(readFileSync(file)).toEqual(content);
-    }
+    });
+
+    it("creates logs when it is missing", async () => {
+      const logs = join(clone, "logs");
+      rmSync(logs, { recursive: true, force: true });
+      await writePaths();
+      expect(statSync(logs).isDirectory()).toBe(true);
+    });
+
+    it("does not cover the clone, hooks, config or the publish tokens", async () => {
+      const tokens = gitCloneTokens(origin);
+      mkdirSync(tokens, { recursive: true });
+      const real = realpathSync(clone);
+      const paths = await writePaths();
+      expect(paths).not.toContain(real);
+      for (const protectedPath of [
+        join(real, "hooks"),
+        join(real, "config"),
+        realpathSync(tokens),
+      ]) {
+        for (const path of paths) {
+          expect(isInside(path, protectedPath)).toBe(false);
+          expect(isInside(protectedPath, path)).toBe(false);
+        }
+      }
+    });
+
+    it("gives the same paths for a relative worktree path", async () => {
+      expect(await writePaths(relative(process.cwd(), worktree))).toEqual(await writePaths());
+    });
+
+    it("calls the worktree guard before it creates logs", async () => {
+      const logs = join(clone, "logs");
+      rmSync(logs, { recursive: true, force: true });
+      const folder = join(origin.dir, "not-a-worktree");
+      mkdirSync(folder);
+      const error = await failureOf(writePaths(folder), Error);
+      expect(error.message).toBe(`not a worktree of the clone: ${folder}`);
+      expect(existsSync(logs)).toBe(false);
+    });
+
+    it.skipIf(!bwrapWorks)("lets a sandboxed commit work and blocks other writes", async () => {
+      const real = realpathSync(clone);
+      const tokens = gitCloneTokens(origin);
+      mkdirSync(tokens, { recursive: true });
+      const realWorktree = realpathSync(worktree);
+      const writable = [realWorktree, ...(await writePaths())];
+      const tip = () =>
+        runGit(["rev-parse", `refs/heads/${branch}`], { gitDir: clone, env });
+      const before = await tip();
+      writeFileSync(join(worktree, "sandboxed.txt"), "sandboxed\n");
+      const add = inSandbox(writable, realWorktree, env, ["git", "add", "-A"]);
+      expect(add.status).toBe(0);
+      const commit = inSandbox(writable, realWorktree, env, [
+        "git",
+        "commit",
+        "-m",
+        "sandboxed commit",
+      ]);
+      expect(commit.status).toBe(0);
+      expect(await tip()).not.toBe(before);
+      const subject = await runGit(["log", "-1", "--format=%s"], { cwd: worktree, env });
+      expect(subject.trim()).toBe("sandboxed commit");
+      for (const file of [
+        join(real, "config"),
+        join(real, "hooks", "blocked"),
+        join(real, "packed-refs"),
+        join(realpathSync(tokens), "blocked"),
+      ]) {
+        const existed = existsSync(file);
+        const content = existed ? readFileSync(file) : undefined;
+        const write = inSandbox(writable, realWorktree, env, [
+          "sh",
+          "-c",
+          'printf x >> "$1"',
+          "sh",
+          file,
+        ]);
+        expect(write.status).not.toBe(0);
+        expect(existsSync(file)).toBe(existed);
+        if (content !== undefined) expect(readFileSync(file)).toEqual(content);
+      }
+    });
+
+    it("keeps the files of a commit inside the write paths", async () => {
+      const paths = await writePaths();
+      const before = snapshot(realpathSync(clone));
+      await commitInWorktree(worktree, env, { file: "fallback.txt" });
+      const after = snapshot(realpathSync(clone));
+      const changed = [...after].filter(([file, value]) => before.get(file) !== value).map(([f]) => f);
+      expect(changed).not.toEqual([]);
+      for (const file of changed) {
+        expect(paths.some((path) => isInside(file, path))).toBe(true);
+      }
+    });
   });
 
-  it("keeps the files of a commit inside the write paths", async () => {
-    const paths = await writePaths();
-    const before = snapshot(realpathSync(clone));
-    await commitInWorktree(worktree, env, { file: "fallback.txt" });
-    const after = snapshot(realpathSync(clone));
-    const changed = [...after].filter(([file, value]) => before.get(file) !== value).map(([f]) => f);
-    expect(changed).not.toEqual([]);
-    for (const file of changed) {
-      expect(paths.some((path) => isInside(file, path))).toBe(true);
-    }
+  describe("sharedFolder", () => {
+    it("gives the real clone folder for a task worktree", async () => {
+      expect(await sharedFolder({ clone, env, path: worktree })).toBe(realpathSync(clone));
+    });
+
+    it("rejects a path that is not a task worktree, as sandboxWritePaths does", async () => {
+      const folder = join(origin.dir, "not-a-worktree");
+      mkdirSync(folder);
+      const error = await failureOf(sharedFolder({ clone, env, path: folder }), Error);
+      expect(error.message).toBe(`not a worktree of the clone: ${folder}`);
+    });
+  });
+
+  describe("trackedPaths", () => {
+    beforeEach(async () => {
+      mkdirSync(join(worktree, ".claude"));
+      writeFileSync(join(worktree, ".claude", "settings.json"), "{}\n");
+      writeFileSync(join(worktree, ".bashrc"), "x\n");
+      writeFileSync(join(worktree, "a*"), "x\n");
+      writeFileSync(join(worktree, "ab"), "x\n");
+      writeFileSync(join(worktree, ".vscode"), "untracked\n");
+      await runGit(["add", ".claude/settings.json", ".bashrc", "ab"], { cwd: worktree, env });
+    });
+
+    const tracked = (paths: readonly string[]) => trackedPaths({ env, path: worktree, paths });
+
+    it("gives a tracked file and leaves out an untracked file", async () => {
+      expect(await tracked([".bashrc", ".vscode"])).toEqual([".bashrc"]);
+    });
+
+    it("gives a folder that holds a tracked file", async () => {
+      expect(await tracked([".claude"])).toEqual([".claude"]);
+    });
+
+    it("does not match a folder name that only starts like a tracked entry", async () => {
+      expect(await tracked([".clau", ".bash"])).toEqual([]);
+    });
+
+    it("treats a name with * as a name, and not as a pattern", async () => {
+      expect(await tracked(["a*"])).toEqual([]);
+      await runGit(["add", "a*"], { cwd: worktree, env });
+      expect(await tracked(["a*"])).toEqual(["a*"]);
+    });
+
+    it("keeps the order of the input", async () => {
+      expect(await tracked([".claude/settings.json", ".vscode", ".bashrc"])).toEqual([
+        ".claude/settings.json",
+        ".bashrc",
+      ]);
+    });
+
+    it("gives [] for an empty list and starts no git", async () => {
+      const log = join(origin.dir, "git.log");
+      const bin = join(origin.dir, "gitbin");
+      writeGitRecorder(bin, log);
+
+      const result = await trackedPaths({
+        env: { ...env, PATH: `${bin}${delimiter}${env.PATH ?? ""}` },
+        path: worktree,
+        paths: [],
+      });
+
+      expect(result).toEqual([]);
+      expect(readArgLog(log)).toEqual([]);
+    });
   });
 });
