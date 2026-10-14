@@ -1,6 +1,6 @@
 import type { RunOutcome } from "../assistant/provider.js";
 import type { Io } from "../cli.js";
-import type { TaskState } from "../state/machine.js";
+import { failTask, type TaskState } from "../state/machine.js";
 import type { Task, TaskStore } from "../store/store.js";
 
 export type SuccessOutcome = Extract<RunOutcome, { kind: "success" }>;
@@ -22,12 +22,23 @@ export type RunOutcomeResult = { outcome: SuccessOutcome } | { exitCode: number 
 
 // Records the usage of the run, then moves the task for an outcome that is not success.
 export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
-  const { store, task, outcome } = request;
+  const { store, task, phase, io, outcome } = request;
   store.appendEvent(task.id, "usage", { usage: outcome.usage });
   switch (outcome.kind) {
     case "success":
       return { outcome };
+    case "failure":
+      return failRun(store, task, io, `${phase} failed: ${outcome.reason}`);
+    case "timeout":
+      return failRun(store, task, io, `${phase} timed out after ${request.timeoutMinutes} min`);
     default:
       throw new Error(`not handled: ${outcome.kind}`);
   }
+}
+
+// The message is the error of the event and the line on stderr.
+function failRun(store: TaskStore, task: Task, io: Io, message: string): RunOutcomeResult {
+  failTask(store, task.id, message);
+  io.stderr(`${message}\n`);
+  return { exitCode: 1 };
 }
