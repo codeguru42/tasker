@@ -3,7 +3,8 @@ import { setRoleModel } from "../../src/config/edit.js";
 import { validConfig } from "../helpers.js";
 
 // The raw configuration with extra keys in a non-default order, and a second repo.
-function rawConfig() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rawConfig(): Record<string, any> {
   const raw = validConfig();
   raw.repos.other = structuredClone(raw.repos.tasker);
   return { retentionDays: 7, ...raw, zeta: true };
