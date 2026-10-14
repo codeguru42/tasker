@@ -62,10 +62,10 @@ function spentResetsAt(info: Record<string, unknown>): number | undefined {
 export function overageStopOf(event: AssistantEvent, overageStop: OverageStop): { resetsAt?: number } | undefined {
   const info = rateLimitInfoOf(event);
   if (info === undefined) return undefined;
-  const status = info["overageStatus"];
+  const overageStatus = info["overageStatus"];
   const paid =
     info["isUsingOverage"] === true ||
-    (info["status"] === "rejected" && (status === "allowed" || status === "allowed_warning"));
+    (info["status"] === "rejected" && (overageStatus === "allowed" || overageStatus === "allowed_warning"));
   if (!paid) return undefined;
   const resetsAt = spentResetsAt(info);
   if (resetsAt !== undefined && overageStop.approvedResetsAt === resetsAt) return undefined;
