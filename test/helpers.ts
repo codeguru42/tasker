@@ -865,6 +865,24 @@ export function writeFakeGit(binDir: string, body: string): void {
   writeFakeCommand(binDir, "git", body);
 }
 
+// path with each folder that holds an entry named program replaced, in the same place, by a new
+// temp folder (see useTempDir()) with links to the other entries. A folder with no such entry
+// stays as it is. As a result, program is not found, and every other program of the path still runs.
+// Call it inside a test.
+export function usePathWithout(program: string, path: string): string {
+  return path
+    .split(delimiter)
+    .map((folder) => {
+      if (!existsSync(join(folder, program))) return folder;
+      const copy = useTempDir("tasker-path-without-");
+      for (const entry of readdirSync(folder)) {
+        if (entry !== program) symlinkSync(join(folder, entry), join(copy, entry));
+      }
+      return copy;
+    })
+    .join(delimiter);
+}
+
 // Writes an executable shell script named name into binDir. body is the script after "#!/bin/sh".
 export function writeFakeCommand(binDir: string, name: string, body: string): void {
   mkdirSync(binDir, { recursive: true });

@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, rmSync } from "node:fs";
+import { readdirSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { doctor } from "../../src/commands/doctor.js";
@@ -13,6 +13,7 @@ import {
   treeSnapshot,
   useFakeClaude,
   useProcessEnv,
+  usePathWithout,
   useTempDir,
   validConfig,
   writeTempConfig,
@@ -25,14 +26,6 @@ const GOOD_GH: FakeGhAnswer[] = [VERSION, ghTokenAnswer("codeguru42", "gho_test"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RawConfig = Record<string, any>;
-
-// The PATH of the test, without the folders of a real claude of the host.
-function pathWithoutClaude(): string {
-  return (process.env.PATH ?? "")
-    .split(delimiter)
-    .filter((folder) => !existsSync(join(folder, "claude")))
-    .join(delimiter);
-}
 
 async function setUp(
   answers: readonly FakeGhAnswer[],
@@ -51,10 +44,13 @@ async function setUp(
   change(raw);
   const written = writeTempConfig(raw);
   onTestFinished(() => rmSync(written.dir, { recursive: true, force: true }));
-  const claudeBins = withClaude ? [useFakeClaude({ version: { stdout: "2.1.299 (Claude Code)\n" } }).binDir] : [];
+  const hostPath = process.env.PATH ?? "";
+  const toolPath = withClaude
+    ? [useFakeClaude({ version: { stdout: "2.1.299 (Claude Code)\n" } }).binDir, hostPath]
+    : [usePathWithout("claude", hostPath)];
   useProcessEnv({
     ...fixture.origin.env,
-    PATH: [join(dir, "bin"), ...claudeBins, pathWithoutClaude()].join(delimiter),
+    PATH: [join(dir, "bin"), ...toolPath].join(delimiter),
     TASKER_CONFIG: written.path,
   });
   return { fixture, fake };

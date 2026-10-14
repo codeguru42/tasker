@@ -60,6 +60,7 @@ import {
   useFakeClaude,
   useProcessEnv,
   useTempDir,
+  usePathWithout,
   useStartedTask,
   useStartFixture,
   useThreeRepoDataRoot,
@@ -72,6 +73,7 @@ import {
   withStoreFile,
   writeBootstrapLog,
   writeDataRootConfig,
+  writeFakeCommand,
   writeFakeGh,
   type GitOrigin,
 } from "./helpers.js";
@@ -1420,5 +1422,47 @@ describe("useFakeClaude", () => {
     expect(names).not.toContain("TASKER_FAKE_CLAUDE_EXIT");
     expect(names).not.toContain("FAKE_CLAUDE_EXIT");
     expect(names).not.toContain("ANTHROPIC_API_KEY");
+  });
+});
+
+describe("usePathWithout", () => {
+  const runs = (program: string, path: string) => spawnSync(program, [], { env: { PATH: path } });
+
+  it("hides the program and keeps the other programs of its folder and of the other folders", () => {
+    const withClaude = join(useTempDir("tasker-bin-"), "bin");
+    const other = join(useTempDir("tasker-bin-"), "bin");
+    writeFakeCommand(withClaude, "claude", "exit 0");
+    writeFakeCommand(withClaude, "tool", "exit 0");
+    writeFakeCommand(other, "other", "exit 0");
+    const path = [withClaude, other].join(delimiter);
+
+    const changed = usePathWithout("claude", path);
+
+    expect(runs("claude", path).status).toBe(0);
+    expect((runs("claude", changed).error as NodeJS.ErrnoException).code).toBe("ENOENT");
+    expect(runs("tool", changed).status).toBe(0);
+    expect(runs("other", changed).status).toBe(0);
+  });
+
+  it("keeps the exact string and the place of a folder without the program", () => {
+    const withClaude = join(useTempDir("tasker-bin-"), "bin");
+    const other = join(useTempDir("tasker-bin-"), "bin");
+    writeFakeCommand(withClaude, "claude", "exit 0");
+    writeFakeCommand(other, "other", "exit 0");
+
+    const folders = usePathWithout("claude", [other, withClaude, other].join(delimiter)).split(delimiter);
+
+    expect(folders).toHaveLength(3);
+    expect(folders[0]).toBe(other);
+    expect(folders[1]).not.toBe(withClaude);
+    expect(folders[2]).toBe(other);
+  });
+
+  it("gives a PATH without the program as it is", () => {
+    const other = join(useTempDir("tasker-bin-"), "bin");
+    writeFakeCommand(other, "other", "exit 0");
+    const path = [other, "/no/such/folder"].join(delimiter);
+
+    expect(usePathWithout("claude", path)).toBe(path);
   });
 });
