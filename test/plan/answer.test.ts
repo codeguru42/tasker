@@ -121,9 +121,9 @@ describe("checkPlanAnswer: the schema", () => {
     };
 
     expect(problemsOf(answer)).toEqual([
-      "extra: unrecognized key",
       "todos.0.id: must be kebab-case",
       "todos.0.title: Too small: expected string to have >=1 characters",
+      "extra: unrecognized key",
     ]);
   });
 });
