@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
-import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
@@ -14,7 +14,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, makeTempDir, repoRoot, startFixture, startWriteLockHolder, tableNames, withRawDatabase, withStoreFile } from "../helpers.js";
+import { deadPid, useTempDir, repoRoot, startFixture, startWriteLockHolder, tableNames, withRawDatabase, withStoreFile } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -32,7 +32,7 @@ describe("task store", () => {
   const now = () => clock;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-data-");
+    dir = useTempDir("tasker-data-");
     dbPath = join(dir, "tasker.db");
     clock = new Date("2026-01-01T00:00:00.000Z");
     store = openStore(dbPath, { now });
@@ -40,7 +40,6 @@ describe("task store", () => {
 
   afterEach(() => {
     store.close();
-    rmSync(dir, { recursive: true, force: true });
   });
 
   const newTask = {
@@ -1013,7 +1012,7 @@ describe("open of a new database", () => {
   it(
     "waits for another process that holds the write lock of a new database",
     async () => {
-      const path = join(makeTempDir("tasker-open-"), "tasker.db");
+      const path = join(useTempDir("tasker-open-"), "tasker.db");
       await startWriteLockHolder(path, 500);
 
       withStoreFile(path, () => {});
@@ -1029,7 +1028,7 @@ describe("open of a new database", () => {
   it(
     "throws database is locked after the busy timeout when the write lock of a new database stays taken",
     async () => {
-      const path = join(makeTempDir("tasker-open-"), "tasker.db");
+      const path = join(useTempDir("tasker-open-"), "tasker.db");
       await startWriteLockHolder(path, 8000);
 
       const start = Date.now();
@@ -1042,7 +1041,7 @@ describe("open of a new database", () => {
   it(
     "fails at once on an error that is not SQLITE_BUSY on the switch to WAL",
     () => {
-      const path = join(makeTempDir("tasker-open-"), "tasker.db");
+      const path = join(useTempDir("tasker-open-"), "tasker.db");
       writeFileSync(path, "x".repeat(4096));
 
       const start = Date.now();

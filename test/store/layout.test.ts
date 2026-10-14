@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   createDataRoot,
   dataRootLayout,
@@ -8,7 +8,7 @@ import {
   taskArtifactsDir,
   taskLogsDir,
 } from "../../src/store/layout.js";
-import { makeTempDir, useTempDir } from "../helpers.js";
+import { useTempDir } from "../helpers.js";
 
 describe("dataRootLayout", () => {
   it("puts the folders and the database directly under the data root", () => {
@@ -35,14 +35,10 @@ describe("taskArtifactsDir", () => {
   });
 
   it("makes no folder", () => {
-    const root = makeTempDir("tasker-data-");
-    try {
-      const path = taskArtifactsDir(root, { issueKey: "PROJ-7", attempt: 1 });
-      expect(existsSync(path)).toBe(false);
-      expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
+    const root = useTempDir("tasker-data-");
+    const path = taskArtifactsDir(root, { issueKey: "PROJ-7", attempt: 1 });
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
   });
 });
 
@@ -53,14 +49,10 @@ describe("taskLogsDir", () => {
   });
 
   it("makes no folder", () => {
-    const root = makeTempDir("tasker-data-");
-    try {
-      const path = taskLogsDir(root, { issueKey: "PROJ-7", attempt: 1 });
-      expect(existsSync(path)).toBe(false);
-      expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
+    const root = useTempDir("tasker-data-");
+    const path = taskLogsDir(root, { issueKey: "PROJ-7", attempt: 1 });
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
   });
 });
 
@@ -68,11 +60,7 @@ describe("createDataRoot", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-data-");
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    dir = useTempDir("tasker-data-");
   });
 
   it("creates a missing root, clones and artifacts", () => {

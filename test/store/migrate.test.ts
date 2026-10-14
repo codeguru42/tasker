@@ -1,22 +1,20 @@
 import { DatabaseSync } from "node:sqlite";
-import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
-import { makeTempDir, tableNames } from "../helpers.js";
+import { useTempDir, tableNames } from "../helpers.js";
 
 describe("migrate", () => {
   let dir: string;
   let db: DatabaseSync;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-data-");
+    dir = useTempDir("tasker-data-");
     db = new DatabaseSync(join(dir, "t.db"));
   });
 
   afterEach(() => {
     db.close();
-    rmSync(dir, { recursive: true, force: true });
   });
 
   it("takes a new database to the last version", () => {

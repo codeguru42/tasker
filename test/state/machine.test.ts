@@ -1,4 +1,3 @@
-import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -15,7 +14,7 @@ import {
   type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { makeTempDir } from "../helpers.js";
+import { useTempDir } from "../helpers.js";
 
 describe("spawning states", () => {
   it("has the ten spawning states", () => {
@@ -221,13 +220,12 @@ describe("task transitions", () => {
   let store: TaskStore;
 
   beforeEach(() => {
-    dir = makeTempDir("tasker-data-");
+    dir = useTempDir("tasker-data-");
     store = openStore(join(dir, "tasker.db"));
   });
 
   afterEach(() => {
     store.close();
-    rmSync(dir, { recursive: true, force: true });
   });
 
   const newTask = (state: string) => ({
