@@ -93,8 +93,10 @@ describe("runAssistant", () => {
   it("keeps the last 64 KiB of stderr and gives it no line", async () => {
     const { result, lines } = await runCollected("head -c 100000 /dev/zero | tr '\\0' e >&2; printf END >&2");
 
-    expect(result.stderrTail).toHaveLength(65536);
-    expect(result.stderrTail).toMatch(/^e+END$/);
+    expect(result).toMatchObject({ started: true });
+    const stderrTail = result.started ? result.stderrTail : "";
+    expect(stderrTail).toHaveLength(65536);
+    expect(stderrTail).toMatch(/^e+END$/);
     expect(lines).toEqual([]);
   });
 
@@ -177,7 +179,8 @@ describe("runAssistant", () => {
   });
 
   it("reports a started run with all result keys", async () => {
-    const { result } = await runCollected("exit 0");
+    // /bin/sh, because the bash of some hosts writes a startup warning to stderr.
+    const { result } = await runCollected("exit 0", { file: "/bin/sh" });
 
     expect(result).toEqual({ started: true, code: 0, signal: null, timedOut: false, killed: false, stderrTail: "" });
   });
