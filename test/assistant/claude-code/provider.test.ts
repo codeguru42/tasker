@@ -455,7 +455,6 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
       platform?: NodeJS.Platform;
       except?: string[];
       sharedFolder?: string;
-      timeoutMs?: number;
       overrides?: Partial<RunInput>;
     } = {},
   ) {
@@ -464,7 +463,7 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
     const tmpRoot = realpathSync(useTempDir("tasker-claude-tmp-"));
     const cwd = useTempDir("tasker-claude-cwd-");
     const outcome = await createClaudeCodeProvider({ platform: options.platform ?? "linux", tmpRoot }).run(
-      runInput({ cwd, env: fake.env, sandbox: { ...limits, ...(options.sharedFolder ? { sharedFolder: options.sharedFolder } : {}) }, ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}), ...options.overrides }),
+      runInput({ cwd, env: fake.env, sandbox: { ...limits, ...(options.sharedFolder ? { sharedFolder: options.sharedFolder } : {}) }, ...options.overrides }),
     );
     return { outcome, fake, tmpRoot, cwd };
   }
@@ -487,7 +486,7 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
   });
 
   it("keeps the cleanup for an overage stop", { timeout: 15_000 }, async () => {
-    const { outcome } = await sandboxed(stopped(), { timeoutMs: 10_000, overrides: { overageStop: {} } });
+    const { outcome } = await sandboxed(stopped(), { overrides: { timeoutMs: 10_000, overageStop: {} } });
 
     expect(outcome).toMatchObject({ kind: "quota", cause: "overage", sandboxCleanup: { removed: [] } });
   });
@@ -522,7 +521,7 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
   it("gives the cleanup for a timeout too", { timeout: 20_000 }, async () => {
     const { outcome, cwd } = await sandboxed(
       { stream: [], placeholders: [".bashrc"], sleepMs: 15_000 },
-      { timeoutMs: 3000 },
+      { overrides: { timeoutMs: 3000 } },
     );
 
     expect(outcome.kind).toBe("timeout");
