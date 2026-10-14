@@ -92,7 +92,9 @@ When a rate limit stops a run, the last event is a `result` with `terminal_reaso
 
 A quota outcome wins over a failure, because the next step is a resume, not a fix.
 
-Paid usage (overage) is usage past the subscription quota, and it costs money. The caller must pass the overage stop only under `overagePolicy: "decline"`. The caller must pass the reset time of each window that the operator approved. An overage stop ends the child at once. Its outcome wins over the timeout, because it rests on the parsed event, not on whether the stop beat the exit of the child.
+Paid usage (overage) is usage past the subscription quota, and it costs money. The caller must pass the overage stop only under `overagePolicy: "decline"`. The caller must pass the reset time of the window that the operator approved. An event in that window does not stop the run. An overage stop ends the child at once. Its outcome wins over the timeout, because it rests on the parsed event, not on whether the stop beat the exit of the child.
+
+An event shows the start of paid usage when `isUsingOverage` is `true`, or when `status` is `rejected` and `overageStatus` is `allowed` or `allowed_warning`. In the second case, the subscription is spent and paid usage is on. A high `utilization` alone does not show it. The presence of `overageStatus` does not show it, and neither does `overageStatus: "rejected"`, because an `allowed` event can carry `overageStatus` too. With paid usage off, the stop comes through the quota stop.
 
 The events have these facts:
 
@@ -106,7 +108,7 @@ The events have these facts:
 
 Tasker keeps the events itself, so the provider has no transcript path.
 
-No real capture shows the start of paid usage. The rule is the best known form. The stream can report paid usage only after the first paid request, so one paid request can pass before the stop.
+No real capture shows the start of paid usage. This rule of the start of paid usage is the best known form. The stream can report paid usage only after the first paid request, so one paid request can pass before the stop.
 
 ### Doctor checks
 
