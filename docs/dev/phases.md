@@ -48,6 +48,18 @@ The output of a command goes only to the log, and not to the terminal. The stand
 
 A command that succeeds can leave a child in the background. The child keeps running and can still write to the log. Tasker does not wait for it.
 
+## The assistant runner
+
+The runner of an assistant child follows the deadline, process group and signal rules of this page. An abort stops the group as the deadline does.
+
+One rule differs from a phase command. A phase command can leave a background child alive. The assistant runner stops the whole group when the assistant exits. A background child holds the output open, and the run must end when the assistant ends. The assistant wrote its lines before it exited, so no line is lost. No background process of the assistant stays in the worktree.
+
+The prompt goes on the input of the assistant. [assistants.md](assistants.md#the-prompt) gives the reason. The runner closes the input after the write, so the assistant sees the end of the input. An assistant can exit before it reads the whole prompt. The write then fails, and tasker ignores the failure, because the result of the run comes from the exit.
+
+The assistant writes one event on each line, and the provider parses each event. So the runner gives the output line by line. A pipe gives the output in chunks, and one event can be larger than a chunk. So the runner joins the chunks before the split. It decodes one UTF-8 stream, so a character that crosses a chunk border stays whole.
+
+The error output does not go to the terminal. The runner keeps its last 64 KiB as the reason of a failure.
+
 ## The log and the marker
 
 The log is append-only. A run again keeps the history of the earlier runs.
@@ -57,3 +69,8 @@ The marker records a finished run. A finished phase never runs twice. A phase th
 ## Facts about outside tools
 
 - While a program has a listener for SIGTERM, Node does not exit on SIGTERM. After the last listener is removed, the next SIGTERM ends Node with the status 143.
+- Node reports a write to the input of a child that exited as an error event on that stream. With no listener, the error ends Node.
+- The exit of a child comes before the end of its output. A background child that holds the output delays the end until it exits.
+- Node gives the same error for a missing working folder and a missing program. A working folder that is a file makes the start fail at once, with no error event. So the runner checks the folder first.
+- A pipe on Linux gives at most 64 KiB in one chunk.
+- A Node timer longer than 2^31-1 ms fires at once with a warning. So each timer of the deadline is at most that long.
