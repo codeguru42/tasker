@@ -43,6 +43,14 @@ export function taskArtifactsDir(
   );
 }
 
+// The folder of the assistant sessions of one attempt. It makes no folder.
+export function taskSessionsDir(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+): string {
+  return join(taskArtifactsDir(dataRoot, task), "sessions");
+}
+
 // The folder of the logs of one attempt. It makes no folder.
 export function taskLogsDir(
   dataRoot: string,
