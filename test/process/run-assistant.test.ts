@@ -1,12 +1,13 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runAssistant } from "../../src/process/run-assistant.js";
-import { readPidFile, signalListenerCounts, startFixture, useTempDir } from "../helpers.js";
+import { readPidFile, signalListenerCounts, startFixture, useTempDir, waitUntilGone } from "../helpers.js";
 
 const MINUTE_MS = 60_000;
+const GRACE_MS = 5000;
 
 // Runs command under bash as an assistant child. It collects each line and each pid that the runner reports.
-async function runCollected(command: string, opts: { cwd?: string; prompt?: string; deadline?: number } = {}) {
+async function runCollected(command: string, opts: { cwd?: string; prompt?: string; deadline?: number; signal?: AbortSignal } = {}) {
   const dir = useTempDir("tasker-run-assistant-");
   const lines: string[] = [];
   const pids: number[] = [];
@@ -15,6 +16,7 @@ async function runCollected(command: string, opts: { cwd?: string; prompt?: stri
     env: { PATH: process.env.PATH },
     prompt: opts.prompt ?? "",
     deadline: opts.deadline ?? Date.now() + MINUTE_MS,
+    signal: opts.signal,
     onLine: (line) => lines.push(line),
     onSpawn: (pid) => pids.push(pid),
   });
@@ -82,6 +84,46 @@ describe("runAssistant", () => {
     expect(result.stderrTail).toHaveLength(65536);
     expect(result.stderrTail).toMatch(/^e+END$/);
     expect(lines).toEqual([]);
+  });
+
+  it("stops the group when the signal aborts", { timeout: 20_000 }, async () => {
+    const dir = useTempDir("tasker-run-assistant-");
+    const controller = new AbortController();
+    const before = signalListenerCounts();
+    const running = runCollected("sleep 30 & echo $! > child.pid; wait", { cwd: dir, signal: controller.signal });
+    const childPid = await readPidFile(join(dir, "child.pid"), 5000);
+
+    controller.abort();
+
+    const { result } = await running;
+    expect(result).toMatchObject({ code: null, signal: "SIGTERM", timedOut: false, killed: false });
+    await waitUntilGone(childPid, 5000);
+    expect(signalListenerCounts()).toEqual(before);
+  });
+
+  it("stops the group at once when the signal is already aborted", { timeout: 20_000 }, async () => {
+    const start = Date.now();
+
+    const { result, pids } = await runCollected("sleep 30", { signal: AbortSignal.abort() });
+
+    expect(result).toMatchObject({ signal: "SIGTERM", timedOut: false, killed: false });
+    expect(Date.now() - start).toBeLessThan(2000);
+    expect(pids).toHaveLength(1);
+  });
+
+  it("kills a leader that ignores SIGTERM 5 s after the abort", { timeout: 20_000 }, async () => {
+    const dir = useTempDir("tasker-run-assistant-");
+    const controller = new AbortController();
+    const running = runCollected('trap "" TERM; echo $$ > leader.pid; sleep 30', { cwd: dir, signal: controller.signal });
+    const leaderPid = await readPidFile(join(dir, "leader.pid"), 5000);
+    const abortedAt = Date.now();
+
+    controller.abort();
+
+    const { result } = await running;
+    expect(result).toMatchObject({ timedOut: false, killed: true });
+    expect(Date.now() - abortedAt).toBeGreaterThanOrEqual(GRACE_MS);
+    await waitUntilGone(leaderPid, 5000);
   });
 
   it("stops the group at the deadline", { timeout: 20_000 }, async () => {
