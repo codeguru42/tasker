@@ -65,7 +65,7 @@ flowchart LR
 
 Two loops go back to Plan, and the overview does not draw them: `refine` from Work review, and `reopen` from Landing. Each one writes a new plan revision, which goes through `approve`, Build and Work review again.
 
-In every diagram, an edge label names the command that will take this edge. "done" means that the spawned run finished. Blue states spawn a process: an assistant, the verify commands, git or the CLI of the forge (`pushing`, `opening_pr`, `merging`, `finishing`, `updating_branch`). These are the "spawning states". A run marker covers them, so tasker can find a crash in them. Grey "back to" boxes show a state a second time, so that a loop does not stretch the layout.
+In every diagram, an edge label names the command that will take this edge. "done" means that the spawned run finished. Blue states spawn a process: an assistant, the verify commands, git or the CLI of the forge (`pushing`, `opening_pr`, `merging`, `finishing`, `updating_branch`). These are the "spawning states". [A run marker](dev/data-root.md#run_markers-table) covers them, so tasker can find a crash in them. Grey "back to" boxes show a state a second time, so that a loop does not stretch the layout.
 
 Two things that the diagrams do not show:
 
