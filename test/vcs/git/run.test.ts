@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { GitError, GitNotInstalledError, gitSshCommand, runGit } from "../../../src/vcs/git/run.js";
+import { GitError, GitNotInstalledError, gitSshCommand, isGitExit, runGit } from "../../../src/vcs/git/run.js";
 import { failureOf, gitTestEnv, useTempDir, repoRoot, writeFakeGit } from "../../helpers.js";
 
 describe("runGit", () => {
@@ -366,5 +366,21 @@ describe("gitSshCommand", () => {
 
   it("gives the batch ssh command when both values are empty", () => {
     expect(gitSshCommand({ GIT_SSH_COMMAND: "", GIT_SSH: "" })).toBe("ssh -o BatchMode=yes");
+  });
+});
+
+describe("isGitExit", () => {
+  it("gives true for a GitError with the given exit code", () => {
+    expect(isGitExit(new GitError("m", "config", "", "", 5), 5)).toBe(true);
+  });
+
+  it("gives false for a GitError with another exit code or no exit code", () => {
+    expect(isGitExit(new GitError("m", "config", "", "", 1), 5)).toBe(false);
+    expect(isGitExit(new GitError("m", "config", "", "", null), 5)).toBe(false);
+  });
+
+  it("gives false for a plain Error and for null", () => {
+    expect(isGitExit(new Error("m"), 5)).toBe(false);
+    expect(isGitExit(null, 5)).toBe(false);
   });
 });

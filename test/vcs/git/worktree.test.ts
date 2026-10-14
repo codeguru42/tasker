@@ -19,6 +19,7 @@ import {
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { shellQuote } from "../../../src/vcs/git/ssh.js";
 import {
+  assertTaskBranchNameAndShape,
   assertTaskBranchShape,
   assertTaskWorktree,
   createTaskWorktree,
@@ -116,6 +117,20 @@ describe("assertTaskBranchShape", () => {
     expect(() => assertTaskBranchShape(branch)).toThrow(
       `not a task branch: ${JSON.stringify(branch)}`,
     );
+  });
+});
+
+describe("assertTaskBranchNameAndShape", () => {
+  it("accepts a task branch", () => {
+    expect(() => assertTaskBranchNameAndShape("issue-7-fix-it")).not.toThrow();
+  });
+
+  it("refuses a name that is not a task branch name", () => {
+    expect(() => assertTaskBranchNameAndShape("HEAD")).toThrow('not a task branch name: "HEAD"');
+  });
+
+  it("refuses a name with the wrong shape", () => {
+    expect(() => assertTaskBranchNameAndShape("main")).toThrow('not a task branch: "main"');
   });
 });
 

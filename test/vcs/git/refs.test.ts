@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  assertRevision,
   assertRevisionInput,
   isFullRevision,
   refExists,
@@ -93,5 +94,17 @@ describe("refs", () => {
         'not a full revision or ref: "main"',
       );
     });
+  });
+});
+
+describe("assertRevision", () => {
+  it("accepts a full revision", () => {
+    expect(() => assertRevision("the revision", "a".repeat(40))).not.toThrow();
+  });
+
+  it("refuses a value that is not a full revision", () => {
+    expect(() => assertRevision("the start revision", "abc")).toThrow(
+      'the start revision is not a full revision: "abc"',
+    );
   });
 });
