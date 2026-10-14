@@ -28,6 +28,17 @@ export function replaceFile(
   const real = follow ? realPathOrNothing(path) : undefined;
   const target = real ?? path;
   const mode = options.mode ?? (follow ? modeOf(real) : regularFileMode(path));
+  placeTempFile(target, text, mode, (tmp) => renameSync(tmp, target));
+}
+
+// Writes text to a new temp file in the folder of target, calls place with the temp path, and then removes
+// the temp file. The temp file goes also after an error of the write or of place.
+export function placeTempFile(
+  target: string,
+  text: string,
+  mode: number | undefined,
+  place: (tmp: string) => void,
+): void {
   const tmp = join(dirname(target), `.${basename(target)}.${process.pid}.${randomUUID()}.tmp`);
   // A failed create leaves no file of ours, so nothing is removed.
   const fd = openSync(tmp, "wx", mode ?? 0o666);
@@ -39,10 +50,9 @@ export function replaceFile(
     } finally {
       closeSync(fd);
     }
-    renameSync(tmp, target);
-  } catch (error) {
+    place(tmp);
+  } finally {
     rmSync(tmp, { force: true });
-    throw error;
   }
 }
 

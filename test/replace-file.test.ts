@@ -9,10 +9,10 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { errnoCode } from "../src/errno.js";
-import { replaceFile } from "../src/replace-file.js";
+import { placeTempFile, replaceFile } from "../src/replace-file.js";
 import { thrownBy, useTempDir } from "./helpers.js";
 
 describe("replaceFile", () => {
@@ -165,6 +165,33 @@ describe("replaceFile", () => {
     const thrown = thrownBy(() => replaceFile(join(dir, "missing", "file"), "new"));
 
     expect(errnoCode(thrown)).toBe("ENOENT");
+    expect(readdirSync(dir)).toEqual([]);
+  });
+});
+
+describe("placeTempFile", () => {
+  it("gives place a temp file in the folder of the target with the text and leaves no temp file", () => {
+    const dir = useTempDir("tasker-place-");
+    const target = join(dir, "file.md");
+    let seen: { path: string; text: string } | undefined;
+
+    placeTempFile(target, "the text", undefined, (tmp) => {
+      seen = { path: tmp, text: readFileSync(tmp, "utf8") };
+    });
+
+    expect(seen?.text).toBe("the text");
+    expect(dirname(seen?.path ?? "")).toBe(dir);
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
+  it("passes the error of place through and leaves no temp file", () => {
+    const dir = useTempDir("tasker-place-");
+
+    expect(() =>
+      placeTempFile(join(dir, "file.md"), "the text", undefined, () => {
+        throw new Error("place failed");
+      }),
+    ).toThrow("place failed");
     expect(readdirSync(dir)).toEqual([]);
   });
 });
