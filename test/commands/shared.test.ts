@@ -4,8 +4,8 @@ import { CommanderError } from "commander";
 import { afterEach, describe, expect, it } from "vitest";
 import { orFail, withIssueTaskAsync, withStore, withStoreAsync } from "../../src/commands/shared.js";
 import { parseConfig } from "../../src/config/schema.js";
-import { openStore, type TaskStore } from "../../src/store/store.js";
-import { captureIo, makeTempDir, seedTasks, validConfig } from "../helpers.js";
+import type { TaskStore } from "../../src/store/store.js";
+import { captureIo, makeTempDir, seedTasks, validConfig, withDataRootStore } from "../helpers.js";
 
 describe("orFail", () => {
   it("returns the value of fn and writes nothing", () => {
@@ -56,12 +56,9 @@ describe("withStore", () => {
     const database = join(dataRoot, "tasker.db");
     expect(existsSync(database)).toBe(true);
     expect(existsSync(`${database}-wal`)).toBe(false);
-    const store = openStore(database);
-    try {
+    withDataRootStore(dataRoot, (store) => {
       expect(store.getTask(task.id)).toEqual(task);
-    } finally {
-      store.close();
-    }
+    });
   });
 
   it("closes the store when fn throws", () => {
