@@ -71,7 +71,7 @@ These rules hold:
 
 - A move into a spawning state is an error when the task has a marker. This holds also when the process of the marker is dead.
 - When the child starts, the caller must add the pid of the child to the marker. Only the process that wrote the marker can add it.
-- A move out of a spawning state deletes the marker of any process. A missing marker is not an error.
+- Each move to a state that is not spawning deletes the marker of any process, also a move to failed and an abort. A missing marker is not an error.
 
 The marker uses the same check of a process as the [locks](#locks-table), so the limit of the locks applies.
 
