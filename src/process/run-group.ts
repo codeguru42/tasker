@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 
 const KILL_GRACE_MS = 5_000;
 const POLL_MS = 100;
@@ -39,25 +39,15 @@ function groupRuns(pid: number): boolean {
   }
 }
 
-// Runs file with args in a new process group and session. stdout and stderr go to outputFd, and stdin is /dev/null.
-// While it runs, SIGINT and SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM. Five seconds later, it gets SIGKILL.
-export function runInGroup(
-  file: string,
-  args: readonly string[],
-  options: RunGroupOptions,
-): Promise<GroupResult> {
+export interface SuperviseOptions {
+  deadline: number;
+}
+
+// Watches child, the leader of its own process group with pid pid, until it closes.
+// While it runs, SIGINT and SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM.
+// Five seconds later, it gets SIGKILL. After such a stop, it waits until the group is gone.
+export function superviseGroup(child: ChildProcess, pid: number, options: SuperviseOptions): Promise<GroupResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(file, [...args], {
-      cwd: options.cwd,
-      env: options.env,
-      detached: true,
-      stdio: ["ignore", options.outputFd, options.outputFd],
-    });
-    const pid = child.pid;
-    if (pid === undefined) {
-      child.once("error", reject); // no group exists, so no signal and no timer
-      return;
-    }
     let settled = false;
     let timedOut = false;
     let killed = false;
@@ -98,10 +88,30 @@ export function runInGroup(
       pollTimer = setInterval(finishIfDone, POLL_MS);
     };
     child.on("error", (error) => settle(() => reject(error)));
-    child.on("exit", (code, signal) => {
+    child.on("close", (code, signal) => {
       exited = { code, signal };
       finishIfDone();
     });
     armDeadline();
   });
+}
+
+// Runs file with args in a new process group and session. stdout and stderr go to outputFd, and stdin is /dev/null.
+// The group, the deadline and the signals follow superviseGroup.
+export async function runInGroup(
+  file: string,
+  args: readonly string[],
+  options: RunGroupOptions,
+): Promise<GroupResult> {
+  const child = spawn(file, [...args], {
+    cwd: options.cwd,
+    env: options.env,
+    detached: true,
+    stdio: ["ignore", options.outputFd, options.outputFd],
+  });
+  const pid = child.pid;
+  if (pid === undefined) {
+    return new Promise((_, reject) => child.once("error", reject)); // no group exists, so no signal and no timer
+  }
+  return superviseGroup(child, pid, { deadline: options.deadline });
 }

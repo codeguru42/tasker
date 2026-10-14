@@ -87,6 +87,16 @@ describe("runInGroup", () => {
     await expect(runLogged("exit 0", { cwd: missing })).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("leaves a background child alive when the leader exits", async () => {
+    const cwd = useTempDir("tasker-run-group-cwd-");
+
+    const { result } = await runLogged("sleep 30 & echo $! > child.pid; exit 0", { cwd });
+
+    expect(result).toEqual({ code: 0, signal: null, timedOut: false, killed: false });
+    const childPid = await readPidFile(join(cwd, "child.pid"), 5000);
+    expect(isAlive(childPid)).toBe(true);
+  });
+
   it.each([
     { name: "exit 0", command: "exit 0", missingCwd: false, deadlineMs: MINUTE_MS },
     { name: "exit 3", command: "exit 3", missingCwd: false, deadlineMs: MINUTE_MS },
