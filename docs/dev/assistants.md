@@ -36,7 +36,7 @@ A continued session also gets the model. A host measure showed that a resume wit
 
 The child gets the environment that [phases.md](phases.md) describes. This doc does not repeat the filter rules.
 
-The config folder name passes the filter, because it locates the configuration of the child: its credentials, its trust of folders and its settings. Without it, the child falls back to the configuration file in the home folder.
+`CLAUDE_CONFIG_DIR` passes the filter on purpose. It locates the configuration of the child: its credentials, its trust of folders and its settings. Without it, the child falls back to `$HOME/.claude.json`, not the folder that the operator set.
 
 A stray Anthropic key is a risk. With such a key, `claude` bills the API and not the subscription, and it gives no error. The filter drops these keys for this reason.
 
