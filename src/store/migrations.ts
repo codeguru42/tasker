@@ -39,4 +39,11 @@ CREATE UNIQUE INDEX tasks_active_repo_issue ON tasks (repo_key, issue_key)
   pid INTEGER NOT NULL,
   acquired_at TEXT NOT NULL
 );`,
+  `CREATE TABLE run_markers (
+  task_id INTEGER PRIMARY KEY REFERENCES tasks(id),
+  state TEXT NOT NULL,
+  pid INTEGER NOT NULL,
+  child_pid INTEGER,
+  started_at TEXT NOT NULL
+);`,
 ];

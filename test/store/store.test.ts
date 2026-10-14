@@ -660,7 +660,7 @@ describe("task store", () => {
       const check = new DatabaseSync(oldPath);
       try {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(5);
+        expect(migrations.length).toBe(6);
       } finally {
         check.close();
       }
