@@ -59,6 +59,22 @@ A crash leaves the row of the lock. The next try finds that the process of the r
 
 The check of the process works only on one machine. A `dataRoot` on a network drive that two machines share is not supported.
 
+## `run_markers` table
+
+The table holds the run marker of a task in a spawning state. A spawning state is a state in which tasker runs a process for the task. The marker records the tasker process that runs the task, so that tasker can find a run that died. A task has one marker at most.
+
+The tasker process decides if a run is alive, not the child. Tasker owns the run and records its end. A child with no tasker has no one to record its end. So a run is dead when tasker is gone, also when the child still runs. The marker keeps the pid of the child, so that a later command can stop a child that still runs.
+
+The move into a spawning state and the write of the marker happen in one transaction. With two separate writes, a crash between them leaves a spawning state with no marker, or a marker of a state that the task left. The move out of a spawning state and the delete of the marker share a transaction for the same reason. The read of the run status holds the write lock too. So the end of a run in another process cannot come between the read and the check of the process, and a run that ended in the correct way never looks dead.
+
+These rules hold:
+
+- A move into a spawning state is an error when the task has a marker. This holds also when the process of the marker is dead.
+- When the child starts, the caller must add the pid of the child to the marker. Only the process that wrote the marker can add it.
+- A move out of a spawning state deletes the marker of any process. A missing marker is not an error.
+
+The marker uses the same check of a process as the [locks](#locks-table), so the limit of the locks applies.
+
 ## Schema versions
 
 Version N means that the first N migrations ran. SQLite keeps N in `PRAGMA user_version`.
