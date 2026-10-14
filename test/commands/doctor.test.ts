@@ -192,6 +192,6 @@ describe("doctor", () => {
     for (const call of fake.calls()) {
       expect(allowed).toContainEqual(call.args);
     }
-    expect(readdirSync(fixture.context.dataRoot).sort()).toEqual(["artifacts", "clones"]);
+    expect(readdirSync(fixture.context.dataRoot).sort()).toEqual(["artifacts", "clones", "prompts"]);
   });
 });

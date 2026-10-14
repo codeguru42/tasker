@@ -18,7 +18,7 @@ describe("dataRootCheck", () => {
     const result = await dataRootCheck(dataRoot).run({});
 
     expect(result.status).toBe("ok");
-    expect(readdirSync(dataRoot).sort()).toEqual(["artifacts", "clones"]);
+    expect(readdirSync(dataRoot).sort()).toEqual(["artifacts", "clones", "prompts"]);
   });
 
   it("gives error when the folders cannot be made", async () => {

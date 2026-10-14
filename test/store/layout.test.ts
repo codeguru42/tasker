@@ -16,6 +16,7 @@ describe("dataRootLayout", () => {
       root: "/d",
       clones: "/d/clones",
       artifacts: "/d/artifacts",
+      prompts: "/d/prompts",
       database: "/d/tasker.db",
     });
   });
@@ -63,11 +64,11 @@ describe("createDataRoot", () => {
     dir = useTempDir("tasker-data-");
   });
 
-  it("creates a missing root, clones and artifacts", () => {
+  it("creates a missing root, clones, artifacts and prompts", () => {
     const root = join(dir, "root");
     const layout = createDataRoot(root);
     expect(layout).toEqual(dataRootLayout(root));
-    for (const path of [root, layout.clones, layout.artifacts]) {
+    for (const path of [root, layout.clones, layout.artifacts, layout.prompts]) {
       expect(statSync(path).isDirectory()).toBe(true);
     }
     expect(existsSync(join(root, "worktrees"))).toBe(false);
