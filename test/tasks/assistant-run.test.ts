@@ -5,6 +5,7 @@ import { taskSessionsDir } from "../../src/store/layout.js";
 import { vcsForRepo } from "../../src/vcs/provider.js";
 import { executeReadDenyPaths, prepareTaskExecuteRun, prepareTaskPlanModeRun } from "../../src/tasks/assistant-run.js";
 import {
+  claudeOverageEvent,
   claudeSample,
   readRunMarker,
   TEST_SESSION_ID,
@@ -186,6 +187,53 @@ describe("prepareTaskPlanModeRun", () => {
     expect(flagValues(argv, "--model")).toEqual(["haiku"]);
     expect(flagValues(argv, "--effort")).toEqual(["low"]);
     expect(prepared.session).toEqual(recorded);
+  });
+});
+
+describe("prepareTaskPlanModeRun with an overage event", () => {
+  const overage = claudeOverageEvent();
+  const resetsAt = (overage["rate_limit_info"] as { resetsAt: number }).resetsAt;
+  const withOverage = () => [JSON.stringify(overage), ...claudeSample("plain")];
+
+  const runWith = async (
+    options: Pick<Parameters<typeof useAssistantRunFixture>[0], "claude" | "repo" | "limits">,
+    approvedResetsAt?: number,
+  ) => {
+    const { config, task, env, started } = await useAssistantRunFixture(options);
+    return withDataRootStore(started.dataRoot, async (store) => {
+      const prepared = await prepareTaskPlanModeRun({
+        config,
+        store,
+        task,
+        role: "plan",
+        session: { resume: false },
+        env,
+        approvedResetsAt,
+      });
+      return prepared.start({ prompt: "p" });
+    });
+  };
+
+  it("stops the run at paid usage under the decline policy", async () => {
+    // The short deadline ends the child at once when the stop does not work.
+    const outcome = await runWith({
+      claude: { stream: [JSON.stringify(overage)], untilStopped: true },
+      limits: { planTimeoutMin: 0.01 },
+    });
+
+    expect(outcome).toMatchObject({ kind: "quota", cause: "overage", resetsAt });
+  });
+
+  it("does not stop the run under the ask policy, also when a window is approved", async () => {
+    const outcome = await runWith({ claude: { stream: withOverage() }, repo: { overagePolicy: "ask" } }, resetsAt);
+
+    expect(outcome.kind).toBe("success");
+  });
+
+  it("does not stop the run when the approved window is the window of the event", async () => {
+    const outcome = await runWith({ claude: { stream: withOverage() } }, resetsAt);
+
+    expect(outcome.kind).toBe("success");
   });
 });
 
