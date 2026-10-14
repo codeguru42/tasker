@@ -8,14 +8,13 @@ import { parseLine, readStream, type StreamFacts } from "./stream.js";
 
 type Failure = Extract<RunOutcome, { kind: "failure" }>;
 
-// A failure before the spawn: no run, so no events and no usage.
-function refusal(input: RunInput, reason: string): Failure {
+// A failure with no exit code and no signal: a refusal before the spawn, a start that failed, or a
+// run that rejected.
+function failureWithNoExit(input: RunInput, reason: string, events: AssistantEvent[]): Failure {
   return {
     kind: "failure",
     sessionId: input.sessionId,
-    events: [],
-    permissionDenials: [],
-    usage: "unavailable",
+    ...outcomeFacts(events, readStream(events)),
     exitCode: null,
     signal: null,
     reason,
@@ -57,10 +56,10 @@ export function createClaudeCodeProvider(): AssistantProvider {
     id: "claude-code",
     async run(input) {
       if (input.sandbox !== undefined) {
-        return refusal(input, "the claude-code provider cannot enforce a sandbox in this version");
+        return failureWithNoExit(input, "the claude-code provider cannot enforce a sandbox in this version", []);
       }
       if (input.overageStop !== undefined) {
-        return refusal(input, "the claude-code provider cannot enforce an overage stop in this version");
+        return failureWithNoExit(input, "the claude-code provider cannot enforce an overage stop in this version", []);
       }
       const events: AssistantEvent[] = [];
       let run: AssistantResult;
@@ -83,10 +82,10 @@ export function createClaudeCodeProvider(): AssistantProvider {
           onSpawn: input.onSpawn ?? (() => {}),
         });
       } catch (error) {
-        return { ...refusal(input, errorMessage(error)), ...outcomeFacts(events, readStream(events)) };
+        return failureWithNoExit(input, errorMessage(error), events);
       }
       if (!run.started) {
-        return { ...refusal(input, run.notFound ? "claude is not installed or not on PATH" : run.error), ...outcomeFacts(events, readStream(events)) };
+        return failureWithNoExit(input, run.notFound ? "claude is not installed or not on PATH" : run.error, events);
       }
       return outcomeOf(input, run, events, readStream(events));
     },
