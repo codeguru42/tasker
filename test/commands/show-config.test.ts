@@ -1,24 +1,13 @@
-import { rmSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
 import { showConfig } from "../../src/commands/show-config.js";
 import { loadConfig } from "../../src/config/load.js";
-import { captureIo, validConfig, writeTempConfig } from "../helpers.js";
-
-let dir: string | undefined;
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-  if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
-  dir = undefined;
-});
+import { captureIo, useConfigFile, useProcessEnv, validConfig } from "../helpers.js";
 
 describe("show-config", () => {
   it("prints the configuration with the defaults filled in", async () => {
-    const written = writeTempConfig(validConfig());
-    dir = written.dir;
-    vi.stubEnv("TASKER_CONFIG", written.path);
+    const written = useConfigFile(() => JSON.stringify(validConfig()));
     const io = captureIo();
 
     const code = await run(["show-config"], { commands: [showConfig], io });
@@ -40,9 +29,7 @@ describe("show-config", () => {
       ...raw.repos.tasker,
       remote: "git@github.com:codeguru42/other.git",
     };
-    const written = writeTempConfig(raw);
-    dir = written.dir;
-    vi.stubEnv("TASKER_CONFIG", written.path);
+    const written = useConfigFile(() => JSON.stringify(raw));
     const io = captureIo();
 
     const code = await run(["show-config", "--repo", "codeguru42/other"], {
@@ -60,9 +47,7 @@ describe("show-config", () => {
   it.each(["missing", "toString"])(
     "reports the repo key %s that does not exist",
     async (key) => {
-      const written = writeTempConfig(validConfig());
-      dir = written.dir;
-      vi.stubEnv("TASKER_CONFIG", written.path);
+      useConfigFile(() => JSON.stringify(validConfig()));
       const io = captureIo();
 
       const code = await run(["show-config", "--repo", key], {
@@ -77,9 +62,7 @@ describe("show-config", () => {
   );
 
   it("prints the loader errors for an invalid configuration", async () => {
-    const written = writeTempConfig({ ...validConfig(), bogus: 1 });
-    dir = written.dir;
-    vi.stubEnv("TASKER_CONFIG", written.path);
+    const written = useConfigFile(() => JSON.stringify({ ...validConfig(), bogus: 1 }));
     let message = "";
     try {
       loadConfig({ TASKER_CONFIG: written.path });
@@ -97,10 +80,9 @@ describe("show-config", () => {
   });
 
   it("prints the loader error for a missing file", async () => {
-    const written = writeTempConfig(validConfig());
-    dir = written.dir;
+    const written = useConfigFile(() => JSON.stringify(validConfig()));
     const missing = join(written.dir, "missing.json");
-    vi.stubEnv("TASKER_CONFIG", missing);
+    useProcessEnv({ TASKER_CONFIG: missing });
     const io = captureIo();
 
     const code = await run(["show-config"], { commands: [showConfig], io });

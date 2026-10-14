@@ -1,6 +1,6 @@
-import { existsSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
 import { showConfig } from "../../src/commands/show-config.js";
 import { status } from "../../src/commands/status.js";
@@ -11,20 +11,14 @@ import {
   issueKeyErrorMessage,
   runCommand,
   seedTasks,
+  useConfigFile,
+  useProcessEnv,
   useThreeRepoDataRoot,
   validConfig,
-  writeTempConfig,
 } from "../helpers.js";
 
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";
-
-const dirs: string[] = [];
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
-});
 
 describe("status", () => {
   it("lists the active tasks of all repos and hides finished and cancelled tasks", async () => {
@@ -264,9 +258,8 @@ describe("status", () => {
       ["a missing file", (dir: string) => join(dir, "missing.json")],
       ["an invalid file", (_dir: string, path: string) => path],
     ])("prints the error of show-config for %s", async (_name, pick) => {
-      const written = writeTempConfig({ ...validConfig(), bogus: 1 });
-      dirs.push(written.dir);
-      vi.stubEnv("TASKER_CONFIG", pick(written.dir, written.path));
+      const written = useConfigFile(() => JSON.stringify({ ...validConfig(), bogus: 1 }));
+      useProcessEnv({ TASKER_CONFIG: pick(written.dir, written.path) });
       const showIo = captureIo();
       const showCode = await run(["show-config"], { commands: [showConfig], io: showIo });
 
