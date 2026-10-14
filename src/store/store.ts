@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import type { AssistantProviderId, Effort, RecordedSession } from "../assistant/provider.js";
 import type { PlanAnswer } from "../plan/answer.js";
 import { isSpawningState, isTerminalState, TERMINAL_STATES } from "../state/machine.js";
 import { type LockStore, tryLockIn, unlockIn } from "./locks.js";
@@ -127,6 +128,14 @@ export interface PlanRevision {
   createdAt: string;
 }
 
+// A session that the store holds: what it recorded when it started, and its id.
+export interface StoredSession extends RecordedSession {
+  sessionId: string;
+}
+
+// The repo comes from the task, so the caller does not give it.
+export type NewPlanSession = Omit<StoredSession, "repoKey">;
+
 export interface StoreOptions {
   now?: () => Date;
 }
@@ -196,6 +205,11 @@ export interface TaskStore extends LockStore {
   // The questions of a revision with their state. The newest revision has only open questions.
   // A resolved question names the next version, and its answer is the feedback of that version.
   planQuestions(taskId: number, version: number): PlanQuestionState[];
+  // Records the plan session of a task once, before the run. The same id again writes nothing and
+  // gives the stored session. Another id is an error that names both ids.
+  recordPlanSession(taskId: number, session: NewPlanSession): StoredSession;
+  // The plan session of a task, or undefined when the task has none.
+  planSession(taskId: number): StoredSession | undefined;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -285,6 +299,27 @@ function rowToPlanRevision(row: PlanRevisionRow): PlanRevision {
 // The plan revision of a row, or undefined when the query found no row.
 function toPlanRevision(row: PlanRevisionRow | undefined): PlanRevision | undefined {
   return row === undefined ? undefined : rowToPlanRevision(row);
+}
+
+interface PlanSessionRow {
+  session_id: string;
+  provider: string;
+  model: string;
+  effort: string;
+  repo_key: string;
+}
+
+// The stored session of a row, or undefined when the query found no row.
+function toStoredSession(row: PlanSessionRow | undefined): StoredSession | undefined {
+  return row === undefined
+    ? undefined
+    : {
+        sessionId: row.session_id,
+        repoKey: row.repo_key,
+        provider: row.provider as AssistantProviderId,
+        model: row.model,
+        effort: row.effort as Effort,
+      };
 }
 
 // The time that a process waits for a lock that another process holds.
@@ -387,6 +422,15 @@ function setUp(db: DatabaseSync) {
     selectLatestPlanRevision: db.prepare(
       "SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version DESC LIMIT 1",
     ),
+    insertPlanSession: db.prepare(
+      `INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at)
+       VALUES (?, 'plan', ?, ?, ?, ?, ?)`,
+    ),
+    selectPlanSession: db.prepare(
+      `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key
+       FROM sessions JOIN tasks ON tasks.id = sessions.task_id
+       WHERE sessions.task_id = ? AND sessions.role = 'plan'`,
+    ),
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
     ),
@@ -431,6 +475,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     return toPlanRevision(
       statements.selectPlanRevision.get(taskId, version) as PlanRevisionRow | undefined,
     );
+  }
+
+  function readPlanSession(taskId: number): StoredSession | undefined {
+    return toStoredSession(statements.selectPlanSession.get(taskId) as PlanSessionRow | undefined);
   }
 
   function readLatestPlanRevision(taskId: number): PlanRevision | undefined {
@@ -707,6 +755,31 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         return { question, state: "resolved", version: next.version, answer: next.feedback };
       });
     },
+
+    recordPlanSession(taskId, session) {
+      return immediateTransaction(db, () => {
+        const task = readTask(taskId);
+        if (task === undefined) throw taskNotFound(taskId);
+        const stored = readPlanSession(taskId);
+        if (stored !== undefined) {
+          if (stored.sessionId === session.sessionId) return stored;
+          throw new Error(
+            `task ${taskId} already has the plan session ${stored.sessionId}, not ${session.sessionId}`,
+          );
+        }
+        statements.insertPlanSession.run(
+          taskId,
+          session.sessionId,
+          session.provider,
+          session.model,
+          session.effort,
+          now().toISOString(),
+        );
+        return { ...session, repoKey: task.repoKey };
+      });
+    },
+
+    planSession: readPlanSession,
 
     approvePlanRevision(taskId, version, state, check) {
       return writeTask(taskId, { state }, check, (at) => {
