@@ -16,13 +16,18 @@ export function fail(io: Io, message: string): never {
   throw new CommanderError(1, "tasker.fail", message);
 }
 
-// The configuration. A loader error stops the command with exit code 1.
-export function loadConfigOrFail(io: Io): Config {
+// The value of fn. An error stops the command with exit code 1 and its message on stderr.
+export function orFail<T>(io: Io, fn: () => T): T {
   try {
-    return loadConfig();
+    return fn();
   } catch (error) {
     fail(io, (error as Error).message);
   }
+}
+
+// The configuration. A loader error stops the command with exit code 1.
+export function loadConfigOrFail(io: Io): Config {
+  return orFail(io, () => loadConfig());
 }
 
 // The issue ref of rawKey. An IssueKeyError stops the command with exit code 1.
