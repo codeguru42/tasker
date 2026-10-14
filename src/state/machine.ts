@@ -42,6 +42,24 @@ export function isTaskState(value: string): value is TaskState {
   return (STATES as readonly string[]).includes(value);
 }
 
+// The states in which tasker runs a process for the task. A run marker covers each of them.
+export const SPAWNING_STATES: ReadonlySet<TaskState> = new Set<TaskState>([
+  "planning",
+  "refining",
+  "executing",
+  "verifying",
+  "reviewing",
+  "pushing",
+  "opening_pr",
+  "merging",
+  "finishing",
+  "updating_branch",
+]);
+
+export function isSpawningState(value: string): boolean {
+  return (SPAWNING_STATES as ReadonlySet<string>).has(value);
+}
+
 // The specific edges. The rule edges (to failed and to cancelled) are added
 // in buildTransitions.
 const EDGES: Record<TaskState, readonly TaskState[]> = {
