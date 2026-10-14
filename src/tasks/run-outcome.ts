@@ -1,6 +1,6 @@
 import type { RunOutcome } from "../assistant/provider.js";
 import type { Io } from "../cli.js";
-import { failTask, type TaskState } from "../state/machine.js";
+import { failTask, type TaskState, transitionTask } from "../state/machine.js";
 import type { Task, TaskStore } from "../store/store.js";
 
 export type SuccessOutcome = Extract<RunOutcome, { kind: "success" }>;
@@ -31,8 +31,14 @@ export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
       return failRun(store, task, io, `${phase} failed: ${outcome.reason}`);
     case "timeout":
       return failRun(store, task, io, `${phase} timed out after ${request.timeoutMinutes} min`);
-    default:
-      throw new Error(`not handled: ${outcome.kind}`);
+    case "quota": {
+      const { cause, resetsAt } = outcome;
+      transitionTask(store, task.id, "quota_blocked", resetsAt === undefined ? { cause } : { cause, resetsAt });
+      const reset =
+        resetsAt === undefined ? "the reset time is unknown" : `it resets at ${new Date(resetsAt * 1000).toISOString()}`;
+      io.stdout(`${phase} stopped by a quota limit; ${reset}\n`);
+      return { exitCode: 1 };
+    }
   }
 }
 
