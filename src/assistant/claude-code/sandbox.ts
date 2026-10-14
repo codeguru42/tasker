@@ -1,5 +1,5 @@
-import { realpathSync } from "node:fs";
-import { join } from "node:path";
+import { accessSync, constants, realpathSync, statSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import { canonicalPath, isInside } from "../../real-path.js";
 import type { SandboxLimits } from "../provider.js";
 
@@ -55,4 +55,39 @@ export function sandboxSocketFolder(o: {
     if (isInside(realPath(shared), folder)) return undefined;
   }
   return folder;
+}
+
+// True when a folder of env.PATH holds an executable file with this name.
+// A missing or unreadable entry counts as "not there". It never throws.
+export function isOnPath(program: string, env: NodeJS.ProcessEnv): boolean {
+  for (const folder of (env.PATH ?? "").split(delimiter)) {
+    if (folder === "") continue;
+    const path = join(folder, program);
+    try {
+      if (!statSync(path).isFile()) continue;
+      accessSync(path, constants.X_OK);
+      return true;
+    } catch {
+      continue;
+    }
+  }
+  return false;
+}
+
+// The programs that the sandbox of claude needs on Linux, with the package that holds each one.
+export const LINUX_SANDBOX_PROGRAMS = [
+  { program: "bwrap", pkg: "bubblewrap" },
+  { program: "socat", pkg: "socat" },
+] as const;
+
+// The reason that this host cannot build the sandbox, or undefined. env is the env that claude gets.
+export function sandboxHostRefusal(platform: NodeJS.Platform, env: NodeJS.ProcessEnv): string | undefined {
+  if (platform !== "linux" && platform !== "darwin") {
+    return `the claude-code provider cannot enforce a sandbox on ${platform}`;
+  }
+  if (platform === "darwin") return undefined;
+  for (const { program } of LINUX_SANDBOX_PROGRAMS) {
+    if (!isOnPath(program, env)) return `the claude-code sandbox needs ${program}, and ${program} is not on PATH`;
+  }
+  return undefined;
 }
