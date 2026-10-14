@@ -32,7 +32,7 @@ export function installPushHook(clone: string, publishTokens: string): void {
     mkdirSync(hooks, { recursive: true });
     // An older tasker wrote its temp file under this fixed name.
     rmSync(join(hooks, "pre-push.tmp"), { force: true });
-    replaceFile(join(hooks, "pre-push"), hookScript(publishTokens), { mode: 0o755 });
+    replaceFile(join(hooks, "pre-push"), hookScript(publishTokens), { mode: 0o755, followSymlink: false });
   } catch (error) {
     throw new Error(`cannot install the pre-push hook in the clone: ${clone}`, { cause: error });
   }

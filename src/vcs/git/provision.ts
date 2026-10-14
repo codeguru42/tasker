@@ -117,7 +117,7 @@ function writeIncludeFile(clone: string, sshKey: string | undefined): void {
       .replaceAll("\n", "\\n");
     content = `[core]\n\tsshCommand = "${value}"\n`;
   }
-  replaceFile(join(clone, INCLUDE_FILE), content);
+  replaceFile(join(clone, INCLUDE_FILE), content, { followSymlink: false });
 }
 
 async function setOrUnset(
