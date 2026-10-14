@@ -1,17 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, parseConfig } from "../../src/config/schema.js";
-import { validConfig } from "../helpers.js";
+import { configIssuesOf, validConfig } from "../helpers.js";
 
 const home = "/home/me";
 
 function issuesOf(raw: unknown, env: NodeJS.ProcessEnv = {}): string[] {
-  try {
-    parseConfig(raw, env, home);
-  } catch (error) {
-    expect(error).toBeInstanceOf(ConfigError);
-    return (error as ConfigError).issues;
-  }
-  throw new Error("expected parseConfig to throw");
+  return configIssuesOf(() => parseConfig(raw, env, home));
 }
 
 function expectIssueAt(issues: string[], path: string): void {

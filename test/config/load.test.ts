@@ -3,8 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { loadConfig } from "../../src/config/load.js";
-import { ConfigError } from "../../src/config/schema.js";
-import { validConfig } from "../helpers.js";
+import { configIssuesOf, validConfig } from "../helpers.js";
 
 const home = "/home/me";
 let dir: string;
@@ -59,13 +58,6 @@ describe("loadConfig", () => {
   it("throws a ConfigError for a file that breaks the schema", () => {
     const path = join(dir, "c.json");
     writeFileSync(path, JSON.stringify({ ...validConfig(), bogus: 1 }));
-    try {
-      loadConfig({ TASKER_CONFIG: path }, home);
-    } catch (error) {
-      expect(error).toBeInstanceOf(ConfigError);
-      expect((error as ConfigError).issues).toContain("bogus: unrecognized key");
-      return;
-    }
-    throw new Error("expected loadConfig to throw");
+    expect(configIssuesOf(() => loadConfig({ TASKER_CONFIG: path }, home))).toContain("bogus: unrecognized key");
   });
 });

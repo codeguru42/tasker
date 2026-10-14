@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ConfigError } from "../../src/config/schema.js";
 import { issueDoctorChecks, issueProviderFor } from "../../src/issues/provider.js";
-import { configWithTrackers } from "../helpers.js";
+import { configIssuesOf, configWithTrackers } from "../helpers.js";
 
 const github = (account: string) => ({ provider: "github", account });
 
@@ -60,14 +59,9 @@ describe("issueProviderFor", () => {
 
   it("throws the ConfigError of the registry for a jira repo in the doctor checks", () => {
     const config = configWithTrackers({ j: { provider: "jira" } });
-    expect(() => issueDoctorChecks(config)).toThrow(ConfigError);
-    try {
-      issueDoctorChecks(config);
-    } catch (error) {
-      expect((error as ConfigError).issues).toEqual([
-        "repos.j.issueTracker.provider: the jira tracker is not available in this version",
-      ]);
-    }
+    expect(configIssuesOf(() => issueDoctorChecks(config))).toEqual([
+      "repos.j.issueTracker.provider: the jira tracker is not available in this version",
+    ]);
   });
 
   it("gives no doctor checks for a configuration with no repo", () => {
@@ -76,14 +70,9 @@ describe("issueProviderFor", () => {
 
   it("throws a ConfigError for a jira repo", () => {
     const config = configWithTrackers({ j: { provider: "jira" } });
-    expect(() => issueProviderFor(config, "j")).toThrow(ConfigError);
-    try {
-      issueProviderFor(config, "j");
-    } catch (error) {
-      expect((error as ConfigError).issues).toEqual([
-        "repos.j.issueTracker.provider: the jira tracker is not available in this version",
-      ]);
-    }
+    expect(configIssuesOf(() => issueProviderFor(config, "j"))).toEqual([
+      "repos.j.issueTracker.provider: the jira tracker is not available in this version",
+    ]);
   });
 
   it.each(["nope", "constructor", "__proto__"])("throws for the unknown repo key %s", (key) => {

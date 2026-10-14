@@ -22,7 +22,7 @@ import { expect, onTestFinished, vi } from "vitest";
 import { type Io, type RegisterCommand, run } from "../src/cli.js";
 import { start } from "../src/commands/start.js";
 import { loadConfig } from "../src/config/load.js";
-import { type Config, parseConfig } from "../src/config/schema.js";
+import { type Config, ConfigError, parseConfig } from "../src/config/schema.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { githubShortRef } from "../src/issue-key/short-ref.js";
@@ -267,6 +267,20 @@ export async function readPidFile(path: string, timeoutMs: number): Promise<numb
   );
   savePid(pid);
   return pid;
+}
+
+// The issues of the ConfigError that fn throws. It throws, so the test fails, when fn returns
+// or when the error is not a ConfigError. It is the sync sibling of failureOf.
+export function configIssuesOf(fn: () => unknown): string[] {
+  try {
+    fn();
+  } catch (error) {
+    if (!(error instanceof ConfigError)) {
+      throw new Error(`the function threw ${String(error)}, not a ConfigError`, { cause: error });
+    }
+    return error.issues;
+  }
+  throw new Error("the function returned, but the test needs a ConfigError");
 }
 
 // The error that promise rejects with. It throws, so the test fails, when promise resolves
