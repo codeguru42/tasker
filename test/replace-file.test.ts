@@ -1,4 +1,14 @@
-import { chmodSync, lstatSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  readlinkSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { errnoCode } from "../src/errno.js";
@@ -39,6 +49,20 @@ describe("replaceFile", () => {
     expect(lstatSync(link).isSymbolicLink()).toBe(true);
     expect(readFileSync(target, "utf8")).toBe("new");
     expect(readdirSync(dir).sort()).toEqual(["link.json", "target.json"]);
+  });
+
+  it("throws ENOENT and keeps a broken symlink when it follows links", () => {
+    const dir = useTempDir("tasker-replace-");
+    const link = join(dir, "link.json");
+    const missing = join(dir, "missing.json");
+    symlinkSync(missing, link);
+
+    const error = thrownBy(() => replaceFile(link, "new"));
+
+    expect(errnoCode(error)).toBe("ENOENT");
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(link)).toBe(missing);
+    expect(readdirSync(dir)).toEqual(["link.json"]);
   });
 
   it("replaces a symlink with a regular file when followSymlink is false", () => {
