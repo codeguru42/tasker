@@ -13,6 +13,7 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 - A change can edit an existing helper to fix a bug or to make the helper useful in more places. The change must not break the code that uses the helper.
 - Tests must cover the behavior of each helper that other code uses. As a result, a change to a helper that breaks that code makes a test fail.
 - The code in `src/` can have its own helpers. These helpers must stay separate from the test helpers. `src/` must not import from `test/`, and `test/helpers.ts` must hold no code that `src/` uses.
+- Code in `src/` and in `test/` must call an existing helper for the job of that helper. It must not repeat the steps of a helper. When two or more places repeat the same steps and no helper exists, add one helper and call it from each place.
 
 ## Commits
 
