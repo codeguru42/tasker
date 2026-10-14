@@ -83,6 +83,16 @@ Each new command must be in the skill and in the `--help` output. The test `test
 
 Write the `.js` extension in each relative import, for example `import { run } from "./cli.js"`. TypeScript with NodeNext modules needs this, even though the file on disk ends in `.ts`.
 
+## zod
+
+These facts hold for zod 4.6.5.
+
+- A default `.superRefine()` still runs after an issue that does not stop the parse, for example an unknown key or a failed pattern.
+- zod skips a default `.superRefine()` after a missing field or a wrong type.
+- With `{ when: () => true }`, a `.superRefine()` runs in every case. It then gets the raw input, so it must check the shape of each field that it reads.
+
+As a result, when a check must report all problems in one run, as [rules.md](rules.md#code) says, give it `{ when: () => true }`. When a check must stop after a schema failure, run it as plain code after a successful `safeParse`, not as a refinement.
+
 ## Tests
 
 - Tests use Vitest. Each test file matches `test/**/*.test.ts`. Its name mirrors the file in `src/` that it tests, except for a test that reads a doc, scans the whole source tree, or tests the shared helpers.
