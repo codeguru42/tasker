@@ -13,7 +13,7 @@ import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { checkPlanAnswer } from "../src/plan/answer.js";
 import { childEnv } from "../src/process/child-env.js";
 import { type TaskStore } from "../src/store/store.js";
-import { taskLogsDir } from "../src/store/layout.js";
+import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import {
@@ -71,6 +71,7 @@ import {
   useFakeSandboxBin,
   useTempDir,
   usePathWithout,
+  useAssistantRunFixture,
   useStartedTask,
   useStartFixture,
   useThreeRepoDataRoot,
@@ -1208,6 +1209,35 @@ describe("readRunMarker", () => {
     const id = withStoreFile(path, (store) => store.createTask(newTask).id);
 
     expect(readRunMarker(path, id)).toBeUndefined();
+  });
+});
+
+describe("useAssistantRunFixture", () => {
+  it("moves the task into the state, with a run marker of this process", async () => {
+    const fixture = await useAssistantRunFixture({ claude: {}, state: "executing" });
+
+    expect(fixture.task.state).toBe("executing");
+    expect(readRunMarker(createDataRoot(fixture.config.dataRoot).database, fixture.task.id)).toMatchObject({
+      state: "executing",
+      pid: process.pid,
+    });
+  });
+
+  it("starts in the planning state and changes the limits of a copy of the configuration", async () => {
+    const fixture = await useAssistantRunFixture({ claude: {}, limits: { planTimeoutMin: 7 } });
+
+    expect(fixture.task.state).toBe("planning");
+    expect(fixture.config.limits.planTimeoutMin).toBe(7);
+    expect(fixture.started.config.limits.planTimeoutMin).not.toBe(7);
+  });
+
+  it("gives an env with the fake claude first and the secrets that the child must not get", async () => {
+    const fixture = await useAssistantRunFixture({ claude: {} });
+
+    expect(fixture.env.PATH?.split(delimiter)[0]).toBe(fixture.claude.binDir);
+    expect(fixture.env.GH_TOKEN).toBe("gho_secret");
+    expect(fixture.env.SSH_AUTH_SOCK).toBe("/tmp/agent.sock");
+    expect(fixture.env.HOME).not.toBe(fixture.started.env.HOME);
   });
 });
 

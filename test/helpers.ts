@@ -568,6 +568,46 @@ export function readRunMarker(dbPath: string, taskId: number) {
   );
 }
 
+export interface AssistantRunFixture {
+  started: StartedTask;
+  // The task, read after startRun. Its run marker belongs to this process.
+  task: Task;
+  config: Config;
+  claude: FakeClaude;
+  // The env of tasker for a run: the fake claude and the fake sandbox programs on PATH, temp folders for
+  // HOME and XDG_CONFIG_HOME, and a fake GH_TOKEN and SSH_AUTH_SOCK that the child must not get.
+  env: NodeJS.ProcessEnv;
+}
+
+// The setup of the tests of an assistant run: a started task (see useStartedTask()) that startRun moved to
+// state, a fake claude with the control in claude, and fake bwrap and socat programs.
+// limits changes keys of config.limits on a copy of the loaded configuration. Call it inside a test.
+export async function useAssistantRunFixture(options: {
+  claude: FakeClaudeControl;
+  repo?: Record<string, unknown>;
+  limits?: Partial<Config["limits"]>;
+  state?: string;
+}): Promise<AssistantRunFixture> {
+  const started = await useStartedTask({ repo: options.repo });
+  const claude = useFakeClaude(options.claude);
+  const sandboxBin = useFakeSandboxBin();
+  const task = withDataRootStore(started.dataRoot, (store) => {
+    const found = store.findLatestTask(started.repoKey, started.key)!;
+    return store.startRun(found.id, options.state ?? "planning");
+  });
+  const home = useTempDir("tasker-run-home-");
+  const env: NodeJS.ProcessEnv = {
+    ...started.env,
+    PATH: [claude.binDir, sandboxBin, started.env.PATH].join(delimiter),
+    HOME: home,
+    XDG_CONFIG_HOME: join(home, "config"),
+    GH_TOKEN: "gho_secret",
+    SSH_AUTH_SOCK: "/tmp/agent.sock",
+  };
+  const config = { ...started.config, limits: { ...started.config.limits, ...options.limits } };
+  return { started, task, config, claude, env };
+}
+
 // Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
 export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
   return withStoreFile(createDataRoot(dataRoot).database, fn, options);
