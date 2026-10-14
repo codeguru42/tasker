@@ -35,9 +35,11 @@ import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import {
   type NewPlanRevision,
+  type NewPlanSession,
   openStore,
   type PlanRevision,
   type StoreOptions,
+  type StoredSession,
   type Task,
   type TaskStore,
 } from "../src/store/store.js";
@@ -1667,5 +1669,21 @@ export function seedPlanRevision(
     prompt: "plan@000000000000",
     ...change,
     version: store.nextPlanVersion(taskId),
+  });
+}
+
+// Records a plan session for the task with TEST_SESSION_ID and the plan model of the test
+// configurations, unless the call changes them.
+export function seedPlanSession(
+  store: TaskStore,
+  taskId: number,
+  change: Partial<NewPlanSession> = {},
+): StoredSession {
+  return store.recordPlanSession(taskId, {
+    sessionId: TEST_SESSION_ID,
+    provider: "claude-code",
+    model: "opus",
+    effort: "high",
+    ...change,
   });
 }

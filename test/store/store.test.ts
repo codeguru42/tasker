@@ -9,6 +9,7 @@ import {
   ActiveTaskError,
   openStore,
   RunMarkerExistsError,
+  type NewPlanSession,
   type Task,
   type TaskStore,
 } from "../../src/store/store.js";
@@ -62,18 +63,24 @@ describe("task store", () => {
       db.prepare("SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version").all(taskId),
     );
 
-  // Checks that a failed call threw message and changed no state, no marker row, no event and no plan revision row.
+  // All rows of the sessions table, as raw rows.
+  const readSessionRows = () =>
+    withRawDatabase(dbPath, (db) => db.prepare("SELECT * FROM sessions ORDER BY rowid").all());
+
+  // Checks that a failed call threw message and changed no state, no marker row, no event, no plan revision row and no session row.
   const expectNothingChanged = (id: number, run: () => unknown, message: string) => {
     const state = store.getTask(id)?.state;
     const marker = readRunMarker(dbPath, id);
     const events = eventCount();
     const plans = readPlanRows(id);
+    const sessions = readSessionRows();
     const error = thrownBy(run, message);
     expect((error as Error).message).toBe(message);
     expect(store.getTask(id)?.state).toBe(state);
     expect(readRunMarker(dbPath, id)).toEqual(marker);
     expect(eventCount()).toBe(events);
     expect(readPlanRows(id)).toEqual(plans);
+    expect(readSessionRows()).toEqual(sessions);
   };
 
   // Writes a raw run marker row for a task.
@@ -1020,6 +1027,94 @@ describe("task store", () => {
       withRawDatabase(dbPath, (db) => {
         insertRawRevision(db, task.id, "review");
       });
+    });
+  });
+
+  describe("plan session", () => {
+    const record = (taskId: number, change: Partial<NewPlanSession> = {}) =>
+      store.recordPlanSession(taskId, {
+        sessionId: "s-1",
+        provider: "claude-code",
+        model: "opus",
+        effort: "low",
+        ...change,
+      });
+
+    it("gives no session for a task with no plan session", () => {
+      const task = store.createTask(newTask);
+      expect(store.planSession(task.id)).toBeUndefined();
+    });
+
+    it("records the first session and gives back the provider, model and effort as written", () => {
+      const task = store.createTask(newTask);
+      const expected = {
+        sessionId: "s-1",
+        repoKey: "tasker",
+        provider: "claude-code",
+        model: "opus",
+        effort: "low",
+      };
+      expect(record(task.id)).toEqual(expected);
+      expect(store.planSession(task.id)).toEqual(expected);
+      expect(readSessionRows()).toEqual([
+        {
+          task_id: task.id,
+          role: "plan",
+          session_id: "s-1",
+          provider: "claude-code",
+          model: "opus",
+          effort: "low",
+          created_at: "2026-01-01T00:00:00.000Z",
+        },
+      ]);
+    });
+
+    it("gives the repo key of the task", () => {
+      const task = store.createTask({ ...newTask, repoKey: "other" });
+      expect(record(task.id).repoKey).toBe("other");
+      expect(store.planSession(task.id)?.repoKey).toBe("other");
+    });
+
+    it("writes nothing on a second record with the same id", () => {
+      const task = store.createTask(newTask);
+      const first = record(task.id);
+      const rows = readSessionRows();
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      expect(record(task.id, { model: "sonnet", effort: "high" })).toEqual(first);
+      expect(readSessionRows()).toEqual(rows);
+    });
+
+    it("refuses a second record with another id and names both ids", () => {
+      const task = store.createTask(newTask);
+      record(task.id);
+      expectNothingChanged(
+        task.id,
+        () => record(task.id, { sessionId: "s-2" }),
+        `task ${task.id} already has the plan session s-1, not s-2`,
+      );
+    });
+
+    it("refuses a task that does not exist", () => {
+      const task = store.createTask(newTask);
+      record(task.id);
+      expectNothingChanged(task.id, () => record(999, { sessionId: "s-9" }), "task not found: 999");
+    });
+
+    it("refuses a session id of another task and writes nothing", () => {
+      const a = store.createTask(newTask);
+      const b = store.createTask({ ...newTask, issueKey: "codeguru42/tasker#7" });
+      record(a.id);
+      expectNothingChanged(b.id, () => record(b.id), "UNIQUE constraint failed: sessions.session_id");
+      expect(store.planSession(b.id)).toBeUndefined();
+    });
+
+    it("keeps the plan sessions of two tasks apart", () => {
+      const a = store.createTask(newTask);
+      const b = store.createTask({ ...newTask, issueKey: "codeguru42/tasker#7" });
+      record(a.id);
+      record(b.id, { sessionId: "s-2", effort: "medium" });
+      expect(store.planSession(a.id)).toMatchObject({ sessionId: "s-1", effort: "low" });
+      expect(store.planSession(b.id)).toMatchObject({ sessionId: "s-2", effort: "medium" });
     });
   });
 

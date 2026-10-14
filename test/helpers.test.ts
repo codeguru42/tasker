@@ -55,6 +55,7 @@ import {
   runInput,
   savePid,
   seedPlanRevision,
+  seedPlanSession,
   seedTasks,
   signalListenerCounts,
   spawnTasker,
@@ -1866,6 +1867,38 @@ describe("seedPlanRevision", () => {
       const revision = seedPlanRevision(store, task.id, { feedback: "use main", source: "refine" });
 
       expect(revision).toMatchObject({ feedback: "use main", source: "refine" });
+    });
+  });
+});
+
+describe("seedPlanSession", () => {
+  const seedTask = (store: TaskStore) =>
+    store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
+
+  it("records TEST_SESSION_ID with the plan model of the test configurations", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      const session = seedPlanSession(store, task.id);
+
+      expect(session).toEqual({
+        sessionId: TEST_SESSION_ID,
+        repoKey: "a/b",
+        provider: "claude-code",
+        model: "opus",
+        effort: "high",
+      });
+      expect(store.planSession(task.id)).toEqual(session);
+    });
+  });
+
+  it("uses the values that the call changes", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      const session = seedPlanSession(store, task.id, { sessionId: "x", effort: "low" });
+
+      expect(session).toMatchObject({ sessionId: "x", effort: "low", model: "opus", provider: "claude-code" });
     });
   });
 });
