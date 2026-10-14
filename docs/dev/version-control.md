@@ -52,7 +52,7 @@ Limit: a program that git starts and that opens `/dev/tty` by itself, for exampl
 
 ## Provision
 
-The marker is the file `repo.git.incomplete` next to the clone folder `repo.git` (see [data-root.md](data-root.md#folders)). Provision writes it before `git init` and removes it after the first fetch of a fresh clone. While the marker exists, the next provision takes the recovery path: it deletes the clone folder, with every file that a person put there, and clones again. The marker and the parent folder stay.
+The marker is the file `bare-repo.incomplete` next to the clone folder `bare-repo` (see [data-root.md](data-root.md#folders)). Provision writes it before `git init` and removes it after the first fetch of a fresh clone. While the marker exists, the next provision takes the recovery path: it deletes the clone folder, with every file that a person put there, and clones again. The marker and the parent folder stay.
 
 A complete clone has no marker and is not cloned again. This is the path of a complete clone. Provision applies the configuration and fetches. A change to `vcs.config` or to `remote` takes effect at the next provision.
 
@@ -122,13 +122,21 @@ These are the version-control values for an assistant run.
 
 One `git commit` in a worktree writes new objects in `objects/`, the branch ref in `refs/`, the reflog in `logs/`, and `index`, `logs/HEAD` and `COMMIT_EDITMSG` in the admin dir of the worktree. It does not write `packed-refs`, `config`, `hooks/` or `HEAD` of the clone. The write paths cover only these places.
 
-- The paths do not cover all of `repo.git`, and not `hooks/` or `config`, because the later git calls of tasker run them.
+- The paths do not cover all of the clone folder, and not `hooks/` or `config`, because the later git calls of tasker run them.
 - The paths do not cover the folder of the publish tokens (see [Push guard](#push-guard)).
 - The worktree guard runs first (see [workspaces.md](workspaces.md#workspaces-1)).
 - Two `git rev-parse` calls read the clone folder and the admin dir, because one call prints two paths on two lines and a path can hold a newline. The code does not use `--path-format=absolute`, because that option needs git 2.31.
 - The code creates `logs/` when it is missing. A fresh bare clone has no `logs/`, and a sandbox cannot bind a missing path.
 - A sandboxed commit with these paths exits with 0. It prints `Unable to create '<clone>/packed-refs.lock': Read-only file system` to stderr, because `packed-refs` is not writable.
 - The paths do not give the worktree folder. The assistant layer writes there already.
+
+The name of the clone folder must not end in `.git`. When the cwd of `claude` is a linked worktree, `claude` reads the `.git` file of the worktree. If the admin dir is `<common>/worktrees/<name>` and the name of `<common>` ends in `.git`, `claude` adds all of `<common>` to the write list of its sandbox. No setting of `claude` turns this off. For this reason, the clone folder is `bare-repo`.
+
+These results come from `claude` 2.1.299, with a bare clone, one linked worktree and the four write paths of this section:
+
+- With the clone folder `repo.git`, `touch HEAD`, `touch info/x`, `touch description`, a new file in the clone root and `git pack-refs` all exit with 0 in the sandbox.
+- With the clone folder `bare-repo`, each of these fails with `Read-only file system`. `git commit` in the worktree still exits with 0 and moves the branch.
+- A `denyWrite` setting does not fix the `.git` case. A deny of the whole clone also blocks `objects/` and the admin dir, so `git commit` fails. A deny of each file cannot cover a new file name. A deny of a missing file leaves a placeholder file, and `git pack-refs` then fails.
 
 Known limit: the assistant can move any ref of the clone, for example the branch of another task or `refs/remotes/origin/main`. A narrower path does not work, because a commit writes `refs/heads/<branch>.lock` in the `refs/heads/` folder, and every task branch is a file in that folder.
 

@@ -9,9 +9,9 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | Path | Content |
 | --- | --- |
 | `<dataRoot>/clones/` | The folders of each repo: the bare clone, the publish tokens and the worktrees. |
-| `<dataRoot>/clones/<slug>/repo.git` | The bare clone of one repo. |
-| `<dataRoot>/clones/<slug>/repo.git.incomplete` | The marker of a clone that is not complete. Provision writes it before `git init` and removes it after the first fetch of a fresh clone. If a later step fails, the marker stays, and the next provision deletes the clone folder and makes the clone again. |
-| `<dataRoot>/clones/<slug>/repo.git/tasker-ssh.config` | The include file with the ssh command (`core.sshCommand`). Provision writes it, and `include.path` links it. See [docs/dev/version-control.md](version-control.md#provision). |
+| `<dataRoot>/clones/<slug>/bare-repo` | The bare clone of one repo. The name must not end in `.git`. [version-control.md](version-control.md#sandbox-write-paths) gives the reason. |
+| `<dataRoot>/clones/<slug>/bare-repo.incomplete` | The marker of a clone that is not complete. Provision writes it before `git init` and removes it after the first fetch of a fresh clone. If a later step fails, the marker stays, and the next provision deletes the clone folder and makes the clone again. |
+| `<dataRoot>/clones/<slug>/bare-repo/tasker-ssh.config` | The include file with the ssh command (`core.sshCommand`). Provision writes it, and `include.path` links it. See [docs/dev/version-control.md](version-control.md#provision). |
 | `<dataRoot>/clones/<slug>/publish-tokens/` | The publish tokens of one repo. |
 | `<dataRoot>/clones/<slug>/worktrees/` | The worktrees of the tasks of one repo. |
 | `<dataRoot>/clones/<slug>/worktrees/<shortRef>/` | The worktree of one task. |
