@@ -384,6 +384,95 @@ describe("parseConfig assistant", () => {
     raw.repos.tasker.assistant.model = "opus";
     expect(issuesOf(raw)).toContain("repos.tasker.assistant.model: unrecognized key");
   });
+
+  it.each(["plan", "execute", "review"])("rejects a claude-code model of an unknown form in %s", (role) => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.models[role].model = "gpt-5";
+    expect(issuesOf(raw)).toEqual([`repos.tasker.assistant.models.${role}.model: is not a claude-code model: gpt-5`]);
+  });
+
+  it("accepts an alias with the 1m suffix and a full id", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.models.plan.model = "opus[1m]";
+    raw.repos.tasker.assistant.models.execute.model = "claude-opus-5-5";
+    expect(() => parseConfig(raw, {}, home)).not.toThrow();
+  });
+
+  it.each(["copilot", "pi"])("accepts any model for %s", (provider) => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.provider = provider;
+    raw.repos.tasker.assistant.models.plan.model = "gpt-5";
+    expect(() => parseConfig(raw, {}, home)).not.toThrow();
+  });
+
+  it("reports a bad model together with the other errors of the repo", () => {
+    const raw = validConfig();
+    delete raw.repos.tasker.verify;
+    raw.repos.tasker.assistant.models.plan.effort = "max";
+    raw.repos.tasker.assistant.models.execute.model = "gpt-5";
+    raw.repos.tasker.bogus = 1;
+    const issues = issuesOf(raw);
+    expectIssueAt(issues, "repos.tasker.verify");
+    expectIssueAt(issues, "repos.tasker.assistant.models.plan.effort");
+    expect(issues).toContain("repos.tasker.assistant.models.execute.model: is not a claude-code model: gpt-5");
+    expect(issues).toContain("repos.tasker.bogus: unrecognized key");
+  });
+
+  it("reports a bad model in a second repo under its own key", () => {
+    const raw = validConfig();
+    raw.repos.other = structuredClone(raw.repos.tasker);
+    raw.repos.other.assistant.models.plan.model = "gpt-5";
+    expect(issuesOf(raw)).toEqual(["repos.other.assistant.models.plan.model: is not a claude-code model: gpt-5"]);
+  });
+
+  describe("model check on a partly valid repo", () => {
+    it("adds no model issue when the repo is a string", () => {
+      const raw = validConfig();
+      raw.repos.tasker = "x";
+      expect(issuesOf(raw)).toEqual(["repos.tasker: Invalid input: expected object, received string"]);
+    });
+
+    it("adds no model issue when assistant is a string", () => {
+      const raw = validConfig();
+      raw.repos.tasker.assistant = "claude-code";
+      expect(issuesOf(raw)).toEqual([
+        "repos.tasker.assistant: Invalid input: expected object, received string",
+      ]);
+    });
+
+    it("adds no model issue when models is missing", () => {
+      const raw = validConfig();
+      delete raw.repos.tasker.assistant.models;
+      expect(issuesOf(raw)).toEqual([
+        "repos.tasker.assistant.models: Invalid input: expected object, received undefined",
+      ]);
+    });
+
+    it("adds no model issue when plan is a string", () => {
+      const raw = validConfig();
+      raw.repos.tasker.assistant.models.plan = "opus";
+      expect(issuesOf(raw)).toEqual([
+        "repos.tasker.assistant.models.plan: Invalid input: expected object, received string",
+      ]);
+    });
+
+    it("adds no model issue when the model is empty", () => {
+      const raw = validConfig();
+      raw.repos.tasker.assistant.models.plan.model = "";
+      expect(issuesOf(raw)).toEqual([
+        "repos.tasker.assistant.models.plan.model: Too small: expected string to have >=1 characters",
+      ]);
+    });
+
+    it("adds no model issue when the provider is bad", () => {
+      const raw = validConfig();
+      raw.repos.tasker.assistant.provider = "gpt";
+      raw.repos.tasker.assistant.models.plan.model = "gpt-5";
+      expect(issuesOf(raw)).toEqual([
+        'repos.tasker.assistant.provider: Invalid option: expected one of "claude-code"|"copilot"|"pi"',
+      ]);
+    });
+  });
 });
 
 function parsedVcs(raw: unknown): unknown {
