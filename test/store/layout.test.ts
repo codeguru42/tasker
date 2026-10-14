@@ -9,6 +9,7 @@ import {
   taskArtifactsDir,
   taskLogsDir,
   taskPlansDir,
+  taskSessionsDir,
 } from "../../src/store/layout.js";
 import { useTempDir } from "../helpers.js";
 
@@ -40,6 +41,20 @@ describe("taskArtifactsDir", () => {
   it("makes no folder", () => {
     const root = useTempDir("tasker-data-");
     const path = taskArtifactsDir(root, { issueKey: "PROJ-7", attempt: 1 });
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("taskSessionsDir", () => {
+  it("puts the sessions in the sessions folder of the files of the attempt", () => {
+    const task = { issueKey: "codeguru42/tasker#10", attempt: 2 };
+    expect(taskSessionsDir("/d", task)).toBe(join(taskArtifactsDir("/d", task), "sessions"));
+  });
+
+  it("makes no folder", () => {
+    const root = useTempDir("tasker-data-");
+    const path = taskSessionsDir(root, { issueKey: "PROJ-7", attempt: 1 });
     expect(existsSync(path)).toBe(false);
     expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
   });
