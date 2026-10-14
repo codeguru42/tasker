@@ -923,12 +923,7 @@ describe("startWriteLockHolder", () => {
   it("resolves when the child holds the write lock", async () => {
     const dbPath = join(useTempDir("tasker-write-lock-"), "tasker.db");
     await startWriteLockHolder(dbPath, 60_000);
-    const db = new DatabaseSync(dbPath);
-    try {
-      expect(() => db.exec("BEGIN IMMEDIATE")).toThrow("database is locked");
-    } finally {
-      db.close();
-    }
+    withRawDatabase(dbPath, (db) => expect(() => db.exec("BEGIN IMMEDIATE")).toThrow("database is locked"));
   });
 
   it("rejects with the stderr when the child ends first", async () => {

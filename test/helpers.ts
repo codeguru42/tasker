@@ -204,15 +204,12 @@ export function spawnTasker(
 
 // The names in the locks table of a data root, sorted.
 export function lockNames(dataRoot: string): string[] {
-  const db = new DatabaseSync(createDataRoot(dataRoot).database);
-  try {
-    return db
+  return withRawDatabase(createDataRoot(dataRoot).database, (db) =>
+    db
       .prepare("SELECT name FROM locks ORDER BY name")
       .all()
-      .map((row) => String(row.name));
-  } finally {
-    db.close();
-  }
+      .map((row) => String(row.name)),
+  );
 }
 
 // True when the process runs. A zombie (state Z, not yet reaped) counts as gone.
