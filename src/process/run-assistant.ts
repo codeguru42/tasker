@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { StringDecoder } from "node:string_decoder";
 import { type GroupResult, superviseGroup } from "./run-group.js";
 
 export interface RunAssistantOptions {
@@ -9,6 +10,25 @@ export interface RunAssistantOptions {
   // Called once for each line of stdout, in order. It must not throw.
   onLine: (line: string) => void;
   onSpawn: (pid: number) => void;
+}
+
+// Joins the chunks of one UTF-8 stream and gives each line, an empty line too, to onLine.
+// The line end is "\n" only. The text after the last line end goes out when the stream ends.
+function lineSplitter(onLine: (line: string) => void) {
+  const decoder = new StringDecoder("utf8");
+  let rest = "";
+  const take = (text: string) => {
+    const pieces = (rest + text).split("\n");
+    rest = pieces.pop() ?? "";
+    for (const line of pieces) onLine(line);
+  };
+  return {
+    write: (chunk: Buffer) => take(decoder.write(chunk)),
+    end: () => {
+      take(decoder.end());
+      if (rest !== "") onLine(rest);
+    },
+  };
 }
 
 // Runs file with args as an assistant child in a new process group and session.
@@ -26,11 +46,9 @@ export function runAssistant(
     stdio: ["pipe", "pipe", "ignore"],
   });
   const pid = child.pid!;
-  child.stdout.on("data", (chunk: Buffer) => {
-    const pieces = chunk.toString("utf8").split("\n");
-    if (pieces[pieces.length - 1] === "") pieces.pop();
-    for (const line of pieces) options.onLine(line);
-  });
+  const splitter = lineSplitter(options.onLine);
+  child.stdout.on("data", splitter.write);
+  child.stdout.on("end", splitter.end);
   options.onSpawn(pid);
   child.stdin.end(options.prompt, "utf8");
   return superviseGroup(child, pid, { deadline: options.deadline });
