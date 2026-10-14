@@ -96,6 +96,13 @@ export interface TaskEvent {
   data: unknown;
 }
 
+type PlanQuestion = PlanAnswer["questions"][number];
+
+// A question is resolved when the next revision has no question with the same id.
+export type PlanQuestionState =
+  | { question: PlanQuestion; state: "open" }
+  | { question: PlanQuestion; state: "resolved"; version: number; answer: string | null };
+
 // Later tickets add more sources, for example a review promotion. The table has no check on the values.
 export type PlanRevisionSource = "plan" | "refine";
 
@@ -186,6 +193,9 @@ export interface TaskStore extends LockStore {
     state: string,
     check?: (current: Task) => NewEvent | void,
   ): Task;
+  // The questions of a revision with their state. The newest revision has only open questions.
+  // A resolved question names the next version, and its answer is the feedback of that version.
+  planQuestions(taskId: number, version: number): PlanQuestionState[];
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -685,6 +695,18 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     getPlanRevision: readPlanRevision,
 
     pinnedPlanRevision: readPinnedPlanRevision,
+
+    planQuestions(taskId, version) {
+      const revision = readPlanRevision(taskId, version);
+      if (revision === undefined) throw noPlanRevision(taskId, version);
+      const next = readPlanRevision(taskId, version + 1);
+      return revision.answer.questions.map((question): PlanQuestionState => {
+        if (next === undefined || next.answer.questions.some((q) => q.id === question.id)) {
+          return { question, state: "open" };
+        }
+        return { question, state: "resolved", version: next.version, answer: next.feedback };
+      });
+    },
 
     approvePlanRevision(taskId, version, state, check) {
       return writeTask(taskId, { state }, check, (at) => {
