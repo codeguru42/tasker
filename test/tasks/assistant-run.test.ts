@@ -7,6 +7,7 @@ import { executeReadDenyPaths, prepareTaskExecuteRun, prepareTaskPlanModeRun } f
 import {
   claudeSample,
   readRunMarker,
+  TEST_SESSION_ID,
   useAssistantRunFixture,
   withDataRootStore,
 } from "../helpers.js";
@@ -156,6 +157,35 @@ describe("prepareTaskPlanModeRun", () => {
     });
 
     expect(outcome.kind).toBe("timeout");
+  });
+
+  it("continues a recorded session with its recorded model and effort, not the configured ones", async () => {
+    const { config, task, env, started, claude } = await useAssistantRunFixture({
+      claude: { stream: claudeSample("resume") },
+    });
+    const recorded = { repoKey: started.repoKey, provider: "claude-code", model: "haiku", effort: "low" } as const;
+    expect(config.repos[started.repoKey]!.assistant.models.plan).not.toMatchObject({ model: "haiku" });
+
+    const prepared = await withDataRootStore(started.dataRoot, async (store) => {
+      const prepared = await prepareTaskPlanModeRun({
+        config,
+        store,
+        task,
+        role: "plan",
+        session: { resume: true, sessionId: TEST_SESSION_ID, recorded },
+        env,
+      });
+      await prepared.start({ prompt: "p" });
+      return prepared;
+    });
+
+    const { argv } = claude.calls()[0]!;
+    expect(prepared.sessionId).toBe(TEST_SESSION_ID);
+    expect(flagValues(argv, "--resume")).toEqual([TEST_SESSION_ID]);
+    expect(argv).not.toContain("--session-id");
+    expect(flagValues(argv, "--model")).toEqual(["haiku"]);
+    expect(flagValues(argv, "--effort")).toEqual(["low"]);
+    expect(prepared.session).toEqual(recorded);
   });
 });
 
