@@ -168,6 +168,24 @@ export interface TaskStore extends LockStore {
   getPlanRevision(taskId: number, version: number): PlanRevision | undefined;
   // The revision with the highest version.
   latestPlanRevision(taskId: number): PlanRevision | undefined;
+  // The approved revision with the highest version.
+  pinnedPlanRevision(taskId: number): PlanRevision | undefined;
+  // Moves the task to a state that is not spawning, deletes its run marker and sets the approval time
+  // of the revision, in one transaction. Only the newest revision can be approved.
+  // The event that check returns is appended in the same transaction.
+  approvePlanRevision(
+    taskId: number,
+    version: number,
+    state: string,
+    check?: (current: Task) => NewEvent | void,
+  ): Task;
+  // Moves the task to a state that is not spawning, deletes its run marker and clears the approval
+  // of the pinned revision, in one transaction. The event that check returns is appended in the same transaction.
+  clearPlanApproval(
+    taskId: number,
+    state: string,
+    check?: (current: Task) => NewEvent | void,
+  ): Task;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -268,6 +286,10 @@ export function taskNotFound(id: number): Error {
   return new Error(`task not found: ${id}`);
 }
 
+function noPlanRevision(taskId: number, version: number): Error {
+  return new Error(`task ${taskId} has no plan revision ${version}`);
+}
+
 // errcode can be an extended code, and its low byte is the primary code.
 function isBusy(error: unknown): boolean {
   const code = (error as { errcode?: unknown }).errcode;
@@ -362,6 +384,9 @@ function setUp(db: DatabaseSync) {
       `SELECT * FROM plan_revisions WHERE task_id = ? AND approved_at IS NOT NULL
        ORDER BY version DESC LIMIT 1`,
     ),
+    setPlanApproval: db.prepare(
+      "UPDATE plan_revisions SET approved_at = ? WHERE task_id = ? AND version = ?",
+    ),
     selectDefaultBaseBranch: db.prepare(
       "SELECT branch FROM default_base_branches WHERE repo_key = ?",
     ),
@@ -401,6 +426,12 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   function readLatestPlanRevision(taskId: number): PlanRevision | undefined {
     return toPlanRevision(
       statements.selectLatestPlanRevision.get(taskId) as PlanRevisionRow | undefined,
+    );
+  }
+
+  function readPinnedPlanRevision(taskId: number): PlanRevision | undefined {
+    return toPlanRevision(
+      statements.selectPinnedPlanRevision.get(taskId) as PlanRevisionRow | undefined,
     );
   }
 
@@ -471,6 +502,14 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       if (event !== undefined) writeEvent(id, at, event.type, event.data);
       return task;
     });
+  }
+
+  // The marker step of a move to a state that is not spawning: it deletes the run marker.
+  function endRunStep(id: number, state: string): void {
+    if (isSpawningState(state)) {
+      throw new Error(`${state} is a spawning state`);
+    }
+    statements.deleteRunMarker.run(id);
   }
 
   return {
@@ -579,12 +618,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     endRun(id, state, check) {
-      return writeTask(id, { state }, check, () => {
-        if (isSpawningState(state)) {
-          throw new Error(`${state} is a spawning state`);
-        }
-        statements.deleteRunMarker.run(id);
-      });
+      return writeTask(id, { state }, check, () => endRunStep(id, state));
     },
 
     runStatus(id) {
@@ -649,6 +683,35 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     getPlanRevision: readPlanRevision,
+
+    pinnedPlanRevision: readPinnedPlanRevision,
+
+    approvePlanRevision(taskId, version, state, check) {
+      return writeTask(taskId, { state }, check, (at) => {
+        endRunStep(taskId, state);
+        const latest = readLatestPlanRevision(taskId);
+        if (latest === undefined || readPlanRevision(taskId, version) === undefined) {
+          throw noPlanRevision(taskId, version);
+        }
+        if (version !== latest.version) {
+          throw new Error(
+            `task ${taskId}: plan revision ${version} is not the newest revision (${latest.version})`,
+          );
+        }
+        statements.setPlanApproval.run(at, taskId, version);
+      });
+    },
+
+    clearPlanApproval(taskId, state, check) {
+      return writeTask(taskId, { state }, check, () => {
+        endRunStep(taskId, state);
+        const pinned = readPinnedPlanRevision(taskId);
+        if (pinned === undefined) {
+          throw new Error(`task ${taskId} has no approved plan revision`);
+        }
+        statements.setPlanApproval.run(null, taskId, pinned.version);
+      });
+    },
 
     latestPlanRevision: readLatestPlanRevision,
 
