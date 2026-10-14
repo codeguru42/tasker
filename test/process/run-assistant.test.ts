@@ -29,7 +29,8 @@ describe("runAssistant", () => {
     const { lines, pids } = await runCollected('echo "$$ $(ps -o pgid=,sid= -p $$)"');
 
     expect(pids).toHaveLength(1);
-    expect(lines).toEqual([`${pids[0]} ${pids[0]} ${pids[0]}`]);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]?.trim().split(/\s+/)).toEqual([String(pids[0]), String(pids[0]), String(pids[0])]);
   });
 
   it("gives the exit code", async () => {
