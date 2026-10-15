@@ -24,7 +24,7 @@ import { thrownBy } from "../helpers/errors.js";
 import { reviewFindingWithout } from "../helpers/review.js";
 import { seedExecuteSession, seedExecuteTodoStates, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
 import { deadPid, repoRoot, startFixture, startWriteLockHolder } from "../helpers/processes.js";
-import { newReview, readRunMarker, seedReview, tableNames, withRawDatabase, withStoreFile } from "../helpers/store.js";
+import { newReview, readRunMarker, seedReview, tableNames, tableRowCount, withRawDatabase, withStoreFile } from "../helpers/store.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
@@ -59,13 +59,7 @@ describe("task store", () => {
     state: "new",
   };
 
-  const eventCount = (): number =>
-    withRawDatabase(dbPath, (db) => {
-      const row = db.prepare("SELECT COUNT(*) AS n FROM events").get() as {
-        n: number;
-      };
-      return row.n;
-    });
+  const eventCount = (): number => withRawDatabase(dbPath, (db) => tableRowCount(db, "events"));
 
   // The plan revision rows of a task, as raw rows.
   const readPlanRows = (taskId: number) =>
@@ -276,14 +270,7 @@ describe("task store", () => {
   });
 
   describe("one active task for each issue", () => {
-    const rowCount = (): number => {
-      return withRawDatabase(dbPath, (db) => {
-        const row = db.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
-          n: number;
-        };
-        return row.n;
-      });
-    };
+    const rowCount = (): number => withRawDatabase(dbPath, (db) => tableRowCount(db, "tasks"));
 
     it("refuses a second active task for the same repo and issue", () => {
       const first = store.createTask(newTask);
@@ -460,10 +447,7 @@ describe("task store", () => {
         withRawDatabase(dbPath, (db) => {
           insertRawTask(db, "tasker", state);
           expect(() => insertRawTask(db, "tasker", "planning")).not.toThrow();
-          const row = db.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
-            n: number;
-          };
-          expect(row.n).toBe(2);
+          expect(tableRowCount(db, "tasks")).toBe(2);
         });
       },
     );
@@ -514,10 +498,7 @@ describe("task store", () => {
       expect(() => openStore(oldPath, { now })).toThrow(/UNIQUE constraint failed/);
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(3);
-        const row = check.prepare("SELECT COUNT(*) AS n FROM tasks").get() as {
-          n: number;
-        };
-        expect(row.n).toBe(2);
+        expect(tableRowCount(check, "tasks")).toBe(2);
       });
     });
   });
@@ -759,13 +740,10 @@ describe("task store", () => {
         )
         .run(taskId, number, position, dismissedAt, dismissReason);
 
-    const countRows = (db: DatabaseSync, table: string) =>
-      (db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n;
-
     const refusal = (db: DatabaseSync, run: () => unknown, message: string) => {
       const error = thrownBy(run, message);
       expect((error as Error).message).toBe(message);
-      expect(countRows(db, "review_findings")).toBe(0);
+      expect(tableRowCount(db, "review_findings")).toBe(0);
     };
 
     it("has the review tables and the review session index", () => {
@@ -814,7 +792,7 @@ describe("task store", () => {
         refusal(db, () => insertRawFinding(db, 1, 1, 1, "t", null), message);
         refusal(db, () => insertRawFinding(db, 1, 1, 1, null, "A reason."), message);
         insertRawFinding(db, 1, 1, 1, "t", "A reason.");
-        expect(countRows(db, "review_findings")).toBe(1);
+        expect(tableRowCount(db, "review_findings")).toBe(1);
       });
     });
   });
@@ -1150,8 +1128,7 @@ describe("task store", () => {
         const message = "UNIQUE constraint failed: sessions.task_id, sessions.plan_version";
         const error = thrownBy(() => insertRawSession(db, 1, "execute", "s-3", 1), message);
         expect((error as Error).message).toBe(message);
-        const row = db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number };
-        expect(row.n).toBe(2);
+        expect(tableRowCount(db, "sessions")).toBe(2);
       });
     });
 
@@ -1163,8 +1140,7 @@ describe("task store", () => {
         const message = "UNIQUE constraint failed: sessions.task_id, sessions.review_number";
         const error = thrownBy(() => insertRawSession(db, 1, "review", "s-3", null, 1), message);
         expect((error as Error).message).toBe(message);
-        const row = db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number };
-        expect(row.n).toBe(2);
+        expect(tableRowCount(db, "sessions")).toBe(2);
       });
     });
 
@@ -1218,8 +1194,7 @@ describe("task store", () => {
         expect((thrownBy(todo, message) as Error).message).toBe(message);
         expect((thrownBy(turn, message) as Error).message).toBe(message);
         for (const table of ["execute_todos", "execute_fix_turns"]) {
-          const row = db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number };
-          expect(row.n).toBe(0);
+          expect(tableRowCount(db, table)).toBe(0);
         }
       });
     });
