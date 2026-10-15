@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { errorMessage } from "../error-message.js";
 import { transitionWithPlanRevision, type TaskState } from "../state/machine.js";
@@ -10,6 +10,19 @@ import {
   type Task,
   type TaskStore,
 } from "./store.js";
+
+// The text of the plan file of revision version, as it is on disk, so an edit by hand counts.
+// A failed read throws one message that names the path.
+export function readPlanFile(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">, version: number): string {
+  const path = planRevisionPath(dataRoot, task, version);
+  try {
+    return readFileSync(path, "utf8");
+  } catch (error) {
+    throw new Error(`cannot read the plan file ${path} of revision v${version}: ${errorMessage(error)}`, {
+      cause: error,
+    });
+  }
+}
 
 // Writes markdown as it is: no header and no added line end. replaceFile() needs the folder.
 function writePlanFile(dataRoot: string, task: Task, version: number, markdown: string): void {
