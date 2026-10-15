@@ -19,6 +19,7 @@ import {
   failVerifyRun,
   latestTaskOf,
   lockNames,
+  newReview,
   readRunMarker,
   seedReview,
   seedTask,
@@ -565,6 +566,41 @@ describe("failVerifyRun", () => {
     });
     expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 1), "utf8")).toBe("log one\n");
     expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 2), "utf8")).toBe("log two\n");
+  });
+});
+
+describe("newReview", () => {
+  it("gives the number and the defaults", () => {
+    expect(newReview(1)).toEqual({
+      number: 1,
+      revision: "4b825dc642cb",
+      prompt: "review@3f9a1c04b2e7",
+      startedAt: dayAt(1),
+      endedAt: dayAt(1),
+      findings: [
+        reviewFinding(),
+        reviewFinding({
+          file: "src/b.ts",
+          line: 9,
+          summary: "The count is off by one.",
+          failure_scenario: "A list of three items gives the count 2.",
+        }),
+      ],
+    });
+  });
+
+  it("gives the number that it is given", () => {
+    expect(newReview(3).number).toBe(3);
+  });
+
+  it("replaces only the keys of the change", () => {
+    const findings = [reviewFinding({ file: "src/c.ts" })];
+
+    expect(newReview(2, { findings, revision: "abc123" })).toEqual({
+      ...newReview(2),
+      findings,
+      revision: "abc123",
+    });
   });
 });
 
