@@ -98,4 +98,30 @@ CREATE TABLE execute_fix_turns (
   ended_at TEXT NOT NULL,
   PRIMARY KEY (task_id, number)
 );`,
+  `CREATE TABLE reviews (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  number INTEGER NOT NULL,
+  revision TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  ended_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, number)
+);
+CREATE TABLE review_findings (
+  task_id INTEGER NOT NULL,
+  number INTEGER NOT NULL,
+  position INTEGER NOT NULL CHECK (position >= 1),
+  file TEXT NOT NULL,
+  line INTEGER,
+  category TEXT,
+  summary TEXT NOT NULL,
+  failure_scenario TEXT NOT NULL,
+  dismissed_at TEXT,
+  dismiss_reason TEXT,
+  PRIMARY KEY (task_id, number, position),
+  FOREIGN KEY (task_id, number) REFERENCES reviews (task_id, number),
+  CHECK ((dismissed_at IS NULL) = (dismiss_reason IS NULL))
+);
+ALTER TABLE sessions ADD COLUMN review_number INTEGER;
+CREATE UNIQUE INDEX sessions_task_review ON sessions (task_id, review_number) WHERE role = 'review';`,
 ];
