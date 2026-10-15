@@ -192,6 +192,52 @@ The command prints an error and exits with code 1 in these cases:
 - tasker cannot read the bootstrap log. The error is `cannot read the bootstrap log for <issue key>: <error code>`.
 - The configuration is missing or invalid.
 
+### `tasker show-plan`
+
+Prints one plan revision of the task of an issue: `tasker show-plan <issue>`. The command uses the same task as `tasker show`: the active task, else the newest task.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+- `--version <N>`: prints revision `N`. `N` must be a whole number of 1 or more, with no sign and no leading zero. With no `--version`, the command prints the newest revision. A bad value is an error, and the command stops before it reads the configuration.
+- `--path`: prints only the path of the plan file `v<N>.md` of the revision, with a final line end. The command prints the path also when the file is missing, because it does not read the file.
+
+The command prints this output:
+
+```
+<issue key> plan v<N>
+<approval line>
+
+<plan text>
+todos:
+  <id>: <title>
+    <description>
+    depends on: <ids>
+questions:
+  <id>: <question>
+    <context>
+    <state>
+```
+
+- The approval line is `not approved` when no revision of the task is approved. It is `approved` when the printed revision is the approved revision. Otherwise it is `approved revision is v<K>`, where `v<K>` is the approved revision.
+- The plan text comes from the file `v<N>.md` and prints as it is. If it does not end with a line end, the command adds one.
+- The todos and the questions come from the stored revision, not from the file.
+- `depends on` lists the ids of the todos that come first, joined with `, `. A todo with none prints `depends on: none`.
+- The state of a question of revision `v<N>` comes only from the next revision `v<N+1>`. If `v<N+1>` has no question with the same id, the state is `answered in v<N+1>: <answer>`. The answer is the feedback of `v<N+1>`. If `v<N+1>` has no feedback, the state is `answered in v<N+1>`. Else the state is `open`. A revision after `v<N+1>` does not change the state, and a question of the newest revision is always `open`.
+- A revision with no questions prints `  none` under `questions:`.
+- A line end inside a title, a description, a context, a question or an answer starts a new line with the indent of its block.
+- Each line of the output, the last one too, ends with a line end.
+
+The command prints an error and exits with code 1 in these cases:
+
+- The issue key does not resolve.
+- The issue has no task. The error names the issue and the repo.
+- The `--version` value is bad. The error is `--version must be a whole number of 1 or more: <value>`.
+- The task has no plan revision. The error is `the task of <issue key> has no plan revision; run tasker plan first`. This error also comes with `--version`.
+- The task has no revision `N`. The error is `the task of <issue key> has no plan revision v<N>`.
+- The plan file is missing. The error is `no plan file at <path>`. This does not apply to `--path`.
+- tasker cannot read the plan file. The error is `cannot read the plan file <path>: <error code>`. This does not apply to `--path`.
+- The configuration is missing or invalid.
+
 ### `tasker status`
 
 Lists the tasks by issue key and state. With no option, it lists the active tasks of all repos. A task is active when its state is not `finished` and not `cancelled`.
