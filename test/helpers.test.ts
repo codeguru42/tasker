@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, join, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { readGithubIssue } from "../src/issues/github/issue.js";
 import { issueProviderFor } from "../src/issues/provider.js";
 import { loadConfig } from "../src/config/load.js";
@@ -929,6 +929,19 @@ describe("savePid", () => {
     expect(pid).toBeGreaterThan(0);
 
     await expect(waitUntilGone(pid, 2000)).resolves.toBeUndefined();
+  });
+
+  it("ignores a saved pid that ends between the check and the kill", () => {
+    const gone = deadPid();
+    const realKill = process.kill.bind(process);
+    const spy = vi.spyOn(process, "kill").mockImplementation((pid, signal) => {
+      if (pid !== gone) return realKill(pid, signal);
+      if (signal === 0) return true;
+      throw Object.assign(new Error("kill ESRCH"), { code: "ESRCH", errno: -3, syscall: "kill" });
+    });
+    onTestFinished(() => spy.mockRestore());
+
+    savePid(gone);
   });
 });
 
