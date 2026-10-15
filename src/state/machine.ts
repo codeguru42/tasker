@@ -290,6 +290,12 @@ export function transitionWithExecution(
   return store.endRun(id, "executed", transitionCheck("executed", "executed", { version, prompts: [...prompts] }));
 }
 
+// Appends the accepted event { revision, baseTip, from, to } and moves the task to accepted, in one transaction.
+// An illegal edge writes nothing.
+export function transitionWithAcceptance(store: TaskStore, id: number, revision: string, baseTip: string): Task {
+  return store.endRun(id, "accepted", transitionCheck("accepted", "accepted", { revision, baseTip }));
+}
+
 export function failTask(store: TaskStore, id: number, message: string): Task {
   return transitionTask(store, id, "failed", { error: message });
 }
