@@ -2,8 +2,8 @@ import { lstatSync, readdirSync, readFileSync, readlinkSync, realpathSync } from
 import { join } from "node:path";
 import { compareText } from "../../compare-text.js";
 import { DeadlineError } from "../../doctor/timed-check.js";
-import { errnoCode, hasErrnoCode } from "../../errno.js";
-import { errorMessage } from "../../error-message.js";
+import { hasErrnoCode } from "../../errno.js";
+import { readErrorText } from "../../read-text-file.js";
 import { withoutLineEnd } from "./worktree.js";
 
 // A lock file is stale when nobody has written it for this long.
@@ -65,7 +65,7 @@ export function readProcView(procRoot: string): ProcView {
   try {
     names = readdirSync(procRoot);
   } catch (error) {
-    return { readable: false, reason: errnoCode(error) ?? errorMessage(error) };
+    return { readable: false, reason: readErrorText(error) };
   }
   const openFiles = new Set<string>();
   const gitCwds: string[] = [];

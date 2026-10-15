@@ -1,10 +1,9 @@
-import { readFileSync } from "node:fs";
 import { CommanderError } from "commander";
 import type { Io } from "../cli.js";
 import { loadConfig } from "../config/load.js";
 import type { Config } from "../config/schema.js";
-import { errnoCode } from "../errno.js";
 import { errorMessage } from "../error-message.js";
+import { readTextFile } from "../read-text-file.js";
 import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
 import { resolveIssueKey, type ResolveOptions } from "../issue-key/resolve.js";
 import { createDataRoot } from "../store/layout.js";
@@ -28,13 +27,9 @@ export function fail(io: Io, message: string): never {
 // The text of the file at path, read as utf8. A missing file stops the command with exit code 1 and the message missing.
 // Any other read error stops it with the message `<unreadable>: <error code>`.
 export function readFileOrFail(io: Io, path: string, messages: { missing: string; unreadable: string }): string {
-  try {
-    return readFileSync(path, "utf8");
-  } catch (error) {
-    const code = errnoCode(error);
-    if (code === "ENOENT") fail(io, messages.missing);
-    fail(io, `${messages.unreadable}: ${code}`);
-  }
+  const file = readTextFile(path);
+  if (file.text !== undefined) return file.text;
+  fail(io, file.missing ? messages.missing : `${messages.unreadable}: ${file.error}`);
 }
 
 // The value of fn. An error stops the command with exit code 1 and its message on stderr.

@@ -1,6 +1,6 @@
-import { appendFileSync, closeSync, openSync, readFileSync, readSync, statSync } from "node:fs";
-import { errnoCode } from "../errno.js";
+import { appendFileSync, closeSync, openSync, readSync, statSync } from "node:fs";
 import { type GroupResult, runInGroup } from "../process/run-group.js";
+import { readTextFile } from "../read-text-file.js";
 import { startFolderError } from "../process/start-folder.js";
 
 export interface CommandFailure {
@@ -108,15 +108,12 @@ export const NO_OUTPUT_LINE =
 // the real count. noOutput is true when the log holds only the command line, empty lines and the outcome line.
 // A missing or unreadable log gives its tail text and noOutput false. It never throws.
 export function readCommandLog(log: string, count: number): { tail: string; noOutput: boolean } {
-  let text: string;
-  try {
-    text = readFileSync(log, "utf8");
-  } catch (error) {
-    const code = errnoCode(error);
-    const tail = code === "ENOENT" ? `the log is missing: ${log}\n` : `cannot read the log ${log}: ${code}\n`;
+  const file = readTextFile(log);
+  if (file.text === undefined) {
+    const tail = file.missing ? `the log is missing: ${log}\n` : `cannot read the log ${log}: ${file.error}\n`;
     return { tail, noOutput: false };
   }
-  const lines = text.split("\n");
+  const lines = file.text.split("\n");
   if (lines.at(-1) === "") lines.pop();
   const last = lines.slice(-count);
   const tail = `the last ${last.length} lines of the log:\n${last.map((line) => `${line}\n`).join("")}`;

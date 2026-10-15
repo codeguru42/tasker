@@ -1,19 +1,13 @@
-import { readFileSync } from "node:fs";
 import { homedir as osHomedir } from "node:os";
-import { errnoCode } from "../errno.js";
+import { readTextFile } from "../read-text-file.js";
 import { resolveConfigPath } from "./path.js";
 import { parseConfig, type Config } from "./schema.js";
 
 function readConfigText(path: string): string {
-  try {
-    return readFileSync(path, "utf8");
-  } catch (cause) {
-    const code = errnoCode(cause);
-    if (code === "ENOENT") {
-      throw new Error(`config file not found: ${path}`, { cause });
-    }
-    throw new Error(`cannot read config file: ${path} (${code ?? "unknown error"})`, { cause });
-  }
+  const file = readTextFile(path);
+  if (file.text !== undefined) return file.text;
+  if (file.missing) throw new Error(`config file not found: ${path}`, { cause: file.cause });
+  throw new Error(`cannot read config file: ${path} (${file.error})`, { cause: file.cause });
 }
 
 // The configuration in text, the text of the file at path. path is only for the error message.
