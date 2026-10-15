@@ -59,6 +59,7 @@ import {
   recordPlanRevisions,
   recordTestPlanRevision,
   seedPlanRevision,
+  seedExecuteSession,
   seedPlanSession,
   seedPlanningTask,
   seedTaskWithPlanFiles,
@@ -71,6 +72,7 @@ import {
   startTaskWithCommits,
   startWriteLockHolder,
   taskNames,
+  TEST_EXECUTE_SESSION_ID,
   TEST_SESSION_ID,
   taskWorkspaceState,
   threeRepoConfig,
@@ -2085,6 +2087,37 @@ describe("seedPlanSession", () => {
       const session = seedPlanSession(store, task.id, { sessionId: "x", effort: "low" });
 
       expect(session).toMatchObject({ sessionId: "x", effort: "low", model: "opus", provider: "claude-code" });
+    });
+  });
+});
+
+describe("seedExecuteSession", () => {
+  it("records TEST_EXECUTE_SESSION_ID with the execute model of the test configurations", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+      seedPlanRevision(store, task.id);
+
+      const session = seedExecuteSession(store, task.id, 1);
+
+      expect(session).toEqual({
+        sessionId: TEST_EXECUTE_SESSION_ID,
+        repoKey: "a/b",
+        provider: "claude-code",
+        model: "sonnet",
+        effort: "medium",
+      });
+      expect(store.executeSession(task.id, 1)).toEqual(session);
+    });
+  });
+
+  it("uses the values that the call changes", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+      seedPlanRevision(store, task.id);
+
+      const session = seedExecuteSession(store, task.id, 1, { sessionId: "x", effort: "low" });
+
+      expect(session).toMatchObject({ sessionId: "x", effort: "low", model: "sonnet", provider: "claude-code" });
     });
   });
 });
