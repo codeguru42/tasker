@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { parseConfig } from "../../src/config/schema.js";
-import { createVcsProvider, vcsForRepo } from "../../src/vcs/provider.js";
+import { createVcsProvider, uncommittedChangeText, vcsForRepo } from "../../src/vcs/provider.js";
 import { validConfig } from "../helpers/config.js";
 import { makeProviderFixture, type ProviderFixture } from "../helpers/git.js";
 
@@ -44,5 +44,15 @@ describe("vcsForRepo", () => {
 
     expect(ctx).toEqual({ dataRoot: config.dataRoot, repoKey: key, env });
     expect(vcs.provision).toBeTypeOf("function");
+  });
+});
+
+describe("uncommittedChangeText", () => {
+  it("keeps the leading space of the status", () => {
+    expect(uncommittedChangeText({ status: " M", path: "a" })).toBe(" M a");
+  });
+
+  it("keeps a comma of the path", () => {
+    expect(uncommittedChangeText({ status: "??", path: "a,b.txt" })).toBe("?? a,b.txt");
   });
 });

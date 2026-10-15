@@ -53,6 +53,11 @@ export interface UncommittedChange {
   path: string;
 }
 
+// The text of one change: the raw status of the version control, a space, the path. A leading space of the status stays.
+export function uncommittedChangeText(change: UncommittedChange): string {
+  return `${change.status} ${change.path}`;
+}
+
 export type ReconcileStrategy = "rebase" | "merge";
 
 export type RemoteTip = { state: "present"; revision: string } | { state: "absent" };

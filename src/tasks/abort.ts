@@ -5,7 +5,7 @@ import { canonicalPath } from "../real-path.js";
 import { isTerminalState, transitionTask } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
-import { vcsForRepo } from "../vcs/provider.js";
+import { uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
 
 export interface AbortRequest {
   config: Config;
@@ -43,7 +43,7 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
       ? await vcs.uncommittedChanges(ctx, { path: entry.path })
       : [];
   if (changes.length > 0 && !request.force) {
-    const lines = changes.map((change) => `${change.status} ${change.path}`);
+    const lines = changes.map(uncommittedChangeText);
     throw new Error(
       [
         `the worktree has uncommitted changes: ${entry!.path}`,
