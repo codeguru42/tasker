@@ -546,6 +546,22 @@ function toStoredSession(row: PlanSessionRow | undefined): StoredSession | undef
       };
 }
 
+// The key of a session row of a task: its role, and the plan revision or the review number that goes with it.
+type SessionKey =
+  | { role: "plan" }
+  | { role: "execute"; planVersion: number }
+  | { role: "review"; reviewNumber: number };
+
+// The role, plan version and review number of a key, as the parameters of a session statement. A part that the
+// key does not have is NULL.
+function keyParams(key: SessionKey): [string, number | null, number | null] {
+  return [
+    key.role,
+    key.role === "execute" ? key.planVersion : null,
+    key.role === "review" ? key.reviewNumber : null,
+  ];
+}
+
 // The time that a process waits for a lock that another process holds.
 const BUSY_TIMEOUT_MS = 5000;
 const SQLITE_BUSY = 5;
@@ -646,27 +662,18 @@ function setUp(db: DatabaseSync) {
     selectLatestPlanRevision: db.prepare(
       "SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version DESC LIMIT 1",
     ),
-    insertPlanSession: db.prepare(
-      `INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at)
-       VALUES (?, 'plan', ?, ?, ?, ?, ?)`,
+    insertSession: db.prepare(
+      `INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at, plan_version, review_number)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ),
-    selectPlanSession: db.prepare(
+    selectSession: db.prepare(
       `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key
        FROM sessions JOIN tasks ON tasks.id = sessions.task_id
-       WHERE sessions.task_id = ? AND sessions.role = 'plan'`,
+       WHERE sessions.task_id = ? AND sessions.role = ? AND sessions.plan_version IS ?
+         AND sessions.review_number IS ?`,
     ),
-    insertExecuteSession: db.prepare(
-      `INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at, plan_version)
-       VALUES (?, 'execute', ?, ?, ?, ?, ?, ?)`,
-    ),
-    selectExecuteSession: db.prepare(
-      `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key
-       FROM sessions JOIN tasks ON tasks.id = sessions.task_id
-       WHERE sessions.task_id = ? AND sessions.role = 'execute' AND sessions.plan_version = ?`,
-    ),
-    deletePlanSession: db.prepare("DELETE FROM sessions WHERE task_id = ? AND role = 'plan'"),
-    deleteExecuteSession: db.prepare(
-      "DELETE FROM sessions WHERE task_id = ? AND role = 'execute' AND plan_version = ?",
+    deleteSession: db.prepare(
+      "DELETE FROM sessions WHERE task_id = ? AND role = ? AND plan_version IS ? AND review_number IS ?",
     ),
     upsertExecuteTodo: db.prepare(
       `INSERT INTO execute_todos (task_id, plan_version, todo_id, state, updated_at)
@@ -781,8 +788,8 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     );
   }
 
-  function readPlanSession(taskId: number): StoredSession | undefined {
-    return toStoredSession(statements.selectPlanSession.get(taskId) as PlanSessionRow | undefined);
+  function readSession(taskId: number, key: SessionKey): StoredSession | undefined {
+    return toStoredSession(statements.selectSession.get(taskId, ...keyParams(key)) as PlanSessionRow | undefined);
   }
 
   // The one home of the open/resolved rule of a question.
@@ -796,12 +803,6 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       }
       return { question, state: "resolved", version: next.version, answer: next.feedback };
     });
-  }
-
-  function readExecuteSession(taskId: number, version: number): StoredSession | undefined {
-    return toStoredSession(
-      statements.selectExecuteSession.get(taskId, version) as PlanSessionRow | undefined,
-    );
   }
 
   // The record-once rule of a session: the same id gives the stored session, another id is an error, else insert.
@@ -818,6 +819,45 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     }
     insert();
     return { ...session, repoKey };
+  }
+
+  // Records the session of a key once, in one transaction. requireKey runs after the task check and can throw
+  // when the thing that the key names is missing.
+  function recordSession(
+    taskId: number,
+    key: SessionKey,
+    session: NewSession,
+    requireKey?: () => void,
+  ): StoredSession {
+    return immediateTransaction(db, () => {
+      const task = readTask(taskId);
+      if (task === undefined) throw taskNotFound(taskId);
+      requireKey?.();
+      const suffix =
+        key.role === "execute"
+          ? ` of plan revision ${key.planVersion}`
+          : key.role === "review"
+            ? ` of review ${key.reviewNumber}`
+            : "";
+      return recordSessionOnce(
+        readSession(taskId, key),
+        session,
+        task.repoKey,
+        (id) => `task ${taskId} already has the ${key.role} session ${id}${suffix}, not ${session.sessionId}`,
+        () =>
+          statements.insertSession.run(
+            taskId,
+            key.role,
+            session.sessionId,
+            session.provider,
+            session.model,
+            session.effort,
+            now().toISOString(),
+            keyParams(key)[1],
+            keyParams(key)[2],
+          ),
+      );
+    });
   }
 
   function readLatestPlanRevision(taskId: number): PlanRevision | undefined {
@@ -967,12 +1007,8 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     statements.upsertExecuteFixTurn.run(taskId, version, turn.verifyFailure, turn.verifyLogTail, at);
   }
 
-  function clearPlanSessionStep(taskId: number): void {
-    statements.deletePlanSession.run(taskId);
-  }
-
-  function clearExecuteSessionStep(taskId: number, version: number): void {
-    statements.deleteExecuteSession.run(taskId, version);
+  function deleteSessionStep(taskId: number, key: SessionKey): void {
+    statements.deleteSession.run(taskId, ...keyParams(key));
   }
 
   // The row insert of a plan revision. It checks the version and opens no transaction, so the
@@ -1299,55 +1335,22 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     recordPlanSession(taskId, session) {
-      return immediateTransaction(db, () => {
-        const task = readTask(taskId);
-        if (task === undefined) throw taskNotFound(taskId);
-        return recordSessionOnce(
-          readPlanSession(taskId),
-          session,
-          task.repoKey,
-          (id) => `task ${taskId} already has the plan session ${id}, not ${session.sessionId}`,
-          () =>
-            statements.insertPlanSession.run(
-              taskId,
-              session.sessionId,
-              session.provider,
-              session.model,
-              session.effort,
-              now().toISOString(),
-            ),
-        );
-      });
+      return recordSession(taskId, { role: "plan" }, session);
     },
 
-    planSession: readPlanSession,
+    planSession(taskId) {
+      return readSession(taskId, { role: "plan" });
+    },
 
     recordExecuteSession(taskId, version, session) {
-      return immediateTransaction(db, () => {
-        const task = readTask(taskId);
-        if (task === undefined) throw taskNotFound(taskId);
+      return recordSession(taskId, { role: "execute", planVersion: version }, session, () => {
         if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
-        return recordSessionOnce(
-          readExecuteSession(taskId, version),
-          session,
-          task.repoKey,
-          (id) =>
-            `task ${taskId} already has the execute session ${id} of plan revision ${version}, not ${session.sessionId}`,
-          () =>
-            statements.insertExecuteSession.run(
-              taskId,
-              session.sessionId,
-              session.provider,
-              session.model,
-              session.effort,
-              now().toISOString(),
-              version,
-            ),
-        );
       });
     },
 
-    executeSession: readExecuteSession,
+    executeSession(taskId, version) {
+      return readSession(taskId, { role: "execute", planVersion: version });
+    },
 
     setExecuteTodoState(taskId, version, todoId, state) {
       immediateTransaction(db, () => {
@@ -1417,21 +1420,23 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     clearPlanSession(taskId) {
       immediateTransaction(db, () => {
-        clearPlanSessionStep(taskId);
+        deleteSessionStep(taskId, { role: "plan" });
       });
     },
 
     clearExecuteSession(taskId, version) {
       immediateTransaction(db, () => {
-        clearExecuteSessionStep(taskId, version);
+        deleteSessionStep(taskId, { role: "execute", planVersion: version });
       });
     },
 
     retryTask(taskId, state, writes, check) {
       return writeTask(taskId, { state }, check, (at) => {
         endRunStep(taskId, state);
-        if (writes.clearPlanSession === true) clearPlanSessionStep(taskId);
-        if (writes.clearExecuteSession !== undefined) clearExecuteSessionStep(taskId, writes.clearExecuteSession);
+        if (writes.clearPlanSession === true) deleteSessionStep(taskId, { role: "plan" });
+        if (writes.clearExecuteSession !== undefined) {
+          deleteSessionStep(taskId, { role: "execute", planVersion: writes.clearExecuteSession });
+        }
         if (writes.resumeExecute !== undefined) {
           const { version, fixTurn } = writes.resumeExecute;
           markExecuteTodosDoneStep(taskId, version, at);
