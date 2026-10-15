@@ -1,15 +1,42 @@
+import { closeSync, mkdirSync, openSync, writeSync } from "node:fs";
+import { dirname } from "node:path";
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
+import type { PlanAnswer } from "../plan/answer.js";
 import { orderTodos } from "../plan/todo-order.js";
+import { readTurnResult, turnResultJsonSchema } from "../plan/turn-result.js";
+import { archivePrompt } from "../prompts/archive.js";
+import {
+  currentTodoText,
+  EXECUTE_PROMPT,
+  EXECUTE_PROMPT_NAME,
+  EXECUTE_TODO_PROMPT,
+  EXECUTE_TODO_PROMPT_NAME,
+  resolvedQuestionsText,
+  todosText,
+} from "../prompts/execute.js";
+import { fillTemplate } from "../prompts/template.js";
+import { transitionTask, transitionWithExecution } from "../state/machine.js";
+import { executeTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
 import { taskNotFound, type TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
 import { baseRevisionOf } from "./base-revision.js";
+import { applyRunOutcome, failRun } from "./run-outcome.js";
 import { assertSessionModel } from "./session-model.js";
+
+type PlanTodo = PlanAnswer["todos"][number];
+
+// One turn of the run: the todo of the turn and the words that name it in a message.
+interface Subject {
+  kind: "todo";
+  todo: PlanTodo;
+  label: string;
+}
 
 export interface ExecuteRequest {
   config: Config;
@@ -43,7 +70,7 @@ export async function executeTask(store: TaskStore, request: ExecuteRequest): Pr
 }
 
 async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise<ExecuteResult> {
-  const { config, env } = request;
+  const { config, env, io } = request;
   const task = store.getTask(request.taskId);
   if (task === undefined) throw taskNotFound(request.taskId);
   if (task.state !== "approved") {
@@ -51,8 +78,9 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   }
   const revision = store.pinnedPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} is approved, but no revision is pinned`);
-  readPlanFile(config.dataRoot, task, revision.version);
-  orderTodos(revision.answer.todos);
+  const version = revision.version;
+  const planText = readPlanFile(config.dataRoot, task, version);
+  const ordered = orderTodos(revision.answer.todos);
   const baseRevision = baseRevisionOf(store, task.id);
   if (baseRevision === undefined) throw new Error(`the task of ${task.issueKey} has no base revision`);
   if (task.branch === null) throw new Error(`the task of ${task.issueKey} has no branch`);
@@ -62,7 +90,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   } catch (error) {
     throw new Error(`cannot read the remote before the run: ${errorMessage(error)}`, { cause: error });
   }
-  const stored = store.executeSession(task.id, revision.version);
+  const stored = store.executeSession(task.id, version);
   if (stored) await assertSessionModel(stored, env, `the execute session of ${task.issueKey}`);
   const prepared = await prepareTaskExecuteRun({
     config,
@@ -71,7 +99,94 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     env,
     session: stored ? { resume: true, sessionId: stored.sessionId, recorded: stored } : { resume: false },
   });
-  // The turns come in the next todo.
-  void prepared;
-  throw new Error("the execute turns are not built yet");
+
+  const progress = store.executeTodoProgress(task.id, version);
+  const doneIds = new Set(progress.filter((entry) => entry.state === "done").map((entry) => entry.todo.id));
+  const subjects: Subject[] = ordered
+    .filter((todo) => !doneIds.has(todo.id))
+    .map((todo) => ({ kind: "todo", todo, label: `todo \`${todo.id}\` (${todo.title})` }));
+  // The prompts that this run sends, filled and archived. The list holds their versions.
+  const prompts: string[] = [];
+  let prefix: string | undefined;
+  if (stored === undefined && subjects.length > 0) {
+    prefix = fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, {
+      COMMIT_RULES: fillTemplate("commit-rules", prepared.executeCommitText, { BASE_REF: baseRevision }),
+      PLAN_MARKDOWN: planText,
+      TODOS: todosText(revision.answer.todos, doneIds),
+      RESOLVED_QUESTIONS: resolvedQuestionsText(store.resolvedQuestionsThrough(task.id, version)),
+    });
+    prompts.push(archivePrompt(config.dataRoot, EXECUTE_PROMPT_NAME, EXECUTE_PROMPT).version);
+  }
+  if (subjects.length > 0) {
+    prompts.push(archivePrompt(config.dataRoot, EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT).version);
+  }
+  // A run with no subject records no session: an id that no conversation holds must not be continued.
+  if (stored === undefined && subjects.length > 0) {
+    store.recordExecuteSession(task.id, version, {
+      sessionId: prepared.sessionId,
+      provider: prepared.session.provider,
+      model: prepared.session.model,
+      effort: prepared.session.effort,
+    });
+  }
+
+  transitionTask(store, task.id, "executing");
+  // Fails the task with message: from executing or quota_blocked, the move to failed with the message.
+  // From failed, only the message on stderr, because a move from failed to failed is illegal.
+  const fail = (message: string): { exitCode: number } => {
+    if (store.getTask(task.id)!.state === "failed") {
+      io.stderr(`${message}\n`);
+      return { exitCode: 1 };
+    }
+    return failRun(store, task, io, message);
+  };
+  const transcriptPath = executeTranscriptPath(config.dataRoot, task, version);
+  try {
+    mkdirSync(dirname(transcriptPath), { recursive: true });
+    const fd = openSync(transcriptPath, "a");
+    try {
+      const limitMin = config.limits.executeTimeoutMin;
+      let first = stored === undefined;
+      for (const subject of subjects) {
+        const { todo, label } = subject;
+        store.setExecuteTodoState(task.id, version, todo.id, "in_progress");
+        store.appendEvent(task.id, "todo_started", { id: todo.id });
+        const turnPrompt = fillTemplate(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT, {
+          CURRENT_TODO: currentTodoText(todo),
+        });
+        const prompt = first && prefix !== undefined ? `${prefix}\n${turnPrompt}` : turnPrompt;
+        first = false;
+        const outcome = await prepared.start({
+          prompt,
+          jsonSchema: turnResultJsonSchema(),
+          onEvent: (event) => writeSync(fd, `${JSON.stringify(event)}\n`),
+        });
+        const result = applyRunOutcome({ store, task, phase: "executing", timeoutMinutes: limitMin, io, outcome });
+        if ("exitCode" in result) return result;
+        const read = readTurnResult(result.outcome.structuredOutput);
+        if (read.kind === "done") {
+          store.setExecuteTodoState(task.id, version, todo.id, "done");
+          store.appendEvent(task.id, "todo_done", { id: todo.id });
+        } else if (read.kind === "blocked") {
+          return fail(`${label} reported blocked: ${read.reason}`);
+        } else {
+          return fail(`${label} reported no result: ${read.detail}`);
+        }
+      }
+    } finally {
+      closeSync(fd);
+    }
+    transitionWithExecution(store, task.id, version, prompts);
+  } catch (error) {
+    return fail(`executing failed: ${errorMessage(error)}`);
+  }
+  const after = store.executeTodoProgress(task.id, version);
+  return {
+    version,
+    todosDone: after.filter((entry) => entry.state === "done").length,
+    todosTotal: after.length,
+    fixTurnDone: false,
+    denials: 0,
+    transcriptPath,
+  };
 }

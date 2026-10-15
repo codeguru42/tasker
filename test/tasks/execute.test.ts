@@ -158,6 +158,7 @@ const todoPrompt = (id: string): string =>
     CURRENT_TODO: currentTodoText(TODOS.find((todo) => todo.id === id)!),
   });
 
+// The states in the plan order.
 const todoStates = (fixture: ExecuteFixture): [string, string][] =>
   withDataRootStore(fixture.config.dataRoot, (store) =>
     store.executeTodoProgress(fixture.task.id, 1).map((entry) => [entry.todo.id, entry.state]),
@@ -223,8 +224,8 @@ describe("executeTask turns", () => {
 
     expect(result).toMatchObject({ todosDone: 2, todosTotal: 2 });
     expect(todoStates(fixture)).toEqual([
-      ["a", "done"],
       ["b", "done"],
+      ["a", "done"],
     ]);
     expect(eventTypes(fixture, ["todo_started", "todo_done", "executed"])).toEqual([
       { type: "todo_started", data: { id: "a" } },
@@ -258,8 +259,8 @@ describe("executeTask turns", () => {
     expect(io.err.join("")).toBe(`${message}\n`);
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
     expect(todoStates(fixture)).toEqual([
-      ["a", "in_progress"],
       ["b", "not_started"],
+      ["a", "in_progress"],
     ]);
     expect(fixture.claude.calls()).toHaveLength(1);
   });
@@ -275,7 +276,7 @@ describe("executeTask turns", () => {
     expect(result).toEqual({ exitCode: 1 });
     expect(io.err.join("").startsWith("todo `a` (Do a) reported no result: ")).toBe(true);
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
-    expect(todoStates(fixture)[0]).toEqual(["a", "in_progress"]);
+    expect(todoStates(fixture)).toContainEqual(["a", "in_progress"]);
   });
 
   it("fails the task when the assistant fails", async () => {

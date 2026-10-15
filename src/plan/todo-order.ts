@@ -42,7 +42,7 @@ export function todoOrder<T extends OrderTodo>(todos: readonly T[]): TodoOrder<T
   return problems.length === 0 ? { ok: true, todos: ordered } : { ok: false, problems };
 }
 
-// For a later ticket: the order of an execute run. It throws for a cycle, because a stored revision from
+// The order of an execute run. It throws for a cycle, because a stored revision from
 // before the plan check can hold one.
 export function orderTodos<T extends OrderTodo>(todos: readonly T[]): T[] {
   const order = todoOrder(todos);

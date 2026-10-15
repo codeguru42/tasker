@@ -1,4 +1,4 @@
-// The prompts of an execute run. No command uses them yet: tasker execute comes in its own ticket.
+// The prompts of an execute run.
 import type { PlanAnswer } from "../plan/answer.js";
 import { orderTodos } from "../plan/todo-order.js";
 import type { TaskStore } from "../store/store.js";
