@@ -8,6 +8,10 @@ import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
 const GRACE_MS = 5000;
+// libuv keeps the loop clock of the Node timers in whole ms, so a timer can fire up to 1 ms before its delay.
+// On a host where CLOCK_MONOTONIC_COARSE has a resolution of 1 ms or better, libuv reads that coarse clock,
+// which can be up to 1 ms more behind.
+const TIMER_CLOCK_STEP_MS = 2;
 
 // Runs command under bash as an assistant child. It collects each line and each pid that the runner reports.
 async function runCollected(
@@ -167,13 +171,13 @@ describe("runAssistant", () => {
     const controller = new AbortController();
     const running = runCollected('trap "" TERM; echo $$ > leader.pid; sleep 30', { cwd: dir, signal: controller.signal });
     const leaderPid = await readPidFile(join(dir, "leader.pid"), 5000);
-    const abortedAt = Date.now();
+    const abortedAt = performance.now();
 
     controller.abort();
 
     const { result } = await running;
     expect(result).toMatchObject({ timedOut: false, killed: true });
-    expect(Date.now() - abortedAt).toBeGreaterThanOrEqual(GRACE_MS);
+    expect(performance.now() - abortedAt).toBeGreaterThan(GRACE_MS - TIMER_CLOCK_STEP_MS);
     await waitUntilGone(leaderPid, 5000);
   });
 
@@ -193,7 +197,7 @@ describe("runAssistant", () => {
 
   it("kills a background child that ignores SIGTERM 5 s after the leader exits", { timeout: 20_000 }, async () => {
     const dir = useTempDir("tasker-run-assistant-");
-    const start = Date.now();
+    const start = performance.now();
 
     const { result } = await runCollected(
       '(trap "" TERM; echo $BASHPID > child.pid; exec sleep 30) & while [ ! -s child.pid ]; do sleep 0.05; done; exit 0',
@@ -201,7 +205,7 @@ describe("runAssistant", () => {
     );
 
     expect(result).toMatchObject({ code: 0, signal: null, timedOut: false, killed: true });
-    expect(Date.now() - start).toBeGreaterThanOrEqual(GRACE_MS);
+    expect(performance.now() - start).toBeGreaterThan(GRACE_MS - TIMER_CLOCK_STEP_MS);
     await waitUntilGone(await readPidFile(join(dir, "child.pid"), 5000), 5000);
   });
 
