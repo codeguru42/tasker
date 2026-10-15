@@ -18,10 +18,13 @@ export type VerifyResult = { status: "ok" } | CommandFailure;
 
 // Runs the verify commands one at a time under /bin/bash in cwd, with one deadline for the list.
 // Each command has its own log, which opens for write. The list stops at the first command that fails.
+// A command that would start after the deadline does not start and gets no log. It is the failing command, and the run timed out.
 // The phase writes no marker, so each run starts again from the first command.
 export async function runVerify(options: VerifyOptions): Promise<VerifyResult> {
   const deadline = Date.now() + options.timeoutMs;
   for (const [i, command] of options.commands.entries()) {
+    // A command after the deadline does not start and gets no log, so the last log does not name the failing command.
+    if (Date.now() >= deadline) return { status: "failed", index: i + 1, command, timedOut: true };
     const log = options.logPath(i + 1);
     mkdirSync(dirname(log), { recursive: true });
     let result: GroupResult;
