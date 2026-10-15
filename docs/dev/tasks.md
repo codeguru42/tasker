@@ -93,7 +93,20 @@ The warning never refuses. Only a person can decide if an overlap is harmless an
 
 The read takes no repo lock. It changes nothing in the clone, and a wait for the repo lock can hold the end of the command.
 
-`tasker refine` and `tasker approve` must print the same warning, each with its own last line.
+`tasker refine` prints the same warning with the same last line as `tasker plan`. `tasker approve` adds the warning with its own last lines in its own ticket.
+
+## Refine
+
+`tasker refine` continues the plan session of a task in `awaiting_plan_review` with the feedback of the operator, and records the next plan revision. The task goes to `refining`, then back to `awaiting_plan_review`.
+
+The steps run in this order, under the task lock. The command does not wait for the lock.
+
+1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model. It makes these checks before any read of a file and before any write. A refused refine leaves the task, the files and the events as they were, so the operator can fix the cause and run the same command again.
+2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base revision and the commits of the task branch.
+3. The command fills the prompt, archives the template and continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for the recorded model. The session is already recorded, so refine records no session.
+4. The command moves the task to `refining` and runs the assistant. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
+
+[The refine prompt](assistants.md#the-refine-prompt) says what the prompt asks for. The new revision is a complete plan. A question that it leaves out counts as answered by the feedback, and the store computes this. The next revision goes to the next free version, and its transcript goes to the file of that version.
 
 ## Limits
 
