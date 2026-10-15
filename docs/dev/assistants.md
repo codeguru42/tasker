@@ -2,8 +2,7 @@
 
 An assistant is a coding-agent program. Tasker starts it in the worktree of a task to plan, to execute and to review. The assistant interface lets tasker run each assistant program in the same way. A command never imports the module of one assistant.
 
-Some parts of this doc are the layer of `tasker execute`. These are the execute prompts, the order of the todos, the turn result, the tools of the execute turns, the remaining time of a start and the start of a later turn. `tasker execute` uses them all. The review and retry commands will use some of them later.
-
+Some parts of this doc are the layer of `tasker execute`. These are the execute prompts, the order of the todos, the turn result, the tools of the execute turns, the remaining time of a start and the start of a later turn. `tasker execute` uses them all.
 ## Refuse, never drop
 
 A provider that cannot enforce a limit that tasker asks for must refuse the run before it starts the program. A run with less confinement than tasker asked for can write or read outside the limits that the operator relies on. The doc comment of the interface holds the rule for the code.
