@@ -59,9 +59,7 @@ A case is one kind of input that a function serves. Examples are a role of an as
 - The docs give only what the code cannot show. They give the purpose of a part, the reasons for a design and the rules that apply across files. They also give the limits and the facts about outside tools. An example of a fact about an outside tool is a git behavior that a flag guards against. A user does not read the code. As a result, the user docs (`docs/config.md` and `skills/tasker/SKILL.md`) describe the behavior that a user sees, for example the commands, the flags and the configuration.
 - Update the docs in the same change as the code.
 - Put a new command in `skills/tasker/SKILL.md` and in the `--help` output.
-- Write the docs in plain English: short sentences, active voice, simple tenses, and "must" for a requirement.
-- Do not use "should", "may", "might" or "could" in the docs.
-- Use one word for one thing in each doc.
+- Write the docs with the simple-english skill. The skill holds the rules of the text, for example the banned words and the sentence limits.
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path such as `/home/<user>/...`.
 
 ## AGENTS.md
