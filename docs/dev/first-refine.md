@@ -77,8 +77,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Make sure that each numbered list still renders. An edit can join two items on one line.
 - Scope a new rule narrowly. A ban on X everywhere clashes with docs that must name X to describe a behavior.
 
-## A ticket that trims a doc
+## A ticket that moves or trims a doc
 
-- Each kept rule keeps its conditions and its definitions. The one home of a merged rule covers each case of the old copies.
+- Each kept rule keeps its conditions and its definitions. When a rule moves from one doc to another, keep every fact of each moved sentence. On #118, the moved UTF-8 rule lost its "reads" half. The one home of a merged rule covers each case of the old copies.
 - A code comment can name a doc heading. Search `src/` and `test/` for a heading before a rename.
 - Write a gap that no code covers yet as a rule for the caller with "must", not as a claim that the code does it.
