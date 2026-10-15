@@ -8,7 +8,7 @@ import { loadConfig } from "../../src/config/load.js";
 import type { Config } from "../../src/config/schema.js";
 import { canonicalPath } from "../../src/real-path.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
-import { transitionTask } from "../../src/state/machine.js";
+import { transitionTask, type TaskState } from "../../src/state/machine.js";
 import type { NewSession, PlanRevision, StoredSession, Task } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
@@ -297,6 +297,48 @@ export function expectNoAssistantRun(fixture: PlanFixture): void {
   expect(lockNames(fixture.started.dataRoot)).toEqual([]);
 }
 
+// The states from workspace_ready to awaiting_work_review, in the order of the main path.
+const TO_WORK_REVIEW = [
+  "planning",
+  "awaiting_plan_review",
+  "approved",
+  "executing",
+  "executed",
+  "verifying",
+  "awaiting_work_review",
+] as const;
+
+// Moves the latest task of key in the repo through states, in order, and gives the task after the last move.
+function walkTask(dataRoot: string, repoKey: string, key: string, states: readonly TaskState[]): Task {
+  return withDataRootStore(dataRoot, (store) => {
+    const found = store.findLatestTask(repoKey, key)!;
+    for (const state of states) transitionTask(store, found.id, state);
+    return store.getTask(found.id)!;
+  });
+}
+
+export interface WorkReviewTask extends StartFixture {
+  key: string;
+  // The task in awaiting_work_review, with its worktree path and branch.
+  task: Task;
+  clone: string;
+  env: NodeJS.ProcessEnv;
+}
+
+// Runs useStartFixture(options), starts the task of issue 5 with startTaskWithCommits and one commit for each file of
+// files (default ["work.txt"]), then moves the task through the states to awaiting_work_review. It throws when the
+// start fails. Call it inside a test.
+export async function useWorkReviewTask(
+  options: Parameters<typeof useStartFixture>[0] & { files?: readonly string[] } = {},
+): Promise<WorkReviewTask> {
+  const { files = ["work.txt"], ...fixtureOptions } = options;
+  const fixture = await useStartFixture(fixtureOptions);
+  const key = `${fixture.repoKey}#5`;
+  await startTaskWithCommits(fixture, 5, files);
+  const task = walkTask(fixture.dataRoot, fixture.repoKey, key, TO_WORK_REVIEW);
+  return { ...fixture, key, task, clone: repoPaths(fixture.dataRoot, fixture.repoKey).clone, env: fixture.origin.env };
+}
+
 export interface VerifyFixture {
   started: StartedTask;
   // The task in executed, with its worktree path.
@@ -316,12 +358,6 @@ export async function useVerifyFixture(options: {
     limits: options.limits,
   });
   if (started.result.code !== 0) throw new Error(`tasker start failed: ${started.result.err}`);
-  const task = withDataRootStore(started.dataRoot, (store) => {
-    const found = store.findLatestTask(started.repoKey, started.key)!;
-    for (const state of ["planning", "awaiting_plan_review", "approved", "executing", "executed"] as const) {
-      transitionTask(store, found.id, state);
-    }
-    return store.getTask(found.id)!;
-  });
+  const task = walkTask(started.dataRoot, started.repoKey, started.key, TO_WORK_REVIEW.slice(0, 5));
   return { started, task, config: started.config, env: started.env };
 }
