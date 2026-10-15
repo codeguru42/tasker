@@ -156,8 +156,8 @@ The reasons:
 
 `tasker verify` runs the verify commands of the repo in the worktree of a task in `executed`. These reasons explain its rules:
 
-- The worktree must be clean before the commands. If it is not, the commands test code that the branch does not hold, and the result says nothing about the branch.
-- The worktree must be clean after the commands. The worktree goes to a person as ready for review. A dirty tree makes that claim false.
+- The worktree must be clean before the commands. If it is not, the commands test code that the branch does not hold.
+- The worktree must be clean after the commands. The worktree goes to a person as ready. A dirty tree makes that claim false.
 - Only the exit codes count, because tasker never reads the output of a command. As a result, no output can change a result. [phases.md](phases.md#the-verify-phase) gives the rule.
 - A failed run is recorded too. `tasker show-verify` prints the run, and the fix turn gets its log.
 - The row of a run and the move of the task share one transaction. The bullet in [data-root.md](data-root.md#verify_runs-table) gives the reason.
