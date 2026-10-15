@@ -221,6 +221,13 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The task is approved, but no revision is pinned. The error is `the task of <issue key> is approved, but no revision is pinned`.
 - Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
 
+### `tasker execute`
+
+Carries out the pinned plan revision of a task in the state `approved` in the execute session of the assistant, one turn for each todo, and records the state of each todo: `tasker execute <issue>`. The task goes through `executing` to `executed`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
