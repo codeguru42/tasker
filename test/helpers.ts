@@ -12,7 +12,6 @@ import {
 } from "node:fs";
 import { userInfo } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, onTestFinished } from "vitest";
 import type { AssistantEvent, RunInput } from "../src/assistant/provider.js";
@@ -22,19 +21,15 @@ import { type Config, parseConfig } from "../src/config/schema.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { githubShortRef } from "../src/issue-key/short-ref.js";
-import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { canonicalPath } from "../src/real-path.js";
 import type { PlanAnswer } from "../src/plan/answer.js";
-import { failTask, transitionTask, type TaskState } from "../src/state/machine.js";
-import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
+import { transitionTask, type TaskState } from "../src/state/machine.js";
 import { recordPlanRevision } from "../src/store/plan-file.js";
 import {
   type ExecuteTodoState,
   type NewPlanRevision,
   type NewSession,
-  openStore,
   type PlanRevision,
-  type StoreOptions,
   type StoredSession,
   type Task,
   type TaskStore,
@@ -46,12 +41,14 @@ import { shellQuote } from "../src/vcs/git/ssh.js";
 import { listWorktrees, taskBranchName, taskWorktreePath } from "../src/vcs/git/worktree.js";
 import type { VcsContext } from "../src/vcs/provider.js";
 import { runCommand } from "./helpers/cli.js";
+import { dayAt, type SeedTask, seedTasks, withDataRootStore } from "./helpers/store.js";
 import { makeTempDir, useProcessEnv, useTempDir, useTempHome } from "./helpers/temp.js";
 
 export * from "./helpers/cli.js";
 export * from "./helpers/errors.js";
 export * from "./helpers/processes.js";
 export * from "./helpers/source-scan.js";
+export * from "./helpers/store.js";
 export * from "./helpers/temp.js";
 
 // A new object for each call, so a test can change it freely.
@@ -76,24 +73,6 @@ export function validConfig(): Record<string, any> {
       },
     },
   };
-}
-
-// The names in the locks table of a data root, sorted.
-export function lockNames(dataRoot: string): string[] {
-  return withRawDatabase(createDataRoot(dataRoot).database, (db) =>
-    db
-      .prepare("SELECT name FROM locks ORDER BY name")
-      .all()
-      .map((row) => String(row.name)),
-  );
-}
-
-// The names of the tables in db, in alphabetical order.
-export function tableNames(db: DatabaseSync): string[] {
-  const rows = db
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
-    .all() as { name: string }[];
-  return rows.map((row) => row.name);
 }
 
 // Writes the value that build gives for a new temp dir as JSON to config.json in that dir.
@@ -121,19 +100,6 @@ export function writeDataRootConfig(raw: Record<string, any> = validConfig()): {
   return { ...written, dataRoot: join(written.dir, "data") };
 }
 
-export interface SeedTask {
-  issueKey: string;
-  repoKey: string;
-  state: string;
-  at: string;
-  title?: string;
-  base?: string;
-  branch?: string;
-  worktreePath?: string;
-  // Fails the task at its at, with this message.
-  failWith?: string;
-}
-
 // The repos codeguru42/tasker and codeguru42/other, and the repo fork. The project of fork
 // is the same as the project of codeguru42/tasker, so one issue key matches two repos.
 export function threeRepoConfig() {
@@ -148,11 +114,6 @@ export function threeRepoConfig() {
   };
   delete raw.repos.tasker;
   return raw;
-}
-
-// The time 00:00 UTC of a day in January 2026, for example dayAt(2) is 2026-01-02T00:00:00.000Z.
-export function dayAt(day: number): string {
-  return `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
 }
 
 // Writes the text that build gives as config.json in a new temp dir, and points TASKER_CONFIG at it.
@@ -299,42 +260,6 @@ export function issueKeyErrorMessage(key: string, configPath: string): string {
   return expect.fail(`the issue key ${key} resolves`);
 }
 
-// Runs fn with resource, then closes resource. When fn gives a promise, resource closes after the
-// promise settles. When fn throws, resource closes and the error goes on.
-function closeAfter<R extends { close(): void }, T>(resource: R, fn: (resource: R) => T): T {
-  let result: T;
-  try {
-    result = fn(resource);
-  } catch (error) {
-    resource.close();
-    throw error;
-  }
-  if (result instanceof Promise) return result.finally(() => resource.close()) as T;
-  resource.close();
-  return result;
-}
-
-// Runs fn with the open store of the database file at path, then closes the store, as closeAfter does.
-export function withStoreFile<T>(path: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
-  return closeAfter(openStore(path, options), fn);
-}
-
-// Runs fn with a raw connection to the SQLite file at path, then closes it, as withStoreFile does.
-export function withRawDatabase<T>(path: string, fn: (db: DatabaseSync) => T): T {
-  return closeAfter(new DatabaseSync(path), fn);
-}
-
-// The raw run marker row of a task in the database file at path, or undefined.
-export function readRunMarker(dbPath: string, taskId: number) {
-  return withRawDatabase(
-    dbPath,
-    (db) =>
-      db.prepare("SELECT * FROM run_markers WHERE task_id = ?").get(taskId) as
-        | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
-        | undefined,
-  );
-}
-
 export interface AssistantRunFixture {
   started: StartedTask;
   // The task, read after startRun. Its run marker belongs to this process.
@@ -402,50 +327,6 @@ export async function usePlanFixture(
   const claude = useFakeClaude(control);
   useProcessEnv({ ...useTempHome(), PATH: claude.binDir + delimiter + process.env.PATH });
   return { started, claude };
-}
-
-// Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
-export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
-  return withStoreFile(createDataRoot(dataRoot).database, fn, options);
-}
-
-// The events of the latest task of issueKey in the repo codeguru42/tasker, as { type, data }.
-export function eventsOf(dataRoot: string, issueKey: string): { type: string; data: unknown }[] {
-  return withDataRootStore(dataRoot, (store) => {
-    const task = store.findLatestTask("codeguru42/tasker", issueKey);
-    if (task === undefined) throw new Error(`no task of ${issueKey}`);
-    return store.listEvents(task.id).map(({ type, data }) => ({ type, data }));
-  });
-}
-
-// Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
-export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] {
-  let at = new Date(0);
-  return withDataRootStore(
-    dataRoot,
-    (store) =>
-      tasks.map((task) => {
-        at = new Date(task.at);
-        const created = store.createTask({
-          issueKey: task.issueKey,
-          repoKey: task.repoKey,
-          state: task.state,
-          title: task.title,
-          base: task.base,
-          branch: task.branch,
-          worktreePath: task.worktreePath,
-        });
-        return task.failWith === undefined ? created : failTask(store, created.id, task.failWith);
-      }),
-    { now: () => at },
-  );
-}
-
-// Writes text as the bootstrap log of the attempt of task under dataRoot.
-export function writeBootstrapLog(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">, text: string): void {
-  const path = bootstrapLogPath(taskLogsDir(dataRoot, task));
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, text);
 }
 
 // The fixed author and committer of every commit that a git test makes.
