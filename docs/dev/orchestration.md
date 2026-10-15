@@ -24,6 +24,22 @@ The orchestrator does all the steps of this section.
 - When a ticket starts, the orchestrator moves its card to In progress. `tasker start` does not move the card. The board moves the card to Done when `tasker finish` closes the issue.
 - When the Todo column of the milestone is empty, stop and tell the user. Do not write the issues of the next milestone.
 
+The defer rule: to defer a ticket means that the user moves its issue to a later milestone, for example "Future". This rule covers a deferred ticket that has a task in flight. A parked task is the task of such a ticket. On 2026-10-14, the user moved #34 from M5 to "Future" while its task was in `awaiting_plan_review`. The user did not want the task aborted, because `tasker abort` deletes the work of the agent. When the user defers a ticket that has a task in flight, the orchestrator does these steps:
+
+1. Tell the agent of the ticket to stop. A message to an agent that has ended starts it again (see "Terms" in "Quota"). The agent stops after its current `tasker` command ends. It runs no other `tasker` command, and it sends its final report.
+2. Leave the task in its state. Do not run `tasker abort`, unless the user tells you to.
+3. Delete the job of the agent, as "Delete the job" in "Quota" says.
+4. Move the issue to the milestone that the user names: `gh issue edit <number> --milestone "<milestone>"`.
+5. Move the card of the ticket to Todo. The ticket waits in Todo of its new milestone.
+6. Post a comment on the issue with the findings of the final report, so that the next agent can start from them. Examples are the state of the task, the open plan questions, the answers so far and the facts that the agent tested.
+7. List the open issues that the deferred issue blocks: `gh issue view <number> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. For each issue of the list, read its milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The command prints an empty line when the issue has no milestone. If the milestone is not the new milestone of the deferred issue, remove the link: `gh issue edit <blocked issue> --remove-blocked-by <number>`. Then the blocked issue can start, as the second bullet of this section says.
+
+If a `gh` command of these steps fails, tell the user, and do the other steps. The task keeps its state.
+
+A parked task stays in flight in `tasker status`. The overlap rule of "Land the work" and the fourth case of the stop rule in "Run one ticket" leave out a parked task.
+
+When the ticket comes back to the current milestone, the orchestrator starts a new agent for it, as this section says. The agent follows the comeback rule of "Run one ticket".
+
 ## The prompt of an agent
 
 The orchestrator writes the prompt of each agent.
@@ -37,7 +53,7 @@ The orchestrator writes the prompt of each agent.
 The agent of the ticket runs steps 1 to 11. Each step gives the state of the task after its command succeeds.
 
 1. Run `tasker doctor`. Then read the issue with `gh issue view <number>`, and compare the issue body with the prompt of the agent. If the body differs from the prompt, report each change to the orchestrator. The body can change while the agent works. Each `tasker` command of steps 1 to 11 follows the command rules (see below).
-2. Run `tasker start <issue>`. The task goes to `workspace_ready`. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
+2. If the ticket has a parked task (see the defer rule in "Pick the tickets"), follow the comeback rule (see below) instead of this step. Run `tasker start <issue>`. The task goes to `workspace_ready`. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
 3. Read the plan with `tasker show-plan` and `tasker show-questions`. Compare the plan with the Requirements and the Docs sections of the issue. Then apply the stop rule and do the quote check (see below).
 4. If the plan needs changes, run `tasker refine <issue> "<feedback>"`. Add the repo-files rule to the feedback text. Before the first refine, do the fact test and the issue check (see below). The task goes to `awaiting_plan_review` again. Then do steps 3 and 4 again until the plan needs no changes. Put the answers to the plan questions in the feedback text. `tasker plan` takes no feedback.
 5. Run `tasker approve`. The task goes to `approved`. Run `tasker execute`. The task goes to `executed`. Run `tasker verify`. If the verify commands pass, the task goes to `awaiting_work_review`. If they fail, follow the verify-failure rule. Run `tasker review`. When the review has findings, the task goes to `reviewed`. When it has none, the task stays in `awaiting_work_review`. If the review has no findings, go to step 9.
@@ -57,6 +73,8 @@ The final report: at the end of its work on the ticket, the agent sends a final 
 - The lessons.
 
 The orchestrator sorts the lessons. A lesson that is a rule for the repo or for agents goes where the new-rule bullet of "The prompt of an agent" says.
+
+The comeback rule: this rule covers a ticket with a parked task (see the defer rule in "Pick the tickets"). The task already exists, so the agent does not run `tasker start` or `tasker plan`. The agent reads the comment of step 6 of the defer rule. Then it runs `git fetch --multiple tasker origin` and `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`, as the diff read does. If the exit code is 1, the base branch moved, and the agent runs `tasker update-branch` as "Land the work" says for the state of the task. If a command fails, or the exit code is not 0 and not 1, the agent stops and reports to the orchestrator. The task keeps its state. Otherwise, the agent continues "Run one ticket" from the state that `tasker show <issue>` prints.
 
 The add-work rule: if the task is in `awaiting_work_review` and the agent must add work, the agent runs `tasker review <issue> "<feedback>"`. The agent adds the repo-files rule to the feedback text. The task reaches `awaiting_work_review` after a review with no findings in step 5 or step 9, or after the agent dismisses all the findings in step 7. In this state, `tasker refine` refuses to run. The work can come from the orchestrator, for example. After `tasker review <issue> "<feedback>"`, the task goes to `refining`, and tasker makes a new plan revision. Then the task goes to `awaiting_plan_review`. Then the agent does steps 3 and 4 for the new plan, and steps 5 to 8 again, starting with `tasker approve`.
 
@@ -313,6 +331,7 @@ If a case says that the orchestrator schedules the next job, the orchestrator fi
 - When the agent reports that it ran `tasker finish`, for example in its final report, the orchestrator must delete the job of that ticket with CronDelete. A task in `landed` keeps its job and its slot until then, unless another bullet of this section applies, for example after a stop in the CI wait. A report of a failed run is not a stop, so the job stays until `tasker finish`.
 - When the orchestrator cancels an agent, the orchestrator must delete the job of that agent with CronDelete.
 - If an agent stops for another reason and the orchestrator does not start it again, the orchestrator must delete the job of that agent with CronDelete.
+- When the user defers a ticket that has a task in flight (see the defer rule in "Pick the tickets"), the orchestrator must delete the job of that agent with CronDelete.
 - In each of these cases, the orchestrator frees the slot of the agent. This also applies when the agent has no job. The schedule-all rule also leaves out this agent until the orchestrator starts it again, as "Schedule a job when an agent starts" says.
 
 ### Do not use these
