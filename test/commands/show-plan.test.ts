@@ -76,7 +76,7 @@ describe("show-plan", () => {
       answer: validPlanAnswer({ plan_markdown: "## Summary\n\nThe second plan of the a module.\n" }),
     });
 
-    const result = await runCommand(showPlan, "show-plan", KEY);
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
     expect(result.code).toBe(0);
     expect(result.out.startsWith(`${KEY} plan v2\nnot approved\n\n## Summary\n\nThe second plan`)).toBe(true);
@@ -90,7 +90,7 @@ describe("show-plan", () => {
       answer: validPlanAnswer({ plan_markdown: "## Summary\n\nThe second plan of the a module.\n" }),
     });
 
-    const result = await runCommand(showPlan, "show-plan", KEY, "--version", "1");
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
 
     expect(result.code).toBe(0);
     expect(result.out.startsWith(`${KEY} plan v1\nnot approved\n\n${PLAN_V1}`)).toBe(true);
@@ -100,7 +100,7 @@ describe("show-plan", () => {
     const { dataRoot, task } = seedPlanningTask();
     recordRevisions(dataRoot, task);
 
-    const result = await runCommand(showPlan, "show-plan", KEY, "--path");
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--path");
 
     expect(result).toEqual({ code: 0, err: "", out: `${planRevisionPath(dataRoot, task, 1)}\n` });
   });
@@ -109,7 +109,7 @@ describe("show-plan", () => {
     const { dataRoot, task } = seedPlanningTask();
     withDataRootStore(dataRoot, (store) => seedPlanRevision(store, task.id));
 
-    const result = await runCommand(showPlan, "show-plan", KEY, "--path");
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--path");
 
     expect(result).toEqual({ code: 0, err: "", out: `${planRevisionPath(dataRoot, task, 1)}\n` });
   });
@@ -119,7 +119,7 @@ describe("show-plan", () => {
       const { dataRoot, task } = seedPlanningTask();
       recordRevisions(dataRoot, task);
 
-      const result = await runCommand(showPlan, "show-plan", KEY);
+      const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
       expect(result.out.split("\n")[1]).toBe("not approved");
     });
@@ -129,7 +129,7 @@ describe("show-plan", () => {
       recordRevisions(dataRoot, task);
       withDataRootStore(dataRoot, (store) => store.approvePlanRevision(task.id, 1, "approved"));
 
-      const result = await runCommand(showPlan, "show-plan", KEY, "--version", "1");
+      const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
 
       expect(result.out.split("\n")[1]).toBe("approved");
     });
@@ -144,7 +144,7 @@ describe("show-plan", () => {
         recordTestPlanRevision(store, dataRoot, task.id, { source: "refine", feedback: "Use main." });
       });
 
-      const result = await runCommand(showPlan, "show-plan", KEY);
+      const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
       expect(result.out.split("\n").slice(0, 2)).toEqual([`${KEY} plan v2`, "approved revision is v1"]);
     });
@@ -157,7 +157,7 @@ describe("show-plan", () => {
       const { dataRoot, task } = seedPlanningTask();
       recordRevisions(dataRoot, task, {}, { source: "refine", feedback: "Use main.\nNot develop.", ...withoutQuestions });
 
-      const result = await runCommand(showPlan, "show-plan", KEY, "--version", "1");
+      const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
 
       expect(result.out.endsWith("    answered in v2: Use main.\n    Not develop.\n")).toBe(true);
     });
@@ -166,7 +166,7 @@ describe("show-plan", () => {
       const { dataRoot, task } = seedPlanningTask();
       recordRevisions(dataRoot, task, {}, { source: "plan", ...withoutQuestions });
 
-      const result = await runCommand(showPlan, "show-plan", KEY, "--version", "1");
+      const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
 
       expect(result.out.endsWith("    answered in v2\n")).toBe(true);
     });
@@ -175,7 +175,7 @@ describe("show-plan", () => {
       const { dataRoot, task } = seedPlanningTask();
       recordRevisions(dataRoot, task, withoutQuestions);
 
-      const result = await runCommand(showPlan, "show-plan", KEY);
+      const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
       expect(result.out.endsWith("questions:\n  none\n")).toBe(true);
     });
@@ -190,7 +190,7 @@ describe("show-plan", () => {
       }),
     });
 
-    const result = await runCommand(showPlan, "show-plan", KEY);
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
     expect(result.out.endsWith(
       "todos:\n  one: First\n  second line\n    Line a\n    Line b\n    depends on: none\n" +
@@ -204,7 +204,7 @@ describe("show-plan", () => {
       answer: validPlanAnswer({ plan_markdown: "## Summary\n\nno line end at the end" }),
     });
 
-    const result = await runCommand(showPlan, "show-plan", KEY);
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
     expect(result.out).toContain("\n\n## Summary\n\nno line end at the end\ntodos:\n");
   });
@@ -213,7 +213,7 @@ describe("show-plan", () => {
     const { dataRoot, task } = seedPlanningTask();
     recordRevisions(dataRoot, task);
 
-    const result = await runCommand(showPlan, "show-plan", KEY, "--version", value);
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", value);
 
     expect(result).toEqual({ code: 1, out: "", err: `--version must be a whole number of 1 or more: ${value}\n` });
   });
@@ -232,7 +232,7 @@ describe("show-plan", () => {
     const { dataRoot, task } = seedPlanningTask();
     recordRevisions(dataRoot, task);
 
-    const result = await runCommand(showPlan, "show-plan", KEY, "--version", "3");
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "3");
 
     expect(result).toEqual({ code: 1, out: "", err: `the task of ${KEY} has no plan revision v3\n` });
   });
@@ -242,7 +242,7 @@ describe("show-plan", () => {
     recordRevisions(dataRoot, task);
     const big = `1${"0".repeat(29)}`;
 
-    const result = await runCommand(showPlan, "show-plan", KEY, "--version", big);
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", big);
 
     expect(result).toEqual({ code: 1, out: "", err: `the task of ${KEY} has no plan revision v${big}\n` });
   });
@@ -250,7 +250,7 @@ describe("show-plan", () => {
   it.each([[[]], [["--version", "2"]]])("prints an error for a task with no revision (%j)", async (extra) => {
     seedPlanningTask();
 
-    const result = await runCommand(showPlan, "show-plan", KEY, ...extra);
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, ...extra);
 
     expect(result).toEqual({
       code: 1,
@@ -263,7 +263,7 @@ describe("show-plan", () => {
     const { dataRoot, task } = seedPlanningTask();
     withDataRootStore(dataRoot, (store) => seedPlanRevision(store, task.id));
 
-    const result = await runCommand(showPlan, "show-plan", KEY);
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
     expect(result).toEqual({ code: 1, out: "", err: `no plan file at ${planRevisionPath(dataRoot, task, 1)}\n` });
   });
@@ -274,7 +274,7 @@ describe("show-plan", () => {
     const path = planRevisionPath(dataRoot, task, 1);
     mkdirSync(path, { recursive: true });
 
-    const result = await runCommand(showPlan, "show-plan", KEY);
+    const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
     expect(result).toEqual({ code: 1, out: "", err: `cannot read the plan file ${path}: EISDIR\n` });
   });
@@ -282,7 +282,7 @@ describe("show-plan", () => {
   it("prints an error for an issue with no task", async () => {
     useThreeRepoDataRoot();
 
-    const result = await runCommand(showPlan, "show-plan", `${TASKER}#9`);
+    const result = await runCommand(showPlan, "show-plan", `${TASKER}#9`, "--repo", TASKER);
 
     expect(result).toEqual({
       code: 1,
