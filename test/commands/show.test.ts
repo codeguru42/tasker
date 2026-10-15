@@ -5,10 +5,72 @@ import { show } from "../../src/commands/show.js";
 import { runCommand } from "../helpers/cli.js";
 import { issueKeyErrorMessage, useThreeRepoDataRoot } from "../helpers/config.js";
 import { taskNames } from "../helpers/git.js";
-import { dayAt, seedTasks } from "../helpers/store.js";
+import {
+  planTodo,
+  seedExecuteFixTurn,
+  seedExecuteTodoStates,
+  seedPinnedPlanRevision,
+  seedPlanRevision,
+  validPlanAnswer,
+} from "../helpers/plan.js";
+import { dayAt, seedTasks, withDataRootStore } from "../helpers/store.js";
+import type { PlanAnswer } from "../../src/plan/answer.js";
+import type { ExecuteTodoState } from "../../src/store/store.js";
 
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";
+
+const showTask = () => runCommand(show, "show", `${TASKER}#5`, "--repo", TASKER);
+
+// The fields of the task that seedPinnedTask seeds in the state executed, with the fixed clock of the seed.
+const EXECUTED_FIELDS =
+  "issue: codeguru42/tasker#5\n" +
+  "repo: codeguru42/tasker\n" +
+  "title: -\n" +
+  "state: executed\n" +
+  "attempt: 1\n" +
+  "base: -\n" +
+  "branch: -\n" +
+  "worktree: -\n" +
+  "created: 2026-01-04T00:00:00.000Z\n" +
+  "updated: 2026-01-04T00:00:00.000Z\n" +
+  'last event: 2026-01-04T00:00:00.000Z plan_revision {"version":1,"prompt":"plan@000000000000"}\n';
+
+const PADDED_BLOCK =
+  "todos (approved v1):\n" +
+  "  done         write-test    Add the a module\n" +
+  "  not started  make-it-pass  Add the a module\n";
+
+// Seeds the task codeguru42/tasker#5 in executed (or failed, with failWith) and its pinned revision v1.
+// The clock is fixed, so that the time fields do not change.
+function seedPinnedTask(
+  dataRoot: string,
+  o: {
+    failWith?: string;
+    answer?: PlanAnswer;
+    todoStates?: Record<string, ExecuteTodoState>;
+    fixTurn?: "queued" | "done";
+  },
+): void {
+  const [task] = seedTasks(dataRoot, [
+    {
+      issueKey: `${TASKER}#5`,
+      repoKey: TASKER,
+      state: o.failWith === undefined ? "executed" : "executing",
+      at: dayAt(4),
+      failWith: o.failWith,
+    },
+  ]);
+  withDataRootStore(
+    dataRoot,
+    (store) => {
+      seedPinnedPlanRevision(store, task.id, o.answer === undefined ? {} : { answer: o.answer }, task.state);
+      seedExecuteTodoStates(store, task.id, 1, o.todoStates ?? {});
+      if (o.fixTurn !== undefined) seedExecuteFixTurn(store, task.id, 1, o.fixTurn);
+    },
+    { now: () => new Date(dayAt(4)) },
+  );
+}
 
 describe("show", () => {
   it("prints the fields of a task in workspace_ready", async () => {
@@ -191,6 +253,81 @@ describe("show", () => {
         'last event: 2026-01-04T00:00:00.000Z transition {"error":"git push failed\\r\\nexit 128\\rdone\\nend","from":"executing","to":"failed"}\n' +
         "failed in: executing\n" +
         "error: git push failed\\nexit 128\\ndone\\nend\n",
+    });
+  });
+
+  it("prints no todo block for a task with no pinned revision", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "executed", at: dayAt(4) },
+    ]);
+    withDataRootStore(
+      dataRoot,
+      (store) => {
+        seedPlanRevision(store, task.id, {}, "executed");
+        seedExecuteTodoStates(store, task.id, 1, { "write-test": "done" });
+      },
+      { now: () => new Date(dayAt(4)) },
+    );
+
+    expect(await showTask()).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS });
+  });
+
+  it("prints no todo block when no todo of the pinned revision has a recorded state", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedPinnedTask(dataRoot, {});
+
+    expect(await showTask()).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS });
+  });
+
+  it("pads the state and the id of each todo to the longest value", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedPinnedTask(dataRoot, { todoStates: { "write-test": "done" } });
+
+    expect(await showTask()).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS + PADDED_BLOCK });
+  });
+
+  it("prints the state in progress", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedPinnedTask(dataRoot, { todoStates: { "make-it-pass": "in_progress" } });
+
+    expect(await showTask()).toEqual({
+      code: 0,
+      err: "",
+      out:
+        EXECUTED_FIELDS +
+        "todos (approved v1):\n" +
+        "  not started  write-test    Add the a module\n" +
+        "  in progress  make-it-pass  Add the a module\n",
+    });
+  });
+
+  it("prints each line end in a todo title as the two characters \\n", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedPinnedTask(dataRoot, {
+      answer: validPlanAnswer({ todos: [planTodo("a", [], { title: "First line\nsecond line" })] }),
+      todoStates: { a: "done" },
+    });
+
+    expect(await showTask()).toEqual({
+      code: 0,
+      err: "",
+      out: EXECUTED_FIELDS + "todos (approved v1):\n  done  a  First line\\nsecond line\n",
+    });
+  });
+
+  it("prints the todo block after the failed in and error lines", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedPinnedTask(dataRoot, { failWith: "git push failed", todoStates: { "write-test": "done" } });
+
+    expect(await showTask()).toEqual({
+      code: 0,
+      err: "",
+      out:
+        EXECUTED_FIELDS.replace("state: executed", "state: failed") +
+        "failed in: executing\n" +
+        "error: git push failed\n" +
+        PADDED_BLOCK,
     });
   });
 
