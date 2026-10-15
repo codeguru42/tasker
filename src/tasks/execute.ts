@@ -146,9 +146,14 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     const fd = openSync(transcriptPath, "a");
     try {
       const limitMin = config.limits.executeTimeoutMin;
+      const clock = request.clock ?? Date.now;
+      // One deadline for all turns, read once before the first turn.
+      const deadline = clock() + limitMin * 60_000;
       let first = stored === undefined;
       for (const subject of subjects) {
         const { todo, label } = subject;
+        const left = deadline - clock();
+        if (left <= 0) return fail(`executing ${label} timed out after ${limitMin} min`);
         store.setExecuteTodoState(task.id, version, todo.id, "in_progress");
         store.appendEvent(task.id, "todo_started", { id: todo.id });
         const turnPrompt = fillTemplate(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT, {
@@ -160,6 +165,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
           prompt,
           jsonSchema: turnResultJsonSchema(),
           onEvent: (event) => writeSync(fd, `${JSON.stringify(event)}\n`),
+          timeoutMs: left,
         });
         const result = applyRunOutcome({ store, task, phase: "executing", timeoutMinutes: limitMin, io, outcome });
         if ("exitCode" in result) return result;
