@@ -5,10 +5,13 @@ import type { Config } from "../../src/config/schema.js";
 import { promptVersion } from "../../src/prompts/archive.js";
 import {
   currentTodoText,
+  EXECUTE_FIX_PROMPT,
+  EXECUTE_FIX_PROMPT_NAME,
   EXECUTE_PROMPT,
   EXECUTE_PROMPT_NAME,
   EXECUTE_TODO_PROMPT,
   EXECUTE_TODO_PROMPT_NAME,
+  NO_VERIFY_LOG,
   resolvedQuestionsText,
   todosText,
 } from "../../src/prompts/execute.js";
@@ -24,6 +27,7 @@ import { realCommandPath } from "../helpers/fake-commands.js";
 import { claudeSample, claudeSampleWithResult, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   planTodo,
+  seedExecuteFixTurn,
   seedExecuteSession,
   seedExecuteTodoStates,
   transcriptLines,
@@ -159,6 +163,25 @@ const todoPrompt = (id: string): string =>
     CURRENT_TODO: currentTodoText(TODOS.find((todo) => todo.id === id)!),
   });
 
+// The prefix of the first turn of a new session, as the plan gives it, with doneIds marked done in the todos.
+const expectedPrefix = (fixture: ExecuteFixture, todos: typeof TODOS, doneIds: ReadonlySet<string>): string => {
+  const { dataRoot } = fixture.started;
+  const baseRevision = withDataRootStore(dataRoot, (store) => baseRevisionOf(store, fixture.task.id))!;
+  const questions = withDataRootStore(dataRoot, (store) => store.resolvedQuestionsThrough(fixture.task.id, 1));
+  return fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, {
+    COMMIT_RULES: fillTemplate("commit-rules", EXECUTE_COMMIT_TEXT, { BASE_REF: baseRevision }),
+    PLAN_MARKDOWN: fixture.revision.answer.plan_markdown,
+    TODOS: todosText(todos, doneIds),
+    RESOLVED_QUESTIONS: resolvedQuestionsText(questions),
+  });
+};
+
+const fixPrompt = (): string =>
+  fillTemplate(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT, {
+    VERIFY_FAILURE: "npm test failed",
+    VERIFY_LOG: NO_VERIFY_LOG,
+  });
+
 // The states in the plan order.
 const todoStates = (fixture: ExecuteFixture): [string, string][] =>
   withDataRootStore(fixture.config.dataRoot, (store) =>
@@ -176,14 +199,7 @@ describe("executeTask turns", () => {
   it("runs a new session in the dependency order with the prefix on the first turn only", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
     const { dataRoot } = fixture.started;
-    const baseRevision = withDataRootStore(dataRoot, (store) => baseRevisionOf(store, fixture.task.id))!;
-    const questions = withDataRootStore(dataRoot, (store) => store.resolvedQuestionsThrough(fixture.task.id, 1));
-    const prefix = fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, {
-      COMMIT_RULES: fillTemplate("commit-rules", EXECUTE_COMMIT_TEXT, { BASE_REF: baseRevision }),
-      PLAN_MARKDOWN: fixture.revision.answer.plan_markdown,
-      TODOS: todosText(TODOS, new Set()),
-      RESOLVED_QUESTIONS: resolvedQuestionsText(questions),
-    });
+    const prefix = expectedPrefix(fixture, TODOS, new Set());
 
     const { result } = await runExecute(fixture);
 
@@ -383,6 +399,77 @@ describe("executeTask turns", () => {
       ...blocked,
       ...doneStream,
     ]);
+  });
+});
+
+describe("executeTask fix turn", () => {
+  const ONE = [planTodo("a")];
+
+  it("runs the queued fix turn after the open todos with the fix prompt", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: ONE } });
+    withDataRootStore(fixture.config.dataRoot, (store) => seedExecuteFixTurn(store, fixture.task.id, 1, "queued"));
+
+    const { result } = await runExecute(fixture);
+
+    const calls = fixture.claude.calls();
+    expect(calls).toHaveLength(2);
+    expect(calls[1]!.stdin).toBe(fixPrompt());
+    expect(argAfter(calls[1]!.argv, "--resume")).toBe(argAfter(calls[0]!.argv, "--session-id"));
+    expect(eventTypes(fixture, ["fix_turn_started", "fix_turn_done", "executed"]).map((event) => event.type)).toEqual([
+      "fix_turn_started",
+      "fix_turn_done",
+      "executed",
+    ]);
+    expect(eventTypes(fixture, ["executed"])[0]!.data).toMatchObject({
+      prompts: [
+        promptVersion(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT),
+        promptVersion(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT),
+        promptVersion(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT),
+      ],
+    });
+    expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
+      "done",
+    );
+    expect(result).toMatchObject({ fixTurnDone: true, todosDone: 1, todosTotal: 1 });
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("executed");
+  });
+
+  it("sends the prefix and the fix prompt when only the fix turn is left in a new session", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: ONE } });
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      store.markExecuteTodosDone(fixture.task.id, 1);
+      seedExecuteFixTurn(store, fixture.task.id, 1, "queued");
+    });
+
+    const { result } = await runExecute(fixture);
+
+    const calls = fixture.claude.calls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.stdin).toBe(`${expectedPrefix(fixture, ONE, new Set(["a"]))}\n${fixPrompt()}`);
+    expect(eventTypes(fixture, ["executed"])[0]!.data).toMatchObject({
+      prompts: [
+        promptVersion(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT),
+        promptVersion(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT),
+      ],
+    });
+    expect(result).toMatchObject({ fixTurnDone: true });
+  });
+
+  it("fails the task when the fix turn reports blocked", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: doneStream, turns: [{ stream: doneStream }, { stream: turnResultStream("blocked", "No disk.") }] },
+      { answer: { todos: ONE } },
+    );
+    withDataRootStore(fixture.config.dataRoot, (store) => seedExecuteFixTurn(store, fixture.task.id, 1, "queued"));
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe("the fix turn for the verify failure reported blocked: No disk.\n");
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+    expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
+      "queued",
+    );
   });
 });
 
