@@ -62,18 +62,37 @@ The assistant writes one event on each line, and the provider parses each event.
 
 The error output does not go to the terminal. The runner keeps its last 64 KiB as the reason of a failure.
 
+## The verify phase
+
+The verify phase runs the verify commands of a repo in the worktree of a task. `tasker verify` runs it. A verify run is one run of the whole list for one task. A task can have many verify runs. The runs of a task are numbered from 1.
+
+The list stops at the first command that fails, times out or cannot start. This command is the failing command of the run. A run that passed has no failing command. The log of a later command is never created. A command that cannot start, for example because the worktree folder is missing, is a failure of that command. The error text goes to its log and to the result.
+
+Only the exit code and the signal of a command decide the result. Nothing reads the output of a command.
+
+Each verify run has its own folder, and each command has its own log in that folder. The log starts with the command line, holds the output of the command, and ends with the outcome line. Each command has its own log for two reasons:
+
+- A reader can print the log of one command. `tasker show-verify` prints the logs.
+- A timeout between two commands opens no log for the command that timed out. As a result, the position of the last log does not name the failing command. The result of the run names it.
+
+Each run has its own folder, so each log opens for write, not for append.
+
+The verify phase has no marker. Each `tasker verify` runs the whole list again. Each verify counts, and a passed run is a result, not a step that is done.
+
 ## The log and the marker
 
-The log is append-only. A run again keeps the history of the earlier runs.
+The bootstrap log is append-only. A run of bootstrap again keeps the history of the earlier runs.
 
-The marker records a finished run. A finished phase never runs twice. A phase that fails has no marker, so the next run starts again from the first command.
+Only bootstrap has a marker. The marker records a finished bootstrap. A finished bootstrap never runs twice. A bootstrap that fails has no marker, so the next run starts again from the first command.
+
+The verify phase has no marker, and each command of a verify run has its own log. [The verify phase](#the-verify-phase) gives the reasons.
 
 ## Facts about outside tools
 
 - While a program has a listener for SIGTERM, Node does not exit on SIGTERM. After the last listener is removed, the next SIGTERM ends Node with the status 143.
 - Node reports a write to the input of a child that exited as an error event on that stream. With no listener, the error ends Node.
 - The exit of a child comes before the end of its output. A background child that holds the output delays the end until it exits.
-- Node gives the same error for a missing working folder and a missing program. A working folder that is a file makes the start fail at once, with no error event. So the runner checks the folder first.
+- Node gives the same error for a missing working folder and a missing program. A working folder that is a file makes the start fail at once, with no error event. So the assistant runner and each phase command check the folder first.
 - A pipe on Linux gives at most 64 KiB in one chunk.
 - A process in a new session is not in the group, so a signal to the group does not reach it.
 - A Node timer longer than 2^31-1 ms fires at once with a warning. So each timer of the deadline is at most that long.
