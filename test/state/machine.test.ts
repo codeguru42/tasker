@@ -11,12 +11,13 @@ import {
   isTerminalState,
   isTaskState,
   transitionTask,
+  transitionWithPlanApproval,
   transitionWithPlanRevision,
   type TaskState,
   type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { validPlanAnswer } from "../helpers/plan.js";
+import { seedPlanRevision, validPlanAnswer } from "../helpers/plan.js";
 import { useTempDir } from "../helpers/temp.js";
 
 describe("spawning states", () => {
@@ -407,6 +408,36 @@ describe("task transitions", () => {
       expect(store.getPlanRevision(task.id, 1)).toBeUndefined();
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.listEvents(task.id).map((e) => e.type)).toEqual(["created"]);
+    });
+  });
+
+  describe("transitionWithPlanApproval", () => {
+    it("approves the revision and moves the task with one approved event", () => {
+      const task = store.createTask(newTask("planning"));
+      seedPlanRevision(store, task.id);
+      const moved = transitionWithPlanApproval(store, task.id, 1, 2);
+      expect(moved.state).toBe("approved");
+      expect(store.getPlanRevision(task.id, 1)!.approvedAt).not.toBeNull();
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "plan_revision", "approved"]);
+      expect(events[2].data).toEqual({
+        version: 1,
+        openQuestions: 2,
+        from: "awaiting_plan_review",
+        to: "approved",
+      });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("planning"));
+      seedPlanRevision(store, task.id, {}, "workspace_ready");
+      const before = store.listEvents(task.id);
+      expect(() => transitionWithPlanApproval(store, task.id, 1, 0)).toThrow(
+        "illegal state transition: workspace_ready -> approved",
+      );
+      expect(store.getTask(task.id)!.state).toBe("workspace_ready");
+      expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBeNull();
+      expect(store.listEvents(task.id)).toEqual(before);
     });
   });
 
