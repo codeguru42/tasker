@@ -8,7 +8,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 
 ## All tickets
 
-- Name the shared test helpers of `test/helpers.ts` that the tests must use ([rules.md](rules.md#tests)). Before a ticket adds a second test file of the same kind, move the shared setup into `test/helpers.ts`.
+- Name the shared test helpers of `test/helpers/` that the tests must use ([rules.md](rules.md#tests)). Before a ticket adds a second test file of the same kind, move the shared setup into `test/helpers/`.
 - Ask the plan for the side effects of each fix before `tasker approve`. A fix can cause a new finding about its own side effect.
 - If a ticket adds a small exported helper, ask the plan for each place that does the same job ([rules.md](rules.md#tests)).
 - If a function becomes the one home of a rule, the old callers use only its result ([the one-home rule](rules.md#code)).
