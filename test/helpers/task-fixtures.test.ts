@@ -26,6 +26,7 @@ import {
   usePlanFixture,
   useStartedTask,
   useStartFixture,
+  useVerifyFixture,
 } from "./task-fixtures.js";
 
 describe("useStartFixture", () => {
@@ -353,5 +354,26 @@ describe("expectRefusedWithoutChange", () => {
     };
 
     await expect(expectRefusedWithoutChange(started, call, "refused")).rejects.toThrow();
+  });
+});
+
+describe("useVerifyFixture", () => {
+  it("gives a task in executed with a worktree path and no lock row", async () => {
+    const fixture = await useVerifyFixture({ commands: ["true", "echo hi"], limits: { verifyTimeoutMin: 3 } });
+    const { dataRoot } = fixture.started;
+
+    expect(fixture.task.state).toBe("executed");
+    expect(latestTaskOf(dataRoot, fixture.started.key).state).toBe("executed");
+    expect(fixture.task.worktreePath).toBe(fixture.started.worktree);
+    expect(lockNames(dataRoot)).toEqual([]);
+  });
+
+  it("puts the verify commands and the limits in the configuration", async () => {
+    const fixture = await useVerifyFixture({ commands: ["true", "echo hi"], limits: { verifyTimeoutMin: 3 } });
+
+    expect(fixture.config).toBe(fixture.started.config);
+    expect(fixture.config.repos[fixture.started.repoKey].verify.commands).toEqual(["true", "echo hi"]);
+    expect(fixture.config.limits.verifyTimeoutMin).toBe(3);
+    expect(fixture.env).toBe(fixture.started.env);
   });
 });
