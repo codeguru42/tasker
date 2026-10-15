@@ -19,6 +19,18 @@ describe("commandFailureMessage", () => {
     );
   });
 
+  it("names a command that could not start", () => {
+    expect(commandFailureMessage("verify", { ...failed, timedOut: false, error: "spawn ENOENT" }, "/l.log", 10)).toBe(
+      "verify command 2 failed: npm ci: could not start: spawn ENOENT. The log is /l.log.",
+    );
+  });
+
+  it("names the start error before the timeout", () => {
+    expect(commandFailureMessage("verify", { ...failed, timedOut: true, error: "spawn ENOENT" }, "/l.log", 10)).toBe(
+      "verify command 2 failed: npm ci: could not start: spawn ENOENT. The log is /l.log.",
+    );
+  });
+
   it("names the signal when no timeout ended the command", () => {
     expect(commandFailureMessage("bootstrap", { ...failed, signal: "SIGKILL" }, "/l.log", 10)).toBe(
       "bootstrap command 2 failed: npm ci: stopped by signal SIGKILL. The log is /l.log.",
