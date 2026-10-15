@@ -257,13 +257,15 @@ describe("refine", () => {
       const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER) });
       const { dataRoot } = fixture.started;
       const before = eventsOf(dataRoot, KEY);
-      rmSync(planRevisionPath(dataRoot, fixture.task, 1));
+      const path = planRevisionPath(dataRoot, fixture.task, 1);
+      rmSync(path);
 
       const result = await runRefine();
 
       expect(result.code).toBe(1);
       expect(result.out).toBe("");
-      expect(result.err).toMatch(/^cannot read the plan file of revision v1: .+\n$/);
+      expect(result.err.startsWith(`cannot read the plan file ${path} of revision v1: `)).toBe(true);
+      expect(result.err.endsWith("\n")).toBe(true);
       expectNoWrite(fixture, fixture.task, before, "awaiting_plan_review");
     });
 
