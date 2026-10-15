@@ -216,4 +216,12 @@ describe("verifyFailureMessage", () => {
     const failure = { status: "failed", index: 1, command: "exit 3", exitCode: 3, timedOut: false } as const;
     expect(verifyFailureMessage(failure, log, 20).endsWith(`\n${NO_OUTPUT_LINE}`)).toBe(true);
   });
+
+  it("leaves out the log for a command that never started", () => {
+    const log = join(useTempDir("tasker-verify-message-"), "none.log");
+    const failure = { status: "failed", index: 2, command: "npm test", timedOut: true, started: false } as const;
+    expect(verifyFailureMessage(failure, log, 20)).toBe(
+      "verify command 2 failed: npm test: timed out after 20 min, before the command started.",
+    );
+  });
 });
