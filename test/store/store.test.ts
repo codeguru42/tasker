@@ -1566,6 +1566,21 @@ describe("task store", () => {
       ]);
     });
 
+    it("refuses done for a fix turn that is already done and keeps its first done time", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "f", verifyLogTail: null });
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      markFixTurnDone(task.id, 1);
+      clock = new Date("2026-01-03T00:00:00.000Z");
+      expectNothingChanged(
+        task.id,
+        () => markFixTurnDone(task.id, 1),
+        `task ${task.id} has no queued fix turn of plan revision 1`,
+      );
+      expect(readFixTurnRows()[0]).toMatchObject({ done_at: "2026-01-02T00:00:00.000Z" });
+    });
+
     it("queues the fix turn again after it is done, with the new texts and time", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
@@ -1618,7 +1633,7 @@ describe("task store", () => {
       expectNothingChanged(
         task.id,
         () => markFixTurnDone(task.id, 1),
-        `task ${task.id} has no fix turn of plan revision 1`,
+        `task ${task.id} has no queued fix turn of plan revision 1`,
       );
       expect(readFixTurnRows()).toEqual([]);
     });
