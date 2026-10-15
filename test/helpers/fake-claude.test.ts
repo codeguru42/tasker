@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
 import {
+  argAfter,
   claudeOverageEvent,
   claudeRateLimitEvent,
   claudeSample,
@@ -379,5 +380,15 @@ describe("writePlaceholder", () => {
     expect(stat.isFile()).toBe(true);
     expect(stat.size).toBe(0);
     expect(stat.mode & 0o777).toBe(0o444);
+  });
+});
+
+describe("argAfter", () => {
+  it("gives the argument after the flag", () => {
+    expect(argAfter(["-p", "--resume", "abc", "--x"], "--resume")).toBe("abc");
+  });
+
+  it("gives undefined when the flag is missing and nothing is at index 0", () => {
+    expect(argAfter([], "--resume")).toBeUndefined();
   });
 });

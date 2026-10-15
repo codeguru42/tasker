@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
+import { failedFrom, lastTransitionError } from "../../src/state/machine.js";
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
@@ -13,6 +14,8 @@ import {
   dayAt,
   databasePathOf,
   eventsOf,
+  failTaskFrom,
+  failVerifyRun,
   latestTaskOf,
   lockNames,
   readRunMarker,
@@ -497,5 +500,65 @@ describe("withDataRootStore", () => {
     const task = withDataRootStore(dataRoot, seedTask, { now: () => at });
 
     expect(task.createdAt).toBe(at.toISOString());
+  });
+});
+
+describe("failTaskFrom", () => {
+  const setup = (state: string) => {
+    const dataRoot = join(useTempDir("tasker-fail-from-"), "data");
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state, at: dayAt(1) }]);
+    return { dataRoot, task };
+  };
+
+  it.each(["verifying", "provisioning", "planning"] as const)("fails the task from %s with the default message", (origin) => {
+    const { dataRoot, task } = setup("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      failTaskFrom(store, task.id, origin);
+
+      expect(store.getTask(task.id)?.state).toBe("failed");
+      expect(failedFrom(store, task.id)).toBe(origin);
+      expect(lastTransitionError(store.listEvents(task.id))).toBe(`${origin} failed: test`);
+    });
+  });
+
+  it("uses the given message", () => {
+    const { dataRoot, task } = setup("approved");
+
+    withDataRootStore(dataRoot, (store) => {
+      failTaskFrom(store, task.id, "executing", "boom");
+
+      expect(failedFrom(store, task.id)).toBe("executing");
+      expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
+    });
+  });
+});
+
+describe("failVerifyRun", () => {
+  it("records a failed run and fails the task from verifying, with the logs", () => {
+    const dataRoot = join(useTempDir("tasker-fail-verify-"), "data");
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "executed", at: dayAt(1) }]);
+
+    withDataRootStore(dataRoot, (store) => {
+      const run = failVerifyRun(
+        store,
+        dataRoot,
+        task,
+        { result: "failed", commands: ["a", "b"], failingCommand: 2 },
+        ["log one\n", "log two\n"],
+        "command 2 failed",
+      );
+
+      expect(run.number).toBe(1);
+      expect(store.getTask(task.id)?.state).toBe("failed");
+      expect(failedFrom(store, task.id)).toBe("verifying");
+      const events = store.listEvents(task.id);
+      expect(events.slice(-2).map((event) => event.type)).toEqual(["verify_run", "transition"]);
+      expect(events.at(-2)?.data).toMatchObject({ number: 1 });
+      expect(events.at(-1)?.data).toMatchObject({ from: "verifying", to: "failed", error: "command 2 failed" });
+      expect(lastTransitionError(events)).toBe("command 2 failed");
+    });
+    expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 1), "utf8")).toBe("log one\n");
+    expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 2), "utf8")).toBe("log two\n");
   });
 });
