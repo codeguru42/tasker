@@ -17,6 +17,8 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - An explicit option from the caller is better than a detection inside a general helper. A detection causes findings about dropped errors and about cost.
 - If a review finding depends on the timing of the event loop, ask for a failing test first. If execute cannot make a test fail, dismiss the finding with the evidence from the local machine.
 - If tests wait in a loop, ask for one shared wait helper.
+- If a new sentence makes an exception to an earlier clause, the exact text says which one wins. For example, the dead-code rule of [rules.md](rules.md#code) keeps a function for a later ticket "also as an unused export" (#124).
+- Ask the plan to add no reason that the issue does not give. On #121, a reason clause that the plan added on its own drew a contradiction finding.
 
 ## A ticket that only adds a layer, for example a schema
 
