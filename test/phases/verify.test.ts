@@ -115,4 +115,16 @@ describe("runVerify", () => {
 
     expect(readLog(dirs, 1)).toContain(`${realpathSync(dirs.cwd)}\n`);
   });
+
+  it("reports a command that cannot start as a failure of that command", async () => {
+    const dirs = setup();
+    const cwd = join(dirs.cwd, "missing");
+    const text = `cannot start /bin/bash: the folder ${cwd} does not exist`;
+
+    const result = await verify(["true", "touch later"], { ...dirs, cwd });
+
+    expect(result).toStrictEqual({ status: "failed", index: 1, command: "true", timedOut: false, error: text });
+    expect(readLog(dirs, 1)).toBe(`$ true\n--- ${text}\n`);
+    expect(existsSync(join(dirs.runDir, "verify-2.log"))).toBe(false);
+  });
 });
