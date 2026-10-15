@@ -107,6 +107,20 @@ export function seedPlanRevision(
   return store.getPlanRevision(taskId, revision.version)!;
 }
 
+// Inserts the next plan revision of the task (see seedPlanRevision) and approves it, so that it is the pinned revision.
+// The task goes to state. The state must not be a spawning state.
+// It writes the plan_revision event and no approved event.
+export function seedPinnedPlanRevision(
+  store: TaskStore,
+  taskId: number,
+  change: Partial<Omit<NewPlanRevision, "version">> = {},
+  state = "approved",
+): PlanRevision {
+  const revision = seedPlanRevision(store, taskId, change, state);
+  store.approvePlanRevision(taskId, revision.version, state);
+  return store.pinnedPlanRevision(taskId)!;
+}
+
 // Creates the task of seed in the store of dataRoot (see seedTasks), then inserts its plan revision v1 with files as
 // its files_changed (see seedPlanRevision). The task keeps the state of seed.
 export function seedTaskWithPlanFiles(dataRoot: string, seed: SeedTask, files: readonly string[]): Task {
@@ -195,6 +209,18 @@ export function seedExecuteTodoStates(
   for (const [todoId, state] of Object.entries(states)) {
     store.setExecuteTodoState(taskId, version, todoId, state);
   }
+}
+
+// Queues a fix turn of a plan revision with the failure "npm test failed" and no log tail.
+// With the state "done", it also marks the turn done.
+export function seedExecuteFixTurn(
+  store: TaskStore,
+  taskId: number,
+  version: number,
+  state: "queued" | "done" = "queued",
+): void {
+  store.queueExecuteFixTurn(taskId, version, { verifyFailure: "npm test failed", verifyLogTail: null });
+  if (state === "done") store.markExecuteFixTurnDone(taskId, version);
 }
 
 // Records a plan session for the task with TEST_SESSION_ID and the plan model of the test
