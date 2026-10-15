@@ -14,6 +14,7 @@ import {
   seedPlanRevision,
   seedPlanSession,
   seedPlanningTask,
+  planTodo,
   seedTaskWithPlanFiles,
   transcriptLines,
   validPlanAnswer,
@@ -66,6 +67,21 @@ describe("validPlanAnswer", () => {
 
     expect(validPlanAnswer().todos[0]!.title).toBe("Add the a module");
     expect(validPlanAnswer().files_changed).toEqual(["src/a.ts", "test/a.test.ts"]);
+  });
+});
+
+describe("planTodo", () => {
+  it("gives a todo with no dependency from its id", () => {
+    expect(planTodo("a")).toEqual({ id: "a", title: "Do a", description: "The work of a.", depends_on: [] });
+  });
+
+  it("gives the dependencies and the changed fields", () => {
+    expect(planTodo("b", ["a"], { description: "x\ny" })).toEqual({
+      id: "b",
+      title: "Do b",
+      description: "x\ny",
+      depends_on: ["a"],
+    });
   });
 });
 
