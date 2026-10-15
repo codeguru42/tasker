@@ -15,6 +15,7 @@ import {
   transitionWithPlanApproval,
   transitionWithPlanRevision,
   transitionWithPlanUnapproval,
+  transitionWithVerifyRun,
   type TaskState,
   type TransitionDetail,
 } from "../../src/state/machine.js";
@@ -495,6 +496,48 @@ describe("task transitions", () => {
       );
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithVerifyRun", () => {
+    const run = {
+      number: 1,
+      result: "passed" as const,
+      commands: ["npm run check"],
+      failingCommand: null,
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:00:01.000Z",
+    };
+
+    it("inserts the row, appends verify_run, then one transition with the detail", () => {
+      const task = store.createTask(newTask("executed"));
+      transitionTask(store, task.id, "verifying");
+      const moved = transitionWithVerifyRun(store, task.id, "awaiting_work_review", run, { note: "ok" });
+      expect(moved.state).toBe("awaiting_work_review");
+      expect(store.getVerifyRun(task.id, 1)?.result).toBe("passed");
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "transition", "verify_run", "transition"]);
+      expect(events[2].data).toEqual({ number: 1, result: "passed" });
+      expect(events[3].data).toEqual({ note: "ok", from: "verifying", to: "awaiting_work_review" });
+    });
+
+    it("moves to failed with an error that failedFrom reads", () => {
+      const task = store.createTask(newTask("executed"));
+      transitionTask(store, task.id, "verifying");
+      transitionWithVerifyRun(store, task.id, "failed", { ...run, result: "failed", failingCommand: 1 }, { error: "boom" });
+      expect(store.getTask(task.id)!.state).toBe("failed");
+      expect(store.listEvents(task.id).at(-1)?.data).toEqual({ error: "boom", from: "verifying", to: "failed" });
+      expect(failedFrom(store, task.id)).toBe("verifying");
+    });
+
+    it("writes no row and no event for an illegal edge", () => {
+      const task = store.createTask(newTask("executed"));
+      expect(() => transitionWithVerifyRun(store, task.id, "awaiting_work_review", run)).toThrow(
+        "illegal state transition: executed -> awaiting_work_review",
+      );
+      expect(store.getVerifyRun(task.id, 1)).toBeUndefined();
+      expect(store.getTask(task.id)!.state).toBe("executed");
+      expect(store.listEvents(task.id).map((e) => e.type)).toEqual(["created"]);
     });
   });
 
