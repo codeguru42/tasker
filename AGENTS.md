@@ -11,6 +11,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [skills/tasker/SKILL.md](skills/tasker/SKILL.md): the commands.
 - [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a rebase conflict.
 - [docs/dev/orchestration.md](docs/dev/orchestration.md): the rules for an orchestrator that runs tickets from the project board through the installed tasker.
+- [docs/dev/planning.md](docs/dev/planning.md): the rules for a planning session that plans a milestone and writes its issues: the order of the work, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the operator.
 - [docs/dev/workspaces.md](docs/dev/workspaces.md): the base branch and the workspace of a task: the forms, the source order of the resolve, the learned default, the guard, the branch name, and the reasons for the git flags of the diff and the reconcile.
 - [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code: the gh boundary, the gh token and environment, the gh and GitHub facts that the code guards against, and the doctor checks.
 - [docs/dev/issue-keys.md](docs/dev/issue-keys.md): the issue key forms, the short refs, the resolve of a key to its repo and the stored spelling.
