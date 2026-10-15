@@ -243,15 +243,15 @@ flowchart LR
 
 | Failed in | Retries to | Then runs |
 | --- | --- | --- |
-| `provisioning` (also a task stuck in `provisioning`) | `provisioning` | `start` |
-| `planning` | `workspace_ready` | `plan` (fresh session) |
-| `refining` (plain refine) | `awaiting_plan_review` | `refine` |
+| `provisioning` | `provisioning`. Retry does not move the task. `start` moves it from `failed`. | `start` |
+| `planning` | `workspace_ready` | `plan` (new session) |
+| `refining` (plain refine) | `awaiting_plan_review` | nothing runs. Retry prints a hint, and you give the next feedback to `refine`. |
 | `refining` (from `tasker reopen`) | `accepted` | `reopen` |
 | `refining` (promoted from `reviewed`) | `reviewed` | nothing. It rests there. |
 | `refining` (from `tasker review FEEDBACK`) | `awaiting_work_review` | nothing. It rests there. |
 | `approved` | `approved` | `execute` |
-| `executing` | `approved` | `execute` (fresh session) |
-| `verifying` | `executed` | `verify`. With `--resume-execute`: `approved`, then `execute` continues the session with one fix turn. |
+| `executing` | `approved` | `execute` (new session). A done todo gets no turn. |
+| `verifying` | `executed` | `verify`. With `--resume-execute`: `approved`, every todo done, then `execute` continues the session with one fix turn. |
 | `reviewing` | `awaiting_work_review` | `review` (fresh session) |
 | `accepted` (a failed `tasker push`) | `accepted` | `push` |
 | `pushing` (the push ended before tasker recorded it) | `accepted` | `push`. No second push if `origin` already has the sha. |
