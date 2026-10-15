@@ -228,6 +228,41 @@ Carries out the pinned plan revision of a task in the state `approved` in the ex
 - `<issue>`: the issue key of the task.
 - `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
 
+The command runs one turn for each todo that is not `done`, in the dependency order of the todos. All turns of one plan revision share one execute session. A new session gets the plan, the todos, the answered questions and the commit rules in its first turn. A later run of the same revision continues the session and skips each done todo. When the store holds a queued fix turn for the revision, the command runs it after the last todo. The command does not run the verify commands.
+
+tasker records the state of each todo. A todo is `in_progress` when its turn starts, and `done` when the turn reports `done`. A todo with a blocked turn, a failed turn or no result stays `in_progress`. A todo that no turn reached has no state. A done todo stays done, also when a later turn fails.
+
+All turns share one time limit: the value of `executeTimeoutMin`. Each turn gets the time that is left. The command starts no turn when no time is left.
+
+Before the run and after each turn, the command reads the tip of the task branch on the remote. A push from the session fails the task. The error is `push detected on <branch>: the tip of the branch on the remote moved from <old> to <new>`. A push wins over every other result of the turn, a quota stop included. The command cannot see a push that moves the tip and then moves it back within one turn.
+
+On success, the command prints these lines on stdout:
+
+- `executed <issue key> at revision v<N>`
+- `todos: <done> of <total> done`
+- `fix turn: done`, only when this run did the fix turn
+- `denials: <count>`, the permission denials of all turns of this run
+- `transcript: <path>`, the file `transcripts/execute-v<N>.jsonl`. The runs of one revision share it.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In the first eight cases, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is not in `approved`. The error is `the task of <issue key> is in <state>; tasker execute needs approved`.
+- The task is approved, but no revision is pinned. The error is `the task of <issue key> is approved, but no revision is pinned`.
+- The plan file of the pinned revision cannot be read. The error is `cannot read the plan file <path> of revision v<N>: <error>`.
+- The todos hold a dependency cycle. The error names the todos of the cycle.
+- The task has no base revision or no branch. The error is `the task of <issue key> has no base revision` or `the task of <issue key> has no branch`.
+- The remote cannot be read before the run. The error is `cannot read the remote before the run: <error>`.
+- The provider refuses the model of the recorded execute session. The error is `the execute session of <issue key> runs on <model>, and <provider> refuses it: <reason>`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- A turn reports `blocked` or gives no result. The task goes to the state `failed`, and the error is `<turn> reported blocked: <reason>` or `<turn> reported no result: <detail>`. The turn is ``todo `<id>` (<title>)`` or `the fix turn for the verify failure`.
+- The assistant fails or a turn runs out of time. The task goes to the state `failed`, and the error is `executing failed: <reason>` or `executing timed out after <n> min`. When no time is left before a turn, the error is `executing <turn> timed out after <n> min`.
+- The tip of the branch moved, or the remote cannot be read after a turn. The task goes to the state `failed`, and the error is the push error above or `cannot read the remote after the run: <error>`.
+- An unexpected error occurs after the run has started. The task goes to the state `failed`, and the error is `executing failed: <error>`.
+- A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
+
+The command writes the events `todo_started` and `todo_done` with the data `{ id }`, `fix_turn_started` and `fix_turn_done` with no data, one `permission_denials` event with `{ denials }`, one `sandbox_cleanup` event for each turn that has one, and one `usage` event for each turn. At the end, it writes one `executed` event with `{ version, prompts, from, to }` in place of the `transition` event. No command resumes a task in `failed` or `quota_blocked` yet.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
