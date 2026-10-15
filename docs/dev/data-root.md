@@ -111,7 +111,7 @@ These rules hold:
 - The runs of a task are numbered from 1. The number of a new run is the highest number of the task plus one. Another number is an error.
 - The insert of a run shares one transaction with its `verify_run` event and the state move, so a refused move leaves no row behind.
 - The row holds the commands that the run started, in order. A run that started no command holds an empty list.
-- The row holds the position of the failing command of the run, from 1. A run with no failing command holds none.
+- The row holds the position of the failing command of the run, from 1. A run with no failing command holds none. The position can be one more than the number of started commands. This happens when the deadline came before the failing command started. Then that command is not in the list of started commands, and it has no log. [phases.md](phases.md#the-verify-phase) gives the deadline rule.
 
 The result of a run is one of these values:
 

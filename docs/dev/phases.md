@@ -70,7 +70,7 @@ The list stops at the first command that fails, times out or cannot start. This 
 
 Only the exit code and the signal of a command decide the result. Nothing reads the output of a command.
 
-Each verify run has its own folder, and each command has its own log in that folder. The log starts with the command line, holds the output of the command, and ends with the outcome line. Each command has its own log for two reasons:
+Each verify run has its own folder, and each command that the run tries to start has its own log in that folder. The log starts with the command line, holds the output of the command, and ends with the outcome line. Each command has its own log for two reasons:
 
 - A reader can print the log of one command. `tasker show-verify` prints the logs.
 - A timeout between two commands opens no log for the command that timed out. As a result, the position of the last log does not name the failing command. The result of the run names it.
