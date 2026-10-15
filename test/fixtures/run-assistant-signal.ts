@@ -1,7 +1,6 @@
-import { writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { runAssistant } from "../../src/process/run-assistant.js";
 import { signalListenerCounts } from "../helpers/processes.js";
+import { markWatching } from "./watching.js";
 
 // Runs one command with runAssistant and prints the result as one JSON line.
 // Arguments: cwd, deadlineMs (from now), command.
@@ -17,7 +16,7 @@ const result = await runAssistant("/bin/bash", ["-c", command], {
   prompt: "",
   deadline: Date.now() + Number(deadlineMs),
   onLine: (line) => lines.push(line),
-  onSpawn: () => writeFileSync(join(cwd, "watching"), `${process.pid}\n`),
+  onSpawn: () => markWatching(cwd),
 });
 const after = signalListenerCounts();
 console.log(JSON.stringify({ result, lines, before, after }));

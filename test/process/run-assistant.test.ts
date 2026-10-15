@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CommandNotFoundError } from "../../src/process/run-child.js";
 import { runAssistant } from "../../src/process/run-assistant.js";
-import { readPidFile, savePid, signalListenerCounts, startFixture, waitUntilGone } from "../helpers/processes.js";
+import { readPidFile, savePid, signalListenerCounts, startFixture, waitForWatching, waitUntilGone } from "../helpers/processes.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
@@ -330,7 +330,7 @@ describe("runAssistant with the signals of tasker", () => {
       const dir = useTempDir("tasker-run-assistant-");
       const fixture = startFixture("run-assistant-signal.ts", [dir, "60000", "echo noise >&2; echo $$ > started; sleep 30"]);
       await readPidFile(join(dir, "started"), 10_000);
-      await readPidFile(join(dir, "watching"), 10_000); // started does not show that runAssistant forwards the signals yet
+      await waitForWatching(dir, 10_000);
 
       process.kill(fixture.pid, signal);
 

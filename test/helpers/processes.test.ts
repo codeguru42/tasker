@@ -14,6 +14,7 @@ import {
   spawnTasker,
   startFixture,
   startWriteLockHolder,
+  waitForWatching,
   waitUntil,
   waitUntilGone,
 } from "./processes.js";
@@ -116,6 +117,21 @@ describe("readPidFile", () => {
     const path = join(useTempDir("tasker-pid-file-"), "pid");
 
     await expect(readPidFile(path, 150)).rejects.toThrow();
+  });
+});
+
+describe("waitForWatching", () => {
+  it("waits for the pid in the file watching of the folder", async () => {
+    const dir = useTempDir("tasker-watching-");
+    const child = spawn("sleep", ["30"], { stdio: "ignore" });
+    savePid(child.pid!);
+    setTimeout(() => writeFileSync(join(dir, "watching"), `${child.pid}\n`), 100);
+
+    await expect(waitForWatching(dir, 5000)).resolves.toBe(child.pid);
+  });
+
+  it("rejects when the folder has no file watching", async () => {
+    await expect(waitForWatching(useTempDir("tasker-watching-"), 150)).rejects.toThrow();
   });
 });
 

@@ -3,7 +3,16 @@ import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { type GroupResult, runInGroup, signalGroup } from "../../src/process/run-group.js";
-import { isAlive, readPidFile, repoRoot, savePid, signalListenerCounts, waitUntil, waitUntilGone } from "../helpers/processes.js";
+import {
+  isAlive,
+  readPidFile,
+  repoRoot,
+  savePid,
+  signalListenerCounts,
+  waitForWatching,
+  waitUntil,
+  waitUntilGone,
+} from "../helpers/processes.js";
 import { useTempDir } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
@@ -294,6 +303,7 @@ describe("runInGroup with the signals of tasker", () => {
     async (signal) => {
       const fixture = startFixture("echo noise; echo noise >&2; echo $$ > started; sleep 30; touch after", MINUTE_MS, 0);
       await readPidFile(join(fixture.dir, "started"), 10_000);
+      await waitForWatching(fixture.dir, 10_000);
 
       fixture.send(signal);
 
@@ -315,6 +325,7 @@ describe("runInGroup with the signals of tasker", () => {
       0,
     );
     await readPidFile(join(fixture.dir, "started"), 10_000);
+    await waitForWatching(fixture.dir, 10_000);
     const ints = join(fixture.dir, "ints");
 
     fixture.send("SIGINT");
