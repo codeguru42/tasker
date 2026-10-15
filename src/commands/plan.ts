@@ -1,12 +1,11 @@
-import { CommanderError } from "commander";
 import type { RegisterCommand } from "../cli.js";
 import { planTask } from "../tasks/plan.js";
+import { reportPlanRun } from "./plan-revision.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
   orFailAsync,
   REPO_OPTION_DESCRIPTION,
-  warnOverlaps,
   withIssueTaskAsync,
 } from "./shared.js";
 
@@ -28,26 +27,11 @@ export const plan: RegisterCommand = (program, io) => {
         })),
       );
       const { key, taskId, planned } = result;
-      // The run step already printed the message.
-      if ("exitCode" in planned) {
-        throw new CommanderError(planned.exitCode, "tasker.plan", "the plan run did not succeed");
-      }
-      io.stdout(
-        [
-          `planned ${key} as revision v${planned.version}`,
-          `plan: ${planned.planPath}`,
-          `prompt: ${planned.promptPath}`,
-          "todos:",
-          ...planned.answer.todos.map((todo) => `- ${todo.id}: ${todo.title}`),
-          `questions: ${planned.answer.questions.length}`,
-          "",
-        ].join("\n"),
-      );
-      await warnOverlaps(io, config, {
+      await reportPlanRun(io, config, {
+        command: "plan",
         taskId,
-        files: planned.answer.files_changed,
-        env: process.env,
-        lastLine: "tasker does not refuse. Decide before you approve.",
+        result: planned,
+        firstLine: (version) => `planned ${key} as revision v${version}`,
       });
     });
 };

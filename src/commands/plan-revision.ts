@@ -1,6 +1,9 @@
+import { CommanderError } from "commander";
 import type { Io } from "../cli.js";
+import type { Config } from "../config/schema.js";
+import type { PlanResult } from "../tasks/plan-run.js";
 import type { PlanQuestionState, PlanRevision, Task, TaskStore } from "../store/store.js";
-import { fail } from "./shared.js";
+import { fail, warnOverlaps } from "./shared.js";
 
 export const VERSION_OPTION_DESCRIPTION =
   "Use this plan revision: a whole number of 1 or more. The default is the newest revision";
@@ -53,4 +56,37 @@ export function formatQuestions(states: PlanQuestionState[]): string {
     );
   });
   return `questions:\n${items.join("")}`;
+}
+
+// The last line of the overlap warning after a plan or a refine: the task waits in awaiting_plan_review for the approve.
+const PLAN_OVERLAP_LAST_LINE = "tasker does not refuse. Decide before you approve.";
+
+// Prints the lines of a new plan revision with firstLine first, then the overlap warning on stderr.
+// A result with exitCode stops the command: the run step already printed the message.
+export async function reportPlanRun(
+  io: Io,
+  config: Config,
+  o: { command: "plan" | "refine"; taskId: number; result: PlanResult; firstLine: (version: number) => string },
+): Promise<void> {
+  const { result } = o;
+  if ("exitCode" in result) {
+    throw new CommanderError(result.exitCode, `tasker.${o.command}`, `the ${o.command} run did not succeed`);
+  }
+  io.stdout(
+    [
+      o.firstLine(result.version),
+      `plan: ${result.planPath}`,
+      `prompt: ${result.promptPath}`,
+      "todos:",
+      ...result.answer.todos.map((todo) => `- ${todo.id}: ${todo.title}`),
+      `questions: ${result.answer.questions.length}`,
+      "",
+    ].join("\n"),
+  );
+  await warnOverlaps(io, config, {
+    taskId: o.taskId,
+    files: result.answer.files_changed,
+    env: process.env,
+    lastLine: PLAN_OVERLAP_LAST_LINE,
+  });
 }
