@@ -7,6 +7,8 @@ import {
   canTransition,
   failTask,
   failedFrom,
+  failedFromEvents,
+  lastFailIndex,
   isSpawningState,
   isTerminalState,
   isTaskState,
@@ -663,6 +665,47 @@ describe("task transitions", () => {
       failTask(store, task.id, "boom");
       store.appendEvent(task.id, "transition", { from: "bogus", to: "failed" });
       expect(failedFrom(store, task.id)).toBeUndefined();
+    });
+  });
+
+  describe("lastFailIndex", () => {
+    it("gives -1 for events with no move into failed", () => {
+      const task = store.createTask(newTask("planning"));
+      store.appendEvent(task.id, "transition", { from: "planning", to: "refining" });
+      expect(lastFailIndex(store.listEvents(task.id))).toBe(-1);
+    });
+
+    it("gives the index of the last of two moves into failed", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      transitionTask(store, task.id, "refining");
+      failTask(store, task.id, "boom again");
+      const events = store.listEvents(task.id);
+      const fails = events.flatMap((event, i) => ((event.data as { to?: string } | undefined)?.to === "failed" ? [i] : []));
+      expect(fails).toHaveLength(2);
+      expect(lastFailIndex(events)).toBe(fails[1]);
+    });
+  });
+
+  describe("failedFromEvents", () => {
+    it("gives the from of the last move into failed", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      transitionTask(store, task.id, "refining");
+      failTask(store, task.id, "boom again");
+      expect(failedFromEvents(store.listEvents(task.id))).toBe("refining");
+    });
+
+    it("gives undefined for events with no move into failed", () => {
+      const task = store.createTask(newTask("planning"));
+      expect(failedFromEvents(store.listEvents(task.id))).toBeUndefined();
+    });
+
+    it("gives undefined when the last move has an invalid from, also when an older move has a valid one", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      store.appendEvent(task.id, "transition", { from: "bogus", to: "failed" });
+      expect(failedFromEvents(store.listEvents(task.id))).toBeUndefined();
     });
   });
 });
