@@ -4,6 +4,7 @@ import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
 import {
   planRevisionOf,
+  planStateSnapshot,
   seedPlanReviewTask,
   seedPlanRevision,
   seedPlanningTask,
@@ -31,16 +32,9 @@ const approvedEvent = (version: number, openQuestions: number) => ({
   data: { version, openQuestions, from: "awaiting_plan_review", to: "approved" },
 });
 
-// The state, the events and the approved_at of each version of the task, as the store holds them now.
-const snapshot = (dataRoot: string, taskId: number, versions: number[]) => ({
-  state: latestTaskOf(dataRoot, KEY).state,
-  events: eventsOf(dataRoot, KEY),
-  approvedAt: versions.map((version) => planRevisionOf(dataRoot, taskId, version)?.approvedAt),
-});
-
 // What a refused approve must leave: the state, the events and each approved_at as before.
-const expectNoWrite = (dataRoot: string, taskId: number, before: ReturnType<typeof snapshot>) => {
-  expect(snapshot(dataRoot, taskId, before.approvedAt.map((_, i) => i + 1))).toEqual(before);
+const expectNoWrite = (dataRoot: string, taskId: number, before: ReturnType<typeof planStateSnapshot>) => {
+  expect(planStateSnapshot(dataRoot, KEY, taskId, before.approvedAt.map((_, i) => i + 1))).toEqual(before);
 };
 
 const question = (id: string, text: string) => ({ id, question: text, context: "No context." });
@@ -122,7 +116,7 @@ describe("approve", () => {
 
   it("fails at once when another process holds the task lock", async () => {
     const { dataRoot, task } = seedPlanReviewTask();
-    const before = snapshot(dataRoot, task.id, [1]);
+    const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
     const name = taskLockName(REPO, KEY);
     const holder = startLockHolder(databasePathOf(dataRoot), name);
     await holder.attempt;
@@ -151,7 +145,7 @@ describe("a refused approve", () => {
   it("refuses a second approve", async () => {
     const { dataRoot, task } = seedPlanReviewTask();
     expect((await runApprove()).code).toBe(0);
-    const before = snapshot(dataRoot, task.id, [1]);
+    const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
 
     const result = await runApprove();
 
@@ -163,7 +157,7 @@ describe("a refused approve", () => {
 
   it("refuses a task in another state", async () => {
     const { dataRoot, task } = seedOtherStateTask();
-    const before = snapshot(dataRoot, task.id, [1]);
+    const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
 
     const result = await runApprove();
 
@@ -175,7 +169,7 @@ describe("a refused approve", () => {
 
   it("refuses a task with no plan revision", async () => {
     const { dataRoot, task } = seedPlanReviewTask({ revisions: [] });
-    const before = snapshot(dataRoot, task.id, [1]);
+    const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
 
     const result = await runApprove();
 
@@ -188,7 +182,7 @@ describe("a refused approve", () => {
   it("prints no overlap warning", async () => {
     const { dataRoot, task } = seedOtherStateTask();
     seedOverlappingTask(dataRoot);
-    const before = snapshot(dataRoot, task.id, [1]);
+    const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
 
     const result = await runApprove();
 
