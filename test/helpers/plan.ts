@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import { transitionTask, type TaskState } from "../../src/state/machine.js";
 import { recordPlanRevision } from "../../src/store/plan-file.js";
@@ -108,6 +109,13 @@ export function seedPlanningTask(): { dataRoot: string; task: Task } {
 // Revision version of the task in dataRoot, or undefined.
 export function planRevisionOf(dataRoot: string, taskId: number, version: number): PlanRevision | undefined {
   return withDataRootStore(dataRoot, (store) => store.getPlanRevision(taskId, version));
+}
+
+// The lines of the file at path, with no empty last item.
+export function transcriptLines(path: string): string[] {
+  return readFileSync(path, "utf8")
+    .split("\n")
+    .filter((line) => line !== "");
 }
 
 // Records the next plan revision of the task with recordPlanRevision: it writes the plan file and the row,

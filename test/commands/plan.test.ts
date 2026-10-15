@@ -10,7 +10,7 @@ import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
-import { planAnswerStream, planRevisionOf, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, validPlanAnswer } from "../helpers/plan.js";
+import { planAnswerStream, planRevisionOf, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, transcriptLines, validPlanAnswer } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
@@ -21,12 +21,6 @@ const REPO = "codeguru42/tasker";
 const runPlan = (key = KEY, ...extra: string[]) => runCommand(plan, "plan", key, ...extra);
 
 type Fixture = Awaited<ReturnType<typeof usePlanFixture>>;
-
-// The lines of a transcript file, with no empty last item.
-const transcriptLines = (path: string) =>
-  readFileSync(path, "utf8")
-    .split("\n")
-    .filter((line) => line !== "");
 
 // The events after the events of the start, as { type, data }.
 const eventsAfterStart = (fixture: Fixture) => {
