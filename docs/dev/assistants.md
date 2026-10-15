@@ -2,6 +2,8 @@
 
 An assistant is a coding-agent program. Tasker starts it in the worktree of a task to plan, to execute and to review. The assistant interface lets tasker run each assistant program in the same way. A command never imports the module of one assistant.
 
+Some parts of this doc are a layer for the later `tasker execute` ticket. These are the execute prompts, the order of the todos, the turn result, the tools of the execute turns, the remaining time of a start and the start of a later turn. No command uses them yet. A function that nothing in `src/` calls yet is not dead code.
+
 ## Refuse, never drop
 
 A provider that cannot enforce a limit that tasker asks for must refuse the run before it starts the program. A run with less confinement than tasker asked for can write or read outside the limits that the operator relies on. The doc comment of the interface holds the rule for the code.
@@ -30,15 +32,29 @@ The plan mode blocks `Edit` and `Write`, but it does not block a shell command t
 
 ### The execute role
 
-The execute role runs under the `dontAsk` permission mode. Under this mode, a tool call that no allow rule covers is denied. The deadline is the execute deadline of the configuration.
+The execute role runs under the `dontAsk` permission mode. Under this mode, a tool call that no allow rule covers is denied. The deadline is the execute deadline of the configuration. One deadline covers every turn of a run. A start can replace it with the time that is left (see "The rules for the caller").
 
 The allow list holds these rules, in this order:
 
 - `Read`, `Glob` and `Grep`, each limited to the worktree.
 - `Edit` and `Write`, each limited to the worktree.
 - The shell, which runs in the sandbox.
+- `StructuredOutput`.
+- `Skill`.
+- `TodoWrite`.
+- `NotebookEdit`, limited to the worktree.
+- `Agent` and `Task`.
+- `Read` of `<configuration folder>/skills/**` and of `<configuration folder>/plugins/**`.
 
 `Read`, `Glob` and `Grep` need a path rule. A plain `Glob` or `Grep` lists and searches files outside the worktree. A host test showed this. With a path rule, a call outside the worktree is denied. Without any `Glob` or `Grep` rule, the tools are not available at all.
+
+The program `claude` answers `--json-schema` through a tool named `StructuredOutput`. A real capture showed a denial of this tool under `dontAsk` without a rule. A measure on `claude` 2.1.300 showed no denial. The rule stays, so that both cases work.
+
+The model calls the subagent tool `Agent`, and the `init` event of `claude` 2.1.300 lists it as `Task`. A measure on 2.1.300 showed that neither is denied without a rule. The list names both, because a later `claude` can use either name.
+
+A skill points the model at reference files in the skills folder and the plugins folder of the configuration folder of `claude`. The configuration folder is `CLAUDE_CONFIG_DIR`, or `.claude` under `HOME`. A measure on `claude` 2.1.300 showed that `dontAsk` denies the read of a skill file without a rule. With the two rules, the read of a skill file and of a plugin skill file passes, and the read of `settings.json` stays denied. The two rules name exactly the patterns `<configuration folder>/skills/**` and `<configuration folder>/plugins/**`. Never allow the whole configuration folder, because it holds the credentials and the settings. When neither variable is set, the list has no skill rule.
+
+One prepared run serves every turn of a session. The first start of a new session creates the session with `--session-id`. Each later start continues it with `--resume`. A continued session uses `--resume` from the first start. The flag changes when `start` is called, not when the run ends.
 
 The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and for the shared git folder of the clone. A deny wins over an allow. As a result, git data changes only through `git` commands in the sandboxed shell.
 
@@ -71,6 +87,8 @@ The filter of the phases drops the GitHub token and the ssh agent of the operato
 - The caller must move the task into a spawning state before the run starts.
 - The caller must record the session before the run starts.
 - For the execute role, the caller must build the prompt with the commit text that the run gives, and must replace the base ref placeholder in it.
+- For the execute role, the caller gives each start the time that is left of one deadline that covers every turn. A time of 0 or less goes to the run unchanged, so the caller must stop before it starts a turn with no time left.
+- For the execute role, the caller must not start a second turn after a refused first start, because the start of a later turn continues the session.
 
 ## The claude-code provider
 
@@ -186,6 +204,8 @@ The plan and the feedback of a refine run also stand in a tag, and the fill trea
 
 The open questions of a refine run also stand in an untrusted tag. The plan session writes them after it reads the issue text of a third party, so a question can carry injected text.
 
+The execute prompts use the same rule for these tags: `approved-plan`, `todos`, `resolved-questions`, `current-todo`, `verify-failure` and `verify-log`. The plan session wrote the plan, the todos and the questions from the issue text of a third party. The verify failure and its log can quote the output of code that the task wrote. The commit rules are not in a tag, because tasker writes them.
+
 ### What the plan prompt asks for
 
 The plan must be complete on its own. The execute run is a new session. It sees only the plan, its todos and the answers to the questions, not the planning conversation.
@@ -195,6 +215,25 @@ The list `files_changed` must name each file that the plan touches. Tasker compa
 The todos come as red and green steps. The commit rules ask for a commit with the failing test, and then a commit with the code.
 
 A todo never runs the full check of the repository. Tasker runs the verify commands itself after the execute run, and that run is the one that counts.
+
+### The execute prompts
+
+The execute run uses three prompts: `execute`, `execute-todo` and `execute-fix`. The code is in `src/prompts/execute.ts`. No command uses them yet.
+
+The reasons for the design:
+
+- One todo goes in each turn. Tasker records the state of each todo itself, and a resume continues at the next todo.
+- The whole plan goes in the first turn only. One session holds it.
+- The plan comes from the plan file. A fresh session has no memory of it.
+- The todos and the resolved questions go in the prompt. The execute session never sees the planning conversation.
+- The todos and the questions are in untrusted tags, because the plan session wrote them from the issue text of a third party.
+- The verify failure is untrusted data, because its output can quote code that the task wrote.
+- The turn prompts share their text in `EXECUTE_TURN_RULES`, and every execute block uses the data sentence of `SHARED_RULES`. As a result, one change updates every prompt.
+- The fix prompt spells out the rule texts and does not point at rule numbers. A fix turn can be the first turn of a resumed session, and that session never saw an `execute-todo` prompt.
+
+The turn result is a strict object: `result` is `done` or `blocked`, and `reason` is optional. An extra key or an unknown value is no result, and it is never read as `done`. The read of a result never throws. A `blocked` result with no reason gets a fixed reason.
+
+The todos run in the order of their dependencies. The plan check refuses a dependency cycle, so a new plan holds none. A stored revision from before this check can hold a cycle, and for such a revision the function `orderTodos` throws. A dependency on an id that no todo has holds nothing back, because the plan check already reports it.
 
 ### The refine prompt
 
