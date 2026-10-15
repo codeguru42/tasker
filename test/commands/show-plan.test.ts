@@ -6,11 +6,10 @@ import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath } from "../../src/store/layout.js";
 import type { NewPlanRevision, Task } from "../../src/store/store.js";
 import {
-  dayAt,
   recordTestPlanRevision,
   runCommand,
   seedPlanRevision,
-  seedTasks,
+  seedPlanningTask,
   useThreeRepoDataRoot,
   validPlanAnswer,
   withDataRootStore,
@@ -20,13 +19,6 @@ const TASKER = "codeguru42/tasker";
 const KEY = `${TASKER}#5`;
 
 type Change = Partial<Omit<NewPlanRevision, "version">>;
-
-// A task of the repo in the state planning, with the data root of the three-repo configuration.
-function seedPlanningTask(): { dataRoot: string; task: Task } {
-  const { dataRoot } = useThreeRepoDataRoot();
-  const [task] = seedTasks(dataRoot, [{ issueKey: KEY, repoKey: TASKER, state: "planning", at: dayAt(2) }]);
-  return { dataRoot, task };
-}
 
 // Records v1 with change1. With change2, moves the task to refining and records v2.
 function recordRevisions(dataRoot: string, task: Task, change1: Change = {}, change2?: Change): void {

@@ -58,6 +58,7 @@ import {
   recordTestPlanRevision,
   seedPlanRevision,
   seedPlanSession,
+  seedPlanningTask,
   seedTasks,
   signalListenerCounts,
   spawnTasker,
@@ -1936,6 +1937,18 @@ describe("recordTestPlanRevision", () => {
       expect(store.getPlanRevision(task.id, 1)).toBeDefined();
       expect(readFileSync(planRevisionPath(dataRoot, task, 1), "utf8")).toBe(markdown);
     });
+  });
+});
+
+describe("seedPlanningTask", () => {
+  it("seeds the task of codeguru42/tasker#5 in the state planning in the data root", () => {
+    const { dataRoot, task } = seedPlanningTask();
+
+    expect(task).toMatchObject({ issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state: "planning" });
+    const found = withDataRootStore(dataRoot, (store) =>
+      store.findLatestTask("codeguru42/tasker", "codeguru42/tasker#5"),
+    );
+    expect(found?.id).toBe(task.id);
   });
 });
 

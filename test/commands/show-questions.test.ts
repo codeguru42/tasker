@@ -2,12 +2,10 @@ import { describe, expect, it } from "vitest";
 import { showQuestions } from "../../src/commands/show-questions.js";
 import { transitionTask } from "../../src/state/machine.js";
 import {
-  dayAt,
   recordTestPlanRevision,
   runCommand,
   seedPlanRevision,
-  seedTasks,
-  useThreeRepoDataRoot,
+  seedPlanningTask,
   validPlanAnswer,
   withDataRootStore,
 } from "../helpers.js";
@@ -17,12 +15,6 @@ const KEY = `${TASKER}#5`;
 
 const OPEN_QUESTION =
   "questions:\n  base-branch: Which branch is the base?\n    The issue names no base branch.\n    open\n";
-
-function seedPlanningTask() {
-  const { dataRoot } = useThreeRepoDataRoot();
-  const [task] = seedTasks(dataRoot, [{ issueKey: KEY, repoKey: TASKER, state: "planning", at: dayAt(2) }]);
-  return { dataRoot, task };
-}
 
 describe("show-questions", () => {
   it("prints the open questions of the newest revision", async () => {

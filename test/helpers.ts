@@ -1726,6 +1726,16 @@ export function seedPlanRevision(
   return store.getPlanRevision(taskId, revision.version)!;
 }
 
+// A task of codeguru42/tasker#5 in the repo codeguru42/tasker, in the state planning,
+// in the data root of the three-repo configuration.
+export function seedPlanningTask(): { dataRoot: string; task: Task } {
+  const { dataRoot } = useThreeRepoDataRoot();
+  const [task] = seedTasks(dataRoot, [
+    { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state: "planning", at: dayAt(2) },
+  ]);
+  return { dataRoot, task };
+}
+
 // Records the next plan revision of the task with recordPlanRevision: it writes the plan file and the row,
 // and moves the task to `to` with the check of the state machine.
 export function recordTestPlanRevision(
