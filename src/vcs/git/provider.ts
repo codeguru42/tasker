@@ -9,7 +9,7 @@ import {
   trackedPaths,
 } from "./assistant-surface.js";
 import { resolveBaseBranch } from "./base-branch.js";
-import { ownCommitsText, uncommittedChanges, worktreeDiff } from "./changes.js";
+import { changedPaths, ownCommitsText, uncommittedChanges, worktreeDiff } from "./changes.js";
 import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "./publish.js";
 import { gitDoctorChecks } from "./doctor.js";
 import { installPushHook } from "./push-guard.js";
@@ -107,6 +107,10 @@ export function createGitProvider({
     async ownCommits(ctx, { taskRef, baseRevision }) {
       const { clone } = pathsOf(ctx);
       return ownCommitsText({ clone, env: ctx.env, branch: taskRef, baseRevision });
+    },
+    async changedPaths(ctx, { taskRef, baseRevision }) {
+      const { clone } = pathsOf(ctx);
+      return changedPaths({ clone, env: ctx.env, branch: taskRef, baseRevision });
     },
     async uncommittedChanges(ctx, { path }) {
       const { clone } = pathsOf(ctx);

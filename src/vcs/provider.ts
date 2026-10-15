@@ -113,6 +113,9 @@ export interface VcsProvider {
   diffAgainstBase(ctx: VcsContext, o: { path: string; baseRevision: string }): Promise<string>;
   // The commits of taskRef that baseRevision does not hold, as text.
   ownCommits(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<string>;
+  // The paths that taskRef changes against baseRevision, raw, in the order of the version control.
+  // A rename gives the old and the new path. It needs no workspace.
+  changedPaths(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<string[]>;
   // The uncommitted changes of the workspace. An empty list means a clean workspace.
   uncommittedChanges(ctx: VcsContext, o: { path: string }): Promise<UncommittedChange[]>;
   // Moves the workspace onto baseRevision and gives its new head revision.
