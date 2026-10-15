@@ -2,11 +2,12 @@ import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { transitionTask } from "../../src/state/machine.js";
+import { NO_OUTPUT_LINE } from "../../src/phases/command-step.js";
 import { verifyCommandLogPath, verifyRunDir } from "../../src/store/layout.js";
 import { verifyTask } from "../../src/tasks/verify.js";
 import { captureIo } from "../helpers/cli.js";
 import { readPidFile, waitUntil } from "../helpers/processes.js";
-import { databasePathOf, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore } from "../helpers/store.js";
+import { databasePathOf, eventsOf, latestTaskOf, lockNames, readRunMarker, seedVerifyRun, withDataRootStore } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
 import { expectRefusedWithoutChange, taskRefOf, useVerifyFixture, type VerifyFixture } from "../helpers/task-fixtures.js";
 
@@ -96,5 +97,78 @@ describe("verifyTask pass", () => {
     const { result } = await run;
 
     expect(result).toMatchObject({ number: 1, commands: 1 });
+  });
+});
+
+// The row of run 1 and the error of the last event, for a task that the verify run failed.
+function failedRunOf(fixture: VerifyFixture, number = 1) {
+  const { dataRoot, key } = fixture.started;
+  const row = withDataRootStore(dataRoot, (store) => store.getVerifyRun(fixture.task.id, number));
+  const last = eventsOf(dataRoot, key).at(-1);
+  return { row, state: latestTaskOf(dataRoot, key).state, event: last, error: (last?.data as { error?: string }).error };
+}
+
+describe("verifyTask command failure", () => {
+  it("fails the task, records the row and prints the error with the tail of the log", async () => {
+    const fixture = await useVerifyFixture({ commands: ["true", "seq 1 30; exit 3"] });
+    const log = verifyCommandLogPath(fixture.started.dataRoot, fixture.task, 1, 2);
+    const lines = Array.from({ length: 19 }, (_, i) => `${i + 12}\n`).join("");
+    const message =
+      `verify command 2 failed: seq 1 30; exit 3: exit code 3. The log is ${log}.\n` +
+      `the last 20 lines of the log:\n${lines}--- exit code 3`;
+
+    const { result, io } = await runVerifyTask(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    const found = failedRunOf(fixture);
+    expect(found.state).toBe("failed");
+    expect(found.row).toMatchObject({
+      result: "failed",
+      commands: ["true", "seq 1 30; exit 3"],
+      failingCommand: 2,
+    });
+    expect(found.error).toBe(message);
+    expect(found.event?.data).toEqual({ error: message, from: "verifying", to: "failed" });
+    expect(io.err.join("")).toBe(`${message}\n`);
+  });
+
+  it("records a timeout as timed_out", async () => {
+    const fixture = await useVerifyFixture({ commands: ["sleep 30"], limits: { verifyTimeoutMin: 0.005 } });
+
+    const { result } = await runVerifyTask(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    const found = failedRunOf(fixture);
+    expect(found.state).toBe("failed");
+    expect(found.row).toMatchObject({ result: "timed_out", commands: ["sleep 30"], failingCommand: 1 });
+    expect(found.error).toContain("sleep 30: timed out after 0.005 min. The log is ");
+  });
+
+  it("adds the no-output line when the failed command wrote nothing", async () => {
+    const fixture = await useVerifyFixture({ commands: ["exit 3"] });
+
+    await runVerifyTask(fixture);
+
+    const found = failedRunOf(fixture);
+    expect(found.state).toBe("failed");
+    expect(found.row).toMatchObject({ result: "failed", commands: ["exit 3"], failingCommand: 1 });
+    expect(found.error?.endsWith(NO_OUTPUT_LINE)).toBe(true);
+  });
+
+  it("numbers the second run 2 and puts its logs in verify-run-2", async () => {
+    const fixture = await useVerifyFixture({ commands: ["true"] });
+    const { dataRoot } = fixture.started;
+    withDataRootStore(dataRoot, (store) => {
+      seedVerifyRun(store, dataRoot, fixture.task, { result: "failed", failingCommand: 1 }, undefined, "failed");
+      transitionTask(store, fixture.task.id, "executed");
+    });
+
+    const { result } = await runVerifyTask(fixture);
+
+    expect(result).toEqual({ number: 2, commands: 1, logsDir: verifyRunDir(dataRoot, fixture.task, 2) });
+    expect(verifyRunDir(dataRoot, fixture.task, 2).endsWith("verify-run-2")).toBe(true);
+    expect(existsSync(verifyCommandLogPath(dataRoot, fixture.task, 2, 1))).toBe(true);
+    const row = withDataRootStore(dataRoot, (store) => store.getVerifyRun(fixture.task.id, 2));
+    expect(row).toMatchObject({ number: 2, result: "passed" });
   });
 });
