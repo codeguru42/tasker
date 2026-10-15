@@ -306,7 +306,9 @@ describe("prepareTaskExecuteRun", () => {
   const expectedRule = (tool: string, path: string) => `${tool}(/${path})`;
 
   it("runs the assistant under dontAsk with the execute model and the file tools of the worktree", async () => {
-    const { claude, models, started } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
+    const { claude, env, models, started } = await prepareAndStartExecute({
+      claude: { stream: claudeSample("plain") },
+    });
 
     const { argv } = claude.calls()[0]!;
     const wt = started.worktree;
@@ -327,6 +329,8 @@ describe("prepareTaskExecuteRun", () => {
       expectedRule("NotebookEdit", `${wt}/**`),
       "Agent",
       "Task",
+      expectedRule("Read", `${env.HOME}/.claude/skills/**`),
+      expectedRule("Read", `${env.HOME}/.claude/plugins/**`),
     ]);
     expect(flagValues(argv, "--disallowedTools")).toEqual([
       "Bash(git push:*)",
@@ -437,5 +441,58 @@ describe("prepareTaskExecuteRun", () => {
       expect(flagValues(argv, "--resume")).toEqual([TEST_EXECUTE_SESSION_ID]);
       expect(argv).not.toContain("--session-id");
     }
+  });
+
+  describe("the read rules of the skills", () => {
+    // The allow rules of one start, with the env of the fixture edited by edit.
+    async function allowRules(edit: (env: NodeJS.ProcessEnv) => NodeJS.ProcessEnv) {
+      const { claude, env } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } }, { env: edit });
+      return { rules: flagValues(claude.calls()[0]!.argv, "--allowedTools")!, env };
+    }
+
+    it("names the folder of CLAUDE_CONFIG_DIR and not HOME/.claude", async () => {
+      const dir = useTempDir("tasker-claude-");
+
+      const { rules, env } = await allowRules((env) => ({ ...env, CLAUDE_CONFIG_DIR: dir }));
+
+      expect(rules).toEqual(
+        expect.arrayContaining([expectedRule("Read", `${dir}/skills/**`), expectedRule("Read", `${dir}/plugins/**`)]),
+      );
+      expect(rules.filter((rule) => rule.includes(`(/${join(env.HOME!, ".claude")}`))).toEqual([]);
+    });
+
+    it("names HOME/.claude when only HOME is set", async () => {
+      const { rules, env } = await allowRules((env) => ({ ...env, CLAUDE_CONFIG_DIR: undefined }));
+
+      expect(rules).toEqual(
+        expect.arrayContaining([
+          expectedRule("Read", `${env.HOME}/.claude/skills/**`),
+          expectedRule("Read", `${env.HOME}/.claude/plugins/**`),
+        ]),
+      );
+    });
+
+    it("gives no skill rule when neither variable is set", async () => {
+      const { rules } = await allowRules((env) => ({ ...env, CLAUDE_CONFIG_DIR: undefined, HOME: "  " }));
+
+      expect(rules.filter((rule) => rule.startsWith("Read(") && /skills|plugins/.test(rule))).toEqual([]);
+    });
+
+    it.each([
+      ["HOME", (env: NodeJS.ProcessEnv) => env],
+      ["CLAUDE_CONFIG_DIR", (env: NodeJS.ProcessEnv) => ({ ...env, CLAUDE_CONFIG_DIR: useTempDir("tasker-claude-") })],
+    ])("never allows the whole configuration folder, with %s set", async (_name, edit) => {
+      const { rules, env } = await allowRules(edit);
+      const folder = resolve(env.CLAUDE_CONFIG_DIR ?? join(env.HOME!, ".claude"));
+
+      const named = rules.filter((rule) => rule.includes(`(/${folder}`));
+      expect(named).toEqual([
+        expectedRule("Read", `${folder}/skills/**`),
+        expectedRule("Read", `${folder}/plugins/**`),
+      ]);
+      for (const whole of [folder, `${folder}/**`, `${folder}/*`]) {
+        expect(rules).not.toContain(expectedRule("Read", whole));
+      }
+    });
   });
 });
