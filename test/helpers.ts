@@ -24,6 +24,7 @@ import { type Io, type RegisterCommand, run } from "../src/cli.js";
 import { start } from "../src/commands/start.js";
 import { loadConfig } from "../src/config/load.js";
 import { type Config, ConfigError, parseConfig } from "../src/config/schema.js";
+import { errnoCode } from "../src/errno.js";
 import { IssueKeyError } from "../src/issue-key/ref.js";
 import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { githubShortRef } from "../src/issue-key/short-ref.js";
@@ -271,9 +272,14 @@ export async function waitUntilGone(pid: number, timeoutMs: number): Promise<voi
 }
 
 // Sends SIGKILL to pid after the test, when it still runs. Use it only for a pid that the test started.
+// The process can end before the kill, so a pid that is gone (ESRCH) is not an error.
 export function savePid(pid: number): void {
   onTestFinished(() => {
-    if (isAlive(pid)) process.kill(pid, "SIGKILL");
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch (error) {
+      if (errnoCode(error) !== "ESRCH") throw error;
+    }
   });
 }
 
