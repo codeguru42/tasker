@@ -5,6 +5,7 @@ import {
   createDataRoot,
   dataRootLayout,
   doctorProbePath,
+  executeTranscriptPath,
   planRevisionPath,
   planTranscriptPath,
   taskArtifactsDir,
@@ -160,6 +161,21 @@ describe("planTranscriptPath", () => {
   it("makes no file and no folder", () => {
     const root = useTempDir("tasker-data-");
     const path = planTranscriptPath(root, { issueKey: "PROJ-7", attempt: 1 }, 1);
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("executeTranscriptPath", () => {
+  it("names the transcript of a plan version execute-v<N>.jsonl in the transcripts folder", () => {
+    expect(executeTranscriptPath("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 }, 3)).toBe(
+      "/d/artifacts/codeguru42-tasker-10/attempt-2/transcripts/execute-v3.jsonl",
+    );
+  });
+
+  it("makes no file and no folder", () => {
+    const root = useTempDir("tasker-data-");
+    const path = executeTranscriptPath(root, { issueKey: "PROJ-7", attempt: 1 }, 1);
     expect(existsSync(path)).toBe(false);
     expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
   });
