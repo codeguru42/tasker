@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
-import { taskLogsDir } from "../../src/store/layout.js";
+import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
 import { useTempDir } from "./temp.js";
@@ -18,6 +18,7 @@ import {
   readRunMarker,
   seedTask,
   seedTasks,
+  seedVerifyRun,
   withDataRootStore,
   withRawDatabase,
   withStoreFile,
@@ -180,6 +181,71 @@ describe("writeBootstrapLog", () => {
 
     const expected = bootstrapLogPath(taskLogsDir(dataRoot, task));
     expect(readFileSync(expected, "utf8")).toBe("=== bootstrap run ===\n");
+  });
+});
+
+describe("seedVerifyRun", () => {
+  const setup = () => {
+    const dataRoot = join(useTempDir("tasker-seed-"), "data");
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "verifying", at: dayAt(1) }]);
+    return { dataRoot, task };
+  };
+
+  it("writes the row with the defaults and the default log", () => {
+    const { dataRoot, task } = setup();
+
+    const { run, stored } = withDataRootStore(dataRoot, (store) => {
+      const seeded = seedVerifyRun(store, dataRoot, task);
+      return { run: seeded, stored: store.getVerifyRun(task.id, 1) };
+    });
+
+    expect(stored).toEqual(run);
+    expect(run).toEqual({
+      taskId: task.id,
+      number: 1,
+      result: "passed",
+      commands: ["npm run check"],
+      failingCommand: null,
+      startedAt: dayAt(1),
+      endedAt: dayAt(1),
+    });
+    expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 1), "utf8")).toBe("$ npm run check\n--- exit code 0\n");
+  });
+
+  it("writes the given logs at the positions 1 and 2", () => {
+    const { dataRoot, task } = setup();
+
+    withDataRootStore(dataRoot, (store) =>
+      seedVerifyRun(store, dataRoot, task, { commands: ["a", "b"] }, ["log one\n", "log two\n"]),
+    );
+
+    expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 1), "utf8")).toBe("log one\n");
+    expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 2), "utf8")).toBe("log two\n");
+  });
+
+  it("seeds the number 2 on a second call", () => {
+    const { dataRoot, task } = setup();
+
+    const numbers = withDataRootStore(dataRoot, (store) => {
+      const first = seedVerifyRun(store, dataRoot, task);
+      const second = seedVerifyRun(store, dataRoot, task);
+      return [first.number, second.number];
+    });
+
+    expect(numbers).toEqual([1, 2]);
+  });
+
+  it("ends the task in awaiting_work_review, or in the given state", () => {
+    const { dataRoot, task } = setup();
+
+    const states = withDataRootStore(dataRoot, (store) => {
+      seedVerifyRun(store, dataRoot, task);
+      const first = store.getTask(task.id)?.state;
+      seedVerifyRun(store, dataRoot, task, {}, undefined, "failed");
+      return [first, store.getTask(task.id)?.state];
+    });
+
+    expect(states).toEqual(["awaiting_work_review", "failed"]);
   });
 });
 
