@@ -1,5 +1,6 @@
 import { lstatSync, readdirSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
 import { join } from "node:path";
+import { compareText } from "../../compare-text.js";
 import { DeadlineError } from "../../doctor/timed-check.js";
 import { errnoCode, hasErrnoCode } from "../../errno.js";
 import { errorMessage } from "../../error-message.js";
@@ -50,7 +51,7 @@ export function findStaleLocks(clone: string, nowMs: number, deadline: number): 
     }
   };
   walk(root);
-  return found.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  return found.sort((a, b) => compareText(a.path, b.path));
 }
 
 export type ProcView =
