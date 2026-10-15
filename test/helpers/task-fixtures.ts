@@ -29,6 +29,7 @@ export interface StartFixture {
 // The setup of the tests of tasker start: a local origin with main, one repo codeguru42/tasker that
 // uses it as the remote, and a fake gh that answers the token call and the read of each issue.
 // The default issue is codeguru42/tasker#5. A key of options.repo that is undefined is removed.
+// options.limits changes the limits of the configuration file.
 // The fake gh comes first on the PATH, so the real gh never runs and git still runs.
 // Call it inside a test. After the test, it removes the folders and restores the env.
 export async function useStartFixture(
@@ -36,6 +37,8 @@ export async function useStartFixture(
     issues?: Parameters<typeof githubIssueAnswer>[0][];
     repo?: Record<string, unknown>;
     remote?: string;
+    // Limits of the configuration to change, for example { planTimeoutMin: 0.05 }.
+    limits?: Record<string, number>;
   } = {},
 ): Promise<StartFixture> {
   const provider = await makeProviderFixture();
@@ -53,6 +56,7 @@ export async function useStartFixture(
     if (value === undefined) delete repo[name];
   }
   raw.repos = { [repoKey]: repo };
+  raw.limits = { ...raw.limits, ...options.limits };
   const written = writeDataRootConfig(raw);
   onTestFinished(() => rmSync(written.dir, { recursive: true, force: true }));
   const gh = fakeGh(written.dir, {}, [
