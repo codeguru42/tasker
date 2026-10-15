@@ -643,18 +643,24 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(8);
+        expect(migrations.length).toBe(9);
       });
     });
   });
 
   describe("sessions table", () => {
-    const insertRawSession = (db: DatabaseSync, taskId: number, role: string, sessionId: string) =>
+    const insertRawSession = (
+      db: DatabaseSync,
+      taskId: number,
+      role: string,
+      sessionId: string,
+      planVersion: number | null = null,
+    ) =>
       db
         .prepare(
-          "INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at) VALUES (?, ?, ?, 'claude-code', 'opus', 'high', 't')",
+          "INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at, plan_version) VALUES (?, ?, ?, 'claude-code', 'opus', 'high', 't', ?)",
         )
-        .run(taskId, role, sessionId);
+        .run(taskId, role, sessionId, planVersion);
 
     it("has the sessions table", () => {
       withRawDatabase(dbPath, (db) => {
@@ -711,13 +717,90 @@ describe("task store", () => {
       });
     });
 
-    it("allows many execute rows for one task", () => {
+    it("allows one execute row for each plan version of a task", () => {
       withRawDatabase(dbPath, (db) => {
         insertRawTask(db, "one", "planning");
-        insertRawSession(db, 1, "execute", "s-1");
-        insertRawSession(db, 1, "execute", "s-2");
+        insertRawSession(db, 1, "execute", "s-1", 1);
+        insertRawSession(db, 1, "execute", "s-2", 2);
+        const message = "UNIQUE constraint failed: sessions.task_id, sessions.plan_version";
+        const error = thrownBy(() => insertRawSession(db, 1, "execute", "s-3", 1), message);
+        expect((error as Error).message).toBe(message);
         const row = db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number };
         expect(row.n).toBe(2);
+      });
+    });
+
+    it("upgrades a version-8 database and keeps the plan session without a plan version", () => {
+      const oldPath = join(dir, "old8.db");
+      makeOldDatabase(oldPath, 8);
+      withRawDatabase(oldPath, (raw) => {
+        insertRawTask(raw, "tasker", "planning");
+        raw
+          .prepare(
+            "INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at) VALUES (1, 'plan', 's-1', 'claude-code', 'opus', 'high', 't')",
+          )
+          .run();
+      });
+      withStoreFile(oldPath, () => {}, { now });
+      withRawDatabase(oldPath, (check) => {
+        expect(schemaVersion(check)).toBe(migrations.length);
+        expect(check.prepare("SELECT session_id, plan_version FROM sessions").all()).toEqual([
+          { session_id: "s-1", plan_version: null },
+        ]);
+        const message = "UNIQUE constraint failed: sessions.task_id, sessions.role";
+        const error = thrownBy(() => insertRawSession(check, 1, "plan", "s-2"), message);
+        expect((error as Error).message).toBe(message);
+      });
+    });
+
+    it("has the execute_todos and execute_fix_turns tables", () => {
+      withRawDatabase(dbPath, (db) => {
+        expect(tableNames(db)).toContain("execute_todos");
+        expect(tableNames(db)).toContain("execute_fix_turns");
+      });
+    });
+
+    it("refuses a todo state or a fix turn of a plan revision that does not exist", () => {
+      withRawDatabase(dbPath, (db) => {
+        db.exec("PRAGMA foreign_keys = ON");
+        insertRawTask(db, "one", "planning");
+        const message = "FOREIGN KEY constraint failed";
+        const todo = () =>
+          db
+            .prepare(
+              "INSERT INTO execute_todos (task_id, plan_version, todo_id, state, updated_at) VALUES (1, 1, 'a', 'done', 't')",
+            )
+            .run();
+        const turn = () =>
+          db
+            .prepare(
+              "INSERT INTO execute_fix_turns (task_id, plan_version, verify_failure, queued_at) VALUES (1, 1, 'f', 't')",
+            )
+            .run();
+        expect((thrownBy(todo, message) as Error).message).toBe(message);
+        expect((thrownBy(turn, message) as Error).message).toBe(message);
+        for (const table of ["execute_todos", "execute_fix_turns"]) {
+          const row = db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number };
+          expect(row.n).toBe(0);
+        }
+      });
+    });
+
+    it("refuses a todo state other than in_progress and done", () => {
+      withRawDatabase(dbPath, (db) => {
+        db.exec("PRAGMA foreign_keys = ON");
+        insertRawTask(db, "one", "planning");
+        db.prepare(
+          "INSERT INTO plan_revisions (task_id, version, source, answer, prompt, created_at) VALUES (1, 1, 'plan', '{}', 'plan@000000000000', 't')",
+        ).run();
+        const insert = () =>
+          db
+            .prepare(
+              "INSERT INTO execute_todos (task_id, plan_version, todo_id, state, updated_at) VALUES (1, 1, 'a', 'started', 't')",
+            )
+            .run();
+        const error = thrownBy(insert, "CHECK constraint failed");
+        expect((error as Error).message).toContain("CHECK constraint failed");
       });
     });
 
@@ -1036,6 +1119,7 @@ describe("task store", () => {
           model: "opus",
           effort: "low",
           created_at: "2026-01-01T00:00:00.000Z",
+          plan_version: null,
         },
       ]);
     });
