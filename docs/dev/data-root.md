@@ -152,7 +152,7 @@ These rules hold:
 - A dismissal is written once and needs a reason, because the next review reads it. After that the row does not change, and no store write deletes a row.
 - A dismissal that names a missing finding or a dismissed finding writes nothing. The same holds when the dismissal names other findings that are open.
 - A dismissal that names no finding is an error, and it writes nothing.
-- An open finding still needs a decision of the operator: a dismissal or a fix in a later plan. So the task stays in its state until no finding is open.
+- An open finding still needs a decision of the operator: a dismissal or a fix in a later plan. So the task stays in its state until no finding of the review is open.
 
 ## `default_base_branches` table
 
