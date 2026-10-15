@@ -148,7 +148,7 @@ describe("start", () => {
     const result = await runCommand(start, "start", KEY);
 
     expect(expectFailed(fixture.dataRoot, result)).toBe(
-      "no base branch for codeguru42/tasker: pass --base <branch>, or set repos.codeguru42/tasker.defaultBaseBranch",
+      "no base branch for codeguru42/tasker: pass --base <branch> to tasker start, or set repos.codeguru42/tasker.defaultBaseBranch",
     );
   });
 
