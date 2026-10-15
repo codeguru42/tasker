@@ -872,27 +872,35 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     return rowToTask(row);
   }
 
-  // The one transaction frame of a task write: read the task, run check, take the clock once, run
-  // the marker step, write the row and append the event of check. A throw from check or from the
-  // marker step refuses the move, and then nothing is written.
+  // The frame of a task write: read the task, run check, take the clock once, run the marker step,
+  // write the row and append the event of check. A throw from check or from the marker step refuses
+  // the move, and then nothing is written. It starts no transaction. The caller runs it inside its own.
+  function writeTaskStep(
+    id: number,
+    changes: TaskChanges,
+    check: ((current: Task) => NewEvent | void) | undefined,
+    markerStep?: (at: string) => void,
+  ): Task {
+    const current = readTask(id);
+    if (current === undefined) {
+      throw taskNotFound(id);
+    }
+    const event = check?.(current);
+    const at = now().toISOString();
+    markerStep?.(at);
+    const task = writeChanges(current, changes, at);
+    if (event !== undefined) writeEvent(id, at, event.type, event.data);
+    return task;
+  }
+
+  // The one transaction frame of a task write. See writeTaskStep.
   function writeTask(
     id: number,
     changes: TaskChanges,
     check: ((current: Task) => NewEvent | void) | undefined,
     markerStep?: (at: string) => void,
   ): Task {
-    return immediateTransaction(db, () => {
-      const current = readTask(id);
-      if (current === undefined) {
-        throw taskNotFound(id);
-      }
-      const event = check?.(current);
-      const at = now().toISOString();
-      markerStep?.(at);
-      const task = writeChanges(current, changes, at);
-      if (event !== undefined) writeEvent(id, at, event.type, event.data);
-      return task;
-    });
+    return immediateTransaction(db, () => writeTaskStep(id, changes, check, markerStep));
   }
 
   // The frame of a new row at the end of a run: the insert, its event, the move to a state that is
