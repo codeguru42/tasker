@@ -228,7 +228,7 @@ Carries out the pinned plan revision of a task in the state `approved` in the ex
 - `<issue>`: the issue key of the task.
 - `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
 
-The command runs one turn for each todo that is not `done`, in the dependency order of the todos. All turns of one plan revision share one execute session. A new session gets the plan, the todos, the answered questions and the commit rules in its first turn. A later run of the same revision continues the session and skips each done todo. When the store holds a queued fix turn for the revision, the command runs it after the last todo. The command does not run the verify commands.
+The command runs one turn for each todo that is not `done`, in the dependency order of the todos. All turns of one plan revision share one execute session. A new session gets the plan, the todos, the answered questions and the commit rules in its first turn. A later run of the same revision continues the session and skips each done todo. When the store holds a queued fix turn for the revision, the command runs it after the last todo. The command does not run the verify commands. Run `tasker verify` after it.
 
 tasker records the state of each todo. A todo is `in_progress` when its turn starts, and `done` when the turn reports `done`. A todo with a blocked turn, a failed turn or no result stays `in_progress`. A todo that no turn reached has no state. A done todo stays done, also when a later turn fails.
 
@@ -266,10 +266,38 @@ The command writes the events `todo_started` and `todo_done` with the data `{ id
 
 ### `tasker verify`
 
-Runs the verify commands of the repo in the worktree of a task in the state `executed`: `tasker verify <issue>`.
+Runs the verify commands of the repo in the worktree of a task in the state `executed`, and records the run: `tasker verify <issue>`. The task goes through `verifying` to `awaiting_work_review`, or to `failed`.
 
 - `<issue>`: the issue key of the task.
 - `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+The command runs the commands of `verify.commands` one at a time, in the list order, under `/bin/bash` in the worktree. The first command that fails stops the list. All commands share one time limit: the value of `verifyTimeoutMin`. Only the exit codes count. tasker never reads the output of a command to decide the result. The output of each command goes to its own log.
+
+The worktree must be clean before and after the commands. A change is a changed file or a new file that git does not ignore. A file that git ignores does not count. If the worktree has a change before the commands, no command runs. If the commands leave a change, the run fails, also when every command passed.
+
+Each run gets a number. The first run of a task is run 1, and a later run gets the next number. Each run writes its logs in the folder `verify-run-<N>` of the logs of the task. The file `verify-<position>.log` holds the log of the command at that position, counted from 1. A command that never started has no log. tasker records every run that reached the commands, also a failed run.
+
+If you press Ctrl-C, the command gets the signal and stops the running command. The run ends as a failure of that command.
+
+On success, the command prints these lines on stdout:
+
+- `verified <issue key>: run <N>`
+- `commands: <count>`
+- `logs: <folder of the run>`
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In the first four cases, the task keeps its state. The command writes no event and no verify run:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is not in `executed`. The error is `the task of <issue key> is in <state>; tasker verify needs executed`.
+- The task has no worktree. The error is `the task of <issue key> has no worktree`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- The worktree cannot be read before the run. The task goes to the state `failed`, and the error is `cannot read the uncommitted changes of the worktree before the run: <error>`. The command records no run.
+- The worktree has changes before the run. The task goes to the state `failed`, and the command records the run as `dirty_before` with no command. The error has two lines. The first line is `the worktree had uncommitted changes before the verify run: <list>`. The list gives the status of git and the path of each change. The second line tells you to run `tasker retry <issue key> --resume-execute`, so that the execute run finishes the changes.
+- A command fails or runs out of time. The task goes to the state `failed`, and the command records the run as `failed` or `timed_out`. The first line of the error is `verify command <N> failed: <command>: <outcome>. The log is <path>.` The outcome is `exit code <n>`, `stopped by signal <name>`, `timed out after <n> min` or `could not start: <error>`. The last 20 lines of the log follow. When the command wrote no output, the last line is `The command produced no output. It usually failed before it reached the tool that it runs.`
+- The commands leave changes in the worktree. The task goes to the state `failed`, and the command records the run as `dirty_after`. The error has two lines. The first line is `the verify commands left uncommitted changes in the worktree: <list>`. The second line says that a plain `tasker retry` runs the commands on the same tree and fails again, and tells you to run `tasker retry <issue key> --resume-execute`, so that the fix turn ignores or removes these files.
+- The worktree cannot be read after the run. The task goes to the state `failed`, and the command records the run as `failed` with all commands and no failing command. The error is `cannot read the uncommitted changes of the worktree after the run: <error>`.
+- The run passed, but tasker cannot record it. The task goes to the state `failed`, and the error is `the verify commands passed, but the run could not be recorded: <error>`.
+- An unexpected error occurs after the run has started. The task goes to the state `failed`, and the error is `verifying failed: <error>`.
 
 ### `tasker abort`
 
