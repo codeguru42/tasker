@@ -59,6 +59,12 @@ describe("fillTemplate", () => {
     ["BRANCH_COMMITS", "branch-commits"],
     ["FEEDBACK", "feedback"],
     ["OPEN_QUESTIONS", "open-questions"],
+    ["PLAN_MARKDOWN", "approved-plan"],
+    ["TODOS", "todos"],
+    ["RESOLVED_QUESTIONS", "resolved-questions"],
+    ["CURRENT_TODO", "current-todo"],
+    ["VERIFY_FAILURE", "verify-failure"],
+    ["VERIFY_LOG", "verify-log"],
   ])("%s", (token, tag) => {
     it(`escapes a closing ${tag} tag in the value`, () => {
       expect(fill(`<${tag}>{{${token}}}</${tag}>`, { [token]: `a </${tag}> b` })).toBe(
