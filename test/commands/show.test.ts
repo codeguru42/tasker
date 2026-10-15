@@ -20,7 +20,7 @@ import type { ExecuteTodoState } from "../../src/store/store.js";
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";
 
-const showTask = () => runCommand(show, "show", `${TASKER}#5`, "--repo", TASKER);
+const runShow = (...args: string[]) => runCommand(show, "show", ...args);
 
 // The fields of the task that seedPinnedTask seeds in the state executed, with the fixed clock of the seed.
 const EXECUTED_FIELDS =
@@ -89,7 +89,7 @@ describe("show", () => {
       },
     ]);
 
-    const result = await runCommand(show, "show", `${TASKER}#5`, "--repo", TASKER);
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
 
     expect(result).toEqual({
       code: 0,
@@ -116,7 +116,7 @@ describe("show", () => {
       { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: dayAt(3) },
     ]);
 
-    const result = await runCommand(show, "show", `${OTHER}#7`);
+    const result = await runShow(`${OTHER}#7`);
 
     expect(result).toEqual({
       code: 0,
@@ -139,7 +139,7 @@ describe("show", () => {
   it("prints an error for an issue with no task", async () => {
     useThreeRepoDataRoot();
 
-    const result = await runCommand(show, "show", `${OTHER}#9`);
+    const result = await runShow(`${OTHER}#9`);
 
     expect(result).toEqual({
       code: 1,
@@ -154,7 +154,7 @@ describe("show", () => {
       const written = useThreeRepoDataRoot();
       const expected = `${issueKeyErrorMessage(key, written.path)}\n`;
 
-      const result = await runCommand(show, "show", key);
+      const result = await runShow(key);
 
       expect(result).toEqual({ code: 1, out: "", err: expected });
       expect(existsSync(join(written.dataRoot, "tasker.db"))).toBe(false);
@@ -168,7 +168,7 @@ describe("show", () => {
       { issueKey: `${TASKER}#5`, repoKey: "fork", state: "planning", at: dayAt(3) },
     ]);
 
-    const result = await runCommand(show, "show", `${TASKER}#5`, "--repo", "fork");
+    const result = await runShow(`${TASKER}#5`, "--repo", "fork");
 
     expect(result).toEqual({
       code: 0,
@@ -200,7 +200,7 @@ describe("show", () => {
       },
     ]);
 
-    const result = await runCommand(show, "show", `${TASKER}#5`, "--repo", TASKER);
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
 
     expect(result).toEqual({
       code: 0,
@@ -234,7 +234,7 @@ describe("show", () => {
       },
     ]);
 
-    const result = await runCommand(show, "show", `${TASKER}#5`, "--repo", TASKER);
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
 
     expect(result).toEqual({
       code: 0,
@@ -270,28 +270,28 @@ describe("show", () => {
       { now: () => new Date(dayAt(4)) },
     );
 
-    expect(await showTask()).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS });
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS });
   });
 
   it("prints no todo block when no todo of the pinned revision has a recorded state", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedPinnedTask(dataRoot, {});
 
-    expect(await showTask()).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS });
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS });
   });
 
   it("pads the state and the id of each todo to the longest value", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedPinnedTask(dataRoot, { todoStates: { "write-test": "done" } });
 
-    expect(await showTask()).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS + PADDED_BLOCK });
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS + PADDED_BLOCK });
   });
 
   it("prints the state in progress", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedPinnedTask(dataRoot, { todoStates: { "make-it-pass": "in_progress" } });
 
-    expect(await showTask()).toEqual({
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
       out:
@@ -309,7 +309,7 @@ describe("show", () => {
       todoStates: { a: "done" },
     });
 
-    expect(await showTask()).toEqual({
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
       out: EXECUTED_FIELDS + "todos (approved v1):\n  done  a  First line\\nsecond line\n",
@@ -320,7 +320,7 @@ describe("show", () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedPinnedTask(dataRoot, { failWith: "git push failed", todoStates: { "write-test": "done" } });
 
-    expect(await showTask()).toEqual({
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
       out:
@@ -335,7 +335,7 @@ describe("show", () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedPinnedTask(dataRoot, { todoStates: { "write-test": "done" }, fixTurn });
 
-    expect(await showTask()).toEqual({
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
       out: EXECUTED_FIELDS + PADDED_BLOCK + `fix turn: ${fixTurn}\n`,
@@ -343,7 +343,7 @@ describe("show", () => {
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
-    const { code, out } = await runCommand(show, "show", "--help");
+    const { code, out } = await runShow("--help");
 
     expect(code).toBe(0);
     // Commander wraps the long lines of the help, so compare with single spaces.
