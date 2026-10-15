@@ -2,8 +2,13 @@ import type { Io } from "../cli.js";
 import { errorMessage } from "../error-message.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
-import { commandFailureMessage } from "../phases/command-step.js";
-import { runVerify } from "../phases/verify.js";
+import {
+  commandFailureMessage,
+  commandLogHasNoOutput,
+  commandLogTail,
+  NO_OUTPUT_LINE,
+} from "../phases/command-step.js";
+import { runVerify, startedCommands } from "../phases/verify.js";
 import { childEnv } from "../process/child-env.js";
 import { type TaskState, transitionTask, transitionWithVerifyRun } from "../state/machine.js";
 import { verifyCommandLogPath, verifyRunDir } from "../store/layout.js";
@@ -65,9 +70,21 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
     });
     if (result.status !== "ok") {
       const log = verifyCommandLogPath(config.dataRoot, task, number, result.index);
+      const text =
+        `${commandFailureMessage("verify", result, log, config.limits.verifyTimeoutMin)}\n` +
+        commandLogTail(log, 20) +
+        (commandLogHasNoOutput(log) ? `${NO_OUTPUT_LINE}\n` : "");
       return {
-        kind: "fail",
-        message: commandFailureMessage("verify", result, log, config.limits.verifyTimeoutMin),
+        kind: "record",
+        run: {
+          number,
+          result: result.timedOut ? "timed_out" : "failed",
+          commands: startedCommands(commands, result),
+          failingCommand: result.index,
+          startedAt,
+        },
+        to: "failed",
+        message: text.trimEnd(),
       };
     }
     return {
@@ -85,15 +102,27 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
   }
   if (outcome.kind === "fail") return failRun(store, task, io, outcome.message);
 
+  const failed = outcome.to === "failed";
   try {
-    transitionWithVerifyRun(store, task.id, outcome.to, { ...outcome.run, endedAt: new Date().toISOString() });
+    transitionWithVerifyRun(
+      store,
+      task.id,
+      outcome.to,
+      { ...outcome.run, endedAt: new Date().toISOString() },
+      failed ? { error: outcome.message } : undefined,
+    );
   } catch (error) {
+    const reason = errorMessage(error);
     return failRun(
       store,
       task,
       io,
-      `the verify commands passed, but the run could not be recorded: ${errorMessage(error)}`,
+      failed ? `verifying failed: ${reason}` : `the verify commands passed, but the run could not be recorded: ${reason}`,
     );
+  }
+  if (failed) {
+    io.stderr(`${outcome.message}\n`);
+    return { exitCode: 1 };
   }
   return { number, commands: commands.length, logsDir };
 }
