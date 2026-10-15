@@ -411,6 +411,19 @@ describe("turnResultStream", () => {
 
     expect(JSON.parse(lines.at(-1)!).structured_output).toStrictEqual({ result: "done" });
   });
+
+  it("applies the edit to the result event and keeps the structured output", () => {
+    const denials = [{ tool_name: "Bash", tool_use_id: "t1", tool_input: { command: "git push" } }];
+
+    const lines = turnResultStream("done", undefined, (event) => {
+      event["permission_denials"] = denials;
+    });
+
+    const last = JSON.parse(lines.at(-1)!);
+    expect(last.permission_denials).toEqual(denials);
+    expect(last.structured_output).toStrictEqual({ result: "done" });
+    expect(last.result).toBe(JSON.stringify({ result: "done" }));
+  });
 });
 
 describe("seedPlanReviewTask", () => {
