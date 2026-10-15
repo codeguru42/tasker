@@ -25,6 +25,9 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - A check of the docs in the plan must not write a file to the folder of the agent. The folder bullet of [Limits](orchestration.md#limits) names that folder. Process substitution, for example `diff <(cmd1) <(cmd2)`, needs no file. On #115, a plan step wrote a temporary file to the folder of the agent.
 - If the ticket derives a name from a key, for example a session name from an issue key, say that a collision of derived names is not an issue ([Core features first](working-with-the-user.md#core-features-first)). Otherwise the plan raises the question (#115).
 - If a plan step or a doc step points to a report, link to the item of the report, not to the step as a whole. On #120, a link to a step as a whole drew a finding.
+- If a plan searches for the callers of a function, ask it to search each form of a use, not only `name(`. Examples are an import, a pass as a value, for example `map(name)`, and a call through another name. On #122, a search for `name(` missed callers, and a review loop found them.
+- If the work of the add-work rule of [Run one ticket](orchestration.md#run-one-ticket) adds tests and code, ask the plan for a `test:` commit and then a `feat:` or `fix:` commit, as [Tests](rules.md#tests) and [Commits](rules.md#commits) of rules.md say. On #122, the work of the add-work rule put both in one commit.
+- If the plan depends on a fact about a program on the local machine, for example the behavior of `claude` under a permission mode, measure the fact and give it in the first refine with the command and its result ([the fact test](orchestration.md#run-one-ticket)). On #128, the plan session tried to get such a fact itself, outside the worktree.
 
 ## A ticket that only adds a layer, for example a schema
 
