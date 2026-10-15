@@ -187,7 +187,7 @@ On success, the command prints the line `approved <issue> at revision v<N>` on s
 
 Open questions do not stop an approval. The operator decides, and the count makes the choice visible. All questions of the newest revision are open. Only a later revision answers them, so run `tasker refine` first to answer them.
 
-Before it writes, the command prints the overlap warning on stderr, with the same text as `tasker plan`. The last line is `tasker approves the plan anyway.` See the section `tasker plan`. The warning only informs. It never stops the command.
+Before it writes, the command prints the overlap warning on stderr, with the same text as `tasker plan`. The warning ends with two lines: `tasker approves the plan anyway.` and `To take the approval back, run: tasker unapprove <issue key>`. See the section `tasker plan`. The warning only informs. It never stops the command.
 
 An older approved revision stays approved. The new approval pins the newest revision, so a later command reads that one as the approved revision.
 
