@@ -9,6 +9,8 @@ import {
   orFailAsync,
   repoKeyOrFail,
   warnOverlaps,
+  wholeNumberOptionsOrFail,
+  withFinalLineEnd,
   withIssueTaskAsync,
   withStore,
   withStoreAsync,
@@ -338,5 +340,51 @@ describe("warnOverlaps", () => {
     expect(io.err).toEqual([
       `note: cannot compare the plan with the other tasks in flight: ${taskNotFound(999).message}\n`,
     ]);
+  });
+});
+
+describe("wholeNumberOptionsOrFail", () => {
+  it.each([
+    ["absent options", { "--x": undefined, "--y": undefined }],
+    ["1 and 12", { "--x": "1", "--y": "12" }],
+  ])("writes nothing for %s", (_name, options) => {
+    const io = captureIo();
+
+    wholeNumberOptionsOrFail(io, options);
+
+    expect(io.out).toEqual([]);
+    expect(io.err).toEqual([]);
+  });
+
+  it.each(["0", "01", "-1", "1.5", "+1", "abc"])("stops the command with exit code 1 for %s", (value) => {
+    const io = captureIo();
+
+    const error = thrownBy(() => wholeNumberOptionsOrFail(io, { "--x": value }));
+
+    expect(error).toBeInstanceOf(CommanderError);
+    expect((error as CommanderError).exitCode).toBe(1);
+    expect(io.err).toEqual([`--x must be a whole number of 1 or more: ${value}\n`]);
+    expect(io.out).toEqual([]);
+  });
+
+  it("reports two bad options in the given order in one write", () => {
+    const io = captureIo();
+
+    thrownBy(() => wholeNumberOptionsOrFail(io, { "--run": "0", "--good": "3", "--command": "01" }));
+
+    expect(io.err).toEqual([
+      "--run must be a whole number of 1 or more: 0\n--command must be a whole number of 1 or more: 01\n",
+    ]);
+  });
+});
+
+describe("withFinalLineEnd", () => {
+  it.each([
+    ["a", "a\n"],
+    ["a\n", "a\n"],
+    ["a\r\n", "a\r\n"],
+    ["", "\n"],
+  ])("turns %j into %j", (text, expected) => {
+    expect(withFinalLineEnd(text)).toBe(expected);
   });
 });
