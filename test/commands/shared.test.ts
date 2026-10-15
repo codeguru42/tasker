@@ -8,13 +8,14 @@ import {
   orFail,
   orFailAsync,
   repoKeyOrFail,
+  warnOverlaps,
   withIssueTaskAsync,
   withStore,
   withStoreAsync,
 } from "../../src/commands/shared.js";
 import { parseConfig } from "../../src/config/schema.js";
 import { IssueKeyError } from "../../src/issue-key/ref.js";
-import type { TaskStore } from "../../src/store/store.js";
+import { taskNotFound, type TaskStore } from "../../src/store/store.js";
 import { captureIo, failureOf, useTempDir, seedTasks, thrownBy, validConfig, withDataRootStore } from "../helpers.js";
 
 describe("orFail", () => {
@@ -320,5 +321,18 @@ describe("withIssueTaskAsync", () => {
     expect((error as CommanderError).exitCode).toBe(1);
     expect(io.err.join("")).toBe(`no task for the issue ${KEY} in the repo ${REPO}\n`);
     expect(called).toBe(false);
+  });
+});
+
+describe("warnOverlaps", () => {
+  it("prints one note line and resolves when the task is missing", async () => {
+    const config = parseConfig({ ...validConfig(), dataRoot: useTempDir("tasker-warn-") }, {}, "/home/test");
+    const io = captureIo();
+
+    await warnOverlaps(io, config, { taskId: 999, files: ["src/a.ts"], env: {}, lastLine: "last" });
+
+    expect(io.err).toEqual([
+      `note: cannot compare the plan with the other tasks in flight: ${taskNotFound(999).message}\n`,
+    ]);
   });
 });

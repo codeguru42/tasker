@@ -10,6 +10,7 @@ import { type Task } from "../../src/store/store.js";
 import { taskLockName } from "../../src/store/locks.js";
 import {
   claudeSample,
+  dayAt,
   eventsOf,
   fakeGh,
   ghTokenAnswer,
@@ -17,7 +18,10 @@ import {
   planAnswerStream,
   readRunMarker,
   runCommand,
+  seedPlanRevision,
   seedPlanSession,
+  seedTaskWithPlanFiles,
+  startTaskWithCommits,
   startLockHolder,
   TEST_SESSION_ID,
   usePlanFixture,
@@ -357,5 +361,154 @@ describe("plan", () => {
       expect(taskOf(fixture).state).toBe("workspace_ready");
       expectNoRun(fixture);
     });
+  });
+});
+
+describe("the overlap warning", () => {
+  const W1 = "WARNING: this plan changes files that other tasks in flight also change.";
+  const W2 = "The task that lands second can get merge conflicts and redo its work.";
+  const LAST = "tasker does not refuse. Decide before you approve.";
+  const OTHER = { repoKey: REPO, at: dayAt(3) };
+  const issues = (...numbers: number[]) => ({
+    issues: [5, ...numbers].map((number) => ({ project: REPO, number })),
+  });
+  const planFixture = (files: string[], ...numbers: number[]) =>
+    usePlanFixture({ stream: planAnswerStream(validPlanAnswer({ files_changed: files })) }, issues(...numbers));
+
+  it("warns of a shared file from the plan of a task in flight", async () => {
+    const fixture = await planFixture(["src/a.ts", "test/a.test.ts"]);
+    seedTaskWithPlanFiles(
+      fixture.started.dataRoot,
+      { ...OTHER, issueKey: "codeguru42/tasker#7", state: "awaiting_plan_review" },
+      ["src/a.ts"],
+    );
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe(
+      [W1, W2, "  codeguru42/tasker#7 (awaiting_plan_review):", "    src/a.ts", LAST, ""].join("\n"),
+    );
+    expect(taskOf(fixture).state).toBe("awaiting_plan_review");
+    const other = withDataRootStore(fixture.started.dataRoot, (store) => store.findLatestTask(REPO, "codeguru42/tasker#7"));
+    expect(other?.state).toBe("awaiting_plan_review");
+  });
+
+  it("warns of a shared file from the branch of a task in flight", async () => {
+    const fixture = await planFixture(["src/a.ts"], 6);
+    await startTaskWithCommits(fixture.started, 6, ["src/a.ts"]);
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe([W1, W2, "  codeguru42/tasker#6 (workspace_ready):", "    src/a.ts", LAST, ""].join("\n"));
+  });
+
+  it("prints no warning when no file is shared", async () => {
+    const fixture = await planFixture(["src/a.ts"], 6);
+    await startTaskWithCommits(fixture.started, 6, ["src/b.ts"]);
+    seedTaskWithPlanFiles(
+      fixture.started.dataRoot,
+      { ...OTHER, issueKey: "codeguru42/tasker#7", state: "awaiting_plan_review" },
+      ["docs/c.md"],
+    );
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe("");
+  });
+
+  it("ignores a task of another repo", async () => {
+    const fixture = await planFixture(["src/a.ts"]);
+    seedTaskWithPlanFiles(
+      fixture.started.dataRoot,
+      { issueKey: "codeguru42/other#7", repoKey: "codeguru42/other", state: "awaiting_plan_review", at: dayAt(3) },
+      ["src/a.ts"],
+    );
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe("");
+  });
+
+  it("ignores a finished and a cancelled task", async () => {
+    const fixture = await planFixture(["src/a.ts"]);
+    seedTaskWithPlanFiles(fixture.started.dataRoot, { ...OTHER, issueKey: "codeguru42/tasker#7", state: "finished" }, [
+      "src/a.ts",
+    ]);
+    seedTaskWithPlanFiles(fixture.started.dataRoot, { ...OTHER, issueKey: "codeguru42/tasker#8", state: "cancelled" }, [
+      "src/a.ts",
+    ]);
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe("");
+  });
+
+  it("prints a note for a branch that is gone, and still counts the plan files", async () => {
+    const fixture = await planFixture(["test/a.test.ts"], 6);
+    const task = await startTaskWithCommits(fixture.started, 6, ["src/b.ts"]);
+    withDataRootStore(fixture.started.dataRoot, (store) => {
+      seedPlanRevision(store, task.id, { answer: validPlanAnswer({ files_changed: ["test/a.test.ts"] }) }, "workspace_ready");
+      store.updateTask(task.id, { branch: "issue-6-gone" });
+    });
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    const lines = result.err.split("\n");
+    expect(lines[0]).toMatch(
+      /^note: cannot read the files of the task branch of codeguru42\/tasker#6: .*cannot resolve the task branch: issue-6-gone/,
+    );
+    expect(lines.slice(1)).toEqual([W1, W2, "  codeguru42/tasker#6 (workspace_ready):", "    test/a.test.ts", LAST, ""]);
+  });
+
+  it("orders the blocks by issue number and the files as text", async () => {
+    const fixture = await planFixture(["test/a.test.ts", "src/a.ts"], 6, 10);
+    await startTaskWithCommits(fixture.started, 10, ["src/a.ts"]);
+    seedTaskWithPlanFiles(
+      fixture.started.dataRoot,
+      { ...OTHER, issueKey: "codeguru42/tasker#6", state: "awaiting_plan_review" },
+      ["test/a.test.ts", "src/a.ts"],
+    );
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe(
+      [
+        W1,
+        W2,
+        "  codeguru42/tasker#6 (awaiting_plan_review):",
+        "    src/a.ts",
+        "    test/a.test.ts",
+        "  codeguru42/tasker#10 (workspace_ready):",
+        "    src/a.ts",
+        LAST,
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("prints no warning after a failure or a quota stop", async () => {
+    for (const control of [
+      { stream: planAnswerStream(validPlanAnswer({ files_changed: ["src/a.ts"] })), exitCode: 1, stderr: "boom" },
+      { stream: claudeSample("quota-stop"), exitCode: 1 },
+    ]) {
+      const fixture = await usePlanFixture(control);
+      seedTaskWithPlanFiles(
+        fixture.started.dataRoot,
+        { ...OTHER, issueKey: "codeguru42/tasker#7", state: "awaiting_plan_review" },
+        ["src/a.ts"],
+      );
+
+      const result = await runPlan();
+
+      expect(result.code).toBe(1);
+      expect(result.err).not.toContain("WARNING");
+    }
   });
 });

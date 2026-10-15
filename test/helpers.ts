@@ -529,6 +529,19 @@ export async function useStartedTask(options: Parameters<typeof useStartFixture>
   return { ...fixture, ...(await startIssueTask(fixture, 5)), env: fixture.origin.env };
 }
 
+// Starts the task of codeguru42/tasker#<number> in the fixture with startIssueTask, then commits each file of files
+// on its task branch, one commit each. It throws when tasker start fails.
+export async function startTaskWithCommits(
+  fixture: StartFixture,
+  number: number,
+  files: readonly string[],
+): Promise<Task> {
+  const { key, result, worktree } = await startIssueTask(fixture, number);
+  if (result.code !== 0) throw new Error(`tasker start failed for ${key}: ${result.err}`);
+  for (const file of files) await commitInWorktree(worktree, fixture.origin.env, { file });
+  return withDataRootStore(fixture.dataRoot, (store) => store.findLatestTask(fixture.repoKey, key)!);
+}
+
 // What a test compares before and after a command: the state of the latest task, whether the
 // worktree folder exists, whether git lists the worktree, and whether the task branch exists.
 export async function taskWorkspaceState(
@@ -1744,6 +1757,16 @@ export function seedPlanRevision(
   const revision = newPlanRevision(store, taskId, change);
   store.addPlanRevision(taskId, revision, state);
   return store.getPlanRevision(taskId, revision.version)!;
+}
+
+// Creates the task of seed in the store of dataRoot (see seedTasks), then inserts its plan revision v1 with files as
+// its files_changed (see seedPlanRevision). The task keeps the state of seed.
+export function seedTaskWithPlanFiles(dataRoot: string, seed: SeedTask, files: readonly string[]): Task {
+  const [task] = seedTasks(dataRoot, [seed]);
+  withDataRootStore(dataRoot, (store) =>
+    seedPlanRevision(store, task.id, { answer: validPlanAnswer({ files_changed: [...files] }) }, seed.state),
+  );
+  return task;
 }
 
 // A task of codeguru42/tasker#5 in the repo codeguru42/tasker, in the state planning,

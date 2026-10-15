@@ -14,6 +14,7 @@ import { checkPlanAnswer } from "../src/plan/answer.js";
 import { childEnv } from "../src/process/child-env.js";
 import { type Task, type TaskStore } from "../src/store/store.js";
 import { dataRootLayout, planRevisionPath, taskLogsDir } from "../src/store/layout.js";
+import { changedPaths } from "../src/vcs/git/changes.js";
 import { repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import {
@@ -60,12 +61,14 @@ import {
   seedPlanRevision,
   seedPlanSession,
   seedPlanningTask,
+  seedTaskWithPlanFiles,
   seedTasks,
   signalListenerCounts,
   spawnTasker,
   sshKeyArgs,
   startFixture,
   startIssueTask,
+  startTaskWithCommits,
   startWriteLockHolder,
   taskNames,
   TEST_SESSION_ID,
@@ -1476,6 +1479,50 @@ describe("startIssueTask", () => {
     expect(started.key).toBe("codeguru42/tasker#6");
     expect(existsSync(started.worktree)).toBe(true);
     expect(await localBranches(started.clone, fixture.origin.env)).toContain(`refs/heads/${started.branch}`);
+  });
+});
+
+describe("startTaskWithCommits", () => {
+  it("starts the task and commits each file on its branch", async () => {
+    const fixture = await useStartFixture({ issues: [{ project: "codeguru42/tasker", number: 6 }] });
+
+    const task = await startTaskWithCommits(fixture, 6, ["src/a.ts", "docs/b.md"]);
+
+    expect(task.state).toBe("workspace_ready");
+    expect(task.issueKey).toBe("codeguru42/tasker#6");
+    const paths = await changedPaths({
+      clone: repoPaths(fixture.dataRoot, fixture.repoKey).clone,
+      env: fixture.origin.env,
+      branch: task.branch!,
+      baseRevision: "refs/remotes/origin/main",
+    });
+    expect([...paths].sort()).toEqual(["docs/b.md", "src/a.ts"]);
+  });
+});
+
+describe("seedTaskWithPlanFiles", () => {
+  const seed = { issueKey: "codeguru42/tasker#7", repoKey: "codeguru42/tasker", at: dayAt(3) };
+
+  it("gives the files as the files_changed of revision v1 and keeps the state", () => {
+    const dataRoot = useTempDir("tasker-seed-");
+
+    const task = seedTaskWithPlanFiles(dataRoot, { ...seed, state: "awaiting_plan_review" }, ["src/a.ts"]);
+
+    withDataRootStore(dataRoot, (store) => {
+      expect(store.latestPlanRevision(task.id)?.answer.files_changed).toEqual(["src/a.ts"]);
+      expect(store.getTask(task.id)?.state).toBe("awaiting_plan_review");
+    });
+  });
+
+  it("keeps the state finished", () => {
+    const dataRoot = useTempDir("tasker-seed-");
+
+    const task = seedTaskWithPlanFiles(dataRoot, { ...seed, state: "finished" }, ["src/a.ts"]);
+
+    withDataRootStore(dataRoot, (store) => {
+      expect(store.latestPlanRevision(task.id)?.answer.files_changed).toEqual(["src/a.ts"]);
+      expect(store.getTask(task.id)?.state).toBe("finished");
+    });
   });
 });
 
