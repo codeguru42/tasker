@@ -57,6 +57,7 @@ describe("fillTemplate", () => {
   describe.each([
     ["CURRENT_PLAN", "current-plan"],
     ["BRANCH_COMMITS", "branch-commits"],
+    ["EARLIER_REVIEWS", "earlier-reviews"],
     ["FEEDBACK", "feedback"],
     ["OPEN_QUESTIONS", "open-questions"],
     ["PLAN_MARKDOWN", "approved-plan"],
