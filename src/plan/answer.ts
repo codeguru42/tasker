@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cleanPath, isPlaceholder, PLACEHOLDER } from "../answer-checks.js";
 import { formatIssues } from "../zod-issues.js";
 import { jsonSchemaOf } from "./json-schema.js";
 import { todoOrder } from "./todo-order.js";
@@ -18,13 +19,6 @@ export type PlanAnswer = z.infer<typeof planAnswerSchema>;
 
 export function planAnswerJsonSchema(): Record<string, unknown> {
   return jsonSchemaOf(planAnswerSchema);
-}
-
-export const PLACEHOLDER = "is a placeholder, not real text";
-
-// The text is too short to hold real content.
-export function isPlaceholder(text: string): boolean {
-  return text.trim().length < 3;
 }
 
 type PlanCheck = { ok: true; answer: PlanAnswer } | { ok: false; problems: string[] };
@@ -81,6 +75,6 @@ export function checkPlanAnswer(output: unknown): PlanCheck {
 // The clean step of the paths of a plan: trim, no leading "./", no empty path and no repeat.
 // The first copy of a path keeps its place.
 export function cleanPlanPaths(paths: readonly string[]): string[] {
-  const files = paths.map((path) => path.trim().replace(/^\.\//, "")).filter((path) => path !== "");
+  const files = paths.map((path) => cleanPath(path)).filter((path) => path !== "");
   return [...new Set(files)];
 }

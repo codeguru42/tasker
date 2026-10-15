@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cleanPlanPaths, isPlaceholder, PLACEHOLDER } from "../plan/answer.js";
+import { cleanPath, isPlaceholder, PLACEHOLDER } from "../answer-checks.js";
 import { jsonSchemaOf } from "../plan/json-schema.js";
 import { formatIssues } from "../zod-issues.js";
 
@@ -34,11 +34,11 @@ export function checkReviewAnswer(output: unknown): ReviewCheck {
   // The checks are not zod refinements. docs/dev/assistants.md gives the reason.
   const problems: string[] = [];
   const findings = parsed.data.findings.map((finding, i) => {
-    const [file] = cleanPlanPaths([finding.file]);
-    if (file === undefined) problems.push(`findings.${i}.file: is empty after a trim and the removal of a leading "./"`);
+    const file = cleanPath(finding.file);
+    if (file === "") problems.push(`findings.${i}.file: is empty after a trim and the removal of a leading "./"`);
     if (isPlaceholder(finding.summary)) problems.push(`findings.${i}.summary: ${PLACEHOLDER}`);
     if (isPlaceholder(finding.failure_scenario)) problems.push(`findings.${i}.failure_scenario: ${PLACEHOLDER}`);
-    return { ...finding, file: file ?? "" };
+    return { ...finding, file };
   });
   if (problems.length > 0) return { ok: false, problems };
   return { ok: true, answer: { findings } };
