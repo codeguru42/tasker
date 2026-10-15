@@ -23,7 +23,7 @@ import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
-import { claudeSample, claudeSampleWithResult, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
+import { argAfter, claudeSample, claudeSampleWithResult, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   planTodo,
   seedExecuteFixTurn,
@@ -183,8 +183,6 @@ const todoStates = (fixture: ExecuteFixture): [string, string][] =>
 
 const eventTypes = (fixture: ExecuteFixture, types: string[]) =>
   eventsOf(fixture.config.dataRoot, fixture.started.key).filter((event) => types.includes(event.type));
-
-const argAfter = (argv: string[], flag: string): string | undefined => argv[argv.indexOf(flag) + 1];
 
 const doneStream = turnResultStream("done");
 

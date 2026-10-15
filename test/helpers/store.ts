@@ -2,7 +2,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
-import { failTask } from "../../src/state/machine.js";
+import { failTask, isSpawningState, transitionWithVerifyRun } from "../../src/state/machine.js";
+import type { TaskState } from "../../src/state/machine.js";
 import { createDataRoot, taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import {
   type NewVerifyRun,
@@ -140,6 +141,34 @@ export function writeBootstrapLog(dataRoot: string, task: Pick<Task, "issueKey" 
   writeFileSync(path, text);
 }
 
+// The next number and the row of a verify run of task, with the defaults of a passed run of one command.
+function nextVerifyRunOf(store: TaskStore, taskId: number, change: Partial<Omit<NewVerifyRun, "number">>): NewVerifyRun {
+  return {
+    number: store.nextVerifyRun(taskId),
+    result: "passed",
+    commands: ["npm run check"],
+    failingCommand: null,
+    startedAt: dayAt(1),
+    endedAt: dayAt(1),
+    ...change,
+  };
+}
+
+// Writes a log for each command of run at its position. The logs default to one passing log for each command.
+function writeVerifyLogs(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+  run: NewVerifyRun,
+  logs?: readonly string[],
+): void {
+  const texts = logs ?? run.commands.map((command) => `$ ${command}\n--- exit code 0\n`);
+  texts.forEach((text, i) => {
+    const path = verifyCommandLogPath(dataRoot, task, run.number, i + 1);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, text);
+  });
+}
+
 // Seeds the next verify run of task: the row, and a log for each command at its position. The task ends in state.
 // The logs default to one passing log for each command. It gives back the stored run.
 export function seedVerifyRun(
@@ -150,24 +179,40 @@ export function seedVerifyRun(
   logs?: readonly string[],
   state = "awaiting_work_review",
 ): VerifyRun {
-  const number = store.nextVerifyRun(task.id);
-  const run: NewVerifyRun = {
-    number,
-    result: "passed",
-    commands: ["npm run check"],
-    failingCommand: null,
-    startedAt: dayAt(1),
-    endedAt: dayAt(1),
-    ...change,
-  };
-  const texts = logs ?? run.commands.map((command) => `$ ${command}\n--- exit code 0\n`);
-  texts.forEach((text, i) => {
-    const path = verifyCommandLogPath(dataRoot, task, number, i + 1);
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, text);
-  });
+  const run = nextVerifyRunOf(store, task.id, change);
+  writeVerifyLogs(dataRoot, task, run, logs);
   store.addVerifyRun(task.id, run, state);
-  return store.getVerifyRun(task.id, number)!;
+  return store.getVerifyRun(task.id, run.number)!;
+}
+
+// Does a real recorded verify failure: it writes the logs, moves the task to verifying, then records the run and
+// moves the task to failed with error in one transaction. The events end with verify_run, then the transition.
+export function failVerifyRun(
+  store: TaskStore,
+  dataRoot: string,
+  task: Pick<Task, "id" | "issueKey" | "attempt">,
+  change: Partial<Omit<NewVerifyRun, "number">> = {},
+  logs?: readonly string[],
+  error = "verify failed: test",
+): VerifyRun {
+  const run = nextVerifyRunOf(store, task.id, change);
+  writeVerifyLogs(dataRoot, task, run, logs);
+  store.startRun(task.id, "verifying");
+  transitionWithVerifyRun(store, task.id, "failed", run, { error });
+  return store.getVerifyRun(task.id, run.number)!;
+}
+
+// Moves the task to origin with no edge check, then fails it with message. A spawning origin starts a run, so the
+// run marker exists as in a real failure. failedFrom then gives origin.
+export function failTaskFrom(
+  store: TaskStore,
+  taskId: number,
+  origin: TaskState,
+  message = `${origin} failed: test`,
+): Task {
+  if (isSpawningState(origin)) store.startRun(taskId, origin);
+  else store.endRun(taskId, origin);
+  return failTask(store, taskId, message);
 }
 
 // Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.

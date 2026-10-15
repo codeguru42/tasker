@@ -148,3 +148,8 @@ export function useFakeClaude(control: FakeClaudeControl): FakeClaude {
 // Makes an empty file with mode 0o444, as bwrap leaves for a protected path. It lives in a fixture module
 // that imports only node: modules, so that the fake claude starts fast.
 export { writePlaceholder } from "../fixtures/placeholder.js";
+
+// The argument after flag in argv of a claude call, for example the id after --session-id.
+export function argAfter(argv: string[], flag: string): string | undefined {
+  return argv[argv.indexOf(flag) + 1];
+}

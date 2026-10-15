@@ -510,17 +510,20 @@ describe("failTaskFrom", () => {
     return { dataRoot, task };
   };
 
-  it.each(["verifying", "provisioning", "planning"] as const)("fails the task from %s with the default message", (origin) => {
-    const { dataRoot, task } = setup("workspace_ready");
+  it.each(["verifying", "provisioning", "planning"] as const)(
+    "fails the task from %s with the default message",
+    (origin) => {
+      const { dataRoot, task } = setup("workspace_ready");
 
-    withDataRootStore(dataRoot, (store) => {
-      failTaskFrom(store, task.id, origin);
+      withDataRootStore(dataRoot, (store) => {
+        failTaskFrom(store, task.id, origin);
 
-      expect(store.getTask(task.id)?.state).toBe("failed");
-      expect(failedFrom(store, task.id)).toBe(origin);
-      expect(lastTransitionError(store.listEvents(task.id))).toBe(`${origin} failed: test`);
-    });
-  });
+        expect(store.getTask(task.id)?.state).toBe("failed");
+        expect(failedFrom(store, task.id)).toBe(origin);
+        expect(lastTransitionError(store.listEvents(task.id))).toBe(`${origin} failed: test`);
+      });
+    },
+  );
 
   it("uses the given message", () => {
     const { dataRoot, task } = setup("approved");
