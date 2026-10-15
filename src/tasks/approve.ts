@@ -27,7 +27,15 @@ export async function approveTask(store: TaskStore, request: ApproveRequest): Pr
 async function approveLocked(store: TaskStore, request: ApproveRequest): Promise<Approved> {
   const task = store.getTask(request.taskId);
   if (task === undefined) throw taskNotFound(request.taskId);
-  const revision = store.latestPlanRevision(task.id)!;
+  if (task.state === "approved") {
+    const pinned = store.pinnedPlanRevision(task.id);
+    if (pinned !== undefined) throw new Error(`${task.issueKey} is already approved at revision v${pinned.version}`);
+  }
+  if (task.state !== "awaiting_plan_review") {
+    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker approve needs awaiting_plan_review`);
+  }
+  const revision = store.latestPlanRevision(task.id);
+  if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
   const openQuestions = revision.answer.questions;
   await request.warnOverlaps(revision.answer.files_changed);
   transitionWithPlanApproval(store, task.id, revision.version, openQuestions.length);
