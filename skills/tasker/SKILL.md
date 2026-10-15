@@ -264,6 +264,13 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 The command writes the events `todo_started` and `todo_done` with the data `{ id }`, `fix_turn_started` and `fix_turn_done` with no data, one `permission_denials` event with `{ denials }`, one `sandbox_cleanup` event for each turn that has one, and one `usage` event for each turn. At the end, it writes one `executed` event with `{ version, prompts, from, to }` in place of the `transition` event. No command resumes a task in `failed` or `quota_blocked` yet.
 
+### `tasker verify`
+
+Runs the verify commands of the repo in the worktree of a task in the state `executed`: `tasker verify <issue>`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
