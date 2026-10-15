@@ -16,7 +16,6 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, onTestFinished } from "vitest";
 import type { AssistantEvent, RunInput } from "../src/assistant/provider.js";
-import { type Io, type RegisterCommand, run } from "../src/cli.js";
 import { start } from "../src/commands/start.js";
 import { loadConfig } from "../src/config/load.js";
 import { type Config, parseConfig } from "../src/config/schema.js";
@@ -46,58 +45,14 @@ import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
 import { listWorktrees, taskBranchName, taskWorktreePath } from "../src/vcs/git/worktree.js";
 import type { VcsContext } from "../src/vcs/provider.js";
+import { runCommand } from "./helpers/cli.js";
 import { makeTempDir, useProcessEnv, useTempDir, useTempHome } from "./helpers/temp.js";
 
+export * from "./helpers/cli.js";
 export * from "./helpers/errors.js";
 export * from "./helpers/processes.js";
 export * from "./helpers/source-scan.js";
 export * from "./helpers/temp.js";
-
-export interface CapturedIo extends Io {
-  out: string[];
-  err: string[];
-  questions: string[];
-}
-
-// With answers, the io has a prompt that gives the next answer, and rejects when none is left.
-export function captureIo(options: { answers?: string[] } = {}): CapturedIo {
-  const out: string[] = [];
-  const err: string[] = [];
-  const questions: string[] = [];
-  const answers = options.answers === undefined ? undefined : [...options.answers];
-  const io: CapturedIo = {
-    out,
-    err,
-    questions,
-    stdout: (text) => out.push(text),
-    stderr: (text) => err.push(text),
-  };
-  if (answers !== undefined) {
-    io.prompt = (question) => {
-      questions.push(question);
-      const answer = answers.shift();
-      return answer === undefined ? Promise.reject(new Error("no answer left")) : Promise.resolve(answer);
-    };
-  }
-  return io;
-}
-
-export const greet: RegisterCommand = (program) => {
-  program
-    .command("greet")
-    .description("Say hello")
-    .option("--name <name>", "Who to greet");
-};
-
-// Runs argv with only this command and gives the exit code and the whole stdout and stderr.
-export async function runCommand(
-  command: RegisterCommand,
-  ...argv: string[]
-): Promise<{ code: number; out: string; err: string }> {
-  const io = captureIo();
-  const code = await run(argv, { commands: [command], io });
-  return { code, out: io.out.join(""), err: io.err.join("") };
-}
 
 // A new object for each call, so a test can change it freely.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
