@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { planRevisionPath, taskPlansDir } from "../../src/store/layout.js";
-import { PlanFileWriteError } from "../../src/store/plan-file.js";
+import { PlanFileWriteError, readPlanFile } from "../../src/store/plan-file.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
 import { recordTestPlanRevision, validPlanAnswer } from "../helpers/plan.js";
@@ -84,6 +84,35 @@ describe("recordPlanRevision", () => {
 
       expect((error as Error).message).toBe("task not found: 9999");
       expect(existsSync(taskPlansDir(dataRoot, { issueKey: newTask.issueKey, attempt: 1 }))).toBe(false);
+    });
+  });
+});
+
+describe("readPlanFile", () => {
+  let dataRoot: string;
+
+  beforeEach(() => {
+    dataRoot = useTempDir("tasker-plan-file-");
+  });
+
+  it("gives the text that the record wrote, as it is", () => {
+    withDataRootStore(dataRoot, (store) => {
+      const task = store.createTask(newTask);
+      const markdown = "## Summary\n\nno newline";
+      recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: markdown }) });
+
+      expect(readPlanFile(dataRoot, task, 1)).toBe(markdown);
+    });
+  });
+
+  it("throws a message that names the path when the file is missing", () => {
+    withDataRootStore(dataRoot, (store) => {
+      const task = store.createTask(newTask);
+      const path = planRevisionPath(dataRoot, task, 1);
+
+      const error = thrownBy(() => readPlanFile(dataRoot, task, 1));
+
+      expect((error as Error).message.startsWith(`cannot read the plan file ${path} of revision v1: `)).toBe(true);
     });
   });
 });
