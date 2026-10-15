@@ -1322,6 +1322,18 @@ describe("task store", () => {
       expect(store.executeSession(task.id, 5)).toBeUndefined();
     });
 
+    it("refuses a task that does not exist and writes nothing", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedExecuteSession(store, task.id, 1, { sessionId: "s-1" });
+      expectNothingChanged(
+        task.id,
+        () => seedExecuteSession(store, 999, 1, { sessionId: "s-9" }),
+        "task not found: 999",
+      );
+      expect(store.executeSession(999, 1)).toBeUndefined();
+    });
+
     it("keeps the plan session and the execute session of one task apart", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
