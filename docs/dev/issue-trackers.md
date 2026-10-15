@@ -35,6 +35,8 @@ A `gh api` call sends a string value with `-f` and only a number with `-F`. `-F`
 
 Before the first call of an account, tasker reads its token with `gh auth token --hostname github.com --user <account>`. With `--user`, gh 2.101.0 ignores `GH_TOKEN`.
 
+Never call `gh auth token` with an empty user. With `--user ""`, gh 2.101.0 falls back to the active account and prints its token.
+
 - tasker reads the token one time for each account in one process. Concurrent calls share one read. A failed read is not kept, so the next call reads the token again.
 - A caller with no signal never stops the read.
 - A caller whose signal aborts rejects at once. The other callers keep waiting.
@@ -91,6 +93,8 @@ The writes read nothing before they write. They rely on these facts of the gh 2.
 As a result, exit 0 is success and the code has no special case. The label must exist on GitHub. The writes do not create it.
 
 The assignee `@me` passes to `gh` as it is. `gh` resolves it to the user of the token, which is the account of the tracker.
+
+`gh issue edit` splits the value of `--add-label` and of `--add-assignee` on commas (gh 2.101.0).
 
 Limit: the in-progress marker is a label only. GitHub Projects (v2) columns are not supported.
 
