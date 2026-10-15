@@ -1,5 +1,6 @@
 import { CommanderError } from "commander";
-import type { RegisterCommand } from "../cli.js";
+import type { Io, RegisterCommand } from "../cli.js";
+import type { Config } from "../config/schema.js";
 import { executeTask } from "../tasks/execute.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
@@ -19,19 +20,29 @@ export const execute: RegisterCommand = (program, io) => {
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .action(async (issue: string, options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
-      const { key, result } = await orFailAsync(io, () =>
-        withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
-          key: found.issueKey,
-          result: await executeTask(store, { config, ref, taskId: found.id, env: process.env, io }),
-        })),
-      );
-      if ("exitCode" in result) {
-        throw new CommanderError(result.exitCode, "tasker.execute", "the execute run did not succeed");
-      }
-      io.stdout(`executed ${key} at revision v${result.version}\n`);
-      io.stdout(`todos: ${result.todosDone} of ${result.todosTotal} done\n`);
-      if (result.fixTurnDone) io.stdout("fix turn: done\n");
-      io.stdout(`denials: ${result.denials}\n`);
-      io.stdout(`transcript: ${result.transcriptPath}\n`);
+      await executeIssue(io, config, issue, { repo: options.repo });
     });
 };
+
+// The steps and the output of tasker execute. tasker retry runs them too.
+export async function executeIssue(
+  io: Io,
+  config: Config,
+  issue: string,
+  options: { repo?: string },
+): Promise<void> {
+  const { key, result } = await orFailAsync(io, () =>
+    withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
+      key: found.issueKey,
+      result: await executeTask(store, { config, ref, taskId: found.id, env: process.env, io }),
+    })),
+  );
+  if ("exitCode" in result) {
+    throw new CommanderError(result.exitCode, "tasker.execute", "the execute run did not succeed");
+  }
+  io.stdout(`executed ${key} at revision v${result.version}\n`);
+  io.stdout(`todos: ${result.todosDone} of ${result.todosTotal} done\n`);
+  if (result.fixTurnDone) io.stdout("fix turn: done\n");
+  io.stdout(`denials: ${result.denials}\n`);
+  io.stdout(`transcript: ${result.transcriptPath}\n`);
+}

@@ -1,4 +1,5 @@
-import type { RegisterCommand } from "../cli.js";
+import type { Io, RegisterCommand } from "../cli.js";
+import type { Config } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
 import { BootstrapFailedError, startTask } from "../tasks/start.js";
 import {
@@ -26,46 +27,56 @@ export const start: RegisterCommand = (program, io) => {
     )
     .action(async (issue: string, options: { repo?: string; base?: string }) => {
       const config = loadConfigOrFail(io);
-      const ref = resolveIssueKeyOrFail(io, issue, config, { repo: options.repo });
-      const ask = () =>
-        io.prompt === undefined
-          ? Promise.reject(
-              new Error(
-                `no base branch for ${ref.repoKey}: pass --base <branch>, or set repos.${ref.repoKey}.defaultBaseBranch`,
-              ),
-            )
-          : io.prompt(`Base branch for ${ref.repoKey}: `);
-      const outcome = await orFailAsync(
-        io,
-        () =>
-          withStoreAsync(config, (store) =>
-            startTask(store, {
-              config,
-              ref,
-              base: options.base,
-              env: process.env,
-              repoLockWaitMs: REPO_LOCK_WAIT_MS,
-              ask,
-              note: (line) => io.stderr(`${line}\n`),
-            }),
-          ),
-        // The bootstrap error comes first, then the tail of the log.
-        (error) =>
-          error instanceof BootstrapFailedError
-            ? `${error.message}\n${error.tail.trimEnd()}`
-            : errorMessage(error),
-      );
-      const { task } = outcome;
-      if (!outcome.started) io.stdout("task already started\n");
-      io.stdout(
-        formatFields([
-          ["issue", task.issueKey],
-          ["repo", task.repoKey],
-          ["state", task.state],
-          ["base", task.base],
-          ["branch", task.branch],
-          ["worktree", task.worktreePath],
-        ]),
-      );
+      await startIssue(io, config, issue, { repo: options.repo, base: options.base });
     });
 };
+
+// The steps and the output of tasker start. tasker retry runs them too.
+export async function startIssue(
+  io: Io,
+  config: Config,
+  issue: string,
+  options: { repo?: string; base?: string },
+): Promise<void> {
+  const ref = resolveIssueKeyOrFail(io, issue, config, { repo: options.repo });
+  const ask = () =>
+    io.prompt === undefined
+      ? Promise.reject(
+          new Error(
+            `no base branch for ${ref.repoKey}: pass --base <branch>, or set repos.${ref.repoKey}.defaultBaseBranch`,
+          ),
+        )
+      : io.prompt(`Base branch for ${ref.repoKey}: `);
+  const outcome = await orFailAsync(
+    io,
+    () =>
+      withStoreAsync(config, (store) =>
+        startTask(store, {
+          config,
+          ref,
+          base: options.base,
+          env: process.env,
+          repoLockWaitMs: REPO_LOCK_WAIT_MS,
+          ask,
+          note: (line) => io.stderr(`${line}\n`),
+        }),
+      ),
+    // The bootstrap error comes first, then the tail of the log.
+    (error) =>
+      error instanceof BootstrapFailedError
+        ? `${error.message}\n${error.tail.trimEnd()}`
+        : errorMessage(error),
+  );
+  const { task } = outcome;
+  if (!outcome.started) io.stdout("task already started\n");
+  io.stdout(
+    formatFields([
+      ["issue", task.issueKey],
+      ["repo", task.repoKey],
+      ["state", task.state],
+      ["base", task.base],
+      ["branch", task.branch],
+      ["worktree", task.worktreePath],
+    ]),
+  );
+}
