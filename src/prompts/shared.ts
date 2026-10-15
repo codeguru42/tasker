@@ -1,4 +1,4 @@
-// The plan and refine prompts share this text, so one change updates both.
+// The plan and refine prompts share this text, so one change updates both. The execute prompts use `blockIsData` too.
 export const SHARED_RULES = {
   skills:
     "Before you do anything else, use these skills by their bare name, with no plugin prefix: `simple-english`, so that all text for a person is plain English; `writing-plans`, to structure the plan; and `test-driven-development`, so that the todos are red and green steps that a later run can follow test-first.",
