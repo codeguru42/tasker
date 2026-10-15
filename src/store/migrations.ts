@@ -67,4 +67,25 @@ CREATE UNIQUE INDEX tasks_active_repo_issue ON tasks (repo_key, issue_key)
   created_at TEXT NOT NULL
 );
 CREATE UNIQUE INDEX sessions_task_plan ON sessions (task_id, role) WHERE role = 'plan';`,
+  `ALTER TABLE sessions ADD COLUMN plan_version INTEGER;
+CREATE UNIQUE INDEX sessions_task_execute ON sessions (task_id, plan_version) WHERE role = 'execute';
+CREATE TABLE execute_todos (
+  task_id INTEGER NOT NULL,
+  plan_version INTEGER NOT NULL,
+  todo_id TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('in_progress', 'done')),
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, plan_version, todo_id),
+  FOREIGN KEY (task_id, plan_version) REFERENCES plan_revisions (task_id, version)
+);
+CREATE TABLE execute_fix_turns (
+  task_id INTEGER NOT NULL,
+  plan_version INTEGER NOT NULL,
+  verify_failure TEXT NOT NULL,
+  verify_log_tail TEXT,
+  queued_at TEXT NOT NULL,
+  done_at TEXT,
+  PRIMARY KEY (task_id, plan_version),
+  FOREIGN KEY (task_id, plan_version) REFERENCES plan_revisions (task_id, version)
+);`,
 ];
