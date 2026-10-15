@@ -195,13 +195,16 @@ export function canTransition(from: TaskState, to: TaskState): boolean {
 // detail cannot set from or to: the type rejects them, and the values of the machine win at run time.
 export type TransitionDetail = Record<string, unknown> & { from?: never; to?: never };
 
+// The from and to of a move of current to `to`. An illegal edge throws.
+function legalMove(current: Task, to: TaskState): { from: TaskState; to: TaskState } {
+  if (!isTaskState(current.state) || !canTransition(current.state, to)) {
+    throw new Error(`illegal state transition: ${current.state} -> ${to}`);
+  }
+  return { from: current.state, to };
+}
+
 function transitionCheck(to: TaskState, detail?: TransitionDetail) {
-  return (current: Task): NewEvent => {
-    if (!isTaskState(current.state) || !canTransition(current.state, to)) {
-      throw new Error(`illegal state transition: ${current.state} -> ${to}`);
-    }
-    return { type: "transition", data: { ...detail, from: current.state, to } };
-  };
+  return (current: Task): NewEvent => ({ type: "transition", data: { ...detail, ...legalMove(current, to) } });
 }
 
 // Writes the new state, the run marker change and one transition event { ...detail, from, to } in
