@@ -12,6 +12,7 @@ import { taskNames } from "./git.js";
 import {
   dayAt,
   eventsOf,
+  latestTaskOf,
   lockNames,
   readRunMarker,
   seedTask,
@@ -72,6 +73,28 @@ describe("eventsOf", () => {
     withDataRootStore(dataRoot, () => {});
 
     expect((thrownBy(() => eventsOf(dataRoot, "codeguru42/tasker#9")) as Error).message).toBe(
+      "no task of codeguru42/tasker#9",
+    );
+  });
+});
+
+describe("latestTaskOf", () => {
+  it("gives the newest of two tasks of the issue", () => {
+    const dataRoot = join(useTempDir("tasker-latest-"), "data");
+    const issueKey = "codeguru42/tasker#9";
+    const [, second] = seedTasks(dataRoot, [
+      { issueKey, repoKey: "codeguru42/tasker", state: "finished", at: dayAt(1) },
+      { issueKey, repoKey: "codeguru42/tasker", state: "planning", at: dayAt(2) },
+    ]);
+
+    expect(latestTaskOf(dataRoot, issueKey).id).toBe(second.id);
+  });
+
+  it("throws for an issue key with no task", () => {
+    const dataRoot = join(useTempDir("tasker-latest-"), "data");
+    withDataRootStore(dataRoot, () => {});
+
+    expect((thrownBy(() => latestTaskOf(dataRoot, "codeguru42/tasker#9")) as Error).message).toBe(
       "no task of codeguru42/tasker#9",
     );
   });
