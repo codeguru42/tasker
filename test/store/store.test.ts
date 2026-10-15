@@ -1438,6 +1438,112 @@ describe("task store", () => {
     });
   });
 
+  describe("retry write", () => {
+    const retryCheck = () => ({ type: "retry", data: { origin: "executing" } });
+    const failedTask = () => {
+      const task = store.createTask({ ...newTask, state: "failed" });
+      seedPlanRevision(store, task.id);
+      seedPlanRevision(store, task.id);
+      return task;
+    };
+
+    it("moves the state, drops the run marker and writes the event of the check", () => {
+      const task = failedTask();
+      writeRunPid(task.id, "failed", process.pid);
+
+      const moved = store.retryTask(task.id, "approved", {}, retryCheck);
+
+      expect(moved.state).toBe("approved");
+      expect(store.getTask(task.id)?.state).toBe("approved");
+      expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+      expect(store.listEvents(task.id).at(-1)).toMatchObject({
+        type: "retry",
+        data: { origin: "executing" },
+      });
+    });
+
+    it("clears the plan session and keeps the execute session", () => {
+      const task = failedTask();
+      seedPlanSession(store, task.id);
+      seedExecuteSession(store, task.id, 1);
+
+      store.retryTask(task.id, "workspace_ready", { clearPlanSession: true }, retryCheck);
+
+      expect(store.planSession(task.id)).toBeUndefined();
+      expect(store.executeSession(task.id, 1)).toBeDefined();
+    });
+
+    it("clears the execute session of one version only", () => {
+      const task = failedTask();
+      seedPlanSession(store, task.id);
+      seedExecuteSession(store, task.id, 1);
+      seedExecuteSession(store, task.id, 2, { sessionId: "s-2" });
+
+      store.retryTask(task.id, "approved", { clearExecuteSession: 1 }, retryCheck);
+
+      expect(store.executeSession(task.id, 1)).toBeUndefined();
+      expect(store.executeSession(task.id, 2)?.sessionId).toBe("s-2");
+      expect(store.planSession(task.id)).toBeDefined();
+    });
+
+    it("marks every todo done and queues the fix turn", () => {
+      const task = failedTask();
+      seedExecuteTodoStates(store, task.id, 1, { "write-test": "in_progress" });
+
+      store.retryTask(
+        task.id,
+        "approved",
+        { resumeExecute: { version: 1, fixTurn: { verifyFailure: "npm test failed", verifyLogTail: "line 1\n" } } },
+        retryCheck,
+      );
+
+      expect(todoProgress(task.id, 1).map((entry) => entry.state)).toEqual(["done", "done"]);
+      expect(queuedFixTurn(task.id, 1)).toMatchObject({ verifyFailure: "npm test failed", verifyLogTail: "line 1\n" });
+      expect(fixTurnState(task.id, 1)).toBe("queued");
+    });
+
+    it("writes nothing when resumeExecute names a version with no revision", () => {
+      const task = failedTask();
+      seedPlanSession(store, task.id);
+      seedExecuteSession(store, task.id, 1);
+      writeRunPid(task.id, "failed", process.pid);
+
+      expectNothingChanged(
+        task.id,
+        () =>
+          store.retryTask(
+            task.id,
+            "approved",
+            {
+              clearPlanSession: true,
+              clearExecuteSession: 1,
+              resumeExecute: { version: 5, fixTurn: { verifyFailure: "f", verifyLogTail: null } },
+            },
+            retryCheck,
+          ),
+        `task ${task.id} has no plan revision 5`,
+      );
+      expect(store.getTask(task.id)?.state).toBe("failed");
+      expect(store.planSession(task.id)).toBeDefined();
+      expect(store.executeSession(task.id, 1)).toBeDefined();
+    });
+
+    it("writes nothing when the check throws", () => {
+      const task = failedTask();
+      seedPlanSession(store, task.id);
+
+      expectNothingChanged(
+        task.id,
+        () =>
+          store.retryTask(task.id, "workspace_ready", { clearPlanSession: true }, () => {
+            throw new Error("no edge");
+          }),
+        "no edge",
+      );
+      expect(store.planSession(task.id)).toBeDefined();
+    });
+  });
+
   describe("execute todo states", () => {
     const todos = validPlanAnswer().todos;
 

@@ -15,12 +15,13 @@ import {
   transitionWithPlanApproval,
   transitionWithPlanRevision,
   transitionWithPlanUnapproval,
+  transitionWithRetry,
   transitionWithVerifyRun,
   type TaskState,
   type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { seedPinnedPlanRevision, seedPlanRevision, validPlanAnswer } from "../helpers/plan.js";
+import { seedExecuteSession, seedPinnedPlanRevision, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
 import { useTempDir } from "../helpers/temp.js";
 
 describe("spawning states", () => {
@@ -496,6 +497,53 @@ describe("task transitions", () => {
       );
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithRetry", () => {
+    it("writes one retry event in place of the transition event, with the writes", () => {
+      const task = store.createTask(newTask("failed"));
+      seedPlanSession(store, task.id);
+
+      const moved = transitionWithRetry(
+        store,
+        task.id,
+        "workspace_ready",
+        { origin: "planning", resumeExecute: false },
+        { clearPlanSession: true },
+      );
+
+      expect(moved.state).toBe("workspace_ready");
+      expect(store.planSession(task.id)).toBeUndefined();
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "retry"]);
+      expect(events[1].data).toEqual({
+        origin: "planning",
+        target: "workspace_ready",
+        resumeExecute: false,
+        from: "failed",
+        to: "workspace_ready",
+      });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("failed"));
+      seedPlanRevision(store, task.id);
+      seedExecuteSession(store, task.id, 1);
+
+      expect(() =>
+        transitionWithRetry(
+          store,
+          task.id,
+          "planning",
+          { origin: "planning", resumeExecute: false },
+          { clearExecuteSession: 1 },
+        ),
+      ).toThrow("illegal state transition: failed -> planning");
+
+      expect(store.getTask(task.id)!.state).toBe("failed");
+      expect(store.executeSession(task.id, 1)).toBeDefined();
+      expect(store.listEvents(task.id).map((e) => e.type)).toEqual(["created", "plan_revision"]);
     });
   });
 
