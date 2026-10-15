@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify and retry, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -173,6 +173,19 @@ The reasons:
 - The fix turn gets the tail of the log from tasker, not from the sandbox. The log is in the data root, outside the worktree, and the sandbox gives the shell only the worktree. The bound of 200 lines and 64 KiB keeps a large log out of the prompt.
 - The tail comes only from the verify run of this failure. Some verify failures record no run, and then the latest run belongs to an earlier verify. Its log gives the fix turn false data, so the fix turn gets no tail.
 
+## Accept
+
+`tasker accept` records that a person accepts the work of a task in `awaiting_work_review`. The task goes to `accepted`.
+
+The command runs under the task lock and does not wait for the lock. It holds the repo lock for the fetch, as [the locks table](data-root.md#locks-table) requires. It makes all checks before any write: the task, the state, the worktree, the branch, the stored base revision and the fetch of `origin` with the read of the base tip. A refused accept leaves the task and the events as they were. The fetch can still move the refs of `origin` in the clone.
+
+The write is one transaction. It appends one `accepted` event with the data `{ revision, baseTip, from, to }` and moves the task to `accepted`. The `accepted` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
+
+These reasons explain its rules:
+
+- The base check runs here and not at the landing. As a result, a base that moved while the task waited in review shows before a person lands it.
+- Accept only records the decision of a person. The landing (M10) is the one step that changes origin. As a result, a refused or an accepted task leaves origin as it was, and the person still decides to land in a separate step.
+
 ## Limits
 
 - A new base on a second run does not move a task branch that already exists. The stored base can differ from the real start point of the branch.
@@ -184,3 +197,4 @@ The reasons:
 - The plan reads the title and the body of the issue. It does not read the comments.
 - `tasker retry` resumes a task in `failed` for the origins of its table. No command resumes a task in `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`, and a second `tasker execute` works only on a task in `approved`.
 - Layer 3 of the push guard cannot see a push that moves the tip and then moves it back within one turn. It compares only the tips before and after.
+- The base can move after the check of `tasker accept`, so the land (M10) refuses a push that is not a fast-forward.
