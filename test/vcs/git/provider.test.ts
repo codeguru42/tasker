@@ -13,6 +13,7 @@ import {
 import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
 import { changedPaths, ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
+import { remoteTip } from "../../../src/vcs/git/remote-tip.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import {
@@ -259,6 +260,26 @@ describe("createGitProvider", () => {
       });
       expect(deletion).toEqual({ state: "deleted" });
       expect(await fixture.origin.branchHead(taskRef)).toBeUndefined();
+    });
+  });
+
+  describe("remote tip", () => {
+    it("gives the tip of a task ref that exists on the origin like remoteTip", async () => {
+      const { origin, context } = fixture;
+      const tip = await provider().remoteTaskRefTip(context, { taskRef: "main" });
+      expect(tip).toEqual({ state: "present", revision: await origin.branchHead("main") });
+      expect(tip).toEqual(
+        await remoteTip({ remote: origin.path, branch: "main", sshKey: undefined, env: context.env }),
+      );
+    });
+
+    it("gives absent for a task ref that does not exist like remoteTip", async () => {
+      const { origin, context } = fixture;
+      const tip = await provider().remoteTaskRefTip(context, { taskRef: "issue-1-missing" });
+      expect(tip).toEqual({ state: "absent" });
+      expect(tip).toEqual(
+        await remoteTip({ remote: origin.path, branch: "issue-1-missing", sshKey: undefined, env: context.env }),
+      );
     });
   });
 
