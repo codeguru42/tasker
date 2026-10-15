@@ -508,15 +508,25 @@ export interface StartedTask extends StartFixture {
   env: NodeJS.ProcessEnv;
 }
 
+// Runs tasker start for codeguru42/tasker#<number> in the fixture and gives the key, the result and the names of
+// its clone, branch and worktree. It makes no assertion. The fake gh of the fixture must answer the read of the
+// issue (see the issues option of useStartFixture).
+export async function startIssueTask(
+  fixture: StartFixture,
+  number: number,
+): Promise<Pick<StartedTask, "key" | "result" | "branch" | "worktree" | "clone">> {
+  const key = `codeguru42/tasker#${number}`;
+  const result = await runCommand(start, "start", key);
+  const { clone, worktrees } = repoPaths(fixture.dataRoot, fixture.repoKey);
+  const { branch, worktree } = taskNames(worktrees, number, `Issue ${number}`);
+  return { key, result, branch, worktree, clone };
+}
+
 // Runs useStartFixture(options), then tasker start for issue 5. It makes no assertion, so a test
 // with a failing bootstrap can use it. Call it inside a test.
 export async function useStartedTask(options: Parameters<typeof useStartFixture>[0] = {}): Promise<StartedTask> {
   const fixture = await useStartFixture(options);
-  const key = "codeguru42/tasker#5";
-  const result = await runCommand(start, "start", key);
-  const { clone, worktrees } = repoPaths(fixture.dataRoot, fixture.repoKey);
-  const { branch, worktree } = taskNames(worktrees, 5, "Issue 5");
-  return { ...fixture, key, result, branch, worktree, clone, env: fixture.origin.env };
+  return { ...fixture, ...(await startIssueTask(fixture, 5)), env: fixture.origin.env };
 }
 
 // What a test compares before and after a command: the state of the latest task, whether the

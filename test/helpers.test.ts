@@ -65,6 +65,7 @@ import {
   spawnTasker,
   sshKeyArgs,
   startFixture,
+  startIssueTask,
   startWriteLockHolder,
   taskNames,
   TEST_SESSION_ID,
@@ -1463,6 +1464,18 @@ describe("useStartedTask", () => {
     expect(started.key).toBe("codeguru42/tasker#5");
     expect(existsSync(started.worktree)).toBe(true);
     expect(await localBranches(started.clone, started.env)).toContain(`refs/heads/${started.branch}`);
+  });
+});
+
+describe("startIssueTask", () => {
+  it("starts the task of the issue number and gives its names", async () => {
+    const fixture = await useStartFixture({ issues: [{ project: "codeguru42/tasker", number: 6 }] });
+    const started = await startIssueTask(fixture, 6);
+
+    expect(started.result.code).toBe(0);
+    expect(started.key).toBe("codeguru42/tasker#6");
+    expect(existsSync(started.worktree)).toBe(true);
+    expect(await localBranches(started.clone, fixture.origin.env)).toContain(`refs/heads/${started.branch}`);
   });
 });
 
