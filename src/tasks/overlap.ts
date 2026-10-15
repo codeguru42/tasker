@@ -4,6 +4,7 @@ import { errorMessage } from "../error-message.js";
 import { compareIssueKeys } from "../issue-key/order.js";
 import { cleanPlanPaths } from "../plan/answer.js";
 import type { Task, TaskStore } from "../store/store.js";
+import { baseRevisionOf } from "./base-revision.js";
 import { vcsForRepo } from "../vcs/provider.js";
 
 // The files of the task that another task in flight also changes.
@@ -18,17 +19,6 @@ export interface OverlapReport {
   overlaps: TaskOverlap[];
   // One line for each task whose branch paths cannot be read.
   notes: string[];
-}
-
-// The revision of the newest base event of the task, or undefined.
-function baseRevisionOf(store: TaskStore, taskId: number): string | undefined {
-  const events = store.listEvents(taskId);
-  for (let i = events.length - 1; i >= 0; i--) {
-    if (events[i].type !== "base") continue;
-    const revision = (events[i].data as { revision?: unknown } | null)?.revision;
-    return typeof revision === "string" ? revision : undefined;
-  }
-  return undefined;
 }
 
 // Compares files with the files of each other active task of the repo of task. docs/dev/tasks.md gives the reasons.
