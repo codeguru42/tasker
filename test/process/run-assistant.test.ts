@@ -41,6 +41,16 @@ async function runCollected(
 }
 
 describe("runAssistant", () => {
+  it("removes its signal listeners after a spawn that throws", async () => {
+    const before = signalListenerCounts();
+
+    await expect(runCollected("exit 0", { file: "/bin/ba\0sh" })).rejects.toMatchObject({
+      code: "ERR_INVALID_ARG_VALUE",
+    });
+
+    expect(signalListenerCounts()).toEqual(before);
+  });
+
   it("writes the prompt to stdin and gives each stdout line to onLine", async () => {
     const { result, lines } = await runCollected("cat", { prompt: "one\ntwo\n" });
 
@@ -323,6 +333,30 @@ describe("runAssistant", () => {
 });
 
 describe("runAssistant with the signals of tasker", () => {
+  it.each(["SIGINT", "SIGTERM"] as const)(
+    "forwards %s that comes while the child starts to the group",
+    { timeout: 20_000 },
+    async (signal) => {
+      const dir = useTempDir("tasker-run-assistant-");
+      const fixture = startFixture("run-assistant-signal.ts", [dir, "60000", "sleep 30", signal]);
+
+      const { result, before, after } = JSON.parse(await fixture.firstLine);
+      expect(result).toMatchObject({ started: true, signal, timedOut: false, killed: false });
+      expect(after).toEqual(before);
+      await fixture.exited;
+    },
+  );
+
+  it("drops a signal that comes while a child that cannot start starts", { timeout: 20_000 }, async () => {
+    const dir = useTempDir("tasker-run-assistant-");
+    const fixture = startFixture("run-assistant-signal.ts", [dir, "60000", "exit 0", "SIGTERM", join(dir, "missing")]);
+
+    const { result, before, after } = JSON.parse(await fixture.firstLine);
+    expect(result).toMatchObject({ started: false, notFound: true });
+    expect(after).toEqual(before);
+    await fixture.exited;
+  });
+
   it.each(["SIGINT", "SIGTERM"] as const)(
     "forwards %s to the group and keeps tasker alive",
     { timeout: 20_000 },

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
-import { type GroupResult, runInGroup, signalGroup } from "../../src/process/run-group.js";
+import { type GroupResult, forwardSignals, runInGroup, signalGroup } from "../../src/process/run-group.js";
 import {
   isAlive,
   readPidFile,
@@ -26,13 +26,13 @@ interface Run {
 // Runs command under bash in a new folder, with a deadline 60 s ahead. The log holds its output.
 async function runLogged(
   command: string,
-  options: { cwd?: string; deadline?: number; onSpawn?: (pid: number) => void } = {},
+  options: { cwd?: string; deadline?: number; file?: string; onSpawn?: (pid: number) => void } = {},
 ): Promise<Run & { dir: string }> {
   const dir = useTempDir("tasker-run-group-");
   const logPath = join(dir, "out.log");
   const outputFd = openSync(logPath, "a");
   try {
-    const result = await runInGroup("/bin/bash", ["-c", command], {
+    const result = await runInGroup(options.file ?? "/bin/bash", ["-c", command], {
       cwd: options.cwd ?? dir,
       env: { PATH: process.env.PATH },
       outputFd,
@@ -140,6 +140,16 @@ describe("runInGroup", () => {
     },
   );
 
+  it("leaves the SIGINT and SIGTERM listener counts as before after a spawn that throws", async () => {
+    const before = signalListenerCounts();
+
+    await expect(runLogged("exit 0", { file: "/bin/ba\0sh" })).rejects.toMatchObject({
+      code: "ERR_INVALID_ARG_VALUE",
+    });
+
+    expect(signalListenerCounts()).toEqual(before);
+  });
+
   it("sends SIGTERM to the whole group at the deadline", { timeout: 20_000 }, async () => {
     const cwd = useTempDir("tasker-run-group-cwd-");
     const running = runLogged("sleep 30 & echo $! > child.pid; wait", {
@@ -240,18 +250,28 @@ interface Fixture {
   exit: Promise<{ code: number | null; signal: NodeJS.Signals | null }>;
   send: (signal: NodeJS.Signals) => void;
   // Waits for the JSON line of the fixture.
-  line: () => Promise<{ result: GroupResult; before: number[]; after: number[] }>;
+  line: () => Promise<{
+    result?: GroupResult;
+    error?: { code: string; message: string };
+    before: number[];
+    after: number[];
+  }>;
   // Resolves "exited" when the fixture ends within ms, and "hung" when it does not.
   exitsWithin: (ms: number) => Promise<"exited" | "hung">;
 }
 
 // Starts the fixture script, which runs command with runInGroup in its own process.
-function startFixture(command: string, deadlineMs: number, holdMs: number): Fixture {
+function startFixture(
+  command: string,
+  deadlineMs: number,
+  holdMs: number,
+  extra: { spawnSignal?: NodeJS.Signals; file?: string } = {},
+): Fixture {
   const dir = useTempDir("tasker-run-group-fixture-");
   const logPath = join(dir, "out.log");
   const child = spawn(
     process.execPath,
-    ["--import", "tsx", "test/fixtures/run-group-signal.ts", dir, logPath, String(deadlineMs), String(holdMs), command],
+    ["--import", "tsx", "test/fixtures/run-group-signal.ts", dir, logPath, String(deadlineMs), String(holdMs), command, extra.spawnSignal ?? "", ...(extra.file ? [extra.file] : [])],
     { cwd: repoRoot },
   );
   const pid = child.pid;
@@ -318,6 +338,30 @@ describe("runInGroup with the signals of tasker", () => {
     },
   );
 
+  it.each(["SIGINT", "SIGTERM"] as const)(
+    "forwards %s that comes while the child starts to the group",
+    { timeout: 20_000 },
+    async (signal) => {
+      const fixture = startFixture("echo $$ > started; sleep 30; touch after", MINUTE_MS, 0, { spawnSignal: signal });
+
+      expect(await fixture.exit).toEqual({ code: 0, signal: null });
+      const { result, before, after } = await fixture.line();
+      expect(result).toEqual({ code: null, signal, timedOut: false, killed: false });
+      expect(after).toEqual(before);
+      expect(existsSync(join(fixture.dir, "after"))).toBe(false);
+    },
+  );
+
+  it("drops a signal that comes while a child that cannot start starts", { timeout: 20_000 }, async () => {
+    const file = join(useTempDir("tasker-run-group-"), "missing");
+    const fixture = startFixture("exit 0", MINUTE_MS, 0, { spawnSignal: "SIGTERM", file });
+
+    expect(await fixture.exit).toEqual({ code: 0, signal: null });
+    const { error, before, after } = await fixture.line();
+    expect(error?.code).toBe("ENOENT");
+    expect(after).toEqual(before);
+  });
+
   it("forwards a second SIGINT to the same command", { timeout: 20_000 }, async () => {
     const fixture = startFixture(
       "trap 'echo int >> ints' INT; echo $$ > started; while :; do sleep 0.05; done",
@@ -337,7 +381,7 @@ describe("runInGroup with the signals of tasker", () => {
     expect(isAlive(fixture.pid)).toBe(true);
     fixture.send("SIGTERM");
     expect(await fixture.exit).toEqual({ code: 0, signal: null });
-    expect((await fixture.line()).result.signal).toBe("SIGTERM");
+    expect((await fixture.line()).result?.signal).toBe("SIGTERM");
   });
 
   it("lets a SIGTERM after the run end tasker", { timeout: 20_000 }, async () => {
@@ -360,7 +404,50 @@ describe("runInGroup with the signals of tasker", () => {
     const fixture = startFixture(IGNORE_TERM, 300, 0);
     const { result } = await fixture.line();
 
-    expect(result.killed).toBe(true);
+    expect(result?.killed).toBe(true);
     expect(await fixture.exitsWithin(3000)).toBe("exited");
+  });
+});
+
+describe("forwardSignals", () => {
+  function startSleeper(): number {
+    const child = spawn("sleep", ["30"], { detached: true, stdio: "ignore" });
+    const pid = child.pid;
+    if (pid === undefined) throw new Error("sleep did not start");
+    savePid(pid);
+    return pid;
+  }
+
+  it("sends a signal that comes before attach to the group at attach", async () => {
+    const pid = startSleeper();
+    const forward = forwardSignals();
+    onTestFinished(forward.stop);
+
+    process.emit("SIGTERM");
+
+    expect(isAlive(pid)).toBe(true);
+    forward.attach(pid);
+    await waitUntilGone(pid, 5000);
+  });
+
+  it("sends a signal after attach to the group at once", async () => {
+    const pid = startSleeper();
+    const forward = forwardSignals();
+    onTestFinished(forward.stop);
+    forward.attach(pid);
+
+    process.emit("SIGINT");
+
+    await waitUntilGone(pid, 5000);
+  });
+
+  it("removes its listeners at stop", () => {
+    const before = signalListenerCounts();
+
+    const forward = forwardSignals();
+
+    expect(signalListenerCounts()).toEqual([before[0]! + 1, before[1]! + 1]);
+    forward.stop();
+    expect(signalListenerCounts()).toEqual(before);
   });
 });
