@@ -2,7 +2,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
-import { runVerify } from "../../src/phases/verify.js";
+import { runVerify, startedCommands } from "../../src/phases/verify.js";
 import { readPidFile, waitUntilGone } from "../helpers/processes.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
@@ -158,5 +158,33 @@ describe("runVerify", () => {
     expect(result).toStrictEqual({ status: "failed", index: 1, command: "true", timedOut: false, error: text });
     expect(readLog(dirs, 1)).toBe(`$ true\n--- ${text}\n`);
     expect(existsSync(join(dirs.runDir, "verify-2.log"))).toBe(false);
+  });
+});
+
+describe("startedCommands", () => {
+  const commands = ["a", "b", "c"];
+
+  it("gives all commands for an ok result", () => {
+    expect(startedCommands(commands, { status: "ok" })).toEqual(["a", "b", "c"]);
+  });
+
+  it("includes the command that failed with an exit code", () => {
+    const failure = { status: "failed", index: 2, command: "b", exitCode: 3, timedOut: false } as const;
+    expect(startedCommands(commands, failure)).toEqual(["a", "b"]);
+  });
+
+  it("includes the command that timed out after it started", () => {
+    const failure = { status: "failed", index: 2, command: "b", signal: "SIGTERM", timedOut: true } as const;
+    expect(startedCommands(commands, failure)).toEqual(["a", "b"]);
+  });
+
+  it("includes the command that could not start", () => {
+    const failure = { status: "failed", index: 2, command: "b", timedOut: false, error: "spawn ENOENT" } as const;
+    expect(startedCommands(commands, failure)).toEqual(["a", "b"]);
+  });
+
+  it("leaves out the command that the deadline kept from its start", () => {
+    const failure = { status: "failed", index: 2, command: "b", timedOut: true } as const;
+    expect(startedCommands(commands, failure)).toEqual(["a"]);
   });
 });
