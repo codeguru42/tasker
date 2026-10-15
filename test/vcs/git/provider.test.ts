@@ -38,6 +38,8 @@ describe("createGitProvider", () => {
   const paths = () => repoPaths(fixture.context.dataRoot, fixture.context.repoKey);
   const provider = () => createGitProvider({ remote: fixture.origin.path, config: {} });
   const base = "refs/remotes/origin/main";
+  const containment = (git: ReturnType<typeof provider>, path: string) =>
+    git.baseContainment(fixture.context, { path, baseRevision: base });
 
   describe("provision and workspaces", () => {
     it("makes the clone of the repo at its folder", async () => {
@@ -145,6 +147,16 @@ describe("createGitProvider", () => {
       expect(await git.ownCommits(fixture.context, { taskRef, baseRevision: base })).toBe(
         await ownCommitsText({ clone, env, branch: taskRef, baseRevision: base }),
       );
+    });
+
+    it("fetches origin and says whether the workspace contains the tip of the base", async () => {
+      const { git, path } = await workspace();
+      const env = fixture.context.env;
+      const head = await commitInWorktree(path, env, { file: "a.txt" });
+      const tip = await fixture.origin.addCommit("main");
+      expect(await containment(git, path)).toEqual({ revision: head, baseTip: tip, contains: false });
+      const moved = await runGit(["rev-parse", base], { gitDir: paths().clone, env });
+      expect(moved.trim()).toBe(tip);
     });
 
     it("gives the changed paths like changedPaths", async () => {
