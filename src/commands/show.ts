@@ -24,7 +24,7 @@ const TODO_STATE_LABELS: Record<ExecuteTodoProgress["state"], string> = {
   not_started: "not started",
 };
 
-// The todos of the pinned revision with their states.
+// The todos of the pinned revision with their states, then the state of its fix turn.
 // The text is empty when the task has no pinned revision, or when no todo of it has a recorded state.
 function todoProgress(store: TaskStore, taskId: number): string {
   const pinned = store.pinnedPlanRevision(taskId);
@@ -37,7 +37,9 @@ function todoProgress(store: TaskStore, taskId: number): string {
   const lines = progress.map(
     ({ todo }, i) => `  ${labels[i].padEnd(stateWidth)}  ${todo.id.padEnd(idWidth)}  ${oneLine(todo.title)}\n`,
   );
-  return `todos (approved v${pinned.version}):\n${lines.join("")}`;
+  const fixTurn = store.executeFixTurnState(taskId, pinned.version);
+  const fixTurnLine = fixTurn === undefined ? "" : `fix turn: ${fixTurn}\n`;
+  return `todos (approved v${pinned.version}):\n${lines.join("")}${fixTurnLine}`;
 }
 
 function formatTask(store: TaskStore, task: Task): string {
