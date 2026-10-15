@@ -17,7 +17,7 @@ Every `tasker` command on this page is the installed `tasker`: the `tasker` comm
 The orchestrator does all the steps of this section.
 
 - Take tickets only from the Todo column of the project board, and only from the current milestone. Do not start a ticket from a later milestone.
-- Start a ticket only when all the issues that block it are closed.
+- Start a ticket only when all the issues that block it are closed, also an issue of another milestone. As a result, no orchestrator starts a ticket while a broken test is open (see "A failed CI run").
 - Each time a ticket lands, read the board again: the open issues of the milestone and the issues that block them. A new issue can join a milestone while a run is in progress. In one milestone, a new issue stayed in Todo for hours, because the orchestrator read the board only at the start.
 - Run at most 3 agents at the same time, one ticket for each agent.
 - Do not run two tickets at the same time when both edit the same shared file, for example `test/helpers.ts` or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. This bullet covers two tickets of the milestone of the orchestrator. For a task in flight of another milestone, the overlap rule of "Land the work" gives a landing order instead.
