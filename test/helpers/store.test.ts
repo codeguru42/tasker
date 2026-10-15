@@ -25,6 +25,7 @@ import {
   seedTask,
   seedTasks,
   seedVerifyRun,
+  tableRowCount,
   withDataRootStore,
   withRawDatabase,
   withStoreFile,
@@ -266,6 +267,34 @@ describe("lockNames", () => {
       store.unlock("repo:a");
       store.unlock("repo:b");
       expect(lockNames(dataRoot)).toEqual([]);
+    });
+  });
+});
+
+describe("tableRowCount", () => {
+  const withTables = <T>(fn: (db: DatabaseSync) => T): T =>
+    withRawDatabase(join(useTempDir("tasker-row-count-"), "t.db"), (db) => {
+      db.exec("CREATE TABLE t (x); CREATE TABLE u (x)");
+      return fn(db);
+    });
+
+  it("gives 0 for an empty table", () => {
+    withTables((db) => expect(tableRowCount(db, "t")).toBe(0));
+  });
+
+  it("gives the number of all rows of the table", () => {
+    withTables((db) => {
+      db.exec("INSERT INTO t (x) VALUES (1), (1)");
+
+      expect(tableRowCount(db, "t")).toBe(2);
+    });
+  });
+
+  it("counts only the named table", () => {
+    withTables((db) => {
+      db.exec("INSERT INTO t (x) VALUES (1), (2); INSERT INTO u (x) VALUES (3)");
+
+      expect(tableRowCount(db, "u")).toBe(1);
     });
   });
 });
