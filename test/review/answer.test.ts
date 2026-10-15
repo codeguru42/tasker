@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkReviewAnswer, reviewAnswerJsonSchema } from "../../src/review/answer.js";
-import { reviewFinding, validReviewAnswer } from "../helpers/review.js";
+import { reviewFinding, reviewFindingWithout, validReviewAnswer } from "../helpers/review.js";
 
 function check(output: unknown) {
   return checkReviewAnswer(output);
@@ -29,9 +29,7 @@ describe("checkReviewAnswer: valid answers", () => {
   });
 
   it("passes a finding without line and without category", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { line: _line, category: _category, ...rest } = reviewFinding();
-    const output = answerOf(rest);
+    const output = answerOf(reviewFindingWithout("line", "category"));
     const result = check(output);
     expect(result).toEqual({ ok: true, answer: output });
     if (result.ok) expect(Object.keys(result.answer.findings[0] ?? {}).sort()).toEqual(["failure_scenario", "file", "summary"]);
@@ -62,9 +60,7 @@ describe("checkReviewAnswer: the schema", () => {
   });
 
   it("gives a problem for a missing summary", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { summary: _summary, ...rest } = reviewFinding();
-    expect(problemsOf(answerOf(rest))).toEqual(["findings.0.summary: Invalid input: expected string, received undefined"]);
+    expect(problemsOf(answerOf(reviewFindingWithout("summary")))).toEqual(["findings.0.summary: Invalid input: expected string, received undefined"]);
   });
 
   it("gives a problem for missing findings", () => {

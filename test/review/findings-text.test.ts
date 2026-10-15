@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type FindingEntry, formatFindings } from "../../src/review/findings-text.js";
-import { reviewFinding } from "../helpers/review.js";
+import { reviewFinding, reviewFindingWithout } from "../helpers/review.js";
 
 function format(entries: readonly FindingEntry[]): string {
   return formatFindings(entries);
@@ -20,15 +20,11 @@ describe("formatFindings", () => {
   });
 
   it("leaves out the line when the finding has none", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { line: _line, ...finding } = reviewFinding();
-    expect(format([entry({ finding })]).split("\n")[0]).toBe("- [1] src/a.ts (correctness): The loop skips the last item.");
+    expect(format([entry({ finding: reviewFindingWithout("line") })]).split("\n")[0]).toBe("- [1] src/a.ts (correctness): The loop skips the last item.");
   });
 
   it("leaves out the category when the finding has none", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { category: _category, ...finding } = reviewFinding();
-    expect(format([entry({ finding })]).split("\n")[0]).toBe("- [1] src/a.ts:3: The loop skips the last item.");
+    expect(format([entry({ finding: reviewFindingWithout("category") })]).split("\n")[0]).toBe("- [1] src/a.ts:3: The loop skips the last item.");
   });
 
   it("prints the reason of a dismissed finding", () => {

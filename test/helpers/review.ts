@@ -11,6 +11,13 @@ export function reviewFinding(change: Partial<Finding> = {}): Finding {
   };
 }
 
+// reviewFinding() without the named keys.
+export function reviewFindingWithout<K extends keyof Finding>(...keys: K[]): Omit<Finding, K> {
+  const finding: Partial<Finding> = reviewFinding();
+  for (const key of keys) delete finding[key];
+  return finding as Omit<Finding, K>;
+}
+
 export function validReviewAnswer(change: Partial<ReviewAnswer> = {}): ReviewAnswer {
   return { findings: [reviewFinding()], ...change };
 }
