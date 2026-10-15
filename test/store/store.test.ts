@@ -16,7 +16,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, useTempDir, repoRoot, seedExecuteSession, seedPlanRevision, seedPlanSession, startFixture, startWriteLockHolder, readRunMarker, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
+import { deadPid, useTempDir, repoRoot, seedExecuteSession, seedExecuteTodoStates, seedPlanRevision, seedPlanSession, startFixture, startWriteLockHolder, readRunMarker, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -129,6 +129,8 @@ describe("task store", () => {
   const setTodoState = (taskId: number, version: number, todoId: string, state: ExecuteTodoState) =>
     store.setExecuteTodoState(taskId, version, todoId, state);
   const todoProgress = (taskId: number, version: number) => store.executeTodoProgress(taskId, version);
+
+  const markTodosDone = (taskId: number, version: number) => store.markExecuteTodosDone(taskId, version);
 
   const clearPlan = (taskId: number) => store.clearPlanSession(taskId);
   const clearExecute = (taskId: number, version: number) => store.clearExecuteSession(taskId, version);
@@ -1394,6 +1396,28 @@ describe("task store", () => {
       const message = `task ${task.id} has no plan revision 5`;
       expectNothingChanged(task.id, () => setTodoState(task.id, 5, "write-test", "done"), message);
       expectNothingChanged(task.id, () => todoProgress(task.id, 5), message);
+    });
+  });
+
+  describe("mark every todo done", () => {
+    it("sets each todo to done with one time", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedExecuteTodoStates(store, task.id, 1, { "write-test": "in_progress" });
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      markTodosDone(task.id, 1);
+      expect(readTodoRows()).toEqual([
+        { task_id: task.id, plan_version: 1, todo_id: "make-it-pass", state: "done", updated_at: "2026-01-02T00:00:00.000Z" },
+        { task_id: task.id, plan_version: 1, todo_id: "write-test", state: "done", updated_at: "2026-01-02T00:00:00.000Z" },
+      ]);
+    });
+
+    it("refuses a plan revision that does not exist and writes nothing", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedExecuteTodoStates(store, task.id, 1, { "write-test": "in_progress" });
+      expectNothingChanged(task.id, () => markTodosDone(task.id, 5), `task ${task.id} has no plan revision 5`);
+      expect(readTodoRows()).toHaveLength(1);
     });
   });
 
