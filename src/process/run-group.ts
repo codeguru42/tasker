@@ -152,8 +152,9 @@ export async function runInGroup(
   if (pid === undefined) {
     return new Promise((_, reject) => child.once("error", reject)); // no group exists, so no signal and no timer
   }
+  const { onSpawn } = options;
   return superviseGroup(child, pid, {
     deadline: options.deadline,
-    onStart: options.onSpawn && (() => options.onSpawn?.(pid)),
+    onStart: onSpawn && (() => onSpawn(pid)),
   });
 }
