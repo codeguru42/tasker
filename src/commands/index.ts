@@ -10,10 +10,11 @@ import { refine } from "./refine.js";
 import { showBootstrap } from "./show-bootstrap.js";
 import { showPlan } from "./show-plan.js";
 import { showQuestions } from "./show-questions.js";
+import { showVerify } from "./show-verify.js";
 import { showConfig } from "./show-config.js";
 import { start } from "./start.js";
 import { status } from "./status.js";
 import { unapprove } from "./unapprove.js";
 import { verify } from "./verify.js";
 
-export const commands: RegisterCommand[] = [showConfig, show, showBootstrap, showPlan, showQuestions, start, plan, refine, approve, unapprove, execute, verify, abort, status, doctor, model];
+export const commands: RegisterCommand[] = [showConfig, show, showBootstrap, showPlan, showQuestions, showVerify, start, plan, refine, approve, unapprove, execute, verify, abort, status, doctor, model];

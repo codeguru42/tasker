@@ -447,6 +447,10 @@ The command prints an error and exits with code 1 in these cases:
 - The task has no revision `N`. The error is `the task of <issue key> has no plan revision v<N>`.
 - The configuration is missing or invalid.
 
+### `tasker show-verify`
+
+Prints one verify run of the task of an issue: `tasker show-verify <issue>`. The command uses the same task as `tasker show`: the active task, else the newest task.
+
 ### `tasker status`
 
 Lists the tasks by issue key and state. With no option, it lists the active tasks of all repos. A task is active when its state is not `finished` and not `cancelled`.
