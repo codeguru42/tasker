@@ -244,7 +244,7 @@ On success, the command prints these lines on stdout:
 - `denials: <count>`, the permission denials of all turns of this run
 - `transcript: <path>`, the file `transcripts/execute-v<N>.jsonl`. The runs of one revision share it.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In the first eight cases, the task keeps its state and nothing is written:
+The command stops with exit code 1 and prints the error on stderr in these cases. In the first nine cases, the task keeps its state and nothing is written:
 
 - The issue has no task. The error names the issue and the repo.
 - The task is not in `approved`. The error is `the task of <issue key> is in <state>; tasker execute needs approved`.
@@ -254,6 +254,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The task has no base revision or no branch. The error is `the task of <issue key> has no base revision` or `the task of <issue key> has no branch`.
 - The remote cannot be read before the run. The error is `cannot read the remote before the run: <error>`.
 - The provider refuses the model of the recorded execute session. The error is `the execute session of <issue key> runs on <model>, and <provider> refuses it: <reason>`.
+- The prompt cannot be archived. Fix the cause, then run the command again. A prompt that tasker archived before the failure stays in the prompt archive.
 - Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
 - A turn reports `blocked` or gives no result. The task goes to the state `failed`, and the error is `<turn> reported blocked: <reason>` or `<turn> reported no result: <detail>`. The turn is ``todo `<id>` (<title>)`` or `the fix turn for the verify failure`.
 - The assistant fails or a turn runs out of time. The task goes to the state `failed`, and the error is `executing failed: <reason>` or `executing timed out after <n> min`. When no time is left before a turn, the error is `executing <turn> timed out after <n> min`.
