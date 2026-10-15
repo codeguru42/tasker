@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { formatIssues } from "../zod-issues.js";
+import { jsonSchemaOf } from "./json-schema.js";
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, { message: "must be kebab-case" });
 const text = z.string().min(1);
@@ -15,9 +16,7 @@ const planAnswerSchema = z.strictObject({
 export type PlanAnswer = z.infer<typeof planAnswerSchema>;
 
 export function planAnswerJsonSchema(): Record<string, unknown> {
-  const schema: Record<string, unknown> = z.toJSONSchema(planAnswerSchema);
-  delete schema.$schema;
-  return schema;
+  return jsonSchemaOf(planAnswerSchema);
 }
 
 const PLACEHOLDER = "is a placeholder, not real text";
