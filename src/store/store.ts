@@ -374,6 +374,13 @@ export interface TaskStore extends LockStore {
   // step inside the transaction of the move, through retryTask. Code in src that changes a task must use retryTask, so
   // that the move and the write stay one step.
   clearExecuteSession(taskId: number, version: number): void;
+  // Records the session of a review number, the same way as recordPlanSession. It needs no review row,
+  // because tasker review records the session before its run, for the rule of docs/dev/assistants.md that
+  // each session is recorded before its run. A task has one review session for each number.
+  recordReviewSession(taskId: number, number: number, session: NewSession): StoredSession;
+  // Deletes the review session of a review number. A missing row is not an error. tasker retry, a later
+  // ticket, calls it.
+  clearReviewSession(taskId: number, number: number): void;
   // The writes of a retry beside the move: the move to state, the run marker delete, the writes and the event of
   // check, in one transaction. A throw of any step writes nothing.
   retryTask(
@@ -1427,6 +1434,16 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     clearExecuteSession(taskId, version) {
       immediateTransaction(db, () => {
         deleteSessionStep(taskId, { role: "execute", planVersion: version });
+      });
+    },
+
+    recordReviewSession(taskId, number, session) {
+      return recordSession(taskId, { role: "review", reviewNumber: number }, session);
+    },
+
+    clearReviewSession(taskId, number) {
+      immediateTransaction(db, () => {
+        deleteSessionStep(taskId, { role: "review", reviewNumber: number });
       });
     },
 
