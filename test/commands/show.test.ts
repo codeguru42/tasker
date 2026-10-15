@@ -331,6 +331,17 @@ describe("show", () => {
     });
   });
 
+  it.each(["queued", "done"] as const)("prints the line fix turn: %s after the todo block", async (fixTurn) => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedPinnedTask(dataRoot, { todoStates: { "write-test": "done" }, fixTurn });
+
+    expect(await showTask()).toEqual({
+      code: 0,
+      err: "",
+      out: EXECUTED_FIELDS + PADDED_BLOCK + `fix turn: ${fixTurn}\n`,
+    });
+  });
+
   it("prints the description of the command and of --repo for --help", async () => {
     const { code, out } = await runCommand(show, "show", "--help");
 
