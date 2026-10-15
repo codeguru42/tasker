@@ -160,4 +160,90 @@ describe("show-verify", () => {
 
     expect(result).toEqual({ code: 1, out: "", err: `the task of ${KEY} has no verify run ${value}; it has 1\n` });
   });
+
+  it("prints the header and only the block of --command", async () => {
+    const { dataRoot, task } = seedRuns([{ change: { commands: ["a", "b"] }, logs: ["log a\n", "log b\n"] }]);
+    const path = verifyCommandLogPath(dataRoot, task, 1, 2);
+
+    const result = await showVerifyOf(KEY, "--command", "2");
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out: `${KEY} verify run 1 of 1: passed (${dayAt(1)})\n\n== command 2: b (${path}) ==\nlog b\n`,
+    });
+  });
+
+  it("combines --run and --command", async () => {
+    const { dataRoot, task } = seedRuns([
+      { change: { commands: ["a"] }, logs: ["first\n"] },
+      { change: { commands: ["b"] }, logs: ["second\n"] },
+    ]);
+    const path = verifyCommandLogPath(dataRoot, task, 1, 1);
+
+    const result = await showVerifyOf(KEY, "--run", "1", "--command", "1");
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out: `${KEY} verify run 1 of 2: passed (${dayAt(1)})\n\n== command 1: a (${path}) ==\nfirst\n`,
+    });
+  });
+
+  it.each(["0", "01", "-1", "1.5"])("fails for the bad --command value %s", async (value) => {
+    seedRuns([{}]);
+
+    const result = await showVerifyOf(KEY, "--command", value);
+
+    expect(result).toEqual({ code: 1, out: "", err: `--command must be a whole number of 1 or more: ${value}\n` });
+  });
+
+  it("reports a bad --run and a bad --command together", async () => {
+    seedRuns([{}]);
+
+    const result = await showVerifyOf(KEY, "--run", "0", "--command", "01");
+
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err:
+        "--run must be a whole number of 1 or more: 0\n" + "--command must be a whole number of 1 or more: 01\n",
+    });
+  });
+
+  it("fails for a command that the run did not start", async () => {
+    seedRuns([{ change: { commands: ["a", "b"] } }]);
+
+    const result = await showVerifyOf(KEY, "--command", "3");
+
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err: `verify run 1 of ${KEY} has no log for command 3; it ran 2 commands\n`,
+    });
+  });
+
+  it("prints only the started commands of a run that the deadline stopped", async () => {
+    const { dataRoot, task } = seedRuns([
+      {
+        change: { result: "timed_out", commands: ["a", "b"], failingCommand: 3 },
+        logs: ["log a\n", "log b\n"],
+      },
+    ]);
+    const path1 = verifyCommandLogPath(dataRoot, task, 1, 1);
+    const path2 = verifyCommandLogPath(dataRoot, task, 1, 2);
+
+    const all = await showVerifyOf(KEY);
+    const third = await showVerifyOf(KEY, "--command", "3");
+
+    expect(all.out).toBe(
+      `${KEY} verify run 1 of 1: timed_out (${dayAt(1)})\n` +
+        `\n== command 1: a (${path1}) ==\nlog a\n\n== command 2: b (${path2}) ==\nlog b\n`,
+    );
+    expect(third).toEqual({
+      code: 1,
+      out: "",
+      err: `verify run 1 of ${KEY} has no log for command 3; it ran 2 commands\n`,
+    });
+  });
 });
