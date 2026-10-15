@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { approve } from "../../src/commands/approve.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import { transitionTask, type TaskState } from "../../src/state/machine.js";
 import { recordPlanRevision } from "../../src/store/plan-file.js";
@@ -11,6 +12,7 @@ import {
   type Task,
   type TaskStore,
 } from "../../src/store/store.js";
+import { runCommand } from "./cli.js";
 import { claudeSampleWithResult, TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID } from "./fake-claude.js";
 import { useThreeRepoDataRoot } from "./config.js";
 import { dayAt, eventsOf, latestTaskOf, type SeedTask, seedTasks, withDataRootStore } from "./store.js";
@@ -248,6 +250,12 @@ export function seedApprovedTask(
     return store.getTask(task.id)!;
   });
   return { dataRoot, task: seeded };
+}
+
+// Runs tasker approve for key in the repo codeguru42/tasker, the repo of the task of seedPlanReviewTask, with extra
+// after the repo option.
+export function runApprove(key = "codeguru42/tasker#5", ...extra: string[]) {
+  return runCommand(approve, "approve", key, "--repo", "codeguru42/tasker", ...extra);
 }
 
 // The state and the events of the latest task of issueKey, and the approved_at of each version of the task taskId,
