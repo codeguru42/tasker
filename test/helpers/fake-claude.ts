@@ -28,7 +28,17 @@ export interface FakeClaudeControl {
   // Paths relative to the cwd of the fake. Before the output, the fake makes each one with writePlaceholder().
   // With killWith, this plays a killed claude that leaves placeholders.
   placeholders?: string[];
+  // The answer of each call. Call N (from 0, a --version call does not count) uses the fields of turns[N] over the
+  // top-level fields. A call past the end of the list uses the top-level fields.
+  turns?: FakeClaudeTurn[];
+  // A program and its arguments. Before the output, the fake runs it in its cwd. Use an absolute program path,
+  // because the fake runs with the filtered child env. A program that fails makes the fake write one stderr line
+  // and exit with 99.
+  exec?: string[];
 }
+
+// The fields of FakeClaudeControl that one call can set for itself.
+export type FakeClaudeTurn = Pick<FakeClaudeControl, "stream" | "stderr" | "exitCode" | "sleepMs" | "untilStopped" | "exec">;
 
 // One call that the fake claude logged.
 export interface FakeClaudeCall {
