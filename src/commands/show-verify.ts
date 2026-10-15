@@ -25,7 +25,11 @@ export const showVerify: RegisterCommand = (program, io) => {
         withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
           const total = store.verifyRunCount(task.id);
           if (total === 0) fail(io, `the task of ${task.issueKey} has no verify run; run tasker verify first`);
-          const run = store.latestVerifyRun(task.id)!;
+          if (options.run !== undefined && Number(options.run) > total) {
+            fail(io, `the task of ${task.issueKey} has no verify run ${options.run}; it has ${total}`);
+          }
+          const run =
+            options.run === undefined ? store.latestVerifyRun(task.id)! : store.getVerifyRun(task.id, Number(options.run))!;
           const header = `${task.issueKey} verify run ${run.number} of ${total}: ${run.result} (${run.startedAt})\n`;
           if (run.commands.length === 0) return `${header}\nno logs: this run ran no command\n`;
           const blocks = run.commands.map((command, i) => {
