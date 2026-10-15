@@ -244,7 +244,7 @@ On success, the command prints these lines on stdout:
 - `denials: <count>`, the permission denials of all turns of this run
 - `transcript: <path>`, the file `transcripts/execute-v<N>.jsonl`. The runs of one revision share it.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In the first nine cases, the task keeps its state and nothing is written:
+The command stops with exit code 1 and prints the error on stderr in these cases. In the first ten cases, the task keeps its state. The command writes no event, no session and no transcript:
 
 - The issue has no task. The error names the issue and the repo.
 - The task is not in `approved`. The error is `the task of <issue key> is in <state>; tasker execute needs approved`.
