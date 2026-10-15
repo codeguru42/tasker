@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { failTask } from "../../src/state/machine.js";
 import { loadConfig } from "../../src/config/load.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
 import { baseRevisionOf } from "../../src/tasks/base-revision.js";
@@ -14,8 +15,10 @@ import { planTodo, validPlanAnswer } from "./plan.js";
 import { databasePathOf, latestTaskOf, readRunMarker, withDataRootStore } from "./store.js";
 import {
   expectNoAssistantRun,
+  expectRefusedWithoutChange,
   startIssueTask,
   startTaskWithCommits,
+  taskRefOf,
   taskWorkspaceState,
   useAssistantRunFixture,
   useExecuteFixture,
@@ -292,5 +295,63 @@ describe("useExecuteFixture", () => {
     const found = process.env.PATH!.split(delimiter).some((dir) => existsSync(join(dir, "bwrap")));
     expect(found).toBe(true);
     expect(process.env.PATH!.includes(fixture.claude.binDir)).toBe(true);
+  });
+});
+
+describe("taskRefOf", () => {
+  it("gives the key, the repo key and the short ref of issue 5", async () => {
+    const started = await useStartedTask();
+
+    expect(taskRefOf(started)).toEqual({ key: started.key, repoKey: started.repoKey, shortRef: "issue-5" });
+  });
+});
+
+describe("expectRefusedWithoutChange", () => {
+  it("gives the error of a call that throws the message and changes nothing", async () => {
+    const started = await useStartedTask();
+
+    const error = await expectRefusedWithoutChange(
+      started,
+      () => Promise.reject(new Error("refused: reason")),
+      "refused",
+    );
+
+    expect(error.message).toBe("refused: reason");
+  });
+
+  it("fails when the call does not throw", async () => {
+    const started = await useStartedTask();
+
+    await expect(expectRefusedWithoutChange(started, () => Promise.resolve(), "refused")).rejects.toThrow();
+  });
+
+  it("fails when the message does not start with the text", async () => {
+    const started = await useStartedTask();
+
+    await expect(
+      expectRefusedWithoutChange(started, () => Promise.reject(new Error("other")), "refused"),
+    ).rejects.toThrow();
+  });
+
+  it("fails when the call changes the state", async () => {
+    const started = await useStartedTask();
+    const call = async () => {
+      withDataRootStore(started.dataRoot, (store) => failTask(store, latestTaskOf(started.dataRoot, started.key).id, "x"));
+      throw new Error("refused");
+    };
+
+    await expect(expectRefusedWithoutChange(started, call, "refused")).rejects.toThrow();
+  });
+
+  it("fails when the call adds an event", async () => {
+    const started = await useStartedTask();
+    const call = async () => {
+      withDataRootStore(started.dataRoot, (store) =>
+        store.appendEvent(latestTaskOf(started.dataRoot, started.key).id, "note"),
+      );
+      throw new Error("refused");
+    };
+
+    await expect(expectRefusedWithoutChange(started, call, "refused")).rejects.toThrow();
   });
 });
