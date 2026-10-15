@@ -528,7 +528,7 @@ describe("task transitions", () => {
 
     it("writes nothing for an illegal edge", () => {
       const task = store.createTask(newTask("failed"));
-      seedPlanRevision(store, task.id);
+      seedPlanRevision(store, task.id, {}, "failed");
       seedExecuteSession(store, task.id, 1);
 
       expect(() =>

@@ -169,6 +169,15 @@ export interface NewExecuteFixTurn {
   verifyLogTail: string | null;
 }
 
+// The writes of a retry beside the move. They share the transaction of the move.
+export interface RetryWrites {
+  clearPlanSession?: boolean;
+  // The version of the pinned revision whose execute session goes.
+  clearExecuteSession?: number;
+  // Marks every todo of the version done and queues the fix turn of the version.
+  resumeExecute?: { version: number; fixTurn: NewExecuteFixTurn };
+}
+
 export interface ExecuteFixTurn extends NewExecuteFixTurn {
   queuedAt: string;
 }
@@ -288,10 +297,15 @@ export interface TaskStore extends LockStore {
   setExecuteTodoState(taskId: number, version: number, todoId: string, state: ExecuteTodoState): void;
   // The todos of a plan revision in the order of the plan, each with its state. A todo with no row is not started.
   executeTodoProgress(taskId: number, version: number): ExecuteTodoProgress[];
-  // Sets every todo of a plan revision to done, with one time, in one transaction. The revision must exist.
+  // Sets every todo of a plan revision to done, with one time, in one transaction. The revision must exist. This is a
+  // method of the store interface, and no code in src calls it: tasker retry runs the same step inside the transaction
+  // of the move, through retryTask. Code in src that changes a task must use retryTask, so that the move and the write
+  // stay one step.
   markExecuteTodosDone(taskId: number, version: number): void;
   // Queues the fix turn of a plan revision. A new fix turn replaces the old one, also when the old one is done.
-  // The revision must exist.
+  // The revision must exist. This is a method of the store interface, and no code in src calls it: tasker retry runs
+  // the same step inside the transaction of the move, through retryTask. Code in src that changes a task must use
+  // retryTask, so that the move and the write stay one step.
   queueExecuteFixTurn(taskId: number, version: number, turn: NewExecuteFixTurn): void;
   // The queued fix turn of a plan revision, or undefined when it has none or the turn is done.
   queuedExecuteFixTurn(taskId: number, version: number): ExecuteFixTurn | undefined;
@@ -300,13 +314,24 @@ export interface TaskStore extends LockStore {
   // Marks the queued fix turn of a plan revision done. A revision with no queued fix turn is an error, also when its
   // fix turn is already done. The time of an earlier done mark does not change.
   markExecuteFixTurnDone(taskId: number, version: number): void;
-  // Deletes the plan session of a task. A missing row is not an error. Only `tasker retry` (a later ticket)
-  // calls it. A run that failed before its first turn recorded an id that no conversation holds,
-  // so the next run must not continue that id.
+  // Deletes the plan session of a task. A missing row is not an error. A run that failed before its first turn recorded
+  // an id that no conversation holds, so the next run must not continue that id. This is a method of the store
+  // interface, and no code in src calls it: tasker retry runs the same step inside the transaction of the move, through
+  // retryTask. Code in src that changes a task must use retryTask, so that the move and the write stay one step.
   clearPlanSession(taskId: number): void;
-  // Deletes the execute session of a plan revision. A missing row is not an error. Only `tasker retry`
-  // (a later ticket) calls it, for the same reason as clearPlanSession.
+  // Deletes the execute session of a plan revision. A missing row is not an error. The reason is the same as for
+  // clearPlanSession. This is a method of the store interface, and no code in src calls it: tasker retry runs the same
+  // step inside the transaction of the move, through retryTask. Code in src that changes a task must use retryTask, so
+  // that the move and the write stay one step.
   clearExecuteSession(taskId: number, version: number): void;
+  // The writes of a retry beside the move: the move to state, the run marker delete, the writes and the event of
+  // check, in one transaction. A throw of any step writes nothing.
+  retryTask(
+    taskId: number,
+    state: string,
+    writes: RetryWrites,
+    check?: (current: Task) => NewEvent | void,
+  ): Task;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -781,6 +806,29 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     statements.deleteRunMarker.run(id);
   }
 
+  // The steps of the todo marks, the fix turn and the session clears. They open no transaction, so the caller must
+  // have one open. The public methods and retryTask share them.
+  function markExecuteTodosDoneStep(taskId: number, version: number, at: string): void {
+    const revision = readPlanRevision(taskId, version);
+    if (revision === undefined) throw noPlanRevision(taskId, version);
+    for (const todo of revision.answer.todos) {
+      statements.upsertExecuteTodo.run(taskId, version, todo.id, "done", at);
+    }
+  }
+
+  function queueExecuteFixTurnStep(taskId: number, version: number, turn: NewExecuteFixTurn, at: string): void {
+    if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
+    statements.upsertExecuteFixTurn.run(taskId, version, turn.verifyFailure, turn.verifyLogTail, at);
+  }
+
+  function clearPlanSessionStep(taskId: number): void {
+    statements.deletePlanSession.run(taskId);
+  }
+
+  function clearExecuteSessionStep(taskId: number, version: number): void {
+    statements.deleteExecuteSession.run(taskId, version);
+  }
+
   // The row insert of a plan revision. It checks the version and opens no transaction, so the
   // caller must have one open.
   function writePlanRevision(taskId: number, revision: NewPlanRevision): PlanRevision {
@@ -1093,25 +1141,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     markExecuteTodosDone(taskId, version) {
       immediateTransaction(db, () => {
-        const revision = readPlanRevision(taskId, version);
-        if (revision === undefined) throw noPlanRevision(taskId, version);
-        const at = now().toISOString();
-        for (const todo of revision.answer.todos) {
-          statements.upsertExecuteTodo.run(taskId, version, todo.id, "done", at);
-        }
+        markExecuteTodosDoneStep(taskId, version, now().toISOString());
       });
     },
 
     queueExecuteFixTurn(taskId, version, turn) {
       immediateTransaction(db, () => {
-        if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
-        statements.upsertExecuteFixTurn.run(
-          taskId,
-          version,
-          turn.verifyFailure,
-          turn.verifyLogTail,
-          now().toISOString(),
-        );
+        queueExecuteFixTurnStep(taskId, version, turn, now().toISOString());
       });
     },
 
@@ -1146,13 +1182,26 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     clearPlanSession(taskId) {
       immediateTransaction(db, () => {
-        statements.deletePlanSession.run(taskId);
+        clearPlanSessionStep(taskId);
       });
     },
 
     clearExecuteSession(taskId, version) {
       immediateTransaction(db, () => {
-        statements.deleteExecuteSession.run(taskId, version);
+        clearExecuteSessionStep(taskId, version);
+      });
+    },
+
+    retryTask(taskId, state, writes, check) {
+      return writeTask(taskId, { state }, check, (at) => {
+        endRunStep(taskId, state);
+        if (writes.clearPlanSession === true) clearPlanSessionStep(taskId);
+        if (writes.clearExecuteSession !== undefined) clearExecuteSessionStep(taskId, writes.clearExecuteSession);
+        if (writes.resumeExecute !== undefined) {
+          const { version, fixTurn } = writes.resumeExecute;
+          markExecuteTodosDoneStep(taskId, version, at);
+          queueExecuteFixTurnStep(taskId, version, fixTurn, at);
+        }
       });
     },
 

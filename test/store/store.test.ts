@@ -1442,8 +1442,8 @@ describe("task store", () => {
     const retryCheck = () => ({ type: "retry", data: { origin: "executing" } });
     const failedTask = () => {
       const task = store.createTask({ ...newTask, state: "failed" });
-      seedPlanRevision(store, task.id);
-      seedPlanRevision(store, task.id);
+      seedPlanRevision(store, task.id, {}, "failed");
+      seedPlanRevision(store, task.id, {}, "failed");
       return task;
     };
 

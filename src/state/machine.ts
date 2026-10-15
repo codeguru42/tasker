@@ -1,4 +1,4 @@
-import type { NewEvent, NewPlanRevision, NewVerifyRun, Task, TaskEvent, TaskStore } from "../store/store.js";
+import type { NewEvent, RetryWrites, NewPlanRevision, NewVerifyRun, Task, TaskEvent, TaskStore } from "../store/store.js";
 
 export const STATES = [
   "provisioning",
@@ -243,6 +243,23 @@ export function transitionWithVerifyRun(
   detail?: TransitionDetail,
 ): Task {
   return store.addVerifyRun(id, run, to, transitionCheck("transition", to, detail));
+}
+
+// Moves the task to to, writes writes and appends one retry event { origin, target, resumeExecute, from, to } in
+// place of the transition event, in one transaction. An illegal edge or a failing write writes nothing.
+export function transitionWithRetry(
+  store: TaskStore,
+  id: number,
+  to: TaskState,
+  detail: { origin: TaskState; resumeExecute: boolean },
+  writes: RetryWrites,
+): Task {
+  const check = transitionCheck("retry", to, {
+    origin: detail.origin,
+    target: to,
+    resumeExecute: detail.resumeExecute,
+  });
+  return store.retryTask(id, to, writes, check);
 }
 
 // Approves revision version, appends the approved event { version, openQuestions, from, to } and moves the task to
