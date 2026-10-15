@@ -17,7 +17,7 @@ Every `tasker` command on this page is the installed `tasker`: the `tasker` comm
 The orchestrator does all the steps of this section.
 
 - Take tickets only from the Todo column of the project board, and only from the current milestone. Do not start a ticket from a later milestone.
-- Start a ticket only when all the issues that block it are closed, also an issue of another milestone. As a result, no orchestrator starts a ticket while a broken test is open (see "A failed CI run").
+- Start a ticket only when all the issues that block it are closed, also an issue of another milestone. While a broken-test issue is open, no orchestrator starts a ticket except that issue itself (see the broken-test rule in [A failed CI run](#a-failed-ci-run)).
 - Each time a ticket lands, read the board again: the open issues of the milestone and the issues that block them. A new issue can join a milestone while a run is in progress. In one milestone, a new issue stayed in Todo for hours, because the orchestrator read the board only at the start. Then do the re-read rule (see below).
 - Run at most 3 agents at the same time, one ticket for each agent.
 - Do not run two tickets at the same time when both edit the same shared file, for example a file under `test/helpers/` or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. This bullet covers two tickets of the milestone of the orchestrator. For a task in flight of another milestone, the overlap rule of "Land the work" gives a landing order instead.
@@ -322,6 +322,14 @@ This section gives the steps of the orchestrator after an agent reports a failed
 2. If the verdict is broken, the new issue blocks all further work. List the open issues: `gh issue list --state open --limit 1000 --json number,milestone`. An issue has not started when `tasker status` lists no task for it. Leave out the new issue itself. For each issue that has not started, in every milestone, run `gh issue edit <number> --add-blocked-by <new issue>`. Tell the user at once. If an edit fails, the issues already edited keep the link, and the rest have no link. Tell the user the numbers of the issues without a link.
 3. If the verdict is flaky, the new issue blocks nothing.
 4. Send the agent the number of the new issue. The bullet of "Land the work" that reads the state with `tasker show <issue>` first applies to this message.
+
+The broken-test rule: a broken-test issue is the new issue of step 1 when the verdict is broken. The rule has two actors: the orchestrator that files the broken-test issue, and each other orchestrator. The notice rule defines the other orchestrators (see [Pick the tickets](#pick-the-tickets)).
+
+After step 2, the orchestrator that filed the broken-test issue sends a broken-test notice to each other orchestrator. It sends a notice for the verdict broken only. The notice gives the number of the broken-test issue. The orchestrator lists the other orchestrators with step 3 of the notice rule and sends the notice with `SendMessage`, as step 4 says. If the session list or a message fails, the orchestrator tells the user, as [the notice rule](#pick-the-tickets) says for a failed message. When another orchestrator gets a broken-test notice, it keeps the number of the issue and follows the ban.
+
+The ban: an orchestrator that knows of an open broken-test issue starts no ticket, except the broken-test issue itself. The orchestrator knows of the issue because it filed the issue or because it got the notice. Before each start, the orchestrator reads the state of the issue with `gh issue view <number> --json state -q .state`. The command prints `OPEN` for an open issue and `CLOSED` for a closed issue. When the output is `CLOSED`, the ban ends. If the command fails, the orchestrator starts no ticket and tells the user the command and the error.
+
+The ban covers only the start of a ticket. A task in flight is not a start, so the ban does not stop it. The rule gives no steps for two broken-test issues open at the same time. A second failed run most likely has the same cause, and the open broken-test issue covers the fix.
 
 ## Quota
 
