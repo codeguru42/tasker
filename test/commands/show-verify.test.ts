@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { showVerify } from "../../src/commands/show-verify.js";
@@ -244,6 +244,27 @@ describe("show-verify", () => {
       code: 1,
       out: "",
       err: `verify run 1 of ${KEY} has no log for command 3; it ran 2 commands\n`,
+    });
+  });
+
+  it("prints every block and exits with code 1 when a log cannot be read", async () => {
+    const { dataRoot, task } = seedRuns([
+      { change: { commands: ["a", "b", "c"] }, logs: ["log a\n", "log b\n", "log c\n"] },
+    ]);
+    const [path1, path2, path3] = [1, 2, 3].map((position) => verifyCommandLogPath(dataRoot, task, 1, position));
+    rmSync(path2);
+    mkdirSync(path2);
+
+    const result = await showVerifyOf(KEY);
+
+    expect(result).toEqual({
+      code: 1,
+      err: "",
+      out:
+        `${KEY} verify run 1 of 1: passed (${dayAt(1)})\n` +
+        `\n== command 1: a (${path1}) ==\nlog a\n` +
+        `\n== command 2: b (${path2}) ==\n(log not readable: EISDIR)\n` +
+        `\n== command 3: c (${path3}) ==\nlog c\n`,
     });
   });
 });
