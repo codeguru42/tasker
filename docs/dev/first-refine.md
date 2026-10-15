@@ -82,3 +82,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Each kept rule keeps its conditions and its definitions. When a rule moves from one doc to another, keep every fact of each moved sentence. On #118, the moved UTF-8 rule lost its "reads" half. The one home of a merged rule covers each case of the old copies.
 - A code comment can name a doc heading. Search `src/` and `test/` for a heading before a rename.
 - Write a gap that no code covers yet as a rule for the caller with "must", not as a claim that the code does it.
+
+## A ticket that adds a doc of rules or hints
+
+- Name the docs that already hold some of the rules or hints, because they draw duplication findings (#116).
+- Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its lead-in names.
