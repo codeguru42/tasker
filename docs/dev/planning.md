@@ -22,7 +22,7 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 - The agent of a ticket uses no other source, as [the Limits of orchestration.md](orchestration.md#limits) say. [The design-gap rule](orchestration.md#run-one-ticket) says who answers a gap.
 - An issue puts each table, list or diagram in its body. It does not say "as described elsewhere".
 - Each issue has a "Docs" section. The section names each doc to update with the code. A Docs item asks only for what [rules.md](rules.md#docs) permits, and a new command goes where [rules.md](rules.md#docs) says.
-- Each issue gives the scope hints that past tickets needed. Examples:
+- Each issue gives the scope hints that past tickets needed. [first-refine.md](first-refine.md) lists the hints by the kind of ticket. Examples:
   - The use and the extension of the helpers of `test/helpers.ts`, as [rules.md](rules.md#tests) says.
   - The report of every configuration error in one run, as [rules.md](rules.md#code) says.
   - "No command calls this yet", for a ticket that only adds a layer.
