@@ -77,14 +77,14 @@ Provision finds a held lock from the `config.lock` file and never from the text 
 
 ### The clone configuration
 
-Each value goes in with `git config --replace-all`. This leaves exactly one local line, even when a person added more with `--add`. Each run writes each key. Only the local configuration of the clone changes.
+Provision first reads the local lines of each key with `git config --local --null --get-all`. A read takes no lock. When the key has one local line with the wanted value, or has no line and the key is removed, provision writes nothing for this key. Else it writes the value with `git config --replace-all`, or removes the key with `--unset-all`. Values compare as exact text, so a value that differs only in case is written. The reason: a live sandboxed run holds a `config.lock` placeholder in the clone, and a write fails while that file exists. `--replace-all` leaves exactly one local line, even when a person added more with `--add`. Only the local configuration of the clone changes.
 
 - `remote.origin.url` for a relative local path has the form that `git clone` writes.
 - The fetch refspec makes `origin/<branch>` refs.
 - An unset author name or email removes the local key, so git uses the global identity. Exit code 5 of `git config --unset-all` means "the key is missing", and provision treats it as success.
 - Signing is turned off.
 - `core.hooksPath` is local, so a global value does not make git skip the hook. It is absolute, because git resolves a relative value against the worktree.
-- The include file holds the ssh command. A relative `include.path` in a bare clone resolves against the clone folder. Provision writes the file to a `.tmp` file and renames it, so a crash leaves only the `.tmp` file. A held `config.lock` fails a config call first, so the include file stays as it was.
+- The include file holds the ssh command. A relative `include.path` in a bare clone resolves against the clone folder. Provision writes the file to a `.tmp` file and renames it, so a crash leaves only the `.tmp` file. When a value changed, a held `config.lock` fails a config call first, so the include file stays as it was. When no value changed, provision writes the include file also while `config.lock` is held.
 
 If `sshKey` is set, the include file holds this text, where `<value>` is the ssh command:
 
