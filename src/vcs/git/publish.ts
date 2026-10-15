@@ -1,10 +1,10 @@
 import { detailSuffix } from "../../detail-suffix.js";
 import { LOCAL_PREFIX } from "../local-branch.js";
-import type { RemoteTaskRefDeletion } from "../provider.js";
+import type { RemoteTaskRefDeletion, RemoteTip } from "../provider.js";
 import { pushWithToken } from "./push-guard.js";
 import { assertRevision } from "./refs.js";
 import { GitError } from "./run.js";
-import { type RemoteTip, remoteTip } from "./remote-tip.js";
+import { remoteTip } from "./remote-tip.js";
 import { assertTaskBranchNameAndShape, taskBranchRevision } from "./worktree.js";
 
 interface RemoteOptions {

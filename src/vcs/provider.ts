@@ -55,6 +55,8 @@ export interface UncommittedChange {
 
 export type ReconcileStrategy = "rebase" | "merge";
 
+export type RemoteTip = { state: "present"; revision: string } | { state: "absent" };
+
 export interface PublishResult {
   state: "published" | "already-published";
   taskRef: string;
