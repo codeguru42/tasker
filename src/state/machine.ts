@@ -205,7 +205,7 @@ function legalMove(current: Task, to: TaskState): { from: TaskState; to: TaskSta
 
 // The check of a move of current to `to`: it gives an event of the type with the data { ...detail, from, to }. An
 // illegal edge throws, so the store writes nothing.
-function transitionCheck(type: string, to: TaskState, detail?: Record<string, unknown>) {
+function transitionCheck(type: string, to: TaskState, detail?: TransitionDetail) {
   return (current: Task): NewEvent => ({ type, data: { ...detail, ...legalMove(current, to) } });
 }
 
