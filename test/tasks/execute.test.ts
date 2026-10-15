@@ -95,6 +95,8 @@ describe("executeTask checks", () => {
   it("refuses a task that has no base event", async () => {
     const fixture = await useExecuteFixture({});
     withRawDatabase(databasePathOf(fixture.config.dataRoot), (db) => {
+      // The events table refuses a delete, so the test removes its trigger first.
+      db.exec("DROP TRIGGER events_no_delete");
       db.prepare("DELETE FROM events WHERE type = 'base'").run();
     });
 
