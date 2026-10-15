@@ -13,7 +13,7 @@ import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
 import { planAnswerStream, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, validPlanAnswer } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { dayAt, eventsOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
+import { dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -22,9 +22,6 @@ const REPO = "codeguru42/tasker";
 const runPlan = (key = KEY, ...extra: string[]) => runCommand(plan, "plan", key, ...extra);
 
 type Fixture = Awaited<ReturnType<typeof usePlanFixture>>;
-
-const taskOf = (fixture: Fixture) =>
-  withDataRootStore(fixture.started.dataRoot, (store) => store.findLatestTask(REPO, KEY)!);
 
 // Revision 1 of the task, or undefined.
 const revisionOf = (fixture: Fixture, task: Task) =>
@@ -49,7 +46,7 @@ const eventsAfterStart = (fixture: Fixture) => {
 
 // What a failure before the run must leave: no plan session, no claude call and no lock.
 const expectNoRun = (fixture: Fixture) => {
-  const task = taskOf(fixture);
+  const task = latestTaskOf(fixture.started.dataRoot, KEY);
   withDataRootStore(fixture.started.dataRoot, (store) => expect(store.planSession(task.id)).toBeUndefined());
   expect(fixture.claude.calls()).toEqual([]);
   expect(lockNames(fixture.started.dataRoot)).toEqual([]);
@@ -62,7 +59,7 @@ describe("plan", () => {
 
     const result = await runPlan();
 
-    const task = taskOf(fixture);
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const revision = revisionOf(fixture, task);
     const promptPath = archivePrompt(fixture.started.dataRoot, PLAN_PROMPT_NAME, PLAN_PROMPT).path;
     const planPath = planRevisionPath(fixture.started.dataRoot, task, 1);
@@ -110,7 +107,7 @@ describe("plan", () => {
 
     await runPlan();
 
-    const task = taskOf(fixture);
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const session = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(task.id));
     const argv = fixture.claude.calls()[0]!.argv;
     expect(argv[argv.indexOf("--session-id") + 1]).toBe(session?.sessionId);
@@ -119,7 +116,7 @@ describe("plan", () => {
 
   it("continues a recorded plan session and records no second one", async () => {
     const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
-    withDataRootStore(fixture.started.dataRoot, (store) => seedPlanSession(store, taskOf(fixture).id));
+    withDataRootStore(fixture.started.dataRoot, (store) => seedPlanSession(store, latestTaskOf(fixture.started.dataRoot, KEY).id));
 
     const result = await runPlan();
 
@@ -127,7 +124,7 @@ describe("plan", () => {
     const argv = fixture.claude.calls()[0]!.argv;
     expect(argv[argv.indexOf("--resume") + 1]).toBe(TEST_SESSION_ID);
     expect(argv).not.toContain("--session-id");
-    const rows = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(taskOf(fixture).id));
+    const rows = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(latestTaskOf(fixture.started.dataRoot, KEY).id));
     expect(rows?.sessionId).toBe(TEST_SESSION_ID);
   });
 
@@ -137,7 +134,7 @@ describe("plan", () => {
 
     await runPlan();
 
-    const path = planTranscriptPath(fixture.started.dataRoot, taskOf(fixture), 1);
+    const path = planTranscriptPath(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY), 1);
     const lines = transcriptLines(path);
     expect(lines).toHaveLength(stream.length);
     for (const line of lines) expect(() => JSON.parse(line)).not.toThrow();
@@ -149,7 +146,7 @@ describe("plan", () => {
 
     const first = await runPlan();
 
-    const task = taskOf(fixture);
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
     expect(first.code).toBe(1);
     expect(first.err).toMatch(/^planning failed: .+\n$/);
     expect(task.state).toBe("failed");
@@ -177,8 +174,8 @@ describe("plan", () => {
 
     expect(result.code).toBe(1);
     expect(result.out).toMatch(/^planning stopped by a quota limit; /);
-    expect(taskOf(fixture).state).toBe("quota_blocked");
-    expect(readRunMarker(dbPathOf(fixture), taskOf(fixture).id)).toBeUndefined();
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("quota_blocked");
+    expect(readRunMarker(dbPathOf(fixture), latestTaskOf(fixture.started.dataRoot, KEY).id)).toBeUndefined();
   });
 
   it("fails the task for an answer that tasker refuses, and writes no row", async () => {
@@ -188,7 +185,7 @@ describe("plan", () => {
 
     const message =
       "the assistant returned a plan that tasker refuses:\n  - todos: a plan with no todos is not a plan";
-    const task = taskOf(fixture);
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
     expect(result).toEqual({ code: 1, out: "", err: `${message}\n` });
     expect(task.state).toBe("failed");
     expect(eventsAfterStart(fixture).at(-1)).toEqual({
@@ -200,7 +197,7 @@ describe("plan", () => {
 
   it("fails the task with no planning failed prefix when the plan file cannot be written", async () => {
     const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
-    const task = taskOf(fixture);
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const plansDir = taskPlansDir(fixture.started.dataRoot, task);
     mkdirSync(dirname(plansDir), { recursive: true });
     writeFileSync(plansDir, "a file, not a folder");
@@ -210,13 +207,13 @@ describe("plan", () => {
     expect(result.code).toBe(1);
     expect(result.err).toMatch(/^cannot write the plan file of revision v1: .+\n$/);
     expect(result.err).not.toContain("planning failed:");
-    expect(taskOf(fixture).state).toBe("failed");
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
     expect(revisionOf(fixture, task)).toBeUndefined();
   });
 
   it("fails the task with planning failed when the last transaction throws after the plan file is written", async () => {
     const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
-    const task = taskOf(fixture);
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
     withRawDatabase(dbPathOf(fixture), (db) =>
       db.exec(
         "CREATE TRIGGER refuse_plan_revision BEFORE INSERT ON plan_revisions BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
@@ -227,7 +224,7 @@ describe("plan", () => {
 
     expect(result.code).toBe(1);
     expect(result.err).toMatch(/^planning failed: .*refused by the test.*\n$/);
-    expect(taskOf(fixture).state).toBe("failed");
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
     expect(revisionOf(fixture, task)).toBeUndefined();
     expect(existsSync(planRevisionPath(fixture.started.dataRoot, task, 1))).toBe(true);
     expect(eventsAfterStart(fixture).at(-1)).toEqual({
@@ -239,7 +236,7 @@ describe("plan", () => {
   it("replaces a stale v1.md with the plan", async () => {
     const answer = validPlanAnswer();
     const fixture = await usePlanFixture({ stream: planAnswerStream(answer) });
-    const path = planRevisionPath(fixture.started.dataRoot, taskOf(fixture), 1);
+    const path = planRevisionPath(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY), 1);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, "left by a stopped run");
 
@@ -251,14 +248,14 @@ describe("plan", () => {
 
   it("fails the task with planning failed when an error occurs after the move to planning", async () => {
     const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
-    const path = planTranscriptPath(fixture.started.dataRoot, taskOf(fixture), 1);
+    const path = planTranscriptPath(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY), 1);
     mkdirSync(path, { recursive: true });
 
     const result = await runPlan();
 
     expect(result.code).toBe(1);
     expect(result.err).toMatch(/^planning failed: .+\n$/);
-    const task = taskOf(fixture);
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
     expect(task.state).toBe("failed");
     expect(eventsAfterStart(fixture).at(-1)).toEqual({
       type: "transition",
@@ -275,7 +272,7 @@ describe("plan", () => {
 
       expect(result.code).toBe(1);
       expect(result.err).toBe(`no task for the issue codeguru42/tasker#6 in the repo ${REPO}\n`);
-      expect(taskOf(fixture).state).toBe("workspace_ready");
+      expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("workspace_ready");
       expectNoRun(fixture);
     });
 
@@ -290,8 +287,8 @@ describe("plan", () => {
       expect(result.code).toBe(1);
       expect(result.out).toBe("");
       expect(result.err).toMatch(new RegExp(`^the lock ${name} is busy: process ${holder.pid} took it at .+\\n$`));
-      expect(taskOf(fixture).state).toBe("workspace_ready");
-      expect(withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(taskOf(fixture).id))).toBeUndefined();
+      expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("workspace_ready");
+      expect(withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(latestTaskOf(fixture.started.dataRoot, KEY).id))).toBeUndefined();
       expect(fixture.claude.calls()).toEqual([]);
       expect(lockNames(fixture.started.dataRoot)).toEqual([name]);
     });
@@ -311,14 +308,14 @@ describe("plan", () => {
 
       expect(result.code).toBe(1);
       expect(result.err).not.toBe("");
-      expect(taskOf(fixture).state).toBe("workspace_ready");
+      expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("workspace_ready");
       expectNoRun(fixture);
     });
 
     it("fails for a task that is not in workspace_ready, and reads no issue", async () => {
       const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
       withDataRootStore(fixture.started.dataRoot, (store) =>
-        transitionTask(store, taskOf(fixture).id, "failed", { error: "earlier" }),
+        transitionTask(store, latestTaskOf(fixture.started.dataRoot, KEY).id, "failed", { error: "earlier" }),
       );
       const ghCalls = fixture.started.gh.calls().length;
 
@@ -329,7 +326,7 @@ describe("plan", () => {
         out: "",
         err: `the task of ${KEY} is in failed; tasker plan needs workspace_ready\n`,
       });
-      expect(taskOf(fixture).state).toBe("failed");
+      expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
       expect(fixture.started.gh.calls()).toHaveLength(ghCalls);
       expectNoRun(fixture);
     });
@@ -344,7 +341,7 @@ describe("plan", () => {
 
       expect(result.code).toBe(1);
       expect(result.err).not.toBe("");
-      expect(taskOf(fixture).state).toBe("workspace_ready");
+      expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("workspace_ready");
       expectNoRun(fixture);
     });
   });
@@ -375,7 +372,7 @@ describe("the overlap warning", () => {
     expect(result.err).toBe(
       [W1, W2, "  codeguru42/tasker#7 (awaiting_plan_review):", "    src/a.ts", LAST, ""].join("\n"),
     );
-    expect(taskOf(fixture).state).toBe("awaiting_plan_review");
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
     const other = withDataRootStore(fixture.started.dataRoot, (store) => store.findLatestTask(REPO, "codeguru42/tasker#7"));
     expect(other?.state).toBe("awaiting_plan_review");
   });

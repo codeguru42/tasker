@@ -65,13 +65,19 @@ export function readRunMarker(dbPath: string, taskId: number) {
   );
 }
 
-// The events of the latest task of issueKey in the repo codeguru42/tasker, as { type, data }.
-export function eventsOf(dataRoot: string, issueKey: string): { type: string; data: unknown }[] {
+// The latest task of issueKey in the repo codeguru42/tasker. It throws when there is none.
+export function latestTaskOf(dataRoot: string, issueKey: string): Task {
   return withDataRootStore(dataRoot, (store) => {
     const task = store.findLatestTask("codeguru42/tasker", issueKey);
     if (task === undefined) throw new Error(`no task of ${issueKey}`);
-    return store.listEvents(task.id).map(({ type, data }) => ({ type, data }));
+    return task;
   });
+}
+
+// The events of the latest task of issueKey in the repo codeguru42/tasker, as { type, data }.
+export function eventsOf(dataRoot: string, issueKey: string): { type: string; data: unknown }[] {
+  const task = latestTaskOf(dataRoot, issueKey);
+  return withDataRootStore(dataRoot, (store) => store.listEvents(task.id).map(({ type, data }) => ({ type, data })));
 }
 
 export interface SeedTask {
