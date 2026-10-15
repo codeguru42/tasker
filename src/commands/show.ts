@@ -1,5 +1,5 @@
 import type { RegisterCommand } from "../cli.js";
-import { failedFrom, lastTransitionError } from "../state/machine.js";
+import { failedFromEvents, lastTransitionError } from "../state/machine.js";
 import type { ExecuteTodoProgress, Task, TaskStore } from "../store/store.js";
 import {
   formatColumns,
@@ -48,7 +48,7 @@ function formatTask(store: TaskStore, task: Task): string {
     ["last event", last && `${last.at} ${last.type} ${JSON.stringify(last.data)}`],
   ];
   if (task.state === "failed") {
-    fields.push(["failed in", failedFrom(store, task.id)], ["error", lastTransitionError(events)]);
+    fields.push(["failed in", failedFromEvents(events)], ["error", lastTransitionError(events)]);
   }
   return formatFields(fields) + todoProgress(store, task.id);
 }
