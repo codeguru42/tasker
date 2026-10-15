@@ -1,9 +1,9 @@
 import type { RegisterCommand } from "../cli.js";
+import { indented } from "../indented.js";
 import { planRevisionPath } from "../store/layout.js";
 import type { PlanRevision, Task, TaskStore } from "../store/store.js";
 import {
   formatQuestions,
-  indented,
   planHeader,
   planRevisionOrFail,
   planVersionOrFail,

@@ -1,6 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
 import { approveTask, type Approved } from "../tasks/approve.js";
-import { indented } from "./plan-revision.js";
+import { indented } from "../indented.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,

@@ -1,6 +1,7 @@
 import { CommanderError } from "commander";
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
+import { indented } from "../indented.js";
 import type { PlanResult } from "../tasks/plan-run.js";
 import type { PlanQuestionState, PlanRevision, Task, TaskStore } from "../store/store.js";
 import { fail, warnOverlaps } from "./shared.js";
@@ -28,14 +29,6 @@ export function planRevisionOrFail(io: Io, store: TaskStore, task: Task, version
 // The first line of the plan commands, with no line end.
 export function planHeader(task: Task, revision: PlanRevision): string {
   return `${task.issueKey} plan v${revision.version}`;
-}
-
-// The text with the prefix before each of its lines. Each line end of the text counts.
-export function indented(prefix: string, text: string): string {
-  return text
-    .split(/\r\n|\r|\n/)
-    .map((line) => `${prefix}${line}`)
-    .join("\n");
 }
 
 function formatQuestionState(state: PlanQuestionState): string {
