@@ -104,6 +104,8 @@ export type PlanQuestionState =
   | { question: PlanQuestion; state: "open" }
   | { question: PlanQuestion; state: "resolved"; version: number; answer: string | null };
 
+type ResolvedPlanQuestion = Extract<PlanQuestionState, { state: "resolved" }>;
+
 // Later tickets add more sources, for example a review promotion. The table has no check on the values.
 export type PlanRevisionSource = "plan" | "refine";
 
@@ -232,6 +234,10 @@ export interface TaskStore extends LockStore {
   // The questions of a revision with their state. The newest revision has only open questions.
   // A resolved question names the next version, and its answer is the feedback of that version.
   planQuestions(taskId: number, version: number): PlanQuestionState[];
+  // The questions of the revisions before `version` that a later revision up to `version` resolves.
+  // The order is by the resolving version, then by the order of the questions in the revision.
+  // The revision must exist.
+  resolvedQuestionsThrough(taskId: number, version: number): ResolvedPlanQuestion[];
   // Records the plan session of a task once, before the run. The same id again writes nothing and
   // gives the stored session. Another id is an error that names both ids.
   recordPlanSession(taskId: number, session: NewSession): StoredSession;
@@ -571,6 +577,19 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     return toStoredSession(statements.selectPlanSession.get(taskId) as PlanSessionRow | undefined);
   }
 
+  // The one home of the open/resolved rule of a question.
+  function readPlanQuestions(taskId: number, version: number): PlanQuestionState[] {
+    const revision = readPlanRevision(taskId, version);
+    if (revision === undefined) throw noPlanRevision(taskId, version);
+    const next = readPlanRevision(taskId, version + 1);
+    return revision.answer.questions.map((question): PlanQuestionState => {
+      if (next === undefined || next.answer.questions.some((q) => q.id === question.id)) {
+        return { question, state: "open" };
+      }
+      return { question, state: "resolved", version: next.version, answer: next.feedback };
+    });
+  }
+
   function readExecuteSession(taskId: number, version: number): StoredSession | undefined {
     return toStoredSession(
       statements.selectExecuteSession.get(taskId, version) as PlanSessionRow | undefined,
@@ -863,16 +882,17 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     pinnedPlanRevision: readPinnedPlanRevision,
 
-    planQuestions(taskId, version) {
-      const revision = readPlanRevision(taskId, version);
-      if (revision === undefined) throw noPlanRevision(taskId, version);
-      const next = readPlanRevision(taskId, version + 1);
-      return revision.answer.questions.map((question): PlanQuestionState => {
-        if (next === undefined || next.answer.questions.some((q) => q.id === question.id)) {
-          return { question, state: "open" };
+    planQuestions: readPlanQuestions,
+
+    resolvedQuestionsThrough(taskId, version) {
+      if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
+      const resolved: ResolvedPlanQuestion[] = [];
+      for (let v = 1; v < version; v++) {
+        for (const entry of readPlanQuestions(taskId, v)) {
+          if (entry.state === "resolved") resolved.push(entry);
         }
-        return { question, state: "resolved", version: next.version, answer: next.feedback };
-      });
+      }
+      return resolved;
     },
 
     recordPlanSession(taskId, session) {
