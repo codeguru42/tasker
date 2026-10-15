@@ -15,7 +15,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, useTempDir, repoRoot, seedPlanRevision, startFixture, startWriteLockHolder, readRunMarker, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
+import { deadPid, useTempDir, repoRoot, seedPlanRevision, seedPlanSession, startFixture, startWriteLockHolder, readRunMarker, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -98,6 +98,16 @@ describe("task store", () => {
         "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES ('a/b#1', ?, ?, 't', 't')",
       )
       .run(repoKey, state);
+
+  // Records an execute session of a plan revision, with the model and effort of the execute role unless change gives others.
+  const recordExecute = (taskId: number, version: number, change: Partial<NewSession> = {}) =>
+    store.recordExecuteSession(taskId, version, {
+      sessionId: "s-1",
+      provider: "claude-code",
+      model: "sonnet",
+      effort: "medium",
+      ...change,
+    });
 
   it("creates a task with equal timestamps and no branch", () => {
     const task = store.createTask(newTask);
@@ -1170,6 +1180,89 @@ describe("task store", () => {
       record(b.id, { sessionId: "s-2", effort: "medium" });
       expect(store.planSession(a.id)).toMatchObject({ sessionId: "s-1", effort: "low" });
       expect(store.planSession(b.id)).toMatchObject({ sessionId: "s-2", effort: "medium" });
+    });
+  });
+
+  describe("execute session", () => {
+    it("records the first session and gives it back", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      const expected = {
+        sessionId: "s-1",
+        repoKey: "tasker",
+        provider: "claude-code",
+        model: "sonnet",
+        effort: "medium",
+      };
+      expect(recordExecute(task.id, 1)).toEqual(expected);
+      expect(store.executeSession(task.id, 1)).toEqual(expected);
+      expect(readSessionRows()).toEqual([
+        {
+          task_id: task.id,
+          role: "execute",
+          session_id: "s-1",
+          provider: "claude-code",
+          model: "sonnet",
+          effort: "medium",
+          created_at: "2026-01-01T00:00:00.000Z",
+          plan_version: 1,
+        },
+      ]);
+    });
+
+    it("writes nothing on a second record with the same id", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      const first = recordExecute(task.id, 1);
+      const rows = readSessionRows();
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      expect(recordExecute(task.id, 1, { model: "opus", effort: "high" })).toEqual(first);
+      expect(readSessionRows()).toEqual(rows);
+    });
+
+    it("refuses a second record with another id and names both ids", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      recordExecute(task.id, 1);
+      expectNothingChanged(
+        task.id,
+        () => recordExecute(task.id, 1, { sessionId: "s-2" }),
+        `task ${task.id} already has the execute session s-1 of plan revision 1, not s-2`,
+      );
+    });
+
+    it("refuses a version with no plan revision and writes nothing", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      expectNothingChanged(task.id, () => recordExecute(task.id, 5), `task ${task.id} has no plan revision 5`);
+      expect(store.executeSession(task.id, 5)).toBeUndefined();
+    });
+
+    it("keeps the plan session and the execute session of one task apart", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedPlanSession(store, task.id);
+      recordExecute(task.id, 1, { sessionId: "s-2" });
+      expect(store.planSession(task.id)).toMatchObject({ model: "opus" });
+      expect(store.planSession(task.id)?.sessionId).not.toBe("s-2");
+      expect(store.executeSession(task.id, 1)).toMatchObject({ sessionId: "s-2", model: "sonnet" });
+    });
+
+    it("gives each plan revision its own execute session", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedPlanRevision(store, task.id);
+      recordExecute(task.id, 1, { sessionId: "s-1" });
+      recordExecute(task.id, 2, { sessionId: "s-2" });
+      expect(store.executeSession(task.id, 1)?.sessionId).toBe("s-1");
+      expect(store.executeSession(task.id, 2)?.sessionId).toBe("s-2");
+    });
+
+    it("gives no session for a version with no execute session", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      expect(store.executeSession(task.id, 1)).toBeUndefined();
+      expect(store.executeSession(task.id, 7)).toBeUndefined();
     });
   });
 
