@@ -30,7 +30,7 @@ const V1_ANSWER = validPlanAnswer({
   ],
 });
 const V2_ANSWER = validPlanAnswer({
-  plan_markdown: "## Summary\n\nThe second plan.\n",
+  plan_markdown: "## Summary\n\nAdd the b module and its test, test first.\n",
   todos: [
     { id: "only-todo", title: "Do the work", description: "Do all of it.", depends_on: [] },
   ],

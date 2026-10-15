@@ -4,6 +4,7 @@ import { doctor } from "./doctor.js";
 import { model } from "./model.js";
 import { show } from "./show.js";
 import { plan } from "./plan.js";
+import { refine } from "./refine.js";
 import { showBootstrap } from "./show-bootstrap.js";
 import { showPlan } from "./show-plan.js";
 import { showQuestions } from "./show-questions.js";
@@ -11,4 +12,4 @@ import { showConfig } from "./show-config.js";
 import { start } from "./start.js";
 import { status } from "./status.js";
 
-export const commands: RegisterCommand[] = [showConfig, show, showBootstrap, showPlan, showQuestions, start, plan, abort, status, doctor, model];
+export const commands: RegisterCommand[] = [showConfig, show, showBootstrap, showPlan, showQuestions, start, plan, refine, abort, status, doctor, model];
