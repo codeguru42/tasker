@@ -1071,6 +1071,25 @@ describe("task store", () => {
         expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBe(firstTime);
         expect(store.pinnedPlanRevision(task.id)?.version).toBe(1);
       });
+
+      it("refuses a clear of a version that is not pinned", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        approve(task.id, 1);
+        seedPlanRevision(store, task.id);
+        seedPlanRevision(store, task.id);
+        approve(task.id, 3);
+        const v1 = store.getPlanRevision(task.id, 1)?.approvedAt;
+        const v3 = store.getPlanRevision(task.id, 3)?.approvedAt;
+        expectNothingChanged(
+          task.id,
+          () => clear(task.id, 1),
+          `task ${task.id}: plan revision 1 is not the pinned revision (3)`,
+        );
+        expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBe(v1);
+        expect(store.getPlanRevision(task.id, 3)?.approvedAt).toBe(v3);
+        expect(store.pinnedPlanRevision(task.id)?.version).toBe(3);
+      });
     });
 
     describe("questions", () => {
