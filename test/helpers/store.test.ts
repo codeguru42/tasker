@@ -7,6 +7,7 @@ import { failedFrom, lastTransitionError } from "../../src/state/machine.js";
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
+import { reviewFinding } from "./review.js";
 import { useTempDir } from "./temp.js";
 import { useThreeRepoDataRoot } from "./config.js";
 import { taskNames } from "./git.js";
@@ -19,6 +20,7 @@ import {
   latestTaskOf,
   lockNames,
   readRunMarker,
+  seedReview,
   seedTask,
   seedTasks,
   seedVerifyRun,
@@ -563,5 +565,58 @@ describe("failVerifyRun", () => {
     });
     expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 1), "utf8")).toBe("log one\n");
     expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 2), "utf8")).toBe("log two\n");
+  });
+});
+
+describe("seedReview", () => {
+  const withSeededTask = <T>(fn: (store: TaskStore, taskId: number) => T): T =>
+    withStoreFile(join(useTempDir("tasker-seed-"), "tasker.db"), (store) => fn(store, seedTask(store).id));
+
+  it("stores the defaults with two open findings", () => {
+    withSeededTask((store, taskId) => {
+      const review = seedReview(store, taskId);
+
+      expect(store.getReview(taskId, 1)).toEqual(review);
+      expect(review).toMatchObject({
+        taskId,
+        number: 1,
+        revision: "4b825dc642cb",
+        prompt: "review@3f9a1c04b2e7",
+        startedAt: dayAt(1),
+        endedAt: dayAt(1),
+      });
+      expect(review.findings).toHaveLength(2);
+      expect(review.findings.map((entry) => entry.position)).toEqual([1, 2]);
+      expect(review.findings.map((entry) => entry.dismissed)).toEqual([null, null]);
+      expect(review.findings[0]?.finding).toEqual(reviewFinding());
+    });
+  });
+
+  it("seeds the number 2 on a second call", () => {
+    withSeededTask((store, taskId) => {
+      seedReview(store, taskId);
+
+      expect(seedReview(store, taskId).number).toBe(2);
+      expect(store.reviewCount(taskId)).toBe(2);
+    });
+  });
+
+  it("ends the task in reviewed by default and in the given state", () => {
+    withSeededTask((store, taskId) => {
+      seedReview(store, taskId);
+      expect(store.getTask(taskId)?.state).toBe("reviewed");
+
+      seedReview(store, taskId, {}, "awaiting_work_review");
+      expect(store.getTask(taskId)?.state).toBe("awaiting_work_review");
+    });
+  });
+
+  it("replaces the default findings with the given findings", () => {
+    withSeededTask((store, taskId) => {
+      const review = seedReview(store, taskId, { findings: [reviewFinding({ file: "src/c.ts" })] });
+
+      expect(review.findings).toHaveLength(1);
+      expect(review.findings[0]?.finding.file).toBe("src/c.ts");
+    });
   });
 });
