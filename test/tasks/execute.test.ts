@@ -20,6 +20,7 @@ import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
+import { realCommandPath } from "../helpers/fake-commands.js";
 import { claudeSample, claudeSampleWithResult, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   planTodo,
@@ -423,6 +424,80 @@ describe("executeTask deadline", { timeout: 20_000 }, () => {
       ["b", "not_started"],
       ["a", "done"],
     ]);
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+  });
+});
+
+describe("executeTask push guard", () => {
+  // The fake claude is made before the origin is known, so its exec finds the origin in the cwd of the run:
+  // the worktree is on the task branch, and its remote origin is the origin folder.
+  const git = realCommandPath("git");
+  const shell = (script: string) => [realCommandPath("sh"), "-c", script];
+  const originOf = `o=$(${git} config remote.origin.url)`;
+  // Makes the task branch on the origin at main, as a push from the session would.
+  const pushBranch = shell(`${originOf}; ${git} --git-dir "$o" branch "$(${git} branch --show-current)" main`);
+  // Moves the origin folder away, so that the remote cannot be read.
+  const moveOrigin = shell(`${originOf}; ${realCommandPath("mv")} "$o" "$o-gone"`);
+
+  const pushMessage = async (fixture: ExecuteFixture): Promise<string> => {
+    const sha = await fixture.started.origin.branchHead("main");
+    return `push detected on ${fixture.started.branch}: the tip of the branch on the remote moved from absent to ${sha}`;
+  };
+
+  it("fails the task and keeps the todo done when the tip moved after a done turn", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: doneStream, turns: [{ stream: doneStream, exec: pushBranch }] },
+      { answer: { todos: TODOS } },
+    );
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe(`${await pushMessage(fixture)}\n`);
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+    expect(todoStates(fixture)).toContainEqual(["a", "done"]);
+    expect(fixture.claude.calls()).toHaveLength(1);
+  });
+
+  it("ends in failed, not in quota_blocked, when the tip moved after a quota stop", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: doneStream, turns: [{ stream: claudeSample("quota-stop"), exitCode: 1, exec: pushBranch }] },
+      { answer: { todos: TODOS } },
+    );
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toContain(await pushMessage(fixture));
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+  });
+
+  it("keeps the first message and prints the push message when a failed turn also pushed", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: doneStream, turns: [{ stream: doneStream, exitCode: 1, stderr: "boom", exec: pushBranch }] },
+      { answer: { todos: TODOS } },
+    );
+
+    const { result, io } = await runExecute(fixture);
+
+    const err = io.err.join("");
+    expect(result).toEqual({ exitCode: 1 });
+    expect(err).toMatch(/^executing failed: .+\n/);
+    expect(err).toContain(`${await pushMessage(fixture)}\n`);
+    expect(err).not.toContain("illegal state transition");
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+  });
+
+  it("fails the task when the remote cannot be read after a turn", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: doneStream, turns: [{ stream: doneStream, exec: moveOrigin }] },
+      { answer: { todos: TODOS } },
+    );
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("").startsWith("cannot read the remote after the run: ")).toBe(true);
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
   });
 });
