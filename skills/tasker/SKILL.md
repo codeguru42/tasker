@@ -201,6 +201,26 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The task has no plan revision. The error is `the task of <issue key> has no plan revision`.
 - Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
 
+### `tasker unapprove`
+
+Takes back the approval of the pinned plan revision of a task in the state `approved`: `tasker unapprove <issue>`. The task goes back to the state `awaiting_plan_review`. The command works only before execute starts, because `tasker execute` moves the task out of `approved` first.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+On success, the command prints the line `unapproved <issue key>: revision v<N> is no longer pinned` on stdout.
+
+An older approved revision stays approved. The command clears only the pinned revision, so a later command reads the older one as the pinned revision again.
+
+The command writes one event of the type `unapproved` with the data `{ version, from, to }`. It writes no `transition` event.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is in another state. The error is `the task of <issue key> is in <state>; tasker unapprove needs approved`.
+- The task is approved, but no revision is pinned. The error is `the task of <issue key> is approved, but no revision is pinned`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
