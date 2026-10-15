@@ -275,7 +275,7 @@ The command runs the commands of `verify.commands` one at a time, in the list or
 
 The worktree must be clean before and after the commands. A change is a changed file or a new file that git does not ignore. A file that git ignores does not count. If the worktree has a change before the commands, no command runs. If the commands leave a change, the run fails, also when every command passed.
 
-Each run gets a number. The first run of a task is run 1, and a later run gets the next number. Each run writes its logs in the folder `verify-run-<N>` of the logs of the task. The file `verify-<position>.log` holds the log of the command at that position, counted from 1. A command that never started has no log. tasker records every run that reached the commands, also a failed run.
+Each run gets a number. The first run of a task is run 1, and a later run gets the next number. Each run writes its logs in the folder `verify-run-<N>` of the logs of the task. The file `verify-<position>.log` holds the log of the command at that position, counted from 1. A command that never started has no log. tasker records every run that reached the commands, also a failed run. `tasker show-verify` prints a run and the log of each command.
 
 If you press Ctrl-C, the command gets the signal and stops the running command. The run ends as a failure of that command.
 
@@ -449,7 +449,39 @@ The command prints an error and exits with code 1 in these cases:
 
 ### `tasker show-verify`
 
-Prints one verify run of the task of an issue: `tasker show-verify <issue>`. The command uses the same task as `tasker show`: the active task, else the newest task.
+Prints one verify run of the task of an issue: its result and the log of each command: `tasker show-verify <issue>`. The command uses the same task as `tasker show`: the active task, else the newest task. The command only reads, and it works in each state.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+- `--run <N>`: prints run `N`. `N` must be a whole number of 1 or more, with no sign and no leading zero. With no `--run`, the command prints the newest run.
+- `--command <N>`: prints only the block of the command at position `N` of the run, counted from 1. The rule for `N` is the same as for `--run`. The header line stays.
+
+A bad `--run` value or a bad `--command` value is an error, and the command stops before it reads the configuration. If both values are bad, the command prints one error line for each.
+
+The command prints this output:
+
+```
+<issue key> verify run <N> of <count>: <result> (<start time>)
+
+== command <k>: <command> (<log path>) ==
+<log>
+```
+
+The result is `passed`, `failed`, `timed_out`, `dirty_before` or `dirty_after`, as the store holds it. The start time is the time when the run started. The command prints one block for each command that the run started, in order. A command that never started has no block, also when the time limit stopped the run before the failing command. If the log does not end with a line end, the command adds one. An empty log gives one empty line.
+
+If the run ran no command, the command prints the header line, a blank line and the line `no logs: this run ran no command`.
+
+If a log file cannot be read, its block holds the line `(log not readable: <error code>)`. The command still prints every other block. Then it exits with code 1, and it prints nothing on stderr.
+
+The command prints an error and exits with code 1 in these cases:
+
+- The issue key does not resolve.
+- The issue has no task. The error names the issue and the repo.
+- The `--run` value or the `--command` value is bad. The error is `--run must be a whole number of 1 or more: <value>` or `--command must be a whole number of 1 or more: <value>`.
+- The task has no verify run. The error is `the task of <issue key> has no verify run; run tasker verify first`. This error also comes with `--run`.
+- The task has no run `N`. The error is `the task of <issue key> has no verify run <N>; it has <count>`.
+- The run has no log for command `N`. The error is `verify run <N> of <issue key> has no log for command <k>; it ran <m> commands`.
+- The configuration is missing or invalid.
 
 ### `tasker status`
 
