@@ -62,6 +62,7 @@ export function buildProgram(commands: readonly RegisterCommand[], io: Io): Comm
   const program = new Command("tasker")
     .description("Drive an AI coding assistant through an issue")
     .version(readVersion())
+    .enablePositionalOptions()
     .configureOutput({ writeOut: io.stdout, writeErr: io.stderr })
     .exitOverride()
     .showHelpAfterError("(run 'tasker --help' for usage)");
