@@ -284,7 +284,7 @@ flowchart LR
 | --- | --- | --- |
 | `approved` | `awaiting_plan_review` | The approval is cleared. The plan was written against the old tree. |
 | `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review` | `executed` | Landing goes back behind a real `verify` run. |
-| `failed`, from a failed `push`, `merge`, `open-pr` or `review` | `executed` | The same reason. A retry would push, merge, open a PR or review the moved tree with no verify. |
+| `failed`, from a failed `push`, `merge`, `open-pr` or `review` | `executed` | The same reason. Without the demotion, a retry can push, merge, open a PR or review the moved tree with no verify. |
 | any other | its origin | Nothing to demote. |
 
 ## Code

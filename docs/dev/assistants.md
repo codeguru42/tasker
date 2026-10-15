@@ -145,7 +145,7 @@ The provider refuses a sandbox before it starts the program in three cases:
 
 On Linux, `bwrap` comes from the `bubblewrap` package, and `socat` has its own package. The setting that makes `claude` fail when the sandbox is not available is the second guard, behind the check of the provider.
 
-The only Unix socket that a command can use is the folder `claude-<uid>` in the temp root, as a real path. `claude` keeps its own sockets there. The provider never opens all Unix sockets, because that would open the sockets of the ssh agent and the keyring. When this folder is a shared temp folder, or holds one, the provider gives no socket rule. Then no command can use a Unix socket. When the provider cannot resolve the folder, the run fails before the start, and the reason holds the error code and no path. macOS uses this rule. Linux ignores it, because `seccomp` cannot filter by path.
+The only Unix socket that a command can use is the folder `claude-<uid>` in the temp root, as a real path. `claude` keeps its own sockets there. The provider never opens all Unix sockets, because all Unix sockets include the sockets of the ssh agent and the keyring. When this folder is a shared temp folder, or holds one, the provider gives no socket rule. Then no command can use a Unix socket. When the provider cannot resolve the folder, the run fails before the start, and the reason holds the error code and no path. macOS uses this rule. Linux ignores it, because `seccomp` cannot filter by path.
 
 The sandbox can always write the folder `claude-<uid>` in the temp root (`/tmp/claude-<uid>`). So a test of the sandbox on the local machine runs outside that folder (`claude` 2.1.300).
 

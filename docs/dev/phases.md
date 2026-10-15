@@ -66,7 +66,7 @@ The error output does not go to the terminal. The runner keeps its last 64 KiB a
 
 The verify phase runs the verify commands of a repo in the worktree of a task. `tasker verify` runs it. A verify run is one run of the whole list for one task. A task can have many verify runs. [data-root.md](data-root.md#verify_runs-table) gives the numbers and the results of the runs.
 
-The list stops at the first command that fails, times out or cannot start. This command is the failing command of the run. A run that passed has no failing command. The log of a later command is never created. A command that would start after the deadline does not start and gets no log. It is the failing command of the run, and the run timed out. A command that cannot start, for example because the worktree folder is missing, is a failure of that command. The error text goes to its log and to the result.
+The list stops at the first command that fails, times out or cannot start. This command is the failing command of the run. A run that passed has no failing command. The log of a later command is never created. If the deadline comes before the start of a command, the command does not start and gets no log. It is the failing command of the run, and the run timed out. A command that cannot start, for example because the worktree folder is missing, is a failure of that command. The error text goes to its log and to the result.
 
 Only the exit code and the signal of a command decide the result. Nothing reads the output of a command.
 

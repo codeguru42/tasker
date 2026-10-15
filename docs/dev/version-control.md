@@ -219,7 +219,7 @@ The land push has no lease, no `--force` and no `+`. As a result, git refuses a 
 
 - A push of a revision that origin already has succeeds and changes nothing.
 - The clone must have the revision, or git refuses the push.
-- A base that origin does not have is refused, for example `HEAD`, which a plain push would make as a new branch on origin.
+- A base that origin does not have is refused, for example `HEAD`. A plain push of `HEAD` makes it as a new branch on origin.
 - Limit: if someone deletes the base between the tip read and the push, the push makes the base again at the revision.
 - A local base (`refs/heads/`) cannot land.
 

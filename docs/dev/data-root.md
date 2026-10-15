@@ -119,7 +119,7 @@ The result of a run is one of these values:
 | Result | Meaning |
 | --- | --- |
 | `passed` | Every command exited with 0, and the worktree was clean before and after. |
-| `failed` | A command exited with another code, stopped by a signal, or could not start. |
+| `failed` | A command exited with another code, stopped by a signal, or failed to start. |
 | `timed_out` | The deadline came. |
 | `dirty_before` | The worktree had uncommitted changes before the first command, so no command ran. |
 | `dirty_after` | The commands passed but left uncommitted changes. |

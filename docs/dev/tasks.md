@@ -12,13 +12,13 @@ The order follows what each step needs and what a failure can leave.
 
 - The issue is read, and the closed check runs, before a task exists. As a result, a bad key, a missing issue or a closed issue leaves no task.
 - The base comes before the workspace, because the workspace starts from the base.
-- Bootstrap runs after the repo lock is free. A bootstrap can run for a long time, and it does not use the clone. If it held the lock, one slow bootstrap would stop the start of every other task in the repo.
+- Bootstrap runs after the repo lock is free. A bootstrap can run for a long time, and it does not use the clone. If bootstrap holds the repo lock, one slow bootstrap stops the start of every other task in the repo.
 
 ## The locks
 
 Each start and each abort takes the task lock first and the repo lock second. No code takes a task lock while it holds a repo lock. As a result, two commands cannot wait for each other in a circle, so they cannot deadlock.
 
-The task lock does not wait. A second command for the same issue stops at once, because it would repeat the work of the first one. The repo lock covers the steps that change the clone and the question for the base branch. The base step fetches first and asks only after the fetch, so the question falls inside the lock. The repo lock waits, because another task of the same repo usually holds it only for these short steps. The wait is long enough for a first fetch of a large repo.
+The task lock does not wait. A second command for the same issue stops at once, because otherwise it repeats the work of the first one. The repo lock covers the steps that change the clone and the question for the base branch. The base step fetches first and asks only after the fetch, so the question falls inside the lock. The repo lock waits, because another task of the same repo usually holds it only for these short steps. The wait is long enough for a first fetch of a large repo.
 
 The rule that each command that changes a task takes the task lock has one home: [the locks table](data-root.md#locks-table).
 
