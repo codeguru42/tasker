@@ -71,6 +71,10 @@ export function startedCommands(commands: readonly string[], result: VerifyResul
 // The error of a failed verify run: the message of the failing command, then the tail of its log, then the
 // no-output line when the log holds no output.
 export function verifyFailureMessage(failure: VerifyFailure, log: string, timeoutMin: number): string {
+  // A command that never started has no log, so the message names no log and has no tail.
+  if (failure.started === false) {
+    return `verify command ${failure.index} failed: ${failure.command}: timed out after ${timeoutMin} min, before the command started.`;
+  }
   const { tail, noOutput } = readCommandLog(log, 20);
   return `${commandFailureMessage("verify", failure, log, timeoutMin)}\n${tail}${noOutput ? `${NO_OUTPUT_LINE}\n` : ""}`.trimEnd();
 }
