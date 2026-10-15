@@ -1,13 +1,8 @@
 import {
-  accessSync,
-  constants,
   existsSync,
   mkdirSync,
-  readdirSync,
   readFileSync,
   rmSync,
-  statSync,
-  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { userInfo } from "node:os";
@@ -39,12 +34,14 @@ import { shellQuote } from "../src/vcs/git/ssh.js";
 import { listWorktrees, taskBranchName, taskWorktreePath } from "../src/vcs/git/worktree.js";
 import type { VcsContext } from "../src/vcs/provider.js";
 import { runCommand } from "./helpers/cli.js";
+import { logLine, readArgLog, realCommandPath, useFakeSandboxBin, writeFakeCommand } from "./helpers/fake-commands.js";
 import { useThreeRepoDataRoot, validConfig, writeDataRootConfig } from "./helpers/config.js";
 import { dayAt, type SeedTask, seedTasks, withDataRootStore } from "./helpers/store.js";
 import { makeTempDir, useProcessEnv, useTempDir, useTempHome } from "./helpers/temp.js";
 
 export * from "./helpers/cli.js";
 export * from "./helpers/config.js";
+export * from "./helpers/fake-commands.js";
 export * from "./helpers/errors.js";
 export * from "./helpers/processes.js";
 export * from "./helpers/source-scan.js";
@@ -514,38 +511,6 @@ export function writeFakeGit(binDir: string, body: string): void {
   writeFakeCommand(binDir, "git", body);
 }
 
-// path with each folder that holds an entry named program replaced, in the same place, by a new
-// temp folder (see useTempDir()) with links to the other entries. A folder with no such entry
-// stays as it is. As a result, program is not found, and every other program of the path still runs.
-// Call it inside a test.
-export function usePathWithout(program: string, path: string): string {
-  return path
-    .split(delimiter)
-    .map((folder) => {
-      if (!existsSync(join(folder, program))) return folder;
-      const copy = useTempDir("tasker-path-without-");
-      for (const entry of readdirSync(folder)) {
-        if (entry !== program) symlinkSync(join(folder, entry), join(copy, entry));
-      }
-      return copy;
-    })
-    .join(delimiter);
-}
-
-// Writes an executable shell script named name into binDir. body is the script after "#!/bin/sh".
-export function writeFakeCommand(binDir: string, name: string, body: string): void {
-  mkdirSync(binDir, { recursive: true });
-  writeFileSync(join(binDir, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
-}
-
-// The shell line that appends one call to the log: the argument count, then each argument.
-// Each item ends with a NUL, so an argument can hold a newline.
-// Each item of extra (a piece of shell code) goes in the log before the arguments and counts in the argument count.
-function logLine(logPath: string, extra: readonly string[] = []): string {
-  const count = extra.length === 0 ? '"$#"' : `"$(($# + ${extra.length}))"`;
-  return `printf '%s\\0' ${[count, ...extra].join(" ")} "$@" >> ${shellQuote(logPath)}`;
-}
-
 // How a fake ssh behaves (see writeFakeSsh()).
 export type FakeSshMode =
   | "serve"
@@ -778,23 +743,6 @@ export function sshKeyArgs(key: string): string[] {
   return ["-i", key, "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes"];
 }
 
-// The first file with this name on process.env.PATH.
-function realCommandPath(name: string): string {
-  for (const folder of (process.env.PATH ?? "").split(delimiter)) {
-    if (folder === "") continue;
-    const candidate = join(folder, name);
-    try {
-      if (statSync(candidate).isFile()) {
-        accessSync(candidate, constants.X_OK);
-        return candidate;
-      }
-    } catch {
-      // Not here. Try the next folder.
-    }
-  }
-  throw new Error(`no ${name} found on PATH`);
-}
-
 // Writes a git wrapper into binDir. It logs each call (see readArgLog()), then runs the real git.
 // The real git is the first git file on process.env.PATH.
 export function writeGitRecorder(binDir: string, logPath: string): void {
@@ -809,28 +757,6 @@ export function writeGitFailAfter(binDir: string, subcommand: string): void {
     binDir,
     `${shellQuote(realCommandPath("git"))} "$@"\ncode=$?\nif [ "$1" = ${shellQuote(subcommand)} ]; then exit 1; fi\nexit $code`,
   );
-}
-
-// Reads a log of writeFakeSsh(), writeGitRecorder() or writeFakeGh(). It returns one argument list for each call.
-// A missing log gives no calls.
-export function readArgLog(logPath: string): string[][] {
-  let text: string;
-  try {
-    text = readFileSync(logPath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
-    throw error;
-  }
-  const items = text.split("\0");
-  items.pop(); // The text after the last NUL is empty.
-  const calls: string[][] = [];
-  let index = 0;
-  while (index < items.length) {
-    const count = Number(items[index]);
-    calls.push(items.slice(index + 1, index + 1 + count));
-    index += 1 + count;
-  }
-  return calls;
 }
 
 // The query of readGithubBlockers(). It is a literal, so that the test checks the query on its own.
@@ -1008,21 +934,6 @@ export function useFakeClaude(control: FakeClaudeControl): FakeClaude {
 // Makes an empty file with mode 0o444, as bwrap leaves for a protected path. It lives in a fixture module
 // that imports only node: modules, so that the fake claude starts fast.
 export { writePlaceholder } from "./fixtures/placeholder.js";
-
-// Writes a fake bwrap and a fake socat (both exit 0) into binDir, except the names in except.
-export function writeFakeSandboxPrograms(binDir: string, except: readonly string[] = []): void {
-  for (const name of ["bwrap", "socat"]) {
-    if (!except.includes(name)) writeFakeCommand(binDir, name, "exit 0");
-  }
-}
-
-// A new temp folder (see useTempDir()) with a fake bwrap and a fake socat, except the names in except.
-// It gives the folder. Call it inside a test.
-export function useFakeSandboxBin(except: readonly string[] = []): string {
-  const bin = join(useTempDir("tasker-bin-"), "bin");
-  writeFakeSandboxPrograms(bin, except);
-  return bin;
-}
 
 // The questions block that show-plan and show-questions print for the one open question of validPlanAnswer.
 export const OPEN_QUESTION_BLOCK =
