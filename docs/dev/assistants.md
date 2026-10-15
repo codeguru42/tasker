@@ -140,7 +140,7 @@ The limits of the sandbox:
 - The network stays open.
 - Only the shell of the assistant is in the sandbox. The `claude` program is not.
 - A shell command can write `objects/`, `refs/` and `logs/` of the clone, because `git commit` needs them. See the known limit in [version-control.md](version-control.md#sandbox-write-paths).
-- While a sandboxed run is live, a placeholder `config.lock` in the bare clone makes the provision of another task in the same repo fail.
+- While a sandboxed run is live, it holds a placeholder `config.lock` in the bare clone. The provision of another task in the same repo fails only when a value of the clone configuration changed while this file exists.
 - After a kill of `claude`, the bare clone keeps `config.lock`, `.mcp.json` and an empty `.claude/` folder. A later write to the configuration of the clone fails until a later change removes them. The cleanup covers the worktree only.
 - A later `claude` can widen the write list in a way that the guard of the `.git` name does not catch. The guard follows `claude` 2.1.299.
 
