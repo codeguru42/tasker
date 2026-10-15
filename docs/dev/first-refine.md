@@ -120,4 +120,4 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 ## A ticket that adds a doc of rules or hints
 
 - Name the docs that already hold some of the rules or hints, because they draw duplication findings (#116).
-- Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its lead-in names.
+- Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its lead-in names. A link must support the exact sentence that holds it. If a hint links to a rule to prevent a repeat, put the link on the sentence that the rule supports, not on the new fact. On #149, review 1 found two links that only pointed near the topic.
