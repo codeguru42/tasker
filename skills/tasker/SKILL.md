@@ -88,6 +88,40 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 Two starts for different issues of one repo run at the same time. They wait for each other only while one of them uses the clone or waits for your answer to the question for the base branch. A wait for the clone ends after 5 minutes with the lock error. The task then stays in the state `provisioning`, with no error. Run the command again to continue it.
 
+### `tasker plan`
+
+Runs the assistant in plan mode in the worktree of a task in the state `workspace_ready`, and records the first plan revision: `tasker plan <issue>`. The task goes to the state `planning`, then to `awaiting_plan_review`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+On success, the command prints these lines:
+
+- `planned <issue> as revision v1`
+- `plan: <path>`, the path of the plan file.
+- `prompt: <path>`, the path of the archived prompt.
+- `todos:`, then one line `- <id>: <title>` for each todo, in the order of the plan.
+- `questions: <count>`
+
+The assistant reads only the issue title and body. It does not read the issue comments.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In the first five cases, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo. Run `tasker start` first.
+- The task is not in `workspace_ready`. The error names the state. `tasker plan` runs only on a task that `tasker start` brought to `workspace_ready`. For a task in `provisioning`, run `tasker start` again. For a task in `failed` or `quota_blocked`, see below. For a task that is past `planning`, the plan already exists.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- The issue cannot be read. Fix the cause (for example the gh login), then run the command again.
+- The prompt cannot be archived. Fix the cause, then run the command again.
+- The assistant fails or runs longer than the time limit. The task goes to the state `failed`, and the error is `planning failed: <reason>` or `planning timed out after <n> min`.
+- An unexpected error occurs after the run has started, for example the transcript file cannot be opened. The task goes to the state `failed`, and the error is `planning failed: <error>`.
+- The assistant returns a plan that tasker refuses. The task goes to the state `failed`. The error lists each problem.
+- The plan file cannot be written. The task goes to the state `failed`, and the error is `cannot write the plan file of revision v1: <error>`.
+- A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
+
+For now, no command continues a task in `failed` or `quota_blocked`. Run `tasker abort <issue>` to leave the state. A crash of tasker leaves the task in `planning`. Run `tasker abort <issue>` for it too.
+
+If you press Ctrl-C, the assistant stops. The run ends as a failure, and the task goes to the state `failed`.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
