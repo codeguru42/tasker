@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { approve } from "../../src/commands/approve.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
-import { planRevisionOf, seedPlanReviewTask, seedTaskWithPlanFiles, validPlanAnswer } from "../helpers/plan.js";
+import {
+  planRevisionOf,
+  seedPlanReviewTask,
+  seedPlanRevision,
+  seedPlanningTask,
+  seedTaskWithPlanFiles,
+  validPlanAnswer,
+} from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, withDataRootStore } from "../helpers/store.js";
 
@@ -126,6 +133,70 @@ describe("approve", () => {
     expect(result.out).toBe("");
     expect(result.err).toMatch(new RegExp(`^the lock ${name} is busy`));
     expect(lockNames(dataRoot)).toEqual([name]);
+    expectNoWrite(dataRoot, task.id, before);
+  });
+});
+
+describe("a refused approve", () => {
+  // A task that the store holds in workspace_ready with a plan revision v1. The store refuses a revision in a
+  // spawning state, so this is the nearest state that tasker can write before awaiting_plan_review.
+  const seedOtherStateTask = () => {
+    const { dataRoot, task } = seedPlanningTask();
+    withDataRootStore(dataRoot, (store) => seedPlanRevision(store, task.id, {}, "workspace_ready"));
+    return { dataRoot, task };
+  };
+  const STATE_ERROR =
+    "the task of codeguru42/tasker#5 is in workspace_ready; tasker approve needs awaiting_plan_review\n";
+
+  it("refuses a second approve", async () => {
+    const { dataRoot, task } = seedPlanReviewTask();
+    expect((await runApprove()).code).toBe(0);
+    const before = snapshot(dataRoot, task.id, [1]);
+
+    const result = await runApprove();
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe("");
+    expect(result.err).toBe("codeguru42/tasker#5 is already approved at revision v1\n");
+    expectNoWrite(dataRoot, task.id, before);
+  });
+
+  it("refuses a task in another state", async () => {
+    const { dataRoot, task } = seedOtherStateTask();
+    const before = snapshot(dataRoot, task.id, [1]);
+
+    const result = await runApprove();
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe("");
+    expect(result.err).toBe(STATE_ERROR);
+    expectNoWrite(dataRoot, task.id, before);
+  });
+
+  it("refuses a task with no plan revision", async () => {
+    const { dataRoot, task } = seedPlanReviewTask({ revisions: [] });
+    const before = snapshot(dataRoot, task.id, [1]);
+
+    const result = await runApprove();
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe("");
+    expect(result.err).toBe("the task of codeguru42/tasker#5 has no plan revision\n");
+    expectNoWrite(dataRoot, task.id, before);
+  });
+
+  it("prints no overlap warning", async () => {
+    const { dataRoot, task } = seedOtherStateTask();
+    seedTaskWithPlanFiles(
+      dataRoot,
+      { issueKey: "codeguru42/tasker#6", repoKey: REPO, state: "awaiting_plan_review", at: dayAt(3) },
+      ["src/a.ts"],
+    );
+    const before = snapshot(dataRoot, task.id, [1]);
+
+    const result = await runApprove();
+
+    expect(result.err).toBe(STATE_ERROR);
     expectNoWrite(dataRoot, task.id, before);
   });
 });
