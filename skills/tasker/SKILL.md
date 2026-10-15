@@ -341,6 +341,33 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is `--resume-execute applies only to a task that failed in verifying`.
 - Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
 
+### `tasker accept`
+
+Accepts the work of a task in the state `awaiting_work_review`: `tasker accept <issue>`. The task goes to the state `accepted`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+The command fetches `origin`. Then it makes sure that the branch of the task contains the tip of the base on `origin`. For a local base, the tip is the tip of the local branch in the clone. The command reads the head of the worktree, so an uncommitted change does not count. No command brings the branch current yet.
+
+On success, the command prints the line `accepted <issue key> at <revision>` on stdout. The revision is the head of the worktree.
+
+The command writes one event of the type `accepted` with the data `{ revision, baseTip, from, to }`. It writes no `transition` event.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is in another state. The error is `the task of <issue key> is in <state>; tasker accept needs awaiting_work_review`.
+- The task has no worktree. The error is `the task of <issue key> has no worktree`.
+- The task has no branch. The error is `the task of <issue key> has no branch`.
+- The task has no base revision. The error is `the task of <issue key> has no base revision`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- Another command holds the clone for more than 5 minutes. The error says that the lock is busy. Run the command again.
+- The fetch or the read of the base fails, for example because `origin` has no such base. The error is `cannot read the base tip: <error>`.
+- The branch does not contain the tip of the base. The error is `the branch <branch> (<revision>) does not contain the tip of the base <base> (<base tip>)`.
+
+A fetch that ran still moves the refs of `origin` in the clone, also when the command stops with an error.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
