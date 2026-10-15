@@ -37,6 +37,8 @@ This page describes how the code of tasker is laid out and how to test it. [rule
 5. Add the command to the Commands section of `skills/tasker/SKILL.md`. Use a heading of this form: `` ### `tasker <name>` ``. If the command has an alias, use the main name in the heading, not the alias. Under the heading, write the description and the list of options.
 6. Write the tests first (see "Tests").
 
+The program enables the positional options of Commander. As a result, a root option counts only before the command name. A command can have an option with the name of a root option, for example `--version`.
+
 Each new command must be in the skill and in the `--help` output. The test `test/skill.test.ts` fails when `tasker --help` lists a command that the skill does not list. The test does not check options, so list them in the skill yourself.
 
 ## Add a version control provider
