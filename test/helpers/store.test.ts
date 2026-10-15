@@ -11,6 +11,7 @@ import { useThreeRepoDataRoot } from "./config.js";
 import { taskNames } from "./git.js";
 import {
   dayAt,
+  databasePathOf,
   eventsOf,
   latestTaskOf,
   lockNames,
@@ -97,6 +98,19 @@ describe("latestTaskOf", () => {
     expect((thrownBy(() => latestTaskOf(dataRoot, "codeguru42/tasker#9")) as Error).message).toBe(
       "no task of codeguru42/tasker#9",
     );
+  });
+});
+
+describe("databasePathOf", () => {
+  it("gives the database file that withDataRootStore opens", () => {
+    const dataRoot = join(useTempDir("tasker-dbpath-"), "data");
+    const [seeded] = seedTasks(dataRoot, [
+      { issueKey: "a/b#1", repoKey: "a/b", state: "planning", at: dayAt(1) },
+    ]);
+
+    const found = withStoreFile(databasePathOf(dataRoot), (store) => store.getTask(seeded.id));
+
+    expect(found?.issueKey).toBe("a/b#1");
   });
 });
 
