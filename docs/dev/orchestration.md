@@ -244,7 +244,7 @@ The manual fix: the agent does it only when the orchestrator tells it to, after 
 4. Do the commit check on the local `<task branch>` again. This check also covers step 8 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md), because it checks the tip. If the check lists a broken commit, fix the cause commits of the listed commits one time with step 3, with the base commit of this check. Then do the commit check one more time. If that check still lists a broken commit, stop and report the list to the orchestrator. If a check stops with an error, stop and report to the orchestrator. In each of these cases, the worktree and the local task branch stay, and the task stays in `failed`. Nothing reached tasker yet.
 5. Do steps 9 to 21 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md): the push to `origin`, `tasker update-branch <issue> --take-remote`, the next commands, and the cleanup after `tasker finish`.
 
-The commit check makes sure that each implementation commit and the tip of the task branch pass `npm run check`. It gives the list of broken commits and the base commit. The agent does it in its own clone, on a copy of the branch:
+The commit check makes sure that each implementation commit and the tip of the task branch pass `npm run check`. It gives the list of broken commits and the base commit. The agent does it in the local clone, on a copy of the branch:
 
 1. Do steps 1 to 4 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The clone gets the read-only `tasker` remote, and the agent reads the base branch. If a step fails, stop and report to the orchestrator. Nothing changes.
 2. Run `git fetch --multiple tasker origin`. If the fetch fails, stop and report to the orchestrator. Nothing changes.
