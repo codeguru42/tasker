@@ -10,7 +10,7 @@ import { withTaskLock } from "../store/locks.js";
 import type { NewVerifyRun, TaskStore } from "../store/store.js";
 import { type UncommittedChange, uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
 import { failRun } from "./run-outcome.js";
-import { taskInState } from "./task-state.js";
+import { requireWorktree, taskInState } from "./task-state.js";
 
 export interface VerifyRequest {
   config: Config;
@@ -44,8 +44,7 @@ type VerifyOutcome =
 async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<VerifyTaskResult> {
   const { config, env, io } = request;
   const task = taskInState(store, request.taskId, "executed", "verify");
-  if (task.worktreePath === null) throw new Error(`the task of ${task.issueKey} has no worktree`);
-  const worktreePath = task.worktreePath;
+  const worktreePath = requireWorktree(task);
   const repo = config.repos[task.repoKey];
   const number = store.nextVerifyRun(task.id);
   const startedAt = new Date().toISOString();

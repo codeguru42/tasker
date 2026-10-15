@@ -1,4 +1,5 @@
 import type { TaskState } from "../state/machine.js";
+import { baseRevisionOf } from "./base-revision.js";
 import { taskNotFound, type Task, type TaskStore } from "../store/store.js";
 
 // The task with the id. An id with no task throws taskNotFound.
@@ -20,4 +21,23 @@ export function taskInState(store: TaskStore, taskId: number, state: TaskState, 
   const task = taskById(store, taskId);
   assertTaskState(task, state, command);
   return task;
+}
+
+// The worktree path of the task. Throws when the task has none.
+export function requireWorktree(task: Task): string {
+  if (task.worktreePath === null) throw new Error(`the task of ${task.issueKey} has no worktree`);
+  return task.worktreePath;
+}
+
+// The branch of the task. Throws when the task has none.
+export function requireBranch(task: Task): string {
+  if (task.branch === null) throw new Error(`the task of ${task.issueKey} has no branch`);
+  return task.branch;
+}
+
+// The revision of the newest base event of the task. Throws when the task has none.
+export function requireBaseRevision(store: TaskStore, task: Task): string {
+  const revision = baseRevisionOf(store, task.id);
+  if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no base revision`);
+  return revision;
 }

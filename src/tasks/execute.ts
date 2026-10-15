@@ -30,10 +30,9 @@ import { type ExecuteFixTurn, type TaskStore } from "../store/store.js";
 import { type RemoteTip, vcsForRepo } from "../vcs/provider.js";
 import { tipMoved } from "../vcs/remote-tip.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
-import { baseRevisionOf } from "./base-revision.js";
 import { applyRunOutcome, failRun } from "./run-outcome.js";
 import { assertSessionModel } from "./session-model.js";
-import { taskInState } from "./task-state.js";
+import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
 type PlanTodo = PlanAnswer["todos"][number];
 
@@ -81,11 +80,9 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   const version = revision.version;
   const planText = readPlanFile(config.dataRoot, task, version);
   const ordered = orderTodos(revision.answer.todos);
-  const baseRevision = baseRevisionOf(store, task.id);
-  if (baseRevision === undefined) throw new Error(`the task of ${task.issueKey} has no base revision`);
-  if (task.branch === null) throw new Error(`the task of ${task.issueKey} has no branch`);
+  const baseRevision = requireBaseRevision(store, task);
+  const branch = requireBranch(task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
-  const branch = task.branch;
   let before: RemoteTip;
   try {
     before = await vcs.remoteTaskRefTip(ctx, { taskRef: branch });

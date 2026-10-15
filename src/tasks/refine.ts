@@ -9,10 +9,9 @@ import { readPlanFile } from "../store/plan-file.js";
 import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
-import { baseRevisionOf } from "./base-revision.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
 import { assertSessionModel } from "./session-model.js";
-import { taskInState } from "./task-state.js";
+import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
 export interface RefineRequest {
   config: Config;
@@ -41,11 +40,10 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
   if (session === undefined) throw new Error(`the task of ${task.issueKey} has no plan session`);
   await assertSessionModel(session, env, `the plan session of ${task.issueKey}`);
   const currentPlan = readPlanFile(config.dataRoot, task, revision.version);
-  const baseRevision = baseRevisionOf(store, task.id);
-  if (baseRevision === undefined) throw new Error(`the task of ${task.issueKey} has no base revision`);
-  if (task.branch === null) throw new Error(`the task of ${task.issueKey} has no branch`);
+  const baseRevision = requireBaseRevision(store, task);
+  const branch = requireBranch(task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
-  const branchCommits = await vcs.ownCommits(ctx, { taskRef: task.branch, baseRevision });
+  const branchCommits = await vcs.ownCommits(ctx, { taskRef: branch, baseRevision });
   const prompt = fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, {
     CURRENT_PLAN: currentPlan,
     BRANCH_COMMITS: branchCommits,
