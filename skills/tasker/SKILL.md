@@ -105,6 +105,22 @@ On success, the command prints these lines:
 - `todos:`, then one line `- <id>: <title>` for each todo, in the order of the plan.
 - `questions: <count>`
 
+After these lines, the command compares the files of the plan with the files of each other active task of the same repo. For each other task, it reads the files of its newest plan revision and the files that its task branch changes. A task in `finished` or `cancelled` does not count. When a file is shared, the command prints this warning on stderr:
+
+```text
+WARNING: this plan changes files that other tasks in flight also change.
+The task that lands second can get merge conflicts and redo its work.
+  <issue key> (<state>):
+    <file>
+tasker does not refuse. Decide before you approve.
+```
+
+The warning has one part for each other task that shares a file. The parts follow the order of the issue keys by number, so `#9` comes before `#10`. The shared files of a task are sorted as plain text. When no file is shared, the command prints no warning.
+
+If the command cannot read the files of a task branch, it prints this line before the warning: `note: cannot read the files of the task branch of <issue key>: <error>`. The files of the newest plan revision of that task still count. If the compare itself fails, the command prints the line `note: cannot compare the plan with the other tasks in flight: <error>`.
+
+The warning and the notes only inform. They never stop the command, and they never change the exit code or the state of a task.
+
 The assistant reads only the issue title and body. It does not read the issue comments.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In the first five cases, the task keeps its state and nothing is written:
