@@ -134,7 +134,7 @@ export interface StoredSession extends RecordedSession {
 }
 
 // The repo comes from the task, so the caller does not give it.
-export type NewPlanSession = Omit<StoredSession, "repoKey">;
+export type NewSession = Omit<StoredSession, "repoKey">;
 
 export interface StoreOptions {
   now?: () => Date;
@@ -214,7 +214,7 @@ export interface TaskStore extends LockStore {
   planQuestions(taskId: number, version: number): PlanQuestionState[];
   // Records the plan session of a task once, before the run. The same id again writes nothing and
   // gives the stored session. Another id is an error that names both ids.
-  recordPlanSession(taskId: number, session: NewPlanSession): StoredSession;
+  recordPlanSession(taskId: number, session: NewSession): StoredSession;
   // The plan session of a task, or undefined when the task has none.
   planSession(taskId: number): StoredSession | undefined;
   getDefaultBaseBranch(repoKey: string): string | undefined;

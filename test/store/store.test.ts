@@ -9,7 +9,7 @@ import {
   ActiveTaskError,
   openStore,
   RunMarkerExistsError,
-  type NewPlanSession,
+  type NewSession,
   type Task,
   type TaskStore,
 } from "../../src/store/store.js";
@@ -1002,7 +1002,7 @@ describe("task store", () => {
   });
 
   describe("plan session", () => {
-    const record = (taskId: number, change: Partial<NewPlanSession> = {}) =>
+    const record = (taskId: number, change: Partial<NewSession> = {}) =>
       store.recordPlanSession(taskId, {
         sessionId: "s-1",
         provider: "claude-code",

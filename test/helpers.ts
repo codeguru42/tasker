@@ -37,7 +37,7 @@ import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { recordPlanRevision } from "../src/store/plan-file.js";
 import {
   type NewPlanRevision,
-  type NewPlanSession,
+  type NewSession,
   openStore,
   type PlanRevision,
   type StoreOptions,
@@ -1813,7 +1813,7 @@ export function recordPlanRevisions(
 export function seedPlanSession(
   store: TaskStore,
   taskId: number,
-  change: Partial<NewPlanSession> = {},
+  change: Partial<NewSession> = {},
 ): StoredSession {
   return store.recordPlanSession(taskId, {
     sessionId: TEST_SESSION_ID,
