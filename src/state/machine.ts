@@ -203,8 +203,10 @@ function legalMove(current: Task, to: TaskState): { from: TaskState; to: TaskSta
   return { from: current.state, to };
 }
 
-function transitionCheck(to: TaskState, detail?: TransitionDetail) {
-  return (current: Task): NewEvent => ({ type: "transition", data: { ...detail, ...legalMove(current, to) } });
+// The check of a move of current to `to`: it gives an event of the type with the data { ...detail, from, to }. An
+// illegal edge throws, so the store writes nothing.
+function transitionCheck(type: string, to: TaskState, detail?: Record<string, unknown>) {
+  return (current: Task): NewEvent => ({ type, data: { ...detail, ...legalMove(current, to) } });
 }
 
 // Writes the new state, the run marker change and one transition event { ...detail, from, to } in
@@ -217,7 +219,7 @@ export function transitionTask(
   to: TaskState,
   detail?: TransitionDetail,
 ): Task {
-  const check = transitionCheck(to, detail);
+  const check = transitionCheck("transition", to, detail);
   return isSpawningState(to) ? store.startRun(id, to, check) : store.endRun(id, to, check);
 }
 
@@ -228,16 +230,13 @@ export function transitionWithPlanRevision(
   to: TaskState,
   revision: NewPlanRevision,
 ): Task {
-  return store.addPlanRevision(id, revision, to, transitionCheck(to));
+  return store.addPlanRevision(id, revision, to, transitionCheck("transition", to));
 }
 
 // Approves revision version, appends the approved event { version, openQuestions, from, to } and moves the task to
 // approved, in one transaction. An illegal edge writes nothing.
 export function transitionWithPlanApproval(store: TaskStore, id: number, version: number, openQuestions: number): Task {
-  return store.approvePlanRevision(id, version, "approved", (current) => ({
-    type: "approved",
-    data: { version, openQuestions, ...legalMove(current, "approved") },
-  }));
+  return store.approvePlanRevision(id, version, "approved", transitionCheck("approved", "approved", { version, openQuestions }));
 }
 
 export function failTask(store: TaskStore, id: number, message: string): Task {
