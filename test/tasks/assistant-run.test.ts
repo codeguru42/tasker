@@ -392,4 +392,13 @@ describe("prepareTaskExecuteRun", () => {
 
     expect(outcome.kind).toBe("timeout");
   });
+
+  it("stops a start at its own timeoutMs, not at the execute deadline", async () => {
+    const { outcome } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain"), untilStopped: true }, limits: { executeTimeoutMin: 60 } },
+      { starts: [{ prompt: "p", timeoutMs: 50 }] },
+    );
+
+    expect(outcome.kind).toBe("timeout");
+  });
 });
