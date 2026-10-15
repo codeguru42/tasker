@@ -111,7 +111,7 @@ describe("runVerify", () => {
 
     const result = await verify(["true", "touch later"], dirs, { timeoutMs: 0 });
 
-    expect(result).toStrictEqual({ status: "failed", index: 1, command: "true", timedOut: true });
+    expect(result).toStrictEqual({ status: "failed", index: 1, command: "true", timedOut: true, started: false });
     expect(existsSync(join(dirs.runDir, "verify-1.log"))).toBe(false);
     expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
   });
@@ -184,7 +184,12 @@ describe("startedCommands", () => {
   });
 
   it("leaves out the command that the deadline kept from its start", () => {
-    const failure = { status: "failed", index: 2, command: "b", timedOut: true } as const;
+    const failure = { status: "failed", index: 2, command: "b", timedOut: true, started: false } as const;
     expect(startedCommands(commands, failure)).toEqual(["a"]);
+  });
+
+  it("counts a timeout with no flag as started", () => {
+    const failure = { status: "failed", index: 2, command: "b", timedOut: true } as const;
+    expect(startedCommands(commands, failure)).toEqual(["a", "b"]);
   });
 });

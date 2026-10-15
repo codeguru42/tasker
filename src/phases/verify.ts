@@ -16,7 +16,10 @@ export interface VerifyOptions {
   onSpawn?: (pid: number) => void;
 }
 
-export type VerifyResult = { status: "ok" } | CommandFailure;
+// A failure of a verify command. started is false only when the deadline came before the command,
+// so the command never started and has no log. Bootstrap failures never carry the flag.
+export type VerifyFailure = CommandFailure & { started?: false };
+export type VerifyResult = { status: "ok" } | VerifyFailure;
 
 // Runs the verify commands one at a time under /bin/bash in cwd, with one deadline for the list.
 // Each command has its own log, which opens for write. The list stops at the first command that fails.
@@ -26,7 +29,7 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyResult> {
   const deadline = Date.now() + options.timeoutMs;
   for (const [i, command] of options.commands.entries()) {
     // A command after the deadline does not start and gets no log, so the last log does not name the failing command.
-    if (Date.now() >= deadline) return { status: "failed", index: i + 1, command, timedOut: true };
+    if (Date.now() >= deadline) return { status: "failed", index: i + 1, command, timedOut: true, started: false };
     const log = options.logPath(i + 1);
     mkdirSync(dirname(log), { recursive: true });
     let result: GroupResult;
@@ -51,12 +54,9 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyResult> {
   return { status: "ok" };
 }
 
-// The commands that started. A failure at index stops the list there, and that command started too.
-// The exception is a timeout with no exit code, no signal and no error: the deadline came before
-// that command, so it never started.
+// The commands that started. A failure at index stops the list there, and that command started too,
+// unless runVerify marked it with started: false.
 export function startedCommands(commands: readonly string[], result: VerifyResult): string[] {
   if (result.status === "ok") return [...commands];
-  const neverStarted =
-    result.timedOut && result.exitCode === undefined && result.signal === undefined && result.error === undefined;
-  return commands.slice(0, neverStarted ? result.index - 1 : result.index);
+  return commands.slice(0, result.started === false ? result.index - 1 : result.index);
 }
