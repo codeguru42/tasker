@@ -24,8 +24,8 @@ This page describes how the code of tasker is laid out and how to test it. [rule
 - `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.
 - `docs/` holds the docs. `AGENTS.md` links to each of them.
 - `test/` holds the tests.
-- `test/fixtures/` holds scripts that tests spawn as child processes. It also holds the recorded streams that the tests play back, and small modules that a fixture script imports. Such a module imports only `node:` modules, because a fixture that loads `test/helpers.ts` at run time starts 2 to 3 times slower, too slowly for the deadline tests.
-- `test/helpers.ts` holds the shared test helpers.
+- `test/fixtures/` holds scripts that tests spawn as child processes. It also holds the recorded streams that the tests play back, and small modules that a fixture script imports. Such a module imports only `node:` modules, because a fixture that loads a file under `test/helpers/` at run time starts 2 to 3 times slower, too slowly for the deadline tests.
+- `test/helpers/` holds the shared test helpers, one file for each kind of helper, and the tests of each file.
 - `dist/` holds the build output. Git ignores it.
 
 ## Add a command
@@ -99,7 +99,7 @@ As a result, when a check must report all problems in one run, as [rules.md](rul
 ## Tests
 
 - Tests use Vitest. Each test file matches `test/**/*.test.ts`. Its name mirrors the file in `src/` that it tests, except for a test that reads a doc, scans the whole source tree, or tests the shared helpers.
-- Unit tests call `run()` with a capturing `Io` and with fixture commands. The `Io` collects output in arrays, so the test reads stdout and stderr and checks the returned exit code. The capturing `Io` and the fixture commands come from `test/helpers.ts`. [rules.md](rules.md#tests) gives the rules for the shared helpers.
+- Unit tests call `run()` with a capturing `Io` and with fixture commands. The `Io` collects output in arrays, so the test reads stdout and stderr and checks the returned exit code. The capturing `Io` and the fixture commands come from `test/helpers/`. [rules.md](rules.md#tests) gives the rules for the shared helpers.
 - End-to-end tests spawn `src/main.ts` through `tsx`. Write few of them, because they are slow.
 - Write the test first. Run it and watch it fail (red). Then write the code that makes it pass (green).
 - In Vitest 5.0.3, an `onTestFinished` callback runs after the `afterEach` hooks.
