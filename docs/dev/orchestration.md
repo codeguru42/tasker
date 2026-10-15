@@ -139,6 +139,8 @@ The reason: the repo file `.claude/settings.json` allows `Bash(tasker *)`. A Bas
 
 If the classifier denies a `tasker` command in the plain form, the agent does not try another form. The agent stops and reports the exact text of the denial to the orchestrator. The orchestrator tells the user. The command did not run, so the task keeps its state. The agent runs no other `tasker` command until the orchestrator tells it the next step.
 
+The tool-block rule: a tool block is a denial of a tool call by the permission rules or by the classifier of auto mode. The paragraph above covers a denied `tasker` command in the plain form. If any other tool block stops the agent, the agent reports the exact text of the denial to the orchestrator. The orchestrator tells the user. The orchestrator does not run the blocked action for the agent, unless the user tells it to.
+
 The plain-form rule does not cover these:
 
 - A read-only `tasker` command, which does not change a task. Examples are `tasker show`, `tasker status`, `tasker show-plan`, `tasker show-review`, `tasker show-quota` and `tasker doctor`. Such a command can have a pipe, for example `tasker show-quota | jq` in "Quota".
