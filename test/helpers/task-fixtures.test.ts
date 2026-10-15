@@ -27,6 +27,7 @@ import {
   useStartedTask,
   useStartFixture,
   useVerifyFixture,
+  useWorkReviewTask,
 } from "./task-fixtures.js";
 
 describe("useStartFixture", () => {
@@ -375,5 +376,34 @@ describe("useVerifyFixture", () => {
     expect(fixture.config.repos[fixture.started.repoKey].verify.commands).toEqual(["true", "echo hi"]);
     expect(fixture.config.limits.verifyTimeoutMin).toBe(3);
     expect(fixture.env).toBe(fixture.started.env);
+  });
+});
+
+describe("useWorkReviewTask", () => {
+  const changedFiles = (work: Awaited<ReturnType<typeof useWorkReviewTask>>) =>
+    changedPaths({
+      clone: work.clone,
+      env: work.env,
+      branch: work.task.branch!,
+      baseRevision: "refs/remotes/origin/main",
+    });
+
+  it("gives a task in awaiting_work_review with a worktree path, a branch and one commit", async () => {
+    const work = await useWorkReviewTask();
+
+    expect(work.key).toBe("codeguru42/tasker#5");
+    expect(work.task.state).toBe("awaiting_work_review");
+    expect(latestTaskOf(work.dataRoot, work.key).state).toBe("awaiting_work_review");
+    expect(work.task.worktreePath).not.toBeNull();
+    expect(work.task.branch).not.toBeNull();
+    expect(await changedFiles(work)).toEqual(["work.txt"]);
+  });
+
+  it("commits each given file and leaves no run marker", async () => {
+    const work = await useWorkReviewTask({ files: ["src/a.ts", "docs/b.md"] });
+
+    expect([...(await changedFiles(work))].sort()).toEqual(["docs/b.md", "src/a.ts"]);
+    expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();
+    expect(lockNames(work.dataRoot)).toEqual([]);
   });
 });
