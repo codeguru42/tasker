@@ -31,9 +31,14 @@ export function withRawDatabase<T>(path: string, fn: (db: DatabaseSync) => T): T
   return closeAfter(new DatabaseSync(path), fn);
 }
 
+// The path of the database file of dataRoot.
+export function databasePathOf(dataRoot: string): string {
+  return createDataRoot(dataRoot).database;
+}
+
 // Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
 export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
-  return withStoreFile(createDataRoot(dataRoot).database, fn, options);
+  return withStoreFile(databasePathOf(dataRoot), fn, options);
 }
 
 // The names of the tables in db, in alphabetical order.
@@ -46,7 +51,7 @@ export function tableNames(db: DatabaseSync): string[] {
 
 // The names in the locks table of a data root, sorted.
 export function lockNames(dataRoot: string): string[] {
-  return withRawDatabase(createDataRoot(dataRoot).database, (db) =>
+  return withRawDatabase(databasePathOf(dataRoot), (db) =>
     db
       .prepare("SELECT name FROM locks ORDER BY name")
       .all()

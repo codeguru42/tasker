@@ -5,7 +5,7 @@ import { plan } from "../../src/commands/plan.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
 import { PLAN_PROMPT, PLAN_PROMPT_NAME } from "../../src/prompts/plan.js";
 import { transitionTask } from "../../src/state/machine.js";
-import { createDataRoot, planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
+import { planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
 import { type Task } from "../../src/store/store.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
@@ -13,7 +13,7 @@ import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
 import { planAnswerStream, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, validPlanAnswer } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
+import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -32,8 +32,6 @@ const transcriptLines = (path: string) =>
   readFileSync(path, "utf8")
     .split("\n")
     .filter((line) => line !== "");
-
-const dbPathOf = (fixture: Fixture) => createDataRoot(fixture.started.dataRoot).database;
 
 // The events after the events of the start, as { type, data }.
 const eventsAfterStart = (fixture: Fixture) => {
@@ -78,7 +76,7 @@ describe("plan", () => {
       err: "",
     });
     expect(task.state).toBe("awaiting_plan_review");
-    expect(readRunMarker(dbPathOf(fixture), task.id)).toBeUndefined();
+    expect(readRunMarker(databasePathOf(fixture.started.dataRoot), task.id)).toBeUndefined();
     expect(revision).toMatchObject({ version: 1, source: "plan", feedback: null, answer });
     expect(revision?.prompt).toMatch(/^plan@[0-9a-f]{12}$/);
     expect(promptPath).toContain(revision!.prompt);
@@ -175,7 +173,7 @@ describe("plan", () => {
     expect(result.code).toBe(1);
     expect(result.out).toMatch(/^planning stopped by a quota limit; /);
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("quota_blocked");
-    expect(readRunMarker(dbPathOf(fixture), latestTaskOf(fixture.started.dataRoot, KEY).id)).toBeUndefined();
+    expect(readRunMarker(databasePathOf(fixture.started.dataRoot), latestTaskOf(fixture.started.dataRoot, KEY).id)).toBeUndefined();
   });
 
   it("fails the task for an answer that tasker refuses, and writes no row", async () => {
@@ -214,7 +212,7 @@ describe("plan", () => {
   it("fails the task with planning failed when the last transaction throws after the plan file is written", async () => {
     const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
-    withRawDatabase(dbPathOf(fixture), (db) =>
+    withRawDatabase(databasePathOf(fixture.started.dataRoot), (db) =>
       db.exec(
         "CREATE TRIGGER refuse_plan_revision BEFORE INSERT ON plan_revisions BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
       ),
@@ -261,7 +259,7 @@ describe("plan", () => {
       type: "transition",
       data: { from: "planning", to: "failed", error: result.err.trimEnd() },
     });
-    expect(readRunMarker(dbPathOf(fixture), task.id)).toBeUndefined();
+    expect(readRunMarker(databasePathOf(fixture.started.dataRoot), task.id)).toBeUndefined();
   });
 
   describe("a failure before the run", () => {
@@ -279,7 +277,7 @@ describe("plan", () => {
     it("fails at once when another process holds the task lock", async () => {
       const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
       const name = taskLockName(REPO, KEY);
-      const holder = startLockHolder(dbPathOf(fixture), name);
+      const holder = startLockHolder(databasePathOf(fixture.started.dataRoot), name);
       await holder.attempt;
 
       const result = await runPlan();
