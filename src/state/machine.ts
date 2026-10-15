@@ -239,6 +239,16 @@ export function transitionWithPlanApproval(store: TaskStore, id: number, version
   return store.approvePlanRevision(id, version, "approved", transitionCheck("approved", "approved", { version, openQuestions }));
 }
 
+// Clears the approval of the pinned revision version, appends the unapproved event { version, from, to } and moves
+// the task to awaiting_plan_review, in one transaction. An illegal edge writes nothing.
+export function transitionWithPlanUnapproval(store: TaskStore, id: number, version: number): Task {
+  return store.clearPlanApproval(
+    id,
+    "awaiting_plan_review",
+    transitionCheck("unapproved", "awaiting_plan_review", { version }),
+  );
+}
+
 export function failTask(store: TaskStore, id: number, message: string): Task {
   return transitionTask(store, id, "failed", { error: message });
 }
