@@ -85,6 +85,16 @@ The steps run in this order, under the task lock. The command does not wait for 
 
 An error after the start of the run also moves the task to `failed`, with the prefix `planning failed:`. A failed write of the plan file moves it to `failed` too, with its own message. A crash of tasker leaves the task in `planning`, with its run marker. Until M9, `tasker abort` is the way out.
 
+After a successful plan, the command warns when the plan changes files that another active task of the same repo also changes. [What the plan prompt asks for](assistants.md#what-the-plan-prompt-asks-for) says that tasker compares `files_changed` with the other tasks in flight. The purpose of the warning is to let an operator order the landings before the approve, because the task that lands second can get merge conflicts and redo its work.
+
+The warning reads the files of the newest plan of the other task and the files that its task branch changes. A task that already executed has files that its plan did not list, so the plan alone is not enough.
+
+The warning never refuses. Only a person can decide if an overlap is harmless and which task lands first. A failure inside the compare prints one note line on stderr and changes neither the exit code nor a state.
+
+The read takes no repo lock. It changes nothing in the clone, and a wait for the repo lock can hold the end of the command.
+
+`tasker refine` and `tasker approve` must print the same warning, each with its own last line.
+
 ## Limits
 
 - A new base on a second run does not move a task branch that already exists. The stored base can differ from the real start point of the branch.
