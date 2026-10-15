@@ -5,7 +5,9 @@ import { start } from "../../src/commands/start.js";
 import { loadConfig } from "../../src/config/load.js";
 import type { Config } from "../../src/config/schema.js";
 import { canonicalPath } from "../../src/real-path.js";
-import { type Task } from "../../src/store/store.js";
+import type { PlanAnswer } from "../../src/plan/answer.js";
+import { transitionTask } from "../../src/state/machine.js";
+import type { NewSession, PlanRevision, StoredSession, Task } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "./cli.js";
@@ -14,6 +16,7 @@ import { useFakeSandboxBin } from "./fake-commands.js";
 import { type FakeClaude, type FakeClaudeControl, useFakeClaude } from "./fake-claude.js";
 import { type FakeGh, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
 import { type GitOrigin, commitInWorktree, localBranches, makeProviderFixture, taskNames } from "./git.js";
+import { recordTestPlanRevision, seedPlanSession, validPlanAnswer } from "./plan.js";
 import { lockNames, withDataRootStore } from "./store.js";
 import { useProcessEnv, useTempHome } from "./temp.js";
 
@@ -197,6 +200,36 @@ export async function usePlanFixture(
   const claude = useFakeClaude(control);
   useProcessEnv({ ...useTempHome(), PATH: claude.binDir + delimiter + process.env.PATH });
   return { started, claude };
+}
+
+export interface RefineFixture extends PlanFixture {
+  task: Task;
+  revision: PlanRevision;
+  session: StoredSession;
+}
+
+// The setup of the tests of tasker refine: usePlanFixture(control, { repo, limits }), then the task moves to planning
+// and gets revision v1 with its plan file (the answer of options.answer on top of validPlanAnswer), so it is in
+// awaiting_plan_review, and a plan session (options.session on top of seedPlanSession). Call it inside a test.
+export async function useRefineFixture(
+  control: FakeClaudeControl,
+  options: {
+    repo?: Record<string, unknown>;
+    limits?: Record<string, number>;
+    answer?: Partial<PlanAnswer>;
+    session?: Partial<NewSession>;
+  } = {},
+): Promise<RefineFixture> {
+  const fixture = await usePlanFixture(control, { repo: options.repo, limits: options.limits });
+  const { dataRoot, repoKey, key } = fixture.started;
+  return withDataRootStore(dataRoot, (store) => {
+    const found = store.findLatestTask(repoKey, key)!;
+    transitionTask(store, found.id, "planning");
+    const task = recordTestPlanRevision(store, dataRoot, found.id, { answer: validPlanAnswer(options.answer) });
+    const revision = store.getPlanRevision(task.id, 1)!;
+    const session = seedPlanSession(store, task.id, options.session);
+    return { ...fixture, task, revision, session };
+  });
 }
 
 // Expects that no run of the assistant started: no call of the fake claude and no lock row.
