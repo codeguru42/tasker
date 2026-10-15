@@ -117,16 +117,6 @@ describe("task store", () => {
       )
       .run(repoKey, state);
 
-  // Records an execute session of a plan revision, with the model and effort of the execute role unless change gives others.
-  const recordExecute = (taskId: number, version: number, change: Partial<NewSession> = {}) =>
-    store.recordExecuteSession(taskId, version, {
-      sessionId: "s-1",
-      provider: "claude-code",
-      model: "sonnet",
-      effort: "medium",
-      ...change,
-    });
-
   const setTodoState = (taskId: number, version: number, todoId: string, state: ExecuteTodoState) =>
     store.setExecuteTodoState(taskId, version, todoId, state);
   const todoProgress = (taskId: number, version: number) => store.executeTodoProgress(taskId, version);
@@ -1288,7 +1278,7 @@ describe("task store", () => {
         model: "sonnet",
         effort: "medium",
       };
-      expect(recordExecute(task.id, 1)).toEqual(expected);
+      expect(seedExecuteSession(store, task.id, 1, { sessionId: "s-1" })).toEqual(expected);
       expect(store.executeSession(task.id, 1)).toEqual(expected);
       expect(readSessionRows()).toEqual([
         {
@@ -1307,20 +1297,20 @@ describe("task store", () => {
     it("writes nothing on a second record with the same id", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
-      const first = recordExecute(task.id, 1);
+      const first = seedExecuteSession(store, task.id, 1, { sessionId: "s-1" });
       const rows = readSessionRows();
       clock = new Date("2026-01-02T00:00:00.000Z");
-      expect(recordExecute(task.id, 1, { model: "opus", effort: "high" })).toEqual(first);
+      expect(seedExecuteSession(store, task.id, 1, { sessionId: "s-1", model: "opus", effort: "high" })).toEqual(first);
       expect(readSessionRows()).toEqual(rows);
     });
 
     it("refuses a second record with another id and names both ids", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
-      recordExecute(task.id, 1);
+      seedExecuteSession(store, task.id, 1, { sessionId: "s-1" });
       expectNothingChanged(
         task.id,
-        () => recordExecute(task.id, 1, { sessionId: "s-2" }),
+        () => seedExecuteSession(store, task.id, 1, { sessionId: "s-2" }),
         `task ${task.id} already has the execute session s-1 of plan revision 1, not s-2`,
       );
     });
@@ -1328,7 +1318,7 @@ describe("task store", () => {
     it("refuses a version with no plan revision and writes nothing", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
-      expectNothingChanged(task.id, () => recordExecute(task.id, 5), `task ${task.id} has no plan revision 5`);
+      expectNothingChanged(task.id, () => seedExecuteSession(store, task.id, 5, { sessionId: "s-1" }), `task ${task.id} has no plan revision 5`);
       expect(store.executeSession(task.id, 5)).toBeUndefined();
     });
 
@@ -1336,7 +1326,7 @@ describe("task store", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
       seedPlanSession(store, task.id);
-      recordExecute(task.id, 1, { sessionId: "s-2" });
+      seedExecuteSession(store, task.id, 1, { sessionId: "s-2" });
       expect(store.planSession(task.id)).toMatchObject({ model: "opus" });
       expect(store.planSession(task.id)?.sessionId).not.toBe("s-2");
       expect(store.executeSession(task.id, 1)).toMatchObject({ sessionId: "s-2", model: "sonnet" });
@@ -1346,8 +1336,8 @@ describe("task store", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
       seedPlanRevision(store, task.id);
-      recordExecute(task.id, 1, { sessionId: "s-1" });
-      recordExecute(task.id, 2, { sessionId: "s-2" });
+      seedExecuteSession(store, task.id, 1, { sessionId: "s-1" });
+      seedExecuteSession(store, task.id, 2, { sessionId: "s-2" });
       expect(store.executeSession(task.id, 1)?.sessionId).toBe("s-1");
       expect(store.executeSession(task.id, 2)?.sessionId).toBe("s-2");
     });
