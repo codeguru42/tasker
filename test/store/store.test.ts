@@ -1292,6 +1292,68 @@ describe("task store", () => {
       });
     });
 
+    describe("addPlanRevision", () => {
+      const revision = (version: number) => ({
+        version,
+        source: "plan" as const,
+        answer: validPlanAnswer(),
+        prompt: "plan@000000000000",
+      });
+
+      const planningTask = () => {
+        const task = store.createTask({ ...newTask, state: "planning" });
+        writeRunPid(task.id, "planning", process.pid);
+        return task;
+      };
+
+      it("inserts the row and the events, sets the state and deletes the marker", () => {
+        const task = planningTask();
+        const before = store.listEvents(task.id).length;
+        const moved = store.addPlanRevision(task.id, revision(1), "awaiting_plan_review", () => ({
+          type: "transition",
+          data: { to: "awaiting_plan_review" },
+        }));
+        expect(moved.state).toBe("awaiting_plan_review");
+        expect(store.getTask(task.id)).toEqual(moved);
+        expect(store.getPlanRevision(task.id, 1)).toMatchObject({ version: 1, prompt: "plan@000000000000" });
+        expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+        expect(store.listEvents(task.id).slice(before)).toMatchObject([
+          { type: "plan_revision", data: { version: 1, prompt: "plan@000000000000" } },
+          { type: "transition", data: { to: "awaiting_plan_review" } },
+        ]);
+      });
+
+      it("writes nothing when check throws", () => {
+        const task = planningTask();
+        expectNothingChanged(
+          task.id,
+          () =>
+            store.addPlanRevision(task.id, revision(1), "awaiting_plan_review", () => {
+              throw new Error("check refused");
+            }),
+          "check refused",
+        );
+      });
+
+      it("writes nothing for a version that is not the next one", () => {
+        const task = planningTask();
+        expectNothingChanged(
+          task.id,
+          () => store.addPlanRevision(task.id, revision(2), "awaiting_plan_review"),
+          `task ${task.id}: plan revision 2 is not the next version (1)`,
+        );
+      });
+
+      it("writes nothing for a spawning state", () => {
+        const task = planningTask();
+        expectNothingChanged(
+          task.id,
+          () => store.addPlanRevision(task.id, revision(1), "executing"),
+          "executing is a spawning state",
+        );
+      });
+    });
+
     describe("setRunChildPid", () => {
       it("adds the child pid to the marker of this process", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
