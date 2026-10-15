@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
+import { createSessionProvider } from "../assistant/provider.js";
 import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { archivePrompt } from "../prompts/archive.js";
@@ -35,10 +36,23 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
   const { config, env, io, feedback } = request;
   const task = store.getTask(request.taskId);
   if (task === undefined) throw taskNotFound(request.taskId);
+  if (task.state !== "awaiting_plan_review") {
+    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker refine needs awaiting_plan_review`);
+  }
+  if (feedback.trim() === "") throw new Error("the feedback is empty");
   const revision = store.latestPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
   const session = store.planSession(task.id);
   if (session === undefined) throw new Error(`the task of ${task.issueKey} has no plan session`);
+  const selected = createSessionProvider(session);
+  for (const check of selected.provider.modelChecks(session.model)) {
+    const result = await check.run(env);
+    if (result.status === "error") {
+      throw new Error(
+        `the plan session of ${task.issueKey} runs on ${session.model}, and ${session.provider} refuses it: ${result.detail}`,
+      );
+    }
+  }
   let currentPlan: string;
   try {
     currentPlan = readFileSync(planRevisionPath(config.dataRoot, task, revision.version), "utf8");
