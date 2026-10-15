@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { failTask } from "../../src/state/machine.js";
+import { canTransition, failTask } from "../../src/state/machine.js";
 import { loadConfig } from "../../src/config/load.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
 import { baseRevisionOf } from "../../src/tasks/base-revision.js";
@@ -12,14 +12,17 @@ import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { planTodo, validPlanAnswer } from "./plan.js";
-import { databasePathOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore } from "./store.js";
+import { dayAt, databasePathOf, latestTaskOf, lockNames, readRunMarker, seedTasks, withDataRootStore } from "./store.js";
+import { useTempDir } from "./temp.js";
 import {
   expectNoAssistantRun,
   expectRefusedWithoutChange,
+  moveTaskThrough,
   startIssueTask,
   startTaskWithCommits,
   taskRefOf,
   taskWorkspaceState,
+  TO_WORK_REVIEW,
   useAssistantRunFixture,
   useExecuteFixture,
   useRefineFixture,
@@ -405,5 +408,66 @@ describe("useWorkReviewTask", () => {
     expect([...(await changedFiles(work))].sort()).toEqual(["docs/b.md", "src/a.ts"]);
     expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();
     expect(lockNames(work.dataRoot)).toEqual([]);
+  });
+});
+
+describe("TO_WORK_REVIEW", () => {
+  it("lists the states from planning to awaiting_work_review in the order of the main path", () => {
+    expect(TO_WORK_REVIEW).toEqual([
+      "planning",
+      "awaiting_plan_review",
+      "approved",
+      "executing",
+      "executed",
+      "verifying",
+      "awaiting_work_review",
+    ]);
+  });
+
+  it("is a legal walk from workspace_ready", () => {
+    const steps = ["workspace_ready", ...TO_WORK_REVIEW];
+
+    steps.slice(1).forEach((to, index) => {
+      expect(canTransition(steps[index]! as never, to)).toBe(true);
+    });
+  });
+});
+
+describe("moveTaskThrough", () => {
+  const seedReadyTask = () => {
+    const dataRoot = useTempDir("tasker-move-");
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: "a/b#1", repoKey: "a/b", state: "workspace_ready", at: dayAt(1) },
+    ]);
+    return { dataRoot, id: task!.id };
+  };
+  const move = (dataRoot: string, id: number, states: Parameters<typeof moveTaskThrough>[2]) =>
+    withDataRootStore(dataRoot, (store) => ({
+      task: moveTaskThrough(store, id, states),
+      transitions: store
+        .listEvents(id)
+        .filter((event) => event.type === "transition")
+        .map((event) => event.data),
+    }));
+
+  it("moves the task through the states in order and gives the task after the last move", () => {
+    const { dataRoot, id } = seedReadyTask();
+
+    const { task, transitions } = move(dataRoot, id, ["planning", "awaiting_plan_review"]);
+
+    expect(task.state).toBe("awaiting_plan_review");
+    expect(transitions).toMatchObject([
+      { from: "workspace_ready", to: "planning" },
+      { from: "planning", to: "awaiting_plan_review" },
+    ]);
+  });
+
+  it("changes nothing for an empty list", () => {
+    const { dataRoot, id } = seedReadyTask();
+
+    const { task, transitions } = move(dataRoot, id, []);
+
+    expect(task.state).toBe("workspace_ready");
+    expect(transitions).toEqual([]);
   });
 });
