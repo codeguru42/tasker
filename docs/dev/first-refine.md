@@ -70,7 +70,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Do not write "go to step N" without a condition. Define each term, for example "loop". Do not list a step two times.
 - A rule that names `tasker review` covers each outcome: findings, no findings, all findings dismissed, and new findings after `tasker update-branch`. Start a rule with the state ("If the task is in X ..."), not with the steps that lead to it.
 - A rule that names an earlier and a later ticket covers the swap of the roles when the order changes.
-- Ask the plan for the side effects of each edit on the whole page.
+- For the side-effects hint of [All tickets](#all-tickets), ask for the side effects of each edit on the whole page.
 - Make sure that each numbered list still renders. An edit can join two items on one line.
 - Scope a new rule narrowly. A ban on X everywhere clashes with docs that must name X to describe a behavior.
 
