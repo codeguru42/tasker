@@ -1,7 +1,7 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { useProcessEnv, useTempDir, useTempHome } from "./temp.js";
+import { useProcessEnv, useTempDir, useTempFile, useTempHome } from "./temp.js";
 
 describe("useTempDir", () => {
   let saved = "";
@@ -16,6 +16,35 @@ describe("useTempDir", () => {
   it("removes the folder after the test", () => {
     expect(saved).not.toBe("");
     expect(existsSync(saved)).toBe(false);
+  });
+});
+
+describe("useTempFile", () => {
+  let savedFolder = "";
+
+  it("writes the content to the file and gives its path", () => {
+    const path = useTempFile("tasker-use-temp-file-", "note.txt", "hello\n");
+
+    expect(path.endsWith("/note.txt")).toBe(true);
+    expect(readFileSync(path, "utf8")).toBe("hello\n");
+  });
+
+  it("puts the file in a new folder that holds only that file", () => {
+    const path = useTempFile("tasker-use-temp-file-", "note.txt", "x");
+
+    expect(readdirSync(dirname(path))).toEqual(["note.txt"]);
+  });
+
+  it("makes a folder that exists", () => {
+    savedFolder = dirname(useTempFile("tasker-use-temp-file-", "note.txt", "x"));
+
+    expect(savedFolder).not.toBe("");
+    expect(existsSync(savedFolder)).toBe(true);
+  });
+
+  it("removes the folder after the test", () => {
+    expect(savedFolder).not.toBe("");
+    expect(existsSync(savedFolder)).toBe(false);
   });
 });
 
