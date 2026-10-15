@@ -264,7 +264,11 @@ A field with no value prints `-`. The `last event` line holds the time, the type
 
 If the task is in the state `failed`, the command prints two more lines. `failed in` gives the state that the task left when it failed. `error` gives the error of the failure.
 
-Each field stays on one line. A line end in a value prints as the two characters `\n`.
+If the pinned plan revision has at least one todo with a recorded state, the command prints a todo block after all other lines. The pinned revision is the approved revision with the highest version. The block starts with the line `todos (approved v<N>):`. Then it prints one line for each todo of the revision, in the order of the plan: `<state>  <id>  <title>`. The state is `done`, `in progress` or `not started`. The command pads the state and the id to the longest value of the revision, and two spaces separate the columns.
+
+If the revision has a fix turn, the line `fix turn: queued` or `fix turn: done` follows the block. If the task has no pinned revision, or no todo has a recorded state, the command prints no block and no fix turn line.
+
+Each field and each todo title stays on one line. A line end in a value prints as the two characters `\n`.
 
 The command prints an error and exits with code 1 in these cases:
 
