@@ -3,8 +3,15 @@ import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { failTask } from "../../src/state/machine.js";
-import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
-import { openStore, type StoreOptions, type Task, type TaskStore } from "../../src/store/store.js";
+import { createDataRoot, taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
+import {
+  type NewVerifyRun,
+  openStore,
+  type StoreOptions,
+  type Task,
+  type TaskStore,
+  type VerifyRun,
+} from "../../src/store/store.js";
 
 // Runs fn with resource, then closes resource. When fn gives a promise, resource closes after the
 // promise settles. When fn throws, resource closes and the error goes on.
@@ -131,6 +138,36 @@ export function writeBootstrapLog(dataRoot: string, task: Pick<Task, "issueKey" 
   const path = bootstrapLogPath(taskLogsDir(dataRoot, task));
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, text);
+}
+
+// Seeds the next verify run of task: the row, and a log for each command at its position. The task ends in state.
+// The logs default to one passing log for each command. It gives back the stored run.
+export function seedVerifyRun(
+  store: TaskStore,
+  dataRoot: string,
+  task: Pick<Task, "id" | "issueKey" | "attempt">,
+  change: Partial<Omit<NewVerifyRun, "number">> = {},
+  logs?: readonly string[],
+  state = "awaiting_work_review",
+): VerifyRun {
+  const number = store.nextVerifyRun(task.id);
+  const run: NewVerifyRun = {
+    number,
+    result: "passed",
+    commands: ["npm run check"],
+    failingCommand: null,
+    startedAt: dayAt(1),
+    endedAt: dayAt(1),
+    ...change,
+  };
+  const texts = logs ?? run.commands.map((command) => `$ ${command}\n--- exit code 0\n`);
+  texts.forEach((text, i) => {
+    const path = verifyCommandLogPath(dataRoot, task, number, i + 1);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, text);
+  });
+  store.addVerifyRun(task.id, run, state);
+  return store.getVerifyRun(task.id, number)!;
 }
 
 // Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.
