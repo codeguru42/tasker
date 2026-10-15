@@ -232,6 +232,38 @@ export async function useRefineFixture(
   });
 }
 
+export interface ExecuteFixture extends PlanFixture {
+  task: Task;
+  revision: PlanRevision;
+  config: Config;
+  env: NodeJS.ProcessEnv;
+}
+
+// The setup of the tests of tasker execute: usePlanFixture(control, { repo, limits }), the fake bwrap and socat first
+// on PATH, then the task moves to planning, gets revision v1 with its plan file (the answer of options.answer on top
+// of validPlanAnswer) and v1 is approved, so the task is in approved with v1 pinned. config is the configuration of
+// the started task and env is process.env after the stubs. Call it inside a test.
+export async function useExecuteFixture(
+  control: FakeClaudeControl,
+  options: {
+    repo?: Record<string, unknown>;
+    limits?: Record<string, number>;
+    answer?: Partial<PlanAnswer>;
+  } = {},
+): Promise<ExecuteFixture> {
+  const fixture = await usePlanFixture(control, { repo: options.repo, limits: options.limits });
+  useProcessEnv({ PATH: useFakeSandboxBin() + delimiter + process.env.PATH });
+  const { dataRoot, repoKey, key } = fixture.started;
+  return withDataRootStore(dataRoot, (store) => {
+    const found = store.findLatestTask(repoKey, key)!;
+    transitionTask(store, found.id, "planning");
+    recordTestPlanRevision(store, dataRoot, found.id, { answer: validPlanAnswer(options.answer) });
+    const task = store.approvePlanRevision(found.id, 1, "approved");
+    const revision = store.getPlanRevision(task.id, 1)!;
+    return { ...fixture, task, revision, config: fixture.started.config, env: process.env };
+  });
+}
+
 // Expects that no run of the assistant started: no call of the fake claude and no lock row.
 export function expectNoAssistantRun(fixture: PlanFixture): void {
   expect(fixture.claude.calls()).toEqual([]);
