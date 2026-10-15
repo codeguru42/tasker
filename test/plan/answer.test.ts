@@ -190,6 +190,18 @@ describe("checkPlanAnswer: the checks after the schema", () => {
     ]);
   });
 
+  it("refuses a dependency cycle between two todos", () => {
+    expect(problemsOf(withTodo({ depends_on: ["make-it-pass"] }))).toEqual([
+      "todos: a dependency cycle between write-test, make-it-pass",
+    ]);
+  });
+
+  it("refuses a todo that depends on itself", () => {
+    expect(problemsOf(withTodo({ depends_on: ["write-test"] }))).toEqual([
+      "todos: a dependency cycle between write-test",
+    ]);
+  });
+
   it("gives every problem of the checks, in the order of the checks", () => {
     const answer = validPlanAnswer({
       plan_markdown: "## Summary\n\nshort\n",
