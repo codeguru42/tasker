@@ -12,8 +12,10 @@ import {
   type ExecuteTodoState,
   type NewExecuteFixTurn,
   type NewSession,
+  type NewVerifyRun,
   type Task,
   type TaskStore,
+  type VerifyRunResult,
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
@@ -686,7 +688,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(9);
+        expect(migrations.length).toBe(10);
       });
     });
   });
@@ -1821,6 +1823,131 @@ describe("task store", () => {
       it("refuses a task that does not exist", () => {
         const error = thrownBy(() => store.addPlanRevision(9999, revision(1), "awaiting_plan_review"));
         expect((error as Error).message).toBe("task not found: 9999");
+      });
+    });
+
+    describe("verify runs", () => {
+      const run = (number: number, change: Partial<NewVerifyRun> = {}): NewVerifyRun => ({
+        number,
+        result: "failed",
+        commands: ["npm run lint", "npm test"],
+        failingCommand: 2,
+        startedAt: "2026-01-01T00:00:00.000Z",
+        endedAt: "2026-01-01T00:01:00.000Z",
+        ...change,
+      });
+
+      // The verify run rows of a task, as raw rows.
+      const readVerifyRows = (taskId: number) =>
+        withRawDatabase(dbPath, (db) =>
+          db.prepare("SELECT * FROM verify_runs WHERE task_id = ? ORDER BY number").all(taskId),
+        );
+
+      it("has the verify_runs table", () => {
+        withRawDatabase(dbPath, (db) => {
+          expect(tableNames(db)).toContain("verify_runs");
+        });
+      });
+
+      it("upgrades a version-9 database", () => {
+        const oldPath = join(dir, "old9.db");
+        makeOldDatabase(oldPath, 9);
+        withStoreFile(oldPath, () => {}, { now });
+        withRawDatabase(oldPath, (check) => {
+          expect(schemaVersion(check)).toBe(migrations.length);
+          expect(tableNames(check)).toContain("verify_runs");
+        });
+      });
+
+      it("numbers the runs of a task from 1", () => {
+        const task = runningTask("verifying");
+        expect(store.nextVerifyRun(task.id)).toBe(1);
+        store.addVerifyRun(task.id, run(1), "awaiting_work_review");
+        expect(store.nextVerifyRun(task.id)).toBe(2);
+        store.startRun(task.id, "verifying");
+        store.addVerifyRun(task.id, run(2), "awaiting_work_review");
+        expect(readVerifyRows(task.id)).toHaveLength(2);
+      });
+
+      it("inserts the row and the events, sets the state and deletes the marker", () => {
+        const task = runningTask("verifying");
+        const before = store.listEvents(task.id).length;
+        const moved = store.addVerifyRun(task.id, run(1), "awaiting_work_review", () => ({
+          type: "transition",
+          data: { to: "awaiting_work_review" },
+        }));
+        expect(moved.state).toBe("awaiting_work_review");
+        expect(store.getTask(task.id)).toEqual(moved);
+        expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+        expect(store.listEvents(task.id).slice(before)).toMatchObject([
+          { type: "verify_run", data: { number: 1, result: "failed" } },
+          { type: "transition", data: { to: "awaiting_work_review" } },
+        ]);
+        expect(readVerifyRows(task.id)).toMatchObject([
+          { task_id: task.id, number: 1, result: "failed", commands: '["npm run lint","npm test"]', failing_command: 2 },
+        ]);
+      });
+
+      it("writes nothing when check throws", () => {
+        const task = runningTask("verifying");
+        expectNothingChanged(
+          task.id,
+          () =>
+            store.addVerifyRun(task.id, run(1), "awaiting_work_review", () => {
+              throw new Error("check refused");
+            }),
+          "check refused",
+        );
+        expect(readVerifyRows(task.id)).toEqual([]);
+      });
+
+      it("writes nothing for a spawning state", () => {
+        const task = runningTask("verifying");
+        expectNothingChanged(
+          task.id,
+          () => store.addVerifyRun(task.id, run(1), "executing"),
+          "executing is a spawning state",
+        );
+        expect(readVerifyRows(task.id)).toEqual([]);
+      });
+
+      it("writes nothing for a number that is not the next one", () => {
+        const task = runningTask("verifying");
+        expectNothingChanged(
+          task.id,
+          () => store.addVerifyRun(task.id, run(2), "awaiting_work_review"),
+          `task ${task.id}: verify run 2 is not the next number (1)`,
+        );
+        expect(readVerifyRows(task.id)).toEqual([]);
+      });
+
+      it("writes nothing for a result outside the list", () => {
+        const task = runningTask("verifying");
+        const state = store.getTask(task.id)?.state;
+        const events = eventCount();
+        const error = thrownBy(() =>
+          store.addVerifyRun(task.id, run(1, { result: "lost" as VerifyRunResult }), "awaiting_work_review"),
+        );
+        expect((error as Error).message).toContain("CHECK constraint failed");
+        expect(store.getTask(task.id)?.state).toBe(state);
+        expect(eventCount()).toBe(events);
+        expect(readVerifyRows(task.id)).toEqual([]);
+      });
+
+      it("gives the runs back", () => {
+        const task = runningTask("verifying");
+        expect(store.verifyRunCount(task.id)).toBe(0);
+        expect(store.latestVerifyRun(task.id)).toBeUndefined();
+        store.addVerifyRun(task.id, run(1), "awaiting_work_review");
+        store.startRun(task.id, "verifying");
+        store.addVerifyRun(task.id, run(2, { result: "passed", failingCommand: null }), "awaiting_work_review");
+        expect(store.verifyRunCount(task.id)).toBe(2);
+        expect(store.getVerifyRun(task.id, 1)).toEqual({ taskId: task.id, ...run(1) });
+        expect(store.getVerifyRun(task.id, 9)).toBeUndefined();
+        expect(store.latestVerifyRun(task.id)).toEqual({
+          taskId: task.id,
+          ...run(2, { result: "passed", failingCommand: null }),
+        });
       });
     });
 
