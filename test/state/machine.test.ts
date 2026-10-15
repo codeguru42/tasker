@@ -11,6 +11,7 @@ import {
   isTerminalState,
   isTaskState,
   transitionTask,
+  transitionWithExecution,
   transitionWithPlanApproval,
   transitionWithPlanRevision,
   transitionWithPlanUnapproval,
@@ -465,6 +466,34 @@ describe("task transitions", () => {
       );
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBe(approvedAt);
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithExecution", () => {
+    it("moves the task to executed with one executed event and deletes the run marker", () => {
+      const task = store.createTask(newTask("approved"));
+      transitionTask(store, task.id, "executing");
+      const moved = transitionWithExecution(store, task.id, 1, ["execute@a", "execute-todo@b"]);
+      expect(moved.state).toBe("executed");
+      expect(store.runStatus(task.id)).toEqual({ status: "none" });
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "transition", "executed"]);
+      expect(events[2].data).toEqual({
+        version: 1,
+        prompts: ["execute@a", "execute-todo@b"],
+        from: "executing",
+        to: "executed",
+      });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("workspace_ready"));
+      const before = store.listEvents(task.id);
+      expect(() => transitionWithExecution(store, task.id, 1, [])).toThrow(
+        "illegal state transition: workspace_ready -> executed",
+      );
+      expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.listEvents(task.id)).toEqual(before);
     });
   });
