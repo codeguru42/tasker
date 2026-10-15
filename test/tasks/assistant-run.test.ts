@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
+import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
 import type { Task } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { vcsForRepo } from "../../src/vcs/provider.js";
@@ -14,6 +15,7 @@ import {
   type RepoReadDenyPaths,
 } from "../../src/tasks/assistant-run.js";
 import { TEST_SESSION_ID, claudeOverageEvent, claudeSample } from "../helpers/fake-claude.js";
+import { turnResultStream } from "../helpers/plan.js";
 import { readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { type AssistantRunFixture, useAssistantRunFixture } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
@@ -71,18 +73,36 @@ const runPlanMode = async (
   });
 };
 
-// The call helper of prepareTaskExecuteRun(): the fixture in the executing state, the prepare, the start,
-// and the surface of the task repo.
-const prepareAndStartExecute = async (options: Parameters<typeof useAssistantRunFixture>[0]) => {
+type ExecuteStart = Parameters<Awaited<ReturnType<typeof prepareTaskExecuteRun>>["start"]>[0];
+
+// The call helper of prepareTaskExecuteRun(): the fixture in the executing state, the prepare, the starts
+// (one start { prompt: "p" } unless run.starts gives others), and the surface of the task repo.
+// run.session changes the session request, and run.env edits the env of the fixture.
+const prepareAndStartExecute = async (
+  options: Parameters<typeof useAssistantRunFixture>[0],
+  run: {
+    session?: AssistantSessionRequest;
+    env?: (env: NodeJS.ProcessEnv) => NodeJS.ProcessEnv;
+    starts?: ExecuteStart[];
+  } = {},
+) => {
   const fixture = await useAssistantRunFixture({ state: "executing", ...options });
-  const { config, task, env, started } = fixture;
+  const { config, task, started } = fixture;
+  const env = run.env ? run.env({ ...fixture.env }) : fixture.env;
   const result = await withDataRootStore(started.dataRoot, async (store) => {
-    const prepared = await prepareTaskExecuteRun({ config, store, task, session: { resume: false }, env });
-    const outcome = await prepared.start({ prompt: "p" });
-    return { prepared, outcome };
+    const prepared = await prepareTaskExecuteRun({
+      config,
+      store,
+      task,
+      session: run.session ?? { resume: false },
+      env,
+    });
+    const outcomes = [];
+    for (const input of run.starts ?? [{ prompt: "p" }]) outcomes.push(await prepared.start(input));
+    return { prepared, outcomes, outcome: outcomes[0]! };
   });
   const { vcs, ctx } = vcsForRepo(config, started.repoKey, env);
-  return { ...fixture, ...result, surface: vcs.assistantSurface(ctx), models: modelsOf(fixture) };
+  return { ...fixture, env, ...result, surface: vcs.assistantSurface(ctx), models: modelsOf(fixture) };
 };
 
 describe("executeReadDenyPaths", () => {
@@ -349,6 +369,19 @@ describe("prepareTaskExecuteRun", () => {
     const { prepared, surface } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
 
     expect(prepared.executeCommitText).toBe(surface.executeCommitText);
+  });
+
+  it("passes the JSON Schema of a start, and the structured output reads as a turn result", async () => {
+    const jsonSchema = turnResultJsonSchema();
+
+    const { claude, outcome } = await prepareAndStartExecute(
+      { claude: { stream: turnResultStream("done") } },
+      { starts: [{ prompt: "p", jsonSchema }] },
+    );
+
+    expect(flagValues(claude.calls()[0]!.argv, "--json-schema")).toEqual([JSON.stringify(jsonSchema)]);
+    expect(outcome.kind).toBe("success");
+    expect(readTurnResult(outcome.kind === "success" ? outcome.structuredOutput : undefined)).toEqual({ kind: "done" });
   });
 
   it("stops the run at the execute deadline, not the plan deadline", async () => {
