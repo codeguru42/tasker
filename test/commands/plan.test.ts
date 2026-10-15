@@ -11,6 +11,7 @@ import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
 import { planAnswerStream, planRevisionOf, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, transcriptLines, validPlanAnswer } from "../helpers/plan.js";
+import { overlapWarningText } from "../helpers/overlap.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { expectNoAssistantRun, startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
@@ -334,8 +335,6 @@ describe("plan", () => {
 });
 
 describe("the overlap warning", () => {
-  const W1 = "WARNING: this plan changes files that other tasks in flight also change.";
-  const W2 = "The task that lands second can get merge conflicts and redo its work.";
   const LAST = "tasker does not refuse. Decide before you approve.";
   const OTHER = { repoKey: REPO, at: dayAt(3) };
   const issues = (...numbers: number[]) => ({
@@ -356,7 +355,7 @@ describe("the overlap warning", () => {
 
     expect(result.code).toBe(0);
     expect(result.err).toBe(
-      [W1, W2, "  codeguru42/tasker#7 (awaiting_plan_review):", "    src/a.ts", LAST, ""].join("\n"),
+      overlapWarningText([{ issueKey: "codeguru42/tasker#7", state: "awaiting_plan_review", files: ["src/a.ts"] }], LAST),
     );
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
     const other = withDataRootStore(fixture.started.dataRoot, (store) => store.findLatestTask(REPO, "codeguru42/tasker#7"));
@@ -370,7 +369,9 @@ describe("the overlap warning", () => {
     const result = await runPlan();
 
     expect(result.code).toBe(0);
-    expect(result.err).toBe([W1, W2, "  codeguru42/tasker#6 (workspace_ready):", "    src/a.ts", LAST, ""].join("\n"));
+    expect(result.err).toBe(
+      overlapWarningText([{ issueKey: "codeguru42/tasker#6", state: "workspace_ready", files: ["src/a.ts"] }], LAST),
+    );
   });
 
   it("prints no warning when no file is shared", async () => {
@@ -432,7 +433,9 @@ describe("the overlap warning", () => {
     expect(lines[0]).toMatch(
       /^note: cannot read the files of the task branch of codeguru42\/tasker#6: .*cannot resolve the task branch: issue-6-gone/,
     );
-    expect(lines.slice(1)).toEqual([W1, W2, "  codeguru42/tasker#6 (workspace_ready):", "    test/a.test.ts", LAST, ""]);
+    expect(lines.slice(1).join("\n")).toBe(
+      overlapWarningText([{ issueKey: "codeguru42/tasker#6", state: "workspace_ready", files: ["test/a.test.ts"] }], LAST),
+    );
   });
 
   it("orders the blocks by issue number and the files as text", async () => {
@@ -448,17 +451,13 @@ describe("the overlap warning", () => {
 
     expect(result.code).toBe(0);
     expect(result.err).toBe(
-      [
-        W1,
-        W2,
-        "  codeguru42/tasker#6 (awaiting_plan_review):",
-        "    src/a.ts",
-        "    test/a.test.ts",
-        "  codeguru42/tasker#10 (workspace_ready):",
-        "    src/a.ts",
+      overlapWarningText(
+        [
+          { issueKey: "codeguru42/tasker#6", state: "awaiting_plan_review", files: ["src/a.ts", "test/a.test.ts"] },
+          { issueKey: "codeguru42/tasker#10", state: "workspace_ready", files: ["src/a.ts"] },
+        ],
         LAST,
-        "",
-      ].join("\n"),
+      ),
     );
   });
 

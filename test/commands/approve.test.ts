@@ -10,6 +10,7 @@ import {
   seedTaskWithPlanFiles,
   validPlanAnswer,
 } from "../helpers/plan.js";
+import { overlapWarningText } from "../helpers/overlap.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, withDataRootStore } from "../helpers/store.js";
 
@@ -17,6 +18,13 @@ const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 
 const runApprove = (key = KEY, ...extra: string[]) => runCommand(approve, "approve", key, "--repo", REPO, ...extra);
+
+const seedOverlappingTask = (dataRoot: string) =>
+  seedTaskWithPlanFiles(
+    dataRoot,
+    { issueKey: "codeguru42/tasker#6", repoKey: REPO, state: "awaiting_plan_review", at: dayAt(3) },
+    ["src/a.ts"],
+  );
 
 const approvedEvent = (version: number, openQuestions: number) => ({
   type: "approved",
@@ -98,24 +106,16 @@ describe("approve", () => {
 
   it("warns about another task that changes the same files, and approves anyway", async () => {
     const { dataRoot } = seedPlanReviewTask();
-    seedTaskWithPlanFiles(
-      dataRoot,
-      { issueKey: "codeguru42/tasker#6", repoKey: REPO, state: "awaiting_plan_review", at: dayAt(3) },
-      ["src/a.ts"],
-    );
+    seedOverlappingTask(dataRoot);
 
     const result = await runApprove();
 
     expect(result.code).toBe(0);
     expect(result.err).toBe(
-      [
-        "WARNING: this plan changes files that other tasks in flight also change.",
-        "The task that lands second can get merge conflicts and redo its work.",
-        "  codeguru42/tasker#6 (awaiting_plan_review):",
-        "    src/a.ts",
+      overlapWarningText(
+        [{ issueKey: "codeguru42/tasker#6", state: "awaiting_plan_review", files: ["src/a.ts"] }],
         "tasker approves the plan anyway.",
-        "",
-      ].join("\n"),
+      ),
     );
     expect(latestTaskOf(dataRoot, KEY).state).toBe("approved");
   });
@@ -187,11 +187,7 @@ describe("a refused approve", () => {
 
   it("prints no overlap warning", async () => {
     const { dataRoot, task } = seedOtherStateTask();
-    seedTaskWithPlanFiles(
-      dataRoot,
-      { issueKey: "codeguru42/tasker#6", repoKey: REPO, state: "awaiting_plan_review", at: dayAt(3) },
-      ["src/a.ts"],
-    );
+    seedOverlappingTask(dataRoot);
     const before = snapshot(dataRoot, task.id, [1]);
 
     const result = await runApprove();

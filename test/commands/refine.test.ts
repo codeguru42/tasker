@@ -13,6 +13,7 @@ import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
 import { planAnswerStream, planRevisionOf, seedPlanSession, seedTaskWithPlanFiles, transcriptLines, validPlanAnswer } from "../helpers/plan.js";
+import { overlapWarningText } from "../helpers/overlap.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { expectNoAssistantRun, type PlanFixture, useRefineFixture, usePlanFixture } from "../helpers/task-fixtures.js";
@@ -224,14 +225,10 @@ describe("refine", () => {
     expect(result.code).toBe(0);
     expect(result.out).toMatch(/^refined /);
     expect(result.err).toBe(
-      [
-        "WARNING: this plan changes files that other tasks in flight also change.",
-        "The task that lands second can get merge conflicts and redo its work.",
-        "  codeguru42/tasker#6 (awaiting_plan_review):",
-        "    src/a.ts",
+      overlapWarningText(
+        [{ issueKey: "codeguru42/tasker#6", state: "awaiting_plan_review", files: ["src/a.ts"] }],
         "tasker does not refuse. Decide before you approve.",
-        "",
-      ].join("\n"),
+      ),
     );
   });
 
