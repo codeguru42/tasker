@@ -228,6 +228,12 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
   };
 }
 
+// The configuration folder of claude: CLAUDE_CONFIG_DIR, else .claude under HOME, else none.
+function claudeConfigDir(env: NodeJS.ProcessEnv): string | undefined {
+  if (isSet(env.CLAUDE_CONFIG_DIR)) return env.CLAUDE_CONFIG_DIR;
+  return isSet(env.HOME) ? join(env.HOME, ".claude") : undefined;
+}
+
 // The paths that one configured repo gives for the read deny list. AssistantSurface has both fields.
 export interface RepoReadDenyPaths {
   denyReadPaths: readonly string[];
@@ -250,8 +256,8 @@ export function executeReadDenyPaths(o: {
   else if (isSet(env.XDG_CONFIG_HOME)) fromEnv.push(join(env.XDG_CONFIG_HOME, "gh"));
   else if (home) fromEnv.push(join(home, ".config", "gh"));
   if (home) fromEnv.push(join(home, ".git-credentials"), join(home, ".netrc"));
-  if (isSet(env.CLAUDE_CONFIG_DIR)) fromEnv.push(join(env.CLAUDE_CONFIG_DIR, ".credentials.json"));
-  else if (home) fromEnv.push(join(home, ".claude", ".credentials.json"));
+  const claudeDir = claudeConfigDir(env);
+  if (claudeDir !== undefined) fromEnv.push(join(claudeDir, ".credentials.json"));
   // resolveConfigPath() reads its homedir argument only when TASKER_CONFIG and XDG_CONFIG_HOME are
   // unset, and the default of that argument is the home folder of the host. So the entry goes in
   // only when the env names the file or a folder for it, and the call never passes undefined.
