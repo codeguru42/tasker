@@ -50,3 +50,13 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyResult> {
   }
   return { status: "ok" };
 }
+
+// The commands that started. A failure at index stops the list there, and that command started too.
+// The exception is a timeout with no exit code, no signal and no error: the deadline came before
+// that command, so it never started.
+export function startedCommands(commands: readonly string[], result: VerifyResult): string[] {
+  if (result.status === "ok") return [...commands];
+  const neverStarted =
+    result.timedOut && result.exitCode === undefined && result.signal === undefined && result.error === undefined;
+  return commands.slice(0, neverStarted ? result.index - 1 : result.index);
+}
