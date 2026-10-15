@@ -238,6 +238,35 @@ The command prints an error and exits with code 1 in these cases:
 - tasker cannot read the plan file. The error is `cannot read the plan file <path>: <error code>`. This does not apply to `--path`.
 - The configuration is missing or invalid.
 
+### `tasker show-questions`
+
+Prints the questions of one plan revision of the task of an issue, each with its state: `tasker show-questions <issue>`. The command uses the same task as `tasker show`: the active task, else the newest task. The command does not read the plan file.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+- `--version <N>`: prints the questions of revision `N`. The rule is the same as for `tasker show-plan`: `N` must be a whole number of 1 or more, with no sign and no leading zero. With no `--version`, the command uses the newest revision.
+
+If the revision has questions, the command prints the header line `<issue key> plan v<N>`, then the questions block of `tasker show-plan`:
+
+```
+<issue key> plan v<N>
+questions:
+  <id>: <question>
+    <context>
+    <state>
+```
+
+The state is `open`, `answered in v<N+1>: <answer>`, or `answered in v<N+1>` when the next revision `v<N+1>` has no feedback. The rule is the same as for `tasker show-plan`: only the next revision `v<N+1>` decides the state. If the revision has no questions, the command prints one line: `<issue key> plan v<N> has no questions`. Each line ends with a line end.
+
+The command prints an error and exits with code 1 in these cases:
+
+- The issue key does not resolve.
+- The issue has no task. The error names the issue and the repo.
+- The `--version` value is bad. The error is `--version must be a whole number of 1 or more: <value>`.
+- The task has no plan revision. The error is `the task of <issue key> has no plan revision; run tasker plan first`. This error also comes with `--version`.
+- The task has no revision `N`. The error is `the task of <issue key> has no plan revision v<N>`.
+- The configuration is missing or invalid.
+
 ### `tasker status`
 
 Lists the tasks by issue key and state. With no option, it lists the active tasks of all repos. A task is active when its state is not `finished` and not `cancelled`.
