@@ -1073,8 +1073,12 @@ describe("task store", () => {
     describe("questions", () => {
       const questionsOf = (taskId: number, version: number) => store.planQuestions(taskId, version);
 
+      const resolvedThrough = (taskId: number, version: number) =>
+        store.resolvedQuestionsThrough(taskId, version);
+
       const a = { id: "a", question: "Which branch?", context: "No base is named." };
       const b = { id: "b", question: "Which test runner?", context: "Two exist." };
+      const c = { id: "c", question: "Which linter?", context: "None is set." };
 
       it("resolves a question that the next revision drops, with the feedback as the answer", () => {
         const task = store.createTask(newTask);
@@ -1115,6 +1119,64 @@ describe("task store", () => {
         const task = store.createTask(newTask);
         const error = thrownBy(() => questionsOf(task.id, 5));
         expect((error as Error).message).toBe(`task ${task.id} has no plan revision 5`);
+      });
+
+      describe("resolved through a version", () => {
+        // v1 has a, b, c. v2 has b, c. v3 has c.
+        const seedThreeRevisions = (taskId: number) => {
+          seedPlanRevision(store, taskId, { answer: validPlanAnswer({ questions: [a, b, c] }) });
+          seedPlanRevision(store, taskId, {
+            source: "refine",
+            feedback: "f2",
+            answer: validPlanAnswer({ questions: [b, c] }),
+          });
+          seedPlanRevision(store, taskId, {
+            source: "refine",
+            feedback: "f3",
+            answer: validPlanAnswer({ questions: [c] }),
+          });
+        };
+
+        it("gives the resolved questions in the order of the resolving version", () => {
+          const task = store.createTask(newTask);
+          seedThreeRevisions(task.id);
+          expect(resolvedThrough(task.id, 3)).toEqual([
+            { question: a, state: "resolved", version: 2, answer: "f2" },
+            { question: b, state: "resolved", version: 3, answer: "f3" },
+          ]);
+        });
+
+        it("gives only the questions that an earlier version resolves", () => {
+          const task = store.createTask(newTask);
+          seedThreeRevisions(task.id);
+          expect(resolvedThrough(task.id, 2)).toEqual([
+            { question: a, state: "resolved", version: 2, answer: "f2" },
+          ]);
+        });
+
+        it("gives nothing for the first version", () => {
+          const task = store.createTask(newTask);
+          seedThreeRevisions(task.id);
+          expect(resolvedThrough(task.id, 1)).toEqual([]);
+        });
+
+        it("gives an empty list for a task with no question", () => {
+          const task = store.createTask(newTask);
+          seedPlanRevision(store, task.id, { answer: validPlanAnswer({ questions: [] }) });
+          seedPlanRevision(store, task.id, {
+            source: "refine",
+            feedback: "f2",
+            answer: validPlanAnswer({ questions: [] }),
+          });
+          expect(resolvedThrough(task.id, 2)).toEqual([]);
+        });
+
+        it("refuses a revision that does not exist", () => {
+          const task = store.createTask(newTask);
+          seedThreeRevisions(task.id);
+          const error = thrownBy(() => resolvedThrough(task.id, 5));
+          expect((error as Error).message).toBe(`task ${task.id} has no plan revision 5`);
+        });
       });
     });
 
