@@ -18,6 +18,14 @@ function writePlanFile(dataRoot: string, task: Task, version: number, markdown: 
   replaceFile(path, markdown);
 }
 
+// The write of a plan file failed. The message is the error that tasker records for the task.
+export class PlanFileWriteError extends Error {
+  constructor(version: number, cause: unknown) {
+    super(`cannot write the plan file of revision v${version}: ${errorMessage(cause)}`, { cause });
+    this.name = "PlanFileWriteError";
+  }
+}
+
 // docs/dev/data-root.md gives the reasons for the order. The caller holds the task lock and gives the version.
 export function recordPlanRevision(
   store: TaskStore,
@@ -31,7 +39,7 @@ export function recordPlanRevision(
   try {
     writePlanFile(dataRoot, task, revision.version, revision.answer.plan_markdown);
   } catch (error) {
-    throw new Error(`cannot write the plan file of revision v${revision.version}: ${errorMessage(error)}`, { cause: error });
+    throw new PlanFileWriteError(revision.version, error);
   }
   return transitionWithPlanRevision(store, taskId, to, revision);
 }

@@ -12,7 +12,7 @@ import { fillTemplate } from "../prompts/template.js";
 import { transitionTask } from "../state/machine.js";
 import { planRevisionPath, planTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
-import { recordPlanRevision } from "../store/plan-file.js";
+import { PlanFileWriteError, recordPlanRevision } from "../store/plan-file.js";
 import { taskNotFound, type TaskStore } from "../store/store.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { applyRunOutcome, failRun } from "./run-outcome.js";
@@ -111,7 +111,9 @@ async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanR
         "awaiting_plan_review",
       );
     } catch (error) {
-      return failRun(store, task, io, errorMessage(error));
+      // Only the write of the plan file has its own message. Each other error goes to the outer catch.
+      if (!(error instanceof PlanFileWriteError)) throw error;
+      return failRun(store, task, io, error.message);
     }
     return {
       version,
