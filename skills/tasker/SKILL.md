@@ -369,7 +369,7 @@ The command prints an error and exits with code 1 in these cases:
 - The issue key does not resolve.
 - The issue has no task. The error names the issue and the repo.
 - The task has no bootstrap log. The error is `no bootstrap log for <issue key>`.
-- tasker cannot read the bootstrap log. The error is `cannot read the bootstrap log for <issue key>: <error code>`.
+- tasker cannot read the bootstrap log. The error is `cannot read the bootstrap log for <issue key>: <error>`. `<error>` is the error code, for example `EISDIR`, or else the error message.
 - The configuration is missing or invalid.
 
 ### `tasker show-plan`
@@ -415,7 +415,7 @@ The command prints an error and exits with code 1 in these cases:
 - The task has no plan revision. The error is `the task of <issue key> has no plan revision; run tasker plan first`. This error also comes with `--version`.
 - The task has no revision `N`. The error is `the task of <issue key> has no plan revision v<N>`.
 - The plan file is missing. The error is `no plan file at <path>`. This does not apply to `--path`.
-- tasker cannot read the plan file. The error is `cannot read the plan file <path>: <error code>`. This does not apply to `--path`.
+- tasker cannot read the plan file. The error is `cannot read the plan file <path>: <error>`. `<error>` is the error code, for example `EISDIR`, or else the error message. This does not apply to `--path`.
 - The configuration is missing or invalid.
 
 ### `tasker show-questions`
@@ -471,7 +471,7 @@ The result is `passed`, `failed`, `timed_out`, `dirty_before` or `dirty_after`, 
 
 If the run ran no command, the command prints the header line, a blank line and the line `no logs: this run ran no command`.
 
-If a log file cannot be read, its block holds the line `(log not readable: <error code>)`. The command still prints every other block. Then it exits with code 1, and it prints nothing on stderr.
+If a log file cannot be read, its block holds the line `(log not readable: <error>)`. `<error>` is the error code, for example `EISDIR`, or else the error message. The command still prints every other block. Then it exits with code 1, and it prints nothing on stderr.
 
 The command prints an error and exits with code 1 in these cases:
 
