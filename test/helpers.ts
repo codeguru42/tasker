@@ -30,7 +30,7 @@ import { githubShortRef } from "../src/issue-key/short-ref.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { canonicalPath } from "../src/real-path.js";
 import type { PlanAnswer } from "../src/plan/answer.js";
-import { failTask, type TaskState } from "../src/state/machine.js";
+import { failTask, transitionTask, type TaskState } from "../src/state/machine.js";
 import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { recordPlanRevision } from "../src/store/plan-file.js";
@@ -1746,6 +1746,23 @@ export function recordTestPlanRevision(
   to: TaskState = "awaiting_plan_review",
 ): Task {
   return recordPlanRevision(store, dataRoot, taskId, newPlanRevision(store, taskId, change), to);
+}
+
+// Records v1 of the task with first. With second, it moves the task to refining and records v2.
+// Each revision gets its plan file, as recordTestPlanRevision writes it.
+export function recordPlanRevisions(
+  dataRoot: string,
+  task: Task,
+  first: Partial<Omit<NewPlanRevision, "version">> = {},
+  second?: Partial<Omit<NewPlanRevision, "version">>,
+): void {
+  withDataRootStore(dataRoot, (store) => {
+    recordTestPlanRevision(store, dataRoot, task.id, first);
+    if (second !== undefined) {
+      transitionTask(store, task.id, "refining");
+      recordTestPlanRevision(store, dataRoot, task.id, second);
+    }
+  });
 }
 
 // Records a plan session for the task with TEST_SESSION_ID and the plan model of the test

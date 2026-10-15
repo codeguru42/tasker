@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { showPlan } from "../../src/commands/show-plan.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath } from "../../src/store/layout.js";
-import type { NewPlanRevision, Task } from "../../src/store/store.js";
 import {
+  recordPlanRevisions,
   recordTestPlanRevision,
   runCommand,
   seedPlanRevision,
@@ -17,19 +17,6 @@ import {
 
 const TASKER = "codeguru42/tasker";
 const KEY = `${TASKER}#5`;
-
-type Change = Partial<Omit<NewPlanRevision, "version">>;
-
-// Records v1 with change1. With change2, moves the task to refining and records v2.
-function recordRevisions(dataRoot: string, task: Task, change1: Change = {}, change2?: Change): void {
-  withDataRootStore(dataRoot, (store) => {
-    recordTestPlanRevision(store, dataRoot, task.id, change1);
-    if (change2 !== undefined) {
-      transitionTask(store, task.id, "refining");
-      recordTestPlanRevision(store, dataRoot, task.id, change2);
-    }
-  });
-}
 
 const TODOS_AND_QUESTION =
   "todos:\n" +
@@ -49,7 +36,7 @@ const PLAN_V1 = "## Summary\n\nAdd the a module and its test, test first.\n";
 describe("show-plan", () => {
   it("prints the header, the approval line, the plan, the todos and the questions", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task);
+    recordPlanRevisions(dataRoot, task);
 
     const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
@@ -62,7 +49,7 @@ describe("show-plan", () => {
 
   it("prints the newest revision by default", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task, {}, {
+    recordPlanRevisions(dataRoot, task, {}, {
       source: "refine",
       feedback: "Use main.",
       answer: validPlanAnswer({ plan_markdown: "## Summary\n\nThe second plan of the a module.\n" }),
@@ -76,7 +63,7 @@ describe("show-plan", () => {
 
   it("prints the revision of --version", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task, {}, {
+    recordPlanRevisions(dataRoot, task, {}, {
       source: "refine",
       feedback: "Use main.",
       answer: validPlanAnswer({ plan_markdown: "## Summary\n\nThe second plan of the a module.\n" }),
@@ -90,7 +77,7 @@ describe("show-plan", () => {
 
   it("prints only the path of the plan file for --path", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task);
+    recordPlanRevisions(dataRoot, task);
 
     const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--path");
 
@@ -109,7 +96,7 @@ describe("show-plan", () => {
   describe("the approval line", () => {
     it("says not approved for a revision that nobody approved", async () => {
       const { dataRoot, task } = seedPlanningTask();
-      recordRevisions(dataRoot, task);
+      recordPlanRevisions(dataRoot, task);
 
       const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
@@ -118,7 +105,7 @@ describe("show-plan", () => {
 
     it("says approved for the approved revision", async () => {
       const { dataRoot, task } = seedPlanningTask();
-      recordRevisions(dataRoot, task);
+      recordPlanRevisions(dataRoot, task);
       withDataRootStore(dataRoot, (store) => store.approvePlanRevision(task.id, 1, "approved"));
 
       const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
@@ -128,7 +115,7 @@ describe("show-plan", () => {
 
     it("names the approved revision when another revision is shown", async () => {
       const { dataRoot, task } = seedPlanningTask();
-      recordRevisions(dataRoot, task);
+      recordPlanRevisions(dataRoot, task);
       withDataRootStore(dataRoot, (store) => {
         store.approvePlanRevision(task.id, 1, "approved");
         transitionTask(store, task.id, "awaiting_plan_review");
@@ -147,7 +134,7 @@ describe("show-plan", () => {
 
     it("prints the answer of a question that a later revision answered", async () => {
       const { dataRoot, task } = seedPlanningTask();
-      recordRevisions(dataRoot, task, {}, { source: "refine", feedback: "Use main.\nNot develop.", ...withoutQuestions });
+      recordPlanRevisions(dataRoot, task, {}, { source: "refine", feedback: "Use main.\nNot develop.", ...withoutQuestions });
 
       const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
 
@@ -156,7 +143,7 @@ describe("show-plan", () => {
 
     it("prints no colon when the answering revision has no feedback", async () => {
       const { dataRoot, task } = seedPlanningTask();
-      recordRevisions(dataRoot, task, {}, { source: "plan", ...withoutQuestions });
+      recordPlanRevisions(dataRoot, task, {}, { source: "plan", ...withoutQuestions });
 
       const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
 
@@ -165,7 +152,7 @@ describe("show-plan", () => {
 
     it("prints none when the revision has no questions", async () => {
       const { dataRoot, task } = seedPlanningTask();
-      recordRevisions(dataRoot, task, withoutQuestions);
+      recordPlanRevisions(dataRoot, task, withoutQuestions);
 
       const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
@@ -175,7 +162,7 @@ describe("show-plan", () => {
 
   it("keeps the indent on each line of a multi-line description and context", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task, {
+    recordPlanRevisions(dataRoot, task, {
       answer: validPlanAnswer({
         todos: [{ id: "one", title: "First\nsecond line", description: "Line a\nLine b", depends_on: [] }],
         questions: [{ id: "q", question: "Which?", context: "Context a\r\nContext b" }],
@@ -192,7 +179,7 @@ describe("show-plan", () => {
 
   it("puts todos on its own line when the plan text has no final line end", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task, {
+    recordPlanRevisions(dataRoot, task, {
       answer: validPlanAnswer({ plan_markdown: "## Summary\n\nno line end at the end" }),
     });
 
@@ -203,7 +190,7 @@ describe("show-plan", () => {
 
   it.each(["0", "01", "-1", "1.5", "abc", "+1"])("rejects the bad --version value %s", async (value) => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task);
+    recordPlanRevisions(dataRoot, task);
 
     const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", value);
 
@@ -222,7 +209,7 @@ describe("show-plan", () => {
 
   it("prints an error for a revision that does not exist", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task);
+    recordPlanRevisions(dataRoot, task);
 
     const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "3");
 
@@ -231,7 +218,7 @@ describe("show-plan", () => {
 
   it("prints a very large version as the user typed it", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordRevisions(dataRoot, task);
+    recordPlanRevisions(dataRoot, task);
     const big = `1${"0".repeat(29)}`;
 
     const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", big);

@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { showQuestions } from "../../src/commands/show-questions.js";
-import { transitionTask } from "../../src/state/machine.js";
 import {
-  recordTestPlanRevision,
+  recordPlanRevisions,
   runCommand,
   seedPlanRevision,
   seedPlanningTask,
@@ -19,7 +18,7 @@ const OPEN_QUESTION =
 describe("show-questions", () => {
   it("prints the open questions of the newest revision", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    withDataRootStore(dataRoot, (store) => recordTestPlanRevision(store, dataRoot, task.id));
+    recordPlanRevisions(dataRoot, task);
 
     const result = await runCommand(showQuestions, "show-questions", KEY, "--repo", TASKER);
 
@@ -28,15 +27,12 @@ describe("show-questions", () => {
 
   it("prints the answered question of --version 1", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    withDataRootStore(dataRoot, (store) => {
-      recordTestPlanRevision(store, dataRoot, task.id);
-      transitionTask(store, task.id, "refining");
-      recordTestPlanRevision(store, dataRoot, task.id, {
-        source: "refine",
-        feedback: "Use main.",
-        answer: validPlanAnswer({ questions: [] }),
-      });
-    });
+    recordPlanRevisions(
+      dataRoot,
+      task,
+      {},
+      { source: "refine", feedback: "Use main.", answer: validPlanAnswer({ questions: [] }) },
+    );
 
     const result = await runCommand(showQuestions, "show-questions", KEY, "--repo", TASKER, "--version", "1");
 
@@ -49,9 +45,7 @@ describe("show-questions", () => {
 
   it("prints one line when the revision has no questions", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    withDataRootStore(dataRoot, (store) =>
-      recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ questions: [] }) }),
-    );
+    recordPlanRevisions(dataRoot, task, { answer: validPlanAnswer({ questions: [] }) });
 
     const result = await runCommand(showQuestions, "show-questions", KEY, "--repo", TASKER);
 
@@ -69,7 +63,7 @@ describe("show-questions", () => {
 
   it("rejects a bad --version value", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    withDataRootStore(dataRoot, (store) => recordTestPlanRevision(store, dataRoot, task.id));
+    recordPlanRevisions(dataRoot, task);
 
     const result = await runCommand(showQuestions, "show-questions", KEY, "--repo", TASKER, "--version", "0");
 
@@ -78,7 +72,7 @@ describe("show-questions", () => {
 
   it("prints an error for a revision that does not exist", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    withDataRootStore(dataRoot, (store) => recordTestPlanRevision(store, dataRoot, task.id));
+    recordPlanRevisions(dataRoot, task);
 
     const result = await runCommand(showQuestions, "show-questions", KEY, "--repo", TASKER, "--version", "3");
 

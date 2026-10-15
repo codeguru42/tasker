@@ -55,6 +55,7 @@ import {
   runCommand,
   runInput,
   savePid,
+  recordPlanRevisions,
   recordTestPlanRevision,
   seedPlanRevision,
   seedPlanSession,
@@ -1949,6 +1950,40 @@ describe("seedPlanningTask", () => {
       store.findLatestTask("codeguru42/tasker", "codeguru42/tasker#5"),
     );
     expect(found?.id).toBe(task.id);
+  });
+});
+
+describe("recordPlanRevisions", () => {
+  it("records v1 with its plan file and leaves the task in awaiting_plan_review", () => {
+    const { dataRoot, task } = seedPlanningTask();
+    const markdown = "## Summary\n\nfirst\n";
+
+    recordPlanRevisions(dataRoot, task, { answer: validPlanAnswer({ plan_markdown: markdown }) });
+
+    withDataRootStore(dataRoot, (store) => {
+      expect(store.getPlanRevision(task.id, 1)).toBeDefined();
+      expect(store.getPlanRevision(task.id, 2)).toBeUndefined();
+      expect(store.getTask(task.id)?.state).toBe("awaiting_plan_review");
+    });
+    expect(readFileSync(planRevisionPath(dataRoot, task, 1), "utf8")).toBe(markdown);
+  });
+
+  it("with second, records v2 after the refining state with its plan file", () => {
+    const { dataRoot, task } = seedPlanningTask();
+    const markdown = "## Summary\n\nsecond\n";
+
+    recordPlanRevisions(
+      dataRoot,
+      task,
+      {},
+      { source: "refine", feedback: "Use main.", answer: validPlanAnswer({ plan_markdown: markdown }) },
+    );
+
+    withDataRootStore(dataRoot, (store) => {
+      expect(store.getPlanRevision(task.id, 2)).toMatchObject({ source: "refine", feedback: "Use main." });
+      expect(store.getTask(task.id)?.state).toBe("awaiting_plan_review");
+    });
+    expect(readFileSync(planRevisionPath(dataRoot, task, 2), "utf8")).toBe(markdown);
   });
 });
 
