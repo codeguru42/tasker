@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { commandFailureMessage, commandLogTail } from "../../src/phases/command-step.js";
+import { commandFailureMessage, commandLogHasNoOutput, commandLogTail, NO_OUTPUT_LINE } from "../../src/phases/command-step.js";
 import { useTempDir } from "../helpers/temp.js";
 
 describe("commandFailureMessage", () => {
@@ -71,5 +71,35 @@ describe("commandLogTail", () => {
     const log = join(useTempDir("tasker-tail-"), "folder");
     mkdirSync(log);
     expect(commandLogTail(log, 20)).toBe(`cannot read the log ${log}: EISDIR\n`);
+  });
+});
+
+describe("commandLogHasNoOutput", () => {
+  function logWith(content: string): string {
+    const path = join(useTempDir("tasker-no-output-"), "verify.log");
+    writeFileSync(path, content);
+    return path;
+  }
+
+  it("is true for a header and an outcome line", () => {
+    expect(commandLogHasNoOutput(logWith("$ exit 3\n--- exit code 3\n"))).toBe(true);
+  });
+
+  it("is false for a log with output", () => {
+    expect(commandLogHasNoOutput(logWith("$ ls\nfile\n--- exit code 0\n"))).toBe(false);
+  });
+
+  it("is false for a missing log", () => {
+    expect(commandLogHasNoOutput(join(useTempDir("tasker-no-output-"), "none.log"))).toBe(false);
+  });
+
+  it("is true for a header and an error line", () => {
+    expect(commandLogHasNoOutput(logWith("$ nope\n--- spawn ENOENT\n"))).toBe(true);
+  });
+
+  it("gives the text of the no-output line", () => {
+    expect(NO_OUTPUT_LINE).toBe(
+      "The command produced no output. It usually failed before it reached the tool that it runs.",
+    );
   });
 });
