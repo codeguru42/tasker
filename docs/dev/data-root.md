@@ -74,7 +74,7 @@ tasker never changes or deletes the file of a revision that has a row.
 
 ## `sessions` table
 
-The table has one row for each assistant session of a task. A session is one conversation of the assistant. A session has the role plan or the role execute.
+The table has one row for each assistant session of a task. A session is one conversation of the assistant. A session has the role plan, the role execute or the role review.
 
 tasker writes the record before the run. [assistants.md](assistants.md#the-session-id) gives the reason. A continued session reads its provider, model and effort from the record. [assistants.md](assistants.md#new-and-continued-sessions) gives the reason.
 
@@ -85,6 +85,8 @@ These rules hold:
 - A task has one execute session at most for each version of its plan. The execute runs of the pinned revision work in that session.
 - The version is the key of an execute session. A refine after an approval gives a new version, so a new plan never continues the session of an old plan.
 - The limit of this key: when the operator runs `tasker unapprove` and then approves the same version again, the execute runs continue the session of that version.
+- A task has one review session for each review number. A review session is never continued.
+- A review session is recorded for the rule of [assistants.md](assistants.md#the-session-id) that each session is recorded before its run. So the record can exist before the review row.
 - Only `tasker retry` deletes a session row. A run that failed before its first turn recorded an id that no conversation holds. The next run must not continue that id, so the retry deletes the row, and the next run records a new id. For the same reason, a run of `tasker execute` with no turn records no session.
 
 ## `execute_todos` table
@@ -127,6 +129,30 @@ The result of a run is one of these values:
 `tasker verify` decides which result a run gets. The store only keeps it. The table refuses a result outside this list.
 
 The table does not store the paths of the logs. The paths derive from the run number and the position of a command, so the store does not hold them.
+
+## `reviews` table
+
+The table has one row for each review of a task. A review is one run of the review assistant on the worktree of the task.
+
+These rules hold:
+
+- The reviews of a task are numbered from 1. The number of a new review is the highest number of the task plus one. Another number is an error.
+- The insert of a review shares one transaction with its `review` event and the state move, so a refused move leaves no row behind.
+- The row stores the revision of the worktree, because the findings describe one tree.
+- The caller gives both times. The store does not take them from its clock.
+
+## `review_findings` table
+
+The table has one row for each finding of a review.
+
+These rules hold:
+
+- The position of a finding, from 1, is the id that the operator types in `tasker dismiss-review`.
+- A finding is open until its dismissal.
+- A dismissal is written once and needs a reason, because the next review reads it. After that the row does not change, and no store write deletes a row.
+- A dismissal that names a missing finding or a dismissed finding writes nothing. The same holds when the dismissal names other findings that are open.
+- A dismissal that names no finding is an error, and it writes nothing.
+- An open finding still needs a decision of the operator: a dismissal or a fix in a later plan. So the task stays in its state until no finding is open.
 
 ## `default_base_branches` table
 
