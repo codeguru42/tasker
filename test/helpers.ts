@@ -133,6 +133,12 @@ export function useTempDir(prefix: string): string {
   return dir;
 }
 
+// A new temp folder (see useTempDir()) as HOME, with XDG_CONFIG_HOME at <HOME>/config. Call it inside a test.
+export function useTempHome(): { HOME: string; XDG_CONFIG_HOME: string } {
+  const home = useTempDir("tasker-home-");
+  return { HOME: home, XDG_CONFIG_HOME: join(home, "config") };
+}
+
 export interface FixtureChild {
   pid: number;
   // The first line of stdout, without the newline. It rejects, with the stderr of the child, when
@@ -601,12 +607,10 @@ export async function useAssistantRunFixture(options: {
     const found = store.findLatestTask(started.repoKey, started.key)!;
     return store.startRun(found.id, options.state ?? "planning");
   });
-  const home = useTempDir("tasker-run-home-");
   const env: NodeJS.ProcessEnv = {
     ...started.env,
     PATH: [claude.binDir, sandboxBin, started.env.PATH].join(delimiter),
-    HOME: home,
-    XDG_CONFIG_HOME: join(home, "config"),
+    ...useTempHome(),
     GH_TOKEN: "gho_secret",
     SSH_AUTH_SOCK: "/tmp/agent.sock",
   };

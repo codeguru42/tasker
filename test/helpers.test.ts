@@ -93,6 +93,7 @@ import {
   writePlaceholder,
   type GitOrigin,
   thrownBy,
+  useTempHome,
 } from "./helpers.js";
 
 // Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.
@@ -1943,5 +1944,13 @@ describe("seedPlanSession", () => {
 
       expect(session).toMatchObject({ sessionId: "x", effort: "low", model: "opus", provider: "claude-code" });
     });
+  });
+});
+
+describe("useTempHome", () => {
+  it("gives an existing folder as HOME and <HOME>/config as XDG_CONFIG_HOME", () => {
+    const env = useTempHome();
+    expect(existsSync(env.HOME)).toBe(true);
+    expect(env.XDG_CONFIG_HOME).toBe(join(env.HOME, "config"));
   });
 });
