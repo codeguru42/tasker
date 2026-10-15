@@ -1,4 +1,4 @@
-import type { NewEvent, NewPlanRevision, Task, TaskStore } from "../store/store.js";
+import type { NewEvent, NewPlanRevision, NewVerifyRun, Task, TaskStore } from "../store/store.js";
 
 export const STATES = [
   "provisioning",
@@ -231,6 +231,18 @@ export function transitionWithPlanRevision(
   revision: NewPlanRevision,
 ): Task {
   return store.addPlanRevision(id, revision, to, transitionCheck("transition", to));
+}
+
+// Inserts the verify run, appends its verify_run event and moves the task to `to` with one transition event
+// { ...detail, from, to }, in one transaction. An illegal edge writes nothing.
+export function transitionWithVerifyRun(
+  store: TaskStore,
+  id: number,
+  to: TaskState,
+  run: NewVerifyRun,
+  detail?: TransitionDetail,
+): Task {
+  return store.addVerifyRun(id, run, to, transitionCheck("transition", to, detail));
 }
 
 // Approves revision version, appends the approved event { version, openQuestions, from, to } and moves the task to
