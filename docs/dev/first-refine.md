@@ -95,12 +95,21 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - A rule that names an earlier and a later ticket covers the swap of the roles when the order changes.
 - For the side-effects hint of [All tickets](#all-tickets), ask for the side effects of each edit on the whole page.
 - Make sure that each numbered list still renders. An edit can join two items on one line.
-- Scope a new rule narrowly. A ban on X everywhere clashes with docs that must name X to describe a behavior.
+- Scope a new rule narrowly. A ban on X everywhere clashes with docs that must name X to describe a behavior. Compare each sentence that scopes a case out ("the rules do not cover X") word for word with the issue. On #165, the plan turned such a sentence into a ban ("X does no handoff").
 - If a step contains a nested step with its own result, say what each result means for the outer step. The failure rule of the outer step must name each result of the nested step. The agent of #125 learned this in its review loops.
+- Ask the plan to copy the exact condition of a nested check into each place that links to it, for example an exit code of `git cherry` (#163).
 - If one rule has two actors of the same kind, for example an earlier and a later task, name the actor in each sentence (#125).
 - If one rule has two kinds of actor, for example the orchestrator and an agent, ask the plan to list each sentence with its actor. Otherwise the review finds each failure path that names only one actor (#135).
+- If a rule waits for a report from another orchestrator, it also gives that orchestrator the duty to send the report. Otherwise the wait has no end. On #147, review 1 found this gap.
 - If a rule records a commit of the shared clone, the rule reads the hash before the work that the hash stamps. Another agent can move the clone between the read and the work, as [the shared-clone rule](orchestration.md#limits) says. The review of #135 found this race in [the re-read rule](orchestration.md#pick-the-tickets).
+- If a rule records a value, say how long the value lives. Cover each later step that uses it, also on another page. On #163, loop 1 found this gap.
 - A rule takes a fact about one event from the report of that event, not from a diff since the last read. An example is the landed commit with its files. Several agents can land close together, and then the diff covers more than one event (#135).
+- If the plan searches for the sentences that hold a term, ask for a pattern that also stops at a colon, for example `[^.:]*`. The pattern `[^.]*` misses the lead-in of a list, which ends with a colon. On #152, the plan and the agent missed one line this way, and it cost one loop.
+- If a rule takes sentences from one case for a new kind of case, ask the plan whether each borrowed sentence fits the new kind. On #139, a sentence for a false claim let a conflict skip the refine that changes the plan.
+- If a rule says "use X in place of Y" for a message, say if it means the address or the text of the message. On #143, "the issue key in place of the session name" had a reading where the message went to the issue key as an address.
+- A shared failure sentence after a chain of checks names the real stop cases. If one check hands over to the next, the sentence otherwise reads as a stop at each check (#163).
+- If a rule lets an agent skip a step, it names each later bullet that no longer applies. On #147, the early update had to switch off the update of the bullet "When the issue of the earlier ticket is closed".
+- A rule about the states of the installed tasker does not link to `docs/statemachine.md`, because that page describes the tasker that this repo builds. On #147, the plan linked to it.
 
 ## A ticket that moves or trims a doc
 
