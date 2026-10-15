@@ -17,6 +17,7 @@ import {
   seedPlanningTask,
   planStateSnapshot,
   planTodo,
+  runApprove,
   seedApprovedTask,
   seedTaskWithPlanFiles,
   transcriptLines,
@@ -405,5 +406,27 @@ describe("planStateSnapshot", () => {
     expect(snapshot.approvedAt[0]).not.toBeNull();
     expect(snapshot.approvedAt[1]).toBeNull();
     expect(snapshot.approvedAt[2]).toBeUndefined();
+  });
+});
+
+describe("runApprove", () => {
+  it("approves the task of seedPlanReviewTask", async () => {
+    const { dataRoot, task } = seedPlanReviewTask();
+
+    const result = await runApprove();
+
+    expect(result.code).toBe(0);
+    expect(result.out.startsWith("approved codeguru42/tasker#5 at revision v1")).toBe(true);
+    expect(withDataRootStore(dataRoot, (store) => store.getTask(task.id))?.state).toBe("approved");
+  });
+
+  it("passes the extra arguments after the repo option", async () => {
+    seedPlanReviewTask();
+
+    const result = await runApprove("codeguru42/tasker#5", "--bogus");
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe("");
+    expect(result.err).toContain("--bogus");
   });
 });
