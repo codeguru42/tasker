@@ -136,6 +136,16 @@ export interface StoredSession extends RecordedSession {
 // The repo comes from the task, so the caller does not give it.
 export type NewSession = Omit<StoredSession, "repoKey">;
 
+// A todo with no row is not started, so the table stores only the two other states.
+export type ExecuteTodoState = "in_progress" | "done";
+
+type PlanTodo = PlanAnswer["todos"][number];
+
+export interface ExecuteTodoProgress {
+  todo: PlanTodo;
+  state: ExecuteTodoState | "not_started";
+}
+
 export interface StoreOptions {
   now?: () => Date;
 }
@@ -223,6 +233,11 @@ export interface TaskStore extends LockStore {
   recordExecuteSession(taskId: number, version: number, session: NewSession): StoredSession;
   // The execute session of a plan revision, or undefined when the revision has none.
   executeSession(taskId: number, version: number): StoredSession | undefined;
+  // Sets the state of one todo of a plan revision and the time of the change. The todo must be a todo
+  // of the plan revision, and the revision must exist.
+  setExecuteTodoState(taskId: number, version: number, todoId: string, state: ExecuteTodoState): void;
+  // The todos of a plan revision in the order of the plan, each with its state. A todo with no row is not started.
+  executeTodoProgress(taskId: number, version: number): ExecuteTodoProgress[];
   // Deletes the plan session of a task. A missing row is not an error. Only `tasker retry` (a later ticket)
   // calls it. A run that failed before its first turn recorded an id that no conversation holds,
   // so the next run must not continue that id.
@@ -463,6 +478,15 @@ function setUp(db: DatabaseSync) {
     deletePlanSession: db.prepare("DELETE FROM sessions WHERE task_id = ? AND role = 'plan'"),
     deleteExecuteSession: db.prepare(
       "DELETE FROM sessions WHERE task_id = ? AND role = 'execute' AND plan_version = ?",
+    ),
+    upsertExecuteTodo: db.prepare(
+      `INSERT INTO execute_todos (task_id, plan_version, todo_id, state, updated_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(task_id, plan_version, todo_id)
+       DO UPDATE SET state = excluded.state, updated_at = excluded.updated_at`,
+    ),
+    selectExecuteTodos: db.prepare(
+      "SELECT todo_id, state FROM execute_todos WHERE task_id = ? AND plan_version = ?",
     ),
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
@@ -868,6 +892,31 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     executeSession: readExecuteSession,
+
+    setExecuteTodoState(taskId, version, todoId, state) {
+      immediateTransaction(db, () => {
+        const revision = readPlanRevision(taskId, version);
+        if (revision === undefined) throw noPlanRevision(taskId, version);
+        if (!revision.answer.todos.some((todo) => todo.id === todoId)) {
+          throw new Error(`plan revision ${version} of task ${taskId} has no todo ${todoId}`);
+        }
+        statements.upsertExecuteTodo.run(taskId, version, todoId, state, now().toISOString());
+      });
+    },
+
+    executeTodoProgress(taskId, version) {
+      const revision = readPlanRevision(taskId, version);
+      if (revision === undefined) throw noPlanRevision(taskId, version);
+      const rows = statements.selectExecuteTodos.all(taskId, version) as {
+        todo_id: string;
+        state: ExecuteTodoState;
+      }[];
+      const states = new Map(rows.map((row) => [row.todo_id, row.state]));
+      return revision.answer.todos.map((todo) => ({
+        todo,
+        state: states.get(todo.id) ?? "not_started",
+      }));
+    },
 
     clearPlanSession(taskId) {
       immediateTransaction(db, () => {
