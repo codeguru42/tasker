@@ -250,6 +250,17 @@ export function transitionWithPlanUnapproval(store: TaskStore, id: number, versi
   );
 }
 
+// Appends the executed event { version, prompts, from, to } and moves the task to executed, in one transaction.
+// prompts holds the versions of the prompts that the run sent. An illegal edge writes nothing.
+export function transitionWithExecution(
+  store: TaskStore,
+  id: number,
+  version: number,
+  prompts: readonly string[],
+): Task {
+  return store.endRun(id, "executed", transitionCheck("executed", "executed", { version, prompts: [...prompts] }));
+}
+
 export function failTask(store: TaskStore, id: number, message: string): Task {
   return transitionTask(store, id, "failed", { error: message });
 }
