@@ -140,6 +140,39 @@ For now, no command continues a task in `failed` or `quota_blocked`. Run `tasker
 
 If you press Ctrl-C, the assistant stops. The run ends as a failure, and the task goes to the state `failed`.
 
+### `tasker refine`
+
+Continues the plan session of a task in the state `awaiting_plan_review` with your feedback, and records the next plan revision: `tasker refine <issue> <feedback>`. The task goes to the state `refining`, then back to `awaiting_plan_review`.
+
+- `<issue>`: the issue key of the task.
+- `<feedback>`: your feedback on the newest plan revision. Quote it as one argument.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+Each revision is a complete plan. When the new revision leaves out a question of the revision before it, that question counts as answered by the feedback. `tasker show-questions` shows the answer.
+
+The session keeps the provider, model and effort that it started with, also after the configuration changed. The assistant also reads the plan file of the newest revision and the commits of the task branch.
+
+On success, the command prints the same lines as `tasker plan`, but the first line is `refined <issue> as revision v<N>`. Then it prints the overlap warning with the same text and the same last line as `tasker plan`. See the section `tasker plan`.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In the first nine cases, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is not in `awaiting_plan_review`. The error names the state.
+- The feedback is empty or has only spaces. The error is `the feedback is empty`.
+- The task has no plan revision or no plan session. The error says which one is missing.
+- The provider refuses the recorded model. The error names the session, the model, the provider and the reason.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- The plan file of the newest revision cannot be read. The error is `cannot read the plan file of revision v<N>: <error>`. Restore the file, then run the command again.
+- The task has no base revision or no branch, or the commits of the branch cannot be read. The error says which.
+- The prompt cannot be archived. Fix the cause, then run the command again.
+- The assistant fails or runs longer than the time limit. The task goes to the state `failed`, and the error is `refining failed: <reason>` or `refining timed out after <n> min`.
+- An unexpected error occurs after the run has started. The task goes to the state `failed`, and the error is `refining failed: <error>`.
+- The assistant returns a plan that tasker refuses. The task goes to the state `failed`. The error lists each problem.
+- The plan file cannot be written. The task goes to the state `failed`, and the error is `cannot write the plan file of revision v<N>: <error>`.
+- A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
+
+A refused check leaves the task, the files and the events as they were. Fix the cause, then run the same command again.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
