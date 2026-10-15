@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { childEnv } from "../../src/process/child-env.js";
 import { runVerify } from "../../src/phases/verify.js";
 import { readPidFile, waitUntilGone } from "../helpers/processes.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
@@ -15,19 +16,17 @@ function setup() {
 
 interface VerifyCallOptions {
   timeoutMs?: number;
-  env?: NodeJS.ProcessEnv;
   envNames?: string[];
 }
 
 function verify(
   commands: string[],
   dirs: ReturnType<typeof setup>,
-  { timeoutMs = MINUTE_MS, env = process.env, envNames = [] }: VerifyCallOptions = {},
+  { timeoutMs = MINUTE_MS, envNames = [] }: VerifyCallOptions = {},
 ) {
   return runVerify({
     commands,
-    env,
-    envNames,
+    env: childEnv(process.env, envNames),
     cwd: dirs.cwd,
     timeoutMs,
     logPath: (n) => join(dirs.runDir, `verify-${n}.log`),
