@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { cleanPath, isPlaceholder, PLACEHOLDER } from "../answer-checks.js";
-import { jsonSchemaOf } from "../plan/json-schema.js";
+import { jsonSchemaOf } from "../json-schema.js";
 import { formatIssues } from "../zod-issues.js";
 
 const text = z.string().min(1);

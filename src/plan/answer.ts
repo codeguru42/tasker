@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { cleanPath, isPlaceholder, PLACEHOLDER } from "../answer-checks.js";
 import { formatIssues } from "../zod-issues.js";
-import { jsonSchemaOf } from "./json-schema.js";
+import { jsonSchemaOf } from "../json-schema.js";
 import { todoOrder } from "./todo-order.js";
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, { message: "must be kebab-case" });
