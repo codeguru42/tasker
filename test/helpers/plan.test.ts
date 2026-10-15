@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkPlanAnswer } from "../../src/plan/answer.js";
@@ -11,6 +11,7 @@ import {
   recordTestPlanRevision,
   seedExecuteSession,
   seedExecuteTodoStates,
+  seedPlanReviewTask,
   seedPlanRevision,
   seedPlanSession,
   seedPlanningTask,
@@ -331,5 +332,42 @@ describe("turnResultStream", () => {
     const lines = turnResultStream("done");
 
     expect(JSON.parse(lines.at(-1)!).structured_output).toStrictEqual({ result: "done" });
+  });
+});
+
+describe("seedPlanReviewTask", () => {
+  it("gives a task in awaiting_plan_review with v1 only, with its plan file and no approval", () => {
+    const { dataRoot, task } = seedPlanReviewTask();
+
+    expect(task.state).toBe("awaiting_plan_review");
+    expect(planRevisionOf(dataRoot, task.id, 1)?.approvedAt).toBeNull();
+    expect(planRevisionOf(dataRoot, task.id, 2)).toBeUndefined();
+    expect(existsSync(planRevisionPath(dataRoot, task, 1))).toBe(true);
+  });
+
+  it("gives a task in awaiting_plan_review with no revision for an empty list", () => {
+    const { dataRoot, task } = seedPlanReviewTask({ revisions: [] });
+
+    expect(task.state).toBe("awaiting_plan_review");
+    expect(planRevisionOf(dataRoot, task.id, 1)).toBeUndefined();
+  });
+
+  it("makes each later revision a refine with its own feedback, and keeps a feedback that the entry gives", () => {
+    const { dataRoot, task } = seedPlanReviewTask({ revisions: [{}, {}, { feedback: "Use main." }] });
+
+    expect(planRevisionOf(dataRoot, task.id, 1)?.source).toBe("plan");
+    expect(planRevisionOf(dataRoot, task.id, 2)).toMatchObject({ source: "refine", feedback: "Refine v2." });
+    expect(planRevisionOf(dataRoot, task.id, 3)).toMatchObject({ source: "refine", feedback: "Use main." });
+    expect(task.state).toBe("awaiting_plan_review");
+  });
+
+  it("approves the revision of approved and goes back to awaiting_plan_review", () => {
+    const { dataRoot, task } = seedPlanReviewTask({ revisions: [{}, {}, {}], approved: 1 });
+
+    expect(planRevisionOf(dataRoot, task.id, 1)?.approvedAt).not.toBeNull();
+    expect(planRevisionOf(dataRoot, task.id, 2)?.approvedAt).toBeNull();
+    expect(planRevisionOf(dataRoot, task.id, 3)?.approvedAt).toBeNull();
+    expect(withDataRootStore(dataRoot, (store) => store.pinnedPlanRevision(task.id))?.version).toBe(1);
+    expect(task.state).toBe("awaiting_plan_review");
   });
 });
