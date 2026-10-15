@@ -13,7 +13,7 @@ import { resolveIssueKey } from "../src/issue-key/resolve.js";
 import { checkPlanAnswer } from "../src/plan/answer.js";
 import { childEnv } from "../src/process/child-env.js";
 import { type Task, type TaskStore } from "../src/store/store.js";
-import { dataRootLayout, taskLogsDir } from "../src/store/layout.js";
+import { dataRootLayout, planRevisionPath, taskLogsDir } from "../src/store/layout.js";
 import { repoPaths } from "../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../src/vcs/git/run.js";
 import {
@@ -55,6 +55,7 @@ import {
   runCommand,
   runInput,
   savePid,
+  recordTestPlanRevision,
   seedPlanRevision,
   seedPlanSession,
   seedTasks,
@@ -1916,6 +1917,24 @@ describe("seedPlanRevision", () => {
       const revision = seedPlanRevision(store, task.id, { feedback: "use main", source: "refine" });
 
       expect(revision).toMatchObject({ feedback: "use main", source: "refine" });
+    });
+  });
+});
+
+describe("recordTestPlanRevision", () => {
+  it("writes the plan file and the row and moves the task to awaiting_plan_review", () => {
+    const dataRoot = useTempDir("tasker-record-");
+    withDataRootStore(dataRoot, (store) => {
+      const task = seedTask(store);
+      const markdown = "## Summary\n\nhelper text\n";
+
+      recordTestPlanRevision(store, dataRoot, task.id, {
+        answer: validPlanAnswer({ plan_markdown: markdown }),
+      });
+
+      expect(store.getTask(task.id)?.state).toBe("awaiting_plan_review");
+      expect(store.getPlanRevision(task.id, 1)).toBeDefined();
+      expect(readFileSync(planRevisionPath(dataRoot, task, 1), "utf8")).toBe(markdown);
     });
   });
 });

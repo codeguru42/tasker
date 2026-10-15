@@ -2,10 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { planRevisionPath, taskPlansDir } from "../../src/store/layout.js";
-import { PlanFileWriteError, recordPlanRevision } from "../../src/store/plan-file.js";
-import { transitionTask, type TaskState } from "../../src/state/machine.js";
-import type { TaskStore } from "../../src/store/store.js";
-import { thrownBy, useTempDir, validPlanAnswer, withDataRootStore } from "../helpers.js";
+import { PlanFileWriteError } from "../../src/store/plan-file.js";
+import { transitionTask } from "../../src/state/machine.js";
+import { recordTestPlanRevision, thrownBy, useTempDir, validPlanAnswer, withDataRootStore } from "../helpers.js";
 
 const newTask = { issueKey: "codeguru42/tasker#91", repoKey: "tasker", state: "planning" };
 
@@ -16,27 +15,14 @@ describe("recordPlanRevision", () => {
     dataRoot = useTempDir("tasker-plan-file-");
   });
 
-  function record(store: TaskStore, taskId: number, markdown: string, to: TaskState = "awaiting_plan_review") {
-    return recordPlanRevision(
-      store,
-      dataRoot,
-      taskId,
-      {
-        version: store.nextPlanVersion(taskId),
-        source: "plan",
-        answer: validPlanAnswer({ plan_markdown: markdown }),
-        prompt: "plan@000000000000",
-      },
-      to,
-    );
-  }
-
   it("makes the plans folder, writes the markdown as it is and then adds the row", () => {
     withDataRootStore(dataRoot, (store) => {
       const task = store.createTask(newTask);
       const markdown = "## Summary\n\nno newline";
 
-      const revision = record(store, task.id, markdown);
+      const revision = recordTestPlanRevision(store, dataRoot, task.id, {
+        answer: validPlanAnswer({ plan_markdown: markdown }),
+      });
 
       expect(readFileSync(planRevisionPath(dataRoot, task, 1), "utf8")).toBe(markdown);
       expect(revision.state).toBe("awaiting_plan_review");
@@ -48,10 +34,10 @@ describe("recordPlanRevision", () => {
   it("writes the next version in its own file and keeps the older file", () => {
     withDataRootStore(dataRoot, (store) => {
       const task = store.createTask(newTask);
-      record(store, task.id, "first\n");
+      recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: "first\n" }) });
       transitionTask(store, task.id, "refining");
 
-      record(store, task.id, "second\n");
+      recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: "second\n" }) });
 
       expect(readFileSync(planRevisionPath(dataRoot, task, 1), "utf8")).toBe("first\n");
       expect(readFileSync(planRevisionPath(dataRoot, task, 2), "utf8")).toBe("second\n");
@@ -66,7 +52,7 @@ describe("recordPlanRevision", () => {
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, "left by a stopped run");
 
-      record(store, task.id, "new text\n");
+      recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: "new text\n" }) });
 
       expect(readFileSync(path, "utf8")).toBe("new text\n");
       expect(store.getPlanRevision(task.id, 1)).toBeDefined();
@@ -80,7 +66,7 @@ describe("recordPlanRevision", () => {
       mkdirSync(dirname(plansDir), { recursive: true });
       writeFileSync(plansDir, "a file, not a folder");
 
-      const error = thrownBy(() => record(store, task.id, "text\n"));
+      const error = thrownBy(() => recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: "text\n" }) }));
 
       expect(error).toBeInstanceOf(PlanFileWriteError);
       expect((error as Error).message).toMatch(/^cannot write the plan file of revision v1: /);
@@ -91,7 +77,7 @@ describe("recordPlanRevision", () => {
 
   it("writes no file for a task that does not exist", () => {
     withDataRootStore(dataRoot, (store) => {
-      const error = thrownBy(() => record(store, 9999, "text\n"));
+      const error = thrownBy(() => recordTestPlanRevision(store, dataRoot, 9999, { answer: validPlanAnswer({ plan_markdown: "text\n" }) }));
 
       expect((error as Error).message).toBe("task not found: 9999");
       expect(existsSync(taskPlansDir(dataRoot, { issueKey: newTask.issueKey, attempt: 1 }))).toBe(false);

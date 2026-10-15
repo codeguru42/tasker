@@ -30,9 +30,10 @@ import { githubShortRef } from "../src/issue-key/short-ref.js";
 import { bootstrapLogPath } from "../src/phases/bootstrap.js";
 import { canonicalPath } from "../src/real-path.js";
 import type { PlanAnswer } from "../src/plan/answer.js";
-import { failTask } from "../src/state/machine.js";
+import { failTask, type TaskState } from "../src/state/machine.js";
 import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
+import { recordPlanRevision } from "../src/store/plan-file.js";
 import {
   type NewPlanRevision,
   type NewPlanSession,
@@ -1696,6 +1697,21 @@ export function planAnswerStream(answer: unknown): string[] {
   }).map((event) => JSON.stringify(event));
 }
 
+// The next plan revision of the task: a valid plan answer, unless change gives other values.
+function newPlanRevision(
+  store: TaskStore,
+  taskId: number,
+  change: Partial<Omit<NewPlanRevision, "version">>,
+): NewPlanRevision {
+  return {
+    source: "plan",
+    answer: validPlanAnswer(),
+    prompt: "plan@000000000000",
+    ...change,
+    version: store.nextPlanVersion(taskId),
+  };
+}
+
 // Inserts the next plan revision of the task with addPlanRevision, with a valid answer unless change gives one.
 // It sets state (not a spawning state) with no check, so it writes the plan_revision event and no transition event.
 // It writes no plan file.
@@ -1705,13 +1721,21 @@ export function seedPlanRevision(
   change: Partial<Omit<NewPlanRevision, "version">> = {},
   state = "awaiting_plan_review",
 ): PlanRevision {
-  const version = store.nextPlanVersion(taskId);
-  store.addPlanRevision(
-    taskId,
-    { source: "plan", answer: validPlanAnswer(), prompt: "plan@000000000000", ...change, version },
-    state,
-  );
-  return store.getPlanRevision(taskId, version)!;
+  const revision = newPlanRevision(store, taskId, change);
+  store.addPlanRevision(taskId, revision, state);
+  return store.getPlanRevision(taskId, revision.version)!;
+}
+
+// Records the next plan revision of the task with recordPlanRevision: it writes the plan file and the row,
+// and moves the task to `to` with the check of the state machine.
+export function recordTestPlanRevision(
+  store: TaskStore,
+  dataRoot: string,
+  taskId: number,
+  change: Partial<Omit<NewPlanRevision, "version">> = {},
+  to: TaskState = "awaiting_plan_review",
+): Task {
+  return recordPlanRevision(store, dataRoot, taskId, newPlanRevision(store, taskId, change), to);
 }
 
 // Records a plan session for the task with TEST_SESSION_ID and the plan model of the test
