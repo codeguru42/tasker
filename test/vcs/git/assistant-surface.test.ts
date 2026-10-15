@@ -12,7 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { userInfo } from "node:os";
-import { delimiter, join, relative } from "node:path";
+import { join, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DENY_RULES,
@@ -27,7 +27,7 @@ import { isInside } from "../../../src/real-path.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
-import { commitInWorktree, gitCloneTokens, makeGitClone, makeGitOrigin, taskNames, type GitOrigin, writeGitRecorder } from "../../helpers/git.js";
+import { commitInWorktree, gitCloneTokens, gitRecorderEnv, makeGitClone, makeGitOrigin, taskNames, type GitOrigin } from "../../helpers/git.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const EXPECTED = [
@@ -341,12 +341,10 @@ describe("task worktree operations", () => {
     });
 
     it("gives [] for an empty list and starts no git", async () => {
-      const log = join(origin.dir, "git.log");
-      const bin = join(origin.dir, "gitbin");
-      writeGitRecorder(bin, log);
+      const { env: recorded, log } = gitRecorderEnv(origin.dir, env);
 
       const result = await trackedPaths({
-        env: { ...env, PATH: `${bin}${delimiter}${env.PATH ?? ""}` },
+        env: recorded,
         path: worktree,
         paths: [],
       });

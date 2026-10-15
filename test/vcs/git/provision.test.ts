@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { delimiter, join, parse, relative, resolve } from "node:path";
+import { join, parse, relative, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type ProvisionOptions, provisionClone } from "../../../src/vcs/git/provision.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
@@ -9,7 +9,7 @@ import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh, type FakeSsh } from "../../helpers/fake-ssh.js";
-import { localBranches, makeGitOrigin, sshKeyArgs, taskNames, type GitOrigin, writeGitRecorder } from "../../helpers/git.js";
+import { gitRecorderEnv, localBranches, makeGitOrigin, sshKeyArgs, taskNames, type GitOrigin } from "../../helpers/git.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 describe("provisionClone", () => {
@@ -185,14 +185,6 @@ describe("provisionClone", () => {
     return readFileSync(join(clone, "config"), "utf8");
   }
 
-  // An env whose git is writeGitRecorder() in tmp, and the path of its log.
-  function recordedEnv(base: NodeJS.ProcessEnv): { env: NodeJS.ProcessEnv; log: string } {
-    const log = join(tmp, "git.log");
-    const bin = join(tmp, "gitbin");
-    writeGitRecorder(bin, log);
-    return { env: { ...base, PATH: `${bin}${delimiter}${base.PATH}` }, log };
-  }
-
   // The git config calls in log that write: the ones with --replace-all or --unset-all.
   function configWrites(log: string): string[][] {
     return readArgLog(log).filter(
@@ -222,7 +214,7 @@ describe("provisionClone", () => {
 
   it("makes no config write on a complete clone when every value is already set", async () => {
     await provision({ config: { authorName: "Bot" } });
-    const { env, log } = recordedEnv(origin.env);
+    const { env, log } = gitRecorderEnv(tmp, origin.env);
     await provision({ config: { authorName: "Bot" }, env });
     expect(configWrites(log)).toEqual([]);
   });
@@ -236,7 +228,7 @@ describe("provisionClone", () => {
   });
 
   it("writes neither the url nor the fetch refspec of a fresh clone", async () => {
-    const { env, log } = recordedEnv(origin.env);
+    const { env, log } = gitRecorderEnv(tmp, origin.env);
     await provision({ env });
     for (const call of configWrites(log)) {
       expect(call).not.toContain("remote.origin.url");
@@ -391,7 +383,7 @@ describe("provisionClone", () => {
 
     it("puts no key path or ssh command in any git argument", async () => {
       const key = hardKey();
-      const { env, log } = recordedEnv(ssh.env);
+      const { env, log } = gitRecorderEnv(tmp, ssh.env);
       await provision({ remote, config: { sshKey: key }, env });
       const calls = readArgLog(log);
       const args = calls.flat();

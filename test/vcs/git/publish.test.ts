@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
@@ -9,7 +9,7 @@ import { taskBranchName } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
-import { NOT_TASK_BRANCHES, NO_TOKEN, addCloneCommit, gitCloneTokens, makeGitClone, makeGitOrigin, sshKeyArgs, type GitOrigin, writeGitRecorder } from "../../helpers/git.js";
+import { NOT_TASK_BRANCHES, NO_TOKEN, addCloneCommit, gitCloneTokens, gitRecorderEnv, makeGitClone, makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
 
 const BRANCH = taskBranchName("issue-1", "task");
 
@@ -24,10 +24,7 @@ describe("publish, land and delete", () => {
     origin = await makeGitOrigin();
     clone = await makeGitClone(origin);
     tokens = gitCloneTokens(origin);
-    const bin = join(origin.dir, "bin");
-    log = join(origin.dir, "git.log");
-    writeGitRecorder(bin, log);
-    env = { ...origin.env, PATH: `${bin}${delimiter}${process.env.PATH}` };
+    ({ env, log } = gitRecorderEnv(origin.dir, origin.env));
   });
 
   afterEach(() => {
