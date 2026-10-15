@@ -40,7 +40,8 @@ export function withFinalLineEnd(text: string): string {
 }
 
 // The text of the file at path, read as utf8. A missing file stops the command with exit code 1 and the message missing.
-// Any other read error stops it with the message `<unreadable>: <error code>`.
+// Any other read error stops it with the message `<unreadable>: <error>`, where <error> is the text of readErrorText:
+// the error code, for example EISDIR, else the error message.
 export function readFileOrFail(io: Io, path: string, messages: { missing: string; unreadable: string }): string {
   const file = readTextFile(path);
   if (file.text !== undefined) return file.text;
