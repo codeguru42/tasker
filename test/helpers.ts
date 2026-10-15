@@ -3,22 +3,19 @@ import {
   accessSync,
   constants,
   existsSync,
-  lstatSync,
   mkdirSync,
-  mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   statSync,
   symlinkSync,
-  utimesSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir, userInfo } from "node:os";
+import { userInfo } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
-import { expect, onTestFinished, vi } from "vitest";
+import { expect, onTestFinished } from "vitest";
 import type { AssistantEvent, RunInput } from "../src/assistant/provider.js";
 import { type Io, type RegisterCommand, run } from "../src/cli.js";
 import { start } from "../src/commands/start.js";
@@ -53,6 +50,9 @@ import { GitError, runGit } from "../src/vcs/git/run.js";
 import { shellQuote } from "../src/vcs/git/ssh.js";
 import { listWorktrees, taskBranchName, taskWorktreePath } from "../src/vcs/git/worktree.js";
 import type { VcsContext } from "../src/vcs/provider.js";
+import { makeTempDir, useProcessEnv, useTempDir, useTempHome } from "./helpers/temp.js";
+
+export * from "./helpers/temp.js";
 
 export interface CapturedIo extends Io {
   out: string[];
@@ -122,24 +122,6 @@ export function validConfig(): Record<string, any> {
       },
     },
   };
-}
-
-// A new empty folder under the system temp folder. The caller removes it.
-export function makeTempDir(prefix: string): string {
-  return mkdtempSync(join(tmpdir(), prefix));
-}
-
-// A new temp folder that is removed after the test. Call it inside a test.
-export function useTempDir(prefix: string): string {
-  const dir = makeTempDir(prefix);
-  onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
-  return dir;
-}
-
-// A new temp folder (see useTempDir()) as HOME, with XDG_CONFIG_HOME at <HOME>/config. Call it inside a test.
-export function useTempHome(): { HOME: string; XDG_CONFIG_HOME: string } {
-  const home = useTempDir("tasker-home-");
-  return { HOME: home, XDG_CONFIG_HOME: join(home, "config") };
 }
 
 export interface FixtureChild {
@@ -414,17 +396,6 @@ export function threeRepoConfig() {
 // The time 00:00 UTC of a day in January 2026, for example dayAt(2) is 2026-01-02T00:00:00.000Z.
 export function dayAt(day: number): string {
   return `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
-}
-
-// Sets each name of env in process.env for this test. A value of undefined removes the name.
-// After the test, it restores process.env. Call it inside a test.
-export function useProcessEnv(env: NodeJS.ProcessEnv): void {
-  for (const [name, value] of Object.entries(env)) {
-    vi.stubEnv(name, value);
-  }
-  onTestFinished(() => {
-    vi.unstubAllEnvs();
-  });
 }
 
 // Writes the text that build gives as config.json in a new temp dir, and points TASKER_CONFIG at it.
@@ -1324,12 +1295,6 @@ export function readArgLog(logPath: string): string[][] {
   return calls;
 }
 
-// Sets the mtime of file to ageMs milliseconds in the past.
-export function ageFile(path: string, ageMs: number): void {
-  const when = new Date(Date.now() - ageMs);
-  utimesSync(path, when, when);
-}
-
 export interface FakeProcess {
   pid: number;
   // The name of the process. The file comm ends with a newline, as in /proc.
@@ -1357,38 +1322,6 @@ export function writeFakeProc(root: string, processes: readonly FakeProcess[]): 
       });
     }
   }
-}
-
-export interface TreeEntry {
-  // The path relative to the folder.
-  path: string;
-  type: "file" | "directory" | "link" | "other";
-  size: number;
-  mtimeMs: number;
-}
-
-// A sorted list of every entry under folder. It uses lstat and follows no link.
-export function treeSnapshot(folder: string): TreeEntry[] {
-  const entries: TreeEntry[] = [];
-  const walk = (current: string): void => {
-    for (const name of readdirSync(current)) {
-      const path = join(current, name);
-      const stat = lstatSync(path);
-      const type = stat.isDirectory()
-        ? "directory"
-        : stat.isFile()
-          ? "file"
-          : stat.isSymbolicLink()
-            ? "link"
-            : "other";
-      entries.push({ path: relative(folder, path), type, size: stat.size, mtimeMs: stat.mtimeMs });
-      if (type === "directory") {
-        walk(path);
-      }
-    }
-  };
-  walk(folder);
-  return entries.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
 
 export const sourceDir = fileURLToPath(new URL("../src/", import.meta.url));
