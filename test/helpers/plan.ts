@@ -210,3 +210,29 @@ export function seedPlanSession(
     ...change,
   });
 }
+
+// A task of codeguru42/tasker#5 (see seedPlanningTask) in awaiting_plan_review, with one plan revision for each entry
+// of revisions, in order (see recordTestPlanRevision): v1 from a plan, each later one from a refine with the feedback
+// "Refine v<N>." unless the entry gives other values. With no revision, the task moves to awaiting_plan_review alone.
+// With approved, the revision of that version is approved right after its record, and the task goes back to
+// awaiting_plan_review before the next revision.
+export function seedPlanReviewTask(
+  o: { revisions?: Partial<Omit<NewPlanRevision, "version">>[]; approved?: number } = {},
+): { dataRoot: string; task: Task } {
+  const { revisions = [{}], approved } = o;
+  const { dataRoot, task } = seedPlanningTask();
+  const seeded = withDataRootStore(dataRoot, (store) => {
+    if (revisions.length === 0) transitionTask(store, task.id, "awaiting_plan_review");
+    revisions.forEach((entry, i) => {
+      if (i > 0) transitionTask(store, task.id, "refining");
+      const change = i === 0 ? entry : { source: "refine" as const, feedback: `Refine v${i + 1}.`, ...entry };
+      recordTestPlanRevision(store, dataRoot, task.id, change);
+      if (i + 1 === approved) {
+        store.approvePlanRevision(task.id, approved, "approved");
+        transitionTask(store, task.id, "awaiting_plan_review");
+      }
+    });
+    return store.getTask(task.id)!;
+  });
+  return { dataRoot, task: seeded };
+}
