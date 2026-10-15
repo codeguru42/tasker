@@ -1,8 +1,15 @@
 import type { Io } from "../cli.js";
+import { errorMessage } from "../error-message.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
+import { commandFailureMessage } from "../phases/command-step.js";
+import { runVerify } from "../phases/verify.js";
+import { childEnv } from "../process/child-env.js";
+import { type TaskState, transitionTask, transitionWithVerifyRun } from "../state/machine.js";
+import { verifyCommandLogPath, verifyRunDir } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
-import type { TaskStore } from "../store/store.js";
+import type { NewVerifyRun, TaskStore } from "../store/store.js";
+import { failRun } from "./run-outcome.js";
 import { taskInState } from "./task-state.js";
 
 export interface VerifyRequest {
@@ -29,8 +36,64 @@ export async function verifyTask(store: TaskStore, request: VerifyRequest): Prom
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => verifyLocked(store, request));
 }
 
+// What the outcome step found. A fail outcome records no verify run. A record outcome does.
+type VerifyOutcome =
+  | { kind: "fail"; message: string }
+  | { kind: "record"; run: Omit<NewVerifyRun, "endedAt">; to: TaskState; message?: string };
+
 async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<VerifyTaskResult> {
+  const { config, env, io } = request;
   const task = taskInState(store, request.taskId, "executed", "verify");
   if (task.worktreePath === null) throw new Error(`the task of ${task.issueKey} has no worktree`);
-  throw new Error("the verify run is not built yet");
+  const worktreePath = task.worktreePath;
+  const repo = config.repos[task.repoKey];
+  const number = store.nextVerifyRun(task.id);
+  const startedAt = new Date().toISOString();
+  const logsDir = verifyRunDir(config.dataRoot, task, number);
+  const commands = repo.verify.commands;
+  transitionTask(store, task.id, "verifying");
+
+  // The outcome step reads and runs. It writes nothing to the store, except the pid of the command in the marker.
+  const outcomeStep = async (): Promise<VerifyOutcome> => {
+    const result = await runVerify({
+      commands,
+      env: childEnv(env, repo.verify.env),
+      cwd: worktreePath,
+      timeoutMs: config.limits.verifyTimeoutMin * 60_000,
+      logPath: (position) => verifyCommandLogPath(config.dataRoot, task, number, position),
+      onSpawn: (pid) => store.setRunChildPid(task.id, pid),
+    });
+    if (result.status !== "ok") {
+      const log = verifyCommandLogPath(config.dataRoot, task, number, result.index);
+      return {
+        kind: "fail",
+        message: commandFailureMessage("verify", result, log, config.limits.verifyTimeoutMin),
+      };
+    }
+    return {
+      kind: "record",
+      run: { number, result: "passed", commands: [...commands], failingCommand: null, startedAt },
+      to: "awaiting_work_review",
+    };
+  };
+
+  let outcome: VerifyOutcome;
+  try {
+    outcome = await outcomeStep();
+  } catch (error) {
+    outcome = { kind: "fail", message: `verifying failed: ${errorMessage(error)}` };
+  }
+  if (outcome.kind === "fail") return failRun(store, task, io, outcome.message);
+
+  try {
+    transitionWithVerifyRun(store, task.id, outcome.to, { ...outcome.run, endedAt: new Date().toISOString() });
+  } catch (error) {
+    return failRun(
+      store,
+      task,
+      io,
+      `the verify commands passed, but the run could not be recorded: ${errorMessage(error)}`,
+    );
+  }
+  return { number, commands: commands.length, logsDir };
 }
