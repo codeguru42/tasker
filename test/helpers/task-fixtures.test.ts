@@ -12,7 +12,7 @@ import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { planTodo, validPlanAnswer } from "./plan.js";
-import { databasePathOf, latestTaskOf, readRunMarker, withDataRootStore } from "./store.js";
+import { databasePathOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore } from "./store.js";
 import {
   expectNoAssistantRun,
   expectRefusedWithoutChange,

@@ -296,3 +296,32 @@ export function expectNoAssistantRun(fixture: PlanFixture): void {
   expect(fixture.claude.calls()).toEqual([]);
   expect(lockNames(fixture.started.dataRoot)).toEqual([]);
 }
+
+export interface VerifyFixture {
+  started: StartedTask;
+  // The task in executed, with its worktree path.
+  task: Task;
+  config: Config;
+  env: NodeJS.ProcessEnv;
+}
+
+// The setup of the tests of tasker verify: a started task with the verify commands in its repo and the limits in
+// the configuration, moved through the states to executed. It throws when the start failed. Call it inside a test.
+export async function useVerifyFixture(options: {
+  commands: string[];
+  limits?: Record<string, number>;
+}): Promise<VerifyFixture> {
+  const started = await useStartedTask({
+    repo: { verify: { commands: options.commands, env: [] } },
+    limits: options.limits,
+  });
+  if (started.result.code !== 0) throw new Error(`tasker start failed: ${started.result.err}`);
+  const task = withDataRootStore(started.dataRoot, (store) => {
+    const found = store.findLatestTask(started.repoKey, started.key)!;
+    for (const state of ["planning", "awaiting_plan_review", "approved", "executing", "executed"] as const) {
+      transitionTask(store, found.id, state);
+    }
+    return store.getTask(found.id)!;
+  });
+  return { started, task, config: started.config, env: started.env };
+}
