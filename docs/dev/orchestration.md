@@ -164,6 +164,16 @@ The facts of the installed tasker:
 - `tasker merge` prints `landed: <commit> on origin/main`. `tasker finish` prints that it marked the issue done on the tracker, and it closes the issue.
 - `tasker start` can print a GraphQL warning that the assign of the issue on the tracker failed. The warning does no harm.
 
+The run times: an agent picks the wait for a long command (see the wait bullet of the command rules) from these usual run times. The times come from the tickets of this repo.
+
+- `tasker start`: a few seconds. For the wait of about 10 minutes on ssh, see the facts of the installed tasker.
+- `tasker plan`: about 1 to 2 minutes for a small issue, and about 4 to 6 minutes for a large issue.
+- `tasker refine`: about 1 to 4 minutes.
+- `tasker execute`: about 1 to 2 minutes for 2 to 4 todos, and about 8 to 15 minutes for 20 to 30 todos.
+- `tasker verify` (`npm run check`): seconds.
+- `tasker review`: about 25 seconds to 2 minutes.
+- A docs ticket: about 1 to 2 minutes for each of plan, refine and execute.
+
 The broken-commit steps: these steps give the git commands for a failure from the code in the verify-failure rule. A broken commit is an implementation commit that fails `npm run check`, or the tip of the task branch when it fails `npm run check`. The tip has no next commit, so it must pass, whatever its prefix. The cause commit of a broken commit is the commit that adds the cause of its failure. It is the broken commit itself, an earlier broken commit, or an earlier commit that the check skips, for example a `test:` commit that adds a test configuration. It is never under the last commit that passed the check, or under the base commit. The Commits section of [docs/dev/rules.md](rules.md) defines an implementation commit and gives the rule. The fix of a broken commit goes into its cause commit, not into a new commit on top. The steps do not change the limits or the cases of the verify-failure rule.
 
 The base commit is the commit under the first commit of the task branch. `tasker update-branch` moves the task branch onto a newer base, so the base commit changes. For this reason, each commit check of the agent (see below) finds the base commit again. The refine feedback gives the base commit of the last commit check, and the session steps use the base commit of the feedback. The one exception is the refine of step 4 after a `tasker update-branch`: there the base commit comes from `git merge-base` directly, not from a commit check.
