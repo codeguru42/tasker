@@ -1,5 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
 import { abort } from "./abort.js";
+import { approve } from "./approve.js";
 import { doctor } from "./doctor.js";
 import { model } from "./model.js";
 import { show } from "./show.js";
@@ -12,4 +13,4 @@ import { showConfig } from "./show-config.js";
 import { start } from "./start.js";
 import { status } from "./status.js";
 
-export const commands: RegisterCommand[] = [showConfig, show, showBootstrap, showPlan, showQuestions, start, plan, refine, abort, status, doctor, model];
+export const commands: RegisterCommand[] = [showConfig, show, showBootstrap, showPlan, showQuestions, start, plan, refine, approve, abort, status, doctor, model];
