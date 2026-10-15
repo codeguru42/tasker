@@ -9,6 +9,7 @@ import {
   ActiveTaskError,
   openStore,
   RunMarkerExistsError,
+  type ExecuteTodoState,
   type NewSession,
   type Task,
   type TaskStore,
@@ -67,13 +68,27 @@ describe("task store", () => {
   const readSessionRows = () =>
     withRawDatabase(dbPath, (db) => db.prepare("SELECT * FROM sessions ORDER BY rowid").all());
 
-  // Checks that a failed call threw message and changed no state, no marker row, no event, no plan revision row and no session row.
+  // All rows of the execute_todos table, as raw rows.
+  const readTodoRows = () =>
+    withRawDatabase(dbPath, (db) =>
+      db.prepare("SELECT * FROM execute_todos ORDER BY plan_version, todo_id").all(),
+    );
+
+  // All rows of the execute_fix_turns table, as raw rows.
+  const readFixTurnRows = () =>
+    withRawDatabase(dbPath, (db) =>
+      db.prepare("SELECT * FROM execute_fix_turns ORDER BY plan_version").all(),
+    );
+
+  // Checks that a failed call threw message and changed no state, no marker row, no event, no plan revision row, no session row, no todo row and no fix turn row.
   const expectNothingChanged = (id: number, run: () => unknown, message: string) => {
     const state = store.getTask(id)?.state;
     const marker = readRunMarker(dbPath, id);
     const events = eventCount();
     const plans = readPlanRows(id);
     const sessions = readSessionRows();
+    const todos = readTodoRows();
+    const fixTurns = readFixTurnRows();
     const error = thrownBy(run, message);
     expect((error as Error).message).toBe(message);
     expect(store.getTask(id)?.state).toBe(state);
@@ -81,6 +96,8 @@ describe("task store", () => {
     expect(eventCount()).toBe(events);
     expect(readPlanRows(id)).toEqual(plans);
     expect(readSessionRows()).toEqual(sessions);
+    expect(readTodoRows()).toEqual(todos);
+    expect(readFixTurnRows()).toEqual(fixTurns);
   };
 
   // Writes a raw run marker row for a task.
@@ -108,6 +125,10 @@ describe("task store", () => {
       effort: "medium",
       ...change,
     });
+
+  const setTodoState = (taskId: number, version: number, todoId: string, state: ExecuteTodoState) =>
+    store.setExecuteTodoState(taskId, version, todoId, state);
+  const todoProgress = (taskId: number, version: number) => store.executeTodoProgress(taskId, version);
 
   const clearPlan = (taskId: number) => store.clearPlanSession(taskId);
   const clearExecute = (taskId: number, version: number) => store.clearExecuteSession(taskId, version);
@@ -1315,6 +1336,64 @@ describe("task store", () => {
       expect(store.executeSession(task.id, 1)).toBeUndefined();
       expect(store.executeSession(task.id, 2)?.sessionId).toBe("s-2");
       expect(store.planSession(task.id)).toBeDefined();
+    });
+  });
+
+  describe("execute todo states", () => {
+    const todos = validPlanAnswer().todos;
+
+    it("inserts a state and updates it with a later time", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      setTodoState(task.id, 1, "write-test", "in_progress");
+      expect(readTodoRows()).toEqual([
+        {
+          task_id: task.id,
+          plan_version: 1,
+          todo_id: "write-test",
+          state: "in_progress",
+          updated_at: "2026-01-01T00:00:00.000Z",
+        },
+      ]);
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      setTodoState(task.id, 1, "write-test", "done");
+      expect(readTodoRows()).toEqual([
+        {
+          task_id: task.id,
+          plan_version: 1,
+          todo_id: "write-test",
+          state: "done",
+          updated_at: "2026-01-02T00:00:00.000Z",
+        },
+      ]);
+    });
+
+    it("refuses a todo id that the plan revision does not have", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      expectNothingChanged(
+        task.id,
+        () => setTodoState(task.id, 1, "nope", "done"),
+        `plan revision 1 of task ${task.id} has no todo nope`,
+      );
+    });
+
+    it("gives the progress in the plan order with not_started for a todo with no row", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      setTodoState(task.id, 1, "make-it-pass", "in_progress");
+      expect(todoProgress(task.id, 1)).toEqual([
+        { todo: todos[0], state: "not_started" },
+        { todo: todos[1], state: "in_progress" },
+      ]);
+    });
+
+    it("refuses a plan revision that does not exist", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      const message = `task ${task.id} has no plan revision 5`;
+      expectNothingChanged(task.id, () => setTodoState(task.id, 5, "write-test", "done"), message);
+      expectNothingChanged(task.id, () => todoProgress(task.id, 5), message);
     });
   });
 
