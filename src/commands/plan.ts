@@ -6,6 +6,7 @@ import {
   loadConfigOrFail,
   orFailAsync,
   REPO_OPTION_DESCRIPTION,
+  warnOverlaps,
   withIssueTaskAsync,
 } from "./shared.js";
 
@@ -22,10 +23,11 @@ export const plan: RegisterCommand = (program, io) => {
       const result = await orFailAsync(io, () =>
         withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
           key: found.issueKey,
+          taskId: found.id,
           planned: await planTask(store, { config, ref, taskId: found.id, env: process.env, io }),
         })),
       );
-      const { key, planned } = result;
+      const { key, taskId, planned } = result;
       // The run step already printed the message.
       if ("exitCode" in planned) {
         throw new CommanderError(planned.exitCode, "tasker.plan", "the plan run did not succeed");
@@ -41,5 +43,11 @@ export const plan: RegisterCommand = (program, io) => {
           "",
         ].join("\n"),
       );
+      await warnOverlaps(io, config, {
+        taskId,
+        files: planned.answer.files_changed,
+        env: process.env,
+        lastLine: "tasker does not refuse. Decide before you approve.",
+      });
     });
 };

@@ -8,7 +8,8 @@ import { errorMessage } from "../error-message.js";
 import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
 import { resolveIssueKey, type ResolveOptions } from "../issue-key/resolve.js";
 import { createDataRoot } from "../store/layout.js";
-import { openStore, type Task, type TaskStore } from "../store/store.js";
+import { findOverlaps, overlapWarning } from "../tasks/overlap.js";
+import { openStore, taskNotFound, type Task, type TaskStore } from "../store/store.js";
 
 // Another command can hold the clone for a long first fetch.
 export const REPO_LOCK_WAIT_MS = 300_000;
@@ -127,6 +128,27 @@ export async function withStoreAsync<T>(
     return await fn(store);
   } finally {
     store.close();
+  }
+}
+
+// Prints the notes and the overlap warning for the files of the task on stderr, with lastLine as the last line of the
+// warning. It never stops the command: a failure prints one note line. docs/dev/tasks.md gives the reasons.
+export async function warnOverlaps(
+  io: Io,
+  config: Config,
+  o: { taskId: number; files: readonly string[]; env: NodeJS.ProcessEnv; lastLine: string },
+): Promise<void> {
+  try {
+    const report = await withStoreAsync(config, async (store) => {
+      const task = store.getTask(o.taskId);
+      if (task === undefined) throw taskNotFound(o.taskId);
+      return findOverlaps({ config, store, task, files: o.files, env: o.env });
+    });
+    for (const note of report.notes) io.stderr(`${note}\n`);
+    const warning = overlapWarning(report.overlaps, o.lastLine);
+    if (warning !== "") io.stderr(warning);
+  } catch (error) {
+    io.stderr(`note: cannot compare the plan with the other tasks in flight: ${errorMessage(error)}\n`);
   }
 }
 
