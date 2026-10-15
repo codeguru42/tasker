@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { lstatSync } from "node:fs";
+import { existsSync, lstatSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
@@ -14,6 +14,7 @@ import {
   useFakeClaude,
   writePlaceholder,
 } from "./fake-claude.js";
+import { realCommandPath } from "./fake-commands.js";
 import { isAlive, savePid, waitUntil } from "./processes.js";
 import { useTempDir } from "./temp.js";
 
@@ -265,6 +266,78 @@ describe("useFakeClaude", () => {
     expect(names).not.toContain("TASKER_FAKE_CLAUDE_EXIT");
     expect(names).not.toContain("FAKE_CLAUDE_EXIT");
     expect(names).not.toContain("ANTHROPIC_API_KEY");
+  });
+});
+
+describe("useFakeClaude with turns and exec", () => {
+  it("gives each call the fields of its own turn, and the top-level fields past the list", () => {
+    const fake = useFakeClaude({
+      stream: ["top"],
+      turns: [{ stream: ["one"] }, { stream: ["two"], exitCode: 4, stderr: "bad\n" }],
+    });
+
+    const first = runClaude(fake.env, ["-p"]);
+    const second = runClaude(fake.env, ["-p"]);
+    const third = runClaude(fake.env, ["-p"]);
+
+    expect(first.stdout).toBe("one\n");
+    expect(first.status).toBe(0);
+    expect(second.stdout).toBe("two\n");
+    expect(second.status).toBe(4);
+    expect(second.stderr).toBe("bad\n");
+    expect(third.stdout).toBe("top\n");
+    expect(third.status).toBe(0);
+  });
+
+  it("keeps the top-level field that a turn does not set", () => {
+    const fake = useFakeClaude({ stream: ["top"], exitCode: 2, turns: [{ stderr: "x\n" }] });
+
+    const result = runClaude(fake.env, ["-p"]);
+
+    expect(result.stdout).toBe("top\n");
+    expect(result.status).toBe(2);
+    expect(result.stderr).toBe("x\n");
+  });
+
+  it("does not count a --version call", () => {
+    const fake = useFakeClaude({
+      stream: ["top"],
+      version: { stdout: "2.1.299 (Claude Code)\n" },
+      turns: [{ stream: ["one"] }],
+    });
+
+    runClaude(fake.env, ["--version"]);
+    const result = runClaude(fake.env, ["-p"]);
+
+    expect(result.stdout).toBe("one\n");
+  });
+
+  it("gives the same stream to each call when the control has no turns", () => {
+    const fake = useFakeClaude({ stream: ["same"] });
+
+    expect(runClaude(fake.env, ["-p"]).stdout).toBe("same\n");
+    expect(runClaude(fake.env, ["-p"]).stdout).toBe("same\n");
+  });
+
+  it("runs exec in the cwd before the output", () => {
+    const cwd = useTempDir("tasker-fake-cwd-");
+    const fake = useFakeClaude({ stream: ["out"], turns: [{ exec: [realCommandPath("touch"), "made.txt"] }] });
+
+    const result = spawnSync("claude", ["-p"], { env: fake.env, cwd, encoding: "utf8" });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe("out\n");
+    expect(existsSync(join(cwd, "made.txt"))).toBe(true);
+  });
+
+  it("writes one stderr line and exits with 99 when exec fails", () => {
+    const fake = useFakeClaude({ stream: ["out"], turns: [{ exec: [realCommandPath("false")] }] });
+
+    const result = runClaude(fake.env, ["-p"]);
+
+    expect(result.status).toBe(99);
+    expect(result.stdout).toBe("");
+    expect(result.stderr.trimEnd().split("\n")).toHaveLength(1);
   });
 });
 
