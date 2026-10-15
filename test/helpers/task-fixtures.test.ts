@@ -1,5 +1,6 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
-import { delimiter } from "node:path";
+import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { issueProviderFor } from "../../src/issues/provider.js";
 import { dataRootLayout } from "../../src/store/layout.js";
@@ -8,6 +9,7 @@ import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { localBranches } from "./git.js";
 import { readRunMarker, withDataRootStore } from "./store.js";
 import {
+  expectNoAssistantRun,
   startIssueTask,
   startTaskWithCommits,
   taskWorkspaceState,
@@ -173,5 +175,27 @@ describe("usePlanFixture", () => {
     expect(existsSync(process.env.HOME!)).toBe(true);
     const state = withDataRootStore(started.dataRoot, (store) => store.findLatestTask(started.repoKey, started.key)?.state);
     expect(state).toBe("workspace_ready");
+  });
+});
+
+describe("expectNoAssistantRun", () => {
+  it("passes for a new plan fixture", async () => {
+    const fixture = await usePlanFixture({});
+
+    expect(() => expectNoAssistantRun(fixture)).not.toThrow();
+  });
+
+  it("throws when a lock row exists", async () => {
+    const fixture = await usePlanFixture({});
+    withDataRootStore(fixture.started.dataRoot, (store) => store.tryLock("x"));
+
+    expect(() => expectNoAssistantRun(fixture)).toThrow();
+  });
+
+  it("throws after one run of the fake claude", async () => {
+    const fixture = await usePlanFixture({});
+    execFileSync(join(fixture.claude.binDir, "claude"), ["--version"]);
+
+    expect(() => expectNoAssistantRun(fixture)).toThrow();
   });
 });
