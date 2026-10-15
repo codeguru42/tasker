@@ -18,8 +18,9 @@ export const showVerify: RegisterCommand = (program, io) => {
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option("--run <N>", "Print this verify run: a whole number of 1 or more. The default is the newest run")
-    .action((issue: string, options: { repo?: string; run?: string }) => {
-      wholeNumberOptionsOrFail(io, { "--run": options.run });
+    .option("--command <N>", "Print only the log of the command at this position of the run, counted from 1")
+    .action((issue: string, options: { repo?: string; run?: string; command?: string }) => {
+      wholeNumberOptionsOrFail(io, { "--run": options.run, "--command": options.command });
       const config = loadConfigOrFail(io);
       io.stdout(
         withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
@@ -30,13 +31,25 @@ export const showVerify: RegisterCommand = (program, io) => {
           }
           const run =
             options.run === undefined ? store.latestVerifyRun(task.id)! : store.getVerifyRun(task.id, Number(options.run))!;
+          const count = run.commands.length;
+          if (options.command !== undefined && Number(options.command) > count) {
+            fail(
+              io,
+              `verify run ${run.number} of ${task.issueKey} has no log for command ${options.command}; it ran ${count} commands`,
+            );
+          }
           const header = `${task.issueKey} verify run ${run.number} of ${total}: ${run.result} (${run.startedAt})\n`;
-          if (run.commands.length === 0) return `${header}\nno logs: this run ran no command\n`;
-          const blocks = run.commands.map((command, i) => {
-            const path = verifyCommandLogPath(config.dataRoot, task, run.number, i + 1);
+          if (count === 0) return `${header}\nno logs: this run ran no command\n`;
+          const positions =
+            options.command === undefined
+              ? run.commands.map((_command, i) => i + 1)
+              : [Number(options.command)];
+          const blocks = positions.map((position) => {
+            const command = run.commands[position - 1];
+            const path = verifyCommandLogPath(config.dataRoot, task, run.number, position);
             const file = readTextFile(path);
             const body = file.text === undefined ? `(log not readable: ${file.error})\n` : withFinalLineEnd(file.text);
-            return `\n== command ${i + 1}: ${command} (${path}) ==\n${body}`;
+            return `\n== command ${position}: ${command} (${path}) ==\n${body}`;
           });
           return header + blocks.join("");
         }),
