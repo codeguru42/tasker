@@ -218,7 +218,7 @@ A prompt name never holds `@`. As a result, a name never looks like a version.
 
 ### The checks after the run
 
-The checks after the run are plain code after a successful parse of the schema. They are not zod refinements. A zod refinement still runs after an issue that does not abort, for example an unknown key or a failed pattern. As a result, a refinement breaks the rule that a failed schema stops the checks.
+The checks after the run are plain code after a successful parse of the schema. They are not zod refinements, because a zod refinement still runs after some issues of the schema ([code-conventions.md](code-conventions.md#zod)). As a result, a refinement breaks the rule that a failed schema stops the checks.
 
 ### The JSON Schema
 
