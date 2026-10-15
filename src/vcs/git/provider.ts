@@ -14,6 +14,7 @@ import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "./publish
 import { gitDoctorChecks } from "./doctor.js";
 import { installPushHook } from "./push-guard.js";
 import { provisionClone } from "./provision.js";
+import { remoteTip } from "./remote-tip.js";
 import { reconcileWorktree } from "./reconcile.js";
 import { repoPaths } from "./repo-paths.js";
 import {
@@ -129,6 +130,9 @@ export function createGitProvider({
     },
     async deleteRemoteTaskRef(ctx, { taskRef, published }) {
       return deleteRemoteTaskBranch({ ...remoteOptionsOf(ctx), branch: taskRef, published });
+    },
+    async remoteTaskRefTip(ctx, { taskRef }) {
+      return remoteTip({ remote, branch: taskRef, sshKey: config.sshKey, env: ctx.env });
     },
     assistantSurface(ctx) {
       const { clone, publishTokens } = pathsOf(ctx);

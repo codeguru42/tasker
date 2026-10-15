@@ -139,6 +139,8 @@ export interface VcsProvider {
     ctx: VcsContext,
     o: { taskRef: string; published: string },
   ): Promise<RemoteTaskRefDeletion>;
+  // The tip of taskRef on the remote: present with its revision, or absent. A failed read rejects and never gives absent.
+  remoteTaskRefTip(ctx: VcsContext, o: { taskRef: string }): Promise<RemoteTip>;
   // The text and the paths that the provider adds to the assistant of a task.
   assistantSurface(ctx: VcsContext): AssistantSurface;
   // The doctor checks of the repo. The checks do not run until the caller runs them.
