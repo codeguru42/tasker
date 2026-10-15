@@ -13,7 +13,7 @@ import {
 } from "../../src/store/store.js";
 import { claudeSampleWithResult, TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID } from "./fake-claude.js";
 import { useThreeRepoDataRoot } from "./config.js";
-import { dayAt, type SeedTask, seedTasks, withDataRootStore } from "./store.js";
+import { dayAt, eventsOf, latestTaskOf, type SeedTask, seedTasks, withDataRootStore } from "./store.js";
 
 // The questions block that show-plan and show-questions print for the one open question of validPlanAnswer.
 export const OPEN_QUESTION_BLOCK =
@@ -235,4 +235,27 @@ export function seedPlanReviewTask(
     return store.getTask(task.id)!;
   });
   return { dataRoot, task: seeded };
+}
+
+// A task of codeguru42/tasker#5 in approved: the task of seedPlanReviewTask with o, then its newest revision is
+// approved and pinned. It writes no approved event.
+export function seedApprovedTask(
+  o: { revisions?: Partial<Omit<NewPlanRevision, "version">>[]; approved?: number } = {},
+): { dataRoot: string; task: Task } {
+  const { dataRoot, task } = seedPlanReviewTask(o);
+  const seeded = withDataRootStore(dataRoot, (store) => {
+    store.approvePlanRevision(task.id, store.latestPlanRevision(task.id)!.version, "approved");
+    return store.getTask(task.id)!;
+  });
+  return { dataRoot, task: seeded };
+}
+
+// The state and the events of the latest task of issueKey, and the approved_at of each version of the task taskId,
+// as the store holds them now. A version with no revision gives undefined.
+export function planStateSnapshot(dataRoot: string, issueKey: string, taskId: number, versions: readonly number[]) {
+  return {
+    state: latestTaskOf(dataRoot, issueKey).state,
+    events: eventsOf(dataRoot, issueKey),
+    approvedAt: versions.map((version) => planRevisionOf(dataRoot, taskId, version)?.approvedAt),
+  };
 }
