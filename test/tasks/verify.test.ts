@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { transitionTask } from "../../src/state/machine.js";
@@ -170,5 +170,56 @@ describe("verifyTask command failure", () => {
     expect(existsSync(verifyCommandLogPath(dataRoot, fixture.task, 2, 1))).toBe(true);
     const row = withDataRootStore(dataRoot, (store) => store.getVerifyRun(fixture.task.id, 2));
     expect(row).toMatchObject({ number: 2, result: "passed" });
+  });
+});
+
+describe("verifyTask uncommitted changes", () => {
+  it("fails with dirty_before when the worktree has a change before the run", async () => {
+    const fixture = await useVerifyFixture({ commands: ["true"] });
+    writeFileSync(join(fixture.started.worktree, "left-over"), "x");
+
+    const { result, io } = await runVerifyTask(fixture);
+
+    const message =
+      "the worktree had uncommitted changes before the verify run: ?? left-over\n" +
+      "If the execute run left them, run tasker retry codeguru42/tasker#5 --resume-execute, " +
+      "so that the execute run finishes them.";
+    expect(result).toEqual({ exitCode: 1 });
+    const found = failedRunOf(fixture);
+    expect(found.state).toBe("failed");
+    expect(found.row).toMatchObject({ result: "dirty_before", commands: [], failingCommand: null });
+    expect(found.error).toBe(message);
+    expect(io.err.join("")).toBe(`${message}\n`);
+    expect(existsSync(verifyRunDir(fixture.started.dataRoot, fixture.task, 1))).toBe(false);
+  });
+
+  it("fails with no row when the worktree cannot be read before the run", async () => {
+    const fixture = await useVerifyFixture({ commands: ["true"] });
+    rmSync(fixture.started.worktree, { recursive: true });
+
+    await runVerifyTask(fixture);
+
+    const found = failedRunOf(fixture);
+    expect(found.state).toBe("failed");
+    expect(found.error?.startsWith("cannot read the uncommitted changes of the worktree before the run: ")).toBe(true);
+    expect(verifyRunCount(fixture)).toBe(0);
+  });
+
+  it("fails with dirty_after when the commands leave a change", async () => {
+    const fixture = await useVerifyFixture({ commands: ["touch made-by-verify"] });
+
+    const { result, io } = await runVerifyTask(fixture);
+
+    const message =
+      "the verify commands left uncommitted changes in the worktree: ?? made-by-verify\n" +
+      "A plain tasker retry runs the commands on the same tree and fails again. " +
+      "Run tasker retry codeguru42/tasker#5 --resume-execute, " +
+      "so that the fix turn ignores or removes these files.";
+    expect(result).toEqual({ exitCode: 1 });
+    const found = failedRunOf(fixture);
+    expect(found.state).toBe("failed");
+    expect(found.row).toMatchObject({ result: "dirty_after", commands: ["touch made-by-verify"], failingCommand: null });
+    expect(found.error).toBe(message);
+    expect(io.err.join("")).toBe(`${message}\n`);
   });
 });
