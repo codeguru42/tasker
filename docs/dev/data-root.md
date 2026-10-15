@@ -71,15 +71,34 @@ tasker never changes or deletes the file of a revision that has a row.
 
 ## `sessions` table
 
-The table has one row for each assistant session of a task. A session is one conversation of the assistant. Today the only role is plan.
+The table has one row for each assistant session of a task. A session is one conversation of the assistant. A session has the role plan or the role execute.
 
 tasker writes the record before the run. [assistants.md](assistants.md#the-session-id) gives the reason. A continued session reads its provider, model and effort from the record. [assistants.md](assistants.md#new-and-continued-sessions) gives the reason.
 
 These rules hold:
 
 - The record is written once. A second record with the same id writes nothing, also when the model or the effort differ. A second record with another id is an error that names both ids. A second id hides the conversation that the task must continue.
-- A task has one plan session at most. The unique rule covers only the plan role, because execute sessions (M7) follow other rules.
-- No store function deletes a row.
+- A task has one plan session at most.
+- A task has one execute session at most for each version of its plan. The execute runs of the pinned revision work in that session.
+- The version is the key of an execute session. A refine after an approval gives a new version, so a new plan never continues the session of an old plan.
+- The limit of this key: when the operator runs `tasker unapprove` and then approves the same version again, the execute runs continue the session of that version.
+- Only `tasker retry` deletes a session row. A run that failed before its first turn recorded an id that no conversation holds. The next run must not continue that id, so the retry deletes the row, and the next run records a new id.
+
+## `execute_todos` table
+
+The table holds the state of each todo of a plan revision. A todo is one step of the plan. `tasker execute` works on one todo in each turn of the execute session.
+
+The states are in a table and not in events, because tasker reads them back to pick the next turn. A todo is in progress or done. A todo with no row is not started, so the table stores only the two other states. Only `tasker execute` writes a state, one turn at a time.
+
+## `execute_fix_turns` table
+
+The table holds the fix turn of a plan revision. A fix turn is one more turn of the execute session after each todo is done. It gives the assistant the error of a failed verify run. `tasker retry --resume-execute` queues it, and `tasker execute` runs it.
+
+These rules hold:
+
+- A revision has one fix turn at most. A new fix turn replaces the old one, also when the old one is done.
+- A row with no done time is a queued fix turn.
+- The row holds the last lines of the log of the failed verify command. The sandbox of the run cannot read the data root, so the lines must travel in the row.
 
 ## `default_base_branches` table
 
