@@ -136,9 +136,10 @@ export type VerifyRunResult = "passed" | "failed" | "timed_out" | "dirty_before"
 export interface NewVerifyRun {
   number: number;
   result: VerifyRunResult;
-  // The commands that the run started, in order.
+  // The commands that the run started, in order. A command that the deadline kept from its start is not in the list.
   commands: string[];
-  // The position (from 1) of the command that failed, timed out or could not start. None for a run that passed.
+  // The position (from 1) of the failing command, or null for a run that passed. It can be one more than the number
+  // of started commands, when the deadline came before the failing command started. That command has no log.
   failingCommand: number | null;
   // The caller gives both times. The store does not take them from its clock.
   startedAt: string;
