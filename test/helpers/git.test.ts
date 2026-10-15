@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { dirname, join, sep } from "node:path";
+import { delimiter, dirname, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../../src/vcs/git/run.js";
@@ -10,11 +10,14 @@ import {
   taskWorktreePath,
 } from "../../src/vcs/git/worktree.js";
 import { failureOf } from "./errors.js";
+import { readArgLog } from "./fake-commands.js";
 import {
   addCloneCommit,
   commitInWorktree,
   GIT_TEST_IDENTITY,
   gitCloneTokens,
+  gitRecorderEnv,
+  gitTestEnv,
   type GitOrigin,
   localBranches,
   makeGitClone,
@@ -22,6 +25,7 @@ import {
   sshKeyArgs,
   taskNames,
 } from "./git.js";
+import { useTempDir } from "./temp.js";
 
 describe("makeGitOrigin", () => {
   let origin: GitOrigin;
@@ -288,5 +292,31 @@ describe("sshKeyArgs", () => {
       "-o",
       "BatchMode=yes",
     ]);
+  });
+});
+
+describe("gitRecorderEnv", () => {
+  it("puts the recorder first on the PATH of the base env and keeps the other values", () => {
+    const dir = useTempDir("tasker-recorder-");
+    const base = { ...gitTestEnv(dir), PATH: `/other${delimiter}${process.env.PATH}`, MARK: "kept" };
+    const { env, log } = gitRecorderEnv(dir, base);
+    expect(env.PATH).toBe(`${join(dir, "gitbin")}${delimiter}${base.PATH}`);
+    expect(env.MARK).toBe("kept");
+    expect(log).toBe(join(dir, "git.log"));
+  });
+
+  it("logs each git call and runs the real git", async () => {
+    const dir = useTempDir("tasker-recorder-");
+    const base = { ...gitTestEnv(dir), PATH: `/other${delimiter}${process.env.PATH}`, MARK: "kept" };
+    const { env, log } = gitRecorderEnv(dir, base);
+    const out = await runGit(["version"], { cwd: dir, env });
+    expect(out).toMatch(/^git version /);
+    expect(readArgLog(log)).toEqual([["version"]]);
+  });
+
+  it("gives the bin folder alone when the base env has no PATH", () => {
+    const dir = useTempDir("tasker-recorder-");
+    const { env } = gitRecorderEnv(dir, { HOME: dir });
+    expect(env.PATH).toBe(join(dir, "gitbin"));
   });
 });
