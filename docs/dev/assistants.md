@@ -206,6 +206,8 @@ The open questions of a refine run also stand in an untrusted tag. The plan sess
 
 The execute prompts use the same rule for these tags: `approved-plan`, `todos`, `resolved-questions`, `current-todo`, `verify-failure` and `verify-log`. The plan session wrote the plan, the todos and the questions from the issue text of a third party. The verify failure and its log can quote the output of code that the task wrote. The commit rules are not in a tag, because tasker writes them.
 
+The review prompt uses two tags. The findings in `earlier-reviews` are untrusted, because earlier runs wrote them from the text of the branch. The block `branch-commits` is untrusted, because an execute run wrote it from the issue text of a third party.
+
 ### What the plan prompt asks for
 
 The plan must be complete on its own. The execute run is a new session. It sees only the plan, its todos and the answers to the questions, not the planning conversation.
@@ -245,7 +247,22 @@ The answer is a complete revision, never a list of changes. A change list leaves
 
 The open questions keep their ids across rounds. As a result, an answered question drops out, and an open question stays trackable.
 
-The two prompts share their common rules in one place in the code. As a result, one change updates both.
+The plan, refine and review prompts share their common rules in one place in the code. As a result, one change updates each of them.
+
+### The review prompt and the findings answer
+
+The code is in `src/prompts/review.ts` and `src/review/`. The review run is read-only, because the operator decides each change.
+
+The reasons for the design:
+
+- The answer has no `questions` key, because nobody answers during the run. An open point becomes a finding.
+- The earlier reviews go in the prompt. As a result, the review does not report a finding again that the operator declined, and the operator does not dismiss the same finding twice.
+- The branch commits go in the prompt, because a read-only run needs no git command, and the diff is the thing under review.
+- The prompt spells out the four simplify checks, so that they run the same under every assistant.
+
+The schema does not restrict the value of `category`, so a run with another word does not fail.
+
+Each command that prints findings uses the same text form.
 
 ### The prompt version and the archive
 
