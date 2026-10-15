@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute and verify, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify and retry, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -162,6 +162,17 @@ The reasons:
 - A failed run is recorded too. `tasker show-verify` prints the run, and the fix turn gets its log.
 - The row of a run and the move of the task share one transaction. The bullet in [data-root.md](data-root.md#verify_runs-table) gives the reason.
 
+## Retry
+
+`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. These reasons explain its rules:
+
+- A plan or execute run can fail before its first turn. Its recorded session id then names no conversation, so a new run must not continue it. Retry deletes the session of the failed step, and the next run starts a new session.
+- A verify failure usually belongs to no todo. So `--resume-execute` marks every todo done and queues one fix turn that gets the failure. The todos do not run again.
+- A refine needs feedback, and tasker can refuse a plan again. So retry runs nothing for the origin `refining`. It prints a hint, and you decide the next feedback.
+- The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait, so retry must release the lock first.
+- The fix turn gets the tail of the log from tasker, not from the sandbox. The log is in the data root, outside the worktree, and the sandbox gives the shell only the worktree. The bound of 200 lines and 64 KiB keeps a large log out of the prompt.
+- The tail comes only from the verify run of this failure. Some verify failures record no run, and then the latest run belongs to an earlier verify. Its log gives the fix turn false data, so the fix turn gets no tail.
+
 ## Limits
 
 - A new base on a second run does not move a task branch that already exists. The stored base can differ from the real start point of the branch.
@@ -171,5 +182,5 @@ The reasons:
 - The abort does not delete the task branch on `origin`. No command publishes a task branch before M10.
 - A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
 - The plan reads the title and the body of the issue. It does not read the comments.
-- No command resumes a task that is in `failed` or `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`, and a second `tasker execute` works only on a task in `approved`.
+- `tasker retry` resumes a task in `failed` for the origins of its table. No command resumes a task in `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`, and a second `tasker execute` works only on a task in `approved`.
 - Layer 3 of the push guard cannot see a push that moves the tip and then moves it back within one turn. It compares only the tips before and after.
