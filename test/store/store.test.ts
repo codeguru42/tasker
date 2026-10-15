@@ -114,6 +114,13 @@ describe("task store", () => {
     });
   };
 
+  // Creates a task in state with a raw run marker of the same state.
+  const runningTask = (state: string, pid = process.pid, childPid: number | null = null) => {
+    const task = store.createTask({ ...newTask, state });
+    writeRunPid(task.id, state, pid, childPid);
+    return task;
+  };
+
   const insertRawTask = (db: DatabaseSync, repoKey: string, state: string) =>
     db
       .prepare(
@@ -1764,14 +1771,8 @@ describe("task store", () => {
         prompt: "plan@000000000000",
       });
 
-      const planningTask = () => {
-        const task = store.createTask({ ...newTask, state: "planning" });
-        writeRunPid(task.id, "planning", process.pid);
-        return task;
-      };
-
       it("inserts the row and the events, sets the state and deletes the marker", () => {
-        const task = planningTask();
+        const task = runningTask("planning");
         const before = store.listEvents(task.id).length;
         const moved = store.addPlanRevision(task.id, revision(1), "awaiting_plan_review", () => ({
           type: "transition",
@@ -1788,7 +1789,7 @@ describe("task store", () => {
       });
 
       it("writes nothing when check throws", () => {
-        const task = planningTask();
+        const task = runningTask("planning");
         expectNothingChanged(
           task.id,
           () =>
@@ -1800,7 +1801,7 @@ describe("task store", () => {
       });
 
       it("writes nothing for a version that is not the next one", () => {
-        const task = planningTask();
+        const task = runningTask("planning");
         expectNothingChanged(
           task.id,
           () => store.addPlanRevision(task.id, revision(2), "awaiting_plan_review"),
@@ -1809,7 +1810,7 @@ describe("task store", () => {
       });
 
       it("writes nothing for a spawning state", () => {
-        const task = planningTask();
+        const task = runningTask("planning");
         expectNothingChanged(
           task.id,
           () => store.addPlanRevision(task.id, revision(1), "executing"),
@@ -1841,8 +1842,7 @@ describe("task store", () => {
       });
 
       it("throws when the marker belongs to another process", () => {
-        const task = store.createTask({ ...newTask, state: "executing" });
-        writeRunPid(task.id, "executing", deadPid());
+        const task = runningTask("executing", deadPid());
         expectNothingChanged(
           task.id,
           () => store.setRunChildPid(task.id, 4242),
@@ -1869,8 +1869,7 @@ describe("task store", () => {
       });
 
       it("deletes the marker of another process", () => {
-        const task = store.createTask({ ...newTask, state: "executing" });
-        writeRunPid(task.id, "executing", deadPid());
+        const task = runningTask("executing", deadPid());
         store.endRun(task.id, "executed");
         expect(store.getTask(task.id)?.state).toBe("executed");
         expect(readRunMarker(dbPath, task.id)).toBeUndefined();
@@ -1939,8 +1938,7 @@ describe("task store", () => {
       });
 
       it("gives dead when the process of the marker is gone, also when the child is alive", () => {
-        const task = store.createTask({ ...newTask, state: "executing" });
-        writeRunPid(task.id, "executing", deadPid(), process.pid);
+        const task = runningTask("executing", deadPid(), process.pid);
         expect(store.runStatus(task.id)).toEqual({ status: "dead", childPid: process.pid });
       });
 
