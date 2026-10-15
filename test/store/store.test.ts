@@ -15,7 +15,7 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, useTempDir, repoRoot, seedPlanRevision, seedPlanSession, startFixture, startWriteLockHolder, readRunMarker, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
+import { deadPid, useTempDir, repoRoot, seedExecuteSession, seedPlanRevision, seedPlanSession, startFixture, startWriteLockHolder, readRunMarker, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -108,6 +108,9 @@ describe("task store", () => {
       effort: "medium",
       ...change,
     });
+
+  const clearPlan = (taskId: number) => store.clearPlanSession(taskId);
+  const clearExecute = (taskId: number, version: number) => store.clearExecuteSession(taskId, version);
 
   it("creates a task with equal timestamps and no branch", () => {
     const task = store.createTask(newTask);
@@ -1263,6 +1266,55 @@ describe("task store", () => {
       seedPlanRevision(store, task.id);
       expect(store.executeSession(task.id, 1)).toBeUndefined();
       expect(store.executeSession(task.id, 7)).toBeUndefined();
+    });
+  });
+
+  describe("clear a session", () => {
+    it("clears the plan session so that a new id is recorded", () => {
+      const task = store.createTask(newTask);
+      seedPlanSession(store, task.id);
+      clearPlan(task.id);
+      expect(store.planSession(task.id)).toBeUndefined();
+      expect(readSessionRows()).toEqual([]);
+      expect(seedPlanSession(store, task.id, { sessionId: "s-new" }).sessionId).toBe("s-new");
+      expect(store.planSession(task.id)?.sessionId).toBe("s-new");
+    });
+
+    it("clears the execute session so that a new id is recorded", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedExecuteSession(store, task.id, 1);
+      clearExecute(task.id, 1);
+      expect(store.executeSession(task.id, 1)).toBeUndefined();
+      expect(readSessionRows()).toEqual([]);
+      expect(seedExecuteSession(store, task.id, 1, { sessionId: "s-new" }).sessionId).toBe("s-new");
+      expect(store.executeSession(task.id, 1)?.sessionId).toBe("s-new");
+    });
+
+    it("does not throw and changes nothing when there is no row to clear", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedPlanSession(store, task.id);
+      const rows = readSessionRows();
+      clearExecute(task.id, 1);
+      clearExecute(task.id, 9);
+      expect(readSessionRows()).toEqual(rows);
+      const other = store.createTask({ ...newTask, issueKey: "codeguru42/tasker#7" });
+      clearPlan(other.id);
+      expect(readSessionRows()).toEqual(rows);
+    });
+
+    it("keeps the other sessions when it clears the execute session of one version", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedPlanRevision(store, task.id);
+      seedPlanSession(store, task.id);
+      seedExecuteSession(store, task.id, 1);
+      seedExecuteSession(store, task.id, 2, { sessionId: "s-2" });
+      clearExecute(task.id, 1);
+      expect(store.executeSession(task.id, 1)).toBeUndefined();
+      expect(store.executeSession(task.id, 2)?.sessionId).toBe("s-2");
+      expect(store.planSession(task.id)).toBeDefined();
     });
   });
 
