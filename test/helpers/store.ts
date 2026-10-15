@@ -188,6 +188,28 @@ export function seedVerifyRun(
   return store.getVerifyRun(task.id, run.number)!;
 }
 
+// A new review with the number and the defaults: a revision, a prompt version, the times dayAt(1) and two open
+// findings. change replaces the defaults that it names.
+export function newReview(number: number, change: Partial<Omit<NewReview, "number">> = {}): NewReview {
+  return {
+    number,
+    revision: "4b825dc642cb",
+    prompt: "review@3f9a1c04b2e7",
+    startedAt: dayAt(1),
+    endedAt: dayAt(1),
+    findings: [
+      reviewFinding(),
+      reviewFinding({
+        file: "src/b.ts",
+        line: 9,
+        summary: "The count is off by one.",
+        failure_scenario: "A list of three items gives the count 2.",
+      }),
+    ],
+    ...change,
+  };
+}
+
 // Seeds the next review of task: the row and its findings. The task ends in state. The findings default to two
 // open findings. It gives back the stored review.
 export function seedReview(
