@@ -167,6 +167,7 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
   const common = prepareCommonRun(req, "execute");
   const { surface, worktree: wt } = common;
   const clone = await surface.sharedFolder(wt);
+  const claudeDir = claudeConfigDir(req.env);
   // One prepared run serves every turn of a session. The first start of a new session starts it.
   // Each later start continues it.
   let resume = common.resume;
@@ -193,6 +194,11 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
       // The model calls Agent. The init event of claude 2.1.300 lists Task.
       "Agent",
       "Task",
+      // A skill points the model at reference files in these folders, and dontAsk denies that read without a rule.
+      // Never allow the whole folder: it holds the credentials and the settings.
+      ...(claudeDir === undefined
+        ? []
+        : [rule("Read", `${resolve(claudeDir)}/skills/**`), rule("Read", `${resolve(claudeDir)}/plugins/**`)]),
     ],
     // A deny wins over an allow, so git data changes only through git in the sandboxed shell.
     disallowedTools: [
