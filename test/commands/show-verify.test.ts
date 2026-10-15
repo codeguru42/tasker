@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { showVerify } from "../../src/commands/show-verify.js";
 import { verifyCommandLogPath } from "../../src/store/layout.js";
@@ -107,5 +109,55 @@ describe("show-verify", () => {
       out: "",
       err: "no task for the issue codeguru42/other#9 in the repo codeguru42/other\n",
     });
+  });
+
+  it("prints run 1 of 2 with --run 1", async () => {
+    const { dataRoot, task } = seedRuns([
+      { change: { result: "failed", startedAt: dayAt(2) }, logs: ["one\n"] },
+      { change: { result: "passed", startedAt: dayAt(3) }, logs: ["two\n"] },
+    ]);
+    const path = verifyCommandLogPath(dataRoot, task, 1, 1);
+
+    const result = await showVerifyOf(KEY, "--run", "1");
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out: `${KEY} verify run 1 of 2: failed (${dayAt(2)})\n\n== command 1: npm run check (${path}) ==\none\n`,
+    });
+  });
+
+  it.each(["0", "01", "-1", "1.5"])("fails for the bad --run value %s", async (value) => {
+    seedRuns([{}]);
+
+    const result = await showVerifyOf(KEY, "--run", value);
+
+    expect(result).toEqual({ code: 1, out: "", err: `--run must be a whole number of 1 or more: ${value}\n` });
+  });
+
+  it("checks --run before the task lookup", async () => {
+    const written = useThreeRepoDataRoot();
+
+    const result = await showVerifyOf("nobody/else#1", "--run", "0");
+
+    expect(result).toEqual({ code: 1, out: "", err: "--run must be a whole number of 1 or more: 0\n" });
+    expect(existsSync(join(written.dataRoot, "tasker.db"))).toBe(false);
+  });
+
+  it("fails for a run that does not exist", async () => {
+    seedRuns([{}, {}]);
+
+    const result = await showVerifyOf(KEY, "--run", "3");
+
+    expect(result).toEqual({ code: 1, out: "", err: `the task of ${KEY} has no verify run 3; it has 2\n` });
+  });
+
+  it("prints a very large --run as the user typed it", async () => {
+    seedRuns([{}]);
+    const value = "9".repeat(30);
+
+    const result = await showVerifyOf(KEY, "--run", value);
+
+    expect(result).toEqual({ code: 1, out: "", err: `the task of ${KEY} has no verify run ${value}; it has 1\n` });
   });
 });
