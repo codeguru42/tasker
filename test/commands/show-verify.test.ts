@@ -1,0 +1,111 @@
+import { describe, expect, it } from "vitest";
+import { showVerify } from "../../src/commands/show-verify.js";
+import { verifyCommandLogPath } from "../../src/store/layout.js";
+import type { NewVerifyRun } from "../../src/store/store.js";
+import { runCommand } from "../helpers/cli.js";
+import { useThreeRepoDataRoot } from "../helpers/config.js";
+import { dayAt, seedTasks, seedVerifyRun, withDataRootStore } from "../helpers/store.js";
+
+const TASKER = "codeguru42/tasker";
+const KEY = `${TASKER}#5`;
+
+// Runs tasker show-verify for key, with the repo of key as --repo, then the extra arguments.
+function showVerifyOf(key: string, ...extra: string[]) {
+  return runCommand(showVerify, "show-verify", key, "--repo", key.split("#")[0], ...extra);
+}
+
+// A task of KEY with the given verify runs, each seeded with seedVerifyRun.
+function seedRuns(runs: { change?: Partial<Omit<NewVerifyRun, "number">>; logs?: string[] }[] = []) {
+  const { dataRoot } = useThreeRepoDataRoot();
+  const [task] = seedTasks(dataRoot, [{ issueKey: KEY, repoKey: TASKER, state: "executed", at: dayAt(2) }]);
+  withDataRootStore(dataRoot, (store) =>
+    runs.forEach((r) => seedVerifyRun(store, dataRoot, task, r.change, r.logs, "failed")),
+  );
+  return { dataRoot, task };
+}
+
+describe("show-verify", () => {
+  it("prints the newest run by default", async () => {
+    const { dataRoot, task } = seedRuns([
+      { change: { startedAt: dayAt(2) }, logs: ["$ npm ci\n--- exit code 0\n"] },
+      {
+        change: { result: "failed", commands: ["npm ci", "npm run check"], failingCommand: 2, startedAt: dayAt(3) },
+        logs: ["$ npm ci\n--- exit code 0\n", "$ npm run check\n--- exit code 1\n"],
+      },
+    ]);
+    const path1 = verifyCommandLogPath(dataRoot, task, 2, 1);
+    const path2 = verifyCommandLogPath(dataRoot, task, 2, 2);
+
+    const result = await showVerifyOf(KEY);
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        `${KEY} verify run 2 of 2: failed (${dayAt(3)})\n` +
+        `\n== command 1: npm ci (${path1}) ==\n$ npm ci\n--- exit code 0\n` +
+        `\n== command 2: npm run check (${path2}) ==\n$ npm run check\n--- exit code 1\n`,
+    });
+  });
+
+  it("prints the result as it is stored", async () => {
+    seedRuns([{ change: { result: "dirty_after" } }]);
+
+    const result = await showVerifyOf(KEY);
+
+    expect(result.code).toBe(0);
+    expect(result.out.split("\n")[0]).toBe(`${KEY} verify run 1 of 1: dirty_after (${dayAt(1)})`);
+  });
+
+  it("adds a final line end to a log that has none, and keeps one that has it", async () => {
+    const { dataRoot, task } = seedRuns([
+      { change: { commands: ["a", "b"] }, logs: ["no end", "has end\n"] },
+    ]);
+    const path1 = verifyCommandLogPath(dataRoot, task, 1, 1);
+    const path2 = verifyCommandLogPath(dataRoot, task, 1, 2);
+
+    const result = await showVerifyOf(KEY);
+
+    expect(result.out).toBe(
+      `${KEY} verify run 1 of 1: passed (${dayAt(1)})\n` +
+        `\n== command 1: a (${path1}) ==\nno end\n` +
+        `\n== command 2: b (${path2}) ==\nhas end\n`,
+    );
+  });
+
+  it("prints the no logs line for a run that ran no command", async () => {
+    seedRuns([{ change: { result: "dirty_before", commands: [] } }]);
+
+    const result = await showVerifyOf(KEY);
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out: `${KEY} verify run 1 of 1: dirty_before (${dayAt(1)})\n\nno logs: this run ran no command\n`,
+    });
+  });
+
+  it.each([[[]], [["--run", "2"]]])("fails for a task with no verify run (extra arguments %j)", async (extra) => {
+    seedRuns();
+
+    const result = await showVerifyOf(KEY, ...extra);
+
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err: `the task of ${KEY} has no verify run; run tasker verify first\n`,
+    });
+  });
+
+  it("fails for an issue with no task", async () => {
+    seedRuns();
+
+    const result = await showVerifyOf("codeguru42/other#9");
+
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err: "no task for the issue codeguru42/other#9 in the repo codeguru42/other\n",
+    });
+  });
+});
