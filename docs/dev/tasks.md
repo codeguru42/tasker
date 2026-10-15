@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine and approve, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve and unapprove, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -93,7 +93,7 @@ The warning never refuses. Only a person can decide if an overlap is harmless an
 
 The read takes no repo lock. It changes nothing in the clone, and a wait for the repo lock can hold the end of the command.
 
-`tasker refine` prints the same warning with the same last line as `tasker plan`. `tasker approve` prints the same warning before its write, with the last line `tasker approves the plan anyway.`.
+`tasker refine` prints the same warning with the same last line as `tasker plan`. `tasker approve` prints the same warning before its write, with two last lines: `tasker approves the plan anyway.` and `To take the approval back, run: tasker unapprove <issue key>`.
 
 ## Refine
 
@@ -119,6 +119,12 @@ The write is one transaction. It sets the approval time of the revision, appends
 Open questions do not stop an approval. The operator decides, and the count in the event and in the output makes the choice visible.
 
 The approval lives on the revision, not on the task. A task has one approved revision for each cycle, and an older approval stays when a newer revision is approved.
+
+`tasker unapprove` takes back the approval of a task in `approved`. The task goes back to `awaiting_plan_review`. The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state and the pinned revision. A refused unapprove leaves the task, the revisions and the events as they were.
+
+The write is one transaction. It clears the approval time of the pinned revision, appends one `unapproved` event with the data `{ version, from, to }`, and moves the task to `awaiting_plan_review`. The `unapproved` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing. An older approved revision stays approved, because the command clears only the pinned one.
+
+The command works only in `approved`. The state alone sets the limit "before execute starts", because `tasker execute` moves the task out of `approved` before it spends anything.
 
 ## Limits
 
