@@ -184,6 +184,15 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
       rule("Edit", `${wt}/**`),
       rule("Write", `${wt}/**`),
       "Bash",
+      // claude answers --json-schema through this tool. A real capture showed a denial under dontAsk without
+      // this rule. claude 2.1.300 did not deny it. The rule covers both.
+      "StructuredOutput",
+      "Skill",
+      "TodoWrite",
+      rule("NotebookEdit", `${wt}/**`),
+      // The model calls Agent. The init event of claude 2.1.300 lists Task.
+      "Agent",
+      "Task",
     ],
     // A deny wins over an allow, so git data changes only through git in the sandboxed shell.
     disallowedTools: [
