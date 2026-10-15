@@ -12,8 +12,8 @@ import {
 
 // The last lines of the overlap warning of tasker approve: the warning does not stop the approval, and the second
 // line names the command that takes the approval back.
-function approveOverlapLastLines(issueKey: string): string {
-  return `tasker approves the plan anyway.\nTo take the approval back, run: tasker unapprove ${issueKey}`;
+function approveOverlapLastLines(issueKey: string): readonly string[] {
+  return ["tasker approves the plan anyway.", `To take the approval back, run: tasker unapprove ${issueKey}`];
 }
 
 function approvalText(approved: Approved): string {
@@ -46,7 +46,7 @@ export const approve: RegisterCommand = (program, io) => {
                 taskId: found.id,
                 files,
                 env: process.env,
-                lastLine: approveOverlapLastLines(found.issueKey),
+                lastLines: approveOverlapLastLines(found.issueKey),
               }),
           }),
         ),

@@ -333,7 +333,7 @@ describe("warnOverlaps", () => {
     const config = parseConfig({ ...validConfig(), dataRoot: useTempDir("tasker-warn-") }, {}, "/home/test");
     const io = captureIo();
 
-    await warnOverlaps(io, config, { taskId: 999, files: ["src/a.ts"], env: {}, lastLine: "last" });
+    await warnOverlaps(io, config, { taskId: 999, files: ["src/a.ts"], env: {}, lastLines: ["last"] });
 
     expect(io.err).toEqual([
       `note: cannot compare the plan with the other tasks in flight: ${taskNotFound(999).message}\n`,

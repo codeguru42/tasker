@@ -227,7 +227,7 @@ describe("refine", () => {
     expect(result.err).toBe(
       overlapWarningText(
         [{ issueKey: "codeguru42/tasker#6", state: "awaiting_plan_review", files: ["src/a.ts"] }],
-        "tasker does not refuse. Decide before you approve.",
+        ["tasker does not refuse. Decide before you approve."],
       ),
     );
   });

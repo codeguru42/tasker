@@ -57,14 +57,14 @@ export async function findOverlaps(o: {
   return report;
 }
 
-// The warning for the overlaps, with lastLine as its last line. An empty text for no overlap.
-export function overlapWarning(overlaps: readonly TaskOverlap[], lastLine: string): string {
+// The warning for the overlaps, with the lines of lastLines at its end. An empty text for no overlap.
+export function overlapWarning(overlaps: readonly TaskOverlap[], lastLines: readonly string[]): string {
   if (overlaps.length === 0) return "";
   const lines = [
     "WARNING: this plan changes files that other tasks in flight also change.",
     "The task that lands second can get merge conflicts and redo its work.",
     ...overlaps.flatMap((overlap) => [`  ${overlap.issueKey} (${overlap.state}):`, ...overlap.files.map((f) => `    ${f}`)]),
-    lastLine,
+    ...lastLines,
   ];
   return `${lines.join("\n")}\n`;
 }

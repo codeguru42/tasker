@@ -58,8 +58,8 @@ export function formatQuestions(states: PlanQuestionState[]): string {
   return `questions:\n${items.join("")}`;
 }
 
-// The last line of the overlap warning after a plan or a refine: the task waits in awaiting_plan_review for the approve.
-const PLAN_OVERLAP_LAST_LINE = "tasker does not refuse. Decide before you approve.";
+// The last lines of the overlap warning after a plan or a refine: the task waits in awaiting_plan_review for the approve.
+const PLAN_OVERLAP_LAST_LINES: readonly string[] = ["tasker does not refuse. Decide before you approve."];
 
 // Prints the lines of a new plan revision with firstLine first, then the overlap warning on stderr.
 // A result with exitCode stops the command: the run step already printed the message.
@@ -87,6 +87,6 @@ export async function reportPlanRun(
     taskId: o.taskId,
     files: result.answer.files_changed,
     env: process.env,
-    lastLine: PLAN_OVERLAP_LAST_LINE,
+    lastLines: PLAN_OVERLAP_LAST_LINES,
   });
 }

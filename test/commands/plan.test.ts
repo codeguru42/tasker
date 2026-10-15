@@ -335,7 +335,7 @@ describe("plan", () => {
 });
 
 describe("the overlap warning", () => {
-  const LAST = "tasker does not refuse. Decide before you approve.";
+  const LAST = ["tasker does not refuse. Decide before you approve."];
   const OTHER = { repoKey: REPO, at: dayAt(3) };
   const issues = (...numbers: number[]) => ({
     issues: [5, ...numbers].map((number) => ({ project: REPO, number })),

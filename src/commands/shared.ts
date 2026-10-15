@@ -131,12 +131,12 @@ export async function withStoreAsync<T>(
   }
 }
 
-// Prints the notes and the overlap warning for the files of the task on stderr, with lastLine as the last line of the
-// warning. It never stops the command: a failure prints one note line. docs/dev/tasks.md gives the reasons.
+// Prints the notes and the overlap warning for the files of the task on stderr, with the lines of lastLines at the end of
+// the warning. It never stops the command: a failure prints one note line. docs/dev/tasks.md gives the reasons.
 export async function warnOverlaps(
   io: Io,
   config: Config,
-  o: { taskId: number; files: readonly string[]; env: NodeJS.ProcessEnv; lastLine: string },
+  o: { taskId: number; files: readonly string[]; env: NodeJS.ProcessEnv; lastLines: readonly string[] },
 ): Promise<void> {
   try {
     const report = await withStoreAsync(config, async (store) => {
@@ -145,7 +145,7 @@ export async function warnOverlaps(
       return findOverlaps({ config, store, task, files: o.files, env: o.env });
     });
     for (const note of report.notes) io.stderr(`${note}\n`);
-    const warning = overlapWarning(report.overlaps, o.lastLine);
+    const warning = overlapWarning(report.overlaps, o.lastLines);
     if (warning !== "") io.stderr(warning);
   } catch (error) {
     io.stderr(`note: cannot compare the plan with the other tasks in flight: ${errorMessage(error)}\n`);

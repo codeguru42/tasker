@@ -108,7 +108,7 @@ describe("approve", () => {
     expect(result.err).toBe(
       overlapWarningText(
         [{ issueKey: "codeguru42/tasker#6", state: "awaiting_plan_review", files: ["src/a.ts"] }],
-        "tasker approves the plan anyway.\nTo take the approval back, run: tasker unapprove codeguru42/tasker#5",
+        ["tasker approves the plan anyway.", "To take the approval back, run: tasker unapprove codeguru42/tasker#5"],
       ),
     );
     expect(latestTaskOf(dataRoot, KEY).state).toBe("approved");
