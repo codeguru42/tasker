@@ -18,7 +18,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - If a review finding depends on the timing of the event loop, ask for a failing test first. If execute cannot make a test fail, dismiss the finding with the evidence from the local machine.
 - If tests wait in a loop, ask for one shared wait helper.
 
-## A ticket that only adds a schema
+## A ticket that only adds a layer, for example a schema
 
 - Say that the wiring is out of scope. Otherwise the review finds "a key that nothing reads".
 
