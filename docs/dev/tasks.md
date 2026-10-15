@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove and execute, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute and verify, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -151,6 +151,16 @@ The reasons:
 - A turn that reports `blocked` or gives no result fails the task. Nobody is present to answer the turn. The operator reads the error and decides with the next command. The todo stays `in_progress`.
 - All turns share one deadline: the value of `executeTimeoutMin`. The command reads the clock once before the first turn, and each turn gets the time that is left. It starts no turn when no time is left. `executeTimeoutMin` is the limit of one execute run. A limit for each turn multiplies with the count of todos, so a plan with many todos can run for many times the configured limit.
 - A run with no turn records no execute session and archives no prompt. The rule of [the sessions table](data-root.md#sessions-table) says that an id that no conversation holds must not be continued. If the run recorded one, a later fix turn from `tasker retry` continues an empty id and fails.
+
+## Verify
+
+`tasker verify` runs the verify commands of the repo in the worktree of a task in `executed`. These reasons explain its rules:
+
+- The worktree must be clean before the commands. If it is not, the commands test code that the branch does not hold, and the result says nothing about the branch.
+- The worktree must be clean after the commands. The worktree goes to a person as ready for review. A dirty tree makes that claim false.
+- Only the exit codes count, because tasker never reads the output of a command. As a result, no output can change a result. [phases.md](phases.md#the-verify-phase) gives the rule.
+- A failed run is recorded too. `tasker show-verify` prints the run, and the fix turn gets its log.
+- The row of a run and the move of the task share one transaction. The bullet in [data-root.md](data-root.md#verify_runs-table) gives the reason.
 
 ## Limits
 
