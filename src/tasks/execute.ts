@@ -23,7 +23,8 @@ import { executeTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
 import { taskNotFound, type TaskStore } from "../store/store.js";
-import { vcsForRepo } from "../vcs/provider.js";
+import { type RemoteTip, vcsForRepo } from "../vcs/provider.js";
+import { tipMoved } from "../vcs/remote-tip.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
 import { baseRevisionOf } from "./base-revision.js";
 import { applyRunOutcome, failRun } from "./run-outcome.js";
@@ -85,8 +86,10 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   if (baseRevision === undefined) throw new Error(`the task of ${task.issueKey} has no base revision`);
   if (task.branch === null) throw new Error(`the task of ${task.issueKey} has no branch`);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const branch = task.branch;
+  let before: RemoteTip;
   try {
-    await vcs.remoteTaskRefTip(ctx, { taskRef: task.branch });
+    before = await vcs.remoteTaskRefTip(ctx, { taskRef: branch });
   } catch (error) {
     throw new Error(`cannot read the remote before the run: ${errorMessage(error)}`, { cause: error });
   }
@@ -168,16 +171,24 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
           timeoutMs: left,
         });
         const result = applyRunOutcome({ store, task, phase: "executing", timeoutMinutes: limitMin, io, outcome });
-        if ("exitCode" in result) return result;
-        const read = readTurnResult(result.outcome.structuredOutput);
-        if (read.kind === "done") {
+        const read = "outcome" in result ? readTurnResult(result.outcome.structuredOutput) : undefined;
+        if (read?.kind === "done") {
           store.setExecuteTodoState(task.id, version, todo.id, "done");
           store.appendEvent(task.id, "todo_done", { id: todo.id });
-        } else if (read.kind === "blocked") {
-          return fail(`${label} reported blocked: ${read.reason}`);
-        } else {
-          return fail(`${label} reported no result: ${read.detail}`);
         }
+        // Layer 3 of the push guard: the tip of the task branch on the remote must not move. A push wins over
+        // every outcome, a quota stop included.
+        let pushed: string | undefined;
+        try {
+          const moved = tipMoved(before, await vcs.remoteTaskRefTip(ctx, { taskRef: branch }));
+          if (moved !== undefined) pushed = `push detected on ${branch}: ${moved}`;
+        } catch (error) {
+          pushed = `cannot read the remote after the run: ${errorMessage(error)}`;
+        }
+        if (pushed !== undefined) return fail(pushed);
+        if ("exitCode" in result) return result;
+        if (read?.kind === "blocked") return fail(`${label} reported blocked: ${read.reason}`);
+        if (read?.kind === "none") return fail(`${label} reported no result: ${read.detail}`);
       }
     } finally {
       closeSync(fd);
