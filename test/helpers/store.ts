@@ -60,6 +60,11 @@ export function tableNames(db: DatabaseSync): string[] {
   return rows.map((row) => row.name);
 }
 
+// The number of all rows of table in db.
+export function tableRowCount(db: DatabaseSync, table: string): number {
+  return (db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n;
+}
+
 // The names in the locks table of a data root, sorted.
 export function lockNames(dataRoot: string): string[] {
   return withRawDatabase(databasePathOf(dataRoot), (db) =>
