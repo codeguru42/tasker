@@ -2,13 +2,7 @@ import type { Io } from "../cli.js";
 import { errorMessage } from "../error-message.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
-import {
-  commandFailureMessage,
-  commandLogHasNoOutput,
-  commandLogTail,
-  NO_OUTPUT_LINE,
-} from "../phases/command-step.js";
-import { runVerify, startedCommands } from "../phases/verify.js";
+import { runVerify, startedCommands, verifyFailureMessage } from "../phases/verify.js";
 import { childEnv } from "../process/child-env.js";
 import { type TaskState, transitionTask, transitionWithVerifyRun } from "../state/machine.js";
 import { verifyCommandLogPath, verifyRunDir } from "../store/layout.js";
@@ -91,10 +85,6 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
     });
     if (result.status !== "ok") {
       const log = verifyCommandLogPath(config.dataRoot, task, number, result.index);
-      const text =
-        `${commandFailureMessage("verify", result, log, config.limits.verifyTimeoutMin)}\n` +
-        commandLogTail(log, 20) +
-        (commandLogHasNoOutput(log) ? `${NO_OUTPUT_LINE}\n` : "");
       return {
         kind: "record",
         run: {
@@ -105,7 +95,7 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
           startedAt,
         },
         to: "failed",
-        message: text.trimEnd(),
+        message: verifyFailureMessage(result, log, config.limits.verifyTimeoutMin),
       };
     }
     const allCommands = [...commands];

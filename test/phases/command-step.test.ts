@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { commandFailureMessage, commandLogHasNoOutput, commandLogTail, NO_OUTPUT_LINE } from "../../src/phases/command-step.js";
+import { commandFailureMessage, NO_OUTPUT_LINE, readCommandLog } from "../../src/phases/command-step.js";
 import { useTempDir } from "../helpers/temp.js";
 
 describe("commandFailureMessage", () => {
@@ -38,9 +38,9 @@ describe("commandFailureMessage", () => {
   });
 });
 
-describe("commandLogTail", () => {
+describe("readCommandLog", () => {
   function logWith(content: string): string {
-    const path = join(useTempDir("tasker-tail-"), "bootstrap.log");
+    const path = join(useTempDir("tasker-read-log-"), "verify.log");
     writeFileSync(path, content);
     return path;
   }
@@ -49,54 +49,42 @@ describe("commandLogTail", () => {
 
   it("gives the last 20 lines of a long log", () => {
     const log = logWith(numbers(30).join(""));
-    expect(commandLogTail(log, 20)).toBe(
-      `the last 20 lines of the log:\n${numbers(30).slice(10).join("")}`,
-    );
+    expect(readCommandLog(log, 20).tail).toBe(`the last 20 lines of the log:\n${numbers(30).slice(10).join("")}`);
   });
 
   it("gives all the lines of a short log with the real count", () => {
-    expect(commandLogTail(logWith("1\n2\n3\n"), 20)).toBe("the last 3 lines of the log:\n1\n2\n3\n");
+    expect(readCommandLog(logWith("1\n2\n3\n"), 20).tail).toBe("the last 3 lines of the log:\n1\n2\n3\n");
   });
 
   it("counts a last line with no line end", () => {
-    expect(commandLogTail(logWith("1\n2"), 20)).toBe("the last 2 lines of the log:\n1\n2\n");
+    expect(readCommandLog(logWith("1\n2"), 20).tail).toBe("the last 2 lines of the log:\n1\n2\n");
   });
 
   it("says that the log is missing", () => {
-    const log = join(useTempDir("tasker-tail-"), "none.log");
-    expect(commandLogTail(log, 20)).toBe(`the log is missing: ${log}\n`);
+    const log = join(useTempDir("tasker-read-log-"), "none.log");
+    expect(readCommandLog(log, 20)).toStrictEqual({ tail: `the log is missing: ${log}\n`, noOutput: false });
   });
 
   it("gives the error code of a log that cannot be read", () => {
-    const log = join(useTempDir("tasker-tail-"), "folder");
+    const log = join(useTempDir("tasker-read-log-"), "folder");
     mkdirSync(log);
-    expect(commandLogTail(log, 20)).toBe(`cannot read the log ${log}: EISDIR\n`);
+    expect(readCommandLog(log, 20)).toStrictEqual({ tail: `cannot read the log ${log}: EISDIR\n`, noOutput: false });
+  });
+
+  it("has no output for a header and an outcome line", () => {
+    expect(readCommandLog(logWith("$ exit 3\n--- exit code 3\n"), 20).noOutput).toBe(true);
+  });
+
+  it("has output for a log with output", () => {
+    expect(readCommandLog(logWith("$ ls\nfile\n--- exit code 0\n"), 20).noOutput).toBe(false);
+  });
+
+  it("has no output for a header and an error line", () => {
+    expect(readCommandLog(logWith("$ nope\n--- spawn ENOENT\n"), 20).noOutput).toBe(true);
   });
 });
 
-describe("commandLogHasNoOutput", () => {
-  function logWith(content: string): string {
-    const path = join(useTempDir("tasker-no-output-"), "verify.log");
-    writeFileSync(path, content);
-    return path;
-  }
-
-  it("is true for a header and an outcome line", () => {
-    expect(commandLogHasNoOutput(logWith("$ exit 3\n--- exit code 3\n"))).toBe(true);
-  });
-
-  it("is false for a log with output", () => {
-    expect(commandLogHasNoOutput(logWith("$ ls\nfile\n--- exit code 0\n"))).toBe(false);
-  });
-
-  it("is false for a missing log", () => {
-    expect(commandLogHasNoOutput(join(useTempDir("tasker-no-output-"), "none.log"))).toBe(false);
-  });
-
-  it("is true for a header and an error line", () => {
-    expect(commandLogHasNoOutput(logWith("$ nope\n--- spawn ENOENT\n"))).toBe(true);
-  });
-
+describe("NO_OUTPUT_LINE", () => {
   it("gives the text of the no-output line", () => {
     expect(NO_OUTPUT_LINE).toBe(
       "The command produced no output. It usually failed before it reached the tool that it runs.",

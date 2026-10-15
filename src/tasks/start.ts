@@ -2,7 +2,7 @@ import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
-import { commandFailureMessage, commandLogTail } from "../phases/command-step.js";
+import { commandFailureMessage, readCommandLog } from "../phases/command-step.js";
 import { childEnv } from "../process/child-env.js";
 import { errorMessage } from "../error-message.js";
 import { failedFrom, failTask, transitionTask } from "../state/machine.js";
@@ -125,7 +125,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
     });
     store.appendEvent(task.id, "bootstrap", { ...result, log });
     if (result.status === "failed") {
-      throw new BootstrapFailedError(commandFailureMessage("bootstrap", result, log, timeoutMin), commandLogTail(log, 20));
+      throw new BootstrapFailedError(commandFailureMessage("bootstrap", result, log, timeoutMin), readCommandLog(log, 20).tail);
     }
   });
   return { started: true, task: transitionTask(store, task.id, "workspace_ready") };

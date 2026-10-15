@@ -2,7 +2,14 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { errorMessage } from "../error-message.js";
 import type { GroupResult } from "../process/run-group.js";
-import { type CommandFailure, commandFailure, runLoggedCommand } from "./command-step.js";
+import {
+  type CommandFailure,
+  commandFailure,
+  commandFailureMessage,
+  NO_OUTPUT_LINE,
+  readCommandLog,
+  runLoggedCommand,
+} from "./command-step.js";
 
 export interface VerifyOptions {
   commands: readonly string[];
@@ -59,4 +66,11 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyResult> {
 export function startedCommands(commands: readonly string[], result: VerifyResult): string[] {
   if (result.status === "ok") return [...commands];
   return commands.slice(0, result.started === false ? result.index - 1 : result.index);
+}
+
+// The error of a failed verify run: the message of the failing command, then the tail of its log, then the
+// no-output line when the log holds no output.
+export function verifyFailureMessage(failure: VerifyFailure, log: string, timeoutMin: number): string {
+  const { tail, noOutput } = readCommandLog(log, 20);
+  return `${commandFailureMessage("verify", failure, log, timeoutMin)}\n${tail}${noOutput ? `${NO_OUTPUT_LINE}\n` : ""}`.trimEnd();
 }
