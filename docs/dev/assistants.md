@@ -82,6 +82,8 @@ The provider runs Claude Code in print mode. It sends the prompt on stdin and re
 
 Each tool rule goes as its own argument, so a rule with a space stays one rule. The host measure showed this. The two tool lists take any number of values, so they come last. The prompt cannot follow them, and it goes to stdin.
 
+In a test by hand on the local machine, write `--allowedTools=Bash`, and send the prompt on stdin or close stdin with `< /dev/null`. A plain `claude -p --allowedTools Bash "<prompt>"` reads the prompt as a tool name (`claude` 2.1.300).
+
 The schema goes inline as JSON text. `claude` parses the argument as JSON, and a file path fails on its first character.
 
 A continued session also gets the model. A host measure showed that a resume with a model runs the given model.
@@ -126,6 +128,8 @@ The provider refuses a sandbox before it starts the program in three cases:
 On Linux, `bwrap` comes from the `bubblewrap` package, and `socat` has its own package. The setting that makes `claude` fail when the sandbox is not available is the second guard, behind the check of the provider.
 
 The only Unix socket that a command can use is the folder `claude-<uid>` in the temp root, as a real path. `claude` keeps its own sockets there. The provider never opens all Unix sockets, because that would open the sockets of the ssh agent and the keyring. When this folder is a shared temp folder, or holds one, the provider gives no socket rule. Then no command can use a Unix socket. When the provider cannot resolve the folder, the run fails before the start, and the reason holds the error code and no path. macOS uses this rule. Linux ignores it, because `seccomp` cannot filter by path.
+
+The sandbox can always write the folder `claude-<uid>` in the temp root (`/tmp/claude-<uid>`). So a test of the sandbox on the local machine runs outside that folder (`claude` 2.1.300).
 
 The sandbox leaves placeholder files in the worktree. `bwrap` makes an empty read-only file for each protected path that does not exist, for example `.bashrc`, `.mcp.json` and some entries of `.claude/`. A killed `claude` does not clean them, and a normal exit still leaves `.claude/.cc-writes` and `.claude`. Measures on `claude` 2.1.289 and 2.1.299 gave the same lists.
 
