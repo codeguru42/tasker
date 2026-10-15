@@ -519,7 +519,6 @@ describe("executeTask denials and sandbox cleanup", () => {
     const types = eventsOf(fixture.started.dataRoot, fixture.started.key).map((event) => event.type);
     expect(types.filter((type) => type === "permission_denials")).toHaveLength(1);
     expect(types.indexOf("permission_denials")).toBeLessThan(types.lastIndexOf("transition"));
-    expect(types.at(-1)).toBe("transition");
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
   });
 

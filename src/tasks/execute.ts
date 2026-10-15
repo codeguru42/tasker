@@ -1,5 +1,6 @@
 import { closeSync, mkdirSync, openSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
+import type { PermissionDenial } from "../assistant/provider.js";
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
@@ -142,6 +143,14 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   }
 
   transitionTask(store, task.id, "executing");
+  // The denials of all turns. One permission_denials event holds them, written right before the move out of executing.
+  const denials: PermissionDenial[] = [];
+  let denialsWritten = false;
+  const flushDenials = (): void => {
+    if (denialsWritten || denials.length === 0) return;
+    denialsWritten = true;
+    store.appendEvent(task.id, "permission_denials", { denials });
+  };
   // Fails the task with message: from executing or quota_blocked, the move to failed with the message.
   // From failed, only the message on stderr, because a move from failed to failed is illegal.
   const fail = (message: string): { exitCode: number } => {
@@ -149,6 +158,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
       io.stderr(`${message}\n`);
       return { exitCode: 1 };
     }
+    flushDenials();
     return failRun(store, task, io, message);
   };
   const transcriptPath = executeTranscriptPath(config.dataRoot, task, version);
@@ -188,6 +198,8 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
           onEvent: (event) => writeSync(fd, `${JSON.stringify(event)}\n`),
           timeoutMs: left,
         });
+        denials.push(...outcome.permissionDenials);
+        if (outcome.kind !== "success") flushDenials();
         const result = applyRunOutcome({ store, task, phase: "executing", timeoutMinutes: limitMin, io, outcome });
         const read = "outcome" in result ? readTurnResult(result.outcome.structuredOutput) : undefined;
         if (read?.kind === "done") {
@@ -199,6 +211,9 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
             store.appendEvent(task.id, "fix_turn_done");
             fixTurnDone = true;
           }
+        }
+        if (outcome.sandboxCleanup !== undefined) {
+          store.appendEvent(task.id, "sandbox_cleanup", outcome.sandboxCleanup);
         }
         // Layer 3 of the push guard: the tip of the task branch on the remote must not move. A push wins over
         // every outcome, a quota stop included.
@@ -217,6 +232,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     } finally {
       closeSync(fd);
     }
+    flushDenials();
     transitionWithExecution(store, task.id, version, prompts);
   } catch (error) {
     return fail(`executing failed: ${errorMessage(error)}`);
@@ -227,7 +243,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     todosDone: after.filter((entry) => entry.state === "done").length,
     todosTotal: after.length,
     fixTurnDone,
-    denials: 0,
+    denials: denials.length,
     transcriptPath,
   };
 }
