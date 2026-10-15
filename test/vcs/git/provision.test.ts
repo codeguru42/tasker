@@ -137,12 +137,6 @@ describe("provisionClone", () => {
     expect(existsSync(`${clone}.incomplete`)).toBe(false);
   });
 
-  it("names the clone when its configuration is locked", async () => {
-    await provision();
-    writeFileSync(join(clone, "config.lock"), "");
-    await expect(provision()).rejects.toThrow(`the clone configuration is locked: ${clone}`);
-  });
-
   it("removes the marker after success", async () => {
     await provision();
     expect(existsSync(`${clone}.incomplete`)).toBe(false);
@@ -165,13 +159,14 @@ describe("provisionClone", () => {
   }
 
   // Every local line of key in the clone, or [] when git exits with 1 (the key is not set).
+  // --null keeps a value with a newline whole.
   async function localConfigAll(key: string): Promise<string[]> {
     try {
-      const out = await runGit(["config", "--local", "--get-all", key], {
+      const out = await runGit(["config", "--local", "--null", "--get-all", key], {
         gitDir: clone,
         env: origin.env,
       });
-      return out.split("\n").filter((line) => line !== "");
+      return out.split("\0").slice(0, -1);
     } catch (error) {
       if (error instanceof GitError && error.exitCode === 1) {
         return [];
@@ -179,6 +174,91 @@ describe("provisionClone", () => {
       throw error;
     }
   }
+
+  // The empty, read-only config.lock that a live sandboxed run holds in the clone.
+  function holdConfigLock(): void {
+    writeFileSync(join(clone, "config.lock"), "", { mode: 0o444 });
+  }
+
+  // The text of the config file of the clone.
+  function configFile(): string {
+    return readFileSync(join(clone, "config"), "utf8");
+  }
+
+  // An env whose git is writeGitRecorder() in tmp, and the path of its log.
+  function recordedEnv(base: NodeJS.ProcessEnv): { env: NodeJS.ProcessEnv; log: string } {
+    const log = join(tmp, "git.log");
+    const bin = join(tmp, "gitbin");
+    writeGitRecorder(bin, log);
+    return { env: { ...base, PATH: `${bin}${delimiter}${base.PATH}` }, log };
+  }
+
+  // The git config calls in log that write: the ones with --replace-all or --unset-all.
+  function configWrites(log: string): string[][] {
+    return readArgLog(log).filter(
+      (call) =>
+        call.includes("config") && (call.includes("--replace-all") || call.includes("--unset-all")),
+    );
+  }
+
+  it("passes and leaves config as it was when config.lock is held and no value changed", async () => {
+    await provision();
+    holdConfigLock();
+    const before = configFile();
+    await provision();
+    expect(configFile()).toBe(before);
+    expect(existsSync(join(clone, "config.lock"))).toBe(true);
+  });
+
+  it("fails with the lock error and leaves config as it was when a value changed", async () => {
+    await provision();
+    holdConfigLock();
+    const before = configFile();
+    await expect(provision({ config: { authorName: "New Name" } })).rejects.toThrow(
+      `the clone configuration is locked: ${clone}`,
+    );
+    expect(configFile()).toBe(before);
+  });
+
+  it("makes no config write on a complete clone when every value is already set", async () => {
+    await provision({ config: { authorName: "Bot" } });
+    const { env, log } = recordedEnv(origin.env);
+    await provision({ config: { authorName: "Bot" }, env });
+    expect(configWrites(log)).toEqual([]);
+  });
+
+  it("keeps a value with a newline whole and does not write it again", async () => {
+    const config = { authorName: "Line One\nLine Two" };
+    await provision({ config });
+    expect(await localConfigAll("user.name")).toEqual(["Line One\nLine Two"]);
+    holdConfigLock();
+    await provision({ config });
+  });
+
+  it("writes neither the url nor the fetch refspec of a fresh clone", async () => {
+    const { env, log } = recordedEnv(origin.env);
+    await provision({ env });
+    for (const call of configWrites(log)) {
+      expect(call).not.toContain("remote.origin.url");
+      expect(call).not.toContain("remote.origin.fetch");
+    }
+    expect(await localConfigAll("remote.origin.url")).toEqual([origin.path]);
+  });
+
+  it("leaves one fetch refspec line when the clone has the tasker refspec two times", async () => {
+    await provision();
+    await addLines("remote.origin.fetch", ["+refs/heads/*:refs/remotes/origin/*"]);
+    await provision();
+    expect(await localConfigAll("remote.origin.fetch")).toEqual([
+      "+refs/heads/*:refs/remotes/origin/*",
+    ]);
+  });
+
+  it("writes a value that differs only in case", async () => {
+    await provision({ config: { authorName: "bot" } });
+    await provision({ config: { authorName: "Bot" } });
+    expect(await localConfigAll("user.name")).toEqual(["Bot"]);
+  });
 
   it("fetches from a changed remote into the same clone", async () => {
     await provision();
@@ -296,11 +376,7 @@ describe("provisionClone", () => {
       const config = { sshKey: "/keys/a" };
       await provision({ remote, config, env: ssh.env });
       await provision({ remote, config, env: ssh.env });
-      const out = await runGit(["config", "--get-all", "include.path"], {
-        gitDir: clone,
-        env: origin.env,
-      });
-      expect(out).toBe("tasker-ssh.config\n");
+      expect(await localConfigAll("include.path")).toEqual(["tasker-ssh.config"]);
     });
 
     it("passes the key to ssh for ls-remote and fetch", async () => {
@@ -314,13 +390,10 @@ describe("provisionClone", () => {
     });
 
     it("puts no key path or ssh command in any git argument", async () => {
-      const gitLog = join(tmp, "git.log");
-      const gitBin = join(tmp, "gitbin");
-      writeGitRecorder(gitBin, gitLog);
       const key = hardKey();
-      const env = { ...ssh.env, PATH: `${gitBin}${delimiter}${ssh.env.PATH}` };
+      const { env, log } = recordedEnv(ssh.env);
       await provision({ remote, config: { sshKey: key }, env });
-      const calls = readArgLog(gitLog);
+      const calls = readArgLog(log);
       const args = calls.flat();
       for (const subcommand of ["ls-remote", "init", "remote", "fetch", "config"]) {
         expect(args).toContain(subcommand);
@@ -368,13 +441,25 @@ describe("provisionClone", () => {
 
     it("leaves the include file as it was when the configuration is locked", async () => {
       await provision({ remote, config: { sshKey: "/keys/a" }, env: ssh.env });
-      writeFileSync(join(clone, "config.lock"), "");
+      holdConfigLock();
       await expect(
-        provision({ remote, config: { sshKey: "/keys/b" }, env: ssh.env }),
+        provision({
+          remote,
+          config: { sshKey: "/keys/b", authorName: "New Name" },
+          env: ssh.env,
+        }),
       ).rejects.toThrow(`the clone configuration is locked: ${clone}`);
       const file = readFileSync(join(clone, "tasker-ssh.config"), "utf8");
       expect(file).toContain(sshCommand("/keys/a"));
       expect(file).not.toContain("/keys/b");
+    });
+
+    it("writes the include file when config.lock is held and no value changed", async () => {
+      await provision({ remote, config: { sshKey: "/keys/a" }, env: ssh.env });
+      holdConfigLock();
+      await provision({ remote, config: { sshKey: "/keys/b" }, env: ssh.env });
+      const file = readFileSync(join(clone, "tasker-ssh.config"), "utf8");
+      expect(file).toContain(sshCommand("/keys/b"));
     });
   });
 
@@ -417,7 +502,7 @@ describe("provisionClone", () => {
       await runGit(["config", "core.hooksPath", join(tmp, "other")], { gitDir: clone, env });
       await provision();
       expect((await get("--get")).trim()).toBe(resolve(clone, "hooks"));
-      expect((await get("--get-all")).trim().split("\n")).toEqual([resolve(clone, "hooks")]);
+      expect(await localConfigAll("core.hooksPath")).toEqual([resolve(clone, "hooks")]);
     });
 
     it("rejects when the hook cannot be installed", async () => {
