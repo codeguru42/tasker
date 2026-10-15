@@ -173,7 +173,7 @@ These cases skip the hook:
 
 Layer 1 and layer 3 cover these cases.
 
-The hook alone does not cover them. A caller that runs an assistant must apply the deny rule of layer 1, and compare the tips of layer 3 before and after the run.
+The hook alone does not cover them. A caller that runs an assistant must apply the deny rule of layer 1. `tasker execute` also compares the tips of layer 3: it reads the tip of the task branch before the run and after each turn, and a moved tip fails the task. The plan and review roles do not compare the tips yet, because they run in the plan mode.
 
 The token files are outside the bare clone and outside each worktree. The sandbox of the assistant must not have a write path that covers them. This doc makes no other promise about a sandbox.
 
