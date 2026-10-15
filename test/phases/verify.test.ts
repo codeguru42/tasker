@@ -83,6 +83,16 @@ describe("runVerify", () => {
     expect(existsSync(join(dirs.runDir, "verify-2.log"))).toBe(false);
   });
 
+  it("starts no command and opens no log after the deadline", async () => {
+    const dirs = setup();
+
+    const result = await verify(["true", "touch later"], dirs, { timeoutMs: 0 });
+
+    expect(result).toStrictEqual({ status: "failed", index: 1, command: "true", timedOut: true });
+    expect(existsSync(join(dirs.runDir, "verify-1.log"))).toBe(false);
+    expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
+  });
+
   it("kills a child that ignores SIGTERM 5 s after the deadline", { timeout: 20_000 }, async () => {
     const dirs = setup();
     const command = '(trap "" TERM; exec sleep 30) & echo $! > child.pid; wait';
