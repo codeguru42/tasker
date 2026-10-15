@@ -22,6 +22,7 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/sessions/` | The folder of the assistant sessions of one attempt. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/` | The transcripts of one attempt. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/plan-v<N>.jsonl` | The transcript of the planning run of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker plan` and `tasker refine` write it. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/execute-v<N>.jsonl` | The transcript of the execute runs of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker execute` writes it, and the runs of one revision share it. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/` | The logs of verify run `<number>` of one attempt. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/verify-<position>.log` | The log of the verify command at position `<position>` of the configured list, from 1. `tasker verify` writes it, and `tasker show-verify` reads it. |
 | `<dataRoot>/prompts/` | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks. |
@@ -84,7 +85,7 @@ These rules hold:
 - A task has one execute session at most for each version of its plan. The execute runs of the pinned revision work in that session.
 - The version is the key of an execute session. A refine after an approval gives a new version, so a new plan never continues the session of an old plan.
 - The limit of this key: when the operator runs `tasker unapprove` and then approves the same version again, the execute runs continue the session of that version.
-- Only `tasker retry` deletes a session row. A run that failed before its first turn recorded an id that no conversation holds. The next run must not continue that id, so the retry deletes the row, and the next run records a new id.
+- Only `tasker retry` deletes a session row. A run that failed before its first turn recorded an id that no conversation holds. The next run must not continue that id, so the retry deletes the row, and the next run records a new id. For the same reason, a run of `tasker execute` with no turn records no session.
 
 ## `execute_todos` table
 
@@ -99,7 +100,7 @@ The table holds the fix turn of a plan revision. A fix turn is one more turn of 
 These rules hold:
 
 - A revision has one fix turn at most. A new fix turn replaces the old one, also when the old one is done.
-- A row with no done time is a queued fix turn.
+- A row with no done time is a queued fix turn. Only a queued fix turn can be marked done. A second done mark on a done fix turn is an error, and the first done time stays.
 - The row holds the last lines of the log of the failed verify command. The sandbox of the run cannot read the data root, so the lines must travel in the row.
 
 ## `verify_runs` table
@@ -179,4 +180,4 @@ Two tasker processes can use the same database at once. A busy timeout makes a p
 
 Each write, and each migration, runs in a `BEGIN IMMEDIATE` transaction, which takes the write lock at the start. As a result, a read-check-write of a row is one step, and another process cannot change the row in between. Two processes that open a new database at the same time do not both run the same migration.
 
-The store writes each event in the same transaction as its row change: the `created` event with the new task row, and the `transition` event with the state change. The approve of a plan revision writes one `approved` event with `from` and `to` in place of the `transition` event, in the same transaction. The unapprove writes one `unapproved` event with `from` and `to` in the same way. The state machine checks the edge inside the same transaction as the write. As a result, the read, the write of the state and the event happen in one step.
+The store writes each event in the same transaction as its row change: the `created` event with the new task row, and the `transition` event with the state change. The approve of a plan revision writes one `approved` event with `from` and `to` in place of the `transition` event, in the same transaction. The unapprove writes one `unapproved` event with `from` and `to` in the same way. The end of an execute run writes one `executed` event with `version`, `prompts`, `from` and `to` in the same way. The state machine checks the edge inside the same transaction as the write. As a result, the read, the write of the state and the event happen in one step.
