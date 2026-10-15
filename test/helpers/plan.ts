@@ -105,6 +105,11 @@ export function seedPlanningTask(): { dataRoot: string; task: Task } {
   return { dataRoot, task };
 }
 
+// Revision version of the task in dataRoot, or undefined.
+export function planRevisionOf(dataRoot: string, taskId: number, version: number): PlanRevision | undefined {
+  return withDataRootStore(dataRoot, (store) => store.getPlanRevision(taskId, version));
+}
+
 // Records the next plan revision of the task with recordPlanRevision: it writes the plan file and the row,
 // and moves the task to `to` with the check of the state machine.
 export function recordTestPlanRevision(

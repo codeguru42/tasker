@@ -6,12 +6,11 @@ import { archivePrompt } from "../../src/prompts/archive.js";
 import { PLAN_PROMPT, PLAN_PROMPT_NAME } from "../../src/prompts/plan.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
-import { type Task } from "../../src/store/store.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
-import { planAnswerStream, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, validPlanAnswer } from "../helpers/plan.js";
+import { planAnswerStream, planRevisionOf, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, validPlanAnswer } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
@@ -22,10 +21,6 @@ const REPO = "codeguru42/tasker";
 const runPlan = (key = KEY, ...extra: string[]) => runCommand(plan, "plan", key, ...extra);
 
 type Fixture = Awaited<ReturnType<typeof usePlanFixture>>;
-
-// Revision 1 of the task, or undefined.
-const revisionOf = (fixture: Fixture, task: Task) =>
-  withDataRootStore(fixture.started.dataRoot, (store) => store.getPlanRevision(task.id, 1));
 
 // The lines of a transcript file, with no empty last item.
 const transcriptLines = (path: string) =>
@@ -58,7 +53,7 @@ describe("plan", () => {
     const result = await runPlan();
 
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
-    const revision = revisionOf(fixture, task);
+    const revision = planRevisionOf(fixture.started.dataRoot, task.id, 1);
     const promptPath = archivePrompt(fixture.started.dataRoot, PLAN_PROMPT_NAME, PLAN_PROMPT).path;
     const planPath = planRevisionPath(fixture.started.dataRoot, task, 1);
     expect(result).toEqual({
@@ -148,7 +143,7 @@ describe("plan", () => {
     expect(first.code).toBe(1);
     expect(first.err).toMatch(/^planning failed: .+\n$/);
     expect(task.state).toBe("failed");
-    expect(revisionOf(fixture, task)).toBeUndefined();
+    expect(planRevisionOf(fixture.started.dataRoot, task.id, 1)).toBeUndefined();
     expect(eventsAfterStart(fixture).at(-1)).toEqual({
       type: "transition",
       data: { from: "planning", to: "failed", error: first.err.trimEnd() },
@@ -190,7 +185,7 @@ describe("plan", () => {
       type: "transition",
       data: { from: "planning", to: "failed", error: message },
     });
-    expect(revisionOf(fixture, task)).toBeUndefined();
+    expect(planRevisionOf(fixture.started.dataRoot, task.id, 1)).toBeUndefined();
   });
 
   it("fails the task with no planning failed prefix when the plan file cannot be written", async () => {
@@ -206,7 +201,7 @@ describe("plan", () => {
     expect(result.err).toMatch(/^cannot write the plan file of revision v1: .+\n$/);
     expect(result.err).not.toContain("planning failed:");
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
-    expect(revisionOf(fixture, task)).toBeUndefined();
+    expect(planRevisionOf(fixture.started.dataRoot, task.id, 1)).toBeUndefined();
   });
 
   it("fails the task with planning failed when the last transaction throws after the plan file is written", async () => {
@@ -223,7 +218,7 @@ describe("plan", () => {
     expect(result.code).toBe(1);
     expect(result.err).toMatch(/^planning failed: .*refused by the test.*\n$/);
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
-    expect(revisionOf(fixture, task)).toBeUndefined();
+    expect(planRevisionOf(fixture.started.dataRoot, task.id, 1)).toBeUndefined();
     expect(existsSync(planRevisionPath(fixture.started.dataRoot, task, 1))).toBe(true);
     expect(eventsAfterStart(fixture).at(-1)).toEqual({
       type: "transition",
