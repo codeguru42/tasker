@@ -20,7 +20,12 @@ export function planAnswerJsonSchema(): Record<string, unknown> {
   return jsonSchemaOf(planAnswerSchema);
 }
 
-const PLACEHOLDER = "is a placeholder, not real text";
+export const PLACEHOLDER = "is a placeholder, not real text";
+
+// The text is too short to hold real content.
+export function isPlaceholder(text: string): boolean {
+  return text.trim().length < 3;
+}
 
 type PlanCheck = { ok: true; answer: PlanAnswer } | { ok: false; problems: string[] };
 
@@ -35,8 +40,8 @@ export function checkPlanAnswer(output: unknown): PlanCheck {
   const problems: string[] = [];
 
   answer.todos.forEach((todo, i) => {
-    if (todo.title.trim().length < 3) problems.push(`todos.${i}.title: ${PLACEHOLDER}`);
-    if (todo.description.trim().length < 3) problems.push(`todos.${i}.description: ${PLACEHOLDER}`);
+    if (isPlaceholder(todo.title)) problems.push(`todos.${i}.title: ${PLACEHOLDER}`);
+    if (isPlaceholder(todo.description)) problems.push(`todos.${i}.description: ${PLACEHOLDER}`);
   });
   const newline = answer.plan_markdown.indexOf("\n");
   const body = newline === -1 ? "" : answer.plan_markdown.slice(newline + 1);
