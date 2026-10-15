@@ -115,3 +115,22 @@ export function commandLogTail(log: string, count: number): string {
   const last = lines.slice(-count);
   return `the last ${last.length} lines of the log:\n${last.map((line) => `${line}\n`).join("")}`;
 }
+
+export const NO_OUTPUT_LINE =
+  "The command produced no output. It usually failed before it reached the tool that it runs.";
+
+// True when the log holds only the command line, the empty lines and the outcome line.
+// A log that is missing or unreadable gives false.
+export function commandLogHasNoOutput(log: string): boolean {
+  let text: string;
+  try {
+    text = readFileSync(log, "utf8");
+  } catch {
+    return false;
+  }
+  const lines = text.split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  lines.shift();
+  if (lines.at(-1)?.startsWith("--- ")) lines.pop();
+  return lines.every((line) => line === "");
+}
