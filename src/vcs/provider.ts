@@ -46,6 +46,15 @@ export interface ResolvedBase {
   notes: string[];
 }
 
+export interface BaseContainment {
+  // The head revision of the workspace.
+  revision: string;
+  // The revision of the tip of the base after the fetch.
+  baseTip: string;
+  // True when the workspace contains the tip of the base.
+  contains: boolean;
+}
+
 export interface UncommittedChange {
   // The two status characters of git, for example " M", "??", "D " or "A ".
   status: string;

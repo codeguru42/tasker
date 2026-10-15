@@ -1,4 +1,4 @@
-import type { UncommittedChange } from "../provider.js";
+import type { BaseContainment, UncommittedChange } from "../provider.js";
 import { assertRevisionInput, resolveRevision } from "./refs.js";
 import { isGitExit, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
@@ -206,4 +206,20 @@ export async function fetchTips(o: {
   const head = await worktreeHead(target, env);
   const base = await resolveRevision({ clone, env, value: baseRevision });
   return { head, base };
+}
+
+// Fetches origin, then reads the head of the task worktree and the tip of the base, and says whether the head
+// contains the tip. It uses fetchTips(), so the fetch moves and prunes refs/remotes/origin/* in the clone, also when
+// a later read fails. A failure of the fetch or of a read rejects.
+export async function fetchBaseContainment(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  sshKey: string | undefined;
+  path: string;
+  baseRevision: string;
+}): Promise<BaseContainment> {
+  const { clone, env } = o;
+  const { head, base } = await fetchTips(o);
+  const contains = await isAncestor({ clone, env, ancestor: base, descendant: head });
+  return { revision: head, baseTip: base, contains };
 }
