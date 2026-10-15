@@ -12,16 +12,18 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 
 ## The order of the work
 
-- The planning session plans one milestone at a time. If the operator asks, the planning session writes the issues of the next milestone before the current milestone ends.
+- The operator decides when a milestone starts. The planning session plans one milestone at a time. If the operator asks, the planning session writes the issues of the next milestone before the current milestone ends.
 - The planning session first drafts all issues of the milestone and shows them to the operator. It posts nothing before the operator approves.
 - If the request does not say which kinds of GitHub objects to make (milestones, issues, project items), the planning session asks the operator before a post. In one case, "post everything" meant milestones only, and the session made more than 100 unwanted issues.
 - If a ticket that landed needs a change, the planning session writes a new follow-up issue. It does not edit the body of a closed issue.
 
 ## The body of an issue
 
-- An issue is complete by itself. It gives the rules, the shapes, the signatures, the payloads, the lists and the edge cases that the work needs.
+- An issue is complete by itself. It gives the rules, the shapes, the signatures, the payloads, the lists, the edge cases, the states and the diagrams that the work needs.
 - The agent of a ticket uses no other source, as [the Limits of orchestration.md](orchestration.md#limits) say. [The design-gap rule](orchestration.md#run-one-ticket) says who answers a gap.
-- An issue puts each table, list or diagram in its body. It does not say "as described elsewhere".
+- An issue puts each table, list or diagram in its body. It does not say "as described elsewhere". The plan session that tasker starts for a ticket sees only the issue and the repo. A phrase such as "the diagrams of the design" with no diagram is a gap.
+- An issue names no source outside the repo and GitHub.
+- An issue for a protocol or a procedure gives its state model: the actors, the states that each actor holds, and who tells whom when a state changes. An issue that gives only the target text draws a new gap in each review loop.
 - Each issue has a "Docs" section. The section names each doc to update with the code. A Docs item asks only for what [rules.md](rules.md#docs) permits, and a new command goes where [rules.md](rules.md#docs) says.
 - Each issue gives the scope hints that past tickets needed. [first-refine.md](first-refine.md) lists the hints by the kind of ticket. Examples:
   - The report of every configuration error in one run, as [rules.md](rules.md#code) says.
@@ -34,23 +36,26 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 - The planning session links two issues when one issue needs the code or the docs that the other issue makes.
 - The planning session also links two issues that will likely edit the same file, so that they do not cause a merge conflict. Examples are `skills/tasker/SKILL.md`, `docs/config.md`, `package.json`, the configuration schema, `docs/dev/code-conventions.md`, and a provider file with its dev doc.
 - An edit of `test/helpers.ts` alone gets no blocked-by link.
-- Before the links, the planning session makes a table of the needs and the likely files of each issue.
+- Before the planning session drafts the issues of a milestone, it makes a table of the needs and the likely files of each issue. It adds the links from the table when it posts the issues, after the operator approves the drafts.
 - A line of tickets that edit one provider and its dev doc is one chain. A ticket with its own folder runs in parallel and gets a blocked-by link only for a real need.
 - The planning session gives each parallel line of work its own dev doc, so that the lines share no doc.
-- An issue of an earlier milestone never waits for an issue of a later milestone. If the earlier milestone is one chain, the planning session links the later issue only to the last issue of that chain. After the links, the planning session reads every blocked-by link of both milestones and makes sure of this rule.
+- An issue of an earlier milestone never waits for an issue of a later milestone. If the earlier milestone is one chain, the planning session links a shared-file overlap only to the last issue of that chain. After the links, the planning session reads every blocked-by link of both milestones and makes sure of this rule.
 - The planning session gives the reasons for the links in the chat with the operator, not in the issue.
 
 ## The milestone of an issue
 
+- Each provider gets its own milestone. That milestone holds the interface and the whole provider. A command milestone only connects commands to the providers.
 - A doc change goes in the ticket of the code that needs it, as [rules.md](rules.md#docs) says for the docs and the code.
-- A docs-only issue goes in the milestone that it is about while that milestone is open. If that milestone is closed, or the issue is about no milestone, the issue goes in the milestone "Docs".
-- GitHub holds the state of each issue and each piece of pending work. If the planning session defers a fix, it writes the fix as an issue in its later milestone at once. The fix does not stay in the notes of a session.
+- A docs-only issue goes in the milestone that it is about while that milestone is open. If that milestone is closed, or the issue is about no milestone, the issue goes in the milestone "Docs" (number 21). The tickets of "Docs" have no order with the numbered milestones.
+- GitHub holds the state of each issue and each piece of pending work. If the planning session defers a fix, it writes the fix as an issue in its later milestone at once.
 
 ## What goes in a ticket
 
+- What goes together in one ticket depends on logic, never on size. Two pieces of work never go together only because they are small. If they are not logically related, they go in two separate tickets. One large piece of work can be split into smaller, coherent tickets. Each smaller ticket must still hold work that is logically connected.
 - The goal is the core features first. If a ticket finds an edge case, the edge case goes in a later issue, unless it is a security gap or a bug on the core path ([orchestration.md](orchestration.md#review-findings) defines both terms). The planning session does not ask the operator about each edge case.
 - If the planning session finds a security gap, it tells the operator at once.
-- If the operator states a design fact, the planning session puts the fact in a doc of the repo through a ticket, not in the notes of a session.
+- If the operator states a design fact or a rule, the planning session puts it in a doc of the repo through a ticket: in the plan of a ticket in progress (before `tasker approve` when possible), in the body of a ticket that has not started, or in a new issue.
+- The work on this repo must continue on any machine. For this reason, the notes of an assistant hold nothing that a session on another machine needs. This includes the preferences of the operator about how to work. Each new rule, fact or preference goes to a doc of the repo, as the bullet before this one says.
 - tasker writes and reads UTF-8 only.
 - Containers are out of scope.
 - If two [issue keys](issue-keys.md) give the same folder name or the same branch name, the planning session does not raise it as a problem.
@@ -58,4 +63,4 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 ## Working with the operator
 
 - Before the operator decides something, the planning session gives the context in plain text: what happened, why it matters, what each choice does, and a recommendation. The planning session defines each term that the operator has not seen, at its first use. A short popup with only a summary is not enough.
-- If the planning session shows the list of milestones, it uses one table with the columns `#`, `Milestone` and `Description`, one row for each milestone, and "Future" last. Notes go below the table.
+- If the planning session shows the list of milestones, it uses one table with the columns `#`, `Milestone` and `Description`, one row for each milestone, and "Future" last. The description in each row is the description of the milestone on GitHub. Notes go below the table.
