@@ -4,6 +4,8 @@ This page gives the rules for a planning session. A planning session is the assi
 
 The page does not cover the work of the orchestrator and of the agents of the tickets. [orchestration.md](orchestration.md) holds that work and defines the terms "orchestrator", "ticket" and "agent".
 
+[issues.md](issues.md) gives the steps and the GitHub facts to file issues, blocked-by links and milestones, and the facts of the project board.
+
 A planning session is not the orchestrator. It is also not one of the sessions that tasker starts for plan, execute and review.
 
 A blocked-by link is the GitHub link that says that one issue waits for another issue.
@@ -14,7 +16,6 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 - The planning session first drafts all issues of the milestone and shows them to the operator. It posts nothing before the operator approves.
 - If the request does not say which kinds of GitHub objects to make (milestones, issues, project items), the planning session asks the operator before a post. In one case, "post everything" meant milestones only, and the session made more than 100 unwanted issues.
 - If a ticket that landed needs a change, the planning session writes a new follow-up issue. It does not edit the body of a closed issue.
-- The project board adds each new issue with the status Todo within about a minute. The planning session does not add an issue to the board itself.
 
 ## The body of an issue
 
@@ -26,7 +27,6 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
   - The report of every configuration error in one run, as [rules.md](rules.md#code) says.
   - [The fact test](orchestration.md#run-one-ticket) for each fact about an outside tool.
 - An issue body has no dependency text, for example no "Depends on" section. The blocked-by links hold the order.
-- Before a post, the planning session makes each title and body follow the plain English rules of [rules.md](rules.md#docs).
 - An issue needs no line for commit style, because the prompts of the installed tasker already name it. [rules.md](rules.md#commits) is the home of the commit rules.
 
 ## The blocked-by links
