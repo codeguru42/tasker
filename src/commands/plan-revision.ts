@@ -9,15 +9,6 @@ import { fail, warnOverlaps } from "./shared.js";
 export const VERSION_OPTION_DESCRIPTION =
   "Use this plan revision: a whole number of 1 or more. The default is the newest revision";
 
-// The value of --version, or undefined when the option is absent. A bad value stops the command with exit code 1.
-// The raw string stays, so that a very large number prints as the user typed it.
-export function planVersionOrFail(io: Io, raw: string | undefined): string | undefined {
-  if (raw !== undefined && !/^[1-9][0-9]*$/.test(raw)) {
-    fail(io, `--version must be a whole number of 1 or more: ${raw}`);
-  }
-  return raw;
-}
-
 // The revision of the task: the newest one, or the one of version.
 export function planRevisionOrFail(io: Io, store: TaskStore, task: Task, version: string | undefined): PlanRevision {
   const latest = store.latestPlanRevision(task.id);

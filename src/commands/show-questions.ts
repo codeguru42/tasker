@@ -1,12 +1,12 @@
 import type { RegisterCommand } from "../cli.js";
+import { formatQuestions, planHeader, planRevisionOrFail, VERSION_OPTION_DESCRIPTION } from "./plan-revision.js";
 import {
-  formatQuestions,
-  planHeader,
-  planRevisionOrFail,
-  planVersionOrFail,
-  VERSION_OPTION_DESCRIPTION,
-} from "./plan-revision.js";
-import { ISSUE_ARGUMENT_DESCRIPTION, loadConfigOrFail, REPO_OPTION_DESCRIPTION, withIssueTask } from "./shared.js";
+  ISSUE_ARGUMENT_DESCRIPTION,
+  loadConfigOrFail,
+  REPO_OPTION_DESCRIPTION,
+  wholeNumberOptionsOrFail,
+  withIssueTask,
+} from "./shared.js";
 
 export const showQuestions: RegisterCommand = (program, io) => {
   program
@@ -16,11 +16,11 @@ export const showQuestions: RegisterCommand = (program, io) => {
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option("--version <N>", VERSION_OPTION_DESCRIPTION)
     .action((issue: string, options: { repo?: string; version?: string }) => {
-      const version = planVersionOrFail(io, options.version);
+      wholeNumberOptionsOrFail(io, { "--version": options.version });
       const config = loadConfigOrFail(io);
       io.stdout(
         withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
-          const revision = planRevisionOrFail(io, store, task, version);
+          const revision = planRevisionOrFail(io, store, task, options.version);
           const header = planHeader(task, revision);
           const states = store.planQuestions(task.id, revision.version);
           if (states.length === 0) return `${header} has no questions\n`;

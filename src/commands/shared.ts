@@ -24,6 +24,21 @@ export function fail(io: Io, message: string): never {
   throw new CommanderError(1, "tasker.fail", message);
 }
 
+// Stops the command with exit code 1 when an option has a value that is not a whole number of 1 or more, with no sign
+// and no leading zero. It reports each bad option, one line each, in the order of options. An absent option is good.
+// The caller keeps the raw strings, so that a very large number prints as the user typed it.
+export function wholeNumberOptionsOrFail(io: Io, options: Record<string, string | undefined>): void {
+  const problems = Object.entries(options)
+    .filter(([, raw]) => raw !== undefined && !/^[1-9][0-9]*$/.test(raw))
+    .map(([name, raw]) => `${name} must be a whole number of 1 or more: ${raw}`);
+  if (problems.length > 0) fail(io, problems.join("\n"));
+}
+
+// The text with a final line end: text that already ends with a line end stays as it is.
+export function withFinalLineEnd(text: string): string {
+  return /[\r\n]$/.test(text) ? text : `${text}\n`;
+}
+
 // The text of the file at path, read as utf8. A missing file stops the command with exit code 1 and the message missing.
 // Any other read error stops it with the message `<unreadable>: <error code>`.
 export function readFileOrFail(io: Io, path: string, messages: { missing: string; unreadable: string }): string {
