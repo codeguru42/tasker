@@ -11,6 +11,7 @@ import {
   RunMarkerExistsError,
   type ExecuteTodoState,
   type NewExecuteFixTurn,
+  type NewReview,
   type NewSession,
   type NewVerifyRun,
   type Task,
@@ -20,9 +21,10 @@ import {
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
+import { reviewFinding, reviewFindingWithout } from "../helpers/review.js";
 import { seedExecuteSession, seedExecuteTodoStates, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
 import { deadPid, repoRoot, startFixture, startWriteLockHolder } from "../helpers/processes.js";
-import { readRunMarker, tableNames, withRawDatabase, withStoreFile } from "../helpers/store.js";
+import { dayAt, readRunMarker, tableNames, withRawDatabase, withStoreFile } from "../helpers/store.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
@@ -87,7 +89,19 @@ describe("task store", () => {
       db.prepare("SELECT * FROM execute_fix_turns ORDER BY plan_version").all(),
     );
 
-  // Checks that a failed call threw message and changed no state, no marker row, no event, no plan revision row, no session row, no todo row and no fix turn row.
+  // The review rows of a task, as raw rows.
+  const readReviewRows = (taskId: number) =>
+    withRawDatabase(dbPath, (db) =>
+      db.prepare("SELECT * FROM reviews WHERE task_id = ? ORDER BY number").all(taskId),
+    );
+
+  // The review finding rows of a task, as raw rows.
+  const readFindingRows = (taskId: number) =>
+    withRawDatabase(dbPath, (db) =>
+      db.prepare("SELECT * FROM review_findings WHERE task_id = ? ORDER BY number, position").all(taskId),
+    );
+
+  // Checks that a failed call threw message and changed no state, no marker row, no event, no plan revision row, no session row, no todo row, no fix turn row, no review row and no finding row.
   const expectNothingChanged = (id: number, run: () => unknown, message: string) => {
     const state = store.getTask(id)?.state;
     const marker = readRunMarker(dbPath, id);
@@ -96,6 +110,8 @@ describe("task store", () => {
     const sessions = readSessionRows();
     const todos = readTodoRows();
     const fixTurns = readFixTurnRows();
+    const reviews = readReviewRows(id);
+    const findings = readFindingRows(id);
     const error = thrownBy(run, message);
     expect((error as Error).message).toBe(message);
     expect(store.getTask(id)?.state).toBe(state);
@@ -105,6 +121,8 @@ describe("task store", () => {
     expect(readSessionRows()).toEqual(sessions);
     expect(readTodoRows()).toEqual(todos);
     expect(readFixTurnRows()).toEqual(fixTurns);
+    expect(readReviewRows(id)).toEqual(reviews);
+    expect(readFindingRows(id)).toEqual(findings);
   };
 
   // Writes a raw run marker row for a task.
@@ -122,6 +140,32 @@ describe("task store", () => {
     writeRunPid(task.id, state, pid, childPid);
     return task;
   };
+
+  const review = (number: number, change: Partial<NewReview> = {}): NewReview => ({
+    number,
+    revision: "4b825dc642cb",
+    prompt: "review@3f9a1c04b2e7",
+    startedAt: dayAt(1),
+    endedAt: dayAt(2),
+    findings: [
+      reviewFinding(),
+      reviewFinding({
+        file: "src/b.ts",
+        line: 9,
+        summary: "The count is off by one.",
+        failure_scenario: "A list of three items gives the count 2.",
+      }),
+    ],
+    ...change,
+  });
+
+  const nextReview = (taskId: number) => store.nextReview(taskId);
+  const addReview = (taskId: number, newReview: NewReview, state: string, check?: Parameters<TaskStore["addReview"]>[3]) =>
+    store.addReview(taskId, newReview, state, check);
+  const getReview = (taskId: number, number: number) => store.getReview(taskId, number);
+  const latestReview = (taskId: number) => store.latestReview(taskId);
+  const reviewCount = (taskId: number) => store.reviewCount(taskId);
+  const listReviews = (taskId: number) => store.listReviews(taskId);
 
   const insertRawTask = (db: DatabaseSync, repoKey: string, state: string) =>
     db
@@ -773,6 +817,140 @@ describe("task store", () => {
         insertRawFinding(db, 1, 1, 1, "t", "A reason.");
         expect(countRows(db, "review_findings")).toBe(1);
       });
+    });
+  });
+
+  describe("reviews store", () => {
+    const toReviewed = () => ({ type: "transition", data: { to: "reviewed" } });
+
+    it("inserts the rows and the events, sets the state and deletes the marker", () => {
+      const task = runningTask("reviewing");
+      const before = store.listEvents(task.id).length;
+      const moved = addReview(task.id, review(1), "reviewed", toReviewed);
+      expect(moved.state).toBe("reviewed");
+      expect(store.getTask(task.id)).toEqual(moved);
+      expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+      expect(store.listEvents(task.id).slice(before)).toMatchObject([
+        { type: "review", data: { number: 1, revision: "4b825dc642cb", findings: 2 } },
+        { type: "transition", data: { to: "reviewed" } },
+      ]);
+      expect(readReviewRows(task.id)).toEqual([
+        {
+          task_id: task.id,
+          number: 1,
+          revision: "4b825dc642cb",
+          prompt: "review@3f9a1c04b2e7",
+          started_at: dayAt(1),
+          ended_at: dayAt(2),
+        },
+      ]);
+      expect(readFindingRows(task.id)).toMatchObject([
+        { number: 1, position: 1, file: "src/a.ts", line: 3, dismissed_at: null, dismiss_reason: null },
+        { number: 1, position: 2, file: "src/b.ts", line: 9, dismissed_at: null, dismiss_reason: null },
+      ]);
+    });
+
+    it("writes nothing for a wrong number", () => {
+      const task = runningTask("reviewing");
+      expectNothingChanged(
+        task.id,
+        () => addReview(task.id, review(2), "reviewed"),
+        `task ${task.id}: review 2 is not the next number (1)`,
+      );
+      expect(readReviewRows(task.id)).toEqual([]);
+    });
+
+    it("writes nothing when check throws", () => {
+      const task = runningTask("reviewing");
+      expectNothingChanged(
+        task.id,
+        () =>
+          addReview(task.id, review(1), "reviewed", () => {
+            throw new Error("check refused");
+          }),
+        "check refused",
+      );
+      expect(readReviewRows(task.id)).toEqual([]);
+      expect(readFindingRows(task.id)).toEqual([]);
+    });
+
+    it("writes nothing for a spawning state", () => {
+      const task = runningTask("reviewing");
+      expectNothingChanged(
+        task.id,
+        () => addReview(task.id, review(1), "executing"),
+        "executing is a spawning state",
+      );
+      expect(readReviewRows(task.id)).toEqual([]);
+    });
+
+    it("numbers, counts and lists the reviews of a task", () => {
+      const task = runningTask("reviewing");
+      expect(nextReview(task.id)).toBe(1);
+      addReview(task.id, review(1), "reviewed");
+      expect(nextReview(task.id)).toBe(2);
+      store.startRun(task.id, "reviewing");
+      addReview(task.id, review(2, { revision: "aaaaaaaaaaaa" }), "reviewed");
+      expect(nextReview(task.id)).toBe(3);
+      expect(reviewCount(task.id)).toBe(2);
+      expect(listReviews(task.id).map((item) => item.number)).toEqual([1, 2]);
+      expect(latestReview(task.id)?.number).toBe(2);
+      expect(latestReview(task.id)?.revision).toBe("aaaaaaaaaaaa");
+    });
+
+    it("gives nothing for a missing review or an empty task", () => {
+      const task = runningTask("reviewing");
+      expect(getReview(task.id, 1)).toBeUndefined();
+      expect(latestReview(task.id)).toBeUndefined();
+      expect(listReviews(task.id)).toEqual([]);
+      expect(reviewCount(task.id)).toBe(0);
+      addReview(task.id, review(1), "reviewed");
+      expect(getReview(task.id, 2)).toBeUndefined();
+    });
+
+    it("gives the full review", () => {
+      const task = runningTask("reviewing");
+      addReview(task.id, review(1), "reviewed");
+      expect(getReview(task.id, 1)).toEqual({
+        taskId: task.id,
+        number: 1,
+        revision: "4b825dc642cb",
+        prompt: "review@3f9a1c04b2e7",
+        startedAt: dayAt(1),
+        endedAt: dayAt(2),
+        findings: [
+          { position: 1, finding: reviewFinding(), dismissed: null },
+          {
+            position: 2,
+            finding: reviewFinding({
+              file: "src/b.ts",
+              line: 9,
+              summary: "The count is off by one.",
+              failure_scenario: "A list of three items gives the count 2.",
+            }),
+            dismissed: null,
+          },
+        ],
+      });
+    });
+
+    it("gives a finding without line and category with no such keys", () => {
+      const task = runningTask("reviewing");
+      const finding = reviewFindingWithout("line", "category");
+      addReview(task.id, review(1, { findings: [finding] }), "reviewed");
+      const stored = getReview(task.id, 1)?.findings[0]?.finding;
+      expect(stored).toEqual(finding);
+      expect(Object.keys(stored ?? {})).not.toContain("line");
+      expect(Object.keys(stored ?? {})).not.toContain("category");
+    });
+
+    it("stores a review with no findings", () => {
+      const task = runningTask("reviewing");
+      const before = store.listEvents(task.id).length;
+      addReview(task.id, review(1, { findings: [] }), "reviewed");
+      expect(readFindingRows(task.id)).toEqual([]);
+      expect(getReview(task.id, 1)?.findings).toEqual([]);
+      expect(store.listEvents(task.id).slice(before)).toMatchObject([{ type: "review", data: { findings: 0 } }]);
     });
   });
 
