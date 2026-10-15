@@ -11,7 +11,7 @@ import {
   trackedPaths,
 } from "../../../src/vcs/git/assistant-surface.js";
 import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
-import { ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
+import { changedPaths, ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
@@ -148,6 +148,19 @@ describe("createGitProvider", () => {
       expect(await git.ownCommits(fixture.context, { taskRef, baseRevision: base })).toBe(
         await ownCommitsText({ clone, env, branch: taskRef, baseRevision: base }),
       );
+    });
+
+    it("gives the changed paths like changedPaths", async () => {
+      const { git, path, taskRef } = await workspace();
+      await commitInWorktree(path, fixture.context.env, { file: "a.txt" });
+      const direct = await changedPaths({
+        clone: paths().clone,
+        env: fixture.context.env,
+        branch: taskRef,
+        baseRevision: base,
+      });
+      expect(direct).toEqual(["a.txt"]);
+      expect(await git.changedPaths(fixture.context, { taskRef, baseRevision: base })).toEqual(direct);
     });
 
     it("lists the uncommitted changes like uncommittedChanges", async () => {
