@@ -22,7 +22,7 @@ The orchestrator does all the steps of this section.
 - Run at most 3 agents at the same time, one ticket for each agent.
 - Do not run two tickets at the same time when both edit the same shared file, for example a file under `test/helpers/` or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. This bullet covers two tickets of the milestone of the orchestrator. For a task in flight of another milestone, the overlap rule of "Land the work" gives a landing order instead.
 - When a ticket starts, the orchestrator moves its card to In progress. `tasker start` does not move the card. The board moves the card to Done when `tasker finish` closes the issue.
-- When the Todo column of the milestone is empty, stop and tell the user. Do not write the issues of the next milestone.
+- When the Todo column of the milestone is empty, stop and tell the user. Do not write the issues of the next milestone. This bullet does not cover a long-running orchestrator (see [The handoff](#the-handoff)).
 
 The re-read rule: the orchestrator works from the current docs. The docs are `AGENTS.md` and the docs that `AGENTS.md` names. The last read is the commit of `main` from which the orchestrator last read the docs.
 
@@ -413,6 +413,35 @@ If a case says that the orchestrator schedules the next job, the orchestrator fi
 - The orchestrator must not use `/loop` or ScheduleWakeup for the wait. One wake-up waits at most one hour. A wake-up before the reset has no tokens to act.
 - An agent cannot make a job, because the agent does not have the tool for that. Only the orchestrator schedules jobs.
 - The orchestrator and the agents must not read the files that tasker keeps in its data folder.
+
+## The handoff
+
+A long-running orchestrator is the orchestrator of a milestone that stays open while other sessions add issues to it, for example "Docs" (see [docs/dev/planning.md](planning.md)). In a handoff, the old orchestrator gives its work to a new orchestrator in a new session.
+
+The rules of this section cover only a long-running orchestrator. An orchestrator of a numbered milestone stops when the Todo column of its milestone is empty, as [Pick the tickets](#pick-the-tickets) says. The rules of this section do not cover it.
+
+A handoff starts in one of two ways:
+
+- The old orchestrator sees that about 20% of its context is used. Then it starts the handoff itself and tells the user.
+- The user asks for a handoff. The user can ask at any time.
+
+After the start, the old orchestrator does these steps:
+
+1. Start no new ticket.
+2. Wait until each task in flight lands. For each landing, do the usual steps: delete the job (see [Delete the job](#delete-the-job)), do the re-read rule and do the notice rule (see [Pick the tickets](#pick-the-tickets)). The reason: a job lives only in the session of the orchestrator (see [Terms](#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
+3. Write the handoff file `$HOME/Documents/tasker/handoff/<date>-<role>.md`, for example `2026-10-15-docs-orchestrator.md`. If a file with that name exists, add a number, for example `2026-10-15-docs-orchestrator-2.md`.
+4. Give the path of the file in the reply to the user.
+
+The old orchestrator puts these items in the handoff file:
+
+- The prompt for the new session, in a code block. The prompt names the milestone, the session name and the first step: the start of the re-read rule. The prompt also names the docs to read and the state at the handoff. Its last step is to watch the board for new issues.
+- The state at the handoff: the tasks in flight of other milestones that share a file with an open issue of the milestone, the parked tasks and the other sessions.
+- What the old orchestrator did, and each decision of the user from its session.
+- A table of the open issues of the milestone, with the columns issue, topic, blockers and files.
+
+The old orchestrator puts no rule in the handoff file. The rules stay in the docs, and the prompt points to them.
+
+The user pastes the prompt as the first message of the new session. The user names the session `orchestrator-<milestone>`, for example `orchestrator-docs`, as the notice rule says (see [Pick the tickets](#pick-the-tickets)). The new orchestrator then starts with the re-read rule.
 
 ## Limits
 
