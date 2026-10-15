@@ -36,7 +36,7 @@ The defer rule: to defer a ticket means that the user moves its issue to a later
 
 If a `gh` command of these steps fails, tell the user, and do the other steps. The task keeps its state.
 
-A parked task stays in flight in `tasker status`. The overlap rule of "Land the work" and the fourth case of the stop rule in "Run one ticket" leave out a parked task.
+A parked task stays in flight in `tasker status`. A task in flight is a parked task when the card of its ticket is in Todo, because the card of a ticket that runs is in In progress. To read the column of the card, run `gh issue view <number> --json projectItems -q '.projectItems[].status.name'`. The command prints `Todo` for a parked task. The overlap rule of "Land the work" and the fourth case of the stop rule in "Run one ticket" leave out a parked task.
 
 When the ticket comes back to the current milestone, the orchestrator starts a new agent for it, as this section says. The agent follows the comeback rule of "Run one ticket".
 
