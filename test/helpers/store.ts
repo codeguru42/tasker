@@ -218,29 +218,9 @@ export function seedReview(
   change: Partial<Omit<NewReview, "number">> = {},
   state = "reviewed",
 ): Review {
-  const number = store.nextReview(taskId);
-  store.addReview(
-    taskId,
-    {
-      number,
-      revision: "4b825dc642cb",
-      prompt: "review@3f9a1c04b2e7",
-      startedAt: dayAt(1),
-      endedAt: dayAt(1),
-      findings: [
-        reviewFinding(),
-        reviewFinding({
-          file: "src/b.ts",
-          line: 9,
-          summary: "The count is off by one.",
-          failure_scenario: "A list of three items gives the count 2.",
-        }),
-      ],
-      ...change,
-    },
-    state,
-  );
-  return store.getReview(taskId, number)!;
+  const review = newReview(store.nextReview(taskId), change);
+  store.addReview(taskId, review, state);
+  return store.getReview(taskId, review.number)!;
 }
 
 // Does a real recorded verify failure: it writes the logs, moves the task to verifying, then records the run and

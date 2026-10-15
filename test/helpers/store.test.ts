@@ -613,18 +613,16 @@ describe("seedReview", () => {
       const review = seedReview(store, taskId);
 
       expect(store.getReview(taskId, 1)).toEqual(review);
-      expect(review).toMatchObject({
+      const expected = newReview(1);
+      expect(review).toEqual({
         taskId,
         number: 1,
-        revision: "4b825dc642cb",
-        prompt: "review@3f9a1c04b2e7",
-        startedAt: dayAt(1),
-        endedAt: dayAt(1),
+        revision: expected.revision,
+        prompt: expected.prompt,
+        startedAt: expected.startedAt,
+        endedAt: expected.endedAt,
+        findings: expected.findings.map((finding, i) => ({ position: i + 1, finding, dismissed: null })),
       });
-      expect(review.findings).toHaveLength(2);
-      expect(review.findings.map((entry) => entry.position)).toEqual([1, 2]);
-      expect(review.findings.map((entry) => entry.dismissed)).toEqual([null, null]);
-      expect(review.findings[0]?.finding).toEqual(reviewFinding());
     });
   });
 
