@@ -21,11 +21,7 @@ import {
   taskBranchName,
   taskWorktreePath,
 } from "../../../src/vcs/git/worktree.js";
-import {
-  commitInWorktree,
-  localBranches,
-  makeProviderFixture, type ProviderFixture,
-} from "../../helpers.js";
+import { commitInWorktree, localBranches, makeProviderFixture, type ProviderFixture } from "../../helpers/git.js";
 
 describe("createGitProvider", () => {
   let fixture: ProviderFixture;

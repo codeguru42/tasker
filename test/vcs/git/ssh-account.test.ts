@@ -1,14 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { sshAccount, sshTarget } from "../../../src/vcs/git/ssh-account.js";
-import {
-  type FakeSsh,
-  type FakeSshMode,
-  fakeSsh,
-  gitTestEnv,
-  useTempDir,
-  readArgLog,
-  sshKeyArgs,
-} from "../../helpers.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh, type FakeSsh, type FakeSshMode } from "../../helpers/fake-ssh.js";
+import { gitTestEnv, sshKeyArgs } from "../../helpers/git.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 describe("sshTarget", () => {
   it.each([

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breaksBoundary, filesThatBreakBoundary, filesThatStart } from "../../helpers.js";
+import { breaksBoundary, filesThatBreakBoundary, filesThatStart } from "../../helpers/source-scan.js";
 
 describe("the gh boundary", () => {
   it("finds the runner in src/issues/github", () => {

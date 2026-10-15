@@ -7,7 +7,9 @@ import {
   CommandNotFoundError,
   runChild,
 } from "../../src/process/run-child.js";
-import { failureOf, useTempDir, writeFakeCommand } from "../helpers.js";
+import { failureOf } from "../helpers/errors.js";
+import { writeFakeCommand } from "../helpers/fake-commands.js";
+import { useTempDir } from "../helpers/temp.js";
 
 let dir: string;
 let bin: string;

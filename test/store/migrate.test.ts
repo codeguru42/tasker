@@ -2,7 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
-import { useTempDir, tableNames } from "../helpers.js";
+import { tableNames } from "../helpers/store.js";
+import { useTempDir } from "../helpers/temp.js";
 
 describe("migrate", () => {
   let dir: string;

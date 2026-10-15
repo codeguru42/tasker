@@ -3,16 +3,10 @@ import { describe, expect, it } from "vitest";
 import { model } from "../../src/commands/model.js";
 import { loadConfig } from "../../src/config/load.js";
 import { ConfigError, parseConfig } from "../../src/config/schema.js";
-import {
-  configIssuesOf,
-  dayAt,
-  issueKeyErrorMessage,
-  runCommand,
-  seedTasks,
-  threeRepoConfig,
-  useConfigFile,
-  validConfig,
-} from "../helpers.js";
+import { runCommand } from "../helpers/cli.js";
+import { issueKeyErrorMessage, threeRepoConfig, useConfigFile, validConfig } from "../helpers/config.js";
+import { configIssuesOf } from "../helpers/errors.js";
+import { dayAt, seedTasks } from "../helpers/store.js";
 
 const KEY = "codeguru42/tasker#5";
 

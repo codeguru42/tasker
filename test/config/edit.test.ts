@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { setRoleModel } from "../../src/config/edit.js";
-import { validConfig } from "../helpers.js";
+import { validConfig } from "../helpers/config.js";
 
 // The raw configuration with extra keys in a non-default order, and a second repo.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

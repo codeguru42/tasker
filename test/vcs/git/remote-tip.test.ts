@@ -2,15 +2,11 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type RemoteTip, remoteTip, tipMoved } from "../../../src/vcs/git/remote-tip.js";
 import { runGit } from "../../../src/vcs/git/run.js";
-import {
-  failureOf,
-  fakeSsh,
-  type GitOrigin,
-  makeGitOrigin,
-  useTempDir,
-  readArgLog,
-  sshKeyArgs,
-} from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh } from "../../helpers/fake-ssh.js";
+import { makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 describe("remoteTip", () => {
   let origin: GitOrigin;

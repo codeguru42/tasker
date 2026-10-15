@@ -2,7 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { immediateTransaction, rollbackQuietly } from "../../src/store/transaction.js";
-import { useTempDir, tableNames, withRawDatabase } from "../helpers.js";
+import { tableNames, withRawDatabase } from "../helpers/store.js";
+import { useTempDir } from "../helpers/temp.js";
 
 describe("transaction", () => {
   let dir: string;

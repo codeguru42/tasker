@@ -8,27 +8,13 @@ import { transitionTask } from "../../src/state/machine.js";
 import { createDataRoot, planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
 import { type Task } from "../../src/store/store.js";
 import { taskLockName } from "../../src/store/locks.js";
-import {
-  claudeSample,
-  dayAt,
-  eventsOf,
-  fakeGh,
-  ghTokenAnswer,
-  lockNames,
-  planAnswerStream,
-  readRunMarker,
-  runCommand,
-  seedPlanRevision,
-  seedPlanSession,
-  seedTaskWithPlanFiles,
-  startTaskWithCommits,
-  startLockHolder,
-  TEST_SESSION_ID,
-  usePlanFixture,
-  validPlanAnswer,
-  withDataRootStore,
-  withRawDatabase,
-} from "../helpers.js";
+import { runCommand } from "../helpers/cli.js";
+import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
+import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
+import { planAnswerStream, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, validPlanAnswer } from "../helpers/plan.js";
+import { startLockHolder } from "../helpers/processes.js";
+import { dayAt, eventsOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
+import { startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";

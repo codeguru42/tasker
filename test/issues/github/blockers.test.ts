@@ -3,7 +3,9 @@ import { IssueKeyError, type IssueRef } from "../../../src/issue-key/ref.js";
 import { readGithubBlockers } from "../../../src/issues/github/blockers.js";
 import { GhError } from "../../../src/issues/github/run.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
-import { blockersGraphqlArgs as graphqlArgs, blockersNode as node, blockersPageJson as pageJson, failureOf, fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { blockersGraphqlArgs as graphqlArgs, blockersNode as node, blockersPageJson as pageJson, fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
 

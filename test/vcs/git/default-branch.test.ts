@@ -2,7 +2,9 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { remoteDefaultBranch } from "../../../src/vcs/git/default-branch.js";
 import { runGit } from "../../../src/vcs/git/run.js";
-import { fakeSsh, type GitOrigin, makeGitOrigin, readArgLog, sshKeyArgs } from "../../helpers.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh } from "../../helpers/fake-ssh.js";
+import { makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
 
 describe("remoteDefaultBranch", () => {
   let origin: GitOrigin;

@@ -1,6 +1,6 @@
 import { closeSync, openSync } from "node:fs";
 import { runInGroup } from "../../src/process/run-group.js";
-import { signalListenerCounts } from "../helpers.js";
+import { signalListenerCounts } from "../helpers/processes.js";
 
 // Runs one command with runInGroup and prints the result as one JSON line.
 // Arguments: cwd, logPath, deadlineMs (from now), holdMs, command.

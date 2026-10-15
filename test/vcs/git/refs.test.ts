@@ -7,7 +7,7 @@ import {
   refRevision,
   resolveRevision,
 } from "../../../src/vcs/git/refs.js";
-import { type GitOrigin, makeGitClone, makeGitOrigin } from "../../helpers.js";
+import { makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers/git.js";
 
 describe("refs", () => {
   let origin: GitOrigin;

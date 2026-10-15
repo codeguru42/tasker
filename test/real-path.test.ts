@@ -2,7 +2,7 @@ import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { canonicalPath, isInside } from "../src/real-path.js";
-import { useTempDir } from "./helpers.js";
+import { useTempDir } from "./helpers/temp.js";
 
 describe("canonicalPath", () => {
   it("gives the real path of a real folder", () => {

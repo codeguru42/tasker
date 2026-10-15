@@ -17,7 +17,11 @@ import {
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
-import { deadPid, useTempDir, repoRoot, seedExecuteSession, seedExecuteTodoStates, seedPlanRevision, seedPlanSession, startFixture, startWriteLockHolder, readRunMarker, tableNames, thrownBy, validPlanAnswer, withRawDatabase, withStoreFile } from "../helpers.js";
+import { thrownBy } from "../helpers/errors.js";
+import { seedExecuteSession, seedExecuteTodoStates, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
+import { deadPid, repoRoot, startFixture, startWriteLockHolder } from "../helpers/processes.js";
+import { readRunMarker, tableNames, withRawDatabase, withStoreFile } from "../helpers/store.js";
+import { useTempDir } from "../helpers/temp.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {

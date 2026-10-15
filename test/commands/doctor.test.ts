@@ -4,21 +4,13 @@ import { describe, expect, it, onTestFinished } from "vitest";
 import { doctor } from "../../src/commands/doctor.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { createVcsProvider } from "../../src/vcs/provider.js";
-import {
-  type FakeGhAnswer,
-  fakeGh,
-  ghTokenAnswer,
-  makeProviderFixture,
-  runCommand,
-  treeSnapshot,
-  useFakeClaude,
-  useProcessEnv,
-  usePathWithout,
-  useTempDir,
-  validConfig,
-  writeFakeSandboxPrograms,
-  writeTempConfig,
-} from "../helpers.js";
+import { runCommand } from "../helpers/cli.js";
+import { validConfig, writeTempConfig } from "../helpers/config.js";
+import { useFakeClaude } from "../helpers/fake-claude.js";
+import { usePathWithout, writeFakeSandboxPrograms } from "../helpers/fake-commands.js";
+import { fakeGh, ghTokenAnswer, type FakeGhAnswer } from "../helpers/fake-gh.js";
+import { makeProviderFixture } from "../helpers/git.js";
+import { treeSnapshot, useProcessEnv, useTempDir } from "../helpers/temp.js";
 
 const VERSION = { args: ["--version"], stdout: "gh version 2.101.0 (2026-09-15)\n" };
 const LOGIN = { args: ["api", "user", "--jq", ".login"], stdout: "codeguru42\n" };

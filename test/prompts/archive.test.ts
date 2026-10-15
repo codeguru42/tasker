@@ -3,7 +3,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileS
 import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { archivePrompt, promptVersion } from "../../src/prompts/archive.js";
-import { useTempDir } from "../helpers.js";
+import { useTempDir } from "../helpers/temp.js";
 
 function hash12(template: string): string {
   return createHash("sha256").update(template).digest("hex").slice(0, 12);

@@ -2,13 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunOutcome } from "../../../src/assistant/provider.js";
 import { overageStopOf, quotaStopOf } from "../../../src/assistant/claude-code/quota.js";
-import {
-  claudeOverageEvent,
-  claudeRateLimitEvent,
-  claudeSampleEvents,
-  claudeSampleWithResult,
-  TEST_SESSION_ID,
-} from "../../helpers.js";
+import { TEST_SESSION_ID, claudeOverageEvent, claudeRateLimitEvent, claudeSampleEvents, claudeSampleWithResult } from "../../helpers/fake-claude.js";
 
 function outcomeWith(events: AssistantEvent[]): RunOutcome {
   return { kind: "success", sessionId: TEST_SESSION_ID, events, permissionDenials: [], usage: "unavailable" };

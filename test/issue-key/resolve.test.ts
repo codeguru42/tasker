@@ -3,7 +3,8 @@ import { parseGithubKey } from "../../src/issue-key/github.js";
 import { IssueKeyError, type IssueRef } from "../../src/issue-key/ref.js";
 import { issueKeyMatches, projectOf, resolveIssueKey, type ResolveOptions } from "../../src/issue-key/resolve.js";
 import { parseConfig } from "../../src/config/schema.js";
-import { configWithTrackers, failureOf, threeRepoConfig, type Trackers } from "../helpers.js";
+import { configWithTrackers, threeRepoConfig, type Trackers } from "../helpers/config.js";
+import { failureOf } from "../helpers/errors.js";
 
 type RefRow = [
   label: string,

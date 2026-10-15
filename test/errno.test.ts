@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { errnoCode, hasErrnoCode } from "../src/errno.js";
-import { thrownBy, useTempDir } from "./helpers.js";
+import { thrownBy } from "./helpers/errors.js";
+import { useTempDir } from "./helpers/temp.js";
 
 describe("errnoCode", () => {
   it("gives ENOENT for the error of a read of a missing path", () => {

@@ -3,20 +3,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
-import {
-  claudeOverageEvent,
-  claudeRateLimitEvent,
-  claudeSample,
-  claudeSampleEvents,
-  claudeSampleWithResult,
-  type FakeClaude,
-  type FakeClaudeControl,
-  runInput,
-  TEST_SESSION_ID,
-  useFakeClaude,
-  useTempDir,
-  writeFakeSandboxPrograms,
-} from "../../helpers.js";
+import { TEST_SESSION_ID, claudeOverageEvent, claudeRateLimitEvent, claudeSample, claudeSampleEvents, claudeSampleWithResult, runInput, type FakeClaude, type FakeClaudeControl, useFakeClaude } from "../../helpers/fake-claude.js";
+import { writeFakeSandboxPrograms } from "../../helpers/fake-commands.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 function input(fake: FakeClaude, overrides: Partial<RunInput> = {}): RunInput {
   return runInput({ cwd: useTempDir("tasker-claude-cwd-"), env: fake.env, ...overrides });

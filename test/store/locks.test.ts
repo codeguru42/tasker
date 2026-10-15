@@ -12,7 +12,10 @@ import {
   withTaskLock,
 } from "../../src/store/locks.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { deadPid, failureOf, lockNames, startLockHolder, useTempDir, waitUntil, withRawDatabase } from "../helpers.js";
+import { failureOf } from "../helpers/errors.js";
+import { deadPid, startLockHolder, waitUntil } from "../helpers/processes.js";
+import { lockNames, withRawDatabase } from "../helpers/store.js";
+import { useTempDir } from "../helpers/temp.js";
 
 const CLOCK = "2026-01-01T00:00:00.000Z";
 const NAME = "repo:alpha";

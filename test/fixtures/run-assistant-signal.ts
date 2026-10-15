@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runAssistant } from "../../src/process/run-assistant.js";
-import { signalListenerCounts } from "../helpers.js";
+import { signalListenerCounts } from "../helpers/processes.js";
 
 // Runs one command with runAssistant and prints the result as one JSON line.
 // Arguments: cwd, deadlineMs (from now), command.

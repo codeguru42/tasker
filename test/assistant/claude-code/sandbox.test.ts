@@ -8,7 +8,8 @@ import {
   sandboxSettings,
   sandboxSocketFolder,
 } from "../../../src/assistant/claude-code/sandbox.js";
-import { useFakeSandboxBin, useTempDir } from "../../helpers.js";
+import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 const limits = {
   allowWrite: ["/work/wt", "/work/clone/objects"],

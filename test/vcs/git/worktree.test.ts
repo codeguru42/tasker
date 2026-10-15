@@ -32,14 +32,8 @@ import {
   taskBranchRevision,
   taskWorktreePath,
 } from "../../../src/vcs/git/worktree.js";
-import {
-  failureOf,
-  localBranches,
-  makeGitClone,
-  makeGitOrigin,
-  NOT_TASK_BRANCHES,
-  type GitOrigin,
-} from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { NOT_TASK_BRANCHES, localBranches, makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers/git.js";
 
 const BRANCH = taskBranchName("issue-1", "x");
 const OTHER_BRANCH = taskBranchName("issue-2", "y");

@@ -4,17 +4,10 @@ import { describe, expect, it } from "vitest";
 import { showPlan } from "../../src/commands/show-plan.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath } from "../../src/store/layout.js";
-import {
-  OPEN_QUESTION_BLOCK,
-  recordPlanRevisions,
-  recordTestPlanRevision,
-  runCommand,
-  seedPlanRevision,
-  seedPlanningTask,
-  useThreeRepoDataRoot,
-  validPlanAnswer,
-  withDataRootStore,
-} from "../helpers.js";
+import { runCommand } from "../helpers/cli.js";
+import { useThreeRepoDataRoot } from "../helpers/config.js";
+import { OPEN_QUESTION_BLOCK, recordPlanRevisions, recordTestPlanRevision, seedPlanRevision, seedPlanningTask, validPlanAnswer } from "../helpers/plan.js";
+import { withDataRootStore } from "../helpers/store.js";
 
 const TASKER = "codeguru42/tasker";
 const KEY = `${TASKER}#5`;

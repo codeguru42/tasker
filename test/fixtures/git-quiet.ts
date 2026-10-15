@@ -2,7 +2,8 @@
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { GitError, runGit } from "../../src/vcs/git/run.js";
-import { gitTestEnv, makeTempDir } from "../helpers.js";
+import { gitTestEnv } from "../helpers/git.js";
+import { makeTempDir } from "../helpers/temp.js";
 
 // Waits for promise. It must reject with a GitError, so that git really started and failed.
 async function expectGitError(promise: Promise<unknown>): Promise<void> {

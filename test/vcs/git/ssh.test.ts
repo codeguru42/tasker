@@ -11,15 +11,11 @@ import {
   sshCommand,
   sshEnv,
 } from "../../../src/vcs/git/ssh.js";
-import {
-  type FakeSsh,
-  failureOf,
-  fakeSsh,
-  gitTestEnv,
-  useTempDir,
-  readArgLog,
-  sshKeyArgs,
-} from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh, type FakeSsh } from "../../helpers/fake-ssh.js";
+import { gitTestEnv, sshKeyArgs } from "../../helpers/git.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 describe("sshCommand", () => {
   it("quotes the key path and writes each ' as '\\''", () => {

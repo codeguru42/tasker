@@ -1,6 +1,7 @@
 import { readFileSync, rmSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { spawnTasker, validConfig, writeTempConfig } from "./helpers.js";
+import { validConfig, writeTempConfig } from "./helpers/config.js";
+import { spawnTasker } from "./helpers/processes.js";
 
 const root = new URL("..", import.meta.url);
 

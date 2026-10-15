@@ -5,7 +5,10 @@ import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { BootstrapFailedError, bootstrapFailureMessage, bootstrapLogTail, startTask } from "../../src/tasks/start.js";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
-import { lockNames, startLockHolder, useStartFixture, useTempDir, withDataRootStore } from "../helpers.js";
+import { startLockHolder } from "../helpers/processes.js";
+import { lockNames, withDataRootStore } from "../helpers/store.js";
+import { useStartFixture } from "../helpers/task-fixtures.js";
+import { useTempDir } from "../helpers/temp.js";
 
 describe("bootstrapFailureMessage", () => {
   const failed = { status: "failed", index: 2, command: "npm ci", timedOut: false } as const;

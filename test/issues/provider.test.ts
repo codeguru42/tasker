@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { issueDoctorChecks, issueProviderFor } from "../../src/issues/provider.js";
-import { configIssuesOf, configWithTrackers } from "../helpers.js";
+import { configWithTrackers } from "../helpers/config.js";
+import { configIssuesOf } from "../helpers/errors.js";
 
 const github = (account: string) => ({ provider: "github", account });
 

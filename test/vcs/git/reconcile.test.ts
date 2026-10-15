@@ -15,15 +15,8 @@ import { ReconcileConflictError } from "../../../src/vcs/errors.js";
 import type { ReconcileStrategy } from "../../../src/vcs/provider.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree, taskBranchName } from "../../../src/vcs/git/worktree.js";
-import {
-  commitInWorktree,
-  failureOf,
-  type GitOrigin,
-  makeGitClone,
-  makeGitOrigin,
-  taskNames,
-  writeGitFailAfter,
-} from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { commitInWorktree, makeGitClone, makeGitOrigin, taskNames, type GitOrigin, writeGitFailAfter } from "../../helpers/git.js";
 
 describe("git reconcile", () => {
   let origin: GitOrigin;

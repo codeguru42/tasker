@@ -16,7 +16,11 @@ import {
 import { parseConfig } from "../../src/config/schema.js";
 import { IssueKeyError } from "../../src/issue-key/ref.js";
 import { taskNotFound, type TaskStore } from "../../src/store/store.js";
-import { captureIo, failureOf, useTempDir, seedTasks, thrownBy, validConfig, withDataRootStore } from "../helpers.js";
+import { captureIo } from "../helpers/cli.js";
+import { validConfig } from "../helpers/config.js";
+import { failureOf, thrownBy } from "../helpers/errors.js";
+import { seedTasks, withDataRootStore } from "../helpers/store.js";
+import { useTempDir } from "../helpers/temp.js";
 
 describe("orFail", () => {
   it("returns the value of fn and writes nothing", () => {

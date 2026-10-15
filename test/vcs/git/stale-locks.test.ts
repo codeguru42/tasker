@@ -8,7 +8,8 @@ import {
 } from "../../../src/vcs/git/stale-locks.js";
 import { DeadlineError } from "../../../src/doctor/timed-check.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
-import { ageFile, useTempDir, writeFakeProc } from "../../helpers.js";
+import { writeFakeProc } from "../../helpers/processes.js";
+import { ageFile, useTempDir } from "../../helpers/temp.js";
 
 const HOUR = 3_600_000;
 

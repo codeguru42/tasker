@@ -14,20 +14,11 @@ import type { GitVcsConfig } from "../../../src/vcs/git/config.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { type ProcView, readProcView } from "../../../src/vcs/git/stale-locks.js";
-import {
-  ageFile,
-  type GitOrigin,
-  fakeSsh,
-  gitTestEnv,
-  makeGitClone,
-  makeGitOrigin,
-  useTempDir,
-  readArgLog,
-  sshKeyArgs,
-  treeSnapshot,
-  writeFakeGit,
-  writeFakeProc,
-} from "../../helpers.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh } from "../../helpers/fake-ssh.js";
+import { gitTestEnv, makeGitClone, makeGitOrigin, sshKeyArgs, type GitOrigin, writeFakeGit } from "../../helpers/git.js";
+import { writeFakeProc } from "../../helpers/processes.js";
+import { ageFile, treeSnapshot, useTempDir } from "../../helpers/temp.js";
 
 describe("gitVersionCheck", () => {
   let dir: string;

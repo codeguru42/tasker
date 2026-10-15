@@ -2,7 +2,10 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { show } from "../../src/commands/show.js";
-import { dayAt, issueKeyErrorMessage, runCommand, seedTasks, taskNames, useThreeRepoDataRoot } from "../helpers.js";
+import { runCommand } from "../helpers/cli.js";
+import { issueKeyErrorMessage, useThreeRepoDataRoot } from "../helpers/config.js";
+import { taskNames } from "../helpers/git.js";
+import { dayAt, seedTasks } from "../helpers/store.js";
 
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";

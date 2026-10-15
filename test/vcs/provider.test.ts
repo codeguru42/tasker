@@ -3,7 +3,8 @@ import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { parseConfig } from "../../src/config/schema.js";
 import { createVcsProvider, vcsForRepo } from "../../src/vcs/provider.js";
-import { makeProviderFixture, type ProviderFixture, validConfig } from "../helpers.js";
+import { validConfig } from "../helpers/config.js";
+import { makeProviderFixture, type ProviderFixture } from "../helpers/git.js";
 
 describe("createVcsProvider", () => {
   let fixture: ProviderFixture;

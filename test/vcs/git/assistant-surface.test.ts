@@ -25,18 +25,10 @@ import {
 import { runGit } from "../../../src/vcs/git/run.js";
 import { isInside } from "../../../src/real-path.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
-import {
-  commitInWorktree,
-  failureOf,
-  gitCloneTokens,
-  makeGitClone,
-  makeGitOrigin,
-  readArgLog,
-  useTempDir,
-  taskNames,
-  writeGitRecorder,
-  type GitOrigin,
-} from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { commitInWorktree, gitCloneTokens, makeGitClone, makeGitOrigin, taskNames, type GitOrigin, writeGitRecorder } from "../../helpers/git.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 const EXPECTED = [
   "Commit each red/green pair, or each completed todo, as its own commit. Never collect the whole plan into one commit at the end. If a run stops partway (a quota limit, a timeout), the work that it finished must stay committed.",

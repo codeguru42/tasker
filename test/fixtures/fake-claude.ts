@@ -1,6 +1,6 @@
 // A fake claude. argv is <controlPath> ...args. It logs each call and then plays back the control file.
 import { appendFileSync, readFileSync } from "node:fs";
-import type { FakeClaudeControl } from "../helpers.js";
+import type { FakeClaudeControl } from "../helpers/fake-claude.js";
 import { writePlaceholder } from "./placeholder.js";
 
 const [controlPath, ...args] = process.argv.slice(2);

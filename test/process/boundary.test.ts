@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadsChildProcess, sourceFiles } from "../helpers.js";
+import { loadsChildProcess, sourceFiles } from "../helpers/source-scan.js";
 
 // The files under src/ that load child_process.
 function childProcessLoaders(): string[] {

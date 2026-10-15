@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { run, type RegisterCommand } from "../src/cli.js";
-import { captureIo, greet } from "./helpers.js";
+import { captureIo, greet } from "./helpers/cli.js";
 import { commandsInHelp, commandsMissingFromSkill } from "./skill-coverage.js";
 
 function readSkill(): string {

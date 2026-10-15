@@ -6,19 +6,11 @@ import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { remoteCwd, sshCommand } from "../../../src/vcs/git/ssh.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
-import {
-  failureOf,
-  type FakeSsh,
-  fakeSsh,
-  type GitOrigin,
-  localBranches,
-  makeGitOrigin,
-  useTempDir,
-  readArgLog,
-  sshKeyArgs,
-  taskNames,
-  writeGitRecorder,
-} from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh, type FakeSsh } from "../../helpers/fake-ssh.js";
+import { localBranches, makeGitOrigin, sshKeyArgs, taskNames, type GitOrigin, writeGitRecorder } from "../../helpers/git.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 describe("provisionClone", () => {
   let origin: GitOrigin;

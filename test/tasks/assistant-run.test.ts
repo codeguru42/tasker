@@ -13,16 +13,10 @@ import {
   prepareTaskPlanModeRun,
   type RepoReadDenyPaths,
 } from "../../src/tasks/assistant-run.js";
-import {
-  type AssistantRunFixture,
-  claudeOverageEvent,
-  claudeSample,
-  readRunMarker,
-  TEST_SESSION_ID,
-  useAssistantRunFixture,
-  useTempDir,
-  withDataRootStore,
-} from "../helpers.js";
+import { TEST_SESSION_ID, claudeOverageEvent, claudeSample } from "../helpers/fake-claude.js";
+import { readRunMarker, withDataRootStore } from "../helpers/store.js";
+import { type AssistantRunFixture, useAssistantRunFixture } from "../helpers/task-fixtures.js";
+import { useTempDir } from "../helpers/temp.js";
 
 // The arguments of argv that follow flag, up to the next flag.
 function flagValues(argv: string[], flag: string): string[] | undefined {

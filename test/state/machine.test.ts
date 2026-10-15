@@ -16,7 +16,8 @@ import {
   type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { useTempDir, validPlanAnswer } from "../helpers.js";
+import { validPlanAnswer } from "../helpers/plan.js";
+import { useTempDir } from "../helpers/temp.js";
 
 describe("spawning states", () => {
   it("has the ten spawning states", () => {

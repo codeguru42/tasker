@@ -1,15 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssueRef } from "../../../src/issue-key/ref.js";
-import {
-  blockersGraphqlArgs,
-  blockersNode,
-  blockersPageJson,
-  configWithTrackers,
-  failureOf,
-  fakeGh,
-  ghTokenAnswer,
-  useTempDir,
-} from "../../helpers.js";
+import { configWithTrackers } from "../../helpers/config.js";
+import { failureOf } from "../../helpers/errors.js";
+import { blockersGraphqlArgs, blockersNode, blockersPageJson, fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
 const token = ghTokenAnswer("octo", "gho_test");

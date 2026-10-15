@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AssistantEvent } from "../../../src/assistant/provider.js";
 import { numberOf, parseLine, readStream } from "../../../src/assistant/claude-code/stream.js";
-import { claudeSample, claudeSampleEvents, claudeSampleWithResult } from "../../helpers.js";
+import { claudeSample, claudeSampleEvents, claudeSampleWithResult } from "../../helpers/fake-claude.js";
 
 function copyOf(event: AssistantEvent | undefined): AssistantEvent {
   return structuredClone(event!);

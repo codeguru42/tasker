@@ -9,15 +9,10 @@ import { abortTask } from "../../src/tasks/abort.js";
 import { startTask } from "../../src/tasks/start.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
-import {
-  lockNames,
-  startLockHolder,
-  taskWorkspaceState,
-  useStartedTask,
-  useStartFixture,
-  useTempDir,
-  withDataRootStore,
-} from "../helpers.js";
+import { startLockHolder } from "../helpers/processes.js";
+import { lockNames, withDataRootStore } from "../helpers/store.js";
+import { taskWorkspaceState, useStartFixture, useStartedTask } from "../helpers/task-fixtures.js";
+import { useTempDir } from "../helpers/temp.js";
 
 describe("abortTask", () => {
   it("removes the worktree when the data root goes through a symlink", async () => {

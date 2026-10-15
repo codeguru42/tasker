@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { reposByProvider } from "../../src/config/repo-groups.js";
 import { parseConfig } from "../../src/config/schema.js";
-import { configWithTrackers, validConfig } from "../helpers.js";
+import { configWithTrackers, validConfig } from "../helpers/config.js";
 
 const account = (repo: { issueTracker: { provider: string } }) => (repo.issueTracker as { account?: string }).account;
 const github = (name: string) => ({ provider: "github", account: name });

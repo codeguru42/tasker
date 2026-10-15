@@ -3,7 +3,8 @@ import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { type GroupResult, runInGroup, signalGroup } from "../../src/process/run-group.js";
-import { isAlive, readPidFile, repoRoot, savePid, signalListenerCounts, useTempDir, waitUntil, waitUntilGone } from "../helpers.js";
+import { isAlive, readPidFile, repoRoot, savePid, signalListenerCounts, waitUntil, waitUntilGone } from "../helpers/processes.js";
+import { useTempDir } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
 const IGNORE_TERM = 'trap "" TERM; sleep 30';

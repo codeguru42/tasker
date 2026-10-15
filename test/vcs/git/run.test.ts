@@ -3,7 +3,10 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { GitError, GitNotInstalledError, gitSshCommand, isGitExit, runGit } from "../../../src/vcs/git/run.js";
-import { failureOf, gitTestEnv, useTempDir, repoRoot, writeFakeGit } from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { gitTestEnv, writeFakeGit } from "../../helpers/git.js";
+import { repoRoot } from "../../helpers/processes.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 describe("runGit", () => {
   let dir: string;

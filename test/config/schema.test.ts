@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, parseConfig } from "../../src/config/schema.js";
-import { configIssuesOf, validConfig } from "../helpers.js";
+import { validConfig } from "../helpers/config.js";
+import { configIssuesOf } from "../helpers/errors.js";
 
 const home = "/home/me";
 

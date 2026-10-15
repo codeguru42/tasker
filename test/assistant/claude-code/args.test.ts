@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { claudeArgs } from "../../../src/assistant/claude-code/args.js";
-import { runInput, TEST_SESSION_ID } from "../../helpers.js";
+import { TEST_SESSION_ID, runInput } from "../../helpers/fake-claude.js";
 
 describe("claudeArgs", () => {
   it("gives the arguments of a new session", () => {

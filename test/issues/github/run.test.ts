@@ -1,7 +1,10 @@
 import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { failureOf, fakeGh, ghTokenAnswer, useTempDir, repoRoot } from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import { repoRoot } from "../../helpers/processes.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 // Fails when token is in the error: its text, its stack, any own property, or a cause.
 function expectNoToken(error: Error, token: string): void {

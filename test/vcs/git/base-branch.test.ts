@@ -10,15 +10,10 @@ import {
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
-import {
-  type FakeSsh,
-  fakeSsh,
-  type GitOrigin,
-  makeGitOrigin,
-  useTempDir,
-  readArgLog,
-  sshKeyArgs,
-} from "../../helpers.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh, type FakeSsh } from "../../helpers/fake-ssh.js";
+import { makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 describe("parseBaseInput", () => {
   it.each([

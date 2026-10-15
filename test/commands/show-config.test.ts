@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
 import { showConfig } from "../../src/commands/show-config.js";
 import { loadConfig } from "../../src/config/load.js";
-import { captureIo, useConfigFile, useProcessEnv, validConfig } from "../helpers.js";
+import { captureIo } from "../helpers/cli.js";
+import { useConfigFile, validConfig } from "../helpers/config.js";
+import { useProcessEnv } from "../helpers/temp.js";
 
 describe("show-config", () => {
   it("prints the configuration with the defaults filled in", async () => {

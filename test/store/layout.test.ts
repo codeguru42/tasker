@@ -13,7 +13,7 @@ import {
   taskSessionsDir,
   taskTranscriptsDir,
 } from "../../src/store/layout.js";
-import { useTempDir } from "../helpers.js";
+import { useTempDir } from "../helpers/temp.js";
 
 describe("dataRootLayout", () => {
   it("puts the folders and the database directly under the data root", () => {

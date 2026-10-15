@@ -2,7 +2,8 @@ import { chmodSync, existsSync, linkSync, lstatSync, mkdirSync, readFileSync, rm
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { removePlaceholders } from "../../../src/assistant/claude-code/placeholders.js";
-import { useTempDir, writePlaceholder } from "../../helpers.js";
+import { writePlaceholder } from "../../helpers/fake-claude.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 const none = async () => [] as string[];
 

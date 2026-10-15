@@ -1,7 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
+import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 type Tracker = import("../../../src/config/schema.js").RepoConfig["issueTracker"];
 

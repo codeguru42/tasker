@@ -7,7 +7,8 @@ import { taskLogsDir } from "../../src/store/layout.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
 import { useTempDir } from "./temp.js";
-import { taskNames, useThreeRepoDataRoot } from "../helpers.js";
+import { useThreeRepoDataRoot } from "./config.js";
+import { taskNames } from "./git.js";
 import {
   dayAt,
   eventsOf,

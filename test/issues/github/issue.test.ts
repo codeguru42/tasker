@@ -3,7 +3,9 @@ import { IssueKeyError, type IssueRef } from "../../../src/issue-key/ref.js";
 import { readGithubIssue } from "../../../src/issues/github/issue.js";
 import { GhError } from "../../../src/issues/github/run.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
-import { failureOf, fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 // The call of readGithubIssue(). The field list is a literal, so that the test checks the call on its own.
 const viewArgs = (number: string, project: string) => [

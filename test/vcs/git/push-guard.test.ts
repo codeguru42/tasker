@@ -12,16 +12,11 @@ import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { pushWithToken } from "../../../src/vcs/git/push-guard.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
-import {
-  failureOf,
-  fakeSsh,
-  type GitOrigin,
-  makeGitOrigin,
-  useTempDir,
-  NO_TOKEN,
-  readArgLog,
-  sshKeyArgs,
-} from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh } from "../../helpers/fake-ssh.js";
+import { NO_TOKEN, makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 const HEX = "0123456789abcdef";
 

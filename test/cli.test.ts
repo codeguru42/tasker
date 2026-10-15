@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { createDefaultIo, type RegisterCommand, run } from "../src/cli.js";
-import { captureIo, greet } from "./helpers.js";
+import { captureIo, greet } from "./helpers/cli.js";
 
 const packageVersion: string = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),

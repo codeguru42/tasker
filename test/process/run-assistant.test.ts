@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CommandNotFoundError } from "../../src/process/run-child.js";
 import { runAssistant } from "../../src/process/run-assistant.js";
-import { readPidFile, savePid, signalListenerCounts, startFixture, useTempDir, waitUntilGone } from "../helpers.js";
+import { readPidFile, savePid, signalListenerCounts, startFixture, waitUntilGone } from "../helpers/processes.js";
+import { useTempDir } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
 const GRACE_MS = 5000;

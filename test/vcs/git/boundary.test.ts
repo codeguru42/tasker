@@ -1,14 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  breaksBoundary,
-  filesThatBreakBoundary,
-  filesThatStart,
-  importsPath,
-  loadsChildProcess,
-  sourceDir,
-  startsCommand,
-} from "../../helpers.js";
+import { breaksBoundary, filesThatBreakBoundary, filesThatStart, importsPath, loadsChildProcess, sourceDir, startsCommand } from "../../helpers/source-scan.js";
 
 describe("the git boundary", () => {
   it("finds the runner in src/vcs/git", () => {

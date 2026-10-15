@@ -3,7 +3,8 @@ import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { useTempDir } from "./temp.js";
-import { validConfig, withRawDatabase, writeTempConfig } from "../helpers.js";
+import { validConfig, writeTempConfig } from "./config.js";
+import { withRawDatabase } from "./store.js";
 import {
   deadPid,
   isAlive,

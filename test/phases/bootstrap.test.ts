@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { bootstrapLogPath, bootstrapMarkerPath, runBootstrap } from "../../src/phases/bootstrap.js";
 import { childEnv } from "../../src/process/child-env.js";
-import { readPidFile, useTempDir, waitUntilGone } from "../helpers.js";
+import { readPidFile, waitUntilGone } from "../helpers/processes.js";
+import { useTempDir } from "../helpers/temp.js";
 
 const HEADER = /^=== bootstrap run \d{4}-.* ===$/m;
 const MINUTE_MS = 60_000;

@@ -17,17 +17,10 @@ import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree, removeTaskWorktree, taskBranchName } from "../../../src/vcs/git/worktree.js";
-import {
-  commitInWorktree,
-  failureOf,
-  fakeSsh,
-  type GitOrigin,
-  makeGitClone,
-  makeGitOrigin,
-  readArgLog,
-  sshKeyArgs,
-  taskNames,
-} from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
+import { fakeSsh } from "../../helpers/fake-ssh.js";
+import { commitInWorktree, makeGitClone, makeGitOrigin, sshKeyArgs, taskNames, type GitOrigin } from "../../helpers/git.js";
 
 const MISSING_BRANCH = taskBranchName("issue-99", "");
 

@@ -2,7 +2,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { loadConfig, loadConfigFile, parseConfigText } from "../../src/config/load.js";
-import { configIssuesOf, useTempDir, validConfig } from "../helpers.js";
+import { validConfig } from "../helpers/config.js";
+import { configIssuesOf } from "../helpers/errors.js";
+import { useTempDir } from "../helpers/temp.js";
 
 const home = "/home/me";
 let dir: string;

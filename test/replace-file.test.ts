@@ -13,7 +13,8 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { errnoCode } from "../src/errno.js";
 import { placeTempFile, replaceFile } from "../src/replace-file.js";
-import { thrownBy, useTempDir } from "./helpers.js";
+import { thrownBy } from "./helpers/errors.js";
+import { useTempDir } from "./helpers/temp.js";
 
 describe("replaceFile", () => {
   it("writes the new text and leaves no other file in the folder", () => {

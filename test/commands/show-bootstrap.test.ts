@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { showBootstrap } from "../../src/commands/show-bootstrap.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { taskLogsDir } from "../../src/store/layout.js";
-import { dayAt, runCommand, seedTasks, useThreeRepoDataRoot, writeBootstrapLog } from "../helpers.js";
+import { runCommand } from "../helpers/cli.js";
+import { useThreeRepoDataRoot } from "../helpers/config.js";
+import { dayAt, seedTasks, writeBootstrapLog } from "../helpers/store.js";
 
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";

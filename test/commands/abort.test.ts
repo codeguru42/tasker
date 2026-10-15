@@ -9,17 +9,11 @@ import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
-import {
-  localBranches,
-  lockNames,
-  runCommand,
-  seedTasks,
-  startLockHolder,
-  taskWorkspaceState,
-  useStartedTask,
-  useStartFixture,
-  withDataRootStore,
-} from "../helpers.js";
+import { runCommand } from "../helpers/cli.js";
+import { localBranches } from "../helpers/git.js";
+import { startLockHolder } from "../helpers/processes.js";
+import { lockNames, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { taskWorkspaceState, useStartFixture, useStartedTask } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";

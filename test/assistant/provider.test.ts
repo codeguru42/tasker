@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { assistantDoctorChecks, createAssistantProvider, createSessionProvider } from "../../src/assistant/provider.js";
 import { parseConfig } from "../../src/config/schema.js";
-import { configIssuesOf, validConfig } from "../helpers.js";
+import { validConfig } from "../helpers/config.js";
+import { configIssuesOf } from "../helpers/errors.js";
 
 const unavailableIds = ["copilot", "pi"] as const;
 type Id = "claude-code" | (typeof unavailableIds)[number];

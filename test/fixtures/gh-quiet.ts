@@ -2,7 +2,8 @@
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { runGh } from "../../src/issues/github/run.js";
-import { ghTokenAnswer, makeTempDir, writeFakeGh } from "../helpers.js";
+import { ghTokenAnswer, writeFakeGh } from "../helpers/fake-gh.js";
+import { makeTempDir } from "../helpers/temp.js";
 
 const dir = makeTempDir("tasker-gh-quiet-");
 try {

@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { filesThatImport, importsPath, sourceDir } from "../helpers.js";
+import { filesThatImport, importsPath, sourceDir } from "../helpers/source-scan.js";
 
 describe("the issue key boundary", () => {
   it("finds no file in src/issue-key that imports from src/issues", () => {

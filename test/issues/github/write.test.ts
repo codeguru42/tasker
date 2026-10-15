@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssueRef } from "../../../src/issue-key/ref.js";
-import { failureOf, fakeGh, ghTokenAnswer, useTempDir } from "../../helpers.js";
+import { failureOf } from "../../helpers/errors.js";
+import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 // The call of an issue edit. The args are a literal, so that the test checks the call on its own.
 const editArgs = (flag: string, value: string, number = "7", project = "octo/repo") => [

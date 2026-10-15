@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { planRevisionPath, taskPlansDir } from "../../src/store/layout.js";
 import { PlanFileWriteError } from "../../src/store/plan-file.js";
 import { transitionTask } from "../../src/state/machine.js";
-import { recordTestPlanRevision, thrownBy, useTempDir, validPlanAnswer, withDataRootStore } from "../helpers.js";
+import { thrownBy } from "../helpers/errors.js";
+import { recordTestPlanRevision, validPlanAnswer } from "../helpers/plan.js";
+import { withDataRootStore } from "../helpers/store.js";
+import { useTempDir } from "../helpers/temp.js";
 
 const newTask = { issueKey: "codeguru42/tasker#91", repoKey: "tasker", state: "planning" };
 

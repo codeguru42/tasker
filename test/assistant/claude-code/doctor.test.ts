@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "../../../src/assistant/claude-code/doctor.js";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
-import { useFakeClaude, useFakeSandboxBin, useTempDir, validConfig } from "../../helpers.js";
+import { validConfig } from "../../helpers/config.js";
+import { useFakeClaude } from "../../helpers/fake-claude.js";
+import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 const VERSION = "2.1.299 (Claude Code)";
 

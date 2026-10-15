@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkPlanAnswer, type PlanAnswer, planAnswerJsonSchema } from "../../src/plan/answer.js";
-import { validPlanAnswer } from "../helpers.js";
+import { validPlanAnswer } from "../helpers/plan.js";
 
 function problemsOf(output: unknown): string[] {
   const result = checkPlanAnswer(output);
