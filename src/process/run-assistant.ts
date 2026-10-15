@@ -1,8 +1,9 @@
-import { spawn } from "node:child_process";
+import { type ChildProcessByStdio, spawn } from "node:child_process";
+import type { Readable, Writable } from "node:stream";
 import { StringDecoder } from "node:string_decoder";
 import { errorMessage } from "../error-message.js";
 import { CommandNotFoundError, assertPathSet } from "./run-child.js";
-import { type GroupResult, superviseGroup } from "./run-group.js";
+import { type GroupResult, forwardSignals, superviseGroup } from "./run-group.js";
 import { startFolderError } from "./start-folder.js";
 
 const STDERR_TAIL_BYTES = 64 * 1024;
@@ -73,14 +74,22 @@ export async function runAssistant(
   }
   const folderError = startFolderError(file, options.cwd);
   if (folderError !== undefined) return { started: false, notFound: false, error: folderError };
-  const child = spawn(file, [...args], {
-    cwd: options.cwd,
-    env: options.env,
-    detached: true,
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+  const forward = forwardSignals();
+  let child: ChildProcessByStdio<Writable, Readable, Readable>;
+  try {
+    child = spawn(file, [...args], {
+      cwd: options.cwd,
+      env: options.env,
+      detached: true,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+  } catch (error) {
+    forward.stop();
+    throw error;
+  }
   const pid = child.pid;
   if (pid === undefined) {
+    forward.stop();
     const error = await new Promise<NodeJS.ErrnoException>((resolve) => child.once("error", resolve));
     if (error.code === "ENOENT") return { started: false, notFound: true, error: new CommandNotFoundError(file, "not-on-path").message };
     return { started: false, notFound: false, error: `cannot start ${file}: ${error.message}` };
@@ -94,6 +103,7 @@ export async function runAssistant(
     tail = Buffer.concat([tail, chunk]).subarray(-STDERR_TAIL_BYTES);
   });
   const supervised = superviseGroup(child, pid, {
+    forward,
     deadline: options.deadline,
     signal: options.signal,
     stopOnExit: true,

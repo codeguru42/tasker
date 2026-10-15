@@ -42,7 +42,35 @@ function groupRuns(pid: number): boolean {
   }
 }
 
+export interface SignalForward {
+  // Gives the pid of the group. Each signal that came before goes to the group now, in the order that it came.
+  attach: (pid: number) => void;
+  // Removes the listeners. A signal that did not reach a group is dropped.
+  stop: () => void;
+}
+
+// From now on, SIGINT and SIGTERM do not stop tasker. A signal that comes before attach waits for the group.
+export function forwardSignals(): SignalForward {
+  let pid: number | undefined;
+  const waiting: NodeJS.Signals[] = [];
+  const forwarders = FORWARDED_SIGNALS.map(
+    (signal) => [signal, () => (pid === undefined ? waiting.push(signal) : signalGroup(pid, signal))] as const,
+  );
+  for (const [signal, handler] of forwarders) process.on(signal, handler);
+  return {
+    attach: (groupPid) => {
+      pid = groupPid;
+      for (const signal of waiting.splice(0)) signalGroup(groupPid, signal);
+    },
+    stop: () => {
+      for (const [signal, handler] of forwarders) process.off(signal, handler);
+    },
+  };
+}
+
 export interface SuperviseOptions {
+  // Started by the caller right before the spawn. superviseGroup attaches it and stops it when the run ends.
+  forward: SignalForward;
   deadline: number;
   signal?: AbortSignal;
   stopOnExit?: boolean;
@@ -50,7 +78,8 @@ export interface SuperviseOptions {
 }
 
 // Watches child, the leader of its own process group with pid pid, until it closes.
-// While it runs, SIGINT and SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM.
+// The caller starts options.forward right before the spawn. From the attach until the run ends, SIGINT and
+// SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM.
 // Five seconds later, it gets SIGKILL. After such a stop, it waits until the group is gone.
 // An abort of signal stops the group in the same way, but it does not set timedOut.
 // With stopOnExit, the exit of the leader stops the group in the same way.
@@ -70,15 +99,14 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
     let deadlineTimer: NodeJS.Timeout | undefined;
     let graceTimer: NodeJS.Timeout | undefined;
     let pollTimer: NodeJS.Timeout | undefined;
-    const forwarders = FORWARDED_SIGNALS.map((signal) => [signal, () => signalGroup(pid, signal)] as const);
-    for (const [signal, handler] of forwarders) process.on(signal, handler);
+    options.forward.attach(pid);
     const settle = (finish: () => void) => {
       if (settled) return;
       settled = true;
       clearTimeout(deadlineTimer);
       clearTimeout(graceTimer);
       clearInterval(pollTimer);
-      for (const [signal, handler] of forwarders) process.off(signal, handler);
+      options.forward.stop();
       options.signal?.removeEventListener("abort", stop);
       finish();
     };
@@ -142,18 +170,27 @@ export async function runInGroup(
   args: readonly string[],
   options: RunGroupOptions,
 ): Promise<GroupResult> {
-  const child = spawn(file, [...args], {
-    cwd: options.cwd,
-    env: options.env,
-    detached: true,
-    stdio: ["ignore", options.outputFd, options.outputFd],
-  });
+  const forward = forwardSignals();
+  let child: ChildProcess;
+  try {
+    child = spawn(file, [...args], {
+      cwd: options.cwd,
+      env: options.env,
+      detached: true,
+      stdio: ["ignore", options.outputFd, options.outputFd],
+    });
+  } catch (error) {
+    forward.stop();
+    throw error;
+  }
   const pid = child.pid;
   if (pid === undefined) {
-    return new Promise((_, reject) => child.once("error", reject)); // no group exists, so no signal and no timer
+    forward.stop();
+    return new Promise((_, reject) => child.once("error", reject)); // no group exists, so tasker drops each signal that came, and no timer starts
   }
   const { onSpawn } = options;
   return superviseGroup(child, pid, {
+    forward,
     deadline: options.deadline,
     onStart: onSpawn && (() => onSpawn(pid)),
   });

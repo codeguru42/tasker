@@ -157,8 +157,8 @@ export async function readPidFile(path: string, timeoutMs: number): Promise<numb
   return pid;
 }
 
-// Waits until the signal fixture that runs in dir forwards its signals, and returns the pid of the fixture.
-// The file started of a child does not show this, because the fixture adds its listeners later.
+// Waits until the signal fixture that runs in dir writes the file watching, and returns the pid of the fixture.
+// The fixture writes the file in onSpawn, when the runner forwards the signals of the fixture.
 export function waitForWatching(dir: string, timeoutMs: number): Promise<number> {
   return readPidFile(join(dir, "watching"), timeoutMs);
 }
