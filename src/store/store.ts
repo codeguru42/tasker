@@ -257,7 +257,8 @@ export interface TaskStore extends LockStore {
     check?: (current: Task) => NewEvent | void,
   ): Task;
   // Moves the task to a state that is not spawning, deletes its run marker and clears the approval
-  // of revision version, in one transaction. The event that check returns is appended in the same transaction.
+  // of revision version, in one transaction. Only the pinned revision can be cleared: another version throws and
+  // writes nothing. The event that check returns is appended in the same transaction.
   clearPlanApproval(
     taskId: number,
     version: number,
@@ -1164,7 +1165,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (pinned === undefined) {
           throw new Error(`task ${taskId} has no approved plan revision`);
         }
-        statements.setPlanApproval.run(null, taskId, pinned.version);
+        if (version !== pinned.version) {
+          throw new Error(`task ${taskId}: plan revision ${version} is not the pinned revision (${pinned.version})`);
+        }
+        statements.setPlanApproval.run(null, taskId, version);
       });
     },
 
