@@ -1,6 +1,8 @@
 import { DatabaseSync, type StatementSync } from "node:sqlite";
 import type { AssistantProviderId, Effort, RecordedSession } from "../assistant/provider.js";
 import type { PlanAnswer } from "../plan/answer.js";
+import type { Finding } from "../review/answer.js";
+import type { FindingEntry } from "../review/findings-text.js";
 import { isSpawningState, isTerminalState, TERMINAL_STATES } from "../state/machine.js";
 import { type LockStore, tryLockIn, unlockIn } from "./locks.js";
 import { migrate } from "./migrate.js";
@@ -150,6 +152,24 @@ export interface VerifyRun extends NewVerifyRun {
   taskId: number;
 }
 
+export interface NewReview {
+  number: number;
+  // The revision of the worktree that the review read. The findings describe this one tree.
+  revision: string;
+  // The prompt version of the run, for example review@3f9a1c04b2e7.
+  prompt: string;
+  // The caller gives both times. The store does not take them from its clock.
+  startedAt: string;
+  endedAt: string;
+  findings: Finding[];
+}
+
+export interface Review extends Omit<NewReview, "findings"> {
+  taskId: number;
+  // In the order of their positions.
+  findings: FindingEntry[];
+}
+
 // A session that the store holds: what it recorded when it started, and its id.
 export interface StoredSession extends RecordedSession {
   sessionId: string;
@@ -252,6 +272,21 @@ export interface TaskStore extends LockStore {
   getVerifyRun(taskId: number, number: number): VerifyRun | undefined;
   // The run with the highest number.
   latestVerifyRun(taskId: number): VerifyRun | undefined;
+  // The number that the next review of the task must have. The caller holds the task lock,
+  // so the value stays valid until the insert.
+  nextReview(taskId: number): number;
+  // Inserts the review and its findings, appends the review event { number, revision, findings },
+  // moves the task to a state that is not spawning and deletes its run marker, in one transaction.
+  // The findings get the positions 1, 2, and so on. The event that check returns is appended in the
+  // same transaction. A throw writes nothing.
+  addReview(taskId: number, review: NewReview, state: string, check?: (current: Task) => NewEvent | void): Task;
+  // The number of reviews of the task.
+  reviewCount(taskId: number): number;
+  getReview(taskId: number, number: number): Review | undefined;
+  // The review with the highest number.
+  latestReview(taskId: number): Review | undefined;
+  // The reviews of the task, oldest first.
+  listReviews(taskId: number): Review[];
   // The revision with the highest version.
   latestPlanRevision(taskId: number): PlanRevision | undefined;
   // The approved revision with the highest version.
@@ -446,6 +481,35 @@ function toVerifyRun(row: VerifyRunRow | undefined): VerifyRun | undefined {
   };
 }
 
+interface ReviewRow {
+  task_id: number;
+  number: number;
+  revision: string;
+  prompt: string;
+  started_at: string;
+  ended_at: string;
+}
+
+interface ReviewFindingRow {
+  position: number;
+  file: string;
+  line: number | null;
+  category: string | null;
+  summary: string;
+  failure_scenario: string;
+  dismissed_at: string | null;
+  dismiss_reason: string | null;
+}
+
+function toFindingEntry(row: ReviewFindingRow): FindingEntry {
+  const finding: Finding = { file: row.file, summary: row.summary, failure_scenario: row.failure_scenario };
+  if (row.line !== null) finding.line = row.line;
+  if (row.category !== null) finding.category = row.category;
+  const dismissed =
+    row.dismissed_at === null ? null : { at: row.dismissed_at, reason: row.dismiss_reason as string };
+  return { position: row.position, finding, dismissed };
+}
+
 interface PlanSessionRow {
   session_id: string;
   provider: string;
@@ -630,6 +694,24 @@ function setUp(db: DatabaseSync) {
       "SELECT * FROM verify_runs WHERE task_id = ? ORDER BY number DESC LIMIT 1",
     ),
     selectVerifyRunCount: db.prepare("SELECT COUNT(*) AS n FROM verify_runs WHERE task_id = ?"),
+    selectNextReview: db.prepare(
+      "SELECT COALESCE(MAX(number), 0) + 1 AS next FROM reviews WHERE task_id = ?",
+    ),
+    insertReview: db.prepare(
+      `INSERT INTO reviews (task_id, number, revision, prompt, started_at, ended_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ),
+    insertReviewFinding: db.prepare(
+      `INSERT INTO review_findings (task_id, number, position, file, line, category, summary, failure_scenario)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ),
+    selectReview: db.prepare("SELECT * FROM reviews WHERE task_id = ? AND number = ?"),
+    selectLatestReview: db.prepare("SELECT * FROM reviews WHERE task_id = ? ORDER BY number DESC LIMIT 1"),
+    selectReviews: db.prepare("SELECT * FROM reviews WHERE task_id = ? ORDER BY number"),
+    selectReviewCount: db.prepare("SELECT COUNT(*) AS n FROM reviews WHERE task_id = ?"),
+    selectReviewFindings: db.prepare(
+      "SELECT * FROM review_findings WHERE task_id = ? AND number = ? ORDER BY position",
+    ),
     selectPinnedPlanRevision: db.prepare(
       `SELECT * FROM plan_revisions WHERE task_id = ? AND approved_at IS NOT NULL
        ORDER BY version DESC LIMIT 1`,
@@ -736,6 +818,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
   function readNextVerifyRun(taskId: number): number {
     return readNext(statements.selectNextVerifyRun, taskId);
+  }
+
+  function readNextReview(taskId: number): number {
+    return readNext(statements.selectNextReview, taskId);
   }
 
   // Throws when the given number of a new row is not the next one.
@@ -886,6 +972,46 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       run.startedAt,
       run.endedAt,
     );
+  }
+
+  // The row insert of a review and its findings. It checks the number and opens no transaction, so
+  // the caller must have one open.
+  function writeReview(taskId: number, review: NewReview): void {
+    requireNext(taskId, "review", review.number, readNextReview(taskId), "number");
+    statements.insertReview.run(
+      taskId,
+      review.number,
+      review.revision,
+      review.prompt,
+      review.startedAt,
+      review.endedAt,
+    );
+    review.findings.forEach((finding, index) => {
+      statements.insertReviewFinding.run(
+        taskId,
+        review.number,
+        index + 1,
+        finding.file,
+        finding.line ?? null,
+        finding.category ?? null,
+        finding.summary,
+        finding.failure_scenario,
+      );
+    });
+  }
+
+  function toReview(row: ReviewRow | undefined): Review | undefined {
+    if (row === undefined) return undefined;
+    const findings = statements.selectReviewFindings.all(row.task_id, row.number) as unknown as ReviewFindingRow[];
+    return {
+      taskId: row.task_id,
+      number: row.number,
+      revision: row.revision,
+      prompt: row.prompt,
+      startedAt: row.started_at,
+      endedAt: row.ended_at,
+      findings: findings.map(toFindingEntry),
+    };
   }
 
   return {
@@ -1064,6 +1190,35 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     latestVerifyRun(taskId) {
       return toVerifyRun(statements.selectLatestVerifyRun.get(taskId) as VerifyRunRow | undefined);
+    },
+
+    nextReview: readNextReview,
+
+    addReview(taskId, review, state, check) {
+      return addRowAtRunEnd(taskId, state, check, () => {
+        writeReview(taskId, review);
+        return {
+          type: "review",
+          data: { number: review.number, revision: review.revision, findings: review.findings.length },
+        };
+      });
+    },
+
+    reviewCount(taskId) {
+      return (statements.selectReviewCount.get(taskId) as { n: number }).n;
+    },
+
+    getReview(taskId, number) {
+      return toReview(statements.selectReview.get(taskId, number) as ReviewRow | undefined);
+    },
+
+    latestReview(taskId) {
+      return toReview(statements.selectLatestReview.get(taskId) as ReviewRow | undefined);
+    },
+
+    listReviews(taskId) {
+      const rows = statements.selectReviews.all(taskId) as unknown as ReviewRow[];
+      return rows.map((row) => toReview(row) as Review);
     },
 
     pinnedPlanRevision: readPinnedPlanRevision,
