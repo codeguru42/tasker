@@ -1,0 +1,177 @@
+import { existsSync, rmSync } from "node:fs";
+import { delimiter } from "node:path";
+import { describe, expect, it } from "vitest";
+import { issueProviderFor } from "../../src/issues/provider.js";
+import { dataRootLayout } from "../../src/store/layout.js";
+import { changedPaths } from "../../src/vcs/git/changes.js";
+import { repoPaths } from "../../src/vcs/git/repo-paths.js";
+import { localBranches } from "./git.js";
+import { readRunMarker, withDataRootStore } from "./store.js";
+import {
+  startIssueTask,
+  startTaskWithCommits,
+  taskWorkspaceState,
+  useAssistantRunFixture,
+  usePlanFixture,
+  useStartedTask,
+  useStartFixture,
+} from "./task-fixtures.js";
+
+describe("useStartFixture", () => {
+  it("gives a configuration with the origin as the remote and main as the base", async () => {
+    const fixture = await useStartFixture();
+    const repo = fixture.config.repos[fixture.repoKey];
+
+    expect(fixture.repoKey).toBe("codeguru42/tasker");
+    expect(repo.remote).toBe(fixture.origin.path);
+    expect(repo.defaultBaseBranch).toBe("main");
+  });
+
+  it("sets TASKER_CONFIG and puts the fake gh first on the PATH", async () => {
+    const fixture = await useStartFixture();
+
+    expect(process.env.TASKER_CONFIG).toBe(fixture.configPath);
+    expect(process.env.PATH?.startsWith(`${fixture.gh.env.PATH}${delimiter}`)).toBe(true);
+  });
+
+  it("answers the read of issue 5 through the fake gh", async () => {
+    const fixture = await useStartFixture();
+    const provider = issueProviderFor(fixture.config, fixture.repoKey);
+    const ref = { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: "codeguru42-tasker-5" };
+
+    const issue = await provider.fetchIssue(ref, process.env);
+
+    expect(issue.title).toBe("Issue 5");
+  });
+
+  it("removes a repo key that is set to undefined", async () => {
+    const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
+
+    expect(fixture.config.repos[fixture.repoKey].defaultBaseBranch).toBeUndefined();
+  });
+});
+
+describe("useAssistantRunFixture", () => {
+  it("moves the task into the state, with a run marker of this process", async () => {
+    const fixture = await useAssistantRunFixture({ claude: {}, state: "executing" });
+
+    expect(fixture.task.state).toBe("executing");
+    expect(readRunMarker(dataRootLayout(fixture.config.dataRoot).database, fixture.task.id)).toMatchObject({
+      state: "executing",
+      pid: process.pid,
+    });
+  });
+
+  it("starts in the planning state and changes the limits of a copy of the configuration", async () => {
+    const fixture = await useAssistantRunFixture({ claude: {}, limits: { planTimeoutMin: 7 } });
+
+    expect(fixture.task.state).toBe("planning");
+    expect(fixture.config.limits.planTimeoutMin).toBe(7);
+    expect(fixture.started.config.limits.planTimeoutMin).not.toBe(7);
+  });
+
+  it("sets the ssh keys and adds a second repo after the task repo in the copy only", async () => {
+    const fixture = await useAssistantRunFixture({
+      claude: {},
+      sshKey: "/keys/a_key",
+      otherRepo: { key: "codeguru42/other", sshKey: "/keys/b_key" },
+    });
+
+    const { repoKey } = fixture.started;
+    expect(Object.keys(fixture.config.repos)).toEqual([repoKey, "codeguru42/other"]);
+    expect(fixture.config.repos[repoKey]!.vcs).toEqual({ provider: "git", config: { sshKey: "/keys/a_key" } });
+    expect(fixture.config.repos["codeguru42/other"]!.vcs).toEqual({
+      provider: "git",
+      config: { sshKey: "/keys/b_key" },
+    });
+    expect(Object.keys(fixture.started.config.repos)).toEqual([repoKey]);
+    expect(fixture.started.config.repos[repoKey]!.vcs).toEqual({ provider: "git", config: {} });
+  });
+
+  it("gives an env with the fake claude first and the secrets that the child must not get", async () => {
+    const fixture = await useAssistantRunFixture({ claude: {} });
+
+    expect(fixture.env.PATH?.split(delimiter)[0]).toBe(fixture.claude.binDir);
+    expect(fixture.env.GH_TOKEN).toBe("gho_secret");
+    expect(fixture.env.SSH_AUTH_SOCK).toBe("/tmp/agent.sock");
+    expect(fixture.env.HOME).not.toBe(fixture.started.env.HOME);
+  });
+});
+
+describe("useStartedTask", () => {
+  it("starts the task of issue 5 and gives its names", async () => {
+    const started = await useStartedTask();
+
+    expect(started.result.code).toBe(0);
+    expect(started.key).toBe("codeguru42/tasker#5");
+    expect(existsSync(started.worktree)).toBe(true);
+    expect(await localBranches(started.clone, started.env)).toContain(`refs/heads/${started.branch}`);
+  });
+});
+
+describe("startIssueTask", () => {
+  it("starts the task of the issue number and gives its names", async () => {
+    const fixture = await useStartFixture({ issues: [{ project: "codeguru42/tasker", number: 6 }] });
+    const started = await startIssueTask(fixture, 6);
+
+    expect(started.result.code).toBe(0);
+    expect(started.key).toBe("codeguru42/tasker#6");
+    expect(existsSync(started.worktree)).toBe(true);
+    expect(await localBranches(started.clone, fixture.origin.env)).toContain(`refs/heads/${started.branch}`);
+  });
+});
+
+describe("startTaskWithCommits", () => {
+  it("starts the task and commits each file on its branch", async () => {
+    const fixture = await useStartFixture({ issues: [{ project: "codeguru42/tasker", number: 6 }] });
+
+    const task = await startTaskWithCommits(fixture, 6, ["src/a.ts", "docs/b.md"]);
+
+    expect(task.state).toBe("workspace_ready");
+    expect(task.issueKey).toBe("codeguru42/tasker#6");
+    const paths = await changedPaths({
+      clone: repoPaths(fixture.dataRoot, fixture.repoKey).clone,
+      env: fixture.origin.env,
+      branch: task.branch!,
+      baseRevision: "refs/remotes/origin/main",
+    });
+    expect([...paths].sort()).toEqual(["docs/b.md", "src/a.ts"]);
+  });
+});
+
+describe("taskWorkspaceState", () => {
+  it("gives the state of a started task", async () => {
+    const started = await useStartedTask();
+
+    expect(await taskWorkspaceState(started)).toEqual({
+      state: "workspace_ready",
+      worktree: true,
+      listed: true,
+      branch: true,
+    });
+  });
+
+  it("shows a folder that is gone, while git still lists the worktree", async () => {
+    const started = await useStartedTask();
+    rmSync(started.worktree, { recursive: true, force: true });
+
+    expect(await taskWorkspaceState(started)).toEqual({
+      state: "workspace_ready",
+      worktree: false,
+      listed: true,
+      branch: true,
+    });
+  });
+});
+
+describe("usePlanFixture", () => {
+  it("puts the fake claude first on PATH, sets a temp HOME and keeps the task in workspace_ready", async () => {
+    const hostHome = process.env.HOME;
+    const { started, claude } = await usePlanFixture({});
+    expect(process.env.PATH!.startsWith(claude.binDir + delimiter)).toBe(true);
+    expect(process.env.HOME).not.toBe(hostHome);
+    expect(existsSync(process.env.HOME!)).toBe(true);
+    const state = withDataRootStore(started.dataRoot, (store) => store.findLatestTask(started.repoKey, started.key)?.state);
+    expect(state).toBe("workspace_ready");
+  });
+});
