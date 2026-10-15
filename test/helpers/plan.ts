@@ -58,12 +58,22 @@ export function planTodo(
   return { id, title: `Do ${id}`, description: `The work of ${id}.`, depends_on: [...dependsOn], ...change };
 }
 
+// The stdout lines of a fake claude run that succeeds with output as its structured output.
+function structuredOutputStream(output: unknown): string[] {
+  return claudeSampleWithResult("json-schema", (result) => {
+    result["structured_output"] = output;
+    result["result"] = JSON.stringify(output);
+  }).map((event) => JSON.stringify(event));
+}
+
 // The stdout lines of a fake claude run that succeeds with answer as its structured output.
 export function planAnswerStream(answer: unknown): string[] {
-  return claudeSampleWithResult("json-schema", (result) => {
-    result["structured_output"] = answer;
-    result["result"] = JSON.stringify(answer);
-  }).map((event) => JSON.stringify(event));
+  return structuredOutputStream(answer);
+}
+
+// The stdout lines of a fake claude run that succeeds with a turn result. With no reason, the result has no reason key.
+export function turnResultStream(result: "done" | "blocked", reason?: string): string[] {
+  return structuredOutputStream(reason === undefined ? { result } : { result, reason });
 }
 
 // The next plan revision of the task: a valid plan answer, unless change gives other values.
