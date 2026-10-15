@@ -689,7 +689,89 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(10);
+        expect(migrations.length).toBe(11);
+      });
+    });
+  });
+
+  describe("reviews", () => {
+    const insertRawReview = (db: DatabaseSync, taskId: number, number: number) =>
+      db
+        .prepare(
+          "INSERT INTO reviews (task_id, number, revision, prompt, started_at, ended_at) VALUES (?, ?, '4b825dc642cb', 'review@3f9a1c04b2e7', 't', 't')",
+        )
+        .run(taskId, number);
+
+    const insertRawFinding = (
+      db: DatabaseSync,
+      taskId: number,
+      number: number,
+      position: number,
+      dismissedAt: string | null = null,
+      dismissReason: string | null = null,
+    ) =>
+      db
+        .prepare(
+          "INSERT INTO review_findings (task_id, number, position, file, summary, failure_scenario, dismissed_at, dismiss_reason) VALUES (?, ?, ?, 'src/a.ts', 'A summary.', 'A scenario.', ?, ?)",
+        )
+        .run(taskId, number, position, dismissedAt, dismissReason);
+
+    const countRows = (db: DatabaseSync, table: string) =>
+      (db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n;
+
+    const refusal = (db: DatabaseSync, run: () => unknown, message: string) => {
+      const error = thrownBy(run, message);
+      expect((error as Error).message).toBe(message);
+      expect(countRows(db, "review_findings")).toBe(0);
+    };
+
+    it("has the review tables and the review session index", () => {
+      withRawDatabase(dbPath, (db) => {
+        expect(tableNames(db)).toEqual(expect.arrayContaining(["reviews", "review_findings"]));
+        const index = db
+          .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'sessions_task_review'")
+          .all();
+        expect(index).toEqual([{ name: "sessions_task_review" }]);
+      });
+    });
+
+    it("upgrades a version-10 database and adds both tables", () => {
+      const oldPath = join(dir, "old10.db");
+      makeOldDatabase(oldPath, 10);
+      withStoreFile(oldPath, () => {}, { now });
+      withRawDatabase(oldPath, (check) => {
+        expect(schemaVersion(check)).toBe(migrations.length);
+        expect(tableNames(check)).toEqual(expect.arrayContaining(["reviews", "review_findings"]));
+      });
+    });
+
+    it("refuses a finding with no review row", () => {
+      withRawDatabase(dbPath, (db) => {
+        db.exec("PRAGMA foreign_keys = ON");
+        insertRawTask(db, "one", "reviewing");
+        refusal(db, () => insertRawFinding(db, 1, 1, 1), "FOREIGN KEY constraint failed");
+      });
+    });
+
+    it("refuses the position 0", () => {
+      withRawDatabase(dbPath, (db) => {
+        db.exec("PRAGMA foreign_keys = ON");
+        insertRawTask(db, "one", "reviewing");
+        insertRawReview(db, 1, 1);
+        refusal(db, () => insertRawFinding(db, 1, 1, 0), "CHECK constraint failed: position >= 1");
+      });
+    });
+
+    it("refuses a dismissal time without a reason and the reverse", () => {
+      withRawDatabase(dbPath, (db) => {
+        db.exec("PRAGMA foreign_keys = ON");
+        insertRawTask(db, "one", "reviewing");
+        insertRawReview(db, 1, 1);
+        const message = "CHECK constraint failed: (dismissed_at IS NULL) = (dismiss_reason IS NULL)";
+        refusal(db, () => insertRawFinding(db, 1, 1, 1, "t", null), message);
+        refusal(db, () => insertRawFinding(db, 1, 1, 1, null, "A reason."), message);
+        insertRawFinding(db, 1, 1, 1, "t", "A reason.");
+        expect(countRows(db, "review_findings")).toBe(1);
       });
     });
   });
@@ -701,12 +783,13 @@ describe("task store", () => {
       role: string,
       sessionId: string,
       planVersion: number | null = null,
+      reviewNumber: number | null = null,
     ) =>
       db
         .prepare(
-          "INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at, plan_version) VALUES (?, ?, ?, 'claude-code', 'opus', 'high', 't', ?)",
+          "INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at, plan_version, review_number) VALUES (?, ?, ?, 'claude-code', 'opus', 'high', 't', ?, ?)",
         )
-        .run(taskId, role, sessionId, planVersion);
+        .run(taskId, role, sessionId, planVersion, reviewNumber);
 
     it("has the sessions table", () => {
       withRawDatabase(dbPath, (db) => {
@@ -770,6 +853,19 @@ describe("task store", () => {
         insertRawSession(db, 1, "execute", "s-2", 2);
         const message = "UNIQUE constraint failed: sessions.task_id, sessions.plan_version";
         const error = thrownBy(() => insertRawSession(db, 1, "execute", "s-3", 1), message);
+        expect((error as Error).message).toBe(message);
+        const row = db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number };
+        expect(row.n).toBe(2);
+      });
+    });
+
+    it("allows one review row for each review number of a task", () => {
+      withRawDatabase(dbPath, (db) => {
+        insertRawTask(db, "one", "planning");
+        insertRawSession(db, 1, "review", "s-1", null, 1);
+        insertRawSession(db, 1, "review", "s-2", null, 2);
+        const message = "UNIQUE constraint failed: sessions.task_id, sessions.review_number";
+        const error = thrownBy(() => insertRawSession(db, 1, "review", "s-3", null, 1), message);
         expect((error as Error).message).toBe(message);
         const row = db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number };
         expect(row.n).toBe(2);
@@ -1241,6 +1337,7 @@ describe("task store", () => {
           effort: "low",
           created_at: "2026-01-01T00:00:00.000Z",
           plan_version: null,
+          review_number: null,
         },
       ]);
     });
@@ -1317,6 +1414,7 @@ describe("task store", () => {
           effort: "medium",
           created_at: "2026-01-01T00:00:00.000Z",
           plan_version: 1,
+          review_number: null,
         },
       ]);
     });
