@@ -1,6 +1,4 @@
-import { readFileSync } from "node:fs";
-import type { Io, RegisterCommand } from "../cli.js";
-import { errnoCode } from "../errno.js";
+import type { RegisterCommand } from "../cli.js";
 import { planRevisionPath } from "../store/layout.js";
 import type { PlanRevision, Task, TaskStore } from "../store/store.js";
 import {
@@ -11,18 +9,13 @@ import {
   planVersionOrFail,
   VERSION_OPTION_DESCRIPTION,
 } from "./plan-revision.js";
-import { fail, ISSUE_ARGUMENT_DESCRIPTION, loadConfigOrFail, REPO_OPTION_DESCRIPTION, withIssueTask } from "./shared.js";
-
-// The text of the plan file. A read error stops the command with exit code 1.
-function readPlanFile(io: Io, path: string): string {
-  try {
-    return readFileSync(path, "utf8");
-  } catch (error) {
-    const code = errnoCode(error);
-    if (code === "ENOENT") fail(io, `no plan file at ${path}`);
-    fail(io, `cannot read the plan file ${path}: ${code}`);
-  }
-}
+import {
+  ISSUE_ARGUMENT_DESCRIPTION,
+  loadConfigOrFail,
+  readFileOrFail,
+  REPO_OPTION_DESCRIPTION,
+  withIssueTask,
+} from "./shared.js";
 
 function approvalLine(store: TaskStore, task: Task, revision: PlanRevision): string {
   const pinned = store.pinnedPlanRevision(task.id);
@@ -67,7 +60,11 @@ export const showPlan: RegisterCommand = (program, io) => {
           const revision = planRevisionOrFail(io, store, task, version);
           const path = planRevisionPath(config.dataRoot, task, revision.version);
           if (options.path) return `${path}\n`;
-          return formatPlan(store, task, revision, readPlanFile(io, path));
+          const planText = readFileOrFail(io, path, {
+            missing: `no plan file at ${path}`,
+            unreadable: `cannot read the plan file ${path}`,
+          });
+          return formatPlan(store, task, revision, planText);
         }),
       );
     });
