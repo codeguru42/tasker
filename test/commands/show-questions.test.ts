@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { showQuestions } from "../../src/commands/show-questions.js";
 import {
+  OPEN_QUESTION_BLOCK,
   recordPlanRevisions,
   runCommand,
   seedPlanRevision,
@@ -12,9 +13,6 @@ import {
 const TASKER = "codeguru42/tasker";
 const KEY = `${TASKER}#5`;
 
-const OPEN_QUESTION =
-  "questions:\n  base-branch: Which branch is the base?\n    The issue names no base branch.\n    open\n";
-
 describe("show-questions", () => {
   it("prints the open questions of the newest revision", async () => {
     const { dataRoot, task } = seedPlanningTask();
@@ -22,7 +20,7 @@ describe("show-questions", () => {
 
     const result = await runCommand(showQuestions, "show-questions", KEY, "--repo", TASKER);
 
-    expect(result).toEqual({ code: 0, err: "", out: `${KEY} plan v1\n${OPEN_QUESTION}` });
+    expect(result).toEqual({ code: 0, err: "", out: `${KEY} plan v1\n${OPEN_QUESTION_BLOCK}` });
   });
 
   it("prints the answered question of --version 1", async () => {
@@ -58,7 +56,7 @@ describe("show-questions", () => {
 
     const result = await runCommand(showQuestions, "show-questions", KEY, "--repo", TASKER);
 
-    expect(result).toEqual({ code: 0, err: "", out: `${KEY} plan v1\n${OPEN_QUESTION}` });
+    expect(result).toEqual({ code: 0, err: "", out: `${KEY} plan v1\n${OPEN_QUESTION_BLOCK}` });
   });
 
   it("rejects a bad --version value", async () => {

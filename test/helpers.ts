@@ -1659,6 +1659,10 @@ export function useFakeSandboxBin(except: readonly string[] = []): string {
   return bin;
 }
 
+// The questions block that show-plan and show-questions print for the one open question of validPlanAnswer.
+export const OPEN_QUESTION_BLOCK =
+  "questions:\n  base-branch: Which branch is the base?\n    The issue names no base branch.\n    open\n";
+
 export function validPlanAnswer(change: Partial<PlanAnswer> = {}): PlanAnswer {
   return {
     summary: ["Add the a module and its test."],

@@ -5,6 +5,7 @@ import { showPlan } from "../../src/commands/show-plan.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath } from "../../src/store/layout.js";
 import {
+  OPEN_QUESTION_BLOCK,
   recordPlanRevisions,
   recordTestPlanRevision,
   runCommand,
@@ -26,10 +27,7 @@ const TODOS_AND_QUESTION =
   "  make-it-pass: Add the a module\n" +
   "    Write the a module so that the test passes.\n" +
   "    depends on: write-test\n" +
-  "questions:\n" +
-  "  base-branch: Which branch is the base?\n" +
-  "    The issue names no base branch.\n" +
-  "    open\n";
+  OPEN_QUESTION_BLOCK;
 
 const PLAN_V1 = "## Summary\n\nAdd the a module and its test, test first.\n";
 
