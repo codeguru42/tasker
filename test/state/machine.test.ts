@@ -11,11 +11,12 @@ import {
   isTerminalState,
   isTaskState,
   transitionTask,
+  transitionWithPlanRevision,
   type TaskState,
   type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { useTempDir } from "../helpers.js";
+import { useTempDir, validPlanAnswer } from "../helpers.js";
 
 describe("spawning states", () => {
   it("has the ten spawning states", () => {
@@ -375,6 +376,36 @@ describe("task transitions", () => {
       expect(store.getTask(task.id)!.state).toBe("executing");
       expect(store.runStatus(task.id)).toEqual({ status: "running" });
       expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithPlanRevision", () => {
+    const revision = {
+      version: 1,
+      source: "plan" as const,
+      answer: validPlanAnswer(),
+      prompt: "plan@000000000000",
+    };
+
+    it("moves planning to awaiting_plan_review, inserts the row and appends plan_revision, then transition", () => {
+      const task = store.createTask(newTask("planning"));
+      const moved = transitionWithPlanRevision(store, task.id, "awaiting_plan_review", revision);
+      expect(moved.state).toBe("awaiting_plan_review");
+      expect(store.getPlanRevision(task.id, 1)).toBeDefined();
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "plan_revision", "transition"]);
+      expect(events[1].data).toEqual({ version: 1, prompt: "plan@000000000000" });
+      expect(events[2].data).toEqual({ from: "planning", to: "awaiting_plan_review" });
+    });
+
+    it("writes no row for an illegal edge", () => {
+      const task = store.createTask(newTask("workspace_ready"));
+      expect(() => transitionWithPlanRevision(store, task.id, "awaiting_plan_review", revision)).toThrow(
+        "illegal state transition: workspace_ready -> awaiting_plan_review",
+      );
+      expect(store.getPlanRevision(task.id, 1)).toBeUndefined();
+      expect(store.getTask(task.id)!.state).toBe("workspace_ready");
+      expect(store.listEvents(task.id).map((e) => e.type)).toEqual(["created"]);
     });
   });
 

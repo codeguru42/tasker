@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { planRevisionPath, taskPlansDir } from "../../src/store/layout.js";
 import { recordPlanRevision } from "../../src/store/plan-file.js";
+import { transitionTask, type TaskState } from "../../src/state/machine.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy, useTempDir, validPlanAnswer, withDataRootStore } from "../helpers.js";
 
@@ -15,12 +16,19 @@ describe("recordPlanRevision", () => {
     dataRoot = useTempDir("tasker-plan-file-");
   });
 
-  function record(store: TaskStore, taskId: number, markdown: string) {
-    return recordPlanRevision(store, dataRoot, taskId, {
-      source: "plan",
-      answer: validPlanAnswer({ plan_markdown: markdown }),
-      prompt: "plan@000000000000",
-    });
+  function record(store: TaskStore, taskId: number, markdown: string, to: TaskState = "awaiting_plan_review") {
+    return recordPlanRevision(
+      store,
+      dataRoot,
+      taskId,
+      {
+        version: store.nextPlanVersion(taskId),
+        source: "plan",
+        answer: validPlanAnswer({ plan_markdown: markdown }),
+        prompt: "plan@000000000000",
+      },
+      to,
+    );
   }
 
   it("makes the plans folder, writes the markdown as it is and then adds the row", () => {
@@ -31,8 +39,9 @@ describe("recordPlanRevision", () => {
       const revision = record(store, task.id, markdown);
 
       expect(readFileSync(planRevisionPath(dataRoot, task, 1), "utf8")).toBe(markdown);
-      expect(revision.version).toBe(1);
-      expect(store.getPlanRevision(task.id, 1)).toEqual(revision);
+      expect(revision.state).toBe("awaiting_plan_review");
+      expect(store.getTask(task.id)).toEqual(revision);
+      expect(store.getPlanRevision(task.id, 1)?.answer.plan_markdown).toBe(markdown);
     });
   });
 
@@ -40,6 +49,7 @@ describe("recordPlanRevision", () => {
     withDataRootStore(dataRoot, (store) => {
       const task = store.createTask(newTask);
       record(store, task.id, "first\n");
+      transitionTask(store, task.id, "refining");
 
       record(store, task.id, "second\n");
 
@@ -60,6 +70,21 @@ describe("recordPlanRevision", () => {
 
       expect(readFileSync(path, "utf8")).toBe("new text\n");
       expect(store.getPlanRevision(task.id, 1)).toBeDefined();
+    });
+  });
+
+  it("throws a clear error and inserts no row when the plan file cannot be written", () => {
+    withDataRootStore(dataRoot, (store) => {
+      const task = store.createTask(newTask);
+      const plansDir = taskPlansDir(dataRoot, task);
+      mkdirSync(dirname(plansDir), { recursive: true });
+      writeFileSync(plansDir, "a file, not a folder");
+
+      const error = thrownBy(() => record(store, task.id, "text\n"));
+
+      expect((error as Error).message).toMatch(/^cannot write the plan file of revision v1: /);
+      expect(store.getPlanRevision(task.id, 1)).toBeUndefined();
+      expect(store.getTask(task.id)?.state).toBe("planning");
     });
   });
 
