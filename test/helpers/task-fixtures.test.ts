@@ -4,12 +4,13 @@ import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "../../src/config/load.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
+import { baseRevisionOf } from "../../src/tasks/base-revision.js";
 import { dataRootLayout, planRevisionPath } from "../../src/store/layout.js";
 import { changedPaths } from "../../src/vcs/git/changes.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
-import { validPlanAnswer } from "./plan.js";
+import { planTodo, validPlanAnswer } from "./plan.js";
 import { databasePathOf, latestTaskOf, readRunMarker, withDataRootStore } from "./store.js";
 import {
   expectNoAssistantRun,
@@ -17,6 +18,7 @@ import {
   startTaskWithCommits,
   taskWorkspaceState,
   useAssistantRunFixture,
+  useExecuteFixture,
   useRefineFixture,
   usePlanFixture,
   useStartedTask,
@@ -253,5 +255,42 @@ describe("useRefineFixture", () => {
     const fixture = await useRefineFixture({}, { limits: { planTimeoutMin: 0.05 } });
 
     expect(fixture.started.config.limits.planTimeoutMin).toBe(0.05);
+  });
+});
+
+describe("useExecuteFixture", () => {
+  const todos = [planTodo("b", ["a"]), planTodo("a")];
+
+  it("leaves the task in approved with revision v1 pinned and the given todos", async () => {
+    const fixture = await useExecuteFixture({}, { answer: { todos } });
+    const { dataRoot } = fixture.started;
+
+    expect(fixture.task.state).toBe("approved");
+    expect(latestTaskOf(dataRoot, fixture.started.key).state).toBe("approved");
+    withDataRootStore(dataRoot, (store) => {
+      const pinned = store.pinnedPlanRevision(fixture.task.id);
+      expect(pinned?.version).toBe(1);
+      expect(pinned?.answer.todos).toEqual(todos);
+    });
+    expect(fixture.revision.version).toBe(1);
+  });
+
+  it("has the plan file, the worktree and a base revision", async () => {
+    const fixture = await useExecuteFixture({});
+    const { dataRoot, worktree } = fixture.started;
+
+    expect(existsSync(planRevisionPath(dataRoot, fixture.task, 1))).toBe(true);
+    expect(existsSync(worktree)).toBe(true);
+    expect(withDataRootStore(dataRoot, (store) => baseRevisionOf(store, fixture.task.id))).toBeDefined();
+  });
+
+  it("puts the fake bwrap on PATH and gives the configuration and the env", async () => {
+    const fixture = await useExecuteFixture({});
+
+    expect(fixture.config).toBe(fixture.started.config);
+    expect(fixture.env.PATH).toBe(process.env.PATH);
+    const found = process.env.PATH!.split(delimiter).some((dir) => existsSync(join(dir, "bwrap")));
+    expect(found).toBe(true);
+    expect(process.env.PATH!.includes(fixture.claude.binDir)).toBe(true);
   });
 });
