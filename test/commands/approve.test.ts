@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { approve } from "../../src/commands/approve.js";
 import { taskLockName } from "../../src/store/locks.js";
-import { runCommand } from "../helpers/cli.js";
 import {
   planRevisionOf,
   planStateSnapshot,
+  runApprove,
   seedPlanReviewTask,
   seedPlanRevision,
   seedPlanningTask,
@@ -17,8 +16,6 @@ import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, withDataRootS
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
-
-const runApprove = (key = KEY, ...extra: string[]) => runCommand(approve, "approve", key, "--repo", REPO, ...extra);
 
 const seedOverlappingTask = (dataRoot: string) =>
   seedTaskWithPlanFiles(

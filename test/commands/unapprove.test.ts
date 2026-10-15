@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { approve } from "../../src/commands/approve.js";
 import { unapprove } from "../../src/commands/unapprove.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
 import {
   planRevisionOf,
   planStateSnapshot,
+  runApprove,
   seedApprovedTask,
   seedPlanReviewTask,
   seedPlanRevision,
@@ -18,7 +18,6 @@ const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 
 const runUnapprove = (key = KEY) => runCommand(unapprove, "unapprove", key, "--repo", REPO);
-const runApprove = () => runCommand(approve, "approve", KEY, "--repo", REPO);
 
 const unapprovedEvent = (version: number) => ({
   type: "unapproved",
