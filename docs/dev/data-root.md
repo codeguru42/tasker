@@ -22,6 +22,8 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/sessions/` | The folder of the assistant sessions of one attempt. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/` | The transcripts of one attempt. |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/plan-v<N>.jsonl` | The transcript of the planning run of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker plan` and `tasker refine` write it. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/` | The logs of verify run `<number>` of one attempt. Each verify run has its own folder. |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/verify-<N>.log` | The log of the verify command at position N of the configured list, from 1. `tasker verify` writes it, and `tasker show-verify` reads it. |
 | `<dataRoot>/prompts/` | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks. |
 | `<dataRoot>/prompts/<version>.md` | One file for each prompt version. |
 | `<dataRoot>/tasker.db` | The SQLite database of the task store. |
@@ -99,6 +101,31 @@ These rules hold:
 - A revision has one fix turn at most. A new fix turn replaces the old one, also when the old one is done.
 - A row with no done time is a queued fix turn.
 - The row holds the last lines of the log of the failed verify command. The sandbox of the run cannot read the data root, so the lines must travel in the row.
+
+## `verify_runs` table
+
+The table has one row for each verify run of a task. A verify run is one run of the whole list of verify commands of the repo. [phases.md](phases.md#the-verify-phase) describes the verify phase.
+
+These rules hold:
+
+- The runs of a task are numbered from 1. The number of a new run is the highest number of the task plus one. Another number is an error.
+- The insert of a run shares one transaction with its `verify_run` event and the state move, so a refused move leaves no row behind.
+- The row holds the commands that the run started, in order. A run that started no command holds an empty list.
+- The failing command is the position of the command that failed, timed out or could not start. A run that passed has none.
+
+The result of a run is one of these values:
+
+| Result | Meaning |
+| --- | --- |
+| `passed` | Every command exited with 0, and the worktree was clean before and after. |
+| `failed` | A command exited with another code, stopped by a signal, or could not start. |
+| `timed_out` | The deadline came. |
+| `dirty_before` | The worktree had uncommitted changes before the first command, so no command ran. |
+| `dirty_after` | The commands passed but left uncommitted changes. |
+
+`tasker verify` decides which result a run gets. The store only keeps it. The table refuses a result outside this list.
+
+The table does not store the paths of the logs. The paths derive from the run number and the position of a command, so the store does not hold them.
 
 ## `default_base_branches` table
 
