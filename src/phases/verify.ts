@@ -1,6 +1,8 @@
-import { mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { errorMessage } from "../error-message.js";
 import { childEnv } from "../process/child-env.js";
+import type { GroupResult } from "../process/run-group.js";
 import { type CommandFailure, commandFailure, runLoggedCommand } from "./command-step.js";
 
 export interface VerifyOptions {
@@ -25,7 +27,15 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyResult> {
   for (const [i, command] of options.commands.entries()) {
     const log = options.logPath(i + 1);
     mkdirSync(dirname(log), { recursive: true });
-    const result = await runLoggedCommand(command, { cwd: options.cwd, env, deadline, log, logFlag: "w" });
+    let result: GroupResult;
+    try {
+      result = await runLoggedCommand(command, { cwd: options.cwd, env, deadline, log, logFlag: "w" });
+    } catch (error) {
+      // A command that cannot start is a failure of that command.
+      const text = errorMessage(error);
+      appendFileSync(log, `--- ${text}\n`);
+      return { status: "failed", index: i + 1, command, timedOut: false, error: text };
+    }
     const failure = commandFailure(i + 1, command, result);
     if (failure !== undefined) return failure;
   }

@@ -1,5 +1,6 @@
 import { appendFileSync, closeSync, openSync, readSync, statSync } from "node:fs";
 import { type GroupResult, runInGroup } from "../process/run-group.js";
+import { startFolderError } from "../process/start-folder.js";
 
 export interface CommandFailure {
   status: "failed";
@@ -42,9 +43,12 @@ function outcomeLine(result: GroupResult): string {
 
 // Runs one command under /bin/bash in cwd until the deadline. The log gets the command line,
 // the output of the command and the outcome line, in this order.
+// A command that cannot start throws, after the command line is in the log.
 export async function runLoggedCommand(command: string, options: LoggedCommandOptions): Promise<GroupResult> {
   const { log } = options;
   appendFileSync(log, `$ ${command}\n`, { flag: options.logFlag });
+  const folderError = startFolderError("/bin/bash", options.cwd);
+  if (folderError !== undefined) throw new Error(folderError);
   const outputFd = openSync(log, "a");
   let result: GroupResult;
   try {
