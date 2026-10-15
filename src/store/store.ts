@@ -295,6 +295,8 @@ export interface TaskStore extends LockStore {
   queueExecuteFixTurn(taskId: number, version: number, turn: NewExecuteFixTurn): void;
   // The queued fix turn of a plan revision, or undefined when it has none or the turn is done.
   queuedExecuteFixTurn(taskId: number, version: number): ExecuteFixTurn | undefined;
+  // The state of the fix turn of a plan revision: queued, done, or undefined when the revision has none.
+  executeFixTurnState(taskId: number, version: number): "queued" | "done" | undefined;
   // Marks the fix turn of a plan revision done. A revision with no fix turn is an error.
   markExecuteFixTurnDone(taskId: number, version: number): void;
   // Deletes the plan session of a task. A missing row is not an error. Only `tasker retry` (a later ticket)
@@ -580,6 +582,9 @@ function setUp(db: DatabaseSync) {
     selectQueuedExecuteFixTurn: db.prepare(
       `SELECT verify_failure, verify_log_tail, queued_at FROM execute_fix_turns
        WHERE task_id = ? AND plan_version = ? AND done_at IS NULL`,
+    ),
+    selectExecuteFixTurnDoneAt: db.prepare(
+      "SELECT done_at FROM execute_fix_turns WHERE task_id = ? AND plan_version = ?",
     ),
     updateExecuteFixTurnDone: db.prepare(
       "UPDATE execute_fix_turns SET done_at = ? WHERE task_id = ? AND plan_version = ?",
@@ -1119,6 +1124,14 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         verifyLogTail: row.verify_log_tail,
         queuedAt: row.queued_at,
       };
+    },
+
+    executeFixTurnState(taskId, version) {
+      const row = statements.selectExecuteFixTurnDoneAt.get(taskId, version) as
+        | { done_at: string | null }
+        | undefined;
+      if (row === undefined) return undefined;
+      return row.done_at === null ? "queued" : "done";
     },
 
     markExecuteFixTurnDone(taskId, version) {
