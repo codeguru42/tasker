@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process";
-import { statSync } from "node:fs";
 import { StringDecoder } from "node:string_decoder";
 import { errorMessage } from "../error-message.js";
 import { CommandNotFoundError, assertPathSet } from "./run-child.js";
 import { type GroupResult, superviseGroup } from "./run-group.js";
+import { startFolderError } from "./start-folder.js";
 
 const STDERR_TAIL_BYTES = 64 * 1024;
 
@@ -71,10 +71,8 @@ export async function runAssistant(
   } catch (error) {
     return { started: false, notFound: true, error: errorMessage(error) };
   }
-  // Node gives the same ENOENT for a missing folder and a missing program, and it throws for a folder that is a file.
-  if (statSync(options.cwd, { throwIfNoEntry: false })?.isDirectory() !== true) {
-    return { started: false, notFound: false, error: `cannot start ${file}: the folder ${options.cwd} does not exist` };
-  }
+  const folderError = startFolderError(file, options.cwd);
+  if (folderError !== undefined) return { started: false, notFound: false, error: folderError };
   const child = spawn(file, [...args], {
     cwd: options.cwd,
     env: options.env,
