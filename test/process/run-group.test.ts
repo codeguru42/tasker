@@ -9,6 +9,7 @@ import {
   repoRoot,
   savePid,
   signalListenerCounts,
+  startSleeper,
   waitForWatching,
   waitUntil,
   waitUntilGone,
@@ -410,14 +411,6 @@ describe("runInGroup with the signals of tasker", () => {
 });
 
 describe("forwardSignals", () => {
-  function startSleeper(): number {
-    const child = spawn("sleep", ["30"], { detached: true, stdio: "ignore" });
-    const pid = child.pid;
-    if (pid === undefined) throw new Error("sleep did not start");
-    savePid(pid);
-    return pid;
-  }
-
   it("sends a signal that comes before attach to the group at attach", async () => {
     const pid = startSleeper();
     const forward = forwardSignals();

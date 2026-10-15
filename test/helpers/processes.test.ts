@@ -13,6 +13,7 @@ import {
   signalListenerCounts,
   spawnTasker,
   startFixture,
+  startSleeper,
   startWriteLockHolder,
   waitForWatching,
   waitUntil,
@@ -102,15 +103,31 @@ describe("savePid", () => {
   });
 });
 
+describe("startSleeper", () => {
+  let pid = 0;
+
+  it("starts a sleep that leads its own process group", () => {
+    pid = startSleeper();
+
+    expect(isAlive(pid)).toBe(true);
+    expect(() => process.kill(-pid, 0)).not.toThrow();
+  });
+
+  it("kills the sleep after the test", async () => {
+    expect(pid).toBeGreaterThan(0);
+
+    await expect(waitUntilGone(pid, 2000)).resolves.toBeUndefined();
+  });
+});
+
 describe("readPidFile", () => {
   it("waits for the pid, returns it and saves it", async () => {
     const path = join(useTempDir("tasker-pid-file-"), "pid");
-    const child = spawn("sleep", ["30"], { stdio: "ignore" });
-    savePid(child.pid!);
-    setTimeout(() => writeFileSync(path, `${child.pid}\n`), 100);
+    const pid = startSleeper();
+    setTimeout(() => writeFileSync(path, `${pid}\n`), 100);
 
-    await expect(readPidFile(path, 5000)).resolves.toBe(child.pid);
-    expect(isAlive(child.pid!)).toBe(true);
+    await expect(readPidFile(path, 5000)).resolves.toBe(pid);
+    expect(isAlive(pid)).toBe(true);
   });
 
   it("rejects when no file appears", async () => {
@@ -123,11 +140,10 @@ describe("readPidFile", () => {
 describe("waitForWatching", () => {
   it("waits for the pid in the file watching of the folder", async () => {
     const dir = useTempDir("tasker-watching-");
-    const child = spawn("sleep", ["30"], { stdio: "ignore" });
-    savePid(child.pid!);
-    setTimeout(() => writeFileSync(join(dir, "watching"), `${child.pid}\n`), 100);
+    const pid = startSleeper();
+    setTimeout(() => writeFileSync(join(dir, "watching"), `${pid}\n`), 100);
 
-    await expect(waitForWatching(dir, 5000)).resolves.toBe(child.pid);
+    await expect(waitForWatching(dir, 5000)).resolves.toBe(pid);
   });
 
   it("rejects when the folder has no file watching", async () => {

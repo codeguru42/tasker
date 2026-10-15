@@ -140,6 +140,15 @@ export function savePid(pid: number): void {
   });
 }
 
+// Starts sleep 30 as the leader of its own process group, saves its pid with savePid and returns the pid.
+export function startSleeper(): number {
+  const child = spawn("sleep", ["30"], { detached: true, stdio: "ignore" });
+  const pid = child.pid;
+  if (pid === undefined) throw new Error("sleep did not start");
+  savePid(pid);
+  return pid;
+}
+
 // Waits until the file holds a pid and a newline, saves the pid with savePid and returns it.
 export async function readPidFile(path: string, timeoutMs: number): Promise<number> {
   let pid = 0;
