@@ -1624,6 +1624,9 @@ export function claudeOverageEvent(edit: (info: Record<string, unknown>) => void
 
 export const TEST_SESSION_ID = "e5f6ebac-a40e-48af-befc-f9a7d1af4c5b";
 
+// The id of an execute session. It differs from TEST_SESSION_ID, because a session id is unique in the whole table.
+export const TEST_EXECUTE_SESSION_ID = "3c9d1a52-7b4e-4f0a-9d86-2e5a8c1b7f34";
+
 // A run input with the defaults of the assistant provider tests, new for each call. Later tickets use it
 // for each provider. A test that starts a child passes a real cwd and env.
 export function runInput(overrides: Partial<RunInput> = {}): RunInput {
@@ -1805,6 +1808,23 @@ export function recordPlanRevisions(
       transitionTask(store, task.id, "refining");
       recordTestPlanRevision(store, dataRoot, task.id, second);
     }
+  });
+}
+
+// Records the execute session of a plan revision with TEST_EXECUTE_SESSION_ID and the execute model of the test
+// configurations, unless the call changes them.
+export function seedExecuteSession(
+  store: TaskStore,
+  taskId: number,
+  version: number,
+  change: Partial<NewSession> = {},
+): StoredSession {
+  return store.recordExecuteSession(taskId, version, {
+    sessionId: TEST_EXECUTE_SESSION_ID,
+    provider: "claude-code",
+    model: "sonnet",
+    effort: "medium",
+    ...change,
   });
 }
 
