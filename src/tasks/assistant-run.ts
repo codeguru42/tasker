@@ -45,12 +45,17 @@ interface StartInput {
   onEvent?: (event: AssistantEvent) => void;
 }
 
+export interface ExecuteStartInput extends StartInput {
+  // Replaces the execute deadline for this start. The caller gives the remaining time of the one deadline of all turns.
+  timeoutMs?: number;
+}
+
 export interface PreparedExecuteRun {
   sessionId: string;
   session: RecordedSession;
   // The commit text for the prompt of the run. It holds the {{BASE_REF}} placeholder.
   executeCommitText: string;
-  start(input: StartInput): Promise<RunOutcome>;
+  start(input: ExecuteStartInput): Promise<RunOutcome>;
 }
 
 export interface PreparedPlanModeRun {
@@ -154,6 +159,7 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
 // The caller must move the task into a spawning state before start().
 // The caller must record sessionId and session before start().
 // The caller must replace {{BASE_REF}} in executeCommitText before it puts the text in the prompt.
+// The caller gives timeoutMs to each start as the remaining time of one deadline for all turns.
 export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<PreparedExecuteRun> {
   const common = prepareCommonRun(req, "execute");
   const { surface, worktree: wt } = common;
@@ -199,7 +205,7 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
     sessionId: common.sessionId,
     session: common.session,
     executeCommitText: surface.executeCommitText,
-    start: (input) => common.run(limits, input),
+    start: (input) => common.run({ ...limits, timeoutMs: input.timeoutMs ?? limits.timeoutMs }, input),
   };
 }
 
