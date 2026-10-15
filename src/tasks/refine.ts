@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
-import { createSessionProvider } from "../assistant/provider.js";
 import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { archivePrompt } from "../prompts/archive.js";
@@ -14,6 +13,7 @@ import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { baseRevisionOf } from "./base-revision.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
+import { assertSessionModel } from "./session-model.js";
 
 export interface RefineRequest {
   config: Config;
@@ -44,15 +44,7 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
   const session = store.planSession(task.id);
   if (session === undefined) throw new Error(`the task of ${task.issueKey} has no plan session`);
-  const selected = createSessionProvider(session);
-  for (const check of selected.provider.modelChecks(session.model)) {
-    const result = await check.run(env);
-    if (result.status === "error") {
-      throw new Error(
-        `the plan session of ${task.issueKey} runs on ${session.model}, and ${session.provider} refuses it: ${result.detail}`,
-      );
-    }
-  }
+  await assertSessionModel(session, env, `the plan session of ${task.issueKey}`);
   let currentPlan: string;
   try {
     currentPlan = readFileSync(planRevisionPath(config.dataRoot, task, revision.version), "utf8");
