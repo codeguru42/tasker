@@ -87,8 +87,9 @@ Write the `.js` extension in each relative import, for example `import { run } f
 
 These facts hold for zod 4.6.5.
 
-- A default `.superRefine()` still runs after an issue that does not stop the parse, for example an unknown key or a failed pattern.
-- zod skips a default `.superRefine()` after a missing field or a wrong type.
+- A default `.superRefine()` still runs after an issue that does not stop the parse, for example an unknown key, a failed pattern or a failed `.min()`.
+- zod skips a default `.superRefine()` after a missing field, a wrong type or a bad enum value.
+- A `z.preprocess` that adds an issue skips its inner schema and a default `.superRefine()` of the parent object. The other fields of the object still get their checks.
 - With `{ when: () => true }`, a `.superRefine()` runs in every case. It then gets the raw input, so it must check the shape of each field that it reads.
 
 As a result, when a check must report all problems in one run, as [rules.md](rules.md#code) says, give it `{ when: () => true }`. When a check must stop after a schema failure, run it as plain code after a successful `safeParse`, not as a refinement.
@@ -99,3 +100,5 @@ As a result, when a check must report all problems in one run, as [rules.md](rul
 - Unit tests call `run()` with a capturing `Io` and with fixture commands. The `Io` collects output in arrays, so the test reads stdout and stderr and checks the returned exit code. The capturing `Io` and the fixture commands come from `test/helpers.ts`. [rules.md](rules.md#tests) gives the rules for the shared helpers.
 - End-to-end tests spawn `src/main.ts` through `tsx`. Write few of them, because they are slow.
 - Write the test first. Run it and watch it fail (red). Then write the code that makes it pass (green).
+- In Vitest 5.0.3, an `onTestFinished` callback runs after the `afterEach` hooks.
+- Node 26 runs a `.ts` file of the repo directly. So a copy of a file of the repo, with its `.js` imports changed to `.ts`, tests a fact of the code with no `node_modules`.
