@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan and refine, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine and approve, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -93,7 +93,7 @@ The warning never refuses. Only a person can decide if an overlap is harmless an
 
 The read takes no repo lock. It changes nothing in the clone, and a wait for the repo lock can hold the end of the command.
 
-`tasker refine` prints the same warning with the same last line as `tasker plan`. `tasker approve` adds the warning with its own last lines in its own ticket.
+`tasker refine` prints the same warning with the same last line as `tasker plan`. `tasker approve` prints the same warning before its write, with the last line `tasker approves the plan anyway.`.
 
 ## Refine
 
@@ -107,6 +107,18 @@ The steps run in this order, under the task lock. The command does not wait for 
 4. The command moves the task to `refining` and runs the assistant. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
 
 [The refine prompt](assistants.md#the-refine-prompt) says what the prompt asks for. The new revision is a complete plan. A question that it leaves out counts as answered by the feedback, and the store computes this. The next revision goes to the next free version, and its transcript goes to the file of that version.
+
+## Approve
+
+`tasker approve` approves the newest plan revision of a task in `awaiting_plan_review`. The task goes to `approved`.
+
+The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the pinned revision and the newest plan revision. A refused approve leaves the task, the revisions and the events as they were. The overlap warning comes after the checks and before the write.
+
+The write is one transaction. It sets the approval time of the revision, appends one `approved` event with the data `{ version, openQuestions, from, to }`, and moves the task to `approved`. The `approved` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
+
+Open questions do not stop an approval. The operator decides, and the count in the event and in the output makes the choice visible.
+
+The approval lives on the revision, not on the task. A task has one approved revision for each cycle, and an older approval stays when a newer revision is approved.
 
 ## Limits
 
