@@ -36,6 +36,7 @@ import type { LockAttempt } from "../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../src/store/layout.js";
 import { recordPlanRevision } from "../src/store/plan-file.js";
 import {
+  type ExecuteTodoState,
   type NewPlanRevision,
   type NewSession,
   openStore,
@@ -1826,6 +1827,18 @@ export function seedExecuteSession(
     effort: "medium",
     ...change,
   });
+}
+
+// Sets the state of each todo that states names, in the order of the record, with setExecuteTodoState.
+export function seedExecuteTodoStates(
+  store: TaskStore,
+  taskId: number,
+  version: number,
+  states: Readonly<Record<string, ExecuteTodoState>>,
+): void {
+  for (const [todoId, state] of Object.entries(states)) {
+    store.setExecuteTodoState(taskId, version, todoId, state);
+  }
 }
 
 // Records a plan session for the task with TEST_SESSION_ID and the plan model of the test
