@@ -82,7 +82,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 ## A ticket that changes a procedure doc
 
-- Say who runs each step, with which binary, in which repo and path, and the state of the task after each command.
+- Say who runs each step, with which binary, in which repo and path, and the state of the task after each command. Each git command of a step names the checkout or worktree where it runs, for example the local clone on `main` or the worktree of the task. The agent of #144 learned this in its review loops.
 - Give each command step a failure case for any error, and name what stays behind.
 - For a read-only command, a missing match is an answer, not a failure. For example, `git grep` with no match exits with 1, and `git show <commit>:<missing path>` exits with 128. Say so in the first refine. Otherwise the plan asks for a failure case for each such command (#114).
 - Do not write "go to step N" without a condition. Define each term, for example "loop". Do not list a step two times.
@@ -91,6 +91,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - For the side-effects hint of [All tickets](#all-tickets), ask for the side effects of each edit on the whole page.
 - Make sure that each numbered list still renders. An edit can join two items on one line.
 - Scope a new rule narrowly. A ban on X everywhere clashes with docs that must name X to describe a behavior.
+- If a step contains a nested step with its own result, say what each result means for the outer step. The failure rule of the outer step must name each result of the nested step. The agent of #125 learned this in its review loops.
+- If one rule has two actors of the same kind, for example an earlier and a later task, name the actor in each sentence (#125).
+- If one rule has two kinds of actor, for example the orchestrator and an agent, ask the plan to list each sentence with its actor. Otherwise the review finds each failure path that names only one actor (#135).
+- If a rule records a commit of the shared clone, the rule reads the hash before the work that the hash stamps. Another agent can move the clone between the read and the work, as [the shared-clone rule](orchestration.md#limits) says. The review of #135 found this race in [the re-read rule](orchestration.md#pick-the-tickets).
+- A rule takes a fact about one event from the report of that event, not from a diff since the last read. An example is the landed commit with its files. Several agents can land close together, and then the diff covers more than one event (#135).
 
 ## A ticket that moves or trims a doc
 
