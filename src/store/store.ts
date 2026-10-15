@@ -287,6 +287,21 @@ export interface TaskStore extends LockStore {
   latestReview(taskId: number): Review | undefined;
   // The reviews of the task, oldest first.
   listReviews(taskId: number): Review[];
+  // Dismisses the named findings of the review with one reason and appends the review_dismissed event
+  // { number, positions, reason }, in one transaction. It gives back the positions that are still open,
+  // in ascending order. An open finding still needs a decision of the operator: a dismissal or a fix in
+  // a later plan. So the task stays in its state until no finding is open. When none is open, the task
+  // moves to the state, which must not be spawning, its run marker is deleted, and the event that check
+  // returns is appended. Check runs only then. An empty list, a missing task, review or finding, and a
+  // finding that is already dismissed throw and write nothing. A dismissal is written once.
+  dismissReviewFindings(
+    taskId: number,
+    number: number,
+    positions: number[],
+    reason: string,
+    state: string,
+    check?: (current: Task) => NewEvent | void,
+  ): number[];
   // The revision with the highest version.
   latestPlanRevision(taskId: number): PlanRevision | undefined;
   // The approved revision with the highest version.
@@ -711,6 +726,17 @@ function setUp(db: DatabaseSync) {
     selectReviewCount: db.prepare("SELECT COUNT(*) AS n FROM reviews WHERE task_id = ?"),
     selectReviewFindings: db.prepare(
       "SELECT * FROM review_findings WHERE task_id = ? AND number = ? ORDER BY position",
+    ),
+    dismissReviewFinding: db.prepare(
+      `UPDATE review_findings SET dismissed_at = ?, dismiss_reason = ?
+       WHERE task_id = ? AND number = ? AND position = ? AND dismissed_at IS NULL`,
+    ),
+    selectReviewFinding: db.prepare(
+      "SELECT position FROM review_findings WHERE task_id = ? AND number = ? AND position = ?",
+    ),
+    selectOpenReviewPositions: db.prepare(
+      `SELECT position FROM review_findings WHERE task_id = ? AND number = ? AND dismissed_at IS NULL
+       ORDER BY position`,
     ),
     selectPinnedPlanRevision: db.prepare(
       `SELECT * FROM plan_revisions WHERE task_id = ? AND approved_at IS NOT NULL
@@ -1227,6 +1253,34 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     listReviews(taskId) {
       const rows = statements.selectReviews.all(taskId) as unknown as ReviewRow[];
       return rows.map((row) => toReview(row) as Review);
+    },
+
+    dismissReviewFindings(taskId, number, positions, reason, state, check) {
+      return immediateTransaction(db, () => {
+        if (readTask(taskId) === undefined) throw taskNotFound(taskId);
+        if (statements.selectReview.get(taskId, number) === undefined) {
+          throw new Error(`task ${taskId} has no review ${number}`);
+        }
+        if (positions.length === 0) {
+          throw new Error(`the dismissal of review ${number} of task ${taskId} names no finding`);
+        }
+        const at = now().toISOString();
+        for (const position of positions) {
+          const { changes } = statements.dismissReviewFinding.run(at, reason, taskId, number, position);
+          if (changes === 0) {
+            if (statements.selectReviewFinding.get(taskId, number, position) === undefined) {
+              throw new Error(`review ${number} of task ${taskId} has no finding ${position}`);
+            }
+            throw new Error(`finding ${position} of review ${number} of task ${taskId} is already dismissed`);
+          }
+        }
+        writeEvent(taskId, at, "review_dismissed", { number, positions, reason });
+        const open = (
+          statements.selectOpenReviewPositions.all(taskId, number) as unknown as { position: number }[]
+        ).map((row) => row.position);
+        if (open.length === 0) writeTaskStep(taskId, { state }, check, () => endRunStep(taskId, state));
+        return open;
+      });
     },
 
     pinnedPlanRevision: readPinnedPlanRevision,
