@@ -1,4 +1,4 @@
-import { DatabaseSync } from "node:sqlite";
+import { DatabaseSync, type StatementSync } from "node:sqlite";
 import type { AssistantProviderId, Effort, RecordedSession } from "../assistant/provider.js";
 import type { PlanAnswer } from "../plan/answer.js";
 import { isSpawningState, isTerminalState, TERMINAL_STATES } from "../state/machine.js";
@@ -724,14 +724,25 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     );
   }
 
-  function readNextPlanVersion(taskId: number): number {
-    const { next } = statements.selectNextPlanVersion.get(taskId) as { next: number };
+  // Runs a next-number statement of a task. The caller holds the task lock or a transaction.
+  function readNext(statement: StatementSync, taskId: number): number {
+    const { next } = statement.get(taskId) as { next: number };
     return next;
   }
 
+  function readNextPlanVersion(taskId: number): number {
+    return readNext(statements.selectNextPlanVersion, taskId);
+  }
+
   function readNextVerifyRun(taskId: number): number {
-    const { next } = statements.selectNextVerifyRun.get(taskId) as { next: number };
-    return next;
+    return readNext(statements.selectNextVerifyRun, taskId);
+  }
+
+  // Throws when the given number of a new row is not the next one.
+  function requireNext(taskId: number, what: string, given: number, next: number, unit: string): void {
+    if (given !== next) {
+      throw new Error(`task ${taskId}: ${what} ${given} is not the next ${unit} (${next})`);
+    }
   }
 
   // Inserts one event. It starts no transaction, because immediateTransaction() is not reentrant.
@@ -798,6 +809,21 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     });
   }
 
+  // The frame of a new row at the end of a run: the insert, its event, the move to a state that is
+  // not spawning and the marker delete, in one transaction.
+  function addRowAtRunEnd(
+    taskId: number,
+    state: string,
+    check: ((current: Task) => NewEvent | void) | undefined,
+    insert: () => NewEvent,
+  ): Task {
+    return writeTask(taskId, { state }, check, (at) => {
+      endRunStep(taskId, state);
+      const event = insert();
+      writeEvent(taskId, at, event.type, event.data);
+    });
+  }
+
   // The marker step of a move to a state that is not spawning: it deletes the run marker.
   function endRunStep(id: number, state: string): void {
     if (isSpawningState(state)) {
@@ -833,11 +859,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   // caller must have one open.
   function writePlanRevision(taskId: number, revision: NewPlanRevision): PlanRevision {
     const next = readNextPlanVersion(taskId);
-    if (revision.version !== next) {
-      throw new Error(
-        `task ${taskId}: plan revision ${revision.version} is not the next version (${next})`,
-      );
-    }
+    requireNext(taskId, "plan revision", revision.version, next, "version");
     const row = statements.insertPlanRevision.get(
       taskId,
       revision.version,
@@ -854,9 +876,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   // caller must have one open.
   function writeVerifyRun(taskId: number, run: NewVerifyRun): void {
     const next = readNextVerifyRun(taskId);
-    if (run.number !== next) {
-      throw new Error(`task ${taskId}: verify run ${run.number} is not the next number (${next})`);
-    }
+    requireNext(taskId, "verify run", run.number, next, "number");
     statements.insertVerifyRun.run(
       taskId,
       run.number,
@@ -1017,10 +1037,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     nextPlanVersion: readNextPlanVersion,
 
     addPlanRevision(taskId, revision, state, check) {
-      return writeTask(taskId, { state }, check, (at) => {
-        endRunStep(taskId, state);
+      return addRowAtRunEnd(taskId, state, check, () => {
         writePlanRevision(taskId, revision);
-        writeEvent(taskId, at, "plan_revision", { version: revision.version, prompt: revision.prompt });
+        return { type: "plan_revision", data: { version: revision.version, prompt: revision.prompt } };
       });
     },
 
@@ -1029,10 +1048,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     nextVerifyRun: readNextVerifyRun,
 
     addVerifyRun(taskId, run, state, check) {
-      return writeTask(taskId, { state }, check, (at) => {
-        endRunStep(taskId, state);
+      return addRowAtRunEnd(taskId, state, check, () => {
         writeVerifyRun(taskId, run);
-        writeEvent(taskId, at, "verify_run", { number: run.number, result: run.result });
+        return { type: "verify_run", data: { number: run.number, result: run.result } };
       });
     },
 
