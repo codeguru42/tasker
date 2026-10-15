@@ -60,7 +60,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 ## A ticket with test fixtures
 
-- Name the import rule of `test/fixtures/` ([code-conventions.md](code-conventions.md#layout)). A fixture that loads `test/helpers.ts` starts 2 to 3 times slower.
+- Name the import rule of `test/fixtures/` ([code-conventions.md](code-conventions.md#layout)).
 - The agent can record fixture data on the local machine and put it in the refine with "write them exactly as given". About 45 KB worked. Then the agent compares each file with `cmp` against `tasker/<task branch>`.
 
 ## A ticket that changes a procedure doc
