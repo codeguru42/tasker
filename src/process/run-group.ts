@@ -11,6 +11,8 @@ export interface RunGroupOptions {
   env: NodeJS.ProcessEnv;
   outputFd: number;
   deadline: number;
+  // Runs once with the pid of the child, after the watch starts. A throw stops the group and rejects the run.
+  onSpawn?: (pid: number) => void;
 }
 
 export interface GroupResult {
@@ -150,5 +152,8 @@ export async function runInGroup(
   if (pid === undefined) {
     return new Promise((_, reject) => child.once("error", reject)); // no group exists, so no signal and no timer
   }
-  return superviseGroup(child, pid, { deadline: options.deadline });
+  return superviseGroup(child, pid, {
+    deadline: options.deadline,
+    onStart: options.onSpawn && (() => options.onSpawn?.(pid)),
+  });
 }

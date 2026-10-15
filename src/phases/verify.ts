@@ -12,6 +12,8 @@ export interface VerifyOptions {
   timeoutMs: number;
   // The log path of the command at position (from 1).
   logPath: (position: number) => string;
+  // Gets the pid of each command that starts, as for runInGroup.
+  onSpawn?: (pid: number) => void;
 }
 
 export type VerifyResult = { status: "ok" } | CommandFailure;
@@ -29,7 +31,14 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyResult> {
     mkdirSync(dirname(log), { recursive: true });
     let result: GroupResult;
     try {
-      result = await runLoggedCommand(command, { cwd: options.cwd, env: options.env, deadline, log, logFlag: "w" });
+      result = await runLoggedCommand(command, {
+        cwd: options.cwd,
+        env: options.env,
+        deadline,
+        log,
+        logFlag: "w",
+        onSpawn: options.onSpawn,
+      });
     } catch (error) {
       // A command that cannot start is a failure of that command.
       const text = errorMessage(error);

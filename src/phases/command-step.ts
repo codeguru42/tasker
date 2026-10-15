@@ -20,6 +20,8 @@ export interface LoggedCommandOptions {
   log: string;
   // "a" appends the header to a log that exists. "w" starts the log new.
   logFlag: "a" | "w";
+  // Gets the pid of the child, as for runInGroup.
+  onSpawn?: (pid: number) => void;
 }
 
 // True when the file is empty or its last byte is a newline.
@@ -58,6 +60,7 @@ export async function runLoggedCommand(command: string, options: LoggedCommandOp
       env: options.env,
       outputFd,
       deadline: options.deadline,
+      onSpawn: options.onSpawn,
     });
   } finally {
     closeSync(outputFd);
