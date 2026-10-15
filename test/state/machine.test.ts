@@ -25,6 +25,7 @@ import {
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
 import { seedExecuteSession, seedPinnedPlanRevision, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
+import { moveTaskThrough, TO_WORK_REVIEW } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
 describe("spawning states", () => {
@@ -508,17 +509,7 @@ describe("task transitions", () => {
 
     it("writes one accepted event in place of the transition event", () => {
       const task = store.createTask(newTask("workspace_ready"));
-      for (const state of [
-        "planning",
-        "awaiting_plan_review",
-        "approved",
-        "executing",
-        "executed",
-        "verifying",
-        "awaiting_work_review",
-      ] as const) {
-        transitionTask(store, task.id, state);
-      }
+      moveTaskThrough(store, task.id, TO_WORK_REVIEW);
       const before = store.listEvents(task.id);
 
       const moved = accept(task.id);

@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { canTransition, failTask } from "../../src/state/machine.js";
+import { canTransition, failTask, type TaskState } from "../../src/state/machine.js";
 import { loadConfig } from "../../src/config/load.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
 import { baseRevisionOf } from "../../src/tasks/base-revision.js";
@@ -425,10 +425,10 @@ describe("TO_WORK_REVIEW", () => {
   });
 
   it("is a legal walk from workspace_ready", () => {
-    const steps = ["workspace_ready", ...TO_WORK_REVIEW];
+    const steps: TaskState[] = ["workspace_ready", ...TO_WORK_REVIEW];
 
     steps.slice(1).forEach((to, index) => {
-      expect(canTransition(steps[index]! as never, to)).toBe(true);
+      expect(canTransition(steps[index]!, to)).toBe(true);
     });
   });
 });

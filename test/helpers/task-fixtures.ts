@@ -9,7 +9,7 @@ import type { Config } from "../../src/config/schema.js";
 import { canonicalPath } from "../../src/real-path.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import { transitionTask, type TaskState } from "../../src/state/machine.js";
-import type { NewSession, PlanRevision, StoredSession, Task } from "../../src/store/store.js";
+import type { NewSession, PlanRevision, StoredSession, Task, TaskStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "./cli.js";
@@ -298,7 +298,7 @@ export function expectNoAssistantRun(fixture: PlanFixture): void {
 }
 
 // The states from workspace_ready to awaiting_work_review, in the order of the main path.
-const TO_WORK_REVIEW = [
+export const TO_WORK_REVIEW = [
   "planning",
   "awaiting_plan_review",
   "approved",
@@ -308,12 +308,17 @@ const TO_WORK_REVIEW = [
   "awaiting_work_review",
 ] as const;
 
+// Moves the task id through states on the open store, in order, with transitionTask, and gives the task after the last
+// move.
+export function moveTaskThrough(store: TaskStore, id: number, states: readonly TaskState[]): Task {
+  for (const state of states) transitionTask(store, id, state);
+  return store.getTask(id)!;
+}
+
 // Moves the latest task of key in the repo through states, in order, and gives the task after the last move.
 function walkTask(dataRoot: string, repoKey: string, key: string, states: readonly TaskState[]): Task {
   return withDataRootStore(dataRoot, (store) => {
-    const found = store.findLatestTask(repoKey, key)!;
-    for (const state of states) transitionTask(store, found.id, state);
-    return store.getTask(found.id)!;
+    return moveTaskThrough(store, store.findLatestTask(repoKey, key)!.id, states);
   });
 }
 
