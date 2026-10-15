@@ -38,18 +38,18 @@ Each time the orchestrator reads the board after a landing, it does these steps 
 
 If a command of the first read or of these steps fails, the orchestrator tells the user the command and the error. A branch name other than `main` in the branch check also counts as a failure. The last read stays. The orchestrator continues its work, and it does the steps again at the next landing. If a command of the first read fails, the orchestrator reads the docs as its local clone holds them. The hash of `git rev-parse --verify HEAD` is then the first last read.
 
-The notice rule: this rule covers a ticket of the milestone "Docs" (see [docs/dev/planning.md](planning.md)). It applies when the landing of the ticket changes `docs/dev/orchestration.md` or another doc that holds working rules. A notice is a message about such a landing from the orchestrator of the ticket to the other orchestrators. The user gives the session of each orchestrator a name of the form `orchestrator-<milestone>`, for example `orchestrator-m6`, `orchestrator-m7` or `orchestrator-docs`. The other orchestrators are all the sessions with such a name except the session of the orchestrator of the ticket.
+The notice rule: this rule covers a ticket of the milestone "Docs" (see [docs/dev/planning.md](planning.md)). It applies when the landing of the ticket changes one of the docs of the re-read rule, for example `docs/dev/orchestration.md`. A notice is a message about such a landing from the orchestrator of the ticket to the other orchestrators. The user gives the session of each orchestrator a name of the form `orchestrator-<milestone>`, for example `orchestrator-m6`, `orchestrator-m7` or `orchestrator-docs`. The other orchestrators are all the sessions with such a name except the session of the orchestrator of the ticket.
 
 The orchestrator of the ticket does these steps:
 
-1. When the final report of the agent of the ticket gives the landed commit, read the board and do the re-read rule. Step 3 of the re-read rule lists the changed docs, and step 5 shows the sections that changed.
-2. If the list has no doc that holds working rules, send no notice.
+1. When the final report of the agent of the ticket arrives, read the files that landed in that report.
+2. If no file of the report is one of the docs of the re-read rule, send no notice.
 3. List the sessions with the session list of your tools, for example `ListAgents`. Each session whose name starts with `orchestrator-`, except your own session, is another orchestrator. A session with another name, for example `planner-m7`, gets no notice.
-4. Send one notice to each other orchestrator with `SendMessage`. The notice names the landed commit and the sections that changed, in one or two lines.
+4. Send one notice to each other orchestrator with `SendMessage`. Take the landed commit and the sections that changed from the same report. The notice names them in one or two lines.
 
    For example: Landed `<commit>` on `main`. `docs/dev/orchestration.md` changed in "Pick the tickets" and "Land the work".
 
-If the re-read rule fails at this landing, the orchestrator of the ticket sends no notice. If the session list or a message fails, the orchestrator of the ticket tells the user the tool and the error, and it continues its work. A session that does not answer gets no second notice. The re-read rule covers that session at its next landing.
+The notice does not depend on the re-read rule. If the re-read rule fails at this landing, the orchestrator of the ticket still sends the notice, and it tells the user the failed command and the error, as the re-read rule says. If the session list or a message fails, the orchestrator of the ticket tells the user the tool and the error, and it continues its work. A session that does not answer gets no second notice. The re-read rule covers that session at its next landing.
 
 The notice is information. When the other orchestrator gets a notice, it does the steps of the re-read rule before its next step. It takes the rule from the doc, not from the notice.
 
@@ -100,7 +100,7 @@ The agent of the ticket runs steps 1 to 11. Each step gives the state of the tas
 
 The final report: at the end of its work on the ticket, the agent sends a final report to the orchestrator. The report gives these items:
 
-- The result: the landed commit and the number of review loops. If the agent stopped before `tasker finish`, the result gives the state of the task and the reason for the stop.
+- The result: the landed commit, the number of review loops, the files that landed and, for each doc that landed, the sections that changed. If the agent stopped before `tasker finish`, the result gives the state of the task and the reason for the stop.
 - Each finding that the agent dismissed, with its reason.
 - The edge cases that the agent left out (see "Review findings").
 - Each claim of the issue that was no longer true (see the issue check), with the current fact and the command that shows it. If the task branch already held commits at the issue check, also the files that the agent read from the base commit and how.
