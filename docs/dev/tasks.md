@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start and abort, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort and plan, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -70,6 +70,21 @@ A quota stop is not a failure. The run can continue after the reset, and the tas
 
 The usage event and the move are two writes, not one. A crash between them leaves the usage event and a task that is still in its spawning state. The run marker of the task stays, so tasker can find that the run died.
 
+## Plan
+
+`tasker plan` runs the assistant in plan mode in the worktree of a task in `workspace_ready`, and records the first plan revision. The task goes to `planning`, then to `awaiting_plan_review`.
+
+The steps run in this order, under the task lock. The command does not wait for the lock.
+
+1. The command makes all its checks and reads before the first write. A failure in this part changes no state, so the task stays in `workspace_ready`.
+2. The command records the session of the plan before it starts the assistant. [The session id](assistants.md#the-session-id) gives the reason. A task that already has a plan session continues it.
+3. The command moves the task to `planning` and runs the assistant. It appends each event of the run to the transcript of the revision.
+4. The command acts on the outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says. A plan that tasker refuses also moves the task to `failed`, and the error lists each problem.
+5. The command writes the plan file before it adds the row. [Plan files](data-root.md#plan-files) gives the reason.
+6. The row, its event and the move to `awaiting_plan_review` share one transaction. [The plan_revisions table](data-root.md#plan_revisions-table) gives the rule.
+
+An error after the start of the run also moves the task to `failed`, with the prefix `planning failed:`. A failed write of the plan file moves it to `failed` too, with its own message. A crash of tasker leaves the task in `planning`, with its run marker. Until M9, `tasker abort` is the way out.
+
 ## Limits
 
 - A new base on a second run does not move a task branch that already exists. The stored base can differ from the real start point of the branch.
@@ -78,3 +93,5 @@ The usage event and the move are two writes, not one. A crash between them leave
 - The start does not assign the issue and does not mark it in progress. It has no option to take over a lock of a live process, and no stacked base.
 - The abort does not delete the task branch on `origin`. No command publishes a task branch before M10.
 - A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
+- The plan reads the title and the body of the issue. It does not read the comments.
+- No command resumes a task that is in `failed` or `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`.
