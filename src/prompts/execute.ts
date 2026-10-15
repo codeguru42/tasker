@@ -1,5 +1,12 @@
 // The prompts of an execute run. No command uses them yet: tasker execute comes in its own ticket.
+import type { PlanAnswer } from "../plan/answer.js";
+import { orderTodos } from "../plan/todo-order.js";
+import type { TaskStore } from "../store/store.js";
 import { SHARED_RULES } from "./shared.js";
+
+type PlanTodo = PlanAnswer["todos"][number];
+// The type comes from the store, so that it has one home.
+type ResolvedQuestion = ReturnType<TaskStore["resolvedQuestionsThrough"]>[number];
 
 export const EXECUTE_PROMPT_NAME = "execute";
 export const EXECUTE_TODO_PROMPT_NAME = "execute-todo";
@@ -64,3 +71,51 @@ export const EXECUTE_FIX_PROMPT = [
   `6. ${T.resultLead} \`done\` when the fix is committed; ${T.blocked} ${T.noQuestionEnd}`,
   "",
 ].join("\n");
+
+function dependsOnText(todo: PlanTodo): string {
+  return `(depends on: ${todo.depends_on.join(", ")})`;
+}
+
+// The todos of the plan in the order of their dependencies, each with its state. Throws for a dependency cycle.
+export function todosText(todos: readonly PlanTodo[], doneIds: ReadonlySet<string>): string {
+  return orderTodos(todos)
+    .map((todo) => {
+      const lines = [`- [${doneIds.has(todo.id) ? "x" : " "}] \`${todo.id}\`: ${todo.title}`];
+      lines.push(...todo.description.split("\n").map((line) => `  ${line}`));
+      if (todo.depends_on.length > 0) lines.push(`  ${dependsOnText(todo)}`);
+      return lines.join("\n");
+    })
+    .join("\n");
+}
+
+// The todo of one turn, with its description and its dependencies.
+export function currentTodoText(todo: PlanTodo): string {
+  const parts = [`Current todo: \`${todo.id}\`: ${todo.title}`, "", todo.description];
+  if (todo.depends_on.length > 0) parts.push("", dependsOnText(todo));
+  return parts.join("\n");
+}
+
+// The resolved questions in groups. A new group starts when the version or the feedback changes.
+export function resolvedQuestionsText(questions: readonly ResolvedQuestion[]): string {
+  if (questions.length === 0) return "None.";
+  const groups: ResolvedQuestion[][] = [];
+  for (const entry of questions) {
+    const last = groups.at(-1)?.[0];
+    if (last !== undefined && last.version === entry.version && last.answer === entry.answer) {
+      groups.at(-1)!.push(entry);
+    } else {
+      groups.push([entry]);
+    }
+  }
+  return groups
+    .map((group) => {
+      const { version, answer } = group[0]!;
+      return [
+        `Resolved in v${version}:`,
+        ...group.flatMap(({ question }) => [`- \`${question.id}\`: ${question.question}`, `  context: ${question.context}`]),
+        `Answered by the feedback given for v${version}:`,
+        answer ?? "(no feedback given)",
+      ].join("\n");
+    })
+    .join("\n\n");
+}
