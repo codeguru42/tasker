@@ -18,7 +18,7 @@ import {
   type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { seedPlanRevision, validPlanAnswer } from "../helpers/plan.js";
+import { seedPinnedPlanRevision, seedPlanRevision, validPlanAnswer } from "../helpers/plan.js";
 import { useTempDir } from "../helpers/temp.js";
 
 describe("spawning states", () => {
@@ -457,8 +457,7 @@ describe("task transitions", () => {
 
     it("writes nothing for an illegal edge", () => {
       const task = store.createTask(newTask("planning"));
-      seedPlanRevision(store, task.id, {}, "workspace_ready");
-      store.approvePlanRevision(task.id, 1, "workspace_ready");
+      seedPinnedPlanRevision(store, task.id, {}, "workspace_ready");
       const before = store.listEvents(task.id);
       const approvedAt = store.getPlanRevision(task.id, 1)!.approvedAt;
       expect(() => transitionWithPlanUnapproval(store, task.id, 1)).toThrow(
