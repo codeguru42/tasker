@@ -43,7 +43,7 @@ export async function startIssue(
     io.prompt === undefined
       ? Promise.reject(
           new Error(
-            `no base branch for ${ref.repoKey}: pass --base <branch>, or set repos.${ref.repoKey}.defaultBaseBranch`,
+            `no base branch for ${ref.repoKey}: pass --base <branch> to tasker start, or set repos.${ref.repoKey}.defaultBaseBranch`,
           ),
         )
       : io.prompt(`Base branch for ${ref.repoKey}: `);
