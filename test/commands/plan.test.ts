@@ -302,6 +302,25 @@ describe("plan", () => {
       expectNoRun(fixture);
     });
 
+    it("fails for a task that is not in workspace_ready, and reads no issue", async () => {
+      const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+      withDataRootStore(fixture.started.dataRoot, (store) =>
+        transitionTask(store, taskOf(fixture).id, "failed", { error: "earlier" }),
+      );
+      const ghCalls = fixture.started.gh.calls().length;
+
+      const result = await runPlan();
+
+      expect(result).toEqual({
+        code: 1,
+        out: "",
+        err: `the task of ${KEY} is in failed; tasker plan needs workspace_ready\n`,
+      });
+      expect(taskOf(fixture).state).toBe("failed");
+      expect(fixture.started.gh.calls()).toHaveLength(ghCalls);
+      expectNoRun(fixture);
+    });
+
     it("fails when the prompt cannot be archived", async () => {
       const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
       const prompts = join(fixture.started.dataRoot, "prompts");
