@@ -10,10 +10,13 @@ import { readTurnResult, turnResultJsonSchema } from "../plan/turn-result.js";
 import { archivePrompt } from "../prompts/archive.js";
 import {
   currentTodoText,
+  EXECUTE_FIX_PROMPT,
+  EXECUTE_FIX_PROMPT_NAME,
   EXECUTE_PROMPT,
   EXECUTE_PROMPT_NAME,
   EXECUTE_TODO_PROMPT,
   EXECUTE_TODO_PROMPT_NAME,
+  NO_VERIFY_LOG,
   resolvedQuestionsText,
   todosText,
 } from "../prompts/execute.js";
@@ -22,7 +25,7 @@ import { transitionTask, transitionWithExecution } from "../state/machine.js";
 import { executeTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
-import { taskNotFound, type TaskStore } from "../store/store.js";
+import { type ExecuteFixTurn, taskNotFound, type TaskStore } from "../store/store.js";
 import { type RemoteTip, vcsForRepo } from "../vcs/provider.js";
 import { tipMoved } from "../vcs/remote-tip.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
@@ -32,12 +35,10 @@ import { assertSessionModel } from "./session-model.js";
 
 type PlanTodo = PlanAnswer["todos"][number];
 
-// One turn of the run: the todo of the turn and the words that name it in a message.
-interface Subject {
-  kind: "todo";
-  todo: PlanTodo;
-  label: string;
-}
+// One turn of the run: a todo or the fix turn, with the words that name it in a message.
+type Subject =
+  | { kind: "todo"; todo: PlanTodo; label: string }
+  | { kind: "fix"; turn: ExecuteFixTurn; label: string };
 
 export interface ExecuteRequest {
   config: Config;
@@ -108,6 +109,10 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   const subjects: Subject[] = ordered
     .filter((todo) => !doneIds.has(todo.id))
     .map((todo) => ({ kind: "todo", todo, label: `todo \`${todo.id}\` (${todo.title})` }));
+  const fixTurn = store.queuedExecuteFixTurn(task.id, version);
+  if (fixTurn !== undefined) {
+    subjects.push({ kind: "fix", turn: fixTurn, label: "the fix turn for the verify failure" });
+  }
   // The prompts that this run sends, filled and archived. The list holds their versions.
   const prompts: string[] = [];
   let prefix: string | undefined;
@@ -120,8 +125,11 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     });
     prompts.push(archivePrompt(config.dataRoot, EXECUTE_PROMPT_NAME, EXECUTE_PROMPT).version);
   }
-  if (subjects.length > 0) {
+  if (subjects.some((subject) => subject.kind === "todo")) {
     prompts.push(archivePrompt(config.dataRoot, EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT).version);
+  }
+  if (fixTurn !== undefined) {
+    prompts.push(archivePrompt(config.dataRoot, EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT).version);
   }
   // A run with no subject records no session: an id that no conversation holds must not be continued.
   if (stored === undefined && subjects.length > 0) {
@@ -144,6 +152,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     return failRun(store, task, io, message);
   };
   const transcriptPath = executeTranscriptPath(config.dataRoot, task, version);
+  let fixTurnDone = false;
   try {
     mkdirSync(dirname(transcriptPath), { recursive: true });
     const fd = openSync(transcriptPath, "a");
@@ -154,14 +163,23 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
       const deadline = clock() + limitMin * 60_000;
       let first = stored === undefined;
       for (const subject of subjects) {
-        const { todo, label } = subject;
+        const { label } = subject;
         const left = deadline - clock();
         if (left <= 0) return fail(`executing ${label} timed out after ${limitMin} min`);
-        store.setExecuteTodoState(task.id, version, todo.id, "in_progress");
-        store.appendEvent(task.id, "todo_started", { id: todo.id });
-        const turnPrompt = fillTemplate(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT, {
-          CURRENT_TODO: currentTodoText(todo),
-        });
+        let turnPrompt: string;
+        if (subject.kind === "todo") {
+          store.setExecuteTodoState(task.id, version, subject.todo.id, "in_progress");
+          store.appendEvent(task.id, "todo_started", { id: subject.todo.id });
+          turnPrompt = fillTemplate(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT, {
+            CURRENT_TODO: currentTodoText(subject.todo),
+          });
+        } else {
+          store.appendEvent(task.id, "fix_turn_started");
+          turnPrompt = fillTemplate(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT, {
+            VERIFY_FAILURE: subject.turn.verifyFailure,
+            VERIFY_LOG: subject.turn.verifyLogTail ?? NO_VERIFY_LOG,
+          });
+        }
         const prompt = first && prefix !== undefined ? `${prefix}\n${turnPrompt}` : turnPrompt;
         first = false;
         const outcome = await prepared.start({
@@ -173,8 +191,14 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
         const result = applyRunOutcome({ store, task, phase: "executing", timeoutMinutes: limitMin, io, outcome });
         const read = "outcome" in result ? readTurnResult(result.outcome.structuredOutput) : undefined;
         if (read?.kind === "done") {
-          store.setExecuteTodoState(task.id, version, todo.id, "done");
-          store.appendEvent(task.id, "todo_done", { id: todo.id });
+          if (subject.kind === "todo") {
+            store.setExecuteTodoState(task.id, version, subject.todo.id, "done");
+            store.appendEvent(task.id, "todo_done", { id: subject.todo.id });
+          } else {
+            store.markExecuteFixTurnDone(task.id, version);
+            store.appendEvent(task.id, "fix_turn_done");
+            fixTurnDone = true;
+          }
         }
         // Layer 3 of the push guard: the tip of the task branch on the remote must not move. A push wins over
         // every outcome, a quota stop included.
@@ -202,7 +226,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     version,
     todosDone: after.filter((entry) => entry.state === "done").length,
     todosTotal: after.length,
-    fixTurnDone: false,
+    fixTurnDone,
     denials: 0,
     transcriptPath,
   };
