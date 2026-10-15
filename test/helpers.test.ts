@@ -57,18 +57,14 @@ import {
   TEST_SESSION_ID,
   taskWorkspaceState,
   useFakeClaude,
-  useFakeSandboxBin,
   useTempDir,
-  usePathWithout,
   useAssistantRunFixture,
   useStartedTask,
   useStartFixture,
   validPlanAnswer,
   waitUntil,
   withDataRootStore,
-  writeFakeCommand,
   writeFakeGh,
-  writeFakeSandboxPrograms,
   writePlaceholder,
   type GitOrigin,
   planAnswerStream,
@@ -1004,84 +1000,6 @@ describe("writePlaceholder", () => {
     expect(stat.isFile()).toBe(true);
     expect(stat.size).toBe(0);
     expect(stat.mode & 0o777).toBe(0o444);
-  });
-});
-
-const runs = (program: string, folder: string) => spawnSync(program, [], { env: { PATH: folder } });
-
-describe("writeFakeSandboxPrograms", () => {
-  it("writes bwrap and socat that exit 0", () => {
-    const bin = useTempDir("tasker-bin-");
-
-    writeFakeSandboxPrograms(bin);
-
-    expect(runs("bwrap", bin).status).toBe(0);
-    expect(runs("socat", bin).status).toBe(0);
-  });
-
-  it("skips the names in the except list", () => {
-    const bin = useTempDir("tasker-bin-");
-
-    writeFakeSandboxPrograms(bin, ["socat"]);
-
-    expect(runs("bwrap", bin).status).toBe(0);
-    expect(existsSync(join(bin, "socat"))).toBe(false);
-  });
-});
-
-describe("useFakeSandboxBin", () => {
-  it("gives a new folder with bwrap and socat that exit 0", () => {
-    const bin = useFakeSandboxBin();
-
-    expect(runs("bwrap", bin).status).toBe(0);
-    expect(runs("socat", bin).status).toBe(0);
-  });
-
-  it("leaves out the names in the except list", () => {
-    const bin = useFakeSandboxBin(["bwrap"]);
-
-    expect(existsSync(join(bin, "bwrap"))).toBe(false);
-    expect(runs("socat", bin).status).toBe(0);
-  });
-});
-
-describe("usePathWithout", () => {
-  it("hides the program and keeps the other programs of its folder and of the other folders", () => {
-    const withClaude = join(useTempDir("tasker-bin-"), "bin");
-    const other = join(useTempDir("tasker-bin-"), "bin");
-    writeFakeCommand(withClaude, "claude", "exit 0");
-    writeFakeCommand(withClaude, "tool", "exit 0");
-    writeFakeCommand(other, "other", "exit 0");
-    const path = [withClaude, other].join(delimiter);
-
-    const changed = usePathWithout("claude", path);
-
-    expect(runs("claude", path).status).toBe(0);
-    expect((runs("claude", changed).error as NodeJS.ErrnoException).code).toBe("ENOENT");
-    expect(runs("tool", changed).status).toBe(0);
-    expect(runs("other", changed).status).toBe(0);
-  });
-
-  it("keeps the exact string and the place of a folder without the program", () => {
-    const withClaude = join(useTempDir("tasker-bin-"), "bin");
-    const other = join(useTempDir("tasker-bin-"), "bin");
-    writeFakeCommand(withClaude, "claude", "exit 0");
-    writeFakeCommand(other, "other", "exit 0");
-
-    const folders = usePathWithout("claude", [other, withClaude, other].join(delimiter)).split(delimiter);
-
-    expect(folders).toHaveLength(3);
-    expect(folders[0]).toBe(other);
-    expect(folders[1]).not.toBe(withClaude);
-    expect(folders[2]).toBe(other);
-  });
-
-  it("gives a PATH without the program as it is", () => {
-    const other = join(useTempDir("tasker-bin-"), "bin");
-    writeFakeCommand(other, "other", "exit 0");
-    const path = [other, "/no/such/folder"].join(delimiter);
-
-    expect(usePathWithout("claude", path)).toBe(path);
   });
 });
 
