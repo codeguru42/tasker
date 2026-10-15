@@ -84,7 +84,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The configuration or the issue key is not valid. Fix it, then run the command again.
 - The issue does not exist, or it is closed and has no task. The error names the issue. Open the issue again or use another one.
 - Another start of the same issue is running. The error says that the lock is busy. Wait until it ends.
-- The base branch is not known and stdin is not a terminal. The error says `no base branch for <repo>`. Pass `--base <branch>` or set `defaultBaseBranch` for the repo.
+- The base branch is not known and stdin is not a terminal. The error is `no base branch for <repo>: pass --base <branch> to tasker start, or set repos.<repo>.defaultBaseBranch`. Pass `--base <branch>` or set `defaultBaseBranch` for the repo.
 - A step fails. The task goes to the state `failed` with the error. Fix the cause, then run the command again.
 - Bootstrap fails. The error names the number and the text of the command, then the exit code, the timeout or the signal, and the path of the log. The last 20 lines of the log follow. Fix the cause, then run the command again.
 
