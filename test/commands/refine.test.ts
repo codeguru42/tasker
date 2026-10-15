@@ -4,16 +4,18 @@ import { describe, expect, it, onTestFinished } from "vitest";
 import { refine } from "../../src/commands/refine.js";
 import { archivePrompt, promptVersion } from "../../src/prompts/archive.js";
 import { openQuestionsText, REFINE_PROMPT, REFINE_PROMPT_NAME } from "../../src/prompts/refine.js";
+import { transitionTask } from "../../src/state/machine.js";
+import type { Task } from "../../src/store/store.js";
 import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { NO_OWN_COMMITS } from "../../src/vcs/git/changes.js";
 import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
-import { planAnswerStream, planRevisionOf, seedTaskWithPlanFiles, transcriptLines, validPlanAnswer } from "../helpers/plan.js";
+import { planAnswerStream, planRevisionOf, seedPlanSession, seedTaskWithPlanFiles, transcriptLines, validPlanAnswer } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore } from "../helpers/store.js";
-import { expectNoAssistantRun, type RefineFixture, useRefineFixture } from "../helpers/task-fixtures.js";
+import { expectNoAssistantRun, type PlanFixture, useRefineFixture, usePlanFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -42,13 +44,18 @@ const refinePromptPath = (dataRoot: string) =>
 
 // What a run that did not start must leave: the state and the events as before, no claude call, no lock,
 // no second revision, no transcript of v2 and no archive of the refine prompt.
-const expectNoWrite = (fixture: RefineFixture, eventsBefore: { type: string; data: unknown }[], state: string) => {
+const expectNoWrite = (
+  fixture: PlanFixture,
+  task: Task,
+  eventsBefore: { type: string; data: unknown }[],
+  state: string,
+) => {
   const { dataRoot } = fixture.started;
   expect(latestTaskOf(dataRoot, KEY).state).toBe(state);
   expectNoAssistantRun(fixture);
   expect(eventsOf(dataRoot, KEY)).toEqual(eventsBefore);
-  expect(planRevisionOf(dataRoot, fixture.task.id, 2)).toBeUndefined();
-  expect(existsSync(planTranscriptPath(dataRoot, fixture.task, 2))).toBe(false);
+  expect(planRevisionOf(dataRoot, task.id, 2)).toBeUndefined();
+  expect(existsSync(planTranscriptPath(dataRoot, task, 2))).toBe(false);
   expect(existsSync(refinePromptPath(dataRoot))).toBe(false);
 };
 
@@ -260,7 +267,7 @@ describe("refine", () => {
       expect(result.code).toBe(1);
       expect(result.out).toBe("");
       expect(result.err).toMatch(/^cannot read the plan file of revision v1: .+\n$/);
-      expectNoWrite(fixture, before, "awaiting_plan_review");
+      expectNoWrite(fixture, fixture.task, before, "awaiting_plan_review");
     });
 
     it("fails when the prompt cannot be archived", async () => {
@@ -275,7 +282,74 @@ describe("refine", () => {
 
       expect(result.code).toBe(1);
       expect(result.err).not.toBe("");
-      expectNoWrite(fixture, before, "awaiting_plan_review");
+      expectNoWrite(fixture, fixture.task, before, "awaiting_plan_review");
     });
+  });
+});
+
+describe("a check before any write", () => {
+  const stream = planAnswerStream(V2_ANSWER);
+
+  const expectRefused = async (
+    fixture: PlanFixture,
+    task: Task,
+    state: string,
+    error: string,
+    feedback = FEEDBACK,
+  ) => {
+    const before = eventsOf(fixture.started.dataRoot, KEY);
+
+    const result = await runRefine(feedback);
+
+    expect(result).toEqual({ code: 1, out: "", err: `${error}\n` });
+    expectNoWrite(fixture, task, before, state);
+  };
+
+  it("refuses a task that is not in awaiting_plan_review", async () => {
+    const fixture = await useRefineFixture({ stream });
+    withDataRootStore(fixture.started.dataRoot, (store) => transitionTask(store, fixture.task.id, "approved"));
+
+    await expectRefused(
+      fixture,
+      fixture.task,
+      "approved",
+      `the task of ${KEY} is in approved; tasker refine needs awaiting_plan_review`,
+    );
+  });
+
+  it("refuses feedback of only spaces", async () => {
+    const fixture = await useRefineFixture({ stream });
+
+    await expectRefused(fixture, fixture.task, "awaiting_plan_review", "the feedback is empty", "   ");
+  });
+
+  it("refuses a task with no plan revision", async () => {
+    const fixture = await usePlanFixture({ stream });
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
+    withDataRootStore(fixture.started.dataRoot, (store) => {
+      transitionTask(store, task.id, "planning");
+      transitionTask(store, task.id, "awaiting_plan_review");
+      seedPlanSession(store, task.id);
+    });
+
+    await expectRefused(fixture, task, "awaiting_plan_review", `the task of ${KEY} has no plan revision`);
+  });
+
+  it("refuses a task with no plan session", async () => {
+    const fixture = await useRefineFixture({ stream });
+    withDataRootStore(fixture.started.dataRoot, (store) => store.clearPlanSession(fixture.task.id));
+
+    await expectRefused(fixture, fixture.task, "awaiting_plan_review", `the task of ${KEY} has no plan session`);
+  });
+
+  it("refuses a recorded model that the provider refuses", async () => {
+    const fixture = await useRefineFixture({ stream }, { session: { model: "gpt-5" } });
+
+    await expectRefused(
+      fixture,
+      fixture.task,
+      "awaiting_plan_review",
+      "the plan session of codeguru42/tasker#5 runs on gpt-5, and claude-code refuses it: is not a claude-code model: gpt-5",
+    );
   });
 });
