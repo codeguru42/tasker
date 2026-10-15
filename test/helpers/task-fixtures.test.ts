@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { loadConfig } from "../../src/config/load.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
 import { dataRootLayout } from "../../src/store/layout.js";
 import { changedPaths } from "../../src/vcs/git/changes.js";
@@ -50,6 +51,16 @@ describe("useStartFixture", () => {
     const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
 
     expect(fixture.config.repos[fixture.repoKey].defaultBaseBranch).toBeUndefined();
+  });
+});
+
+describe("useStartFixture with limits", () => {
+  it("sets the limits in the configuration file and keeps the other limits", async () => {
+    const before = (await useStartFixture()).config.limits;
+    const fixture = await useStartFixture({ limits: { planTimeoutMin: 0.05 } });
+
+    expect(fixture.config.limits).toEqual({ ...before, planTimeoutMin: 0.05 });
+    expect(loadConfig().limits).toEqual({ ...before, planTimeoutMin: 0.05 });
   });
 });
 
