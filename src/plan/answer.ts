@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { formatIssues } from "../zod-issues.js";
 import { jsonSchemaOf } from "./json-schema.js";
+import { todoOrder } from "./todo-order.js";
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, { message: "must be kebab-case" });
 const text = z.string().min(1);
@@ -65,6 +66,8 @@ export function checkPlanAnswer(output: unknown): PlanCheck {
       }
     });
   });
+  const order = todoOrder(answer.todos);
+  if (!order.ok) problems.push(...order.problems);
   if (problems.length > 0) return { ok: false, problems };
 
   return { ok: true, answer: { ...answer, files_changed: cleanPlanPaths(answer.files_changed) } };
