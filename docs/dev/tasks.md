@@ -132,25 +132,24 @@ The command works only in `approved`. The state alone sets the limit "before exe
 
 The steps run in this order, under the task lock. The command does not wait for the lock.
 
-1. The command makes all its checks before the first write: the state, the pinned revision, the plan file, the order of the todos, the base revision, the branch, the remote tip and the recorded model. A refused execute leaves the task, the files and the events as they were.
-2. The command reads the tip of the task branch on the remote. This is the tip before the run.
-3. The command fills the prompts and archives only the prompts that the run sends. It records a new session only when the run has a turn.
-4. The command moves the task to `executing` and opens the transcript of the revision for append.
-5. For each turn, the command sets the state of the todo and runs the assistant. After the turn, it records the result and reads the remote tip again.
-6. The command acts on each outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says, with the phase name `executing`. An error after the start of the run also moves the task to `failed`, with the prefix `executing failed:`.
-7. After the last turn, the command writes the `permission_denials` event when a turn had a denial. Then it moves the task to `executed`.
+1. The command makes all its checks before the first write: the state, the pinned revision, the plan file, the order of the todos, the base revision, the branch, the remote tip and the recorded model. The read of the remote tip gives the tip before the run. A refused execute leaves the task, the files and the events as they were.
+2. The command fills the prompts and archives only the prompts that the run sends. It records a new session only when the run has a turn.
+3. The command moves the task to `executing` and opens the transcript of the revision for append.
+4. For each turn, the command sets the state of the todo and runs the assistant. After the turn, it records the result and reads the remote tip again.
+5. The command acts on each outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says, with the phase name `executing`. An error after the start of the run also moves the task to `failed`, with the prefix `executing failed:`.
+6. After the last turn, the command writes the `permission_denials` event when a turn had a denial. Then it moves the task to `executed`.
 
 The move to `executed` appends one `executed` event with the data `{ version, prompts, from, to }`. The `executed` event takes the place of the `transition` event for this move. `prompts` holds the versions of the prompts that the run sent. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
 
 The reasons:
 
 - The session belongs to the pinned revision. A later run of the same revision continues the session, so the assistant keeps what it learned. A new revision gets a new session.
-- The command runs one turn for each todo. As a result, tasker records the state of each todo, and a failed run keeps the todos that are done. A done todo stays done, also when a later turn fails.
+- The command runs one turn for each todo. As a result, tasker records the state of each todo, and a failed run keeps the todos that are done. A done todo stays done, also when a later turn fails. A done turn already committed its work, and a later failure does not take the commits back. So the next run must not do that todo again.
 - A new session gets the prefix with the plan in its first turn. A continued session gets only the turn prompt, because the session already holds the prefix.
-- The command reads the remote tip before the run and after each turn. This is layer 3 of [the push guard](version-control.md#push-guard). A push from the session moves the tip, and the command fails the task. A push wins over the outcome of the turn. A quota stop with a push ends in `failed`, because a push breaks a rule of tasker and a quota stop does not.
+- The command reads the remote tip before the run and after each turn. This is layer 3 of [the push guard](version-control.md#push-guard). A push from the session moves the tip, and the command fails the task. The command reads the tip after each turn, not only at the end of the run. As a result, the run stops at the first turn that pushed. No later turn spends tokens or builds on work that already left the machine. A push wins over the outcome of the turn. A quota stop with a push ends in `failed`, because a push breaks a rule of tasker and a quota stop does not.
 - A task that is already `failed` is not moved again, because a move from `failed` to `failed` is illegal. In this case the command only prints the message on stderr.
 - A turn that reports `blocked` or gives no result fails the task. Nobody is present to answer the turn. The operator reads the error and decides with the next command. The todo stays `in_progress`.
-- All turns share one deadline: the value of `executeTimeoutMin`. The command reads the clock once before the first turn, and each turn gets the time that is left. It starts no turn when no time is left.
+- All turns share one deadline: the value of `executeTimeoutMin`. The command reads the clock once before the first turn, and each turn gets the time that is left. It starts no turn when no time is left. `executeTimeoutMin` is the limit of one execute run. A limit for each turn multiplies with the count of todos, so a plan with many todos can run for many times the configured limit.
 - A run with no turn records no execute session and archives no prompt. The rule of [the sessions table](data-root.md#sessions-table) says that an id that no conversation holds must not be continued. If the run recorded one, a later fix turn from `tasker retry` continues an empty id and fails.
 
 ## Limits
@@ -162,6 +161,5 @@ The reasons:
 - The abort does not delete the task branch on `origin`. No command publishes a task branch before M10.
 - A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
 - The plan reads the title and the body of the issue. It does not read the comments.
-- No command resumes a task that is in `failed` or `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`.
+- No command resumes a task that is in `failed` or `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`, and a second `tasker execute` works only on a task in `approved`.
 - Layer 3 of the push guard cannot see a push that moves the tip and then moves it back within one turn. It compares only the tips before and after.
-- A stopped execute run has no resume before M9. A later `tasker execute` works only on a task in `approved`.
