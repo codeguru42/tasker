@@ -1,4 +1,4 @@
-import type { NewEvent, NewPlanRevision, NewVerifyRun, Task, TaskStore } from "../store/store.js";
+import type { NewEvent, NewPlanRevision, NewVerifyRun, Task, TaskEvent, TaskStore } from "../store/store.js";
 
 export const STATES = [
   "provisioning",
@@ -291,4 +291,12 @@ export function failedFrom(store: TaskStore, id: number): TaskState | undefined 
     }
   }
   return typeof from === "string" && isTaskState(from) ? from : undefined;
+}
+
+// The error of the last transition event, when it is a string.
+export function lastTransitionError(events: TaskEvent[]): string | undefined {
+  const transition = events.filter((event) => event.type === "transition").at(-1);
+  const data = transition?.data;
+  if (typeof data !== "object" || data === null || !("error" in data)) return undefined;
+  return typeof data.error === "string" ? data.error : undefined;
 }

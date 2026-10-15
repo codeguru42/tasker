@@ -1,6 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
-import { failedFrom } from "../state/machine.js";
-import type { ExecuteTodoProgress, Task, TaskEvent, TaskStore } from "../store/store.js";
+import { failedFrom, lastTransitionError } from "../state/machine.js";
+import type { ExecuteTodoProgress, Task, TaskStore } from "../store/store.js";
 import {
   formatColumns,
   formatFields,
@@ -10,14 +10,6 @@ import {
   REPO_OPTION_DESCRIPTION,
   withIssueTask,
 } from "./shared.js";
-
-// The error of the last transition event, when it is a string.
-function lastError(events: TaskEvent[]): string | undefined {
-  const transition = events.filter((event) => event.type === "transition").at(-1);
-  const data = transition?.data;
-  if (typeof data !== "object" || data === null || !("error" in data)) return undefined;
-  return typeof data.error === "string" ? data.error : undefined;
-}
 
 const TODO_STATE_LABELS: Record<ExecuteTodoProgress["state"], string> = {
   done: "done",
@@ -56,7 +48,7 @@ function formatTask(store: TaskStore, task: Task): string {
     ["last event", last && `${last.at} ${last.type} ${JSON.stringify(last.data)}`],
   ];
   if (task.state === "failed") {
-    fields.push(["failed in", failedFrom(store, task.id)], ["error", lastError(events)]);
+    fields.push(["failed in", failedFrom(store, task.id)], ["error", lastTransitionError(events)]);
   }
   return formatFields(fields) + todoProgress(store, task.id);
 }
