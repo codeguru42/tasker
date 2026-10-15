@@ -17,6 +17,7 @@ import {
   planTodo,
   seedTaskWithPlanFiles,
   transcriptLines,
+  turnResultStream,
   validPlanAnswer,
 } from "./plan.js";
 import { dayAt, seedTask, withDataRootStore } from "./store.js";
@@ -316,5 +317,19 @@ describe("planAnswerStream", () => {
     const answer = validPlanAnswer({ summary: ["Another."] });
     const lines = planAnswerStream(answer);
     expect(JSON.parse(lines.at(-1)!)).toMatchObject({ structured_output: answer });
+  });
+});
+
+describe("turnResultStream", () => {
+  it("gives a last line whose structured_output is a blocked result with its reason", () => {
+    const lines = turnResultStream("blocked", "No disk.");
+
+    expect(JSON.parse(lines.at(-1)!).structured_output).toEqual({ result: "blocked", reason: "No disk." });
+  });
+
+  it("gives a done result with no reason key", () => {
+    const lines = turnResultStream("done");
+
+    expect(JSON.parse(lines.at(-1)!).structured_output).toStrictEqual({ result: "done" });
   });
 });
