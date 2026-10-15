@@ -231,6 +231,15 @@ export function transitionWithPlanRevision(
   return store.addPlanRevision(id, revision, to, transitionCheck(to));
 }
 
+// Approves revision version, appends the approved event { version, openQuestions, from, to } and moves the task to
+// approved, in one transaction. An illegal edge writes nothing.
+export function transitionWithPlanApproval(store: TaskStore, id: number, version: number, openQuestions: number): Task {
+  return store.approvePlanRevision(id, version, "approved", (current) => ({
+    type: "approved",
+    data: { version, openQuestions, ...legalMove(current, "approved") },
+  }));
+}
+
 export function failTask(store: TaskStore, id: number, message: string): Task {
   return transitionTask(store, id, "failed", { error: message });
 }
