@@ -130,6 +130,25 @@ export interface PlanRevision {
   createdAt: string;
 }
 
+// The result of a verify run. tasker verify decides it, and the store only keeps it. The table refuses another value.
+export type VerifyRunResult = "passed" | "failed" | "timed_out" | "dirty_before" | "dirty_after";
+
+export interface NewVerifyRun {
+  number: number;
+  result: VerifyRunResult;
+  // The commands that the run started, in order.
+  commands: string[];
+  // The position (from 1) of the command that failed, timed out or could not start. None for a run that passed.
+  failingCommand: number | null;
+  // The caller gives both times. The store does not take them from its clock.
+  startedAt: string;
+  endedAt: string;
+}
+
+export interface VerifyRun extends NewVerifyRun {
+  taskId: number;
+}
+
 // A session that the store holds: what it recorded when it started, and its id.
 export interface StoredSession extends RecordedSession {
   sessionId: string;
@@ -211,6 +230,18 @@ export interface TaskStore extends LockStore {
     check?: (current: Task) => NewEvent | void,
   ): Task;
   getPlanRevision(taskId: number, version: number): PlanRevision | undefined;
+  // The number that the next verify run of the task must have. The caller holds the task lock,
+  // so the value stays valid until the insert.
+  nextVerifyRun(taskId: number): number;
+  // Inserts the verify run, appends the verify_run event { number, result }, moves the task to a state
+  // that is not spawning and deletes its run marker, in one transaction. The event that check returns is
+  // appended in the same transaction. A throw writes nothing.
+  addVerifyRun(taskId: number, run: NewVerifyRun, state: string, check?: (current: Task) => NewEvent | void): Task;
+  // The number of verify runs of the task.
+  verifyRunCount(taskId: number): number;
+  getVerifyRun(taskId: number, number: number): VerifyRun | undefined;
+  // The run with the highest number.
+  latestVerifyRun(taskId: number): VerifyRun | undefined;
   // The revision with the highest version.
   latestPlanRevision(taskId: number): PlanRevision | undefined;
   // The approved revision with the highest version.
@@ -359,6 +390,29 @@ function rowToPlanRevision(row: PlanRevisionRow): PlanRevision {
 // The plan revision of a row, or undefined when the query found no row.
 function toPlanRevision(row: PlanRevisionRow | undefined): PlanRevision | undefined {
   return row === undefined ? undefined : rowToPlanRevision(row);
+}
+
+interface VerifyRunRow {
+  task_id: number;
+  number: number;
+  result: VerifyRunResult;
+  commands: string;
+  failing_command: number | null;
+  started_at: string;
+  ended_at: string;
+}
+
+function toVerifyRun(row: VerifyRunRow | undefined): VerifyRun | undefined {
+  if (row === undefined) return undefined;
+  return {
+    taskId: row.task_id,
+    number: row.number,
+    result: row.result,
+    commands: JSON.parse(row.commands) as string[],
+    failingCommand: row.failing_command,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+  };
 }
 
 interface PlanSessionRow {
@@ -530,6 +584,18 @@ function setUp(db: DatabaseSync) {
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
     ),
+    selectNextVerifyRun: db.prepare(
+      "SELECT COALESCE(MAX(number), 0) + 1 AS next FROM verify_runs WHERE task_id = ?",
+    ),
+    insertVerifyRun: db.prepare(
+      `INSERT INTO verify_runs (task_id, number, result, commands, failing_command, started_at, ended_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ),
+    selectVerifyRun: db.prepare("SELECT * FROM verify_runs WHERE task_id = ? AND number = ?"),
+    selectLatestVerifyRun: db.prepare(
+      "SELECT * FROM verify_runs WHERE task_id = ? ORDER BY number DESC LIMIT 1",
+    ),
+    selectVerifyRunCount: db.prepare("SELECT COUNT(*) AS n FROM verify_runs WHERE task_id = ?"),
     selectPinnedPlanRevision: db.prepare(
       `SELECT * FROM plan_revisions WHERE task_id = ? AND approved_at IS NOT NULL
        ORDER BY version DESC LIMIT 1`,
@@ -629,6 +695,11 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     return next;
   }
 
+  function readNextVerifyRun(taskId: number): number {
+    const { next } = statements.selectNextVerifyRun.get(taskId) as { next: number };
+    return next;
+  }
+
   // Inserts one event. It starts no transaction, because immediateTransaction() is not reentrant.
   // The caller runs it inside its own transaction.
   function writeEvent(
@@ -720,6 +791,24 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       now().toISOString(),
     ) as unknown as PlanRevisionRow;
     return rowToPlanRevision(row);
+  }
+
+  // The row insert of a verify run. It checks the number and opens no transaction, so the
+  // caller must have one open.
+  function writeVerifyRun(taskId: number, run: NewVerifyRun): void {
+    const next = readNextVerifyRun(taskId);
+    if (run.number !== next) {
+      throw new Error(`task ${taskId}: verify run ${run.number} is not the next number (${next})`);
+    }
+    statements.insertVerifyRun.run(
+      taskId,
+      run.number,
+      run.result,
+      JSON.stringify(run.commands),
+      run.failingCommand,
+      run.startedAt,
+      run.endedAt,
+    );
   }
 
   return {
@@ -879,6 +968,28 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     getPlanRevision: readPlanRevision,
+
+    nextVerifyRun: readNextVerifyRun,
+
+    addVerifyRun(taskId, run, state, check) {
+      return writeTask(taskId, { state }, check, (at) => {
+        endRunStep(taskId, state);
+        writeVerifyRun(taskId, run);
+        writeEvent(taskId, at, "verify_run", { number: run.number, result: run.result });
+      });
+    },
+
+    verifyRunCount(taskId) {
+      return (statements.selectVerifyRunCount.get(taskId) as { n: number }).n;
+    },
+
+    getVerifyRun(taskId, number) {
+      return toVerifyRun(statements.selectVerifyRun.get(taskId, number) as VerifyRunRow | undefined);
+    },
+
+    latestVerifyRun(taskId) {
+      return toVerifyRun(statements.selectLatestVerifyRun.get(taskId) as VerifyRunRow | undefined);
+    },
 
     pinnedPlanRevision: readPinnedPlanRevision,
 

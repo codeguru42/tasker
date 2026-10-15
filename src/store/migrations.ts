@@ -88,4 +88,14 @@ CREATE TABLE execute_fix_turns (
   PRIMARY KEY (task_id, plan_version),
   FOREIGN KEY (task_id, plan_version) REFERENCES plan_revisions (task_id, version)
 );`,
+  `CREATE TABLE verify_runs (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  number INTEGER NOT NULL,
+  result TEXT NOT NULL CHECK (result IN ('passed', 'failed', 'timed_out', 'dirty_before', 'dirty_after')),
+  commands TEXT NOT NULL,
+  failing_command INTEGER,
+  started_at TEXT NOT NULL,
+  ended_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, number)
+);`,
 ];
