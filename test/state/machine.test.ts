@@ -13,6 +13,7 @@ import {
   isTerminalState,
   isTaskState,
   transitionTask,
+  transitionWithAcceptance,
   transitionWithExecution,
   transitionWithPlanApproval,
   transitionWithPlanRevision,
@@ -498,6 +499,49 @@ describe("task transitions", () => {
         "illegal state transition: workspace_ready -> executed",
       );
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithAcceptance", () => {
+    const accept = (id: number) => transitionWithAcceptance(store, id, "head-sha", "base-sha");
+
+    it("writes one accepted event in place of the transition event", () => {
+      const task = store.createTask(newTask("workspace_ready"));
+      for (const state of [
+        "planning",
+        "awaiting_plan_review",
+        "approved",
+        "executing",
+        "executed",
+        "verifying",
+        "awaiting_work_review",
+      ] as const) {
+        transitionTask(store, task.id, state);
+      }
+      const before = store.listEvents(task.id);
+
+      const moved = accept(task.id);
+
+      expect(moved.state).toBe("accepted");
+      const events = store.listEvents(task.id);
+      expect(events.slice(0, before.length)).toEqual(before);
+      expect(events.slice(before.length).map((e) => e.type)).toEqual(["accepted"]);
+      expect(events[events.length - 1].data).toEqual({
+        revision: "head-sha",
+        baseTip: "base-sha",
+        from: "awaiting_work_review",
+        to: "accepted",
+      });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("approved"));
+      transitionTask(store, task.id, "executing");
+      transitionTask(store, task.id, "executed");
+      const before = store.listEvents(task.id);
+      expect(() => accept(task.id)).toThrow("illegal state transition: executed -> accepted");
+      expect(store.getTask(task.id)!.state).toBe("executed");
       expect(store.listEvents(task.id)).toEqual(before);
     });
   });
