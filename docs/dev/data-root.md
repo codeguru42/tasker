@@ -56,6 +56,7 @@ These rules hold:
 - The newest revision is the revision with the highest version.
 - A task can have many approved revisions over its life. The pinned revision is the approved revision with the highest version.
 - Only the newest revision can be approved. The approve and the clear of an approval share one transaction with the state move and the event, so a refused move leaves no approval behind.
+- The insert of a revision shares one transaction with its `plan_revision` event and the state move, so a refused move leaves no row behind.
 - A question is resolved when the next revision has no question with the same id. The answer is the feedback of that next revision. A question of the newest revision is open.
 
 The table has no check on the source of a revision, because later tickets add sources.
