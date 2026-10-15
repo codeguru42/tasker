@@ -69,7 +69,7 @@ describe("taskInState", () => {
 
 const worktreeOf = (store: TaskStore, id: number) => requireWorktree(taskById(store, id));
 const branchOf = (store: TaskStore, id: number) => requireBranch(taskById(store, id));
-const baseRevisionOf = (store: TaskStore, id: number) => requireBaseRevision(store, taskById(store, id));
+const requiredBaseRevisionOf = (store: TaskStore, id: number) => requireBaseRevision(store, taskById(store, id));
 
 describe("requireWorktree", () => {
   it("gives the worktree path", () => {
@@ -105,14 +105,14 @@ describe("requireBaseRevision", () => {
     withDataRootStore(dataRoot, (store) => {
       store.appendEvent(id, "base", { base: "main", revision: "refs/remotes/origin/main", source: "default" });
       store.appendEvent(id, "base", { base: "dev", revision: "refs/remotes/origin/dev", source: "explicit" });
-      expect(baseRevisionOf(store, id)).toBe("refs/remotes/origin/dev");
+      expect(requiredBaseRevisionOf(store, id)).toBe("refs/remotes/origin/dev");
     });
   });
 
   it("throws for a task without a base event", () => {
     const { dataRoot, id } = seeded("awaiting_work_review");
     withDataRootStore(dataRoot, (store) =>
-      expect(() => baseRevisionOf(store, id)).toThrow("the task of codeguru42/tasker#5 has no base revision"),
+      expect(() => requiredBaseRevisionOf(store, id)).toThrow("the task of codeguru42/tasker#5 has no base revision"),
     );
   });
 });
