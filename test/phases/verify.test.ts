@@ -17,12 +17,13 @@ function setup() {
 interface VerifyCallOptions {
   timeoutMs?: number;
   envNames?: string[];
+  onSpawn?: (pid: number) => void;
 }
 
 function verify(
   commands: string[],
   dirs: ReturnType<typeof setup>,
-  { timeoutMs = MINUTE_MS, envNames = [] }: VerifyCallOptions = {},
+  { timeoutMs = MINUTE_MS, envNames = [], onSpawn }: VerifyCallOptions = {},
 ) {
   return runVerify({
     commands,
@@ -30,6 +31,7 @@ function verify(
     cwd: dirs.cwd,
     timeoutMs,
     logPath: (n) => join(dirs.runDir, `verify-${n}.log`),
+    onSpawn,
   });
 }
 
@@ -65,6 +67,27 @@ describe("runVerify", () => {
     expect(readLog(dirs, 2)).toBe("$ printf no-newline; exit 3\nno-newline\n--- exit code 3\n");
     expect(existsSync(join(dirs.runDir, "verify-3.log"))).toBe(false);
     expect(existsSync(join(dirs.cwd, "later"))).toBe(false);
+  });
+
+  it("gives onSpawn one pid for each started command", async () => {
+    const dirs = setup();
+    const pids: number[] = [];
+
+    await verify(["echo $$ > one.pid", "echo $$ > two.pid"], dirs, { onSpawn: (pid) => pids.push(pid) });
+
+    expect(pids).toEqual([
+      Number(readFileSync(join(dirs.cwd, "one.pid"), "utf8")),
+      Number(readFileSync(join(dirs.cwd, "two.pid"), "utf8")),
+    ]);
+  });
+
+  it("gives onSpawn no pid for a command after the failing one", async () => {
+    const dirs = setup();
+    const pids: number[] = [];
+
+    await verify(["true", "exit 3", "true"], dirs, { onSpawn: (pid) => pids.push(pid) });
+
+    expect(pids).toHaveLength(2);
   });
 
   it("sends SIGTERM at the deadline and runs no later command", async () => {

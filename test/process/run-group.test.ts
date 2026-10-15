@@ -17,7 +17,7 @@ interface Run {
 // Runs command under bash in a new folder, with a deadline 60 s ahead. The log holds its output.
 async function runLogged(
   command: string,
-  options: { cwd?: string; deadline?: number } = {},
+  options: { cwd?: string; deadline?: number; onSpawn?: (pid: number) => void } = {},
 ): Promise<Run & { dir: string }> {
   const dir = useTempDir("tasker-run-group-");
   const logPath = join(dir, "out.log");
@@ -28,6 +28,7 @@ async function runLogged(
       env: { PATH: process.env.PATH },
       outputFd,
       deadline: options.deadline ?? Date.now() + MINUTE_MS,
+      onSpawn: options.onSpawn,
     });
     return { result, log: readFileSync(logPath, "utf8"), dir };
   } finally {
@@ -56,6 +57,24 @@ describe("runInGroup", () => {
     const { log } = await runLogged("read -r line; echo rc=$?");
 
     expect(log).toBe("rc=1\n");
+  });
+
+  it("gives onSpawn the pid of the child", async () => {
+    const pids: number[] = [];
+
+    const { log } = await runLogged("echo $$", { onSpawn: (pid) => pids.push(pid) });
+
+    expect(pids).toEqual([Number(log.trim())]);
+  });
+
+  it("rejects with the error of onSpawn", async () => {
+    await expect(
+      runLogged("sleep 30", {
+        onSpawn: () => {
+          throw new Error("spawn hook failed");
+        },
+      }),
+    ).rejects.toThrow("spawn hook failed");
   });
 
   it("gives the exit code", async () => {
