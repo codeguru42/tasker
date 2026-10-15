@@ -23,6 +23,7 @@ import {
   usePlanFixture,
   validPlanAnswer,
   withDataRootStore,
+  withRawDatabase,
 } from "../helpers.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -221,6 +222,28 @@ describe("plan", () => {
     expect(result.err).not.toContain("planning failed:");
     expect(taskOf(fixture).state).toBe("failed");
     expect(revisionOf(fixture, task)).toBeUndefined();
+  });
+
+  it("fails the task with planning failed when the last transaction throws after the plan file is written", async () => {
+    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const task = taskOf(fixture);
+    withRawDatabase(dbPathOf(fixture), (db) =>
+      db.exec(
+        "CREATE TRIGGER refuse_plan_revision BEFORE INSERT ON plan_revisions BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
+      ),
+    );
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toMatch(/^planning failed: .*refused by the test.*\n$/);
+    expect(taskOf(fixture).state).toBe("failed");
+    expect(revisionOf(fixture, task)).toBeUndefined();
+    expect(existsSync(planRevisionPath(fixture.started.dataRoot, task, 1))).toBe(true);
+    expect(eventsAfterStart(fixture).at(-1)).toEqual({
+      type: "transition",
+      data: { from: "planning", to: "failed", error: result.err.trimEnd() },
+    });
   });
 
   it("replaces a stale v1.md with the plan", async () => {

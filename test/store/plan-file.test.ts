@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { planRevisionPath, taskPlansDir } from "../../src/store/layout.js";
-import { recordPlanRevision } from "../../src/store/plan-file.js";
+import { PlanFileWriteError, recordPlanRevision } from "../../src/store/plan-file.js";
 import { transitionTask, type TaskState } from "../../src/state/machine.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy, useTempDir, validPlanAnswer, withDataRootStore } from "../helpers.js";
@@ -82,6 +82,7 @@ describe("recordPlanRevision", () => {
 
       const error = thrownBy(() => record(store, task.id, "text\n"));
 
+      expect(error).toBeInstanceOf(PlanFileWriteError);
       expect((error as Error).message).toMatch(/^cannot write the plan file of revision v1: /);
       expect(store.getPlanRevision(task.id, 1)).toBeUndefined();
       expect(store.getTask(task.id)?.state).toBe("planning");
