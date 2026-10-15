@@ -473,6 +473,70 @@ describe("executeTask fix turn", () => {
   });
 });
 
+describe("executeTask denials and sandbox cleanup", () => {
+  const denial = (command: string) => ({ tool_name: "Bash", tool_input: { command } });
+  const denialStream = (command: string, result: "done" | "blocked" = "done") =>
+    turnResultStream(result, undefined, (event) => {
+      event["permission_denials"] = [denial(command)];
+    });
+  const seen = (command: string) => ({ tool: "Bash", input: { command } });
+
+  it("writes one permission_denials event with all denials before the executed event", async () => {
+    const fixture = await useExecuteFixture(
+      { turns: [{ stream: denialStream("git push") }, { stream: denialStream("rm -rf x") }] },
+      { answer: { todos: TODOS } },
+    );
+
+    const { result } = await runExecute(fixture);
+
+    expect(eventTypes(fixture, ["permission_denials", "executed"]).map((event) => event.type)).toEqual([
+      "permission_denials",
+      "executed",
+    ]);
+    expect(eventTypes(fixture, ["permission_denials"])[0]!.data).toEqual({
+      denials: [seen("git push"), seen("rm -rf x")],
+    });
+    expect(result).toMatchObject({ denials: 2 });
+  });
+
+  it("writes no permission_denials event when no turn had a denial", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
+
+    const { result } = await runExecute(fixture);
+
+    expect(eventTypes(fixture, ["permission_denials"])).toEqual([]);
+    expect(result).toMatchObject({ denials: 0 });
+  });
+
+  it("writes the permission_denials event before the move to failed", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: denialStream("git push"), exitCode: 1, stderr: "boom" },
+      { answer: { todos: TODOS } },
+    );
+
+    await runExecute(fixture);
+
+    const types = eventsOf(fixture.started.dataRoot, fixture.started.key).map((event) => event.type);
+    expect(types.filter((type) => type === "permission_denials")).toHaveLength(1);
+    expect(types.indexOf("permission_denials")).toBeLessThan(types.lastIndexOf("transition"));
+    expect(types.at(-1)).toBe("transition");
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+  });
+
+  it("writes a sandbox_cleanup event with the sandboxCleanup of the outcome", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: doneStream, placeholders: [".bashrc"] },
+      { answer: { todos: [planTodo("a")] } },
+    );
+
+    await runExecute(fixture);
+
+    expect(eventTypes(fixture, ["sandbox_cleanup"])).toEqual([
+      { type: "sandbox_cleanup", data: { removed: [".bashrc"] } },
+    ]);
+  });
+});
+
 describe("executeTask deadline", { timeout: 20_000 }, () => {
   const slowDone = { stream: doneStream, sleepMs: 3000 };
 
