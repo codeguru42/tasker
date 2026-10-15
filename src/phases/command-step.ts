@@ -90,11 +90,14 @@ export function commandFailureMessage(
   log: string,
   timeoutMin: number,
 ): string {
-  const outcome = result.timedOut
-    ? `timed out after ${timeoutMin} min`
-    : result.signal === undefined
-      ? `exit code ${result.exitCode}`
-      : `stopped by signal ${result.signal}`;
+  const outcome =
+    result.error !== undefined
+      ? `could not start: ${result.error}`
+      : result.timedOut
+        ? `timed out after ${timeoutMin} min`
+        : result.signal === undefined
+          ? `exit code ${result.exitCode}`
+          : `stopped by signal ${result.signal}`;
   return `${phase} command ${result.index} failed: ${result.command}: ${outcome}. The log is ${log}.`;
 }
 
