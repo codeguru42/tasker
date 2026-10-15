@@ -78,7 +78,9 @@ interface CommonRun {
   surface: AssistantSurface;
   sessionId: string;
   session: RecordedSession;
-  run(limits: RoleLimits, input: StartInput): Promise<RunOutcome>;
+  // Whether the first run of this prepared run continues a session (--resume) or starts one (--session-id).
+  resume: boolean;
+  run(limits: RoleLimits, input: StartInput, resume: boolean): Promise<RunOutcome>;
 }
 
 // The assistant surface of one configured repo.
@@ -108,7 +110,8 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
       model: selected.model,
       effort: selected.effort,
     },
-    run(limits, input) {
+    resume,
+    run(limits, input, resume) {
       const sessionDir = taskSessionsDir(config.dataRoot, task);
       mkdirSync(sessionDir, { recursive: true });
       return selected.provider.run({
@@ -150,7 +153,7 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
   return {
     sessionId: common.sessionId,
     session: common.session,
-    start: (input) => common.run(limits, input),
+    start: (input) => common.run(limits, input, common.resume),
   };
 }
 
@@ -164,6 +167,9 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
   const common = prepareCommonRun(req, "execute");
   const { surface, worktree: wt } = common;
   const clone = await surface.sharedFolder(wt);
+  // One prepared run serves every turn of a session. The first start of a new session starts it.
+  // Each later start continues it.
+  let resume = common.resume;
   // The path is absolute. The // prefix marks an absolute path in the rule syntax of claude.
   const rule = (tool: string, absolutePath: string) => `${tool}(/${absolutePath})`;
   const limits: RoleLimits = {
@@ -205,7 +211,11 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
     sessionId: common.sessionId,
     session: common.session,
     executeCommitText: surface.executeCommitText,
-    start: (input) => common.run({ ...limits, timeoutMs: input.timeoutMs ?? limits.timeoutMs }, input),
+    start: (input) => {
+      const outcome = common.run({ ...limits, timeoutMs: input.timeoutMs ?? limits.timeoutMs }, input, resume);
+      resume = true;
+      return outcome;
+    },
   };
 }
 
