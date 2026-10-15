@@ -321,6 +321,12 @@ describe("prepareTaskExecuteRun", () => {
       expectedRule("Edit", `${wt}/**`),
       expectedRule("Write", `${wt}/**`),
       "Bash",
+      "StructuredOutput",
+      "Skill",
+      "TodoWrite",
+      expectedRule("NotebookEdit", `${wt}/**`),
+      "Agent",
+      "Task",
     ]);
     expect(flagValues(argv, "--disallowedTools")).toEqual([
       "Bash(git push:*)",
