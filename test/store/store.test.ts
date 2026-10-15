@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
@@ -23,7 +23,7 @@ import { thrownBy } from "../helpers/errors.js";
 import { seedExecuteSession, seedExecuteTodoStates, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
 import { deadPid, repoRoot, startFixture, startWriteLockHolder } from "../helpers/processes.js";
 import { readRunMarker, tableNames, withRawDatabase, withStoreFile } from "../helpers/store.js";
-import { useTempDir } from "../helpers/temp.js";
+import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
 function makeOldDatabase(path: string, version: number): void {
@@ -2232,8 +2232,7 @@ describe("open of a new database", () => {
   it(
     "fails at once on an error that is not SQLITE_BUSY on the switch to WAL",
     () => {
-      const path = join(useTempDir("tasker-open-"), "tasker.db");
-      writeFileSync(path, "x".repeat(4096));
+      const path = useTempFile("tasker-open-", "tasker.db", "x".repeat(4096));
 
       const start = Date.now();
       expect(() => openStore(path)).toThrow("file is not a database");

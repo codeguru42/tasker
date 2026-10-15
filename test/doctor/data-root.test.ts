@@ -1,9 +1,9 @@
-import { chmodSync, readdirSync, writeFileSync } from "node:fs";
+import { chmodSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { dataRootCheck, freeSpaceCheck } from "../../src/doctor/data-root.js";
 import { createDataRoot } from "../../src/store/layout.js";
-import { useTempDir } from "../helpers/temp.js";
+import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 describe("dataRootCheck", () => {
   it("is required and named data root", () => {
@@ -22,9 +22,7 @@ describe("dataRootCheck", () => {
   });
 
   it("gives error when the folders cannot be made", async () => {
-    const dir = useTempDir("tasker-data-root-check-");
-    const file = join(dir, "file");
-    writeFileSync(file, "");
+    const file = useTempFile("tasker-data-root-check-", "file", "");
     const dataRoot = join(file, "data");
 
     const result = await dataRootCheck(dataRoot).run({});

@@ -1,10 +1,10 @@
-import { chmodSync, writeFileSync } from "node:fs";
+import { chmodSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CommandNotFoundError } from "../../src/process/run-child.js";
 import { runAssistant } from "../../src/process/run-assistant.js";
 import { readPidFile, savePid, signalListenerCounts, startFixture, waitUntilGone } from "../helpers/processes.js";
-import { useTempDir } from "../helpers/temp.js";
+import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
 const GRACE_MS = 5000;
@@ -245,8 +245,7 @@ describe("runAssistant", () => {
   });
 
   it("gives an error for a cwd that is a file", async () => {
-    const cwd = join(useTempDir("tasker-run-assistant-"), "file");
-    writeFileSync(cwd, "");
+    const cwd = useTempFile("tasker-run-assistant-", "file", "");
 
     const { result, pids } = await runCollected("exit 0", { cwd });
 
@@ -264,8 +263,7 @@ describe("runAssistant", () => {
   });
 
   it("gives an error for a program that is not executable", async () => {
-    const file = join(useTempDir("tasker-run-assistant-"), "plain-file");
-    writeFileSync(file, "");
+    const file = useTempFile("tasker-run-assistant-", "plain-file", "");
     chmodSync(file, 0o644);
 
     const { result, pids } = await runCollected("exit 0", { file });

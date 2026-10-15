@@ -1,5 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { checkPlanAnswer } from "../../src/plan/answer.js";
 import { planRevisionPath } from "../../src/store/layout.js";
@@ -27,7 +26,7 @@ import {
   validPlanAnswer,
 } from "./plan.js";
 import { dayAt, eventsOf, seedTask, withDataRootStore } from "./store.js";
-import { useTempDir } from "./temp.js";
+import { useTempDir, useTempFile } from "./temp.js";
 
 describe("seedTaskWithPlanFiles", () => {
   const seed = { issueKey: "codeguru42/tasker#7", repoKey: "codeguru42/tasker", at: dayAt(3) };
@@ -294,8 +293,7 @@ describe("planRevisionOf", () => {
 
 describe("transcriptLines", () => {
   it("gives the lines of the file with no empty last item", () => {
-    const path = join(useTempDir("tasker-transcript-"), "t.jsonl");
-    writeFileSync(path, "a\nb\n");
+    const path = useTempFile("tasker-transcript-", "t.jsonl", "a\nb\n");
 
     expect(transcriptLines(path)).toEqual(["a", "b"]);
   });

@@ -1,4 +1,4 @@
-import { lstatSync, mkdtempSync, readdirSync, rmSync, utimesSync } from "node:fs";
+import { lstatSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { onTestFinished, vi } from "vitest";
@@ -13,6 +13,14 @@ export function useTempDir(prefix: string): string {
   const dir = makeTempDir(prefix);
   onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
+}
+
+// A new temp folder (see useTempDir()) with one file name in it that holds content. It gives the path of the file.
+// Call it inside a test.
+export function useTempFile(prefix: string, name: string, content: string): string {
+  const path = join(useTempDir(prefix), name);
+  writeFileSync(path, content);
+  return path;
 }
 
 // A new temp folder (see useTempDir()) as HOME, with XDG_CONFIG_HOME at <HOME>/config. Call it inside a test.

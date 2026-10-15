@@ -1,11 +1,11 @@
-import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
 import { NO_OUTPUT_LINE } from "../../src/phases/command-step.js";
 import { runVerify, startedCommands, verifyFailureMessage } from "../../src/phases/verify.js";
 import { readPidFile, waitUntilGone } from "../helpers/processes.js";
-import { useProcessEnv, useTempDir } from "../helpers/temp.js";
+import { useProcessEnv, useTempDir, useTempFile } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
 
@@ -196,14 +196,8 @@ describe("startedCommands", () => {
 });
 
 describe("verifyFailureMessage", () => {
-  function logWith(content: string): string {
-    const path = join(useTempDir("tasker-verify-message-"), "verify.log");
-    writeFileSync(path, content);
-    return path;
-  }
-
   it("gives the message of the command and the tail of its log", () => {
-    const log = logWith("$ seq 1 3; exit 3\n1\n2\n3\n--- exit code 3\n");
+    const log = useTempFile("tasker-verify-message-", "verify.log", "$ seq 1 3; exit 3\n1\n2\n3\n--- exit code 3\n");
     const failure = { status: "failed", index: 1, command: "seq 1 3; exit 3", exitCode: 3, timedOut: false } as const;
     expect(verifyFailureMessage(failure, log, 20)).toBe(
       `verify command 1 failed: seq 1 3; exit 3: exit code 3. The log is ${log}.\n` +
@@ -212,7 +206,7 @@ describe("verifyFailureMessage", () => {
   });
 
   it("ends with the no-output line when the log holds no output", () => {
-    const log = logWith("$ exit 3\n--- exit code 3\n");
+    const log = useTempFile("tasker-verify-message-", "verify.log", "$ exit 3\n--- exit code 3\n");
     const failure = { status: "failed", index: 1, command: "exit 3", exitCode: 3, timedOut: false } as const;
     expect(verifyFailureMessage(failure, log, 20).endsWith(`\n${NO_OUTPUT_LINE}`)).toBe(true);
   });
