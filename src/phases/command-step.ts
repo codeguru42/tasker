@@ -1,4 +1,5 @@
-import { appendFileSync, closeSync, openSync, readSync, statSync } from "node:fs";
+import { appendFileSync, closeSync, openSync, readFileSync, readSync, statSync } from "node:fs";
+import { errnoCode } from "../errno.js";
 import { type GroupResult, runInGroup } from "../process/run-group.js";
 import { startFolderError } from "../process/start-folder.js";
 
@@ -77,4 +78,34 @@ export function commandFailure(index: number, command: string, result: GroupResu
     ...(result.signal !== null && { signal: result.signal }),
     timedOut: result.timedOut,
   };
+}
+
+// The message of a failed command of a phase: the phase, the command, the outcome and the log.
+export function commandFailureMessage(
+  phase: string,
+  result: CommandFailure,
+  log: string,
+  timeoutMin: number,
+): string {
+  const outcome = result.timedOut
+    ? `timed out after ${timeoutMin} min`
+    : result.signal === undefined
+      ? `exit code ${result.exitCode}`
+      : `stopped by signal ${result.signal}`;
+  return `${phase} command ${result.index} failed: ${result.command}: ${outcome}. The log is ${log}.`;
+}
+
+// The last count lines of the log, with a header that gives the real count. It never throws.
+export function commandLogTail(log: string, count: number): string {
+  let text: string;
+  try {
+    text = readFileSync(log, "utf8");
+  } catch (error) {
+    const code = errnoCode(error);
+    return code === "ENOENT" ? `the log is missing: ${log}\n` : `cannot read the log ${log}: ${code}\n`;
+  }
+  const lines = text.split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  const last = lines.slice(-count);
+  return `the last ${last.length} lines of the log:\n${last.map((line) => `${line}\n`).join("")}`;
 }

@@ -1,10 +1,9 @@
-import { readFileSync } from "node:fs";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
-import { type BootstrapResult, bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
+import { bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
+import { commandFailureMessage, commandLogTail } from "../phases/command-step.js";
 import { childEnv } from "../process/child-env.js";
-import { errnoCode } from "../errno.js";
 import { errorMessage } from "../error-message.js";
 import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
@@ -40,34 +39,6 @@ export class BootstrapFailedError extends Error {
     super(message);
     this.name = "BootstrapFailedError";
   }
-}
-
-export function bootstrapFailureMessage(
-  result: Extract<BootstrapResult, { status: "failed" }>,
-  log: string,
-  timeoutMin: number,
-): string {
-  const outcome = result.timedOut
-    ? `timed out after ${timeoutMin} min`
-    : result.signal === undefined
-      ? `exit code ${result.exitCode}`
-      : `stopped by signal ${result.signal}`;
-  return `bootstrap command ${result.index} failed: ${result.command}: ${outcome}. The log is ${log}.`;
-}
-
-// The last count lines of the log, with a header that gives the real count. It never throws.
-export function bootstrapLogTail(log: string, count: number): string {
-  let text: string;
-  try {
-    text = readFileSync(log, "utf8");
-  } catch (error) {
-    const code = errnoCode(error);
-    return code === "ENOENT" ? `the log is missing: ${log}\n` : `cannot read the log ${log}: ${code}\n`;
-  }
-  const lines = text.split("\n");
-  if (lines.at(-1) === "") lines.pop();
-  const last = lines.slice(-count);
-  return `the last ${last.length} lines of the log:\n${last.map((line) => `${line}\n`).join("")}`;
 }
 
 // Makes a task for the issue and takes it to workspace_ready. The task lock covers all the steps.
@@ -154,7 +125,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
     });
     store.appendEvent(task.id, "bootstrap", { ...result, log });
     if (result.status === "failed") {
-      throw new BootstrapFailedError(bootstrapFailureMessage(result, log, timeoutMin), bootstrapLogTail(log, 20));
+      throw new BootstrapFailedError(commandFailureMessage("bootstrap", result, log, timeoutMin), commandLogTail(log, 20));
     }
   });
   return { started: true, task: transitionTask(store, task.id, "workspace_ready") };
