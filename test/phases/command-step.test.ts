@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { commandFailureMessage, NO_OUTPUT_LINE, readCommandLog, textLines } from "../../src/phases/command-step.js";
+import { commandFailureMessage, NO_OUTPUT_LINE, readCommandLog, readLogTail, textLines, withLineEnds } from "../../src/phases/command-step.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 describe("commandFailureMessage", () => {
@@ -89,6 +89,59 @@ describe("textLines", () => {
 
   it("gives no lines for an empty text", () => {
     expect(textLines("")).toEqual([]);
+  });
+});
+
+describe("withLineEnds", () => {
+  it("puts a line end after each line", () => {
+    expect(withLineEnds(["a", "b"])).toBe("a\nb\n");
+  });
+
+  it("gives an empty text for no lines", () => {
+    expect(withLineEnds([])).toBe("");
+  });
+});
+
+describe("readLogTail", () => {
+  const tailOf = (path: string) => readLogTail(path, 200, 65536);
+  const logOf = (text: string) => useTempFile("tasker-log-tail-", "verify.log", text);
+
+  it("gives the last 200 lines of a log with more lines", () => {
+    const lines = Array.from({ length: 300 }, (_, i) => `line ${i + 1}`);
+    expect(tailOf(logOf(withLineEnds(lines)))).toBe(withLineEnds(lines.slice(100)));
+  });
+
+  it("starts at a whole line when the window starts inside a character", () => {
+    // 1000 lines of 100 bytes. The window starts at byte 34464, the second byte of a euro sign.
+    const euros = "€".repeat(33);
+    const tail = tailOf(logOf(withLineEnds(Array.from({ length: 1000 }, () => euros))));
+    expect(tail).not.toContain("\uFFFD");
+    expect(tail).toBe(withLineEnds(Array.from({ length: 200 }, () => euros)));
+  });
+
+  it("keeps the first line of a window that starts exactly at a line start", () => {
+    // 100 lines of 1024 bytes. The window starts at byte 36864, the start of the line 37.
+    const lines = Array.from({ length: 100 }, (_, i) => `${i + 1}`.padEnd(1023, "x"));
+    expect(tailOf(logOf(withLineEnds(lines)))).toBe(withLineEnds(lines.slice(36)));
+  });
+
+  it("starts at the next whole character inside a line longer than the window", () => {
+    // 90000 bytes. The window starts at byte 24464, the third byte of a euro sign.
+    const tail = tailOf(logOf("€".repeat(30000)));
+    expect(tail).not.toContain("\uFFFD");
+    expect(tail).toBe(`${"€".repeat(21845)}\n`);
+  });
+
+  it("gives null for a missing file", () => {
+    expect(tailOf(join(useTempDir("tasker-log-tail-"), "none.log"))).toBeNull();
+  });
+
+  it("gives null for a folder", () => {
+    expect(tailOf(useTempDir("tasker-log-tail-"))).toBeNull();
+  });
+
+  it("gives an empty text for an empty file", () => {
+    expect(tailOf(logOf(""))).toBe("");
   });
 });
 
