@@ -173,6 +173,34 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 A refused check leaves the task, the files and the events as they were. Fix the cause, then run the same command again.
 
+### `tasker approve`
+
+Approves the newest plan revision of a task in the state `awaiting_plan_review`: `tasker approve <issue>`. The task goes to the state `approved`, and the newest revision is the one to build.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+On success, the command prints the line `approved <issue> at revision v<N>` on stdout. Then it prints one of these:
+
+- `no open questions`
+- `1 open question:` or `<count> open questions:`, then one line `  <id>: <question>` for each open question, in the order of the plan.
+
+Open questions do not stop an approval. The operator decides, and the count makes the choice visible. All questions of the newest revision are open. Only a later revision answers them, so run `tasker refine` first to answer them.
+
+Before it writes, the command prints the overlap warning on stderr, with the same text as `tasker plan`. The last line is `tasker approves the plan anyway.` See the section `tasker plan`. The warning only informs. It never stops the command.
+
+An older approved revision stays approved. The new approval pins the newest revision, so a later command reads that one as the approved revision.
+
+The command writes one event of the type `approved` with the data `{ version, openQuestions, from, to }`. It writes no `transition` event.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is already approved. The error is `<issue key> is already approved at revision v<N>`.
+- The task is in another state. The error names the state.
+- The task has no plan revision. The error is `the task of <issue key> has no plan revision`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.
