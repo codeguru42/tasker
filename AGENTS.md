@@ -5,6 +5,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo (the check, test first, the commits, the docs, the test helpers, the code rules, the simple-english skill and `AGENTS.md`).
 - [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the layout, the steps to add a command, the imports, the zod facts and the tests.
 - [docs/config.md](docs/config.md): the configuration.
+- [docs/statemachine.md](docs/statemachine.md): the task states, the rules of the edges, the main lifecycle, the plan, build, work review and landing sections, the pauses, the failure and retry targets, update branch and the demotion rules.
 - [docs/dev/data-root.md](docs/dev/data-root.md): the folders and the database.
 - [docs/dev/version-control.md](docs/dev/version-control.md): the git code: the git boundary, how tasker uses git, the git environment, provision, the ssh key, the push guard, publish and land, the doctor checks and the repo slug.
 - [docs/dev/doctor.md](docs/dev/doctor.md): the code that all doctor checks share: the timeout rules and the signal rule.
