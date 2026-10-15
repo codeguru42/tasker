@@ -93,7 +93,9 @@ import {
   writePlaceholder,
   type GitOrigin,
   thrownBy,
+  planAnswerStream,
   useTempHome,
+  usePlanFixture,
 } from "./helpers.js";
 
 // Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.
@@ -1952,5 +1954,25 @@ describe("useTempHome", () => {
     const env = useTempHome();
     expect(existsSync(env.HOME)).toBe(true);
     expect(env.XDG_CONFIG_HOME).toBe(join(env.HOME, "config"));
+  });
+});
+
+describe("planAnswerStream", () => {
+  it("gives a last line whose structured_output is the answer", () => {
+    const answer = validPlanAnswer({ summary: ["Another."] });
+    const lines = planAnswerStream(answer);
+    expect(JSON.parse(lines.at(-1)!)).toMatchObject({ structured_output: answer });
+  });
+});
+
+describe("usePlanFixture", () => {
+  it("puts the fake claude first on PATH, sets a temp HOME and keeps the task in workspace_ready", async () => {
+    const hostHome = process.env.HOME;
+    const { started, claude } = await usePlanFixture({});
+    expect(process.env.PATH!.startsWith(claude.binDir + delimiter)).toBe(true);
+    expect(process.env.HOME).not.toBe(hostHome);
+    expect(existsSync(process.env.HOME!)).toBe(true);
+    const state = withDataRootStore(started.dataRoot, (store) => store.findLatestTask(started.repoKey, started.key)?.state);
+    expect(state).toBe("workspace_ready");
   });
 });

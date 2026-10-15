@@ -627,6 +627,24 @@ export async function useAssistantRunFixture(options: {
   return { started, task, config, claude, env };
 }
 
+export interface PlanFixture {
+  started: StartedTask;
+  claude: FakeClaude;
+}
+
+// The setup of the tests of tasker plan: a started task (see useStartedTask()) that stays in workspace_ready,
+// and a fake claude with the control, first on PATH. HOME and XDG_CONFIG_HOME are temp folders.
+// It does not start a run and it makes no fake sandbox programs. Call it inside a test.
+export async function usePlanFixture(
+  control: FakeClaudeControl,
+  options?: Parameters<typeof useStartFixture>[0],
+): Promise<PlanFixture> {
+  const started = await useStartedTask(options);
+  const claude = useFakeClaude(control);
+  useProcessEnv({ ...useTempHome(), PATH: claude.binDir + delimiter + process.env.PATH });
+  return { started, claude };
+}
+
 // Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
 export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
   return withStoreFile(createDataRoot(dataRoot).database, fn, options);
@@ -1668,6 +1686,14 @@ export function validPlanAnswer(change: Partial<PlanAnswer> = {}): PlanAnswer {
     ],
     ...change,
   };
+}
+
+// The stdout lines of a fake claude run that succeeds with answer as its structured output.
+export function planAnswerStream(answer: unknown): string[] {
+  return claudeSampleWithResult("json-schema", (result) => {
+    result["structured_output"] = answer;
+    result["result"] = JSON.stringify(answer);
+  }).map((event) => JSON.stringify(event));
 }
 
 // Inserts the next plan revision of the task with addPlanRevision, with a valid answer unless change gives one.
