@@ -30,7 +30,7 @@ Tasker does not wait for the exit of the command alone. After a deadline, it wai
 
 ## The signals of tasker
 
-While a command runs, tasker passes SIGINT and SIGTERM to the process group of the command. The group does not get the Ctrl-C of the terminal, because it has its own session. So tasker must send the signal.
+Right before tasker starts a command, it starts to pass SIGINT and SIGTERM to the process group of the command. A signal that comes before the group exists goes to the group when the group exists. The group does not get the Ctrl-C of the terminal, because it has its own session. So tasker must send the signal.
 
 The limits of this rule:
 
