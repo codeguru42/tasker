@@ -93,10 +93,14 @@ export function resolveIssueKeyOrFail(
   return issueKeyOrFail(io, () => resolveIssueKey(rawKey, config, options));
 }
 
-// The text of a field value on one line: each line end is written as the two characters \n.
-// A field with no value is -.
+// The text on one line: each line end is written as the two characters \n.
+export function oneLine(text: string): string {
+  return text.replace(/\r\n|\r|\n/g, "\\n");
+}
+
+// The text of a field value. A field with no value is -. Line ends follow oneLine.
 function fieldValue(value: string | number | null | undefined): string {
-  return value === null || value === undefined ? "-" : String(value).replace(/\r\n|\r|\n/g, "\\n");
+  return value === null || value === undefined ? "-" : oneLine(String(value));
 }
 
 // The lines `field: value`, each ending in a line end.
