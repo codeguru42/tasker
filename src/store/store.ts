@@ -257,9 +257,10 @@ export interface TaskStore extends LockStore {
     check?: (current: Task) => NewEvent | void,
   ): Task;
   // Moves the task to a state that is not spawning, deletes its run marker and clears the approval
-  // of the pinned revision, in one transaction. The event that check returns is appended in the same transaction.
+  // of revision version, in one transaction. The event that check returns is appended in the same transaction.
   clearPlanApproval(
     taskId: number,
+    version: number,
     state: string,
     check?: (current: Task) => NewEvent | void,
   ): Task;
@@ -1156,7 +1157,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       });
     },
 
-    clearPlanApproval(taskId, state, check) {
+    clearPlanApproval(taskId, version, state, check) {
       return writeTask(taskId, { state }, check, () => {
         endRunStep(taskId, state);
         const pinned = readPinnedPlanRevision(taskId);

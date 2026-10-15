@@ -244,6 +244,7 @@ export function transitionWithPlanApproval(store: TaskStore, id: number, version
 export function transitionWithPlanUnapproval(store: TaskStore, id: number, version: number): Task {
   return store.clearPlanApproval(
     id,
+    version,
     "awaiting_plan_review",
     transitionCheck("unapproved", "awaiting_plan_review", { version }),
   );

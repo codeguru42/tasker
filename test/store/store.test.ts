@@ -961,8 +961,8 @@ describe("task store", () => {
       const approve = (taskId: number, version: number, state = "approved") =>
         store.approvePlanRevision(taskId, version, state, () => approvalEvent(version));
 
-      const clear = (taskId: number, state = "awaiting_plan_review") =>
-        store.clearPlanApproval(taskId, state, () => ({ type: "unapproval" }));
+      const clear = (taskId: number, version: number, state = "awaiting_plan_review") =>
+        store.clearPlanApproval(taskId, version, state, () => ({ type: "unapproval" }));
 
       const reviewTask = () => store.createTask({ ...newTask, state: "awaiting_plan_review" });
 
@@ -1038,7 +1038,7 @@ describe("task store", () => {
       it("refuses a clear when no revision is approved", () => {
         const task = reviewTask();
         seedPlanRevision(store, task.id);
-        expectNothingChanged(task.id, () => clear(task.id), `task ${task.id} has no approved plan revision`);
+        expectNothingChanged(task.id, () => clear(task.id, 1), `task ${task.id} has no approved plan revision`);
       });
 
       it("clears the approval, moves the state and writes the event", () => {
@@ -1046,7 +1046,7 @@ describe("task store", () => {
         seedPlanRevision(store, task.id);
         approve(task.id, 1);
         clock = new Date("2026-01-04T00:00:00.000Z");
-        const moved = clear(task.id);
+        const moved = clear(task.id, 1);
         expect(moved.state).toBe("awaiting_plan_review");
         expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBeNull();
         expect(store.pinnedPlanRevision(task.id)).toBeUndefined();
@@ -1066,7 +1066,7 @@ describe("task store", () => {
         seedPlanRevision(store, task.id);
         approve(task.id, 3);
         expect(store.pinnedPlanRevision(task.id)?.version).toBe(3);
-        clear(task.id);
+        clear(task.id, 3);
         expect(store.getPlanRevision(task.id, 3)?.approvedAt).toBeNull();
         expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBe(firstTime);
         expect(store.pinnedPlanRevision(task.id)?.version).toBe(1);
