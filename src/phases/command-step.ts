@@ -1,4 +1,4 @@
-import { appendFileSync, closeSync, openSync, readSync, statSync } from "node:fs";
+import { appendFileSync, closeSync, fstatSync, openSync, readSync, statSync } from "node:fs";
 import { type GroupResult, runInGroup } from "../process/run-group.js";
 import { readTextFile } from "../read-text-file.js";
 import { startFolderError } from "../process/start-folder.js";
@@ -111,6 +111,11 @@ export function textLines(text: string): string[] {
   return lines;
 }
 
+// Each line followed by a line end, joined.
+export function withLineEnds(lines: readonly string[]): string {
+  return lines.map((line) => `${line}\n`).join("");
+}
+
 // Reads the log of a failed command one time. tail is the text of the last count lines, with a header that gives
 // the real count. noOutput is true when the log holds only the command line, empty lines and the outcome line.
 // A missing or unreadable log gives its tail text and noOutput false. It never throws.
@@ -122,8 +127,47 @@ export function readCommandLog(log: string, count: number): { tail: string; noOu
   }
   const lines = textLines(file.text);
   const last = lines.slice(-count);
-  const tail = `the last ${last.length} lines of the log:\n${last.map((line) => `${line}\n`).join("")}`;
+  const tail = `the last ${last.length} lines of the log:\n${withLineEnds(last)}`;
   const rest = lines.slice(1);
   if (rest.at(-1)?.startsWith("--- ")) rest.pop();
   return { tail, noOutput: rest.every((line) => line === "") };
+}
+
+// The last maxLines lines of the log at path, each followed by a line end, from the last maxBytes bytes of the file.
+// It reads a byte window and not the whole file, so it does not use readTextFile. A window that starts inside a line
+// drops the partial first line, and a window that starts inside a character starts at the next whole character.
+// A missing or unreadable file gives null. It never throws.
+export function readLogTail(path: string, maxLines: number, maxBytes: number): string | null {
+  let fd: number | undefined;
+  try {
+    fd = openSync(path, "r");
+    const size = fstatSync(fd).size;
+    const start = Math.max(0, size - maxBytes);
+    // The extra first byte shows whether start is at a line start.
+    const from = start > 0 ? start - 1 : 0;
+    const buffer = Buffer.alloc(size - from);
+    let filled = 0;
+    while (filled < buffer.length) {
+      const count = readSync(fd, buffer, filled, buffer.length - filled, from + filled);
+      if (count === 0) break;
+      filled += count;
+    }
+    const bytes = buffer.subarray(0, filled);
+    let begin = 0;
+    if (start > 0) {
+      const lineEnd = bytes.indexOf(0x0a);
+      if (lineEnd >= 0 && lineEnd < bytes.length - 1) {
+        begin = lineEnd + 1;
+      } else {
+        // One line is longer than the window. Skip the continuation bytes of a character that the window cuts.
+        begin = 1;
+        while (begin < bytes.length && (bytes[begin]! & 0xc0) === 0x80) begin++;
+      }
+    }
+    return withLineEnds(textLines(bytes.subarray(begin).toString("utf8")).slice(-maxLines));
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
 }
