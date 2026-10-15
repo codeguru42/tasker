@@ -238,6 +238,8 @@ export interface TaskStore extends LockStore {
   setExecuteTodoState(taskId: number, version: number, todoId: string, state: ExecuteTodoState): void;
   // The todos of a plan revision in the order of the plan, each with its state. A todo with no row is not started.
   executeTodoProgress(taskId: number, version: number): ExecuteTodoProgress[];
+  // Sets every todo of a plan revision to done, with one time, in one transaction. The revision must exist.
+  markExecuteTodosDone(taskId: number, version: number): void;
   // Deletes the plan session of a task. A missing row is not an error. Only `tasker retry` (a later ticket)
   // calls it. A run that failed before its first turn recorded an id that no conversation holds,
   // so the next run must not continue that id.
@@ -916,6 +918,17 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         todo,
         state: states.get(todo.id) ?? "not_started",
       }));
+    },
+
+    markExecuteTodosDone(taskId, version) {
+      immediateTransaction(db, () => {
+        const revision = readPlanRevision(taskId, version);
+        if (revision === undefined) throw noPlanRevision(taskId, version);
+        const at = now().toISOString();
+        for (const todo of revision.answer.todos) {
+          statements.upsertExecuteTodo.run(taskId, version, todo.id, "done", at);
+        }
+      });
     },
 
     clearPlanSession(taskId) {
