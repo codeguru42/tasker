@@ -331,6 +331,7 @@ describe("runAssistant with the signals of tasker", () => {
       const dir = useTempDir("tasker-run-assistant-");
       const fixture = startFixture("run-assistant-signal.ts", [dir, "60000", "echo noise >&2; echo $$ > started; sleep 30"]);
       await readPidFile(join(dir, "started"), 10_000);
+      await readPidFile(join(dir, "watching"), 10_000); // started does not show that runAssistant forwards the signals yet
 
       process.kill(fixture.pid, signal);
 
