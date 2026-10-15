@@ -297,7 +297,8 @@ export interface TaskStore extends LockStore {
   queuedExecuteFixTurn(taskId: number, version: number): ExecuteFixTurn | undefined;
   // The state of the fix turn of a plan revision: queued, done, or undefined when the revision has none.
   executeFixTurnState(taskId: number, version: number): "queued" | "done" | undefined;
-  // Marks the fix turn of a plan revision done. A revision with no fix turn is an error.
+  // Marks the queued fix turn of a plan revision done. A revision with no queued fix turn is an error, also when its
+  // fix turn is already done. The time of an earlier done mark does not change.
   markExecuteFixTurnDone(taskId: number, version: number): void;
   // Deletes the plan session of a task. A missing row is not an error. Only `tasker retry` (a later ticket)
   // calls it. A run that failed before its first turn recorded an id that no conversation holds,
@@ -587,7 +588,7 @@ function setUp(db: DatabaseSync) {
       "SELECT done_at FROM execute_fix_turns WHERE task_id = ? AND plan_version = ?",
     ),
     updateExecuteFixTurnDone: db.prepare(
-      "UPDATE execute_fix_turns SET done_at = ? WHERE task_id = ? AND plan_version = ?",
+      "UPDATE execute_fix_turns SET done_at = ? WHERE task_id = ? AND plan_version = ? AND done_at IS NULL",
     ),
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
@@ -1138,7 +1139,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       immediateTransaction(db, () => {
         const result = statements.updateExecuteFixTurnDone.run(now().toISOString(), taskId, version);
         if (result.changes === 0) {
-          throw new Error(`task ${taskId} has no fix turn of plan revision ${version}`);
+          throw new Error(`task ${taskId} has no queued fix turn of plan revision ${version}`);
         }
       });
     },
