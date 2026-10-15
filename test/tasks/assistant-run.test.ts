@@ -14,7 +14,7 @@ import {
   prepareTaskPlanModeRun,
   type RepoReadDenyPaths,
 } from "../../src/tasks/assistant-run.js";
-import { TEST_SESSION_ID, claudeOverageEvent, claudeSample } from "../helpers/fake-claude.js";
+import { TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID, claudeOverageEvent, claudeSample } from "../helpers/fake-claude.js";
 import { turnResultStream } from "../helpers/plan.js";
 import { readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { type AssistantRunFixture, useAssistantRunFixture } from "../helpers/task-fixtures.js";
@@ -400,5 +400,36 @@ describe("prepareTaskExecuteRun", () => {
     );
 
     expect(outcome.kind).toBe("timeout");
+  });
+
+  it("starts a new session with --session-id and continues it with --resume on a later start", async () => {
+    const { claude, prepared } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain") } },
+      { starts: [{ prompt: "p" }, { prompt: "q" }] },
+    );
+
+    const [first, second] = claude.calls();
+    expect(flagValues(first!.argv, "--session-id")).toEqual([prepared.sessionId]);
+    expect(first!.argv).not.toContain("--resume");
+    expect(flagValues(second!.argv, "--resume")).toEqual([prepared.sessionId]);
+    expect(second!.argv).not.toContain("--session-id");
+  });
+
+  it("continues a recorded session with --resume on every start", async () => {
+    const recorded = { repoKey: "codeguru42/tasker", provider: "claude-code", model: "haiku", effort: "low" } as const;
+
+    const { claude } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain") } },
+      {
+        session: { resume: true, sessionId: TEST_EXECUTE_SESSION_ID, recorded },
+        starts: [{ prompt: "p" }, { prompt: "q" }],
+      },
+    );
+
+    expect(claude.calls()).toHaveLength(2);
+    for (const { argv } of claude.calls()) {
+      expect(flagValues(argv, "--resume")).toEqual([TEST_EXECUTE_SESSION_ID]);
+      expect(argv).not.toContain("--session-id");
+    }
   });
 });
