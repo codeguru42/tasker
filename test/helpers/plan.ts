@@ -49,6 +49,15 @@ export function validPlanAnswer(change: Partial<PlanAnswer> = {}): PlanAnswer {
   };
 }
 
+// A todo of a plan answer from its id and the ids it depends on, with change for other fields.
+export function planTodo(
+  id: string,
+  dependsOn: readonly string[] = [],
+  change: Partial<PlanAnswer["todos"][number]> = {},
+): PlanAnswer["todos"][number] {
+  return { id, title: `Do ${id}`, description: `The work of ${id}.`, depends_on: [...dependsOn], ...change };
+}
+
 // The stdout lines of a fake claude run that succeeds with answer as its structured output.
 export function planAnswerStream(answer: unknown): string[] {
   return claudeSampleWithResult("json-schema", (result) => {
