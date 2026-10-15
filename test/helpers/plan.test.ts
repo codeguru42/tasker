@@ -9,8 +9,10 @@ import {
   planRevisionOf,
   recordPlanRevisions,
   recordTestPlanRevision,
+  seedExecuteFixTurn,
   seedExecuteSession,
   seedExecuteTodoStates,
+  seedPinnedPlanRevision,
   seedPlanReviewTask,
   seedPlanRevision,
   seedPlanSession,
@@ -139,6 +141,79 @@ describe("seedPlanRevision", () => {
       const revision = seedPlanRevision(store, task.id, { feedback: "use main", source: "refine" });
 
       expect(revision).toMatchObject({ feedback: "use main", source: "refine" });
+    });
+  });
+});
+
+describe("seedPinnedPlanRevision", () => {
+  it("gives the revision that is the pinned revision, with version 1", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      const revision = seedPinnedPlanRevision(store, task.id);
+
+      expect(revision.version).toBe(1);
+      expect(revision).toEqual(store.pinnedPlanRevision(task.id));
+    });
+  });
+
+  it("sets the task to approved when it gets no state", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      seedPinnedPlanRevision(store, task.id);
+
+      expect(store.getTask(task.id)?.state).toBe("approved");
+    });
+  });
+
+  it("sets the given state", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      seedPinnedPlanRevision(store, task.id, {}, "executed");
+
+      expect(store.getTask(task.id)?.state).toBe("executed");
+    });
+  });
+
+  it("stores a given change", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+      const answer = validPlanAnswer({ files_changed: ["src/other.ts"] });
+
+      const revision = seedPinnedPlanRevision(store, task.id, { answer });
+
+      expect(revision.answer).toEqual(answer);
+    });
+  });
+});
+
+describe("seedExecuteFixTurn", () => {
+  it("queues a fix turn with the failure npm test failed and no log tail", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+      seedPlanRevision(store, task.id);
+
+      seedExecuteFixTurn(store, task.id, 1);
+
+      expect(store.queuedExecuteFixTurn(task.id, 1)).toMatchObject({
+        verifyFailure: "npm test failed",
+        verifyLogTail: null,
+      });
+      expect(store.executeFixTurnState(task.id, 1)).toBe("queued");
+    });
+  });
+
+  it("marks the fix turn done when the state is done", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+      seedPlanRevision(store, task.id);
+
+      seedExecuteFixTurn(store, task.id, 1, "done");
+
+      expect(store.queuedExecuteFixTurn(task.id, 1)).toBeUndefined();
+      expect(store.executeFixTurnState(task.id, 1)).toBe("done");
     });
   });
 });
