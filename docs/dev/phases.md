@@ -16,7 +16,7 @@ Three rules apply to the environment:
 
 ## The deadline
 
-One deadline covers the whole list of commands of a phase. The limit is for the phase, not for each command. A command that starts after the deadline gets the stop at once.
+One deadline covers the whole list of commands of a phase. The limit is for the phase, not for each command. A bootstrap command that starts after the deadline gets the stop at once. The verify phase starts no command after the deadline. [The verify phase](#the-verify-phase) gives the rule.
 
 At the deadline, tasker sends SIGTERM to the command and to each child of the command. Five seconds later, it sends SIGKILL. The command can clean up in the first five seconds. A process that ignores SIGTERM cannot run on after SIGKILL.
 
@@ -64,9 +64,9 @@ The error output does not go to the terminal. The runner keeps its last 64 KiB a
 
 ## The verify phase
 
-The verify phase runs the verify commands of a repo in the worktree of a task. `tasker verify` runs it. A verify run is one run of the whole list for one task. A task can have many verify runs. The runs of a task are numbered from 1.
+The verify phase runs the verify commands of a repo in the worktree of a task. `tasker verify` runs it. A verify run is one run of the whole list for one task. A task can have many verify runs. [data-root.md](data-root.md#verify_runs-table) gives the numbers and the results of the runs.
 
-The list stops at the first command that fails, times out or cannot start. This command is the failing command of the run. A run that passed has no failing command. The log of a later command is never created. A command that cannot start, for example because the worktree folder is missing, is a failure of that command. The error text goes to its log and to the result.
+The list stops at the first command that fails, times out or cannot start. This command is the failing command of the run. A run that passed has no failing command. The log of a later command is never created. A command that would start after the deadline does not start and gets no log. It is the failing command of the run, and the run timed out. A command that cannot start, for example because the worktree folder is missing, is a failure of that command. The error text goes to its log and to the result.
 
 Only the exit code and the signal of a command decide the result. Nothing reads the output of a command.
 
@@ -85,7 +85,7 @@ The bootstrap log is append-only. A run of bootstrap again keeps the history of 
 
 Only bootstrap has a marker. The marker records a finished bootstrap. A finished bootstrap never runs twice. A bootstrap that fails has no marker, so the next run starts again from the first command.
 
-The verify phase has no marker, and each command of a verify run has its own log. [The verify phase](#the-verify-phase) gives the reasons.
+[The verify phase](#the-verify-phase) describes the logs of the verify phase and why it has no marker.
 
 ## Facts about outside tools
 
