@@ -217,6 +217,12 @@ export interface TaskStore extends LockStore {
   recordPlanSession(taskId: number, session: NewSession): StoredSession;
   // The plan session of a task, or undefined when the task has none.
   planSession(taskId: number): StoredSession | undefined;
+  // Records the execute session of a plan revision once, before the run. The same id again writes
+  // nothing and gives the stored session. Another id is an error that names both ids.
+  // A version with no plan revision is an error.
+  recordExecuteSession(taskId: number, version: number, session: NewSession): StoredSession;
+  // The execute session of a plan revision, or undefined when the revision has none.
+  executeSession(taskId: number, version: number): StoredSession | undefined;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -438,6 +444,15 @@ function setUp(db: DatabaseSync) {
        FROM sessions JOIN tasks ON tasks.id = sessions.task_id
        WHERE sessions.task_id = ? AND sessions.role = 'plan'`,
     ),
+    insertExecuteSession: db.prepare(
+      `INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at, plan_version)
+       VALUES (?, 'execute', ?, ?, ?, ?, ?, ?)`,
+    ),
+    selectExecuteSession: db.prepare(
+      `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key
+       FROM sessions JOIN tasks ON tasks.id = sessions.task_id
+       WHERE sessions.task_id = ? AND sessions.role = 'execute' AND sessions.plan_version = ?`,
+    ),
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
     ),
@@ -486,6 +501,28 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
   function readPlanSession(taskId: number): StoredSession | undefined {
     return toStoredSession(statements.selectPlanSession.get(taskId) as PlanSessionRow | undefined);
+  }
+
+  function readExecuteSession(taskId: number, version: number): StoredSession | undefined {
+    return toStoredSession(
+      statements.selectExecuteSession.get(taskId, version) as PlanSessionRow | undefined,
+    );
+  }
+
+  // The record-once rule of a session: the same id gives the stored session, another id is an error, else insert.
+  function recordSessionOnce(
+    stored: StoredSession | undefined,
+    session: NewSession,
+    repoKey: string,
+    conflict: (storedId: string) => string,
+    insert: () => void,
+  ): StoredSession {
+    if (stored !== undefined) {
+      if (stored.sessionId === session.sessionId) return stored;
+      throw new Error(conflict(stored.sessionId));
+    }
+    insert();
+    return { ...session, repoKey };
   }
 
   function readLatestPlanRevision(taskId: number): PlanRevision | undefined {
@@ -774,26 +811,52 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       return immediateTransaction(db, () => {
         const task = readTask(taskId);
         if (task === undefined) throw taskNotFound(taskId);
-        const stored = readPlanSession(taskId);
-        if (stored !== undefined) {
-          if (stored.sessionId === session.sessionId) return stored;
-          throw new Error(
-            `task ${taskId} already has the plan session ${stored.sessionId}, not ${session.sessionId}`,
-          );
-        }
-        statements.insertPlanSession.run(
-          taskId,
-          session.sessionId,
-          session.provider,
-          session.model,
-          session.effort,
-          now().toISOString(),
+        return recordSessionOnce(
+          readPlanSession(taskId),
+          session,
+          task.repoKey,
+          (id) => `task ${taskId} already has the plan session ${id}, not ${session.sessionId}`,
+          () =>
+            statements.insertPlanSession.run(
+              taskId,
+              session.sessionId,
+              session.provider,
+              session.model,
+              session.effort,
+              now().toISOString(),
+            ),
         );
-        return { ...session, repoKey: task.repoKey };
       });
     },
 
     planSession: readPlanSession,
+
+    recordExecuteSession(taskId, version, session) {
+      return immediateTransaction(db, () => {
+        if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
+        const task = readTask(taskId);
+        if (task === undefined) throw taskNotFound(taskId);
+        return recordSessionOnce(
+          readExecuteSession(taskId, version),
+          session,
+          task.repoKey,
+          (id) =>
+            `task ${taskId} already has the execute session ${id} of plan revision ${version}, not ${session.sessionId}`,
+          () =>
+            statements.insertExecuteSession.run(
+              taskId,
+              session.sessionId,
+              session.provider,
+              session.model,
+              session.effort,
+              now().toISOString(),
+              version,
+            ),
+        );
+      });
+    },
+
+    executeSession: readExecuteSession,
 
     approvePlanRevision(taskId, version, state, check) {
       return writeTask(taskId, { state }, check, (at) => {
