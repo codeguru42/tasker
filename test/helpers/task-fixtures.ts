@@ -2,6 +2,8 @@ import { existsSync, rmSync } from "node:fs";
 import { delimiter } from "node:path";
 import { expect, onTestFinished } from "vitest";
 import { start } from "../../src/commands/start.js";
+import { githubShortRef } from "../../src/issue-key/short-ref.js";
+import type { IssueRef } from "../../src/issue-key/ref.js";
 import { loadConfig } from "../../src/config/load.js";
 import type { Config } from "../../src/config/schema.js";
 import { canonicalPath } from "../../src/real-path.js";
@@ -11,13 +13,14 @@ import type { NewSession, PlanRevision, StoredSession, Task } from "../../src/st
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "./cli.js";
+import { failureOf } from "./errors.js";
 import { validConfig, writeDataRootConfig } from "./config.js";
 import { useFakeSandboxBin } from "./fake-commands.js";
 import { type FakeClaude, type FakeClaudeControl, useFakeClaude } from "./fake-claude.js";
 import { type FakeGh, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
 import { type GitOrigin, commitInWorktree, localBranches, makeProviderFixture, taskNames } from "./git.js";
 import { recordTestPlanRevision, seedPlanSession, validPlanAnswer } from "./plan.js";
-import { lockNames, withDataRootStore } from "./store.js";
+import { eventsOf, latestTaskOf, lockNames, withDataRootStore } from "./store.js";
 import { useProcessEnv, useTempHome } from "./temp.js";
 
 export interface StartFixture {
@@ -95,6 +98,30 @@ export async function startIssueTask(
   const { clone, worktrees } = repoPaths(fixture.dataRoot, fixture.repoKey);
   const { branch, worktree } = taskNames(worktrees, number, `Issue ${number}`);
   return { key, result, branch, worktree, clone };
+}
+
+// The ref of the started task, with the short ref of issue 5.
+export function taskRefOf(started: Pick<StartedTask, "key" | "repoKey">): IssueRef {
+  return { key: started.key, repoKey: started.repoKey, shortRef: githubShortRef("5") };
+}
+
+// Calls call, expects it to throw a message that starts with message, and expects that the state and the events
+// of the latest task did not change. It gives the error.
+export async function expectRefusedWithoutChange(
+  started: Pick<StartedTask, "dataRoot" | "key">,
+  call: () => Promise<unknown>,
+  message: string,
+): Promise<Error> {
+  const { dataRoot, key } = started;
+  const state = latestTaskOf(dataRoot, key).state;
+  const events = eventsOf(dataRoot, key);
+
+  const error = await failureOf(call(), Error);
+
+  expect(error.message.startsWith(message)).toBe(true);
+  expect(latestTaskOf(dataRoot, key).state).toBe(state);
+  expect(eventsOf(dataRoot, key)).toEqual(events);
+  return error;
 }
 
 // Runs useStartFixture(options), then tasker start for issue 5. It makes no assertion, so a test

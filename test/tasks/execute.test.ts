@@ -22,7 +22,6 @@ import { baseRevisionOf } from "../../src/tasks/base-revision.js";
 import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
-import { failureOf } from "../helpers/errors.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
 import { claudeSample, claudeSampleWithResult, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
 import {
@@ -34,13 +33,13 @@ import {
   turnResultStream,
 } from "../helpers/plan.js";
 import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
-import { type ExecuteFixture, useExecuteFixture } from "../helpers/task-fixtures.js";
+import { type ExecuteFixture, expectRefusedWithoutChange, taskRefOf, useExecuteFixture } from "../helpers/task-fixtures.js";
 
 // Runs executeTask for the task of the fixture. change replaces fields of the request.
 async function runExecute(fixture: ExecuteFixture, change: Partial<ExecuteRequest> = {}) {
   const io = captureIo();
   const { started, task, config, env } = fixture;
-  const ref = { key: started.key, repoKey: started.repoKey, shortRef: "issue-5" };
+  const ref = taskRefOf(started);
   const result = await withDataRootStore(config.dataRoot, (store) =>
     executeTask(store, { config, ref, taskId: task.id, env, io, ...change }),
   );
@@ -59,23 +58,17 @@ const executePromptFiles = (dataRoot: string): string[] =>
     : [];
 
 // Runs executeTask, expects it to throw a message that starts with message, and expects that the run wrote nothing:
-// the state and the events as before, no new session row, no transcript, no claude call and no archived prompt.
+// the state and the events as before (see expectRefusedWithoutChange), no new session row, no transcript, no claude call and no archived prompt.
 async function expectRefused(
   fixture: ExecuteFixture,
   message: string,
   change: Partial<ExecuteRequest> = {},
 ): Promise<void> {
   const { dataRoot } = fixture.started;
-  const { key } = fixture.started;
-  const state = latestTaskOf(dataRoot, key).state;
-  const events = eventsOf(dataRoot, key);
   const sessions = sessionRows(dataRoot);
 
-  const error = await failureOf(runExecute(fixture, change), Error);
+  await expectRefusedWithoutChange(fixture.started, () => runExecute(fixture, change), message);
 
-  expect(error.message.startsWith(message)).toBe(true);
-  expect(latestTaskOf(dataRoot, key).state).toBe(state);
-  expect(eventsOf(dataRoot, key)).toEqual(events);
   expect(sessionRows(dataRoot)).toBe(sessions);
   expect(existsSync(executeTranscriptPath(dataRoot, fixture.task, 1))).toBe(false);
   expect(fixture.claude.calls()).toEqual([]);
