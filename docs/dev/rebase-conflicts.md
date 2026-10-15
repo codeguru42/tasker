@@ -6,7 +6,7 @@ The page is for the installed `tasker` that drives the work on this repo. Its co
 
 ## Who runs the procedure
 
-The operator does these steps. The operator is the person or the assistant session that drives tasker from its own local clone of this repo.
+The operator does these steps. The operator is the person or the assistant session that drives tasker from a local clone of this repo.
 
 tasker keeps its own clone of this repo under its data root (`dataRoot`). This page calls it the tasker clone. tasker starts some assistant sessions in a worktree of the tasker clone. Such a session must not do these steps. It must stop and report the conflict to the operator.
 
@@ -36,4 +36,4 @@ Run each git command in the clone of the operator or in its worktree.
 18. Remove the worktree: `git worktree remove <path>`. Do not use `--force`, because `--force` deletes the changes that are not committed. Files that `.gitignore` lists do not stop `git worktree remove`, for example `node_modules/` from `npm ci`.
 19. If `git worktree remove` fails, stop. The worktree and the local task branch stay. The task branch on `origin` stays. Report the exact error of git and the output of `git -C <path> status --porcelain --ignored`. For example, git prints `fatal: '<path>' contains modified or untracked files, use --force to delete it` when the worktree holds changed files or files that git does not track. The report helps to find the cause of such a failure. In one case, an agent used `--force` and blamed `node_modules/`. But git removes a worktree that holds only ignored files without `--force`, so the cause is unknown. A person decides the next step, as step 10 describes.
 20. Delete the local task branch: `git branch -D <task branch>`. The check of step 17 already makes sure that the base branch contains the work, or a commit with the same patch for each commit. If the command fails, stop. The worktree is gone. The local task branch stays. The task branch on `origin` stays. A person decides the next step, as step 10 describes.
-21. Make sure that `origin` has no task branch: do step 10 of "Run one ticket" in [docs/dev/orchestration.md](orchestration.md#run-one-ticket). If the operator is not the agent of a ticket, it runs those commands in its own clone. Where that step says to report to the orchestrator, a person decides the next step instead. Step 10 of this page describes this rule. The operator does not do step 11 of "Run one ticket".
+21. Make sure that `origin` has no task branch: do step 10 of "Run one ticket" in [docs/dev/orchestration.md](orchestration.md#run-one-ticket). If the operator is not the agent of a ticket, it runs those commands in the clone of the operator. Where that step says to report to the orchestrator, a person decides the next step instead. Step 10 of this page describes this rule. The operator does not do step 11 of "Run one ticket".
