@@ -18,6 +18,21 @@ describe("run", () => {
     expect(io.out.join("")).toBe(`${packageVersion}\n`);
   });
 
+  it("gives --version after a command to that command", async () => {
+    const sp: RegisterCommand = (program, io) => {
+      program
+        .command("sp")
+        .option("--version <n>", "The plan version")
+        .action((options: { version?: string }) => io.stdout(`${options.version}\n`));
+    };
+    const io = captureIo();
+
+    const code = await run(["sp", "--version", "2"], { commands: [sp], io });
+
+    expect(code).toBe(0);
+    expect(io.out.join("")).toBe("2\n");
+  });
+
   it("hands the Io to each command", async () => {
     const say: RegisterCommand = (program, io) => {
       program.command("say").action(() => io.stdout("hi\n"));
