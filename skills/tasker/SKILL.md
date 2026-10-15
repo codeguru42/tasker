@@ -150,7 +150,7 @@ Continues the plan session of a task in the state `awaiting_plan_review` with yo
 
 Each revision is a complete plan. When the new revision leaves out a question of the revision before it, that question counts as answered by the feedback. `tasker show-questions` shows the answer.
 
-The session keeps the provider, model and effort that it started with, also after the configuration changed. The assistant also reads the plan file of the newest revision and the commits of the task branch.
+The session keeps the provider, model and effort that it started with, also after the configuration changed. tasker reads the plan file of the newest revision from disk and the commits of the task branch, and gives both to the assistant in the prompt.
 
 On success, the command prints the same lines as `tasker plan`, but the first line is `refined <issue> as revision v<N>`. Then it prints the overlap warning with the same text and the same last line as `tasker plan`. See the section `tasker plan`.
 
