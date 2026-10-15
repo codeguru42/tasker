@@ -23,6 +23,7 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 - The agent of a ticket uses no other source, as [the Limits of orchestration.md](orchestration.md#limits) say. [The design-gap rule](orchestration.md#run-one-ticket) says who answers a gap.
 - An issue puts each table, list or diagram in its body. It does not say "as described elsewhere". The plan session that tasker starts for a ticket sees only the issue and the repo. A phrase such as "the diagrams of the design" with no diagram is a gap.
 - An issue names no source outside the repo and GitHub.
+- An issue that lists files to install names the source of each file. On #119, the plan asked where four skills come from, because the issue named only the target folder.
 - An issue for a protocol or a procedure gives its state model: the actors, the states that each actor holds, and who tells whom when a state changes. An issue that gives only the target text draws a new gap in each review loop.
 - Each issue has a "Docs" section. The section names each doc to update with the code. A Docs item asks only for what [rules.md](rules.md#docs) permits, and a new command goes where [rules.md](rules.md#docs) says.
 - Each issue gives the scope hints that past tickets needed. [first-refine.md](first-refine.md) lists the hints by the kind of ticket. Examples:
