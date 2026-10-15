@@ -1,5 +1,5 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { provisionClone } from "../../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../../src/vcs/git/repo-paths.js";
@@ -304,6 +304,20 @@ export function sshKeyArgs(key: string): string[] {
 // The real git is the first git file on process.env.PATH.
 export function writeGitRecorder(binDir: string, logPath: string): void {
   writeFakeGit(binDir, `${logLine(logPath)}\nexec ${shellQuote(realCommandPath("git"))} "$@"`);
+}
+
+// Writes the git recorder of writeGitRecorder() into <dir>/gitbin, with its log at <dir>/git.log.
+// It returns base with that folder first on PATH, and the path of the log. The PATH of base is
+// the tail, so the other programs of base (for example a fake ssh) stay on PATH.
+export function gitRecorderEnv(
+  dir: string,
+  base: NodeJS.ProcessEnv,
+): { env: NodeJS.ProcessEnv; log: string } {
+  const bin = join(dir, "gitbin");
+  const log = join(dir, "git.log");
+  writeGitRecorder(bin, log);
+  const path = base.PATH === undefined || base.PATH === "" ? bin : `${bin}${delimiter}${base.PATH}`;
+  return { env: { ...base, PATH: path }, log };
 }
 
 // Writes a git wrapper into binDir. It runs the real git with the same arguments. Then it exits
