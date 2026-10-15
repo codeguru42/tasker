@@ -6,12 +6,13 @@ import { openQuestionsText, REFINE_PROMPT, REFINE_PROMPT_NAME } from "../prompts
 import { fillTemplate } from "../prompts/template.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
-import { taskNotFound, type TaskStore } from "../store/store.js";
+import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { baseRevisionOf } from "./base-revision.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
 import { assertSessionModel } from "./session-model.js";
+import { taskInState } from "./task-state.js";
 
 export interface RefineRequest {
   config: Config;
@@ -32,11 +33,7 @@ export async function refineTask(store: TaskStore, request: RefineRequest): Prom
 
 async function refineLocked(store: TaskStore, request: RefineRequest): Promise<PlanResult> {
   const { config, env, io, feedback } = request;
-  const task = store.getTask(request.taskId);
-  if (task === undefined) throw taskNotFound(request.taskId);
-  if (task.state !== "awaiting_plan_review") {
-    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker refine needs awaiting_plan_review`);
-  }
+  const task = taskInState(store, request.taskId, "awaiting_plan_review", "refine");
   if (feedback.trim() === "") throw new Error("the feedback is empty");
   const revision = store.latestPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);

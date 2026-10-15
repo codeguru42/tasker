@@ -6,9 +6,10 @@ import { archivePrompt } from "../prompts/archive.js";
 import { PLAN_PROMPT, PLAN_PROMPT_NAME, planIssueText } from "../prompts/plan.js";
 import { fillTemplate } from "../prompts/template.js";
 import { withTaskLock } from "../store/locks.js";
-import { taskNotFound, type TaskStore } from "../store/store.js";
+import type { TaskStore } from "../store/store.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
+import { taskInState } from "./task-state.js";
 
 export interface PlanRequest {
   config: Config;
@@ -26,11 +27,7 @@ export async function planTask(store: TaskStore, request: PlanRequest): Promise<
 
 async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanResult> {
   const { config, ref, env, io } = request;
-  const task = store.getTask(request.taskId);
-  if (task === undefined) throw taskNotFound(request.taskId);
-  if (task.state !== "workspace_ready") {
-    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker plan needs workspace_ready`);
-  }
+  const task = taskInState(store, request.taskId, "workspace_ready", "plan");
   const issue = await issueProviderFor(config, ref.repoKey).fetchIssue(ref, env);
   const prompt = fillTemplate(PLAN_PROMPT_NAME, PLAN_PROMPT, {
     ISSUE_TEXT: planIssueText({ key: task.issueKey, title: issue.title, body: issue.body }),

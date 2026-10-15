@@ -9,7 +9,8 @@ import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
 import { resolveIssueKey, type ResolveOptions } from "../issue-key/resolve.js";
 import { createDataRoot } from "../store/layout.js";
 import { findOverlaps, overlapWarning } from "../tasks/overlap.js";
-import { openStore, taskNotFound, type Task, type TaskStore } from "../store/store.js";
+import { taskById } from "../tasks/task-state.js";
+import { openStore, type Task, type TaskStore } from "../store/store.js";
 
 // Another command can hold the clone for a long first fetch.
 export const REPO_LOCK_WAIT_MS = 300_000;
@@ -152,8 +153,7 @@ export async function warnOverlaps(
 ): Promise<void> {
   try {
     const report = await withStoreAsync(config, async (store) => {
-      const task = store.getTask(o.taskId);
-      if (task === undefined) throw taskNotFound(o.taskId);
+      const task = taskById(store, o.taskId);
       return findOverlaps({ config, store, task, files: o.files, env: o.env });
     });
     for (const note of report.notes) io.stderr(`${note}\n`);

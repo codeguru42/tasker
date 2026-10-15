@@ -26,13 +26,14 @@ import { transitionTask, transitionWithExecution } from "../state/machine.js";
 import { executeTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
-import { type ExecuteFixTurn, taskNotFound, type TaskStore } from "../store/store.js";
+import { type ExecuteFixTurn, type TaskStore } from "../store/store.js";
 import { type RemoteTip, vcsForRepo } from "../vcs/provider.js";
 import { tipMoved } from "../vcs/remote-tip.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
 import { baseRevisionOf } from "./base-revision.js";
 import { applyRunOutcome, failRun } from "./run-outcome.js";
 import { assertSessionModel } from "./session-model.js";
+import { taskInState } from "./task-state.js";
 
 type PlanTodo = PlanAnswer["todos"][number];
 
@@ -74,11 +75,7 @@ export async function executeTask(store: TaskStore, request: ExecuteRequest): Pr
 
 async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise<ExecuteResult> {
   const { config, env, io } = request;
-  const task = store.getTask(request.taskId);
-  if (task === undefined) throw taskNotFound(request.taskId);
-  if (task.state !== "approved") {
-    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker execute needs approved`);
-  }
+  const task = taskInState(store, request.taskId, "approved", "execute");
   const revision = store.pinnedPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} is approved, but no revision is pinned`);
   const version = revision.version;

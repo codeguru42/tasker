@@ -2,7 +2,8 @@ import type { IssueRef } from "../issue-key/ref.js";
 import type { PlanAnswer } from "../plan/answer.js";
 import { transitionWithPlanApproval } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
-import { taskNotFound, type TaskStore } from "../store/store.js";
+import type { TaskStore } from "../store/store.js";
+import { assertTaskState, taskById } from "./task-state.js";
 
 export interface ApproveRequest {
   ref: IssueRef;
@@ -25,15 +26,12 @@ export async function approveTask(store: TaskStore, request: ApproveRequest): Pr
 }
 
 async function approveLocked(store: TaskStore, request: ApproveRequest): Promise<Approved> {
-  const task = store.getTask(request.taskId);
-  if (task === undefined) throw taskNotFound(request.taskId);
+  const task = taskById(store, request.taskId);
   if (task.state === "approved") {
     const pinned = store.pinnedPlanRevision(task.id);
     if (pinned !== undefined) throw new Error(`${task.issueKey} is already approved at revision v${pinned.version}`);
   }
-  if (task.state !== "awaiting_plan_review") {
-    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker approve needs awaiting_plan_review`);
-  }
+  assertTaskState(task, "awaiting_plan_review", "approve");
   const revision = store.latestPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
   const openQuestions = revision.answer.questions;
