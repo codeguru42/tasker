@@ -139,6 +139,7 @@ describe("task store", () => {
   const queueFixTurn = (taskId: number, version: number, turn: NewExecuteFixTurn) =>
     store.queueExecuteFixTurn(taskId, version, turn);
   const queuedFixTurn = (taskId: number, version: number) => store.queuedExecuteFixTurn(taskId, version);
+  const fixTurnState = (taskId: number, version: number) => store.executeFixTurnState(taskId, version);
   const markFixTurnDone = (taskId: number, version: number) => store.markExecuteFixTurnDone(taskId, version);
 
   const clearPlan = (taskId: number) => store.clearPlanSession(taskId);
@@ -1579,6 +1580,36 @@ describe("task store", () => {
       });
       expect(readFixTurnRows()).toHaveLength(1);
       expect(readFixTurnRows()[0]).toMatchObject({ done_at: null });
+    });
+
+    it("gives no fix turn state for a revision that has none", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      expect(fixTurnState(task.id, 1)).toBeUndefined();
+    });
+
+    it("gives the state queued for a queued fix turn", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "f", verifyLogTail: null });
+      expect(fixTurnState(task.id, 1)).toBe("queued");
+    });
+
+    it("gives the state done for a fix turn that is marked done", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "f", verifyLogTail: null });
+      markFixTurnDone(task.id, 1);
+      expect(fixTurnState(task.id, 1)).toBe("done");
+    });
+
+    it("gives the state queued for a fix turn that is queued again after it is done", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "old", verifyLogTail: null });
+      markFixTurnDone(task.id, 1);
+      queueFixTurn(task.id, 1, { verifyFailure: "new", verifyLogTail: null });
+      expect(fixTurnState(task.id, 1)).toBe("queued");
     });
 
     it("refuses done for a fix turn that does not exist", () => {
