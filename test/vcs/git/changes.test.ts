@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   changedPaths,
+  fetchBaseContainment,
   fetchOrigin,
   fetchTips,
   hasCommitsNotIn,
@@ -20,7 +21,7 @@ import { createTaskWorktree, removeTaskWorktree, taskBranchName } from "../../..
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
-import { commitInWorktree, makeGitClone, makeGitOrigin, sshKeyArgs, taskNames, type GitOrigin } from "../../helpers/git.js";
+import { addCloneCommit, commitInWorktree, makeGitClone, makeGitOrigin, sshKeyArgs, taskNames, type GitOrigin } from "../../helpers/git.js";
 
 const MISSING_BRANCH = taskBranchName("issue-99", "");
 
@@ -57,6 +58,8 @@ describe("git changes", () => {
     uncommittedChanges({ clone, env, path, ...extra });
   const tips = (extra: Partial<Parameters<typeof fetchTips>[0]> = {}) =>
     fetchTips({ clone, env, sshKey: undefined, path, baseRevision: BASE, ...extra });
+  const containment = (extra: Partial<Parameters<typeof fetchBaseContainment>[0]> = {}) =>
+    fetchBaseContainment({ clone, env, sshKey: undefined, path, baseRevision: BASE, ...extra });
   // The tip of the base in the clone.
   const baseTip = () =>
     runGit(["rev-parse", BASE], { gitDir: clone, env }).then((out) => out.trim());
@@ -440,6 +443,49 @@ describe("git changes", () => {
       for (const call of calls) {
         expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
       }
+    });
+  });
+
+  describe("fetchBaseContainment", () => {
+    it("says that a worktree with a commit on top of the base contains its tip", async () => {
+      const head = await commitInWorktree(path, env, { file: "work.txt" });
+      expect(await containment()).toEqual({ revision: head, baseTip: await baseTip(), contains: true });
+    });
+
+    it("says that the worktree does not contain a base that moved on origin", async () => {
+      const head = await commitInWorktree(path, env, { file: "work.txt" });
+      const tip = await origin.addCommit("main");
+      expect(await containment()).toEqual({ revision: head, baseTip: tip, contains: false });
+      expect(await baseTip()).toBe(tip);
+    });
+
+    it("reads a local base and does not move it", async () => {
+      await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: clone, env });
+      const head = await git("rev-parse", "HEAD");
+      expect(await containment({ baseRevision: "refs/heads/x" })).toEqual({
+        revision: head,
+        baseTip: head,
+        contains: true,
+      });
+      const tip = await addCloneCommit(clone, env, "x");
+      expect(await containment({ baseRevision: "refs/heads/x" })).toEqual({
+        revision: head,
+        baseTip: tip,
+        contains: false,
+      });
+    });
+
+    it("rejects for a base that origin does not have", async () => {
+      const error = await failureOf(containment({ baseRevision: "refs/remotes/origin/gone" }), Error);
+      expect(error.message).toBe("cannot resolve the revision: refs/remotes/origin/gone");
+    });
+
+    it("rejects with the error of git when the fetch fails and keeps the base tip", async () => {
+      const before = await baseTip();
+      renameSync(origin.path, `${origin.path}-moved`);
+      const error = await failureOf(containment(), GitError);
+      expect(error.subcommand).toBe("fetch");
+      expect(await baseTip()).toBe(before);
     });
   });
 });
