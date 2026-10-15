@@ -12,6 +12,8 @@ import {
   taskPlansDir,
   taskSessionsDir,
   taskTranscriptsDir,
+  verifyCommandLogPath,
+  verifyRunDir,
 } from "../../src/store/layout.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -72,6 +74,34 @@ describe("taskLogsDir", () => {
     const root = useTempDir("tasker-data-");
     const path = taskLogsDir(root, { issueKey: "PROJ-7", attempt: 1 });
     expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("verifyRunDir", () => {
+  it("puts the logs of one verify run in their own folder of the logs folder", () => {
+    expect(verifyRunDir("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 }, 3)).toBe(
+      "/d/artifacts/codeguru42-tasker-10/attempt-2/logs/verify-run-3",
+    );
+  });
+
+  it("makes no folder", () => {
+    const root = useTempDir("tasker-data-");
+    verifyRunDir(root, { issueKey: "PROJ-7", attempt: 1 }, 1);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("verifyCommandLogPath", () => {
+  it("puts the log of a command in the folder of its verify run", () => {
+    expect(verifyCommandLogPath("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 }, 3, 2)).toBe(
+      "/d/artifacts/codeguru42-tasker-10/attempt-2/logs/verify-run-3/verify-2.log",
+    );
+  });
+
+  it("makes no file", () => {
+    const root = useTempDir("tasker-data-");
+    verifyCommandLogPath(root, { issueKey: "PROJ-7", attempt: 1 }, 1, 1);
     expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
   });
 });
