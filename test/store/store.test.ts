@@ -10,6 +10,7 @@ import {
   openStore,
   RunMarkerExistsError,
   type ExecuteTodoState,
+  type NewExecuteFixTurn,
   type NewSession,
   type Task,
   type TaskStore,
@@ -131,6 +132,11 @@ describe("task store", () => {
   const todoProgress = (taskId: number, version: number) => store.executeTodoProgress(taskId, version);
 
   const markTodosDone = (taskId: number, version: number) => store.markExecuteTodosDone(taskId, version);
+
+  const queueFixTurn = (taskId: number, version: number, turn: NewExecuteFixTurn) =>
+    store.queueExecuteFixTurn(taskId, version, turn);
+  const queuedFixTurn = (taskId: number, version: number) => store.queuedExecuteFixTurn(taskId, version);
+  const markFixTurnDone = (taskId: number, version: number) => store.markExecuteFixTurnDone(taskId, version);
 
   const clearPlan = (taskId: number) => store.clearPlanSession(taskId);
   const clearExecute = (taskId: number, version: number) => store.clearExecuteSession(taskId, version);
@@ -1418,6 +1424,93 @@ describe("task store", () => {
       seedExecuteTodoStates(store, task.id, 1, { "write-test": "in_progress" });
       expectNothingChanged(task.id, () => markTodosDone(task.id, 5), `task ${task.id} has no plan revision 5`);
       expect(readTodoRows()).toHaveLength(1);
+    });
+  });
+
+  describe("execute fix turn", () => {
+    it("queues a fix turn and reads it with a log tail", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "npm test failed", verifyLogTail: "line 1\nline 2" });
+      expect(queuedFixTurn(task.id, 1)).toEqual({
+        verifyFailure: "npm test failed",
+        verifyLogTail: "line 1\nline 2",
+        queuedAt: "2026-01-01T00:00:00.000Z",
+      });
+    });
+
+    it("queues a fix turn and reads it with no log tail", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "npm test failed", verifyLogTail: null });
+      expect(queuedFixTurn(task.id, 1)).toEqual({
+        verifyFailure: "npm test failed",
+        verifyLogTail: null,
+        queuedAt: "2026-01-01T00:00:00.000Z",
+      });
+    });
+
+    it("gives no fix turn for a revision that has none", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      expect(queuedFixTurn(task.id, 1)).toBeUndefined();
+    });
+
+    it("marks the fix turn done and keeps the time", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "f", verifyLogTail: null });
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      markFixTurnDone(task.id, 1);
+      expect(queuedFixTurn(task.id, 1)).toBeUndefined();
+      expect(readFixTurnRows()).toEqual([
+        {
+          task_id: task.id,
+          plan_version: 1,
+          verify_failure: "f",
+          verify_log_tail: null,
+          queued_at: "2026-01-01T00:00:00.000Z",
+          done_at: "2026-01-02T00:00:00.000Z",
+        },
+      ]);
+    });
+
+    it("queues the fix turn again after it is done, with the new texts and time", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "old", verifyLogTail: "old tail" });
+      markFixTurnDone(task.id, 1);
+      clock = new Date("2026-01-03T00:00:00.000Z");
+      queueFixTurn(task.id, 1, { verifyFailure: "new", verifyLogTail: null });
+      expect(queuedFixTurn(task.id, 1)).toEqual({
+        verifyFailure: "new",
+        verifyLogTail: null,
+        queuedAt: "2026-01-03T00:00:00.000Z",
+      });
+      expect(readFixTurnRows()).toHaveLength(1);
+      expect(readFixTurnRows()[0]).toMatchObject({ done_at: null });
+    });
+
+    it("refuses done for a fix turn that does not exist", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      expectNothingChanged(
+        task.id,
+        () => markFixTurnDone(task.id, 1),
+        `task ${task.id} has no fix turn of plan revision 1`,
+      );
+      expect(readFixTurnRows()).toEqual([]);
+    });
+
+    it("refuses to queue a fix turn for a plan revision that does not exist", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      expectNothingChanged(
+        task.id,
+        () => queueFixTurn(task.id, 5, { verifyFailure: "f", verifyLogTail: null }),
+        `task ${task.id} has no plan revision 5`,
+      );
+      expect(readFixTurnRows()).toEqual([]);
     });
   });
 
