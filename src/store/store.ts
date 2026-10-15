@@ -245,7 +245,7 @@ export interface TaskStore extends LockStore {
   planSession(taskId: number): StoredSession | undefined;
   // Records the execute session of a plan revision once, before the run. The same id again writes
   // nothing and gives the stored session. Another id is an error that names both ids.
-  // A version with no plan revision is an error.
+  // A task that does not exist is an error. A version with no plan revision is an error.
   recordExecuteSession(taskId: number, version: number, session: NewSession): StoredSession;
   // The execute session of a plan revision, or undefined when the revision has none.
   executeSession(taskId: number, version: number): StoredSession | undefined;
@@ -921,9 +921,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     recordExecuteSession(taskId, version, session) {
       return immediateTransaction(db, () => {
-        if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
         const task = readTask(taskId);
         if (task === undefined) throw taskNotFound(taskId);
+        if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
         return recordSessionOnce(
           readExecuteSession(taskId, version),
           session,
