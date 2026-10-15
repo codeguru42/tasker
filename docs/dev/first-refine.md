@@ -8,7 +8,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 
 ## All tickets
 
-- Name the shared test helpers of `test/helpers/` that the tests must use ([rules.md](rules.md#tests)). Before a ticket adds a second test file of the same kind, move the shared setup into `test/helpers/`.
+- Name the shared test helpers of `test/helpers/` that the tests must use, and ask the plan to make each test call them. A local helper in a test file can call a shared helper, for example to fix the arguments of one `describe` block. It must not repeat the steps of the shared helper, for example a call of the same store function with its own default values. The review counts such a local helper as a copy (#127). Before a ticket adds a second test file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
 - Ask the plan for the side effects of each fix before `tasker approve`. A fix can cause a new finding about its own side effect.
 - If a ticket adds a small exported helper, ask the plan for each place that does the same job ([rules.md](rules.md#tests)).
 - If a function becomes the one home of a rule, the old callers use only its result ([the one-home rule](rules.md#code)).
