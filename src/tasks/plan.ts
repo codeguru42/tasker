@@ -45,6 +45,9 @@ async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanR
   const { config, ref, env, io } = request;
   const task = store.getTask(request.taskId);
   if (task === undefined) throw taskNotFound(request.taskId);
+  if (task.state !== "workspace_ready") {
+    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker plan needs workspace_ready`);
+  }
   const issue = await issueProviderFor(config, ref.repoKey).fetchIssue(ref, env);
   const prompt = fillTemplate(PLAN_PROMPT_NAME, PLAN_PROMPT, {
     ISSUE_TEXT: planIssueText({ key: task.issueKey, title: issue.title, body: issue.body }),
