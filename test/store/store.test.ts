@@ -1193,13 +1193,7 @@ describe("task store", () => {
 
   describe("plan session", () => {
     const record = (taskId: number, change: Partial<NewSession> = {}) =>
-      store.recordPlanSession(taskId, {
-        sessionId: "s-1",
-        provider: "claude-code",
-        model: "opus",
-        effort: "low",
-        ...change,
-      });
+      seedPlanSession(store, taskId, { sessionId: "s-1", effort: "low", ...change });
 
     it("gives no session for a task with no plan session", () => {
       const task = store.createTask(newTask);
