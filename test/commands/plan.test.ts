@@ -13,7 +13,7 @@ import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
 import { planAnswerStream, planRevisionOf, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, transcriptLines, validPlanAnswer } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
-import { startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
+import { expectNoAssistantRun, startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -35,8 +35,7 @@ const eventsAfterStart = (fixture: Fixture) => {
 const expectNoRun = (fixture: Fixture) => {
   const task = latestTaskOf(fixture.started.dataRoot, KEY);
   withDataRootStore(fixture.started.dataRoot, (store) => expect(store.planSession(task.id)).toBeUndefined());
-  expect(fixture.claude.calls()).toEqual([]);
-  expect(lockNames(fixture.started.dataRoot)).toEqual([]);
+  expectNoAssistantRun(fixture);
 };
 
 describe("plan", () => {

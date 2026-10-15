@@ -1,6 +1,6 @@
 import { existsSync, rmSync } from "node:fs";
 import { delimiter } from "node:path";
-import { onTestFinished } from "vitest";
+import { expect, onTestFinished } from "vitest";
 import { start } from "../../src/commands/start.js";
 import { loadConfig } from "../../src/config/load.js";
 import type { Config } from "../../src/config/schema.js";
@@ -14,7 +14,7 @@ import { useFakeSandboxBin } from "./fake-commands.js";
 import { type FakeClaude, type FakeClaudeControl, useFakeClaude } from "./fake-claude.js";
 import { type FakeGh, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
 import { type GitOrigin, commitInWorktree, localBranches, makeProviderFixture, taskNames } from "./git.js";
-import { withDataRootStore } from "./store.js";
+import { lockNames, withDataRootStore } from "./store.js";
 import { useProcessEnv, useTempHome } from "./temp.js";
 
 export interface StartFixture {
@@ -193,4 +193,10 @@ export async function usePlanFixture(
   const claude = useFakeClaude(control);
   useProcessEnv({ ...useTempHome(), PATH: claude.binDir + delimiter + process.env.PATH });
   return { started, claude };
+}
+
+// Expects that no run of the assistant started: no call of the fake claude and no lock row.
+export function expectNoAssistantRun(fixture: PlanFixture): void {
+  expect(fixture.claude.calls()).toEqual([]);
+  expect(lockNames(fixture.started.dataRoot)).toEqual([]);
 }
