@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkPlanAnswer } from "../../src/plan/answer.js";
 import { planRevisionPath } from "../../src/store/layout.js";
@@ -14,6 +15,7 @@ import {
   seedPlanSession,
   seedPlanningTask,
   seedTaskWithPlanFiles,
+  transcriptLines,
   validPlanAnswer,
 } from "./plan.js";
 import { dayAt, seedTask, withDataRootStore } from "./store.js";
@@ -191,6 +193,15 @@ describe("planRevisionOf", () => {
 
     expect(planRevisionOf(dataRoot, task.id, 2)).toMatchObject({ version: 2, source: "refine" });
     expect(planRevisionOf(dataRoot, task.id, 3)).toBeUndefined();
+  });
+});
+
+describe("transcriptLines", () => {
+  it("gives the lines of the file with no empty last item", () => {
+    const path = join(useTempDir("tasker-transcript-"), "t.jsonl");
+    writeFileSync(path, "a\nb\n");
+
+    expect(transcriptLines(path)).toEqual(["a", "b"]);
   });
 });
 
