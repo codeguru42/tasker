@@ -109,6 +109,16 @@ export function planTranscriptPath(
   return join(taskTranscriptsDir(dataRoot, task), `plan-v${version}.jsonl`);
 }
 
+// The transcript of the execute runs of one plan version: one JSON event on each line, opened for append, so the
+// runs of one revision share one history. Each writer takes the path from here. It makes no file.
+export function executeTranscriptPath(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+  version: number,
+): string {
+  return join(taskTranscriptsDir(dataRoot, task), `execute-v${version}.jsonl`);
+}
+
 // The path of the file that tasker doctor writes and deletes in dataRoot. The name is new for
 // each call, so two doctors that run at the same time do not use the same file. It makes no file.
 export function doctorProbePath(dataRoot: string): string {
