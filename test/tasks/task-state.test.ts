@@ -1,12 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { assertTaskState, taskById, taskInState } from "../../src/tasks/task-state.js";
+import type { TaskStore } from "../../src/store/store.js";
+import {
+  assertTaskState,
+  requireBaseRevision,
+  requireBranch,
+  requireWorktree,
+  taskById,
+  taskInState,
+} from "../../src/tasks/task-state.js";
 import { dayAt, seedTasks, withDataRootStore } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
 
-function seeded(state: string): { dataRoot: string; id: number } {
+function seeded(
+  state: string,
+  extra: { branch?: string; worktreePath?: string } = {},
+): { dataRoot: string; id: number } {
   const dataRoot = useTempDir("tasker-task-state-");
   const [task] = seedTasks(dataRoot, [
-    { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state, at: dayAt(1) },
+    { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state, at: dayAt(1), ...extra },
   ]);
   return { dataRoot, id: task!.id };
 }
@@ -53,5 +64,55 @@ describe("taskInState", () => {
         "the task of codeguru42/tasker#5 is in failed; tasker execute needs approved",
       );
     });
+  });
+});
+
+const worktreeOf = (store: TaskStore, id: number) => requireWorktree(taskById(store, id));
+const branchOf = (store: TaskStore, id: number) => requireBranch(taskById(store, id));
+const baseRevisionOf = (store: TaskStore, id: number) => requireBaseRevision(store, taskById(store, id));
+
+describe("requireWorktree", () => {
+  it("gives the worktree path", () => {
+    const { dataRoot, id } = seeded("awaiting_work_review", { worktreePath: "/work/tree" });
+    withDataRootStore(dataRoot, (store) => expect(worktreeOf(store, id)).toBe("/work/tree"));
+  });
+
+  it("throws for a task without a worktree", () => {
+    const { dataRoot, id } = seeded("awaiting_work_review");
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => worktreeOf(store, id)).toThrow("the task of codeguru42/tasker#5 has no worktree"),
+    );
+  });
+});
+
+describe("requireBranch", () => {
+  it("gives the branch", () => {
+    const { dataRoot, id } = seeded("awaiting_work_review", { branch: "tasker/five" });
+    withDataRootStore(dataRoot, (store) => expect(branchOf(store, id)).toBe("tasker/five"));
+  });
+
+  it("throws for a task without a branch", () => {
+    const { dataRoot, id } = seeded("awaiting_work_review");
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => branchOf(store, id)).toThrow("the task of codeguru42/tasker#5 has no branch"),
+    );
+  });
+});
+
+describe("requireBaseRevision", () => {
+  it("gives the revision of the newest base event", () => {
+    const { dataRoot, id } = seeded("awaiting_work_review");
+    withDataRootStore(dataRoot, (store) => {
+      store.appendEvent(id, "base", { base: "main", revision: "refs/remotes/origin/main", source: "default" });
+      store.appendEvent(id, "base", { base: "dev", revision: "refs/remotes/origin/dev", source: "explicit" });
+      expect(baseRevisionOf(store, id)).toBe("refs/remotes/origin/dev");
+    });
+  });
+
+  it("throws for a task without a base event", () => {
+    const { dataRoot, id } = seeded("awaiting_work_review");
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => baseRevisionOf(store, id)).toThrow("the task of codeguru42/tasker#5 has no base revision"),
+    );
   });
 });
