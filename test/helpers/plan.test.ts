@@ -5,6 +5,7 @@ import { planRevisionPath } from "../../src/store/layout.js";
 import { TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID } from "./fake-claude.js";
 import {
   planAnswerStream,
+  planRevisionOf,
   recordPlanRevisions,
   recordTestPlanRevision,
   seedExecuteSession,
@@ -180,6 +181,16 @@ describe("recordPlanRevisions", () => {
       expect(store.getTask(task.id)?.state).toBe("awaiting_plan_review");
     });
     expect(readFileSync(planRevisionPath(dataRoot, task, 2), "utf8")).toBe(markdown);
+  });
+});
+
+describe("planRevisionOf", () => {
+  it("gives the revision of the version, and undefined for a version with none", () => {
+    const { dataRoot, task } = seedPlanningTask();
+    recordPlanRevisions(dataRoot, task, {}, { source: "refine", feedback: "Use main." });
+
+    expect(planRevisionOf(dataRoot, task.id, 2)).toMatchObject({ version: 2, source: "refine" });
+    expect(planRevisionOf(dataRoot, task.id, 3)).toBeUndefined();
   });
 });
 
