@@ -1,30 +1,22 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { checkPlanAnswer } from "../src/plan/answer.js";
-import { type Task, type TaskStore } from "../src/store/store.js";
-import { planRevisionPath } from "../src/store/layout.js";
+import { checkPlanAnswer } from "../../src/plan/answer.js";
+import { planRevisionPath } from "../../src/store/layout.js";
+import { TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID } from "./fake-claude.js";
 import {
-  dayAt,
+  planAnswerStream,
   recordPlanRevisions,
   recordTestPlanRevision,
-  seedPlanRevision,
   seedExecuteSession,
   seedExecuteTodoStates,
+  seedPlanRevision,
   seedPlanSession,
   seedPlanningTask,
   seedTaskWithPlanFiles,
-  TEST_EXECUTE_SESSION_ID,
-  TEST_SESSION_ID,
-  useTempDir,
   validPlanAnswer,
-  withDataRootStore,
-  planAnswerStream,
-} from "./helpers.js";
-
-// Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.
-function seedTask(store: TaskStore): Task {
-  return store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
-}
+} from "./plan.js";
+import { dayAt, seedTask, withDataRootStore } from "./store.js";
+import { useTempDir } from "./temp.js";
 
 describe("seedTaskWithPlanFiles", () => {
   const seed = { issueKey: "codeguru42/tasker#7", repoKey: "codeguru42/tasker", at: dayAt(3) };
