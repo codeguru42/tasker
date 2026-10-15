@@ -13,6 +13,7 @@ import {
 } from "../../src/prompts/execute.js";
 import { SHARED_RULES } from "../../src/prompts/shared.js";
 import { fillTemplate } from "../../src/prompts/template.js";
+import { rulesOf } from "../helpers/prompts.js";
 import { planTodo, validPlanAnswer } from "../helpers/plan.js";
 
 interface PromptCase {
@@ -49,11 +50,6 @@ const PROMPTS: PromptCase[] = [
 ];
 
 const TURN_PROMPTS = PROMPTS.filter(({ name }) => name !== EXECUTE_PROMPT_NAME);
-
-// The numbered rules of a filled or unfilled prompt, as the lines that start with a number and a dot.
-function rulesOf(prompt: string): string[] {
-  return prompt.split("\n").filter((line) => /^\d+\. /.test(line));
-}
 
 describe("the names", () => {
   it("are execute, execute-todo and execute-fix", () => {
