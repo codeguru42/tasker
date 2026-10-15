@@ -162,7 +162,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The task has no plan revision or no plan session. The error says which one is missing.
 - The provider refuses the recorded model. The error names the session, the model, the provider and the reason.
 - Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
-- The plan file of the newest revision cannot be read. The error is `cannot read the plan file of revision v<N>: <error>`. Restore the file, then run the command again.
+- The plan file of the newest revision cannot be read. The error is `cannot read the plan file <path> of revision v<N>: <error>`. Restore the file, then run the command again.
 - The task has no base revision or no branch, or the commits of the branch cannot be read. The error says which.
 - The prompt cannot be archived. Fix the cause, then run the command again.
 - The assistant fails or runs longer than the time limit. The task goes to the state `failed`, and the error is `refining failed: <reason>` or `refining timed out after <n> min`.

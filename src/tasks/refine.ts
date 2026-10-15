@@ -1,13 +1,11 @@
-import { readFileSync } from "node:fs";
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
-import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { archivePrompt } from "../prompts/archive.js";
 import { openQuestionsText, REFINE_PROMPT, REFINE_PROMPT_NAME } from "../prompts/refine.js";
 import { fillTemplate } from "../prompts/template.js";
-import { planRevisionPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
+import { readPlanFile } from "../store/plan-file.js";
 import { taskNotFound, type TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
@@ -45,14 +43,7 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
   const session = store.planSession(task.id);
   if (session === undefined) throw new Error(`the task of ${task.issueKey} has no plan session`);
   await assertSessionModel(session, env, `the plan session of ${task.issueKey}`);
-  let currentPlan: string;
-  try {
-    currentPlan = readFileSync(planRevisionPath(config.dataRoot, task, revision.version), "utf8");
-  } catch (error) {
-    throw new Error(`cannot read the plan file of revision v${revision.version}: ${errorMessage(error)}`, {
-      cause: error,
-    });
-  }
+  const currentPlan = readPlanFile(config.dataRoot, task, revision.version);
   const baseRevision = baseRevisionOf(store, task.id);
   if (baseRevision === undefined) throw new Error(`the task of ${task.issueKey} has no base revision`);
   if (task.branch === null) throw new Error(`the task of ${task.issueKey} has no branch`);
