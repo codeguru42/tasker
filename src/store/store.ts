@@ -223,6 +223,13 @@ export interface TaskStore extends LockStore {
   recordExecuteSession(taskId: number, version: number, session: NewSession): StoredSession;
   // The execute session of a plan revision, or undefined when the revision has none.
   executeSession(taskId: number, version: number): StoredSession | undefined;
+  // Deletes the plan session of a task. A missing row is not an error. Only `tasker retry` (a later ticket)
+  // calls it. A run that failed before its first turn recorded an id that no conversation holds,
+  // so the next run must not continue that id.
+  clearPlanSession(taskId: number): void;
+  // Deletes the execute session of a plan revision. A missing row is not an error. Only `tasker retry`
+  // (a later ticket) calls it, for the same reason as clearPlanSession.
+  clearExecuteSession(taskId: number, version: number): void;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -452,6 +459,10 @@ function setUp(db: DatabaseSync) {
       `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key
        FROM sessions JOIN tasks ON tasks.id = sessions.task_id
        WHERE sessions.task_id = ? AND sessions.role = 'execute' AND sessions.plan_version = ?`,
+    ),
+    deletePlanSession: db.prepare("DELETE FROM sessions WHERE task_id = ? AND role = 'plan'"),
+    deleteExecuteSession: db.prepare(
+      "DELETE FROM sessions WHERE task_id = ? AND role = 'execute' AND plan_version = ?",
     ),
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
@@ -857,6 +868,18 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     executeSession: readExecuteSession,
+
+    clearPlanSession(taskId) {
+      immediateTransaction(db, () => {
+        statements.deletePlanSession.run(taskId);
+      });
+    },
+
+    clearExecuteSession(taskId, version) {
+      immediateTransaction(db, () => {
+        statements.deleteExecuteSession.run(taskId, version);
+      });
+    },
 
     approvePlanRevision(taskId, version, state, check) {
       return writeTask(taskId, { state }, check, (at) => {
