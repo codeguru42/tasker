@@ -50,7 +50,7 @@ export interface PreparedExecuteRun {
   session: RecordedSession;
   // The commit text for the prompt of the run. It holds the {{BASE_REF}} placeholder.
   executeCommitText: string;
-  start(input: Omit<StartInput, "jsonSchema">): Promise<RunOutcome>;
+  start(input: StartInput): Promise<RunOutcome>;
 }
 
 export interface PreparedPlanModeRun {
