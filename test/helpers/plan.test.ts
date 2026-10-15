@@ -15,13 +15,15 @@ import {
   seedPlanRevision,
   seedPlanSession,
   seedPlanningTask,
+  planStateSnapshot,
   planTodo,
+  seedApprovedTask,
   seedTaskWithPlanFiles,
   transcriptLines,
   turnResultStream,
   validPlanAnswer,
 } from "./plan.js";
-import { dayAt, seedTask, withDataRootStore } from "./store.js";
+import { dayAt, eventsOf, seedTask, withDataRootStore } from "./store.js";
 import { useTempDir } from "./temp.js";
 
 describe("seedTaskWithPlanFiles", () => {
@@ -369,5 +371,39 @@ describe("seedPlanReviewTask", () => {
     expect(planRevisionOf(dataRoot, task.id, 3)?.approvedAt).toBeNull();
     expect(withDataRootStore(dataRoot, (store) => store.pinnedPlanRevision(task.id))?.version).toBe(1);
     expect(task.state).toBe("awaiting_plan_review");
+  });
+});
+
+describe("seedApprovedTask", () => {
+  it("gives a task in approved with v1 pinned", () => {
+    const { dataRoot, task } = seedApprovedTask();
+
+    expect(task.state).toBe("approved");
+    expect(planRevisionOf(dataRoot, task.id, 1)?.approvedAt).not.toBeNull();
+    expect(withDataRootStore(dataRoot, (store) => store.pinnedPlanRevision(task.id))?.version).toBe(1);
+  });
+
+  it("pins the newest revision and keeps the older approval of approved", () => {
+    const { dataRoot, task } = seedApprovedTask({ revisions: [{}, {}, {}], approved: 1 });
+
+    expect(planRevisionOf(dataRoot, task.id, 1)?.approvedAt).not.toBeNull();
+    expect(planRevisionOf(dataRoot, task.id, 2)?.approvedAt).toBeNull();
+    expect(planRevisionOf(dataRoot, task.id, 3)?.approvedAt).not.toBeNull();
+    expect(withDataRootStore(dataRoot, (store) => store.pinnedPlanRevision(task.id))?.version).toBe(3);
+    expect(task.state).toBe("approved");
+  });
+});
+
+describe("planStateSnapshot", () => {
+  it("gives the state, the events and the approval of each version", () => {
+    const { dataRoot, task } = seedPlanReviewTask({ revisions: [{}, {}], approved: 1 });
+
+    const snapshot = planStateSnapshot(dataRoot, "codeguru42/tasker#5", task.id, [1, 2, 3]);
+
+    expect(snapshot.state).toBe("awaiting_plan_review");
+    expect(snapshot.events).toEqual(eventsOf(dataRoot, "codeguru42/tasker#5"));
+    expect(snapshot.approvedAt[0]).not.toBeNull();
+    expect(snapshot.approvedAt[1]).toBeNull();
+    expect(snapshot.approvedAt[2]).toBeUndefined();
   });
 });
