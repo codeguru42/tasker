@@ -104,6 +104,13 @@ export function commandFailureMessage(
 export const NO_OUTPUT_LINE =
   "The command produced no output. It usually failed before it reached the tool that it runs.";
 
+// The lines of a text, split on a line end, with no empty last item.
+export function textLines(text: string): string[] {
+  const lines = text.split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  return lines;
+}
+
 // Reads the log of a failed command one time. tail is the text of the last count lines, with a header that gives
 // the real count. noOutput is true when the log holds only the command line, empty lines and the outcome line.
 // A missing or unreadable log gives its tail text and noOutput false. It never throws.
@@ -113,8 +120,7 @@ export function readCommandLog(log: string, count: number): { tail: string; noOu
     const tail = file.missing ? `the log is missing: ${log}\n` : `cannot read the log ${log}: ${file.error}\n`;
     return { tail, noOutput: false };
   }
-  const lines = file.text.split("\n");
-  if (lines.at(-1) === "") lines.pop();
+  const lines = textLines(file.text);
   const last = lines.slice(-count);
   const tail = `the last ${last.length} lines of the log:\n${last.map((line) => `${line}\n`).join("")}`;
   const rest = lines.slice(1);

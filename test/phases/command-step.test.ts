@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { commandFailureMessage, NO_OUTPUT_LINE, readCommandLog } from "../../src/phases/command-step.js";
+import { commandFailureMessage, NO_OUTPUT_LINE, readCommandLog, textLines } from "../../src/phases/command-step.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 describe("commandFailureMessage", () => {
@@ -75,6 +75,20 @@ describe("readCommandLog", () => {
 
   it("has no output for a header and an error line", () => {
     expect(readCommandLog(useTempFile("tasker-read-log-", "verify.log", "$ nope\n--- spawn ENOENT\n"), 20).noOutput).toBe(true);
+  });
+});
+
+describe("textLines", () => {
+  it("drops the empty last item of a text that ends with a line end", () => {
+    expect(textLines("a\nb\n")).toEqual(["a", "b"]);
+  });
+
+  it("keeps the last line of a text with no final line end", () => {
+    expect(textLines("a\nb")).toEqual(["a", "b"]);
+  });
+
+  it("gives no lines for an empty text", () => {
+    expect(textLines("")).toEqual([]);
   });
 });
 
