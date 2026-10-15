@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort and plan, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan and refine, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
