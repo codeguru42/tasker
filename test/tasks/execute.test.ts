@@ -384,3 +384,45 @@ describe("executeTask turns", () => {
     ]);
   });
 });
+
+describe("executeTask deadline", { timeout: 20_000 }, () => {
+  const slowDone = { stream: doneStream, sleepMs: 3000 };
+
+  it("gives the second turn only the time that is left of the one deadline", async () => {
+    const fixture = await useExecuteFixture(slowDone, {
+      answer: { todos: TODOS },
+      limits: { executeTimeoutMin: 1 },
+    });
+    const clock = () => (fixture.claude.calls().length >= 1 ? 60_000 - 500 : 0);
+
+    const { result, io } = await runExecute(fixture, { clock });
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe("executing timed out after 1 min\n");
+    expect(fixture.claude.calls()).toHaveLength(2);
+    expect(todoStates(fixture)).toEqual([
+      ["b", "in_progress"],
+      ["a", "done"],
+    ]);
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+  });
+
+  it("starts no turn when no time is left", async () => {
+    const fixture = await useExecuteFixture(slowDone, {
+      answer: { todos: TODOS },
+      limits: { executeTimeoutMin: 1 },
+    });
+    const clock = () => (fixture.claude.calls().length >= 1 ? 60_000 : 0);
+
+    const { result, io } = await runExecute(fixture, { clock });
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe("executing todo `b` (Do b) timed out after 1 min\n");
+    expect(fixture.claude.calls()).toHaveLength(1);
+    expect(todoStates(fixture)).toEqual([
+      ["b", "not_started"],
+      ["a", "done"],
+    ]);
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+  });
+});
