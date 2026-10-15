@@ -21,6 +21,10 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - If tests wait in a loop, ask for one shared wait helper.
 - If a new sentence makes an exception to an earlier clause, the exact text says which one wins. For example, the dead-code rule of [rules.md](rules.md#code) keeps a function for a later ticket "also as an unused export" (#124).
 - Ask the plan to add no reason that the issue does not give. On #121, a reason clause that the plan added on its own drew a contradiction finding.
+- If the plan copies issue text, ask the plan to rewrite each word that the simple-english skill bans ([rules.md](rules.md#docs)). Examples are "should" and "could". On #120, the plan copied "could" from the issue, and four reviews missed it.
+- A check of the docs in the plan must not write a file to the folder of the agent. The folder bullet of [Limits](orchestration.md#limits) names that folder. Process substitution, for example `diff <(cmd1) <(cmd2)`, needs no file. On #115, a plan step wrote a temporary file to the folder of the agent.
+- If the ticket derives a name from a key, for example a session name from an issue key, say that a collision of derived names is not an issue ([Core features first](working-with-the-user.md#core-features-first)). Otherwise the plan raises the question (#115).
+- If a plan step or a doc step points to a report, link to the item of the report, not to the step as a whole. On #120, a link to a step as a whole drew a finding.
 
 ## A ticket that only adds a layer, for example a schema
 
