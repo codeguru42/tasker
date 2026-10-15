@@ -292,3 +292,13 @@ The slug has these limits:
 - On a file system that ignores case, two keys that differ only in case also share a folder.
 
 tasker does not check for a shared slug.
+
+## Facts about outside tools
+
+These facts hold for git 2.47.3 and OpenSSH 10.0p2.
+
+- A rewritten `commondir` file that names a repo with `core.fsmonitor` makes `git status`, `git reset --hard` and `git diff HEAD` run the fsmonitor command. `git rev-parse` does not run it. When HEAD does not resolve in that repo, `git diff HEAD` fails with exit code 128 before it runs the command. So a test with an empty fake repo cannot show that a diff is safe.
+- `git check-ref-format` accepts `refs/heads/HEAD`. So a check of a base branch reads its exact tip. [Land](#land) gives the push side.
+- `--end-of-options` breaks `git rev-list ... --not`.
+- `ssh -T git@github.com` exits with 1 on success and with 255 for a wrong key.
+- In tests, a fake `gpg.program` script makes `git commit -S` work with no keys. The script prints a signature block on stdout and the line `[GNUPG:] SIG_CREATED` on stderr, because git passes `--status-fd=2`.
