@@ -217,7 +217,7 @@ The commit check makes sure that each implementation commit and the tip of the t
 7. If the rebase stops for another reason, run `git rebase --abort`. The worktree goes back to the tip of the copy. Do step 10, then stop and report the error to the orchestrator.
 8. When the rebase exits with 0, it kept the same commits, and the worktree is at the tip. If the tip is not an implementation commit, run `npm run check` one time in the worktree. The worktree already has the packages of the tip, because the rebase ran the command after the tip too. If `npm run check` fails, note the tip as a broken commit.
 9. The commit check passes when it noted no broken commit. Otherwise, the check fails and gives the list of broken commits and the base commit of step 4. The step that ran the check gives the next step.
-10. Remove the worktree: `git worktree remove <path>`. Do not use `--force`. If the command fails, stop and report the exact error and the output of `git -C <path> status --porcelain --ignored` to the orchestrator. The worktree stays.
+10. Remove the worktree: `git worktree remove <path>`. Do not use `--force`. If the command fails, stop and report to the orchestrator. The report gives the two items that step 19 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) names: the exact error of git and the output of `git -C <path> status --porcelain --ignored`. The worktree stays.
 
 ## Review findings
 
