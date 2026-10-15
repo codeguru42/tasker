@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { approve } from "../../src/commands/approve.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import { transitionTask, type TaskState } from "../../src/state/machine.js";
@@ -61,10 +62,12 @@ export function planTodo(
 }
 
 // The stdout lines of a fake claude run that succeeds with output as its structured output.
-function structuredOutputStream(output: unknown): string[] {
+// With edit, it changes the result event after the structured output is set.
+function structuredOutputStream(output: unknown, edit?: (result: AssistantEvent) => void): string[] {
   return claudeSampleWithResult("json-schema", (result) => {
     result["structured_output"] = output;
     result["result"] = JSON.stringify(output);
+    edit?.(result);
   }).map((event) => JSON.stringify(event));
 }
 
@@ -74,8 +77,13 @@ export function planAnswerStream(answer: unknown): string[] {
 }
 
 // The stdout lines of a fake claude run that succeeds with a turn result. With no reason, the result has no reason key.
-export function turnResultStream(result: "done" | "blocked", reason?: string): string[] {
-  return structuredOutputStream(reason === undefined ? { result } : { result, reason });
+// With edit, it changes the result event of the stream, for example to add permission_denials.
+export function turnResultStream(
+  result: "done" | "blocked",
+  reason?: string,
+  edit?: (event: AssistantEvent) => void,
+): string[] {
+  return structuredOutputStream(reason === undefined ? { result } : { result, reason }, edit);
 }
 
 // The next plan revision of the task: a valid plan answer, unless change gives other values.
