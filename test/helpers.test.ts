@@ -60,6 +60,7 @@ import {
   recordTestPlanRevision,
   seedPlanRevision,
   seedExecuteSession,
+  seedExecuteTodoStates,
   seedPlanSession,
   seedPlanningTask,
   seedTaskWithPlanFiles,
@@ -2118,6 +2119,36 @@ describe("seedExecuteSession", () => {
       const session = seedExecuteSession(store, task.id, 1, { sessionId: "x", effort: "low" });
 
       expect(session).toMatchObject({ sessionId: "x", effort: "low", model: "sonnet", provider: "claude-code" });
+    });
+  });
+});
+
+describe("seedExecuteTodoStates", () => {
+  it("sets the state of each todo that the record names", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+      seedPlanRevision(store, task.id);
+
+      seedExecuteTodoStates(store, task.id, 1, { "write-test": "done", "make-it-pass": "in_progress" });
+
+      expect(store.executeTodoProgress(task.id, 1).map(({ todo, state }) => [todo.id, state])).toEqual([
+        ["write-test", "done"],
+        ["make-it-pass", "in_progress"],
+      ]);
+    });
+  });
+
+  it("leaves each todo not started for an empty record", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+      seedPlanRevision(store, task.id);
+
+      seedExecuteTodoStates(store, task.id, 1, {});
+
+      expect(store.executeTodoProgress(task.id, 1).map(({ state }) => state)).toEqual([
+        "not_started",
+        "not_started",
+      ]);
     });
   });
 });
