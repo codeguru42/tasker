@@ -1666,19 +1666,22 @@ export function validPlanAnswer(change: Partial<PlanAnswer> = {}): PlanAnswer {
   };
 }
 
-// Inserts the next plan revision of the task, with a valid answer unless change gives one. It writes no plan file.
+// Inserts the next plan revision of the task with addPlanRevision, with a valid answer unless change gives one.
+// It sets state (not a spawning state) with no check, so it writes the plan_revision event and no transition event.
+// It writes no plan file.
 export function seedPlanRevision(
   store: TaskStore,
   taskId: number,
   change: Partial<Omit<NewPlanRevision, "version">> = {},
+  state = "awaiting_plan_review",
 ): PlanRevision {
-  return store.insertPlanRevision(taskId, {
-    source: "plan",
-    answer: validPlanAnswer(),
-    prompt: "plan@000000000000",
-    ...change,
-    version: store.nextPlanVersion(taskId),
-  });
+  const version = store.nextPlanVersion(taskId);
+  store.addPlanRevision(
+    taskId,
+    { source: "plan", answer: validPlanAnswer(), prompt: "plan@000000000000", ...change, version },
+    state,
+  );
+  return store.getPlanRevision(taskId, version)!;
 }
 
 // Records a plan session for the task with TEST_SESSION_ID and the plan model of the test

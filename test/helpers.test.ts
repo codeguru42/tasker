@@ -1865,6 +1865,30 @@ describe("validPlanAnswer", () => {
 });
 
 describe("seedPlanRevision", () => {
+  it("writes the plan_revision event, sets awaiting_plan_review and writes no transition", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+      const before = store.listEvents(task.id).length;
+
+      seedPlanRevision(store, task.id);
+
+      expect(store.getTask(task.id)?.state).toBe("awaiting_plan_review");
+      expect(store.listEvents(task.id).slice(before).map(({ type, data }) => ({ type, data }))).toEqual([
+        { type: "plan_revision", data: { version: 1, prompt: "plan@000000000000" } },
+      ]);
+    });
+  });
+
+  it("sets the given state", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      seedPlanRevision(store, task.id, {}, "approved");
+
+      expect(store.getTask(task.id)?.state).toBe("approved");
+    });
+  });
+
   it("gives the versions 1 and 2 for consecutive calls", () => {
     withDataRootStore(useTempDir("tasker-seed-"), (store) => {
       const task = seedTask(store);

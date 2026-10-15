@@ -179,8 +179,15 @@ export interface TaskStore extends LockStore {
   // The version that the next revision of the task must have. The caller holds the task lock,
   // so the value stays valid until the insert.
   nextPlanVersion(taskId: number): number;
-  // Inserts one plan revision and writes no event. The version must be the next version of the task.
-  insertPlanRevision(taskId: number, revision: NewPlanRevision): PlanRevision;
+  // Inserts the plan revision, appends the plan_revision event { version, prompt }, moves the task to a state
+  // that is not spawning and deletes its run marker, in one transaction. The event that check returns is
+  // appended in the same transaction. A throw writes nothing.
+  addPlanRevision(
+    taskId: number,
+    revision: NewPlanRevision,
+    state: string,
+    check?: (current: Task) => NewEvent | void,
+  ): Task;
   getPlanRevision(taskId: number, version: number): PlanRevision | undefined;
   // The revision with the highest version.
   latestPlanRevision(taskId: number): PlanRevision | undefined;
@@ -570,6 +577,27 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     statements.deleteRunMarker.run(id);
   }
 
+  // The row insert of a plan revision. It checks the version and opens no transaction, so the
+  // caller must have one open.
+  function writePlanRevision(taskId: number, revision: NewPlanRevision): PlanRevision {
+    const next = readNextPlanVersion(taskId);
+    if (revision.version !== next) {
+      throw new Error(
+        `task ${taskId}: plan revision ${revision.version} is not the next version (${next})`,
+      );
+    }
+    const row = statements.insertPlanRevision.get(
+      taskId,
+      revision.version,
+      revision.source,
+      revision.feedback ?? null,
+      JSON.stringify(revision.answer),
+      revision.prompt,
+      now().toISOString(),
+    ) as unknown as PlanRevisionRow;
+    return rowToPlanRevision(row);
+  }
+
   return {
     createTask(task) {
       return immediateTransaction(db, () => {
@@ -718,25 +746,11 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     nextPlanVersion: readNextPlanVersion,
 
-    insertPlanRevision(taskId, revision) {
-      return immediateTransaction(db, () => {
-        if (readTask(taskId) === undefined) throw taskNotFound(taskId);
-        const next = readNextPlanVersion(taskId);
-        if (revision.version !== next) {
-          throw new Error(
-            `task ${taskId}: plan revision ${revision.version} is not the next version (${next})`,
-          );
-        }
-        const row = statements.insertPlanRevision.get(
-          taskId,
-          revision.version,
-          revision.source,
-          revision.feedback ?? null,
-          JSON.stringify(revision.answer),
-          revision.prompt,
-          now().toISOString(),
-        ) as unknown as PlanRevisionRow;
-        return rowToPlanRevision(row);
+    addPlanRevision(taskId, revision, state, check) {
+      return writeTask(taskId, { state }, check, (at) => {
+        endRunStep(taskId, state);
+        writePlanRevision(taskId, revision);
+        writeEvent(taskId, at, "plan_revision", { version: revision.version, prompt: revision.prompt });
       });
     },
 

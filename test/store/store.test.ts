@@ -777,14 +777,6 @@ describe("task store", () => {
       });
     });
 
-    const insert = (taskId: number, version: number) =>
-      store.insertPlanRevision(taskId, {
-        version,
-        source: "plan",
-        answer: validPlanAnswer(),
-        prompt: "plan@000000000000",
-      });
-
     describe("insert and read", () => {
       it("gives next version 1 for a new task and 2 after one revision", () => {
         const task = store.createTask(newTask);
@@ -833,27 +825,6 @@ describe("task store", () => {
         expect(seedPlanRevision(store, b.id).version).toBe(1);
       });
 
-      it("writes no event", () => {
-        const task = store.createTask(newTask);
-        const before = store.listEvents(task.id);
-        seedPlanRevision(store, task.id);
-        expect(store.listEvents(task.id)).toEqual(before);
-      });
-
-      it("refuses a version that is not the next one", () => {
-        const task = store.createTask(newTask);
-        seedPlanRevision(store, task.id);
-        expectNothingChanged(
-          task.id,
-          () => insert(task.id, 3),
-          `task ${task.id}: plan revision 3 is not the next version (2)`,
-        );
-      });
-
-      it("refuses a task that does not exist", () => {
-        const error = thrownBy(() => insert(9999, 1));
-        expect((error as Error).message).toBe("task not found: 9999");
-      });
     });
 
     describe("approval", () => {
@@ -1351,6 +1322,11 @@ describe("task store", () => {
           () => store.addPlanRevision(task.id, revision(1), "executing"),
           "executing is a spawning state",
         );
+      });
+
+      it("refuses a task that does not exist", () => {
+        const error = thrownBy(() => store.addPlanRevision(9999, revision(1), "awaiting_plan_review"));
+        expect((error as Error).message).toBe("task not found: 9999");
       });
     });
 
