@@ -219,6 +219,15 @@ The steps to land a ticket are in "Run one ticket". This section gives the rules
 - If `tasker update-branch` reports a rebase conflict, the agent follows [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent does not copy that procedure.
 - Before the orchestrator sends added work or an answer to an agent, the orchestrator reads the state of the task with `tasker show <issue>`. The orchestrator runs this command itself. It does not send a message to the agent only to learn the state, because a message to an agent that has ended starts the agent again (see "Terms" in "Quota"). The message with the work or the answer names the state that the orchestrator found. The state can change while a message waits, and the next command then depends on the new state.
 
+## A failed CI run
+
+This section gives the steps of the orchestrator after an agent reports a failed run in step 11 of the CI wait (see "Run one ticket"). The orchestrator does all the steps for each failed run that an agent reports. The repo has three labels: `priority: high`, `priority: medium` and `priority: low`. An issue of a failed CI run gets `priority: high`.
+
+1. File a new issue: `gh issue create --title "<title>" --body-file <file> --label "priority: high" --milestone "<milestone in progress>"`. The milestone in progress is the current milestone of "Pick the tickets". The body gives the run URL, the failed tests, the verdict and the evidence of the agent (the result of the rerun and of the local run). The body asks for the cause and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists. Tell the user. The agent keeps waiting, and the task stays in `landed`.
+2. If the verdict is broken, the new issue blocks all further work. List the open issues: `gh issue list --state open --limit 1000 --json number,milestone`. An issue has not started when `tasker status` lists no task for it. Leave out the new issue itself. For each issue that has not started, in every milestone, run `gh issue edit <number> --add-blocked-by <new issue>`. Tell the user at once. If an edit fails, the issues already edited keep the link, and the rest have no link. Tell the user the numbers of the issues without a link.
+3. If the verdict is flaky, the new issue blocks nothing.
+4. Send the agent the number of the new issue. The last bullet of "Land the work" (read the state with `tasker show <issue>` first) applies to this message.
+
 ## Quota
 
 The quota belongs to the whole account. If a task stops in `quota_blocked`, the orchestrator and all the agents also have no tokens. No session can act until the quota resets. For this reason, the orchestrator must plan the resume before the quota runs out. The orchestrator does this with one cron job for each agent.
