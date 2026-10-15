@@ -9,13 +9,13 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 ## Tests
 
 - Write the test first. Commit the failing test, then the code that makes it pass.
-- Put shared test helpers in `test/helpers.ts`. Any change can add a helper there. Do not copy a helper into a test file.
+- Put shared test helpers in `test/helpers/`. Any change can add a helper there. A helper goes in the file of its kind, and a new kind gets a new file. Do not copy a helper into a test file.
 - A change can edit an existing helper to fix a bug or to make the helper useful in more places. The change must not break the code that uses the helper.
 - Tests must cover the behavior of each helper that other code uses. As a result, a change to a helper that breaks that code makes a test fail.
-- The code in `src/` can have its own helpers. These helpers must stay separate from the test helpers. `src/` must not import from `test/`, and `test/helpers.ts` must hold no code that `src/` uses.
+- The code in `src/` can have its own helpers. These helpers must stay separate from the test helpers. `src/` must not import from `test/`, and the files in `test/helpers/` must hold no code that `src/` uses.
 - Code in `src/` and in `test/` must call an existing helper for the job of that helper. It must not repeat the steps of a helper. When two or more places repeat the same steps and no helper exists, add one helper and call it from each place. A place repeats a helper only when it repeats all the steps of the helper. A place that already holds the input of a later step, for example an open store, and does only that one step, keeps its own call. There, a call of the helper does the earlier steps again.
 - The expected-value exception to the helper rule above: a test helper that computes the expected value of a test without the code under test is not a copy of a helper of `src/`. If the test called the helper of `src/`, a bug in that helper changes the expected value and the real value in the same way, and the test passes.
-- Give each function under test one call helper in the outer scope of its test file. Each test calls the function through that helper. If more than one test file needs the same call helper, put it in `test/helpers.ts`, as the rule on shared helpers says.
+- Give each function under test one call helper in the outer scope of its test file. Each test calls the function through that helper. If more than one test file needs the same call helper, put it in `test/helpers/`, as the rule on shared helpers says.
 - A test of a failure path proves that the failure happened, for example with a side effect or a count of the calls. A test that only checks that no error was thrown does not prove it.
 
 ## Code
@@ -55,7 +55,7 @@ A case is one kind of input that a function serves. Examples are a role of an as
 ## Docs
 
 - The code is the source of truth. The docs do not describe anything that a reader can learn from the code directly. Examples are the names of functions, files, helpers, types and table columns, and the signatures, arguments, flags, return values and steps of a function.
-- The rule above has one exception: a rule in a doc can name the file or folder that it applies to. For example, a rule can say where a kind of code goes, or which folder an import rule covers. "Put shared test helpers in `test/helpers.ts`" is such a rule, and it is allowed. The exception is narrow. A doc still does not list the functions, helpers or types of a file. A plain list of the files of a folder is not allowed either. A list that gives the purpose of each folder or file that it names is allowed, for example a layout or an index.
+- The rule above has one exception: a rule in a doc can name the file or folder that it applies to. For example, a rule can say where a kind of code goes, or which folder an import rule covers. "Put shared test helpers in `test/helpers/`" is such a rule, and it is allowed. The exception is narrow. A doc still does not list the functions, helpers or types of a file. A plain list of the files of a folder is not allowed either. A list that gives the purpose of each folder or file that it names is allowed, for example a layout or an index.
 - The docs give only what the code cannot show. They give the purpose of a part, the reasons for a design and the rules that apply across files. They also give the limits and the facts about outside tools. An example of a fact about an outside tool is a git behavior that a flag guards against. A user does not read the code. As a result, the user docs (`docs/config.md` and `skills/tasker/SKILL.md`) describe the behavior that a user sees, for example the commands, the flags and the configuration.
 - Update the docs in the same change as the code.
 - Put a new command in `skills/tasker/SKILL.md` and in the `--help` output.
