@@ -59,6 +59,21 @@ export function taskLogsDir(
   return join(taskArtifactsDir(dataRoot, task), "logs");
 }
 
+// The folder of the logs of one verify run. It makes no folder.
+export function verifyRunDir(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">, run: number): string {
+  return join(taskLogsDir(dataRoot, task), `verify-run-${run}`);
+}
+
+// The log of the command at position (from 1) of one verify run. Each reader and writer takes the path from here. It makes no file.
+export function verifyCommandLogPath(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+  run: number,
+  position: number,
+): string {
+  return join(verifyRunDir(dataRoot, task, run), `verify-${position}.log`);
+}
+
 // The folder of the plan files of one attempt. It makes no folder.
 export function taskPlansDir(
   dataRoot: string,
