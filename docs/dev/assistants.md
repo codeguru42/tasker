@@ -2,7 +2,7 @@
 
 An assistant is a coding-agent program. Tasker starts it in the worktree of a task to plan, to execute and to review. The assistant interface lets tasker run each assistant program in the same way. A command never imports the module of one assistant.
 
-Some parts of this doc are a layer for the later `tasker execute` ticket. These are the execute prompts, the order of the todos, the turn result, the tools of the execute turns, the remaining time of a start and the start of a later turn. No command uses them yet. A function that nothing in `src/` calls yet is not dead code.
+Some parts of this doc are the layer of `tasker execute`. These are the execute prompts, the order of the todos, the turn result, the tools of the execute turns, the remaining time of a start and the start of a later turn. `tasker execute` uses them all. The review and retry commands will use some of them later.
 
 ## Refuse, never drop
 
@@ -220,7 +220,7 @@ A todo never runs the full check of the repository. Tasker runs the verify comma
 
 ### The execute prompts
 
-The execute run uses three prompts: `execute`, `execute-todo` and `execute-fix`. The code is in `src/prompts/execute.ts`. No command uses them yet.
+The execute run uses three prompts: `execute`, `execute-todo` and `execute-fix`. The code is in `src/prompts/execute.ts`. `tasker execute` sends them: `execute` in the first turn of a new session, `execute-todo` for a todo and `execute-fix` for the fix turn.
 
 The reasons for the design:
 
