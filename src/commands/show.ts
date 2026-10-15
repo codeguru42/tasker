@@ -1,10 +1,11 @@
 import type { RegisterCommand } from "../cli.js";
 import { failedFrom } from "../state/machine.js";
-import type { Task, TaskEvent, TaskStore } from "../store/store.js";
+import type { ExecuteTodoProgress, Task, TaskEvent, TaskStore } from "../store/store.js";
 import {
   formatFields,
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
+  oneLine,
   REPO_OPTION_DESCRIPTION,
   withIssueTask,
 } from "./shared.js";
@@ -15,6 +16,28 @@ function lastError(events: TaskEvent[]): string | undefined {
   const data = transition?.data;
   if (typeof data !== "object" || data === null || !("error" in data)) return undefined;
   return typeof data.error === "string" ? data.error : undefined;
+}
+
+const TODO_STATE_LABELS: Record<ExecuteTodoProgress["state"], string> = {
+  done: "done",
+  in_progress: "in progress",
+  not_started: "not started",
+};
+
+// The todos of the pinned revision with their states.
+// The text is empty when the task has no pinned revision, or when no todo of it has a recorded state.
+function todoProgress(store: TaskStore, taskId: number): string {
+  const pinned = store.pinnedPlanRevision(taskId);
+  if (pinned === undefined) return "";
+  const progress = store.executeTodoProgress(taskId, pinned.version);
+  if (progress.every(({ state }) => state === "not_started")) return "";
+  const labels = progress.map(({ state }) => TODO_STATE_LABELS[state]);
+  const stateWidth = Math.max(...labels.map((label) => label.length));
+  const idWidth = Math.max(...progress.map(({ todo }) => todo.id.length));
+  const lines = progress.map(
+    ({ todo }, i) => `  ${labels[i].padEnd(stateWidth)}  ${todo.id.padEnd(idWidth)}  ${oneLine(todo.title)}\n`,
+  );
+  return `todos (approved v${pinned.version}):\n${lines.join("")}`;
 }
 
 function formatTask(store: TaskStore, task: Task): string {
@@ -36,7 +59,7 @@ function formatTask(store: TaskStore, task: Task): string {
   if (task.state === "failed") {
     fields.push(["failed in", failedFrom(store, task.id)], ["error", lastError(events)]);
   }
-  return formatFields(fields);
+  return formatFields(fields) + todoProgress(store, task.id);
 }
 
 export const show: RegisterCommand = (program, io) => {
