@@ -35,7 +35,7 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 
 - The planning session links two issues when one issue needs the code or the docs that the other issue makes.
 - The planning session also links two issues that will likely edit the same file, so that they do not cause a merge conflict. Examples are `skills/tasker/SKILL.md`, `docs/config.md`, `package.json`, the configuration schema, `docs/dev/code-conventions.md`, and a provider file with its dev doc.
-- An edit of `test/helpers.ts` alone gets no blocked-by link, because the orchestrator keeps such tickets apart ([orchestration.md](orchestration.md#pick-the-tickets)).
+- An edit of `test/helpers.ts` alone gets no blocked-by link.
 - Before the links, the planning session makes a table of the needs and the likely files of each issue.
 - A line of tickets that edit one provider and its dev doc is one chain. A ticket with its own folder runs in parallel and gets a blocked-by link only for a real need.
 - The planning session gives each parallel line of work its own dev doc, so that the lines share no doc.
