@@ -68,8 +68,12 @@ export function checkPlanAnswer(output: unknown): PlanCheck {
   });
   if (problems.length > 0) return { ok: false, problems };
 
-  const files = answer.files_changed
-    .map((path) => path.trim().replace(/^\.\//, ""))
-    .filter((path) => path !== "");
-  return { ok: true, answer: { ...answer, files_changed: [...new Set(files)] } };
+  return { ok: true, answer: { ...answer, files_changed: cleanPlanPaths(answer.files_changed) } };
+}
+
+// The clean step of the paths of a plan: trim, no leading "./", no empty path and no repeat.
+// The first copy of a path keeps its place.
+export function cleanPlanPaths(paths: readonly string[]): string[] {
+  const files = paths.map((path) => path.trim().replace(/^\.\//, "")).filter((path) => path !== "");
+  return [...new Set(files)];
 }
