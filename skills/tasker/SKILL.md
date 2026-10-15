@@ -136,7 +136,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The plan file cannot be written. The task goes to the state `failed`, and the error is `cannot write the plan file of revision v1: <error>`.
 - A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
 
-For now, no command continues a task in `failed` or `quota_blocked`. Run `tasker abort <issue>` to leave the state. A crash of tasker leaves the task in `planning`. Run `tasker abort <issue>` for it too.
+For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked`, no command continues it yet. Run `tasker abort <issue>` to leave the state. A crash of tasker leaves the task in `planning`. Run `tasker abort <issue>` for it.
 
 If you press Ctrl-C, the assistant stops. The run ends as a failure, and the task goes to the state `failed`.
 
@@ -262,7 +262,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - An unexpected error occurs after the run has started. The task goes to the state `failed`, and the error is `executing failed: <error>`.
 - A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
 
-The command writes the events `todo_started` and `todo_done` with the data `{ id }`, `fix_turn_started` and `fix_turn_done` with no data, one `permission_denials` event with `{ denials }`, one `sandbox_cleanup` event for each turn that has one, and one `usage` event for each turn. At the end, it writes one `executed` event with `{ version, prompts, from, to }` in place of the `transition` event. No command resumes a task in `failed` or `quota_blocked` yet.
+The command writes the events `todo_started` and `todo_done` with the data `{ id }`, `fix_turn_started` and `fix_turn_done` with no data, one `permission_denials` event with `{ denials }`, one `sandbox_cleanup` event for each turn that has one, and one `usage` event for each turn. At the end, it writes one `executed` event with `{ version, prompts, from, to }` in place of the `transition` event. For a task in `failed`, run `tasker retry <issue>`. No command resumes a task in `quota_blocked` yet.
 
 ### `tasker verify`
 
@@ -299,6 +299,47 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The worktree cannot be read after the run. The task goes to the state `failed`, and the command records the run as `failed` with all commands and no failing command. The error is `cannot read the uncommitted changes of the worktree after the run: <error>`.
 - The run passed, but tasker cannot record it. The task goes to the state `failed`, and the error is `the verify commands passed, but the run could not be recorded: <error>`.
 - An unexpected error occurs after the run has started. The task goes to the state `failed`, and the error is `verifying failed: <error>`.
+
+### `tasker retry`
+
+Moves a task in the state `failed` back to the state before the step that failed, and runs that step again: `tasker retry <issue>`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+- `--resume-execute`: works only for a task that failed in `verifying`. The command marks every todo `done` and queues one fix turn for the failure, in place of a new verify run. See below.
+
+The command reads the origin. The origin is the state that the task left when it failed. `tasker show` prints it as `failed in`. The command looks up the origin in this table:
+
+- `provisioning`: the command does not move the task. `tasker start` moves it from `failed` to `provisioning`, and the command runs it.
+- `planning`: the task goes to `workspace_ready`. The command deletes the plan session, so that the next run starts a new session. Then it runs `tasker plan`.
+- `refining`: the task goes to `awaiting_plan_review`. Nothing runs. The command prints a hint, because a refine needs new feedback from you.
+- `executing`: the task goes to `approved`. The command deletes the execute session of the pinned revision, so that the next run starts a new session. Then it runs `tasker execute`. A todo that is `done` gets no new turn.
+- `verifying`: the task goes to `executed`, and the command runs `tasker verify`.
+- `verifying` with `--resume-execute`: the task goes to `approved`. The command marks every todo of the pinned revision `done` and queues one fix turn. Then it runs `tasker execute`, which continues the execute session and runs only the fix turn.
+
+The deleted session matters because a run that failed before its first turn recorded a session id that names no conversation. A new run must not continue it.
+
+The fix turn gets the error of the failure and the tail of the log of the failing verify command. The tail is the last 200 lines of the log, within 64 KiB. tasker reads the tail and gives it to the assistant, because the log is in the data root and the sandbox of the assistant reaches only the worktree. The command uses a log only when the verify run of this failure recorded it. A failure that recorded no run, a run with no failing command, a command that never started and a log that is missing or cannot be read give a fix turn with no tail. The command never uses an older log, because an older log gives the fix turn false data.
+
+The move, the deletes, the todo marks, the fix turn and one `retry` event happen in one transaction. The `retry` event holds `{ origin, target, resumeExecute, from, to }` in place of the `transition` event. For a task that failed in `provisioning`, the command writes the event alone, with `{ origin, target, resumeExecute }` and no move.
+
+Then the command releases the task lock and runs the next command. The output starts with this line on stdout:
+
+- `retried <issue key>: failed in <origin>, back in <target>`
+
+For the origin `provisioning`, the target is `provisioning`, so the line is `retried <issue key>: failed in provisioning, back in provisioning`.
+
+For a task that failed in `provisioning`, the steps of `tasker start` run with no `--base`. If they stop because no base branch is known, run `tasker start <issue> --base <branch>`. `tasker start` continues the same task.
+
+The output of the next command follows: the output of `tasker start`, `tasker plan`, `tasker execute` or `tasker verify`. The next command keeps its own errors and its own exit code. If it fails, the task goes to `failed` again with a new error, and you can run `tasker retry` again. For the origin `refining`, the command prints `run tasker refine <issue key> "<feedback>" again` and exits with code 0.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is not in `failed`. The error is `the task of <issue key> is in <state>; tasker retry needs failed`.
+- The task failed in a state that retry has no step for. The error is `the task of <issue key> failed in <state>; tasker retry has no step for it`.
+- You gave `--resume-execute` for a task that did not fail in `verifying`. The error is `--resume-execute applies only to a task that failed in verifying`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
 
 ### `tasker abort`
 
