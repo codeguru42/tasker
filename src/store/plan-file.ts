@@ -1,10 +1,11 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { errorMessage } from "../error-message.js";
+import { transitionWithPlanRevision, type TaskState } from "../state/machine.js";
 import { replaceFile } from "../replace-file.js";
 import { planRevisionPath } from "./layout.js";
 import {
   type NewPlanRevision,
-  type PlanRevision,
   taskNotFound,
   type Task,
   type TaskStore,
@@ -17,16 +18,20 @@ function writePlanFile(dataRoot: string, task: Task, version: number, markdown: 
   replaceFile(path, markdown);
 }
 
-// docs/dev/data-root.md gives the reasons for the order. The caller holds the task lock.
+// docs/dev/data-root.md gives the reasons for the order. The caller holds the task lock and gives the version.
 export function recordPlanRevision(
   store: TaskStore,
   dataRoot: string,
   taskId: number,
-  revision: Omit<NewPlanRevision, "version">,
-): PlanRevision {
+  revision: NewPlanRevision,
+  to: TaskState,
+): Task {
   const task = store.getTask(taskId);
   if (task === undefined) throw taskNotFound(taskId);
-  const version = store.nextPlanVersion(taskId);
-  writePlanFile(dataRoot, task, version, revision.answer.plan_markdown);
-  return store.insertPlanRevision(taskId, { ...revision, version });
+  try {
+    writePlanFile(dataRoot, task, revision.version, revision.answer.plan_markdown);
+  } catch (error) {
+    throw new Error(`cannot write the plan file of revision v${revision.version}: ${errorMessage(error)}`, { cause: error });
+  }
+  return transitionWithPlanRevision(store, taskId, to, revision);
 }

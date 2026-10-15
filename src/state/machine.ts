@@ -1,4 +1,4 @@
-import type { NewEvent, Task, TaskStore } from "../store/store.js";
+import type { NewEvent, NewPlanRevision, Task, TaskStore } from "../store/store.js";
 
 export const STATES = [
   "provisioning",
@@ -216,6 +216,16 @@ export function transitionTask(
 ): Task {
   const check = transitionCheck(to, detail);
   return isSpawningState(to) ? store.startRun(id, to, check) : store.endRun(id, to, check);
+}
+
+// Inserts the revision, appends its plan_revision event and moves the task to `to`, in one transaction.
+export function transitionWithPlanRevision(
+  store: TaskStore,
+  id: number,
+  to: TaskState,
+  revision: NewPlanRevision,
+): Task {
+  return store.addPlanRevision(id, revision, to, transitionCheck(to));
 }
 
 export function failTask(store: TaskStore, id: number, message: string): Task {
