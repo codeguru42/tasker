@@ -196,6 +196,15 @@ describe("task store", () => {
 
   const clearPlan = (taskId: number) => store.clearPlanSession(taskId);
   const clearExecute = (taskId: number, version: number) => store.clearExecuteSession(taskId, version);
+  const recordReview = (taskId: number, number: number, change: Partial<NewSession> = {}) =>
+    store.recordReviewSession(taskId, number, {
+      sessionId: "r-1",
+      provider: "claude-code",
+      model: "opus",
+      effort: "high",
+      ...change,
+    });
+  const clearReview = (taskId: number, number: number) => store.clearReviewSession(taskId, number);
 
   it("creates a task with equal timestamps and no branch", () => {
     const task = store.createTask(newTask);
@@ -1799,6 +1808,90 @@ describe("task store", () => {
       seedPlanRevision(store, task.id);
       expect(store.executeSession(task.id, 1)).toBeUndefined();
       expect(store.executeSession(task.id, 7)).toBeUndefined();
+    });
+  });
+
+  describe("review session", () => {
+    it("records a session before the review row exists", () => {
+      const task = store.createTask(newTask);
+      expect(recordReview(task.id, 1)).toEqual({
+        sessionId: "r-1",
+        repoKey: "tasker",
+        provider: "claude-code",
+        model: "opus",
+        effort: "high",
+      });
+      expect(readReviewRows(task.id)).toEqual([]);
+      expect(readSessionRows()).toEqual([
+        {
+          task_id: task.id,
+          role: "review",
+          session_id: "r-1",
+          provider: "claude-code",
+          model: "opus",
+          effort: "high",
+          created_at: "2026-01-01T00:00:00.000Z",
+          plan_version: null,
+          review_number: 1,
+        },
+      ]);
+    });
+
+    it("writes nothing on a second record with the same id", () => {
+      const task = store.createTask(newTask);
+      const first = recordReview(task.id, 1);
+      const rows = readSessionRows();
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      expect(recordReview(task.id, 1)).toEqual(first);
+      expect(readSessionRows()).toEqual(rows);
+    });
+
+    it("refuses another id for the same review number and writes nothing", () => {
+      const task = store.createTask(newTask);
+      recordReview(task.id, 1);
+      expectNothingChanged(
+        task.id,
+        () => recordReview(task.id, 1, { sessionId: "r-2" }),
+        `task ${task.id} already has the review session r-1 of review 1, not r-2`,
+      );
+    });
+
+    it("refuses a task that does not exist", () => {
+      expect(() => recordReview(999, 1)).toThrow("task not found: 999");
+    });
+
+    it("gives two rows for two review numbers", () => {
+      const task = store.createTask(newTask);
+      recordReview(task.id, 1);
+      recordReview(task.id, 2, { sessionId: "r-2" });
+      expect(readSessionRows()).toMatchObject([
+        { role: "review", session_id: "r-1", review_number: 1 },
+        { role: "review", session_id: "r-2", review_number: 2 },
+      ]);
+    });
+
+    it("clears only its own row", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      seedPlanSession(store, task.id);
+      seedExecuteSession(store, task.id, 1);
+      recordReview(task.id, 1);
+      recordReview(task.id, 2, { sessionId: "r-2" });
+      clearReview(task.id, 1);
+      expect(readSessionRows()).toMatchObject([
+        { role: "plan" },
+        { role: "execute" },
+        { role: "review", session_id: "r-2", review_number: 2 },
+      ]);
+    });
+
+    it("changes nothing when there is no row to clear", () => {
+      const task = store.createTask(newTask);
+      recordReview(task.id, 1);
+      const rows = readSessionRows();
+      clearReview(task.id, 2);
+      clearReview(9999, 1);
+      expect(readSessionRows()).toEqual(rows);
     });
   });
 
