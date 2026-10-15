@@ -108,6 +108,14 @@ export function formatFields(fields: [string, string | number | null | undefined
   return fields.map(([field, value]) => `${field}: ${fieldValue(value)}\n`).join("");
 }
 
+// Left-aligned columns: each column is as wide as its widest cell, and two spaces separate the columns.
+// Each line has no trailing spaces and no line end. A row can have fewer cells than another row.
+export function formatColumns(rows: readonly (readonly string[])[]): string[] {
+  const count = Math.max(0, ...rows.map((row) => row.length));
+  const widths = Array.from({ length: count }, (_, i) => Math.max(...rows.map((row) => (row[i] ?? "").length)));
+  return rows.map((row) => row.map((cell, i) => cell.padEnd(widths[i])).join("  ").trimEnd());
+}
+
 function openDataRootStore(config: Config): TaskStore {
   return openStore(createDataRoot(config.dataRoot).database);
 }

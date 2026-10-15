@@ -2,6 +2,7 @@ import type { RegisterCommand } from "../cli.js";
 import { failedFrom } from "../state/machine.js";
 import type { ExecuteTodoProgress, Task, TaskEvent, TaskStore } from "../store/store.js";
 import {
+  formatColumns,
   formatFields,
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
@@ -31,12 +32,8 @@ function todoProgress(store: TaskStore, taskId: number): string {
   if (pinned === undefined) return "";
   const progress = store.executeTodoProgress(taskId, pinned.version);
   if (progress.every(({ state }) => state === "not_started")) return "";
-  const labels = progress.map(({ state }) => TODO_STATE_LABELS[state]);
-  const stateWidth = Math.max(...labels.map((label) => label.length));
-  const idWidth = Math.max(...progress.map(({ todo }) => todo.id.length));
-  const lines = progress.map(
-    ({ todo }, i) => `  ${labels[i].padEnd(stateWidth)}  ${todo.id.padEnd(idWidth)}  ${oneLine(todo.title)}\n`,
-  );
+  const rows = progress.map(({ todo, state }) => [TODO_STATE_LABELS[state], todo.id, oneLine(todo.title)]);
+  const lines = formatColumns(rows).map((line) => `  ${line}\n`);
   const fixTurn = store.executeFixTurnState(taskId, pinned.version);
   const fixTurnLine = fixTurn === undefined ? "" : `fix turn: ${fixTurn}\n`;
   return `todos (approved v${pinned.version}):\n${lines.join("")}${fixTurnLine}`;
