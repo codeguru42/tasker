@@ -1,20 +1,23 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "../../src/config/load.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
-import { dataRootLayout } from "../../src/store/layout.js";
+import { dataRootLayout, planRevisionPath } from "../../src/store/layout.js";
 import { changedPaths } from "../../src/vcs/git/changes.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { localBranches } from "./git.js";
-import { readRunMarker, withDataRootStore } from "./store.js";
+import { TEST_SESSION_ID } from "./fake-claude.js";
+import { validPlanAnswer } from "./plan.js";
+import { databasePathOf, latestTaskOf, readRunMarker, withDataRootStore } from "./store.js";
 import {
   expectNoAssistantRun,
   startIssueTask,
   startTaskWithCommits,
   taskWorkspaceState,
   useAssistantRunFixture,
+  useRefineFixture,
   usePlanFixture,
   useStartedTask,
   useStartFixture,
@@ -208,5 +211,47 @@ describe("expectNoAssistantRun", () => {
     execFileSync(join(fixture.claude.binDir, "claude"), ["--version"]);
 
     expect(() => expectNoAssistantRun(fixture)).toThrow();
+  });
+});
+
+describe("useRefineFixture", () => {
+  it("leaves the task in awaiting_plan_review with no run marker", async () => {
+    const fixture = await useRefineFixture({});
+    const task = latestTaskOf(fixture.started.dataRoot, fixture.started.key);
+
+    expect(fixture.task.id).toBe(task.id);
+    expect(task.state).toBe("awaiting_plan_review");
+    expect(readRunMarker(databasePathOf(fixture.started.dataRoot), task.id)).toBeUndefined();
+  });
+
+  it("writes v1.md with the plan_markdown of the answer", async () => {
+    const answer = validPlanAnswer({ plan_markdown: "## Summary\n\nOther plan.\n" });
+    const fixture = await useRefineFixture({}, { answer });
+
+    expect(fixture.revision.version).toBe(1);
+    expect(readFileSync(planRevisionPath(fixture.started.dataRoot, fixture.task, 1), "utf8")).toBe(
+      answer.plan_markdown,
+    );
+  });
+
+  it("records the plan session", async () => {
+    const fixture = await useRefineFixture({});
+
+    expect(fixture.session).toMatchObject({ sessionId: TEST_SESSION_ID, provider: "claude-code", model: "opus" });
+    expect(withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(fixture.task.id))).toEqual(
+      fixture.session,
+    );
+  });
+
+  it("records the model of options.session", async () => {
+    const fixture = await useRefineFixture({}, { session: { model: "gpt-5" } });
+
+    expect(fixture.session.model).toBe("gpt-5");
+  });
+
+  it("gives options.limits to the configuration", async () => {
+    const fixture = await useRefineFixture({}, { limits: { planTimeoutMin: 0.05 } });
+
+    expect(fixture.started.config.limits.planTimeoutMin).toBe(0.05);
   });
 });
