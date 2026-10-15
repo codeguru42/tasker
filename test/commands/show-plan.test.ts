@@ -2,11 +2,10 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { showPlan } from "../../src/commands/show-plan.js";
-import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath } from "../../src/store/layout.js";
 import { runCommand } from "../helpers/cli.js";
 import { useThreeRepoDataRoot } from "../helpers/config.js";
-import { OPEN_QUESTION_BLOCK, recordPlanRevisions, recordTestPlanRevision, seedPlanRevision, seedPlanningTask, validPlanAnswer } from "../helpers/plan.js";
+import { OPEN_QUESTION_BLOCK, recordPlanRevisions, seedPlanReviewTask, seedPlanRevision, seedPlanningTask, validPlanAnswer } from "../helpers/plan.js";
 import { withDataRootStore } from "../helpers/store.js";
 
 const TASKER = "codeguru42/tasker";
@@ -105,13 +104,9 @@ describe("show-plan", () => {
     });
 
     it("names the approved revision when another revision is shown", async () => {
-      const { dataRoot, task } = seedPlanningTask();
-      recordPlanRevisions(dataRoot, task);
-      withDataRootStore(dataRoot, (store) => {
-        store.approvePlanRevision(task.id, 1, "approved");
-        transitionTask(store, task.id, "awaiting_plan_review");
-        transitionTask(store, task.id, "refining");
-        recordTestPlanRevision(store, dataRoot, task.id, { source: "refine", feedback: "Use main." });
+      seedPlanReviewTask({
+        revisions: [{}, { source: "refine", feedback: "Use main." }],
+        approved: 1,
       });
 
       const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
