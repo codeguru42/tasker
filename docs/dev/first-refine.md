@@ -51,6 +51,15 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 
 - List each search hit of the old path with "change" or "keep", and the reason. Name the folders with a similar name. Name the tests that build the layout themselves.
 
+## A ticket that moves code
+
+- Before a ticket splits a file, ask the plan to list each local function of the old file (a function that the file does not export) and to name each new file that uses it. A local function that two new files use must go to one shared place ([rules.md](rules.md#tests)). Otherwise the split makes a copy (#140).
+- If a move must keep the code exact, ask the plan for a scripted proof that execute runs and reports. A move changes each line of the file, so a read of the diff cannot show a dropped test or a changed body (#140). The proof compares the old and the new state in four ways:
+  - The names of the exports.
+  - The names and the count of the tests, from `npx vitest list --json`.
+  - A sorted diff of the bodies, without the import lines.
+  - The import graph.
+
 ## A ticket that moves a task into or out of a group of states
 
 - The transition code must go through the new functions. Otherwise other paths, for example a failure or an abort, skip the rule.
