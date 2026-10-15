@@ -13,6 +13,7 @@ import {
   transitionTask,
   transitionWithPlanApproval,
   transitionWithPlanRevision,
+  transitionWithPlanUnapproval,
   type TaskState,
   type TransitionDetail,
 } from "../../src/state/machine.js";
@@ -437,6 +438,34 @@ describe("task transitions", () => {
       );
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBeNull();
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithPlanUnapproval", () => {
+    it("clears the pinned approval and moves the task with one unapproved event", () => {
+      const task = store.createTask(newTask("planning"));
+      seedPlanRevision(store, task.id);
+      transitionWithPlanApproval(store, task.id, 1, 0);
+      const moved = transitionWithPlanUnapproval(store, task.id, 1);
+      expect(moved.state).toBe("awaiting_plan_review");
+      expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBeNull();
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "plan_revision", "approved", "unapproved"]);
+      expect(events[3].data).toEqual({ version: 1, from: "approved", to: "awaiting_plan_review" });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("planning"));
+      seedPlanRevision(store, task.id, {}, "workspace_ready");
+      store.approvePlanRevision(task.id, 1, "workspace_ready");
+      const before = store.listEvents(task.id);
+      const approvedAt = store.getPlanRevision(task.id, 1)!.approvedAt;
+      expect(() => transitionWithPlanUnapproval(store, task.id, 1)).toThrow(
+        "illegal state transition: workspace_ready -> awaiting_plan_review",
+      );
+      expect(store.getTask(task.id)!.state).toBe("workspace_ready");
+      expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBe(approvedAt);
       expect(store.listEvents(task.id)).toEqual(before);
     });
   });
