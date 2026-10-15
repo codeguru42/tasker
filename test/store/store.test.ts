@@ -24,7 +24,7 @@ import { thrownBy } from "../helpers/errors.js";
 import { reviewFinding, reviewFindingWithout } from "../helpers/review.js";
 import { seedExecuteSession, seedExecuteTodoStates, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
 import { deadPid, repoRoot, startFixture, startWriteLockHolder } from "../helpers/processes.js";
-import { dayAt, readRunMarker, tableNames, withRawDatabase, withStoreFile } from "../helpers/store.js";
+import { dayAt, readRunMarker, seedReview, tableNames, withRawDatabase, withStoreFile } from "../helpers/store.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
@@ -166,6 +166,14 @@ describe("task store", () => {
   const latestReview = (taskId: number) => store.latestReview(taskId);
   const reviewCount = (taskId: number) => store.reviewCount(taskId);
   const listReviews = (taskId: number) => store.listReviews(taskId);
+  const dismissFindings = (
+    taskId: number,
+    number: number,
+    positions: number[],
+    reason: string,
+    state: string,
+    check?: Parameters<TaskStore["dismissReviewFindings"]>[5],
+  ) => store.dismissReviewFindings(taskId, number, positions, reason, state, check);
 
   const insertRawTask = (db: DatabaseSync, repoKey: string, state: string) =>
     db
@@ -951,6 +959,135 @@ describe("task store", () => {
       expect(readFindingRows(task.id)).toEqual([]);
       expect(getReview(task.id, 1)?.findings).toEqual([]);
       expect(store.listEvents(task.id).slice(before)).toMatchObject([{ type: "review", data: { findings: 0 } }]);
+    });
+  });
+
+  describe("dismiss review findings", () => {
+    const reviewedTask = () => {
+      const task = store.createTask({ ...newTask, state: "reviewed" });
+      seedReview(store, task.id);
+      return task;
+    };
+    const toWorkReview = () => ({ type: "transition", data: { to: "awaiting_work_review" } });
+
+    it("keeps the task and returns the open positions on a partial dismissal", () => {
+      const task = reviewedTask();
+      const before = store.getTask(task.id);
+      const events = store.listEvents(task.id).length;
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      let checks = 0;
+      const open = dismissFindings(task.id, 1, [1], "A false alarm.", "awaiting_work_review", () => {
+        checks += 1;
+        return toWorkReview();
+      });
+      expect(open).toEqual([2]);
+      expect(checks).toBe(0);
+      expect(store.getTask(task.id)).toEqual(before);
+      expect(store.listEvents(task.id).slice(events)).toMatchObject([
+        { type: "review_dismissed", data: { number: 1, positions: [1], reason: "A false alarm." } },
+      ]);
+      expect(readFindingRows(task.id)).toMatchObject([
+        { position: 1, dismissed_at: "2026-01-02T00:00:00.000Z", dismiss_reason: "A false alarm." },
+        { position: 2, dismissed_at: null, dismiss_reason: null },
+      ]);
+      expect(getReview(task.id, 1)?.findings[0]?.dismissed).toEqual({
+        at: "2026-01-02T00:00:00.000Z",
+        reason: "A false alarm.",
+      });
+    });
+
+    it("moves the task on the last dismissal", () => {
+      const task = reviewedTask();
+      dismissFindings(task.id, 1, [1], "One.", "awaiting_work_review");
+      const events = store.listEvents(task.id).length;
+      const open = dismissFindings(task.id, 1, [2], "Two.", "awaiting_work_review", toWorkReview);
+      expect(open).toEqual([]);
+      expect(store.getTask(task.id)?.state).toBe("awaiting_work_review");
+      expect(store.listEvents(task.id).slice(events)).toMatchObject([
+        { type: "review_dismissed", data: { number: 1, positions: [2], reason: "Two." } },
+        { type: "transition", data: { to: "awaiting_work_review" } },
+      ]);
+    });
+
+    it("moves the task when one call dismisses all findings", () => {
+      const task = reviewedTask();
+      const events = store.listEvents(task.id).length;
+      expect(dismissFindings(task.id, 1, [1, 2], "Both.", "awaiting_work_review", toWorkReview)).toEqual([]);
+      expect(store.getTask(task.id)?.state).toBe("awaiting_work_review");
+      expect(store.listEvents(task.id).slice(events)).toMatchObject([
+        { type: "review_dismissed", data: { positions: [1, 2] } },
+        { type: "transition" },
+      ]);
+    });
+
+    it("writes nothing for a missing position", () => {
+      const task = reviewedTask();
+      const message = `review 1 of task ${task.id} has no finding 9`;
+      expectNothingChanged(task.id, () => dismissFindings(task.id, 1, [9], "x", "awaiting_work_review"), message);
+      expectNothingChanged(task.id, () => dismissFindings(task.id, 1, [1, 9], "x", "awaiting_work_review"), message);
+    });
+
+    it("writes nothing for a dismissed position", () => {
+      const task = reviewedTask();
+      dismissFindings(task.id, 1, [1], "First.", "awaiting_work_review");
+      const message = `finding 1 of review 1 of task ${task.id} is already dismissed`;
+      expectNothingChanged(task.id, () => dismissFindings(task.id, 1, [1], "x", "awaiting_work_review"), message);
+      expectNothingChanged(task.id, () => dismissFindings(task.id, 1, [2, 1], "x", "awaiting_work_review"), message);
+    });
+
+    it("writes nothing for a position that the list repeats", () => {
+      const task = reviewedTask();
+      expectNothingChanged(
+        task.id,
+        () => dismissFindings(task.id, 1, [1, 1], "x", "awaiting_work_review"),
+        `finding 1 of review 1 of task ${task.id} is already dismissed`,
+      );
+    });
+
+    it("keeps the first time and reason after a later try", () => {
+      const task = reviewedTask();
+      dismissFindings(task.id, 1, [1], "First.", "awaiting_work_review");
+      clock = new Date("2026-01-05T00:00:00.000Z");
+      expect(() => dismissFindings(task.id, 1, [1], "Second.", "awaiting_work_review")).toThrow("already dismissed");
+      expect(getReview(task.id, 1)?.findings[0]?.dismissed).toEqual({
+        at: "2026-01-01T00:00:00.000Z",
+        reason: "First.",
+      });
+    });
+
+    it("writes nothing for a missing review", () => {
+      const task = reviewedTask();
+      expectNothingChanged(
+        task.id,
+        () => dismissFindings(task.id, 2, [1], "x", "awaiting_work_review"),
+        `task ${task.id} has no review 2`,
+      );
+    });
+
+    it("writes nothing for an empty list", () => {
+      const task = reviewedTask();
+      expectNothingChanged(
+        task.id,
+        () => dismissFindings(task.id, 1, [], "x", "awaiting_work_review"),
+        `the dismissal of review 1 of task ${task.id} names no finding`,
+      );
+    });
+
+    it("writes nothing when check throws on the last dismissal", () => {
+      const task = reviewedTask();
+      expectNothingChanged(
+        task.id,
+        () =>
+          dismissFindings(task.id, 1, [1, 2], "x", "awaiting_work_review", () => {
+            throw new Error("check refused");
+          }),
+        "check refused",
+      );
+      expect(getReview(task.id, 1)?.findings.map((entry) => entry.dismissed)).toEqual([null, null]);
+    });
+
+    it("refuses a missing task", () => {
+      expect(() => dismissFindings(999, 1, [1], "x", "awaiting_work_review")).toThrow("task not found: 999");
     });
   });
 
