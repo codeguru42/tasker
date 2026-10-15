@@ -76,9 +76,9 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
   rmSync(marker, { force: true });
 }
 
-// Writes the url and the fetch refspec of origin and the identity of config, turns off signing,
-// and installs the pre-push hook.
-// A field of the identity that is not set is unset.
+// Makes the url and the fetch refspec of origin, the identity of config, the signing flags and the
+// hooks path match the wanted values, and installs the pre-push hook.
+// It writes a key only when its local lines differ. A field of the identity that is not set is unset.
 async function applyConfig(
   clone: string,
   remote: string,
@@ -86,21 +86,17 @@ async function applyConfig(
   env: NodeJS.ProcessEnv,
   publishTokens: string,
 ): Promise<void> {
-  await setConfig(clone, ["--replace-all", "remote.origin.url", cloneUrl(remote)], env);
-  await setConfig(
-    clone,
-    ["--replace-all", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"],
-    env,
-  );
-  await setOrUnset(clone, "user.name", config.authorName, env);
-  await setOrUnset(clone, "user.email", config.authorEmail, env);
-  await setConfig(clone, ["--replace-all", "commit.gpgSign", "false"], env);
-  await setConfig(clone, ["--replace-all", "tag.gpgSign", "false"], env);
-  await setConfig(clone, ["--replace-all", "tag.forceSignAnnotated", "false"], env);
+  await syncConfig(clone, "remote.origin.url", cloneUrl(remote), env);
+  await syncConfig(clone, "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*", env);
+  await syncConfig(clone, "user.name", config.authorName, env);
+  await syncConfig(clone, "user.email", config.authorEmail, env);
+  await syncConfig(clone, "commit.gpgSign", "false", env);
+  await syncConfig(clone, "tag.gpgSign", "false", env);
+  await syncConfig(clone, "tag.forceSignAnnotated", "false", env);
   // A local value beats a global or system value. It must be absolute: a relative value
   // resolves against the worktree.
-  await setConfig(clone, ["--replace-all", "core.hooksPath", resolve(clone, "hooks")], env);
-  await setConfig(clone, ["--replace-all", "include.path", INCLUDE_FILE], env);
+  await syncConfig(clone, "core.hooksPath", resolve(clone, "hooks"), env);
+  await syncConfig(clone, "include.path", INCLUDE_FILE, env);
   // The include file goes last, so a failed git config call leaves it as it was.
   writeIncludeFile(clone, config.sshKey);
   installPushHook(clone, publishTokens);
@@ -120,23 +116,56 @@ function writeIncludeFile(clone: string, sshKey: string | undefined): void {
   replaceFile(join(clone, INCLUDE_FILE), content, { followSymlink: false });
 }
 
-async function setOrUnset(
+// Makes the local lines of key in the clone match value: one line with value, or no line when
+// value is undefined. It writes only when the lines differ. A read takes no config.lock, and a
+// live sandboxed run holds a config.lock placeholder in the clone, so a write fails then.
+async function syncConfig(
   clone: string,
   key: string,
   value: string | undefined,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
-  if (value !== undefined) {
-    await setConfig(clone, ["--replace-all", key, value], env);
+  const lines = await localLines(clone, key, env);
+  if (value === undefined) {
+    if (lines.length === 0) {
+      return;
+    }
+    try {
+      await setConfig(clone, ["--unset-all", key], env);
+    } catch (error) {
+      // Exit code 5 of --unset-all means that the key is missing.
+      if (!isGitExit(error, 5)) {
+        throw error;
+      }
+    }
     return;
   }
+  if (lines.length === 1 && lines[0] === value) {
+    return;
+  }
+  // --replace-all leaves exactly one local line, also for a key with more than one line.
+  await setConfig(clone, ["--replace-all", key, value], env);
+}
+
+// Every local line of key in the clone. --null keeps a value with a newline whole, and --local
+// reads only the clone configuration, with no include. Exit code 1 means that the key has no line.
+async function localLines(
+  clone: string,
+  key: string,
+  env: NodeJS.ProcessEnv,
+): Promise<string[]> {
   try {
-    await setConfig(clone, ["--unset-all", key], env);
+    const out = await runGit(["config", "--local", "--null", "--get-all", key], {
+      gitDir: clone,
+      env,
+    });
+    // Each value ends with NUL, so the last part after the split is empty.
+    return out.split("\0").slice(0, -1);
   } catch (error) {
-    // Exit code 5 of --unset-all means that the key is missing.
-    if (!isGitExit(error, 5)) {
-      throw error;
+    if (isGitExit(error, 1)) {
+      return [];
     }
+    throw error;
   }
 }
 
