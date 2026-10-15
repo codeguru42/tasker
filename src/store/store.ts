@@ -141,6 +141,16 @@ export type ExecuteTodoState = "in_progress" | "done";
 
 type PlanTodo = PlanAnswer["todos"][number];
 
+// A fix turn is one more turn of the execute session. It gives the assistant the error of a failed verify run.
+export interface NewExecuteFixTurn {
+  verifyFailure: string;
+  verifyLogTail: string | null;
+}
+
+export interface ExecuteFixTurn extends NewExecuteFixTurn {
+  queuedAt: string;
+}
+
 export interface ExecuteTodoProgress {
   todo: PlanTodo;
   state: ExecuteTodoState | "not_started";
@@ -240,6 +250,13 @@ export interface TaskStore extends LockStore {
   executeTodoProgress(taskId: number, version: number): ExecuteTodoProgress[];
   // Sets every todo of a plan revision to done, with one time, in one transaction. The revision must exist.
   markExecuteTodosDone(taskId: number, version: number): void;
+  // Queues the fix turn of a plan revision. A new fix turn replaces the old one, also when the old one is done.
+  // The revision must exist.
+  queueExecuteFixTurn(taskId: number, version: number, turn: NewExecuteFixTurn): void;
+  // The queued fix turn of a plan revision, or undefined when it has none or the turn is done.
+  queuedExecuteFixTurn(taskId: number, version: number): ExecuteFixTurn | undefined;
+  // Marks the fix turn of a plan revision done. A revision with no fix turn is an error.
+  markExecuteFixTurnDone(taskId: number, version: number): void;
   // Deletes the plan session of a task. A missing row is not an error. Only `tasker retry` (a later ticket)
   // calls it. A run that failed before its first turn recorded an id that no conversation holds,
   // so the next run must not continue that id.
@@ -489,6 +506,20 @@ function setUp(db: DatabaseSync) {
     ),
     selectExecuteTodos: db.prepare(
       "SELECT todo_id, state FROM execute_todos WHERE task_id = ? AND plan_version = ?",
+    ),
+    upsertExecuteFixTurn: db.prepare(
+      `INSERT INTO execute_fix_turns (task_id, plan_version, verify_failure, verify_log_tail, queued_at, done_at)
+       VALUES (?, ?, ?, ?, ?, NULL)
+       ON CONFLICT(task_id, plan_version)
+       DO UPDATE SET verify_failure = excluded.verify_failure, verify_log_tail = excluded.verify_log_tail,
+         queued_at = excluded.queued_at, done_at = NULL`,
+    ),
+    selectQueuedExecuteFixTurn: db.prepare(
+      `SELECT verify_failure, verify_log_tail, queued_at FROM execute_fix_turns
+       WHERE task_id = ? AND plan_version = ? AND done_at IS NULL`,
+    ),
+    updateExecuteFixTurnDone: db.prepare(
+      "UPDATE execute_fix_turns SET done_at = ? WHERE task_id = ? AND plan_version = ?",
     ),
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
@@ -927,6 +958,40 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         const at = now().toISOString();
         for (const todo of revision.answer.todos) {
           statements.upsertExecuteTodo.run(taskId, version, todo.id, "done", at);
+        }
+      });
+    },
+
+    queueExecuteFixTurn(taskId, version, turn) {
+      immediateTransaction(db, () => {
+        if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
+        statements.upsertExecuteFixTurn.run(
+          taskId,
+          version,
+          turn.verifyFailure,
+          turn.verifyLogTail,
+          now().toISOString(),
+        );
+      });
+    },
+
+    queuedExecuteFixTurn(taskId, version) {
+      const row = statements.selectQueuedExecuteFixTurn.get(taskId, version) as
+        | { verify_failure: string; verify_log_tail: string | null; queued_at: string }
+        | undefined;
+      if (row === undefined) return undefined;
+      return {
+        verifyFailure: row.verify_failure,
+        verifyLogTail: row.verify_log_tail,
+        queuedAt: row.queued_at,
+      };
+    },
+
+    markExecuteFixTurnDone(taskId, version) {
+      immediateTransaction(db, () => {
+        const result = statements.updateExecuteFixTurnDone.run(now().toISOString(), taskId, version);
+        if (result.changes === 0) {
+          throw new Error(`task ${taskId} has no fix turn of plan revision ${version}`);
         }
       });
     },
