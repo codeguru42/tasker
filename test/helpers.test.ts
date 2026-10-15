@@ -18,10 +18,8 @@ import {
   claudeSampleWithResult,
   dayAt,
   fakeGh,
-  fakeSsh,
   ghTokenAnswer,
   githubIssueAnswer,
-  gitTestEnv,
   isAlive,
   localBranches,
   readRunMarker,
@@ -58,29 +56,6 @@ import {
 function seedTask(store: TaskStore): Task {
   return store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
 }
-
-describe("fakeSsh", () => {
-  let dir: string;
-
-  beforeEach(() => {
-    dir = useTempDir("tasker-fake-ssh-");
-  });
-
-  it("puts the bin folder first on the PATH", () => {
-    const ssh = fakeSsh(dir, gitTestEnv(dir), "serve");
-    expect(ssh.env.PATH?.startsWith(join(dir, "bin") + delimiter)).toBe(true);
-  });
-
-  it("gives the ssh remote of a repo path", () => {
-    const ssh = fakeSsh(dir, gitTestEnv(dir), "serve");
-    expect(ssh.remote("/x/o.git")).toBe("ssh://tasker.invalid/x/o.git");
-  });
-
-  it("writes the fake ssh into the bin folder", () => {
-    fakeSsh(dir, gitTestEnv(dir), "refuse");
-    expect(existsSync(join(dir, "bin", "ssh"))).toBe(true);
-  });
-});
 
 describe("fakeGh", () => {
   let dir: string;
