@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 import { plan } from "../../src/commands/plan.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
 import { PLAN_PROMPT, PLAN_PROMPT_NAME } from "../../src/prompts/plan.js";
@@ -180,7 +180,7 @@ describe("plan", () => {
   });
 
   it("blocks the task on a quota stop", async () => {
-    const fixture = await usePlanFixture({ stream: claudeSample("quota-stop") });
+    const fixture = await usePlanFixture({ stream: claudeSample("quota-stop"), exitCode: 1 });
 
     const result = await runPlan();
 
@@ -305,8 +305,8 @@ describe("plan", () => {
     it("fails when the prompt cannot be archived", async () => {
       const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
       const prompts = join(fixture.started.dataRoot, "prompts");
-      rmSync(prompts, { recursive: true, force: true });
-      writeFileSync(prompts, "a file, not a folder");
+      chmodSync(prompts, 0o555);
+      onTestFinished(() => chmodSync(prompts, 0o755));
 
       const result = await runPlan();
 

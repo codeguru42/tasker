@@ -42,8 +42,9 @@ export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
   }
 }
 
-// The message is the error of the event and the line on stderr.
-function failRun(store: TaskStore, task: Task, io: Io, message: string): RunOutcomeResult {
+// The message is the error of the event and the line on stderr. Each command that fails the task after its run
+// uses it, so the steps have one home.
+export function failRun(store: TaskStore, task: Task, io: Io, message: string): { exitCode: number } {
   failTask(store, task.id, message);
   io.stderr(`${message}\n`);
   return { exitCode: 1 };
