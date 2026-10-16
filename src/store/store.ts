@@ -246,6 +246,8 @@ export interface TaskStore extends LockStore {
     check?: (current: Task) => NewEvent | undefined,
   ): Task;
   getPlanRevision(taskId: number, version: number): PlanRevision | undefined;
+  // The plan revisions of the task, oldest first.
+  listPlanRevisions(taskId: number): PlanRevision[];
   // The number that the next verify run of the task must have. The caller holds the task lock,
   // so the value stays valid until the insert.
   nextVerifyRun(taskId: number): number;
@@ -629,6 +631,7 @@ function setUp(db: DatabaseSync) {
        RETURNING *`,
     ),
     selectPlanRevision: db.prepare("SELECT * FROM plan_revisions WHERE task_id = ? AND version = ?"),
+    selectPlanRevisions: db.prepare("SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version"),
     selectLatestPlanRevision: db.prepare(
       "SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version DESC LIMIT 1",
     ),
@@ -1160,6 +1163,11 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     getPlanRevision: readPlanRevision,
+
+    listPlanRevisions(taskId) {
+      const rows = statements.selectPlanRevisions.all(taskId) as unknown as PlanRevisionRow[];
+      return rows.map((row) => rowToPlanRevision(row));
+    },
 
     nextVerifyRun: readNextVerifyRun,
 
