@@ -395,6 +395,25 @@ describe("runAssistant with the signals of tasker", () => {
     expect(fixture.stdout()).toBe("");
   });
 
+  it(
+    "ends tasker with a signal that comes while a child that cannot start starts after a file read",
+    { timeout: 20_000 },
+    async () => {
+      const dir = useTempDir("tasker-run-assistant-");
+      const fixture = startFixture("run-assistant-signal.ts", [
+        dir,
+        "60000",
+        "exit 0",
+        "SIGTERM",
+        join(dir, "missing"),
+        "after-read",
+      ]);
+
+      expect(await fixture.exited).toEqual({ code: null, signal: "SIGTERM" });
+      expect(fixture.stdout()).toBe("");
+    },
+  );
+
   it.each(["SIGINT", "SIGTERM"] as const)(
     "forwards %s to the group and keeps tasker alive",
     { timeout: 20_000 },

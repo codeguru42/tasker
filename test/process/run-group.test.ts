@@ -260,7 +260,7 @@ function startGroupFixture(
   command: string,
   deadlineMs: number,
   holdMs: number,
-  extra: { spawnSignal?: NodeJS.Signals; file?: string } = {},
+  extra: { spawnSignal?: NodeJS.Signals; file?: string; afterRead?: boolean } = {},
 ): GroupFixture {
   const dir = useTempDir("tasker-run-group-fixture-");
   const logPath = join(dir, "out.log");
@@ -271,7 +271,8 @@ function startGroupFixture(
     String(holdMs),
     command,
     extra.spawnSignal ?? "",
-    ...(extra.file ? [extra.file] : []),
+    extra.file ?? "",
+    extra.afterRead ? "after-read" : "",
   ]);
   let exited = false;
   void child.exited.then(() => (exited = true));
@@ -349,6 +350,18 @@ describe("runInGroup with the signals of tasker", () => {
     expect(await fixture.exit).toEqual({ code: null, signal: "SIGTERM" });
     expect(fixture.stdout()).toBe("");
   });
+
+  it(
+    "ends tasker with a signal that comes while a child that cannot start starts after a file read",
+    { timeout: 20_000 },
+    async () => {
+      const file = join(useTempDir("tasker-run-group-"), "missing");
+      const fixture = startGroupFixture("exit 0", MINUTE_MS, 0, { spawnSignal: "SIGTERM", file, afterRead: true });
+
+      expect(await fixture.exit).toEqual({ code: null, signal: "SIGTERM" });
+      expect(fixture.stdout()).toBe("");
+    },
+  );
 
   it("forwards a second SIGINT to the same command", { timeout: 20_000 }, async () => {
     const fixture = startGroupFixture(
