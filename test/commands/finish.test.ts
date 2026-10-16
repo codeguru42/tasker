@@ -13,6 +13,7 @@ import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
   dayAt,
+  eventDataOf,
   eventsOf,
   lastErrorOf,
   latestTaskOf,
@@ -172,10 +173,6 @@ describe("finish with the tracker write", () => {
   const CLOSE_CALL = ["issue", "close", "5", "-R", REPO, "--reason", "completed"];
   const labelAnswer = (failure: { stderr: string; exitCode: number } | object = {}) =>
     githubWriteAnswer({ project: REPO, number: 5, verb: "edit", rest: ["--add-label", "done"], ...failure });
-  const doneEvents = (dataRoot: string) =>
-    eventsOf(dataRoot, KEY)
-      .filter((event) => event.type === "tracker_update")
-      .map((event) => event.data);
 
   it("adds the done label after the cleanup and before the move to finished", async () => {
     const landed = await useLandedTask({
@@ -223,7 +220,11 @@ describe("finish with the tracker write", () => {
     expect(result.code).toBe(0);
     expect(result.out).not.toContain("on the tracker");
     expect(result.out.endsWith(`finished ${KEY}\n`)).toBe(true);
-    const [event] = doneEvents(landed.dataRoot) as { action: string; result: string; error: string }[];
+    const [event] = eventDataOf(landed.dataRoot, KEY, "tracker_update") as {
+      action: string;
+      result: string;
+      error: string;
+    }[];
     expect(event).toEqual({ action: "done", result: "failed", error: expect.stringContaining("cannot label") });
     expect(result.err).toBe(`warning: cannot mark ${KEY} done on the tracker: ${event.error}\n`);
     expect(latestTaskOf(landed.dataRoot, KEY).state).toBe("finished");
@@ -237,6 +238,6 @@ describe("finish with the tracker write", () => {
 
     expect(result.code).toBe(0);
     expect(trackerWriteCalls(landed.gh)).toEqual([]);
-    expect(doneEvents(landed.dataRoot)).toEqual([]);
+    expect(eventDataOf(landed.dataRoot, KEY, "tracker_update")).toEqual([]);
   });
 });

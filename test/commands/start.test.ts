@@ -11,11 +11,20 @@ import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
 import { ghTokenAnswer, githubWriteAnswer, trackerWriteCalls, writeFakeGh } from "../helpers/fake-gh.js";
 import { taskNames } from "../helpers/git.js";
 import { spawnTasker, startLockHolder, waitUntil, waitUntilGone } from "../helpers/processes.js";
-import { dayAt, eventsOf, latestTaskOf, lockNames, seedTasks, withDataRootStore } from "../helpers/store.js";
+import {
+  dayAt,
+  eventDataOf,
+  eventsOf,
+  latestTaskOf,
+  lockNames,
+  seedTasks,
+  withDataRootStore,
+} from "../helpers/store.js";
 import { trackerRepo, useStartFixture } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
 const KEY = "codeguru42/tasker#5";
+const PROJECT = "codeguru42/tasker";
 
 // Makes sure that the task failed in provisioning with an error, and that stderr holds the notes
 // that came before the error, then that error.
@@ -45,6 +54,15 @@ function hasTask(dataRoot: string): boolean {
   return taskState(dataRoot) !== undefined;
 }
 
+// The six field lines of the output of a new task.
+function fieldLines(dataRoot: string): string {
+  const names = taskNames(repoPaths(dataRoot, PROJECT).worktrees, 5, "Issue 5");
+  return (
+    `issue: ${KEY}\nrepo: ${PROJECT}\nstate: workspace_ready\nbase: main\n` +
+    `branch: ${names.branch}\nworktree: ${names.worktree}\n`
+  );
+}
+
 describe("start", () => {
   it("takes a new task to workspace_ready", async () => {
     const fixture = await useStartFixture({
@@ -58,13 +76,7 @@ describe("start", () => {
     expect(result).toEqual({
       code: 0,
       err: "tasker saved main as the default base branch of codeguru42/tasker.\n",
-      out:
-        "issue: codeguru42/tasker#5\n" +
-        "repo: codeguru42/tasker\n" +
-        "state: workspace_ready\n" +
-        "base: main\n" +
-        `branch: ${names.branch}\n` +
-        `worktree: ${names.worktree}\n`,
+      out: fieldLines(dataRoot),
     });
     expect(existsSync(join(names.worktree, "bootstrap.ran"))).toBe(true);
     const events = eventsOf(dataRoot, KEY);
@@ -458,7 +470,6 @@ describe("start", () => {
   });
 
   describe("the tracker writes", () => {
-    const PROJECT = "codeguru42/tasker";
     const ASSIGN = ["issue", "edit", "5", "-R", PROJECT, "--add-assignee", "@me"];
     const LABEL = ["issue", "edit", "5", "-R", PROJECT, "--add-label", "in progress"];
     const assignAnswer = (failure: { stderr: string; exitCode: number } | object = {}) =>
@@ -471,20 +482,6 @@ describe("start", () => {
         rest: ["--add-label", "in progress"],
         ...failure,
       });
-    const trackerEvents = (dataRoot: string) =>
-      eventsOf(dataRoot, KEY)
-        .filter((event) => event.type === "tracker_update")
-        .map((event) => event.data);
-
-    // The six field lines of the output of a new task.
-    function fieldLines(dataRoot: string): string {
-      const names = taskNames(repoPaths(dataRoot, PROJECT).worktrees, 5, "Issue 5");
-      return (
-        `issue: ${KEY}\nrepo: ${PROJECT}\nstate: workspace_ready\nbase: main\n` +
-        `branch: ${names.branch}\nworktree: ${names.worktree}\n`
-      );
-    }
-
     it("makes no write and no event when updateOnStart is false", async () => {
       const fixture = await useStartFixture({
         repo: trackerRepo({ updateOnStart: false, inProgressLabel: "in progress" }),
@@ -495,7 +492,7 @@ describe("start", () => {
       expect(result.code).toBe(0);
       expect(result.out).toBe(fieldLines(fixture.dataRoot));
       expect(trackerWriteCalls(fixture.gh)).toEqual([]);
-      expect(trackerEvents(fixture.dataRoot)).toEqual([]);
+      expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([]);
     });
 
     it("assigns the issue and adds the label after the fields, and records two ok events", async () => {
@@ -513,7 +510,7 @@ describe("start", () => {
       expect(trackerWriteCalls(fixture.gh)).toEqual([ASSIGN, LABEL]);
       const types = eventsOf(fixture.dataRoot, KEY).map((event) => event.type);
       expect(types.slice(-3)).toEqual(["transition", "tracker_update", "tracker_update"]);
-      expect(trackerEvents(fixture.dataRoot)).toEqual([
+      expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([
         { action: "assign", result: "ok" },
         { action: "in_progress", result: "ok" },
       ]);
@@ -530,7 +527,7 @@ describe("start", () => {
       expect(result.code).toBe(0);
       expect(result.out).toBe(`${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\n`);
       expect(trackerWriteCalls(fixture.gh)).toEqual([ASSIGN]);
-      expect(trackerEvents(fixture.dataRoot)).toEqual([{ action: "assign", result: "ok" }]);
+      expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([{ action: "assign", result: "ok" }]);
     });
 
     it("warns for each failed write, exits with 0 and keeps the task in workspace_ready", async () => {
@@ -546,7 +543,11 @@ describe("start", () => {
 
       expect(result.code).toBe(0);
       expect(result.out).toBe(fieldLines(fixture.dataRoot));
-      const events = trackerEvents(fixture.dataRoot) as { action: string; result: string; error: string }[];
+      const events = eventDataOf(fixture.dataRoot, KEY, "tracker_update") as {
+        action: string;
+        result: string;
+        error: string;
+      }[];
       expect(events).toEqual([
         { action: "assign", result: "failed", error: expect.stringContaining("cannot assign") },
         { action: "in_progress", result: "failed", error: expect.stringContaining("cannot label") },

@@ -11,7 +11,7 @@ import {
   turnResultStream,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { eventsOf, failTaskFrom, failVerifyRun, latestTaskOf, withDataRootStore } from "../helpers/store.js";
+import { eventDataOf, failTaskFrom, failVerifyRun, latestTaskOf, withDataRootStore } from "../helpers/store.js";
 import {
   expectCommandRefused,
   useExecuteFixture,
@@ -29,12 +29,6 @@ const runRetry = (key = KEY, ...extra: string[]) => runCommand(retry, "retry", k
 // The first line of the output of tasker retry.
 const firstLine = (origin: string, target: string) => `retried ${KEY}: failed in ${origin}, back in ${target}\n`;
 
-// The data of each retry event of the task, in order.
-const retryEvents = (dataRoot: string) =>
-  eventsOf(dataRoot, KEY)
-    .filter((event) => event.type === "retry")
-    .map((event) => event.data);
-
 describe("tasker retry", () => {
   it("runs tasker start for a task that failed in provisioning", async () => {
     const started = await useStartedTask();
@@ -49,7 +43,7 @@ describe("tasker retry", () => {
     expect(result.out.startsWith(firstLine("provisioning", "provisioning"))).toBe(true);
     expect(result.out).toContain("state: workspace_ready");
     expect(latestTaskOf(started.dataRoot, KEY).state).toBe("workspace_ready");
-    expect(retryEvents(started.dataRoot)).toEqual([
+    expect(eventDataOf(started.dataRoot, KEY, "retry")).toEqual([
       { origin: "provisioning", target: "provisioning", resumeExecute: false },
     ]);
   });
@@ -73,7 +67,7 @@ describe("tasker retry", () => {
     expect(argAfter(calls[0].argv, "--session-id")).toBeDefined();
     expect(calls[0].argv).not.toContain("--resume");
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
-    expect(retryEvents(dataRoot)).toEqual([
+    expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
       { origin: "planning", target: "workspace_ready", resumeExecute: false, from: "failed", to: "workspace_ready" },
     ]);
   });
@@ -92,7 +86,7 @@ describe("tasker retry", () => {
     });
     expect(fixture.claude.calls()).toEqual([]);
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
-    expect(retryEvents(dataRoot)).toEqual([
+    expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
       {
         origin: "refining",
         target: "awaiting_plan_review",
@@ -123,7 +117,7 @@ describe("tasker retry", () => {
     expect(argAfter(calls[0].argv, "--session-id")).toBeDefined();
     expect(calls[0].argv).not.toContain("--resume");
     expect(latestTaskOf(dataRoot, KEY).state).toBe("executed");
-    expect(retryEvents(dataRoot)).toEqual([
+    expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
       { origin: "executing", target: "approved", resumeExecute: false, from: "failed", to: "approved" },
     ]);
   });
@@ -139,7 +133,7 @@ describe("tasker retry", () => {
     expect(result.out.startsWith(firstLine("verifying", "executed"))).toBe(true);
     expect(result.out).toContain(`verified ${KEY}: run 1`);
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_work_review");
-    expect(retryEvents(dataRoot)).toEqual([
+    expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
       { origin: "verifying", target: "executed", resumeExecute: false, from: "failed", to: "executed" },
     ]);
   });
@@ -173,7 +167,7 @@ describe("tasker retry", () => {
       expect(store.executeTodoProgress(fixture.task.id, 1).map((entry) => entry.state)).toEqual(["done", "done"]);
       expect(store.executeFixTurnState(fixture.task.id, 1)).toBe("done");
     });
-    expect(retryEvents(dataRoot)).toEqual([
+    expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
       { origin: "verifying", target: "approved", resumeExecute: true, from: "failed", to: "approved" },
     ]);
   });
