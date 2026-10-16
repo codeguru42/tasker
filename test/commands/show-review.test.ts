@@ -6,7 +6,7 @@ import type { NewReview } from "../../src/store/store.js";
 import { runCommand } from "../helpers/cli.js";
 import { useThreeRepoDataRoot } from "../helpers/config.js";
 import { findingText, reviewFinding } from "../helpers/review.js";
-import { dayAt, seedReview, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { dayAt, seedTaskWithReviews, withDataRootStore } from "../helpers/store.js";
 
 const TASKER = "codeguru42/tasker";
 const KEY = `${TASKER}#5`;
@@ -21,8 +21,12 @@ function showReviewOf(key: string, ...extra: string[]) {
 // A task of KEY with one review for each change. The task ends in state.
 function seedReviews(changes: Partial<Omit<NewReview, "number">>[] = [], state?: string) {
   const { dataRoot } = useThreeRepoDataRoot();
-  const [task] = seedTasks(dataRoot, [{ issueKey: KEY, repoKey: TASKER, state: "awaiting_work_review", at: dayAt(2) }]);
-  withDataRootStore(dataRoot, (store) => changes.forEach((change) => seedReview(store, task.id, change, state)));
+  const task = seedTaskWithReviews(
+    dataRoot,
+    { issueKey: KEY, repoKey: TASKER, state: "awaiting_work_review", at: dayAt(2) },
+    changes,
+    state,
+  );
   return { dataRoot, task };
 }
 

@@ -14,7 +14,7 @@ import {
   validPlanAnswer,
 } from "../helpers/plan.js";
 import { findingText, reviewFinding } from "../helpers/review.js";
-import { dayAt, seedReview, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { dayAt, seedReview, seedTaskWithReviews, seedTasks, withDataRootStore } from "../helpers/store.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import type { ExecuteTodoState } from "../../src/store/store.js";
 
@@ -346,13 +346,11 @@ describe("show", () => {
 
   it("prints the findings of the latest review after the fields of a reviewed task", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
-    const [task] = seedTasks(dataRoot, [
+    seedTaskWithReviews(
+      dataRoot,
       { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "awaiting_work_review", at: dayAt(2) },
-    ]);
-    withDataRootStore(dataRoot, (store) => {
-      seedReview(store, task.id);
-      seedReview(store, task.id, { revision: "abc123def456", findings: [reviewFinding()] });
-    });
+      [{}, { revision: "abc123def456", findings: [reviewFinding()] }],
+    );
 
     const { code, err, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
 
@@ -364,10 +362,12 @@ describe("show", () => {
 
   it("prints no findings of a review for a task that is not reviewed", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
-    const [task] = seedTasks(dataRoot, [
+    seedTaskWithReviews(
+      dataRoot,
       { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "awaiting_work_review", at: dayAt(2) },
-    ]);
-    withDataRootStore(dataRoot, (store) => seedReview(store, task.id, {}, "awaiting_work_review"));
+      [{}],
+      "awaiting_work_review",
+    );
 
     const { code, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
 

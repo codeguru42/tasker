@@ -255,6 +255,21 @@ export function seedReview(
   return store.getReview(taskId, review.number)!;
 }
 
+// Creates task with seedTasks, then seeds one review for each change with seedReview. Each review moves the task to
+// state. With no change, the task keeps the state of its seed. It gives back the task as the store holds it at the end.
+export function seedTaskWithReviews(
+  dataRoot: string,
+  task: SeedTask,
+  reviews: readonly Partial<Omit<NewReview, "number">>[] = [],
+  state = "reviewed",
+): Task {
+  const [created] = seedTasks(dataRoot, [task]);
+  return withDataRootStore(dataRoot, (store) => {
+    reviews.forEach((change) => seedReview(store, created.id, change, state));
+    return store.getTask(created.id)!;
+  });
+}
+
 // Does a real recorded verify failure: it writes the logs, moves the task to verifying, then records the run and
 // moves the task to failed with error in one transaction. The events end with verify_run, then the transition.
 export function failVerifyRun(

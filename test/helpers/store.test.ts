@@ -24,6 +24,7 @@ import {
   reviewSessionRows,
   seedReview,
   seedTask,
+  seedTaskWithReviews,
   seedTasks,
   seedVerifyRun,
   tableRowCount,
@@ -677,6 +678,51 @@ describe("seedReview", () => {
 
       expect(review.findings).toHaveLength(1);
       expect(review.findings[0]?.finding.file).toBe("src/c.ts");
+    });
+  });
+});
+
+describe("seedTaskWithReviews", () => {
+  const seed = (...args: [Parameters<typeof seedTaskWithReviews>[2]?, Parameters<typeof seedTaskWithReviews>[3]?]) => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const task = seedTaskWithReviews(
+      dataRoot,
+      { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state: "planning", at: dayAt(1) },
+      ...args,
+    );
+    return { dataRoot, task };
+  };
+
+  it("seeds one review for each change and ends the task in reviewed", () => {
+    const { dataRoot, task } = seed([{}, {}]);
+
+    expect(task.state).toBe("reviewed");
+    withDataRootStore(dataRoot, (store) => {
+      expect(store.reviewCount(task.id)).toBe(2);
+      expect(store.getTask(task.id)?.state).toBe("reviewed");
+    });
+  });
+
+  it("ends the task in the given state", () => {
+    const { task } = seed([{}], "awaiting_work_review");
+
+    expect(task.state).toBe("awaiting_work_review");
+  });
+
+  it("stores the change of a review", () => {
+    const { dataRoot, task } = seed([{ revision: "abc" }]);
+
+    withDataRootStore(dataRoot, (store) => {
+      expect(store.getReview(task.id, 1)?.revision).toBe("abc");
+    });
+  });
+
+  it("seeds no review and keeps the state of the seed when it gets no change", () => {
+    const { dataRoot, task } = seed();
+
+    expect(task.state).toBe("planning");
+    withDataRootStore(dataRoot, (store) => {
+      expect(store.reviewCount(task.id)).toBe(0);
     });
   });
 });
