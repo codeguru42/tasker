@@ -24,6 +24,8 @@ describe("timedCheck", () => {
 
   it("gives a thrown string as the detail", async () => {
     const check = timedCheck(spec, async () => {
+      // The test makes sure that a value that is not an Error gives its text as the detail.
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw "plain text";
     });
     expect(await check.run({})).toEqual({ status: "error", detail: "plain text" });

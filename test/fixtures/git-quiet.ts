@@ -13,7 +13,9 @@ async function expectGitError(promise: Promise<unknown>): Promise<void> {
   );
   if (!(error instanceof GitError)) {
     process.exitCode = 1;
-    throw error ?? new Error("git was expected to fail, but it succeeded");
+    // The fixture throws the rejected value again as it is.
+    const thrown: unknown = error ?? new Error("git was expected to fail, but it succeeded");
+    throw thrown;
   }
 }
 
