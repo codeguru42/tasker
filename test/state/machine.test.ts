@@ -34,7 +34,7 @@ import {
   seedPlanSession,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { seedReview } from "../helpers/store.js";
+import { newVerifyRun, seedReview } from "../helpers/store.js";
 import { moveTaskThrough, TO_WORK_REVIEW } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -736,19 +736,12 @@ describe("task transitions", () => {
   });
 
   describe("transitionWithVerifyRun", () => {
-    const run = {
-      number: 1,
-      result: "passed" as const,
-      commands: ["npm run check"],
-      failingCommand: null,
-      startedAt: "2026-01-01T00:00:00.000Z",
-      endedAt: "2026-01-01T00:00:01.000Z",
-    };
-
     it("inserts the row, appends verify_run, then one transition with the detail", () => {
       const task = store.createTask(newTask("executed"));
       transitionTask(store, task.id, "verifying");
-      const moved = transitionWithVerifyRun(store, task.id, "awaiting_work_review", run, { note: "ok" });
+      const moved = transitionWithVerifyRun(store, task.id, "awaiting_work_review", newVerifyRun(store, task.id), {
+        note: "ok",
+      });
       expect(moved.state).toBe("awaiting_work_review");
       expect(store.getVerifyRun(task.id, 1)?.result).toBe("passed");
       const events = store.listEvents(task.id);
@@ -764,7 +757,7 @@ describe("task transitions", () => {
         store,
         task.id,
         "failed",
-        { ...run, result: "failed", failingCommand: 1 },
+        newVerifyRun(store, task.id, { result: "failed", failingCommand: 1 }),
         { error: "boom" },
       );
       expect(store.getTask(task.id)!.state).toBe("failed");
@@ -774,9 +767,9 @@ describe("task transitions", () => {
 
     it("writes no row and no event for an illegal edge", () => {
       const task = store.createTask(newTask("executed"));
-      expect(() => transitionWithVerifyRun(store, task.id, "awaiting_work_review", run)).toThrow(
-        "illegal state transition: executed -> awaiting_work_review",
-      );
+      expect(() =>
+        transitionWithVerifyRun(store, task.id, "awaiting_work_review", newVerifyRun(store, task.id)),
+      ).toThrow("illegal state transition: executed -> awaiting_work_review");
       expect(store.getVerifyRun(task.id, 1)).toBeUndefined();
       expect(store.getTask(task.id)!.state).toBe("executed");
       expect(store.listEvents(task.id).map((e) => e.type)).toEqual(["created"]);

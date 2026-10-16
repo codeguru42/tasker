@@ -32,6 +32,7 @@ import {
 import { deadPid, repoRoot, startFixture, startWriteLockHolder } from "../helpers/processes.js";
 import {
   newReview,
+  newVerifyRun,
   readRunMarker,
   seedReview,
   tableNames,
@@ -2484,15 +2485,13 @@ describe("task store", () => {
     });
 
     describe("verify runs", () => {
-      const run = (number: number, change: Partial<NewVerifyRun> = {}): NewVerifyRun => ({
-        number,
+      // The keys of a failed run that differ from the defaults of newVerifyRun.
+      const failedRun = {
         result: "failed",
         commands: ["npm run lint", "npm test"],
         failingCommand: 2,
-        startedAt: "2026-01-01T00:00:00.000Z",
         endedAt: "2026-01-01T00:01:00.000Z",
-        ...change,
-      });
+      } satisfies Partial<NewVerifyRun>;
 
       // The verify run rows of a task, as raw rows.
       const readVerifyRows = (taskId: number) =>
@@ -2519,20 +2518,25 @@ describe("task store", () => {
       it("numbers the runs of a task from 1", () => {
         const task = runningTask("verifying");
         expect(store.nextVerifyRun(task.id)).toBe(1);
-        store.addVerifyRun(task.id, run(1), "awaiting_work_review");
+        store.addVerifyRun(task.id, newVerifyRun(store, task.id, { number: 1 }), "awaiting_work_review");
         expect(store.nextVerifyRun(task.id)).toBe(2);
         store.startRun(task.id, "verifying");
-        store.addVerifyRun(task.id, run(2), "awaiting_work_review");
+        store.addVerifyRun(task.id, newVerifyRun(store, task.id, { number: 2 }), "awaiting_work_review");
         expect(readVerifyRows(task.id)).toHaveLength(2);
       });
 
       it("inserts the row and the events, sets the state and deletes the marker", () => {
         const task = runningTask("verifying");
         const before = store.listEvents(task.id).length;
-        const moved = store.addVerifyRun(task.id, run(1), "awaiting_work_review", () => ({
-          type: "transition",
-          data: { to: "awaiting_work_review" },
-        }));
+        const moved = store.addVerifyRun(
+          task.id,
+          newVerifyRun(store, task.id, failedRun),
+          "awaiting_work_review",
+          () => ({
+            type: "transition",
+            data: { to: "awaiting_work_review" },
+          }),
+        );
         expect(moved.state).toBe("awaiting_work_review");
         expect(store.getTask(task.id)).toEqual(moved);
         expect(readRunMarker(dbPath, task.id)).toBeUndefined();
@@ -2556,7 +2560,7 @@ describe("task store", () => {
         expectNothingChanged(
           task.id,
           () =>
-            store.addVerifyRun(task.id, run(1), "awaiting_work_review", () => {
+            store.addVerifyRun(task.id, newVerifyRun(store, task.id), "awaiting_work_review", () => {
               throw new Error("check refused");
             }),
           "check refused",
@@ -2568,7 +2572,7 @@ describe("task store", () => {
         const task = runningTask("verifying");
         expectNothingChanged(
           task.id,
-          () => store.addVerifyRun(task.id, run(1), "executing"),
+          () => store.addVerifyRun(task.id, newVerifyRun(store, task.id), "executing"),
           "executing is a spawning state",
         );
         expect(readVerifyRows(task.id)).toEqual([]);
@@ -2578,7 +2582,7 @@ describe("task store", () => {
         const task = runningTask("verifying");
         expectNothingChanged(
           task.id,
-          () => store.addVerifyRun(task.id, run(2), "awaiting_work_review"),
+          () => store.addVerifyRun(task.id, newVerifyRun(store, task.id, { number: 2 }), "awaiting_work_review"),
           `task ${task.id}: verify run 2 is not the next number (1)`,
         );
         expect(readVerifyRows(task.id)).toEqual([]);
@@ -2589,7 +2593,11 @@ describe("task store", () => {
         const state = store.getTask(task.id)?.state;
         const events = eventCount();
         const error = thrownBy(() =>
-          store.addVerifyRun(task.id, run(1, { result: "lost" as VerifyRunResult }), "awaiting_work_review"),
+          store.addVerifyRun(
+            task.id,
+            newVerifyRun(store, task.id, { result: "lost" as VerifyRunResult }),
+            "awaiting_work_review",
+          ),
         );
         expect((error as Error).message).toContain("CHECK constraint failed");
         expect(store.getTask(task.id)?.state).toBe(state);
@@ -2601,16 +2609,15 @@ describe("task store", () => {
         const task = runningTask("verifying");
         expect(store.verifyRunCount(task.id)).toBe(0);
         expect(store.latestVerifyRun(task.id)).toBeUndefined();
-        store.addVerifyRun(task.id, run(1), "awaiting_work_review");
+        const first = newVerifyRun(store, task.id, failedRun);
+        store.addVerifyRun(task.id, first, "awaiting_work_review");
         store.startRun(task.id, "verifying");
-        store.addVerifyRun(task.id, run(2, { result: "passed", failingCommand: null }), "awaiting_work_review");
+        const second = newVerifyRun(store, task.id);
+        store.addVerifyRun(task.id, second, "awaiting_work_review");
         expect(store.verifyRunCount(task.id)).toBe(2);
-        expect(store.getVerifyRun(task.id, 1)).toEqual({ taskId: task.id, ...run(1) });
+        expect(store.getVerifyRun(task.id, 1)).toEqual({ taskId: task.id, ...first });
         expect(store.getVerifyRun(task.id, 9)).toBeUndefined();
-        expect(store.latestVerifyRun(task.id)).toEqual({
-          taskId: task.id,
-          ...run(2, { result: "passed", failingCommand: null }),
-        });
+        expect(store.latestVerifyRun(task.id)).toEqual({ taskId: task.id, ...second });
       });
     });
 
