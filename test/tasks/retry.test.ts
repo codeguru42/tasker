@@ -6,9 +6,24 @@ import { verifyCommandLogPath } from "../../src/store/layout.js";
 import type { Task } from "../../src/store/store.js";
 import { retryTask } from "../../src/tasks/retry.js";
 import { configWithTrackers } from "../helpers/config.js";
-import { seedApprovedTask, seedExecuteSession, seedExecuteTodoStates, seedPlanSession } from "../helpers/plan.js";
+import {
+  seedApprovedTask,
+  seedExecuteSession,
+  seedExecuteTodoStates,
+  seedPlanSession,
+  seedReviewSession,
+} from "../helpers/plan.js";
 import { expectRefusedWithoutChange } from "../helpers/task-fixtures.js";
-import { eventsOf, failTaskFrom, failVerifyRun, latestTaskOf, withDataRootStore } from "../helpers/store.js";
+import {
+  eventsOf,
+  failRefineFrom,
+  failTaskFrom,
+  failVerifyRun,
+  latestTaskOf,
+  reviewSessionRows,
+  seedReview,
+  withDataRootStore,
+} from "../helpers/store.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -20,21 +35,24 @@ function retry(dataRoot: string, task: Task, resumeExecute = false) {
   return withDataRootStore(dataRoot, (store) => retryTask(store, { config, ref, taskId: task.id, resumeExecute }));
 }
 
-// The task of the issue 5 in approved, with the pinned revision v1 and a plan session and an execute session.
+// The task of the issue 5 in approved, with the pinned revision v1, a plan session, an execute session and the review
+// session of review 1.
 function approvedTask() {
   const { dataRoot, task } = seedApprovedTask();
   withDataRootStore(dataRoot, (store) => {
     seedPlanSession(store, task.id);
     seedExecuteSession(store, task.id, 1);
+    seedReviewSession(store, task.id, 1);
   });
   return { dataRoot, task };
 }
 
-// Whether the plan session and the execute session v1 of the task exist.
+// Whether the plan session and the execute session v1 of the task exist, and the numbers of its review sessions.
 function sessionsOf(dataRoot: string, task: Task) {
   return withDataRootStore(dataRoot, (store) => ({
     plan: store.planSession(task.id) !== undefined,
     execute: store.executeSession(task.id, 1) !== undefined,
+    review: reviewSessionRows(dataRoot, task.id).map((row) => row.review_number),
   }));
 }
 
@@ -52,7 +70,7 @@ describe("retryTask checks", () => {
     await expectRetryRefused(dataRoot, task, `the task of ${KEY} is in approved; tasker retry needs failed`);
   });
 
-  it.each(["reviewing", "approved"] as const)("refuses a task that failed in %s", async (origin) => {
+  it.each(["approved", "merging"] as const)("refuses a task that failed in %s", async (origin) => {
     const { dataRoot, task } = approvedTask();
     withDataRootStore(dataRoot, (store) => failTaskFrom(store, task.id, origin));
 
@@ -68,13 +86,14 @@ describe("retryTask checks", () => {
 });
 
 describe("retryTask origins", () => {
-  const kept = { plan: true, execute: true };
+  const kept = { plan: true, execute: true, review: [1] };
   const rows: {
     origin: TaskState;
+    refineOrigin?: TaskState;
     target: TaskState;
     next: string;
     state: string;
-    sessions: { plan: boolean; execute: boolean };
+    sessions: { plan: boolean; execute: boolean; review: number[] };
   }[] = [
     { origin: "provisioning", target: "provisioning", next: "start", state: "failed", sessions: kept },
     {
@@ -86,10 +105,42 @@ describe("retryTask origins", () => {
     },
     {
       origin: "refining",
+      refineOrigin: "awaiting_plan_review",
       target: "awaiting_plan_review",
       next: "refine",
       state: "awaiting_plan_review",
       sessions: kept,
+    },
+    {
+      origin: "refining",
+      refineOrigin: "failed",
+      target: "awaiting_plan_review",
+      next: "refine",
+      state: "awaiting_plan_review",
+      sessions: kept,
+    },
+    {
+      origin: "refining",
+      refineOrigin: "reviewed",
+      target: "reviewed",
+      next: "refine-findings",
+      state: "reviewed",
+      sessions: kept,
+    },
+    {
+      origin: "refining",
+      refineOrigin: "awaiting_work_review",
+      target: "awaiting_work_review",
+      next: "review-feedback",
+      state: "awaiting_work_review",
+      sessions: kept,
+    },
+    {
+      origin: "reviewing",
+      target: "awaiting_work_review",
+      next: "review",
+      state: "awaiting_work_review",
+      sessions: { ...kept, review: [] },
     },
     {
       origin: "executing",
@@ -101,9 +152,17 @@ describe("retryTask origins", () => {
     { origin: "verifying", target: "executed", next: "verify", state: "executed", sessions: kept },
   ];
 
-  it.each(rows)("moves a task that failed in $origin", async ({ origin, target, next, state, sessions }) => {
+  const labeled = rows.map((row) => ({
+    ...row,
+    label: row.refineOrigin === undefined ? row.origin : `${row.origin} after a refine from ${row.refineOrigin}`,
+  }));
+
+  it.each(labeled)("moves a task that failed in $label", async (row) => {
+    const { origin, refineOrigin, target, next, state, sessions } = row;
     const { dataRoot, task } = approvedTask();
-    withDataRootStore(dataRoot, (store) => failTaskFrom(store, task.id, origin));
+    withDataRootStore(dataRoot, (store) =>
+      refineOrigin === undefined ? failTaskFrom(store, task.id, origin) : failRefineFrom(store, task.id, refineOrigin),
+    );
     const before = eventsOf(dataRoot, KEY);
 
     const result = await retry(dataRoot, task);
@@ -116,6 +175,21 @@ describe("retryTask origins", () => {
         ? { origin, target, resumeExecute: false }
         : { origin, target, resumeExecute: false, from: "failed", to: target };
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([{ type: "retry", data }]);
+  });
+});
+
+describe("retryTask review session", () => {
+  it("deletes only the review session of the next review number", async () => {
+    const { dataRoot, task } = approvedTask();
+    withDataRootStore(dataRoot, (store) => {
+      seedReview(store, task.id);
+      seedReviewSession(store, task.id, 2, { sessionId: "r-2" });
+      failTaskFrom(store, task.id, "reviewing");
+    });
+
+    await retry(dataRoot, task);
+
+    expect(sessionsOf(dataRoot, task).review).toEqual([1]);
   });
 });
 

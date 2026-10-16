@@ -2,7 +2,13 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
-import { failTask, isSpawningState, lastTransitionError, transitionWithVerifyRun } from "../../src/state/machine.js";
+import {
+  failTask,
+  isSpawningState,
+  lastTransitionError,
+  transitionTask,
+  transitionWithVerifyRun,
+} from "../../src/state/machine.js";
 import type { TaskState } from "../../src/state/machine.js";
 import { createDataRoot, taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import {
@@ -296,6 +302,11 @@ export function failVerifyRun(
   return store.getVerifyRun(task.id, run.number)!;
 }
 
+// Moves the task to state with no edge check. A spawning state starts a run, so the run marker exists as in a real run.
+function placeTask(store: TaskStore, taskId: number, state: TaskState): Task {
+  return isSpawningState(state) ? store.startRun(taskId, state) : store.endRun(taskId, state);
+}
+
 // Moves the task to origin with no edge check, then fails it with message. A spawning origin starts a run, so the
 // run marker exists as in a real failure. failedFrom then gives origin.
 export function failTaskFrom(
@@ -304,8 +315,20 @@ export function failTaskFrom(
   origin: TaskState,
   message = `${origin} failed: test`,
 ): Task {
-  if (isSpawningState(origin)) store.startRun(taskId, origin);
-  else store.endRun(taskId, origin);
+  placeTask(store, taskId, origin);
+  return failTask(store, taskId, message);
+}
+
+// Moves the task to refineOrigin with no edge check, then into refining, then fails it with message. It records a real
+// move into refining, so transitionFromEvents(events, "refining") gives refineOrigin. failedFrom gives refining.
+export function failRefineFrom(
+  store: TaskStore,
+  taskId: number,
+  refineOrigin: TaskState,
+  message = "refining failed: test",
+): Task {
+  placeTask(store, taskId, refineOrigin);
+  transitionTask(store, taskId, "refining");
   return failTask(store, taskId, message);
 }
 

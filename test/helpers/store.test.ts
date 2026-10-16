@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
-import { failedFrom, lastTransitionError, transitionTask } from "../../src/state/machine.js";
+import { failedFrom, lastTransitionError, transitionFromEvents, transitionTask } from "../../src/state/machine.js";
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
@@ -17,6 +17,7 @@ import {
   databasePathOf,
   eventDataOf,
   eventsOf,
+  failRefineFrom,
   failTaskFrom,
   failVerifyRun,
   lastErrorOf,
@@ -653,13 +654,13 @@ describe("withDataRootStore", () => {
   });
 });
 
-describe("failTaskFrom", () => {
-  const setup = (state: string) => {
-    const dataRoot = join(useTempDir("tasker-fail-from-"), "data");
-    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state, at: dayAt(1) }]);
-    return { dataRoot, task };
-  };
+const setup = (state: string) => {
+  const dataRoot = join(useTempDir("tasker-fail-from-"), "data");
+  const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state, at: dayAt(1) }]);
+  return { dataRoot, task };
+};
 
+describe("failTaskFrom", () => {
   it.each(["verifying", "provisioning", "planning"] as const)(
     "fails the task from %s with the default message",
     (origin) => {
@@ -682,6 +683,31 @@ describe("failTaskFrom", () => {
       failTaskFrom(store, task.id, "executing", "boom");
 
       expect(failedFrom(store, task.id)).toBe("executing");
+      expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
+    });
+  });
+});
+
+describe("failRefineFrom", () => {
+  it.each(["reviewed", "failed"] as const)("fails the task in refining after a move from %s", (refineOrigin) => {
+    const { dataRoot, task } = setup("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      failRefineFrom(store, task.id, refineOrigin);
+
+      expect(store.getTask(task.id)?.state).toBe("failed");
+      expect(failedFrom(store, task.id)).toBe("refining");
+      expect(transitionFromEvents(store.listEvents(task.id), "refining")).toBe(refineOrigin);
+      expect(lastTransitionError(store.listEvents(task.id))).toBe("refining failed: test");
+    });
+  });
+
+  it("uses the given message", () => {
+    const { dataRoot, task } = setup("reviewed");
+
+    withDataRootStore(dataRoot, (store) => {
+      failRefineFrom(store, task.id, "reviewed", "boom");
+
       expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
     });
   });
