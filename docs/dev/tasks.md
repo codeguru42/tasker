@@ -231,7 +231,7 @@ These reasons explain its rules:
 - The review records the tip of the task branch, because the findings describe one tree. [data-root.md](data-root.md#reviews-table) gives the reason. The review reads the commits of the task branch, so the tip of that branch names the tree that the review read. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
 - tasker records the review session although no command continues it yet. [assistants.md](assistants.md#the-session-id) gives the rule of the session id.
 
-No command resumes a review that failed or stopped yet (`tasker retry` M8, `tasker resume` M9).
+`tasker retry` runs a failed review again in a new session (see [Retry](#retry)). No command resumes a stopped review yet (`tasker resume` M9).
 
 ### The feedback form of review
 
@@ -269,15 +269,15 @@ The command has these limits:
 
 ## Retry
 
-`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. An origin that the table does not hold gets no retry, and the command refuses it.
+`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. For the origin `refining`, the origin of the refine picks the row. The origin of a refine is the `from` of the last move into `refining`. An origin that the table does not hold gets no retry, and the command refuses it.
 
 The move, the delete of the sessions, the todo marks, the fix turn and one `retry` event share one transaction. The `retry` event has the data `{ origin, target, resumeExecute, from, to }` and takes the place of the `transition` event for this move. For the origin `provisioning`, retry writes the `retry` event alone, with `{ origin, target, resumeExecute }`, because no move takes place.
 
 These reasons explain its rules:
 
-- A plan or execute run can fail before its first turn. Its recorded session id then names no conversation, so a new run must not continue it. Retry deletes the session of the failed step, and the next run starts a new session.
+- A plan, execute or review run can fail before its first turn. Its recorded session id then names no conversation, so a new run must not continue it. Retry deletes the session of the failed step, and the next run starts a new session. For a review, retry deletes the session of the next review number, so the next review records a new id.
 - A verify failure usually belongs to no todo. So `--resume-execute` marks every todo done and queues one fix turn that gets the failure. The todos do not run again.
-- A refine needs feedback, and tasker can refuse a plan again. So retry runs nothing for the origin `refining`. It prints a hint, and you decide the next feedback.
+- A refine needs feedback, and tasker can refuse a plan again. A promotion from `reviewed` and a feedback refine from `awaiting_work_review` also need you again, because the findings or the feedback can change. So retry runs nothing for the origin `refining`. It moves the task back to the state of the origin of the refine and prints a hint, and you decide the next step.
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait, so retry must release the lock first.
 - The fix turn gets the tail of the log from tasker, not from the sandbox. The log is in the data root, outside the worktree, and the sandbox gives the shell only the worktree. The bound of 200 lines and 64 KiB keeps a large log out of the prompt.
 - The tail comes only from the verify run of this failure. Some verify failures record no run, and then the latest run belongs to an earlier verify. Its log gives the fix turn false data, so the fix turn gets no tail.
