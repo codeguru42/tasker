@@ -24,6 +24,7 @@ import { fakeSsh } from "../../helpers/fake-ssh.js";
 import {
   addCloneCommit,
   commitInWorktree,
+  landBranchOnOriginMain,
   makeGitClone,
   makeGitOrigin,
   sshKeyArgs,
@@ -457,7 +458,7 @@ describe("git changes", () => {
 
     it("says that the base contains the branch after origin took its head, and fetches it", async () => {
       const head = await commitInWorktree(path, env, { file: "work.txt" });
-      await runGit(["fetch", clone, `refs/heads/${branch}:refs/heads/main`], { gitDir: origin.path, env });
+      await landBranchOnOriginMain({ origin: origin.path, clone, branch, env });
       expect(await onBase()).toEqual({ revision: head, baseTip: head, onBase: true });
       expect(await baseTip()).toBe(head);
     });

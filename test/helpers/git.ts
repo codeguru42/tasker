@@ -184,6 +184,18 @@ export async function addCloneCommit(
   return sha;
 }
 
+// Moves main of the origin to the tip of refs/heads/<branch> in the clone, as a landing outside
+// tasker does. Git refuses a move that is not a fast-forward, so the branch must build on main.
+export async function landBranchOnOriginMain(o: {
+  origin: string;
+  clone: string;
+  branch: string;
+  env: NodeJS.ProcessEnv;
+}): Promise<void> {
+  assertBranchName(o.branch);
+  await runGit(["fetch", o.clone, `refs/heads/${o.branch}:refs/heads/main`], { gitDir: o.origin, env: o.env });
+}
+
 // A local git origin, and the provider context of the repo "tasker" with a data root in origin.dir.
 // remove() deletes everything.
 export interface ProviderFixture {

@@ -5,6 +5,7 @@ import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
+import { landBranchOnOriginMain } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   dayAt,
@@ -46,8 +47,10 @@ const seedAccepted = (fixture: StartFixture, extra: { branch?: string; base?: st
 
 // Makes the head of the task branch the head of main on origin, as a push by someone else would.
 const landByOthers = (accepted: AcceptedTask) =>
-  runGit(["fetch", accepted.clone, `refs/heads/${String(accepted.task.branch)}:refs/heads/main`], {
-    gitDir: accepted.origin.path,
+  landBranchOnOriginMain({
+    origin: accepted.origin.path,
+    clone: accepted.clone,
+    branch: String(accepted.task.branch),
     env: accepted.env,
   });
 

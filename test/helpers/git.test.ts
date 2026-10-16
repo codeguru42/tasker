@@ -15,6 +15,7 @@ import {
   addCloneCommit,
   commitInWorktree,
   GIT_TEST_IDENTITY,
+  landBranchOnOriginMain,
   gitCloneTokens,
   gitBeforePushEnv,
   gitRecorderEnv,
@@ -228,6 +229,43 @@ describe("addCloneCommit", () => {
     expect(branchError.message).toContain('"-x"');
     const parentError = await failureOf(addCloneCommit(clone, origin.env, taskBranchName("issue-1", "x"), "-p"), Error);
     expect(parentError.message).toContain('"-p"');
+  });
+});
+
+describe("landBranchOnOriginMain", () => {
+  let origin: GitOrigin;
+  let clone: string;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    clone = await makeGitClone(origin);
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  const land = (branch: string) => landBranchOnOriginMain({ origin: origin.path, clone, branch, env: origin.env });
+
+  it("moves main of the origin to the tip of the branch", async () => {
+    const sha = await addCloneCommit(clone, origin.env, "tasker/x");
+    await land("tasker/x");
+    expect(await origin.branchHead("main")).toBe(sha);
+  });
+
+  it("rejects a branch that does not build on the tip of main, and main keeps its head", async () => {
+    await addCloneCommit(clone, origin.env, "tasker/x");
+    const head = await origin.addCommit("main");
+    const error = await failureOf(land("tasker/x"), GitError);
+    expect(error.message).toContain("non-fast-forward");
+    expect(await origin.branchHead("main")).toBe(head);
+  });
+
+  it("rejects a name that starts with - and runs no git", async () => {
+    const head = await origin.branchHead("main");
+    const error = await failureOf(land("-x"), Error);
+    expect(error.message).toBe("the branch name must not start with -: -x");
+    expect(await origin.branchHead("main")).toBe(head);
   });
 });
 

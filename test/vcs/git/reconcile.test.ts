@@ -18,6 +18,7 @@ import { createTaskWorktree, taskBranchName } from "../../../src/vcs/git/worktre
 import { failureOf } from "../../helpers/errors.js";
 import {
   commitInWorktree,
+  landBranchOnOriginMain,
   makeGitClone,
   makeGitOrigin,
   taskNames,
@@ -330,10 +331,7 @@ describe("git reconcile", () => {
       await commitInWorktree(path, env, { file: "a.txt" });
       const start = await state();
       // Origin main takes the task commit by a fast-forward, as a landing outside tasker does.
-      await runGit(["fetch", clone, `refs/heads/${branch}:refs/heads/main`], {
-        gitDir: origin.path,
-        env,
-      });
+      await landBranchOnOriginMain({ origin: origin.path, clone, branch, env });
       await runGit(["fetch", "origin"], { gitDir: clone, env });
       expect(await git("rev-parse", BASE)).toBe(start.head);
       expect(await resync("rebase")).toEqual({ moved: false, how: "none", head: start.head });
