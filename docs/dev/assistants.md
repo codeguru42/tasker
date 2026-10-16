@@ -239,7 +239,7 @@ The todos run in the order of their dependencies. The plan check refuses a depen
 
 Tasker reads the plan back from its plan file. As a result, the revision does not depend on how much of a long session the assistant still remembers.
 
-The context block says why the operator asks for a revision and what tasker knows about the work. One template serves each state, because each refine fills both blocks. The context holds one plain line or the open findings of a review, and the feedback holds the words of the operator or `None.`.
+The context block says why the operator asks for a revision and what tasker knows about the work. One template serves each state, because each refine fills both blocks. The context holds one plain line, the open findings of a review, or the line of the feedback of the operator on the committed work. The feedback holds the words of the operator or `None.`.
 
 The branch commits go in the prompt. An execute run is a separate session, so the refine session has not seen them. Their work is done, and the revision plans only the work that is still needed.
 

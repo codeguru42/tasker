@@ -231,6 +231,19 @@ These reasons explain its rules:
 
 No command resumes a review that failed or stopped yet (`tasker retry` M8, `tasker resume` M9).
 
+### The feedback form of review
+
+`tasker review <issue> <feedback>` continues the plan session of a task in `awaiting_work_review` with the feedback of the operator on the committed work. The plan session knows the plan and its decisions. The new revision plans only the work that is still needed: [assistants.md](assistants.md#the-refine-prompt) gives that rule. The task goes through `refining` to `awaiting_plan_review`.
+
+The command uses the run step of `tasker refine`, so [the steps of refine](#refine) apply from the plan revision on. It runs in this order:
+
+1. Take the task lock, and check the state with the row of `review` in the table of [the commands of each state](#the-commands-of-each-state).
+2. Check that the feedback is not empty. The error is `the feedback is empty`.
+3. Check the branch, and read the tip of the task branch.
+4. Build the context from the tip and the latest verify run, and run the shared refine step with the source `review-feedback` and the feedback.
+
+The context names no review, and the command reads no review.
+
 ## Dismiss-review
 
 `tasker dismiss-review` dismisses open findings of the latest review of a task in `reviewed`, with one reason. It runs in this order:
