@@ -2,8 +2,6 @@
 
 This page describes the base branch and the workspace of a task. It also gives the reasons for the git flags of the diff and the reconcile.
 
-Each fetch moves and prunes `refs/remotes/origin/*` in the clone, also when a later step fails.
-
 ## Revisions
 
 Every revision input that reaches git is a full revision, or an exact ref that tasker read with `git show-ref --verify`. So git never gets a short name, a range or a suffix (`a..b`, `x^{tree}`) as input that changes what `diff`, `rev-list` or `merge-base` do. The code never reads the error text of git.
@@ -13,6 +11,12 @@ The short name `origin/<x>` can name another ref first, because git reads `refs/
 tasker reads the exact ref `refs/heads/<branch>` with `git show-ref`, not `git rev-parse`, because `rev-parse` can read another ref, for example `refs/heads/refs/heads/<branch>`.
 
 The existence check: a base exists when `git show-ref --verify --quiet -- <revision>` exits with 0. This matches only the exact ref. Exit code 1 means that the ref is missing. Every other error passes through unchanged.
+
+## The fetch
+
+Each fetch moves and prunes `refs/remotes/origin/*` in the clone, also when a later step fails. A failed fetch stores and deletes nothing. The fetch uses the ssh key of the repo (see [version-control.md](version-control.md#the-ssh-key)). The base is read after the fetch, because the fetch can make or move the ref.
+
+The resolve of the base and the containment read of the diff part fetch. No worktree or reconcile function fetches, so the caller resolves the base first.
 
 ## Base branch
 
@@ -29,7 +33,7 @@ Names such as `-x` and `a..b` pass the parse of the text that a user types. [The
 
 ### The resolve
 
-The checks that need no git run first, so a bad input causes no fetch and no write. A failed fetch stores and deletes nothing. The fetch uses the ssh key of the repo (see [version-control.md](version-control.md#the-ssh-key)).
+The checks that need no git run first, so a bad input causes no fetch and no write.
 
 The source order is: the issue hint, then `--base`, then the learned default, then `defaultBaseBranch`, then a question.
 
@@ -132,10 +136,6 @@ The order in each function is: the input checks, then the worktree guard, then t
 - A staged rename gives a delete and an add.
 - A function that takes a worktree path throws the errors of the guard. [The guard text](#workspaces-1) gives the reasons.
 
-### The remote
-
-The fetch uses the ssh key of the repo. See [version-control.md](version-control.md#the-ssh-key) for the reason. The base is read after the fetch, because the fetch can make or move the ref.
-
 ### Side effects
 
 Apart from the fetch, these reads write no ref, no file and no configuration.
@@ -143,8 +143,6 @@ Apart from the fetch, these reads write no ref, no file and no configuration.
 ## Reconcile
 
 Reconcile brings a task worktree onto a base that moved. When a step fails, it puts the worktree back where it was. It acts only on a worktree that is on a task branch or detached. [The branch name](#the-branch-name) gives the check.
-
-No reconcile function fetches. The caller fetches first. See [version-control.md](version-control.md#the-ssh-key) for the ssh key of the fetch.
 
 ### The order
 

@@ -14,7 +14,7 @@ One factory is the only place that picks a provider. It reads `vcs.provider`. Gi
 
 - The interface owns the types of its operations. The git modules import them from the interface. No module re-exports them.
 - The doctor check type stays in `src/doctor/`, because it is not a version control type.
-- Reconcile does not fetch. The caller resolves the base first, which fetches.
+- Reconcile does not fetch. [The fetch](workspaces.md#the-fetch) gives the rule.
 - Push guard rule: a provider that cannot guard a push refuses to provision, and it never runs with a weaker guard. The git provider guards a push with the pre-push hook that provision writes (see [Push guard](#push-guard)).
 - Limit: each git provider gives its own version check, and its lock-file check reads `/proc` in its own call. A doctor run over two git repos has two version checks and can read `/proc` two times.
 
