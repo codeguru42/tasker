@@ -1,6 +1,6 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it, onTestFinished } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import {
   type LockAttempt,
   LockBusyError,
@@ -125,6 +125,17 @@ describe("named locks", () => {
       return process.getActiveResourcesInfo().filter((name) => name === "Timeout").length;
     }
 
+    // Runs start on fake timers and runs each timer until no timer is left.
+    async function onFakeTimers<T>(start: () => Promise<T>): Promise<T> {
+      vi.useFakeTimers();
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
+      const outcome = start();
+      await vi.runAllTimersAsync();
+      return outcome;
+    }
+
     it("runs fn on a free lock, gives its value and deletes the row", async () => {
       const value = await withLock(store, "a", { waitMs: 0 }, () => {
         expect(readRow(dbPath, "a")?.pid).toBe(process.pid);
@@ -194,6 +205,25 @@ describe("named locks", () => {
       expect(Date.now() - start).toBeGreaterThanOrEqual(600);
       expect(calls.tryLock.length).toBeGreaterThanOrEqual(2);
       expect(calls.tryLock.length).toBeLessThanOrEqual(4);
+    });
+
+    it("stops after the last wait when the timer ends early", async () => {
+      const { fake, calls } = fakeStore([BUSY]);
+      const wrapper: LockStore = {
+        tryLock(name) {
+          const attempt = fake.tryLock(name);
+          if (calls.tryLock.length === 4) vi.setSystemTime(Date.now() - 1);
+          return attempt;
+        },
+        unlock: (name) => fake.unlock(name),
+      };
+      await onFakeTimers(() =>
+        failureOf(
+          withLock(wrapper, "a", { waitMs: 600 }, () => {}),
+          LockBusyError,
+        ),
+      );
+      expect(calls.tryLock).toHaveLength(4);
     });
 
     it("keeps the error of fn when unlock also fails", async () => {
