@@ -44,11 +44,11 @@ interface RetryRow {
 // The row of a refine that started from awaiting_plan_review or failed, and of a refine with no row of its own.
 const PLAIN_REFINE_ROW: RetryRow = { target: "awaiting_plan_review", next: "refine", clears: {} };
 
-// The table of retry: the origin (the state that the task left when it failed) gives the row.
+// The table of retry: the origin (the state that the task left when it failed) gives the row. The rows of refining are
+// in REFINE_RETRY_TABLE.
 const RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   provisioning: { target: "provisioning", next: "start", clears: {} },
   planning: { target: "workspace_ready", next: "plan", clears: { plan: true } },
-  refining: PLAIN_REFINE_ROW,
   executing: { target: "approved", next: "execute", clears: { execute: true } },
   verifying: { target: "executed", next: "verify", clears: {} },
   reviewing: { target: "awaiting_work_review", next: "review", clears: { review: true } },
