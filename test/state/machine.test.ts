@@ -16,6 +16,7 @@ import {
   transitionWithAcceptance,
   transitionWithExecution,
   transitionWithLanding,
+  transitionWithMarkedLanding,
   transitionWithPlanApproval,
   transitionWithPlanRevision,
   transitionWithPlanUnapproval,
@@ -651,6 +652,38 @@ describe("task transitions", () => {
       const before = store.listEvents(task.id);
       expect(() => land(task.id)).toThrow("illegal state transition: executed -> landed");
       expect(store.getTask(task.id)!.state).toBe("executed");
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithMarkedLanding", () => {
+    const mark = (id: number) => transitionWithMarkedLanding(store, id, "head-sha", "base-sha");
+
+    it("writes one marked_landed event in place of the transition event and deletes the run marker", () => {
+      const task = store.createTask(newTask("workspace_ready"));
+      moveTaskThrough(store, task.id, [...TO_WORK_REVIEW, "accepted"]);
+      const before = store.listEvents(task.id);
+
+      const moved = mark(task.id);
+
+      expect(moved.state).toBe("landed");
+      const events = store.listEvents(task.id);
+      expect(events.slice(0, before.length)).toEqual(before);
+      expect(events.slice(before.length).map((e) => e.type)).toEqual(["marked_landed"]);
+      expect(events[events.length - 1].data).toEqual({
+        revision: "head-sha",
+        baseTip: "base-sha",
+        from: "accepted",
+        to: "landed",
+      });
+      expect(store.runStatus(task.id)).toEqual({ status: "none" });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("approved"));
+      const before = store.listEvents(task.id);
+      expect(() => mark(task.id)).toThrow("illegal state transition: approved -> landed");
+      expect(store.getTask(task.id)!.state).toBe("approved");
       expect(store.listEvents(task.id)).toEqual(before);
     });
   });
