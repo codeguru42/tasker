@@ -495,6 +495,32 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 A fetch that ran still moves the refs of `origin` in the clone, also when the command stops with an error.
 
+### `tasker finish`
+
+Cleans up a task in the state `landed` or `cleanup_failed`: `tasker finish <issue>`. The task goes through the state `finishing` to the state `finished`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+The command removes the worktree of the task. Then it deletes the local task branch. It moves the task to `finishing` before the first step, and to `finished` after the last step.
+
+The command prints one line on stdout for each step that ran: `removed the worktree <path>` and `deleted the branch <branch>`. A step with nothing to do prints no line. Then the command prints the line `finished <issue key>`.
+
+The command writes one event of the type `transition` with the data `{ worktree, branch, from, to }`. The value of `worktree` is `removed` or `already gone`. The value of `branch` is `deleted` or `already gone`.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is in another state, `finished` included. The error is `the task of <issue key> is in <state>; tasker finish needs landed or cleanup_failed`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- Another command holds the clone for more than 5 minutes. The error says that the lock is busy. Run the command again.
+
+The task goes to `cleanup_failed` when a step fails after the move to `finishing`. The error is `finishing failed: <reason>`, and the event has the data `{ error, from, to }`. The command prints the same error on stderr and stops with exit code 1. For example, git refuses to remove a worktree with uncommitted changes.
+
+To recover, fix the cause and run `tasker finish` again. A second run finishes the steps that are left.
+
+The command keeps the files under `artifacts/`. A crash during the command leaves the task in `finishing` with its run marker.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.

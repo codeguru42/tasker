@@ -39,11 +39,16 @@ const refusal = (state: string) => `the task of ${KEY} is in ${state}; tasker fi
 describe("finish", () => {
   it("refuses a task in accepted and keeps the worktree and the branch", async () => {
     const accepted = await useAcceptedTask();
-    const before = await taskWorkspaceState(accepted);
+    const workspace = {
+      ...accepted,
+      worktree: String(accepted.task.worktreePath),
+      branch: String(accepted.task.branch),
+    };
+    const before = await taskWorkspaceState(workspace);
 
     await expectCommandRefused({ dataRoot: accepted.dataRoot, key: KEY }, runFinish, refusal("accepted"));
 
-    expect(await taskWorkspaceState(accepted)).toEqual(before);
+    expect(await taskWorkspaceState(workspace)).toEqual(before);
   });
 
   it("refuses a task in finished", async () => {
