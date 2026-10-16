@@ -124,6 +124,11 @@ function failedRunOf(fixture: VerifyFixture, number = 1) {
   };
 }
 
+// The last line of the error of a failing verify command.
+function refineHint(key: string): string {
+  return `Run tasker refine ${key} "<feedback>" to plan the fix, or tasker retry ${key} to run the commands again.`;
+}
+
 describe("verifyTask command failure", () => {
   it("fails the task, records the row and prints the error with the tail of the log", async () => {
     const fixture = await useVerifyFixture({ commands: ["true", "seq 1 30; exit 3"] });
@@ -131,7 +136,8 @@ describe("verifyTask command failure", () => {
     const lines = Array.from({ length: 19 }, (_, i) => `${i + 12}\n`).join("");
     const message =
       `verify command 2 failed: seq 1 30; exit 3: exit code 3. The log is ${log}.\n` +
-      `the last 20 lines of the log:\n${lines}--- exit code 3`;
+      `the last 20 lines of the log:\n${lines}--- exit code 3\n` +
+      refineHint(fixture.started.key);
 
     const { result, io } = await runVerifyTask(fixture);
 
@@ -158,6 +164,7 @@ describe("verifyTask command failure", () => {
     expect(found.state).toBe("failed");
     expect(found.row).toMatchObject({ result: "timed_out", commands: ["sleep 30"], failingCommand: 1 });
     expect(found.error).toContain("sleep 30: timed out after 0.005 min. The log is ");
+    expect(found.error?.endsWith(refineHint(fixture.started.key))).toBe(true);
   });
 
   it("adds the no-output line when the failed command wrote nothing", async () => {
@@ -168,7 +175,7 @@ describe("verifyTask command failure", () => {
     const found = failedRunOf(fixture);
     expect(found.state).toBe("failed");
     expect(found.row).toMatchObject({ result: "failed", commands: ["exit 3"], failingCommand: 1 });
-    expect(found.error?.endsWith(NO_OUTPUT_LINE)).toBe(true);
+    expect(found.error?.endsWith(`${NO_OUTPUT_LINE}\n${refineHint(fixture.started.key)}`)).toBe(true);
   });
 
   it("numbers the second run 2 and puts its logs in verify-run-2", async () => {
