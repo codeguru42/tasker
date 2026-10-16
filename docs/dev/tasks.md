@@ -168,6 +168,8 @@ The steps run in this order.
 
 The move to `executed` appends one `executed` event with the data `{ version, prompts, from, to }`. The `executed` event takes the place of the `transition` event for this move. `prompts` holds the versions of the prompts that the run sent.
 
+The command also writes `todo_started` and `todo_done` with the data `{ id }`, and `fix_turn_started` and `fix_turn_done` with no data. It writes one `permission_denials` event with `{ denials }`, one `sandbox_cleanup` event for each turn that has one, and one `usage` event for each turn.
+
 A second `tasker execute` works only on a task in `approved`.
 
 The reasons:
@@ -202,6 +204,8 @@ The reasons:
 5. Move the task to `reviewing`, which writes the run marker. Run the assistant, and write its events to the transcript.
 6. Check the answer. Record the review, its findings and the `review` event, and move the task.
 
+The command writes one `transition` event into `reviewing`, one `usage` event, one `review` event with the data `{ number, revision, findings }`, and one `transition` event out of `reviewing`. A failed run writes the `usage` event and no `review` event.
+
 These reasons explain its rules:
 
 - Each review runs in a new session. The review is then an independent pass that the plan conversation does not bias.
@@ -221,6 +225,8 @@ No command resumes a review that failed or stopped yet (`tasker retry` M8, `task
 3. Read the latest review, and make sure that the task has one.
 4. With `--finding`, make sure that each named position exists and is open. Without it, take every open position, and make sure that at least one exists.
 5. Write the dismissals and the `review_dismissed` event in one transaction. If no finding is open after that, the move to `awaiting_work_review` is part of the same transaction.
+
+The `review_dismissed` event has the data `{ number, positions, reason }`. The command writes a `transition` event only when the task moves. The event and the move share one transaction.
 
 These links give the rules:
 
@@ -289,6 +295,8 @@ These reasons explain its rules:
 ## Finish
 
 `tasker finish` cleans up a task in `landed` or `cleanup_failed`: it removes the worktree and the local task branch, and the task goes through `finishing` to `finished`.
+
+The last write appends one `transition` event with the data `{ worktree, branch, from, to }`. The value of `worktree` is `removed` or `already gone`. The value of `branch` is `deleted` or `already gone`. If a step fails after the move to `finishing`, the task goes to `cleanup_failed`. Its `transition` event then has the data `{ error, from, to }`.
 
 These links give the rules that finish follows:
 
