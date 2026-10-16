@@ -36,6 +36,7 @@ import {
   useRefineFixture,
   usePlanFixture,
   useStartedTask,
+  useReviewFixture,
   useStartFixture,
   useVerifyFixture,
   useWorkReviewTask,
@@ -421,6 +422,18 @@ describe("useWorkReviewTask", () => {
     expect([...(await changedFiles(work))].sort()).toEqual(["docs/b.md", "src/a.ts"]);
     expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();
     expect(lockNames(work.dataRoot)).toEqual([]);
+  });
+});
+
+describe("useReviewFixture", () => {
+  it("gives a task in awaiting_work_review and puts the fake claude first on PATH", async () => {
+    const fixture = await useReviewFixture({ stream: ["one"] });
+
+    expect(fixture.task.state).toBe("awaiting_work_review");
+    expect(fixture.task.worktreePath).not.toBeNull();
+    expect(fixture.task.branch).not.toBeNull();
+    expect(process.env.PATH?.startsWith(`${fixture.claude.binDir}${delimiter}`)).toBe(true);
+    expect(fixture.claude.calls()).toEqual([]);
   });
 });
 

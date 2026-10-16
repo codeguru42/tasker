@@ -345,6 +345,21 @@ export async function useWorkReviewTask(
   return { ...fixture, key, task, clone: repoPaths(fixture.dataRoot, fixture.repoKey).clone, env: fixture.origin.env };
 }
 
+export interface ReviewFixture extends WorkReviewTask {
+  claude: FakeClaude;
+}
+
+// The setup of the tests of tasker review: useWorkReviewTask(options), then a fake claude with the control, first on
+// PATH (see useFakeClaudeOnPath()). Call it inside a test.
+export async function useReviewFixture(
+  control: FakeClaudeControl,
+  options?: Parameters<typeof useWorkReviewTask>[0],
+): Promise<ReviewFixture> {
+  const work = await useWorkReviewTask(options);
+  const claude = useFakeClaudeOnPath(control);
+  return { ...work, claude };
+}
+
 export interface VerifyFixture {
   started: StartedTask;
   // The task in executed, with its worktree path.
