@@ -12,7 +12,7 @@ import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree
 import { runCommand } from "../helpers/cli.js";
 import { localBranches } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { lockNames, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { lockNames, seedQuotaEvent, seedTasks, withDataRootStore } from "../helpers/store.js";
 import { taskWorkspaceState, useStartFixture, useStartedTask } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -23,6 +23,7 @@ describe("abort", () => {
     const started = await useStartedTask();
     expect(started.result.code).toBe(0);
     const originBefore = await localBranches(started.origin.path, started.env);
+    const seeded = seedQuotaEvent(started.dataRoot, REPO);
 
     const result = await runCommand(abort, "abort", KEY);
 
@@ -41,6 +42,7 @@ describe("abort", () => {
     expect(existsSync(bootstrapLogPath(taskLogsDir(started.dataRoot, task!)))).toBe(true);
     expect(lockNames(started.dataRoot)).toEqual([]);
     expect(await localBranches(started.origin.path, started.env)).toEqual(originBefore);
+    expect(withDataRootStore(started.dataRoot, (store) => store.listQuotaEvents())).toEqual([seeded]);
   });
 
   it("cancels a task with no branch and no worktree", async () => {

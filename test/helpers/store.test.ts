@@ -7,6 +7,7 @@ import { failedFrom, lastTransitionError, transitionFromEvents, transitionTask }
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
+import { claudeRateLimitEvent } from "./fake-claude.js";
 import { seedPlanSession, seedReviewSession } from "./plan.js";
 import { findingEntries, reviewFinding } from "./review.js";
 import { useTempDir } from "./temp.js";
@@ -27,6 +28,7 @@ import {
   newVerifyRun,
   readRunMarker,
   reviewSessionRows,
+  seedQuotaEvent,
   seedReview,
   seedTask,
   seedTaskWithReviews,
@@ -902,5 +904,25 @@ describe("reviewSessionRows", () => {
     });
 
     expect(reviewSessionRows(dataRoot, task.id)).toEqual([]);
+  });
+});
+
+describe("seedQuotaEvent", () => {
+  it("records the default event of the repo with the provider claude-code and gives the record", () => {
+    const dataRoot = join(useTempDir("tasker-seed-quota-"), "data");
+
+    const record = seedQuotaEvent(dataRoot, "a/b");
+
+    expect(record).toMatchObject({ repoKey: "a/b", provider: "claude-code", event: claudeRateLimitEvent() });
+    expect(withDataRootStore(dataRoot, (store) => store.listQuotaEvents())).toEqual([record]);
+  });
+
+  it("records the event that it gets", () => {
+    const dataRoot = join(useTempDir("tasker-seed-quota-"), "data");
+    const event = claudeRateLimitEvent((info) => {
+      info.utilization = 0.5;
+    });
+
+    expect(seedQuotaEvent(dataRoot, "a/b", event).event).toEqual(event);
   });
 });

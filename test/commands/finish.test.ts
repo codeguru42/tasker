@@ -19,6 +19,7 @@ import {
   latestTaskOf,
   lockNames,
   readRunMarker,
+  seedQuotaEvent,
   seedTasks,
   withDataRootStore,
 } from "../helpers/store.js";
@@ -82,6 +83,7 @@ describe("finish", () => {
     const landed = await useLandedTask();
     const { dataRoot, task, worktree, branch } = landed;
     const landedEvents = eventsOf(dataRoot, KEY).length;
+    const seeded = seedQuotaEvent(dataRoot, REPO);
 
     const result = await runFinish();
 
@@ -106,6 +108,7 @@ describe("finish", () => {
     expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
     expect(lockNames(dataRoot)).toEqual([]);
     expect(existsSync(bootstrapLogPath(taskLogsDir(dataRoot, latestTaskOf(dataRoot, KEY))))).toBe(true);
+    expect(withDataRootStore(dataRoot, (store) => store.listQuotaEvents())).toEqual([seeded]);
   });
 
   it("finishes the steps that are left from cleanup_failed", async () => {

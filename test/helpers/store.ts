@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import {
   failTask,
@@ -15,12 +16,14 @@ import {
   type NewReview,
   type NewVerifyRun,
   openStore,
+  type QuotaEventRecord,
   type Review,
   type StoreOptions,
   type Task,
   type TaskStore,
   type VerifyRun,
 } from "../../src/store/store.js";
+import { claudeRateLimitEvent } from "./fake-claude.js";
 import { reviewFinding } from "./review.js";
 
 // Runs fn with resource, then closes resource. When fn gives a promise, resource closes after the
@@ -335,4 +338,17 @@ export function failRefineFrom(
 // Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.
 export function seedTask(store: TaskStore): Task {
   return store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
+}
+
+// Records event as the last quota event of repoKey, with the provider claude-code, in the store of dataRoot. It gives
+// back the record as the store holds it.
+export function seedQuotaEvent(
+  dataRoot: string,
+  repoKey: string,
+  event: AssistantEvent = claudeRateLimitEvent(),
+): QuotaEventRecord {
+  return withDataRootStore(dataRoot, (store) => {
+    store.recordQuotaEvent(repoKey, "claude-code", event);
+    return store.listQuotaEvents(repoKey)[0];
+  });
 }

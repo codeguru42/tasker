@@ -20,6 +20,7 @@ import {
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
+import { claudeRateLimitEvent } from "../helpers/fake-claude.js";
 import { findingEntries, reviewFindingWithout } from "../helpers/review.js";
 import {
   seedExecuteSession,
@@ -699,7 +700,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(11);
+        expect(migrations.length).toBe(12);
       });
     });
   });
@@ -2224,6 +2225,45 @@ describe("task store", () => {
         `task ${task.id} has no plan revision 5`,
       );
       expect(readFixTurnRows()).toEqual([]);
+    });
+  });
+
+  describe("quota events", () => {
+    it("lists nothing on a new store", () => {
+      expect(store.listQuotaEvents()).toEqual([]);
+    });
+
+    it("keeps the event as it came, with the provider and the injected time", () => {
+      const event = { ...claudeRateLimitEvent(), unknown_field: { kept: true } };
+      store.recordQuotaEvent("a/repo", "claude-code", event);
+      expect(store.listQuotaEvents()).toEqual([
+        { repoKey: "a/repo", provider: "claude-code", receivedAt: "2026-01-01T00:00:00.000Z", event },
+      ]);
+    });
+
+    it("replaces the record of the same repo with a newer event", () => {
+      store.recordQuotaEvent("a/repo", "claude-code", claudeRateLimitEvent());
+      clock = new Date("2026-01-02T00:00:00.000Z");
+      const newer = claudeRateLimitEvent((info) => {
+        info.utilization = 0.9;
+      });
+      store.recordQuotaEvent("a/repo", "claude-code", newer);
+      expect(store.listQuotaEvents()).toEqual([
+        { repoKey: "a/repo", provider: "claude-code", receivedAt: "2026-01-02T00:00:00.000Z", event: newer },
+      ]);
+    });
+
+    it("lists the records sorted by repo key", () => {
+      store.recordQuotaEvent("b/repo", "claude-code", claudeRateLimitEvent());
+      store.recordQuotaEvent("a/repo", "claude-code", claudeRateLimitEvent());
+      expect(store.listQuotaEvents().map((record) => record.repoKey)).toEqual(["a/repo", "b/repo"]);
+    });
+
+    it("lists only the record of the repo key that it gets", () => {
+      store.recordQuotaEvent("b/repo", "claude-code", claudeRateLimitEvent());
+      store.recordQuotaEvent("a/repo", "claude-code", claudeRateLimitEvent());
+      expect(store.listQuotaEvents("b/repo").map((record) => record.repoKey)).toEqual(["b/repo"]);
+      expect(store.listQuotaEvents("missing/repo")).toEqual([]);
     });
   });
 
