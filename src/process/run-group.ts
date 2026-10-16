@@ -47,9 +47,10 @@ export interface SignalForward {
   attach: (pid: number) => void;
   // Removes the listeners. It is for the end of a run after attach. Each signal that came already went to the group.
   stop: () => void;
-  // For a run with no group. It waits one turn of the event loop, so that each signal that came reaches the
-  // listeners. Then it removes the listeners. It sends each waiting signal to tasker again, in the order that it
-  // came. No listener is left, so each signal gets its default action. A SIGINT or a SIGTERM ends tasker.
+  // For a run with no group. A signal that comes in the poll phase of the event loop reaches the listener only in
+  // the next poll phase. So it waits for two setImmediate turns in a row, with one full poll phase between them.
+  // Then it removes the listeners. It sends each waiting signal to tasker again, in the order that it came.
+  // No listener is left, so each signal gets its default action. A SIGINT or a SIGTERM ends tasker.
   release: () => Promise<void>;
 }
 
@@ -72,7 +73,7 @@ export function forwardSignals(): SignalForward {
     },
     stop,
     release: async () => {
-      await new Promise((resolve) => setImmediate(resolve));
+      for (let turn = 0; turn < 2; turn++) await new Promise((resolve) => setImmediate(resolve));
       stop();
       for (const signal of waiting.splice(0)) process.kill(process.pid, signal);
     },
