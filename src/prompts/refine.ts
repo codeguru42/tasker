@@ -1,4 +1,6 @@
 import type { PlanAnswer } from "../plan/answer.js";
+import { formatFindings, type FindingEntry } from "../review/findings-text.js";
+import type { Review } from "../store/store.js";
 import { SHARED_RULES } from "./shared.js";
 
 export const REFINE_PROMPT_NAME = "refine";
@@ -27,4 +29,16 @@ export const REFINE_PROMPT = [
 export function openQuestionsText(questions: PlanAnswer["questions"]): string {
   if (questions.length === 0) return "None.";
   return questions.map((q) => `- \`${q.id}\`: ${q.question} (${q.context})`).join("\n");
+}
+
+// The context of a refine that promotes the open findings of a review to a plan. verifyRun is the number of the
+// passed verify run of the reviewed work, if any.
+export function promotionContextText(
+  review: Pick<Review, "number" | "revision">,
+  open: readonly FindingEntry[],
+  verifyRun: number | undefined,
+): string {
+  const verifyLine =
+    verifyRun === undefined ? "No verify run is recorded." : `Verify run ${verifyRun} passed on that work.`;
+  return `Review ${review.number} read the committed work at ${review.revision} and found these open findings. ${verifyLine} Revise the plan so that the next execute run fixes each open finding. The work that is done stays.\n${formatFindings(open)}`;
 }

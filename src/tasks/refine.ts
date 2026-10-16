@@ -2,11 +2,17 @@ import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { archivePrompt } from "../prompts/archive.js";
-import { openQuestionsText, PLAIN_REFINE_CONTEXT, REFINE_PROMPT, REFINE_PROMPT_NAME } from "../prompts/refine.js";
+import {
+  openQuestionsText,
+  PLAIN_REFINE_CONTEXT,
+  promotionContextText,
+  REFINE_PROMPT,
+  REFINE_PROMPT_NAME,
+} from "../prompts/refine.js";
 import { fillTemplate } from "../prompts/template.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
-import type { TaskStore } from "../store/store.js";
+import type { Task, TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
@@ -18,22 +24,41 @@ export interface RefineRequest {
   ref: IssueRef;
   // The task that the lookup found. The refine reads it again under the task lock.
   taskId: number;
-  // The feedback of the operator, as given.
-  feedback: string;
+  // The feedback of the operator, as given, or none.
+  feedback?: string;
   env: NodeJS.ProcessEnv;
   io: Io;
 }
 
-// Continues the plan session of the task with the feedback and records the next plan revision.
+// Continues the plan session of the task with the feedback and records the next plan revision. A task in reviewed
+// needs no feedback: the open findings of its latest review go to the plan session.
 // The task lock covers all the steps. It does not wait.
 export async function refineTask(store: TaskStore, request: RefineRequest): Promise<PlanResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => refineLocked(store, request));
 }
 
+// The context of a promotion: the open findings of the latest review of a task in reviewed.
+function promotionContext(store: TaskStore, task: Task): string {
+  const review = store.latestReview(task.id);
+  const open = review?.findings.filter((entry) => entry.dismissed === null) ?? [];
+  if (review === undefined || open.length === 0) {
+    throw new Error(
+      `the latest review of ${task.issueKey} has no open finding; run tasker dismiss-review or tasker review`,
+    );
+  }
+  // A task reaches reviewed only after a passed verify run, so the latest run is the run of that work.
+  return promotionContextText(review, open, store.latestVerifyRun(task.id)?.number);
+}
+
 async function refineLocked(store: TaskStore, request: RefineRequest): Promise<PlanResult> {
   const { config, env, io, feedback } = request;
-  const task = taskInState(store, request.taskId, "awaiting_plan_review", "refine");
-  if (feedback.trim() === "") throw new Error("the feedback is empty");
+  const task = taskInState(store, request.taskId, ["awaiting_plan_review", "reviewed"], "refine");
+  const promotion = task.state === "reviewed";
+  if (!promotion && feedback === undefined) {
+    throw new Error("the feedback is missing; tasker refine needs it unless the task is in reviewed");
+  }
+  if (feedback?.trim() === "") throw new Error("the feedback is empty");
+  const context = promotion ? promotionContext(store, task) : PLAIN_REFINE_CONTEXT;
   const revision = store.latestPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
   const session = store.planSession(task.id);
@@ -47,8 +72,8 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
   const prompt = fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, {
     CURRENT_PLAN: currentPlan,
     BRANCH_COMMITS: branchCommits,
-    CONTEXT: PLAIN_REFINE_CONTEXT,
-    FEEDBACK: feedback,
+    CONTEXT: context,
+    FEEDBACK: feedback ?? "None.",
     OPEN_QUESTIONS: openQuestionsText(revision.answer.questions),
   });
   const archived = archivePrompt(config.dataRoot, REFINE_PROMPT_NAME, REFINE_PROMPT);
@@ -72,7 +97,7 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
     archived,
     version,
     prepared,
-    source: "refine",
+    source: promotion ? "review" : "refine",
     feedback,
   });
 }

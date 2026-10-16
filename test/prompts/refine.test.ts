@@ -23,8 +23,8 @@ const VALUES = {
   OPEN_QUESTIONS: openQuestionsText([QUESTION]),
 };
 
-const promotionText = (open = findingEntries(newReview(1).findings), verifyRun: number | undefined = 1) =>
-  promotionContextText({ number: 1, revision: "4b825dc642cb" }, open, verifyRun);
+const promotionText = (open = findingEntries(newReview(1).findings), verifyRun: number | null = 1) =>
+  promotionContextText({ number: 1, revision: "4b825dc642cb" }, open, verifyRun ?? undefined);
 
 function fillRefine(): string {
   return fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, VALUES);
@@ -90,7 +90,7 @@ describe("promotionContextText", () => {
   });
 
   it("says that no verify run is recorded for no verify run", () => {
-    expect(promotionText(undefined, undefined)).toBe(promotionContextExpected({ verifyRun: null }));
+    expect(promotionText(undefined, null)).toBe(promotionContextExpected({ verifyRun: null }));
   });
 
   it("keeps the original positions of the open findings", () => {

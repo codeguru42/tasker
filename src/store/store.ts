@@ -106,8 +106,8 @@ export type PlanQuestionState =
 
 type ResolvedPlanQuestion = Extract<PlanQuestionState, { state: "resolved" }>;
 
-// Later tickets add more sources, for example a review promotion. The table has no check on the values.
-export type PlanRevisionSource = "plan" | "refine";
+// A review revision comes from the open findings of a review. The table has no check on the values.
+export type PlanRevisionSource = "plan" | "refine" | "review";
 
 export interface NewPlanRevision {
   version: number;
