@@ -6,8 +6,9 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { addCloneCommit, commitInWorktree } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { dayAt, databasePathOf, eventsOf, latestTaskOf, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { dayAt, databasePathOf, eventsOf, latestTaskOf, seedTasks } from "../helpers/store.js";
 import {
+  appendBaseEvent,
   expectCommandRefused,
   taskBranchTipOf,
   useStartFixture,
@@ -24,12 +25,6 @@ const runAccept = (key = KEY) => runCommand(accept, "accept", key, "--repo", REP
 // The revision that ref names in the git dir of the clone.
 const revisionOf = (work: Pick<WorkReviewTask, "clone" | "env">, ref: string) =>
   runGit(["rev-parse", ref], { gitDir: work.clone, env: work.env }).then((out) => out.trim());
-
-// Appends a base event to the task.
-const appendBase = (work: WorkReviewTask, base: string, revision: string) =>
-  withDataRootStore(work.dataRoot, (store) =>
-    store.appendEvent(work.task.id, "base", { base, revision, source: "explicit" }),
-  );
 
 // Runs accept and expects a refusal that changes nothing.
 const expectRefused = (dataRoot: string, error: string | RegExp) =>
@@ -64,7 +59,7 @@ describe("accept", () => {
   it("accepts a task whose base is a local branch at the tip", async () => {
     const work = await useWorkReviewTask();
     await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: work.clone, env: work.env });
-    appendBase(work, "refs/heads/x", "refs/heads/x");
+    appendBaseEvent(work, "refs/heads/x", "refs/heads/x");
     const tip = await revisionOf(work, "refs/heads/x");
 
     const result = await runAccept();
@@ -155,7 +150,7 @@ describe("a refused accept", () => {
     const work = await useWorkReviewTask();
     const head = await taskBranchTipOf(work);
     await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: work.clone, env: work.env });
-    appendBase(work, "refs/heads/x", "refs/heads/x");
+    appendBaseEvent(work, "refs/heads/x", "refs/heads/x");
     const tip = await addCloneCommit(work.clone, work.env, "x");
 
     await expectRefused(
@@ -166,7 +161,7 @@ describe("a refused accept", () => {
 
   it("refuses a base that origin does not have", async () => {
     const work = await useWorkReviewTask();
-    appendBase(work, "gone", "refs/remotes/origin/gone");
+    appendBaseEvent(work, "gone", "refs/remotes/origin/gone");
 
     await expectRefused(
       work.dataRoot,

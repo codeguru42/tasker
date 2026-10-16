@@ -17,6 +17,7 @@ import { planTodo, validPlanAnswer } from "./plan.js";
 import {
   dayAt,
   databasePathOf,
+  eventsOf,
   latestTaskOf,
   lockNames,
   readRunMarker,
@@ -25,6 +26,7 @@ import {
 } from "./store.js";
 import { useTempDir } from "./temp.js";
 import {
+  appendBaseEvent,
   expectCommandRefused,
   expectNoAssistantRun,
   expectRefusedWithoutChange,
@@ -442,6 +444,26 @@ describe("expectCommandRefused", () => {
     };
 
     await expect(expectCommandRefused(started, run, "x")).rejects.toThrow();
+  });
+});
+
+describe("appendBaseEvent", () => {
+  it("appends an explicit base event to the task", () => {
+    const dataRoot = useTempDir("tasker-base-event-");
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state: "accepted", at: dayAt(1) },
+    ]);
+
+    const event = appendBaseEvent({ dataRoot, task }, "refs/heads/x", "refs/heads/x");
+
+    expect(event).toMatchObject({
+      type: "base",
+      data: { base: "refs/heads/x", revision: "refs/heads/x", source: "explicit" },
+    });
+    expect(eventsOf(dataRoot, "codeguru42/tasker#5").at(-1)).toEqual({
+      type: "base",
+      data: { base: "refs/heads/x", revision: "refs/heads/x", source: "explicit" },
+    });
   });
 });
 

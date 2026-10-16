@@ -10,7 +10,7 @@ import type { Config } from "../../src/config/schema.js";
 import { canonicalPath } from "../../src/real-path.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import { transitionTask, type TaskState } from "../../src/state/machine.js";
-import type { NewSession, PlanRevision, StoredSession, Task, TaskStore } from "../../src/store/store.js";
+import type { NewSession, PlanRevision, StoredSession, Task, TaskEvent, TaskStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
@@ -385,6 +385,17 @@ export interface WorkReviewTask extends StartFixture {
   task: Task;
   clone: string;
   env: NodeJS.ProcessEnv;
+}
+
+// Appends a base event { base, revision, source: "explicit" } to the task of the fixture, in a store of its own.
+export function appendBaseEvent(
+  fixture: Pick<WorkReviewTask, "dataRoot" | "task">,
+  base: string,
+  revision: string,
+): TaskEvent {
+  return withDataRootStore(fixture.dataRoot, (store) =>
+    store.appendEvent(fixture.task.id, "base", { base, revision, source: "explicit" }),
+  );
 }
 
 // Runs useStartFixture(options), starts the task of issue 5 with startTaskWithCommits and one commit for each file of
