@@ -371,12 +371,12 @@ describe("gh doctor checks", () => {
       expect(fake.calls()).toEqual([]);
     });
 
-    it("gives error for a missing in-progress label", async () => {
+    it("gives warn for a missing in-progress label", async () => {
       const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), notFound("wip")]);
       const repo = githubRepo("main", { updateOnStart: true, inProgressLabel: "wip" });
       expect(await doctor.ghLabelsCheck(repo).run(fake.env)).toEqual({
-        status: "error",
-        detail: `main:\nthe label "wip" of ${IN_PROGRESS} does not exist in octo/repo: tasker start fails`,
+        status: "warn",
+        detail: `main:\nthe label "wip" of ${IN_PROGRESS} does not exist in octo/repo: the in-progress write of each tasker start fails and only warns`,
         remediation: `Create each missing label in octo/repo on GitHub, or change ${IN_PROGRESS}.`,
       });
       expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip")]);
@@ -388,19 +388,19 @@ describe("gh doctor checks", () => {
         status: "warn",
         detail:
           `main:\nthe label "wip" of ${IN_PROGRESS} exists\n` +
-          `the label "done" of ${DONE} does not exist in octo/repo: tasker finish only warns`,
+          `the label "done" of ${DONE} does not exist in octo/repo: the done write of each tasker finish fails and only warns`,
         remediation: `Create each missing label in octo/repo on GitHub, or change ${DONE}.`,
       });
       expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip"), labelArgs("done")]);
     });
 
-    it("gives error when both labels are missing, and names both keys", async () => {
+    it("gives warn when both labels are missing, and names both keys", async () => {
       const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), notFound("wip"), notFound("done")]);
       expect(await doctor.ghLabelsCheck(bothLabels).run(fake.env)).toEqual({
-        status: "error",
+        status: "warn",
         detail:
-          `main:\nthe label "wip" of ${IN_PROGRESS} does not exist in octo/repo: tasker start fails\n` +
-          `the label "done" of ${DONE} does not exist in octo/repo: tasker finish only warns`,
+          `main:\nthe label "wip" of ${IN_PROGRESS} does not exist in octo/repo: the in-progress write of each tasker start fails and only warns\n` +
+          `the label "done" of ${DONE} does not exist in octo/repo: the done write of each tasker finish fails and only warns`,
         remediation: `Create each missing label in octo/repo on GitHub, or change ${IN_PROGRESS} and ${DONE}.`,
       });
       expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip"), labelArgs("done")]);
