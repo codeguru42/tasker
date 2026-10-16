@@ -45,7 +45,7 @@ type VerifyOutcome =
 
 async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<VerifyTaskResult> {
   const { config, env, io } = request;
-  const task = taskInState(store, request.taskId, "executed", "verify");
+  const task = taskInState(store, request.taskId, "verify");
   const worktreePath = requireWorktree(task);
   const repo = config.repos[task.repoKey];
   const number = store.nextVerifyRun(task.id);

@@ -6,7 +6,8 @@ import { bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
 import { commandFailureMessage, readCommandLog } from "../phases/command-step.js";
 import { childEnv } from "../process/child-env.js";
 import { errorMessage } from "../error-message.js";
-import { failedFrom, failTask, transitionTask } from "../state/machine.js";
+import { acceptedStates } from "../state/commands.js";
+import { failedFrom, failTask, transitionTask, type TaskState } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
@@ -60,9 +61,12 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
   const issueProvider = issueProviderFor(config, ref.repoKey);
   const issue = await issueProvider.fetchIssue(ref, env);
   const active = store.findActiveTask(ref.repoKey, ref.key);
+  // The table names start for the states it accepts. It cannot hold the rule for a task that failed in
+  // provisioning, so that rule stays here.
   const continues =
     active !== undefined &&
-    (active.state === "provisioning" || (active.state === "failed" && failedFrom(store, active.id) === "provisioning"));
+    (acceptedStates("start").includes(active.state as TaskState) ||
+      (active.state === "failed" && failedFrom(store, active.id) === "provisioning"));
   if (active !== undefined && !continues) return { started: false, task: active };
   if (active === undefined && issue.state === "closed") throw new Error(`the issue is closed: ${ref.key}`);
   if (active === undefined && repo.issueTracker.updateOnStart && !request.reclaim) {

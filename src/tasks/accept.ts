@@ -30,7 +30,7 @@ export async function acceptTask(store: TaskStore, request: AcceptRequest): Prom
 
 async function acceptLocked(store: TaskStore, request: AcceptRequest): Promise<Accepted> {
   const { config, env } = request;
-  const task = taskInState(store, request.taskId, "awaiting_work_review", "accept");
+  const task = taskInState(store, request.taskId, "accept");
   requireWorktree(task);
   const branch = requireBranch(task);
   const baseRevision = requireBaseRevision(store, task);

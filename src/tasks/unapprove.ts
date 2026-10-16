@@ -21,7 +21,7 @@ export async function unapproveTask(store: TaskStore, request: UnapproveRequest)
 }
 
 async function unapproveLocked(store: TaskStore, request: UnapproveRequest): Promise<Unapproved> {
-  const task = taskInState(store, request.taskId, "approved", "unapprove");
+  const task = taskInState(store, request.taskId, "unapprove");
   const pinned = store.pinnedPlanRevision(task.id);
   if (pinned === undefined) throw new Error(`the task of ${task.issueKey} is approved, but no revision is pinned`);
   transitionWithPlanUnapproval(store, task.id, pinned.version);

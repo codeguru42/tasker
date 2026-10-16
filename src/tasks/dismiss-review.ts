@@ -30,7 +30,7 @@ export async function dismissReviewTask(store: TaskStore, request: DismissReview
 }
 
 async function dismissReviewLocked(store: TaskStore, request: DismissReviewRequest): Promise<ReviewDismissed> {
-  const task = taskInState(store, request.taskId, "reviewed", "dismiss-review");
+  const task = taskInState(store, request.taskId, "dismiss-review");
   if (request.reason.trim() === "") throw new Error("the reason is empty");
   const review = store.latestReview(task.id);
   if (review === undefined) throw new Error(`the task of ${task.issueKey} is in reviewed and has no review`);

@@ -52,7 +52,7 @@ function promotionContext(store: TaskStore, task: Task): string {
 
 async function refineLocked(store: TaskStore, request: RefineRequest): Promise<PlanResult> {
   const { config, env, io, feedback } = request;
-  const task = taskInState(store, request.taskId, ["awaiting_plan_review", "reviewed"], "refine");
+  const task = taskInState(store, request.taskId, "refine");
   const promotion = task.state === "reviewed";
   if (!promotion && feedback === undefined) {
     throw new Error("the feedback is missing; tasker refine needs it unless the task is in reviewed");

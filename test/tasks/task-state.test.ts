@@ -38,35 +38,31 @@ describe("taskById", () => {
 describe("assertTaskState", () => {
   it("passes in the state", () => {
     const { dataRoot, id } = seeded("approved");
-    withDataRootStore(dataRoot, (store) =>
-      expect(() => assertTaskState(taskById(store, id), "approved", "execute")).not.toThrow(),
-    );
+    withDataRootStore(dataRoot, (store) => expect(() => assertTaskState(taskById(store, id), "execute")).not.toThrow());
   });
 
   it("throws in another state", () => {
     const { dataRoot, id } = seeded("failed");
     withDataRootStore(dataRoot, (store) =>
-      expect(() => assertTaskState(taskById(store, id), "approved", "execute")).toThrow(
+      expect(() => assertTaskState(taskById(store, id), "execute")).toThrow(
         "the task of codeguru42/tasker#5 is in failed; tasker execute needs approved",
       ),
     );
   });
 });
 
-describe("assertTaskState with a list of states", () => {
-  const LANDABLE = ["accepted", "pushed", "in_peer_review"] as const;
-
-  it("passes in a state of the list", () => {
+describe("assertTaskState with more than one state", () => {
+  it("passes in a state that the command accepts", () => {
     const { dataRoot, id } = seeded("pushed");
     withDataRootStore(dataRoot, (store) =>
-      expect(() => assertTaskState(taskById(store, id), LANDABLE, "mark-landed")).not.toThrow(),
+      expect(() => assertTaskState(taskById(store, id), "mark-landed")).not.toThrow(),
     );
   });
 
   it("names all states in another state", () => {
     const { dataRoot, id } = seeded("failed");
     withDataRootStore(dataRoot, (store) =>
-      expect(() => assertTaskState(taskById(store, id), LANDABLE, "mark-landed")).toThrow(
+      expect(() => assertTaskState(taskById(store, id), "mark-landed")).toThrow(
         "the task of codeguru42/tasker#5 is in failed; tasker mark-landed needs accepted, pushed or in_peer_review",
       ),
     );
@@ -75,33 +71,23 @@ describe("assertTaskState with a list of states", () => {
   it("joins two states with or", () => {
     const { dataRoot, id } = seeded("failed");
     withDataRootStore(dataRoot, (store) =>
-      expect(() => assertTaskState(taskById(store, id), ["accepted", "pushed"], "mark-landed")).toThrow(
-        "the task of codeguru42/tasker#5 is in failed; tasker mark-landed needs accepted or pushed",
-      ),
-    );
-  });
-
-  it("gives the text of one state for a list of one state", () => {
-    const { dataRoot, id } = seeded("failed");
-    withDataRootStore(dataRoot, (store) =>
-      expect(() => assertTaskState(taskById(store, id), ["approved"], "execute")).toThrow(
-        "the task of codeguru42/tasker#5 is in failed; tasker execute needs approved",
+      expect(() => assertTaskState(taskById(store, id), "finish")).toThrow(
+        "the task of codeguru42/tasker#5 is in failed; tasker finish needs landed or cleanup_failed",
       ),
     );
   });
 });
 
-describe("taskInState with a list of states", () => {
-  it("gives the task in a state of the list and throws for a state outside it", () => {
-    const landable = ["accepted", "pushed"] as const;
+describe("taskInState for a command with more than one state", () => {
+  it("gives the task in an accepted state and throws for a state outside them", () => {
     const pushed = seeded("pushed");
     withDataRootStore(pushed.dataRoot, (store) =>
-      expect(taskInState(store, pushed.id, landable, "mark-landed").id).toBe(pushed.id),
+      expect(taskInState(store, pushed.id, "mark-landed").id).toBe(pushed.id),
     );
     const failed = seeded("failed");
     withDataRootStore(failed.dataRoot, (store) =>
-      expect(() => taskInState(store, failed.id, landable, "mark-landed")).toThrow(
-        "the task of codeguru42/tasker#5 is in failed; tasker mark-landed needs accepted or pushed",
+      expect(() => taskInState(store, failed.id, "mark-landed")).toThrow(
+        "the task of codeguru42/tasker#5 is in failed; tasker mark-landed needs accepted, pushed or in_peer_review",
       ),
     );
   });
@@ -110,14 +96,14 @@ describe("taskInState with a list of states", () => {
 describe("taskInState", () => {
   it("gives the task in the state", () => {
     const { dataRoot, id } = seeded("approved");
-    withDataRootStore(dataRoot, (store) => expect(taskInState(store, id, "approved", "execute").id).toBe(id));
+    withDataRootStore(dataRoot, (store) => expect(taskInState(store, id, "execute").id).toBe(id));
   });
 
   it("throws for an unknown id and for another state", () => {
     const { dataRoot, id } = seeded("failed");
     withDataRootStore(dataRoot, (store) => {
-      expect(() => taskInState(store, 999, "approved", "execute")).toThrow("task not found: 999");
-      expect(() => taskInState(store, id, "approved", "execute")).toThrow(
+      expect(() => taskInState(store, 999, "execute")).toThrow("task not found: 999");
+      expect(() => taskInState(store, id, "execute")).toThrow(
         "the task of codeguru42/tasker#5 is in failed; tasker execute needs approved",
       );
     });

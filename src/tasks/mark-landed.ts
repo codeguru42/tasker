@@ -31,7 +31,7 @@ export async function markLandedTask(store: TaskStore, request: MarkLandedReques
 
 async function markLandedLocked(store: TaskStore, request: MarkLandedRequest): Promise<MarkedLanded> {
   const { config, env } = request;
-  const task = taskInState(store, request.taskId, ["accepted", "pushed", "in_peer_review"], "mark-landed");
+  const task = taskInState(store, request.taskId, "mark-landed");
   const branch = requireBranch(task);
   requireBase(task);
   const baseRevision = requireBaseRevision(store, task);

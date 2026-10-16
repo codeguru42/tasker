@@ -39,7 +39,7 @@ export async function mergeTask(store: TaskStore, request: MergeRequest): Promis
 
 async function mergeLocked(store: TaskStore, request: MergeRequest): Promise<MergeTaskResult> {
   const { config, env, io } = request;
-  const task = taskInState(store, request.taskId, "accepted", "merge");
+  const task = taskInState(store, request.taskId, "merge");
   const branch = requireBranch(task);
   const base = requireBase(task);
   if (base.startsWith(LOCAL_PREFIX)) {

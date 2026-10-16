@@ -27,7 +27,7 @@ export async function planTask(store: TaskStore, request: PlanRequest): Promise<
 
 async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanResult> {
   const { config, ref, env, io } = request;
-  const task = taskInState(store, request.taskId, "workspace_ready", "plan");
+  const task = taskInState(store, request.taskId, "plan");
   const issue = await issueProviderFor(config, ref.repoKey).fetchIssue(ref, env);
   const prompt = fillTemplate(PLAN_PROMPT_NAME, PLAN_PROMPT, {
     ISSUE_TEXT: planIssueText({ key: task.issueKey, title: issue.title, body: issue.body }),

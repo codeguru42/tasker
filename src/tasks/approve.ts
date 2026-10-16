@@ -31,7 +31,7 @@ async function approveLocked(store: TaskStore, request: ApproveRequest): Promise
     const pinned = store.pinnedPlanRevision(task.id);
     if (pinned !== undefined) throw new Error(`${task.issueKey} is already approved at revision v${pinned.version}`);
   }
-  assertTaskState(task, "awaiting_plan_review", "approve");
+  assertTaskState(task, "approve");
   const revision = store.latestPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
   const openQuestions = revision.answer.questions;

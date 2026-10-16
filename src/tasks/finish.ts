@@ -39,7 +39,7 @@ export async function finishTask(store: TaskStore, request: FinishRequest): Prom
 
 async function finishLocked(store: TaskStore, request: FinishRequest): Promise<FinishTaskResult> {
   const { config, env, io } = request;
-  const task = taskInState(store, request.taskId, ["landed", "cleanup_failed"], "finish");
+  const task = taskInState(store, request.taskId, "finish");
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     transitionTask(store, task.id, "finishing");

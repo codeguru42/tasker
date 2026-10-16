@@ -43,7 +43,7 @@ export async function reviewTask(store: TaskStore, request: ReviewRequest): Prom
 
 async function reviewLocked(store: TaskStore, request: ReviewRequest): Promise<ReviewResult> {
   const { config, env, io } = request;
-  const task = taskInState(store, request.taskId, "awaiting_work_review", "review");
+  const task = taskInState(store, request.taskId, "review");
   requireWorktree(task);
   const branch = requireBranch(task);
   const baseRevision = requireBaseRevision(store, task);

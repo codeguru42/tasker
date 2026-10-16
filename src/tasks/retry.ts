@@ -63,7 +63,7 @@ export async function retryTask(store: TaskStore, request: RetryRequest): Promis
 
 function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
   const { config, taskId, resumeExecute } = request;
-  const task = taskInState(store, taskId, "failed", "retry");
+  const task = taskInState(store, taskId, "retry");
   const events = store.listEvents(taskId);
   const origin = failedFromEvents(events);
   const row = origin === undefined ? undefined : RETRY_TABLE[origin];
