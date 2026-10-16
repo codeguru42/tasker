@@ -125,7 +125,7 @@ Only a failure of `gh repo view` itself names `issueTracker.project` in the reme
 
 ### Labels
 
-- A missing in-progress label is an error, because `tasker start` fails. A missing done label is a warning, because `tasker finish` only warns.
+- A missing in-progress label or done label is a warning, because the write only warns. A missing in-progress label makes the in-progress write of each `tasker start` fail. A missing done label makes the done write of each `tasker finish` fail.
 - The name is URL-encoded, so `/` and a space are safe, and `{` and `}` never hit a placeholder that `gh api` fills, such as `{owner}`.
 - GitHub gives the same 404 for a repo that does not exist, so the project check of the same repo names the real cause.
 
