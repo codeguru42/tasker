@@ -527,7 +527,7 @@ Each running agent has a slot and a delay. The delay is the number of minutes be
 ### Schedule a job when an agent starts
 
 1. When the orchestrator starts an agent, the orchestrator must run `tasker show-quota` and read the reset time, as "Terms" says.
-2. If there is a reset time, the orchestrator must schedule a one-shot five-hour job for the job time of that agent. The orchestrator also follows the schedule-all rule in "When there is no reset time yet".
+2. If there is a reset time, the orchestrator must schedule a one-shot five-hour job for the job time of that agent. The orchestrator also follows the schedule-all rule in "When there is no reset time yet". The orchestrator also applies [the seven-day rule](#the-seven-day-rule).
 3. If there is no reset time yet, the orchestrator starts the agent without a job and tells the agent that it has no job. For example, there is no reset time before the first run in the project. "When there is no reset time yet" gives the next steps.
 
 - When the orchestrator schedules a job, the prompt of the job must name the issue and the agent. The prompt must tell the orchestrator to do the steps of "When the job fires".
@@ -535,6 +535,22 @@ Each running agent has a slot and a delay. The delay is the number of minutes be
 - For a seven-day job, the orchestrator must keep the seven-day reset time of the job with its id.
 - Each id, and the time stored with it, lives until its one-shot job fires or until CronDelete deletes it. A one-shot job deletes itself when it fires. After that, the ticket has no job of that kind.
 - A job that has not fired is a job whose id still lives.
+
+### The seven-day rule
+
+Each time the orchestrator reads the reset time, as "Terms" says, the orchestrator also reads the seven-day reset time.
+
+- If the seven-day reset time is in the future, the orchestrator schedules a seven-day job for each agent that has none, however far away the reset is. The job is a one-shot job for the job time of the seven-day reset. The delay and the rounding come from [The delay of each agent](#the-delay-of-each-agent).
+- The reason: after the seven-day quota runs out, no session has tokens for a later read. As a result, the orchestrator schedules the job at the first read that gives the time.
+- The prompt of the job names the issue, the agent and the window `seven_day`. The prompt tells the orchestrator to do the steps of "When the job fires".
+- If the ticket has a seven-day job that has not fired, and the seven-day reset time did not change, the orchestrator schedules no second one. To compare, the orchestrator uses the seven-day reset time that it stored with the job id.
+- If the seven-day reset time changed, the orchestrator deletes the old seven-day job with CronDelete. Then the orchestrator schedules the new one.
+
+The rule has three failure cases:
+
+- If `tasker show-quota` fails, or the `jq` read of `seven_day` gives `null`, there is no seven-day reset time yet. No seven-day job changes. If `tasker show-quota` itself fails, the orchestrator tells the user the command and the error.
+- If CronCreate of a seven-day job fails, the orchestrator tells the user the tool and the error. The agent has no seven-day job. The next read tries again, because the rule schedules a seven-day job for each agent that has none.
+- If CronDelete of the old seven-day job fails, the orchestrator tells the user the tool and the error. The old job and its id stay. The orchestrator does not schedule the new job at that read. The next read tries again, because the time still differs.
 
 ### When there is no reset time yet
 
