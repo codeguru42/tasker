@@ -135,7 +135,7 @@ flowchart LR
   AC -->|mark-landed| L
   L -->|finish| FN[finishing]
   FN -->|done| F([finished])
-  FN -->|remote branch moved| CF[cleanup_failed]
+  FN -->|a step failed| CF[cleanup_failed]
   CF -->|finish| FN2[back to finishing]
 
   classDef terminal fill:#b91c1c,color:#fff,stroke:#7f1d1d;

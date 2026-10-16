@@ -1,8 +1,8 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, finish, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
-The commands abort, plan, refine, approve, unapprove, execute, accept, merge and mark-landed share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
+The commands abort, plan, refine, approve, unapprove, execute, accept, merge, mark-landed and finish share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
 
 ## Start
 
@@ -63,6 +63,8 @@ The compare of the stored worktree path uses the real path. The data root can go
 The abort removes its own worktree entry. It never prunes, because a prune drops the entries of other tasks too.
 
 The worktree goes before the branch. Git refuses to delete a branch that a worktree entry holds, also when the folder of the entry is gone.
+
+The remove and the delete have one home in `src/tasks/`. Abort and [Finish](#finish) both call it, and the abort keeps its discard step before that call.
 
 The abort does not delete the task branch on `origin`. `tasker merge` pushes only the base branch, and no command publishes a task branch.
 
@@ -277,3 +279,17 @@ These reasons explain its rules:
 - The check is read-only toward `origin`. The work landed outside tasker, so tasker only records it.
 - The check reads the tip of the task ref in the clone and not the worktree, for the same reason as the on-base check of [Merge](#merge).
 - The fetch holds the repo lock, because the fetch changes the refs of the clone. [The locks table](data-root.md#locks-table) requires it.
+
+## Finish
+
+`tasker finish` cleans up a task in `landed` or `cleanup_failed`: it removes the worktree and the local task branch, and the task goes through `finishing` to `finished`.
+
+These links give the rules that finish follows:
+
+- The command makes its checks before its first write, as the [intro](#the-task-commands) says.
+- The task lock does not wait, and the repo lock waits. [The locks](#the-locks) gives both rules.
+- Each step first checks that its target still exists, so a second run finishes the steps that are left. [Abort](#abort) gives the rule.
+- The worktree goes before the branch, for the reason in [Abort](#abort).
+- The command takes the repo lock before the move to `finishing`, for the reason in [Merge](#merge).
+
+A cleanup that stops goes to `cleanup_failed` and not to `failed`. The verify run passed and the work landed, so the failure says nothing about them.
