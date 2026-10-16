@@ -7,7 +7,7 @@ import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import type { PlanResult } from "./plan-run.js";
 import { runRefine } from "./refine.js";
-import { requireBranch, taskInState } from "./task-state.js";
+import { requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
 export interface ReviewFeedbackRequest {
   config: Config;
@@ -26,6 +26,7 @@ export async function reviewFeedbackTask(store: TaskStore, request: ReviewFeedba
     const { config, env, io, feedback } = request;
     const task = taskInState(store, request.taskId, "review");
     if (feedback.trim() === "") throw new Error("the feedback is empty");
+    requireWorktree(task);
     const branch = requireBranch(task);
     const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
     const revision = await vcs.taskRefRevision(ctx, { taskRef: branch });
