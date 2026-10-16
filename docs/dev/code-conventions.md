@@ -105,3 +105,4 @@ As a result, when a check must report all problems in one run, as [rules.md](rul
 - Write the test first. Run it and watch it fail (red). Then write the code that makes it pass (green).
 - In Vitest 5.0.3, an `onTestFinished` callback runs after the `afterEach` hooks.
 - Node 26 runs a `.ts` file of the repo directly. So a copy of a file of the repo, with its `.js` imports changed to `.ts`, tests a fact of the code with no `node_modules`.
+- A boundary test cannot find a module name that the code builds at run time. It also cannot find a git name or a `gh` command name that the code builds at run time.
