@@ -83,13 +83,15 @@ export async function runAssistant(
       stdio: ["pipe", "pipe", "pipe"],
     });
   } catch (error) {
-    forward.stop();
+    await forward.release();
     throw error;
   }
   const pid = child.pid;
   if (pid === undefined) {
-    forward.stop();
-    const error = await new Promise<NodeJS.ErrnoException>((resolve) => child.once("error", resolve));
+    // The child emits error before the wait ends, so the listener must exist first.
+    const errored = new Promise<NodeJS.ErrnoException>((resolve) => child.once("error", resolve));
+    await forward.release();
+    const error = await errored;
     if (error.code === "ENOENT")
       return { started: false, notFound: true, error: new CommandNotFoundError(file, "not-on-path").message };
     return { started: false, notFound: false, error: `cannot start ${file}: ${error.message}` };

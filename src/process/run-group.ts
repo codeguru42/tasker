@@ -45,11 +45,16 @@ function groupRuns(pid: number): boolean {
 export interface SignalForward {
   // Gives the pid of the group. Each signal that came before goes to the group now, in the order that it came.
   attach: (pid: number) => void;
-  // Removes the listeners. A signal that did not reach a group is dropped.
+  // Removes the listeners. It is for the end of a run after attach. Each signal that came already went to the group.
   stop: () => void;
+  // For a run with no group. It waits one turn of the event loop, so that each signal that came reaches the
+  // listeners. Then it removes the listeners. It sends each waiting signal to tasker again, in the order that it
+  // came. No listener is left, so each signal gets its default action. A SIGINT or a SIGTERM ends tasker.
+  release: () => Promise<void>;
 }
 
 // From now on, SIGINT and SIGTERM do not stop tasker. A signal that comes before attach waits for the group.
+// If no group starts, release gives each waiting signal its default action.
 export function forwardSignals(): SignalForward {
   let pid: number | undefined;
   const waiting: NodeJS.Signals[] = [];
@@ -57,13 +62,19 @@ export function forwardSignals(): SignalForward {
     (signal) => [signal, () => (pid === undefined ? waiting.push(signal) : signalGroup(pid, signal))] as const,
   );
   for (const [signal, handler] of forwarders) process.on(signal, handler);
+  const stop = () => {
+    for (const [signal, handler] of forwarders) process.off(signal, handler);
+  };
   return {
     attach: (groupPid) => {
       pid = groupPid;
       for (const signal of waiting.splice(0)) signalGroup(groupPid, signal);
     },
-    stop: () => {
-      for (const [signal, handler] of forwarders) process.off(signal, handler);
+    stop,
+    release: async () => {
+      await new Promise((resolve) => setImmediate(resolve));
+      stop();
+      for (const signal of waiting.splice(0)) process.kill(process.pid, signal);
     },
   };
 }
@@ -180,13 +191,16 @@ export async function runInGroup(
       stdio: ["ignore", options.outputFd, options.outputFd],
     });
   } catch (error) {
-    forward.stop();
+    await forward.release();
     throw error;
   }
   const pid = child.pid;
   if (pid === undefined) {
-    forward.stop();
-    return new Promise((_, reject) => child.once("error", reject)); // no group exists, so tasker drops each signal that came, and no timer starts
+    // The child emits error before the wait ends, so the listener must exist first.
+    const error = new Promise<Error>((resolve) => child.once("error", resolve));
+    await forward.release();
+    // no group exists, so each signal that came gets its default action, and no timer starts
+    throw await error;
   }
   const { onSpawn } = options;
   return superviseGroup(child, pid, {
