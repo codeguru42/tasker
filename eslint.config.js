@@ -64,7 +64,6 @@ export default tseslint.config(
   // removes that rule from this block.
   {
     rules: {
-      "@typescript-eslint/no-invalid-void-type": "off",
       "@typescript-eslint/unbound-method": "off",
       "@typescript-eslint/no-dynamic-delete": "off",
       "@typescript-eslint/restrict-plus-operands": "off",

@@ -220,13 +220,13 @@ export interface TaskStore extends LockStore {
   findLatestTask(repoKey: string, issueKey: string): Task | undefined;
   // A low-level write with no run marker rule. A state move goes through transitionTask.
   // The event that check returns is appended in the same transaction as the row write.
-  updateTask(id: number, changes: TaskChanges, check?: (current: Task) => NewEvent | void): Task;
+  updateTask(id: number, changes: TaskChanges, check?: (current: Task) => NewEvent | undefined): Task;
   // Moves the task into a spawning state and writes its run marker with the pid of this process,
   // in one transaction. The event that check returns is appended in the same transaction.
-  startRun(id: number, state: string, check?: (current: Task) => NewEvent | void): Task;
+  startRun(id: number, state: string, check?: (current: Task) => NewEvent | undefined): Task;
   // Moves the task to a state that is not spawning and deletes its run marker, in one transaction.
   // The current state can be any state. The marker of any process goes, and a missing marker is not an error.
-  endRun(id: number, state: string, check?: (current: Task) => NewEvent | void): Task;
+  endRun(id: number, state: string, check?: (current: Task) => NewEvent | undefined): Task;
   // Tells if the run of a task in a spawning state is alive. The process of tasker decides, never the child.
   runStatus(id: number): RunStatus;
   // Adds the pid of the child to the run marker of this process.
@@ -243,7 +243,7 @@ export interface TaskStore extends LockStore {
     taskId: number,
     revision: NewPlanRevision,
     state: string,
-    check?: (current: Task) => NewEvent | void,
+    check?: (current: Task) => NewEvent | undefined,
   ): Task;
   getPlanRevision(taskId: number, version: number): PlanRevision | undefined;
   // The number that the next verify run of the task must have. The caller holds the task lock,
@@ -252,7 +252,7 @@ export interface TaskStore extends LockStore {
   // Inserts the verify run, appends the verify_run event { number, result }, moves the task to a state
   // that is not spawning and deletes its run marker, in one transaction. The event that check returns is
   // appended in the same transaction. A throw writes nothing.
-  addVerifyRun(taskId: number, run: NewVerifyRun, state: string, check?: (current: Task) => NewEvent | void): Task;
+  addVerifyRun(taskId: number, run: NewVerifyRun, state: string, check?: (current: Task) => NewEvent | undefined): Task;
   // The number of verify runs of the task.
   verifyRunCount(taskId: number): number;
   getVerifyRun(taskId: number, number: number): VerifyRun | undefined;
@@ -265,7 +265,7 @@ export interface TaskStore extends LockStore {
   // moves the task to a state that is not spawning and deletes its run marker, in one transaction.
   // The findings get the positions 1, 2, and so on. The event that check returns is appended in the
   // same transaction. A throw writes nothing.
-  addReview(taskId: number, review: NewReview, state: string, check?: (current: Task) => NewEvent | void): Task;
+  addReview(taskId: number, review: NewReview, state: string, check?: (current: Task) => NewEvent | undefined): Task;
   // The number of reviews of the task.
   reviewCount(taskId: number): number;
   getReview(taskId: number, number: number): Review | undefined;
@@ -287,7 +287,7 @@ export interface TaskStore extends LockStore {
     positions: number[],
     reason: string,
     state: string,
-    check?: (current: Task) => NewEvent | void,
+    check?: (current: Task) => NewEvent | undefined,
   ): number[];
   // The revision with the highest version.
   latestPlanRevision(taskId: number): PlanRevision | undefined;
@@ -296,11 +296,21 @@ export interface TaskStore extends LockStore {
   // Moves the task to a state that is not spawning, deletes its run marker and sets the approval time
   // of the revision, in one transaction. Only the newest revision can be approved.
   // The event that check returns is appended in the same transaction.
-  approvePlanRevision(taskId: number, version: number, state: string, check?: (current: Task) => NewEvent | void): Task;
+  approvePlanRevision(
+    taskId: number,
+    version: number,
+    state: string,
+    check?: (current: Task) => NewEvent | undefined,
+  ): Task;
   // Moves the task to a state that is not spawning, deletes its run marker and clears the approval
   // of revision version, in one transaction. Only the pinned revision can be cleared: another version throws and
   // writes nothing. The event that check returns is appended in the same transaction.
-  clearPlanApproval(taskId: number, version: number, state: string, check?: (current: Task) => NewEvent | void): Task;
+  clearPlanApproval(
+    taskId: number,
+    version: number,
+    state: string,
+    check?: (current: Task) => NewEvent | undefined,
+  ): Task;
   // The questions of a revision with their state. The newest revision has only open questions.
   // A resolved question names the next version, and its answer is the feedback of that version.
   planQuestions(taskId: number, version: number): PlanQuestionState[];
@@ -360,7 +370,7 @@ export interface TaskStore extends LockStore {
   clearReviewSession(taskId: number, number: number): void;
   // The writes of a retry beside the move: the move to state, the run marker delete, the writes and the event of
   // check, in one transaction. A throw of any step writes nothing.
-  retryTask(taskId: number, state: string, writes: RetryWrites, check?: (current: Task) => NewEvent | void): Task;
+  retryTask(taskId: number, state: string, writes: RetryWrites, check?: (current: Task) => NewEvent | undefined): Task;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -874,7 +884,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   function writeTaskStep(
     id: number,
     changes: TaskChanges,
-    check: ((current: Task) => NewEvent | void) | undefined,
+    check: ((current: Task) => NewEvent | undefined) | undefined,
     markerStep?: (at: string) => void,
   ): Task {
     const current = readTask(id);
@@ -893,7 +903,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   function writeTask(
     id: number,
     changes: TaskChanges,
-    check: ((current: Task) => NewEvent | void) | undefined,
+    check: ((current: Task) => NewEvent | undefined) | undefined,
     markerStep?: (at: string) => void,
   ): Task {
     return immediateTransaction(db, () => writeTaskStep(id, changes, check, markerStep));
@@ -904,7 +914,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   function addRowAtRunEnd(
     taskId: number,
     state: string,
-    check: ((current: Task) => NewEvent | void) | undefined,
+    check: ((current: Task) => NewEvent | undefined) | undefined,
     insert: () => NewEvent,
   ): Task {
     return writeTask(taskId, { state }, check, (at) => {
