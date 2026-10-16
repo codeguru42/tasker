@@ -135,10 +135,6 @@ The checks never change GitHub. They make only these `gh` calls: `gh --version`,
 
 ## Tests
 
-The fake `gh` uses shell builtins, and the real `sleep` only for a delay, so the real `gh` can never run.
-
-A call with no answer fails the test, also when the code under test catches the error.
-
 Each test file that uses the token resets its modules before each test, so each test starts with an empty token cache. The token cache of the `gh` code stays the one home of the token read.
 
 The registry test needs no reset, because each test builds its own configuration object.
