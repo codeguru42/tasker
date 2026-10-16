@@ -3,12 +3,18 @@ import {
   PLAIN_REFINE_CONTEXT,
   REFINE_PROMPT,
   REFINE_PROMPT_NAME,
+  failureContextText,
   openQuestionsText,
   promotionContextText,
   reviewFeedbackContextText,
 } from "../../src/prompts/refine.js";
 import { rulesOf } from "../helpers/prompts.js";
-import { findingEntries, promotionContextExpected, reviewFeedbackContextExpected } from "../helpers/review.js";
+import {
+  failureContextExpected,
+  findingEntries,
+  promotionContextExpected,
+  reviewFeedbackContextExpected,
+} from "../helpers/review.js";
 import { newReview } from "../helpers/store.js";
 import { SHARED_RULES } from "../../src/prompts/shared.js";
 import { fillTemplate } from "../../src/prompts/template.js";
@@ -101,6 +107,13 @@ describe("promotionContextText", () => {
     expect(promotionText(findingEntries(newReview(1).findings).slice(1))).toBe(
       promotionContextExpected({ open: ["second"] }),
     );
+  });
+});
+
+describe("failureContextText", () => {
+  it("gives the origin, the error and the instruction line", () => {
+    const error = "verify command 1 failed: npm test: exit code 1.\nboom";
+    expect(failureContextText("verifying", error)).toBe(failureContextExpected("verifying", error));
   });
 });
 

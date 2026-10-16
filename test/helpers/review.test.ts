@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkReviewAnswer } from "../../src/review/answer.js";
 import {
+  failureContextExpected,
   findingEntries,
   findingText,
   promotionContextExpected,
@@ -123,6 +124,14 @@ describe("promotionContextExpected", () => {
         "- [2] src/b.ts:9 (correctness): The count is off by one.\n" +
         "  failure scenario: A list of three items gives the count 2.\n" +
         "  status: open\n",
+    );
+  });
+});
+
+describe("failureContextExpected", () => {
+  it("gives the origin, the error and the instruction line", () => {
+    expect(failureContextExpected("verifying", "boom")).toBe(
+      "The task failed in verifying: boom\nThe operator gives an instruction for the fix.",
     );
   });
 });

@@ -76,3 +76,8 @@ export function promotionContextExpected(
     open.map((which) => findingText(which, which === "first" ? 1 : 2)).join("")
   );
 }
+
+// The expected text of failureContextText, as literal text, so that a test does not call the code under test.
+export function failureContextExpected(origin: string, error: string): string {
+  return `The task failed in ${origin}: ${error}\nThe operator gives an instruction for the fix.`;
+}
