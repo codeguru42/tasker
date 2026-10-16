@@ -142,10 +142,12 @@ If you press Ctrl-C, the assistant stops. The run ends as a failure, and the tas
 
 ### `tasker refine`
 
-Continues the plan session of a task in the state `awaiting_plan_review` with your feedback, and records the next plan revision: `tasker refine <issue> <feedback>`. The task goes to the state `refining`, then back to `awaiting_plan_review`.
+Continues the plan session of a task in the state `awaiting_plan_review` or `reviewed`, and records the next plan revision: `tasker refine <issue> [<feedback>]`. The task goes to the state `refining`, then to `awaiting_plan_review`.
+
+In `reviewed`, the open findings of the latest review go to the plan session, so that the next revision fixes them. The revision has the source `review`. The findings stay open, and the next review decides if the work fixed them.
 
 - `<issue>`: the issue key of the task.
-- `<feedback>`: your feedback on the newest plan revision. Quote it as one argument.
+- `[<feedback>]`: your feedback on the newest plan revision. Quote it as one argument. It is required in `awaiting_plan_review`. In `reviewed`, it is optional and is your guidance on the open findings.
 - `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
 
 Each revision is a complete plan. When the new revision leaves out a question of the revision before it, that question counts as answered by the feedback. `tasker show-questions` shows the answer.
@@ -154,11 +156,13 @@ The session keeps the provider, model and effort that it started with, also afte
 
 On success, the command prints the same lines as `tasker plan`, but the first line is `refined <issue> as revision v<N>`. Then it prints the overlap warning with the same text and the same last line as `tasker plan`. See the section `tasker plan`.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In the first nine cases, the task keeps its state and nothing is written:
+The command stops with exit code 1 and prints the error on stderr in these cases. In the first eleven cases, the task keeps its state and nothing is written:
 
 - The issue has no task. The error names the issue and the repo.
-- The task is not in `awaiting_plan_review`. The error names the state.
+- The task is not in `awaiting_plan_review` or `reviewed`. The error names the state.
+- The task is in `awaiting_plan_review` and you give no feedback. The error is `the feedback is missing; tasker refine needs it unless the task is in reviewed`.
 - The feedback is empty or has only spaces. The error is `the feedback is empty`.
+- The task is in `reviewed`, and its latest review has no open finding or does not exist. The error is `the latest review of <issue> has no open finding; run tasker dismiss-review or tasker review`.
 - The task has no plan revision or no plan session. The error says which one is missing.
 - The provider refuses the recorded model. The error names the session, the model, the provider and the reason.
 - Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
