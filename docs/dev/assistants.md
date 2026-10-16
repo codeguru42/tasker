@@ -46,14 +46,6 @@ The allow list holds these rules, in this order:
 
 `Read`, `Glob` and `Grep` need a path rule. A plain `Glob` or `Grep` lists and searches files outside the worktree. A host test showed this. With a path rule, a call outside the worktree is denied. Without any `Glob` or `Grep` rule, the tools are not available at all.
 
-The program `claude` answers `--json-schema` through a tool named `StructuredOutput`. A real capture showed a denial of this tool under `dontAsk` without a rule. A measure on `claude` 2.1.300 showed no denial. The rule stays, so that both cases work.
-
-The model calls the subagent tool `Agent`, and the `init` event of `claude` 2.1.300 lists it as `Task`. A measure on 2.1.300 showed that neither is denied without a rule. The list names both, because a later `claude` can use either name.
-
-A skill points the model at reference files in the skills folder and the plugins folder of the configuration folder of `claude`. The configuration folder is `CLAUDE_CONFIG_DIR`, or `.claude` under `HOME`. A measure on `claude` 2.1.300 showed that `dontAsk` denies the read of a skill file without a rule. With the two rules, the read of a skill file and of a plugin skill file passes, and the read of `settings.json` stays denied. The two rules name exactly the patterns `<configuration folder>/skills/**` and `<configuration folder>/plugins/**`. Never allow the whole configuration folder, because it holds the credentials and the settings. When neither variable is set, the list has no skill rule.
-
-One prepared run serves every turn of a session. The first start of a new session creates the session with `--session-id`. Each later start continues it with `--resume`. A continued session uses `--resume` from the first start. The flag changes when `start` is called, not when the run ends.
-
 The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and for the shared git folder of the clone. A deny wins over an allow. As a result, git data changes only through `git` commands in the sandboxed shell.
 
 The sandbox follows the rules in [Sandbox](#sandbox). Its write paths and its shared folder come from the version control. Its read deny list holds these paths:
@@ -102,6 +94,18 @@ In a test by hand on the local machine, write `--allowedTools=Bash`, and send th
 The schema goes inline as JSON text. `claude` parses the argument as JSON, and a file path fails on its first character.
 
 A continued session also gets the model. A host measure showed that a resume with a model runs the given model.
+
+One prepared run serves every turn of a session. The first start of a new session creates the session with `--session-id`. Each later start continues it with `--resume`. A continued session uses `--resume` from the first start. The flag changes when `start` is called, not when the run ends.
+
+### Tool rules
+
+These facts of `claude` give the reasons for some rules of the allow list of [the execute role](#the-execute-role).
+
+The program `claude` answers `--json-schema` through a tool named `StructuredOutput`. A real capture showed a denial of this tool under `dontAsk` without a rule. A measure on `claude` 2.1.300 showed no denial. The rule stays, so that both cases work.
+
+The model calls the subagent tool `Agent`, and the `init` event of `claude` 2.1.300 lists it as `Task`. A measure on 2.1.300 showed that neither is denied without a rule. The list names both, because a later `claude` can use either name.
+
+A skill points the model at reference files in the skills folder and the plugins folder of the configuration folder of `claude`. The configuration folder is `CLAUDE_CONFIG_DIR`, or `.claude` under `HOME`. A measure on `claude` 2.1.300 showed that `dontAsk` denies the read of a skill file without a rule. With the two rules, the read of a skill file and of a plugin skill file passes, and the read of `settings.json` stays denied. The two rules name exactly the patterns `<configuration folder>/skills/**` and `<configuration folder>/plugins/**`. Never allow the whole configuration folder, because it holds the credentials and the settings. When neither variable is set, the list has no skill rule.
 
 ### The environment
 
