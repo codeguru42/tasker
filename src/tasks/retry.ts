@@ -3,6 +3,7 @@ import type { IssueRef } from "../issue-key/ref.js";
 import { readLogTail } from "../phases/command-step.js";
 import {
   failedFromEvents,
+  failedOriginText,
   lastFailIndex,
   lastTransitionError,
   transitionWithRetry,
@@ -68,7 +69,9 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
   const origin = failedFromEvents(events);
   const row = origin === undefined ? undefined : RETRY_TABLE[origin];
   if (origin === undefined || row === undefined) {
-    throw new Error(`the task of ${task.issueKey} failed in ${origin ?? "unknown"}; tasker retry has no step for it`);
+    throw new Error(
+      `the task of ${task.issueKey} failed in ${failedOriginText(events)}; tasker retry has no step for it`,
+    );
   }
   if (resumeExecute && origin !== "verifying") {
     throw new Error("--resume-execute applies only to a task that failed in verifying");
