@@ -4,6 +4,7 @@ import {
   findingEntries,
   findingText,
   promotionContextExpected,
+  reviewFeedbackContextExpected,
   reviewFinding,
   reviewFindingWithout,
   validReviewAnswer,
@@ -133,5 +134,23 @@ describe("verifySentenceExpected", () => {
 
   it("says that no verify run is recorded for null", () => {
     expect(verifySentenceExpected(null)).toBe("No verify run is recorded.");
+  });
+});
+
+describe("reviewFeedbackContextExpected", () => {
+  it("gives the line with the revision and verify run 1 by default", () => {
+    expect(reviewFeedbackContextExpected("4b825dc642cb")).toBe(
+      "The operator read the committed work at 4b825dc642cb and asks for a revision of the plan. " +
+        "Verify run 1 passed on that work. The work that is done stays. " +
+        "Plan only the work that is still needed on top of it.",
+    );
+  });
+
+  it("gives the no-verify sentence for null", () => {
+    expect(reviewFeedbackContextExpected("abc1234", null)).toBe(
+      "The operator read the committed work at abc1234 and asks for a revision of the plan. " +
+        "No verify run is recorded. The work that is done stays. " +
+        "Plan only the work that is still needed on top of it.",
+    );
   });
 });

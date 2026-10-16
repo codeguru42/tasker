@@ -52,6 +52,16 @@ export function verifySentenceExpected(verifyRun: number | null): string {
   return verifyRun === null ? "No verify run is recorded." : `Verify run ${verifyRun} passed on that work.`;
 }
 
+// The expected text of reviewFeedbackContextText, as literal text. verifyRun is the number of the passed verify run,
+// or null for none.
+export function reviewFeedbackContextExpected(revision: string, verifyRun: number | null = 1): string {
+  return (
+    `The operator read the committed work at ${revision} and asks for a revision of the plan. ` +
+    `${verifySentenceExpected(verifyRun)} The work that is done stays. ` +
+    "Plan only the work that is still needed on top of it."
+  );
+}
+
 // The expected text of promotionContextText for review 1 at 4b825dc642cb, as literal text, so that a test does not
 // call the code under test. verifyRun is the number of the passed verify run, or null for none. open names the open
 // default findings, with the positions of newReview.

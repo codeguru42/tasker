@@ -5,9 +5,10 @@ import {
   REFINE_PROMPT_NAME,
   openQuestionsText,
   promotionContextText,
+  reviewFeedbackContextText,
 } from "../../src/prompts/refine.js";
 import { rulesOf } from "../helpers/prompts.js";
-import { findingEntries, promotionContextExpected } from "../helpers/review.js";
+import { findingEntries, promotionContextExpected, reviewFeedbackContextExpected } from "../helpers/review.js";
 import { newReview } from "../helpers/store.js";
 import { SHARED_RULES } from "../../src/prompts/shared.js";
 import { fillTemplate } from "../../src/prompts/template.js";
@@ -25,6 +26,9 @@ const VALUES = {
 
 const promotionText = (open = findingEntries(newReview(1).findings), verifyRun: number | null = 1) =>
   promotionContextText({ number: 1, revision: "4b825dc642cb" }, open, verifyRun ?? undefined);
+
+const feedbackText = (verifyRun: number | null = 1) =>
+  reviewFeedbackContextText("4b825dc642cb", verifyRun ?? undefined);
 
 function fillRefine(): string {
   return fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, VALUES);
@@ -97,5 +101,15 @@ describe("promotionContextText", () => {
     expect(promotionText(findingEntries(newReview(1).findings).slice(1))).toBe(
       promotionContextExpected({ open: ["second"] }),
     );
+  });
+});
+
+describe("reviewFeedbackContextText", () => {
+  it("gives the revision and the verify run", () => {
+    expect(feedbackText()).toBe(reviewFeedbackContextExpected("4b825dc642cb", 1));
+  });
+
+  it("says that no verify run is recorded for no verify run", () => {
+    expect(feedbackText(null)).toBe(reviewFeedbackContextExpected("4b825dc642cb", null));
   });
 });
