@@ -13,6 +13,7 @@ import { review } from "./review.js";
 import { showBootstrap } from "./show-bootstrap.js";
 import { showPlan } from "./show-plan.js";
 import { showQuestions } from "./show-questions.js";
+import { showReview } from "./show-review.js";
 import { showVerify } from "./show-verify.js";
 import { showConfig } from "./show-config.js";
 import { start } from "./start.js";
@@ -27,6 +28,7 @@ export const commands: RegisterCommand[] = [
   showPlan,
   showQuestions,
   showVerify,
+  showReview,
   start,
   plan,
   refine,
