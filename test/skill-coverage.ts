@@ -51,6 +51,5 @@ export function commandsWithoutReference(
 }
 
 export function commandsMissingFromSkill(helpText: string, skillText: string): string[] {
-  const headings = new Set(skillText.split("\n").map((line) => line.trim()));
-  return commandsInHelp(helpText).filter((name) => !headings.has(`### \`tasker ${name}\``));
+  return commandsInHelp(helpText).filter((name) => entryOf(skillText, name) === undefined);
 }
