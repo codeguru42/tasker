@@ -187,24 +187,24 @@ describe("named locks", () => {
     it("tries again every 250 ms until the lock is free", async () => {
       const { fake, calls } = fakeStore([BUSY, BUSY, { held: true }]);
       let ran = false;
-      await withLock(fake, "a", { waitMs: 5000 }, () => {
-        ran = true;
-      });
+      await onFakeTimers(() =>
+        withLock(fake, "a", { waitMs: 5000 }, () => {
+          ran = true;
+        }),
+      );
       expect(ran).toBe(true);
-      expect(calls.tryLock).toHaveLength(3);
-      expect(calls.tryLock[2] - calls.tryLock[0]).toBeGreaterThanOrEqual(450);
+      expect(calls.tryLock.map((at) => at - calls.tryLock[0])).toEqual([0, 250, 500]);
     });
 
     it("rejects with LockBusyError after waitMs", async () => {
       const { fake, calls } = fakeStore([BUSY]);
-      const start = Date.now();
-      await failureOf(
-        withLock(fake, "a", { waitMs: 600 }, () => {}),
-        LockBusyError,
+      await onFakeTimers(() =>
+        failureOf(
+          withLock(fake, "a", { waitMs: 600 }, () => {}),
+          LockBusyError,
+        ),
       );
-      expect(Date.now() - start).toBeGreaterThanOrEqual(600);
-      expect(calls.tryLock.length).toBeGreaterThanOrEqual(2);
-      expect(calls.tryLock.length).toBeLessThanOrEqual(4);
+      expect(calls.tryLock.map((at) => at - calls.tryLock[0])).toEqual([0, 250, 500, 600]);
     });
 
     it("stops after the last wait when the timer ends early", async () => {
