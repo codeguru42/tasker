@@ -39,6 +39,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - If a new search hit adds a file that the issue does not list under Docs, compare that file at once with the plans of the tasks in flight. On #168, a new hit added `docs/dev/phases.md`, and a task of another milestone also changed that file.
 - If a plan rewrites a sentence, ask the plan to keep the scope of each example and to add no reference that the old sentence does not name. On #168, one rewrite used "that rule" with no rule named before it. Another rewrite widened the example `HEAD` to "such a base".
 - If a ticket writes files across the whole repo, for example a format run or a rename in each file, ask the plan to leave out the folder `.claude/`. The execute session cannot write some files under `.claude/`, for example `.claude/settings.json`. On #148, the format run left `.claude/settings.json` as it was, and the first `tasker verify` failed on it.
+- If two test helpers share a one-line rule, for example a PATH prefix, ask the plan to put the rule in one shared helper up front ([rules.md](rules.md#tests)). On #43, a new git wrapper helper copied the PATH rule of a sibling helper, and review 1 found the copy. The fix cost one loop.
 
 ## A ticket that only adds a layer, for example a schema
 
