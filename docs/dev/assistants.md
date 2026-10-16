@@ -2,8 +2,6 @@
 
 An assistant is a coding-agent program. Tasker starts it in the worktree of a task to plan, to execute and to review. The assistant interface lets tasker run each assistant program in the same way. A command never imports the module of one assistant.
 
-Some parts of this doc are the layer of `tasker execute`. These are the execute prompts, the order of the todos, the turn result, the tools of the execute turns, the remaining time of a start and the start of a later turn. `tasker execute` uses them all.
-
 ## Refuse, never drop
 
 A provider that cannot enforce a limit that tasker asks for must refuse the run before it starts the program. A run with less confinement than tasker asked for can write or read outside the limits that the operator relies on. The doc comment of the interface holds the rule for the code.
@@ -220,7 +218,7 @@ A todo never runs the full check of the repository. Tasker runs the verify comma
 
 ### The execute prompts
 
-The execute run uses three prompts: `execute`, `execute-todo` and `execute-fix`. The code is in `src/prompts/execute.ts`. `tasker execute` sends them: `execute` in the first turn of a new session, `execute-todo` for a todo and `execute-fix` for the fix turn.
+The execute run uses three prompts: `execute`, `execute-todo` and `execute-fix`. `tasker execute` sends them: `execute` in the first turn of a new session, `execute-todo` for a todo and `execute-fix` for the fix turn.
 
 The reasons for the design:
 
@@ -251,7 +249,7 @@ The plan, refine and review prompts share their common rules in one place in the
 
 ### The review prompt and the findings answer
 
-The code is in `src/prompts/review.ts` and `src/review/`. The review run is read-only, because the operator decides each change.
+The review run is read-only, because the operator decides each change.
 
 The reasons for the design:
 
