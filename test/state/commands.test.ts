@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { STATES, TERMINAL_STATES } from "../../src/state/machine.js";
 import {
   acceptedStates,
+  acceptsState,
   errorSentence,
   nextCell,
   showLines,
@@ -70,6 +71,28 @@ describe("stateCommands", () => {
 describe("acceptedStates", () => {
   it.each(Object.entries(ACCEPTED))("gives the states that %s accepts, in the order of STATES", (command, states) => {
     expect(acceptedStates(command as TaskCommand)).toEqual(states);
+  });
+});
+
+describe("acceptsState", () => {
+  it("is true when the row of the state names the command", () => {
+    expect(acceptsState("plan", "workspace_ready")).toBe(true);
+  });
+
+  it("is true for a command with more than one state", () => {
+    expect(acceptsState("refine", "reviewed")).toBe(true);
+  });
+
+  it("is false for another state", () => {
+    expect(acceptsState("plan", "approved")).toBe(false);
+  });
+
+  it.each(["finished", "cancelled"])("is false for the terminal state %s", (state) => {
+    expect(acceptsState("abort", state)).toBe(false);
+  });
+
+  it("is false for an unknown state", () => {
+    expect(acceptsState("abort", "nonsense")).toBe(false);
   });
 });
 
