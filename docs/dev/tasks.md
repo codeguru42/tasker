@@ -2,6 +2,8 @@
 
 This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
+The commands abort, plan, refine, approve, unapprove, execute and accept share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. A refused approve or unapprove also leaves the plan revisions as they were.
+
 ## Start
 
 ### The purpose of start
@@ -44,7 +46,7 @@ An agent reads stdout. It holds only the fields of the task, so the agent can pa
 
 ## Abort
 
-A dirty worktree needs `--force`, because the abort cannot bring the work back. The check runs before any change, so a refused abort changes nothing.
+A dirty worktree needs `--force`, because the abort cannot bring the work back. A refused abort also leaves the worktree and the branch as they were.
 
 A task that is `finished` or `cancelled` is an error, because it has nothing to abort.
 
@@ -78,7 +80,7 @@ The usage event and the move are two writes, not one. A crash between them leave
 
 The steps run in this order.
 
-1. The command makes all its checks and reads before the first write. A failure in this part changes no state, so the task stays in `workspace_ready`.
+1. The command also makes its reads before the first write. A failure in this part leaves the task in `workspace_ready`.
 2. The command records the session of the plan before it starts the assistant. [The session id](assistants.md#the-session-id) gives the reason. A task that already has a plan session continues it.
 3. The command moves the task to `planning` and runs the assistant. It appends each event of the run to the transcript of the revision.
 4. The command acts on the outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says. A plan that tasker refuses also moves the task to `failed`, and the error lists each problem.
@@ -103,7 +105,7 @@ The read takes no repo lock. It changes nothing in the clone, and a wait for the
 
 The steps run in this order.
 
-1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model. It makes these checks before any read of a file and before any write. A refused refine leaves the task, the files and the events as they were, so the operator can fix the cause and run the same command again.
+1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it reads a file. A refused refine changes nothing, as the intro says, so the operator can fix the cause and run the same command again.
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base revision and the commits of the task branch.
 3. The command fills the prompt, archives the template and continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for the recorded model. The session is already recorded, so refine records no session.
 4. The command moves the task to `refining` and runs the assistant. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
@@ -114,7 +116,7 @@ The steps run in this order.
 
 `tasker approve` approves the newest plan revision of a task in `awaiting_plan_review`. The task goes to `approved`.
 
-It makes all checks before any write: the task, the state, the pinned revision and the newest plan revision. A refused approve leaves the task, the revisions and the events as they were. The overlap warning comes after the checks and before the write.
+Its checks cover the task, the state, the pinned revision and the newest plan revision. The overlap warning comes after the checks and before the write.
 
 The write is one transaction. It sets the approval time of the revision, appends one `approved` event with the data `{ version, openQuestions, from, to }`, and moves the task to `approved`. The `approved` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
 
@@ -122,7 +124,7 @@ Open questions do not stop an approval. The operator decides, and the count in t
 
 The approval lives on the revision, not on the task. A task has one approved revision for each cycle, and an older approval stays when a newer revision is approved.
 
-`tasker unapprove` takes back the approval of a task in `approved`. The task goes back to `awaiting_plan_review`. It makes all checks before any write: the task, the state and the pinned revision. A refused unapprove leaves the task, the revisions and the events as they were.
+`tasker unapprove` takes back the approval of a task in `approved`. The task goes back to `awaiting_plan_review`. Its checks cover the task, the state and the pinned revision.
 
 The write is one transaction. It clears the approval time of the pinned revision, appends one `unapproved` event with the data `{ version, from, to }`, and moves the task to `awaiting_plan_review`. The `unapproved` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing. An older approved revision stays approved, because the command clears only the pinned one.
 
@@ -134,7 +136,7 @@ The command works only in `approved`. The state alone sets the limit "before exe
 
 The steps run in this order.
 
-1. The command makes all its checks before the first write: the state, the pinned revision, the plan file, the order of the todos, the base revision, the branch, the remote tip and the recorded model. The read of the remote tip gives the tip before the run. A refused execute leaves the task, the files and the events as they were.
+1. The checks cover the state, the pinned revision, the plan file, the order of the todos, the base revision, the branch, the remote tip and the recorded model. The read of the remote tip gives the tip before the run.
 2. The command fills the prompts and archives only the prompts that the run sends. It records a new session only when the run has a turn.
 3. The command moves the task to `executing` and opens the transcript of the revision for append.
 4. For each turn, the command sets the state of the todo and runs the assistant. After the turn, it records the result and reads the remote tip again.
@@ -218,7 +220,7 @@ The command has these limits:
 
 `tasker accept` records that a person accepts the work of a task in `awaiting_work_review`. The task goes to `accepted`.
 
-It holds the repo lock for the fetch, as [the locks table](data-root.md#locks-table) requires. It makes all checks before any write: the task, the state, the worktree, the branch, the stored base revision and the fetch of `origin` with the read of the base tip. A refused accept leaves the task and the events as they were. The fetch can still move the refs of `origin` in the clone.
+It holds the repo lock for the fetch, as [the locks table](data-root.md#locks-table) requires. Its checks cover the task, the state, the worktree, the branch, the stored base revision and the fetch of `origin` with the read of the base tip. The fetch can still move the refs of `origin` in the clone, also for a refused accept.
 
 The write is one transaction. It appends one `accepted` event with the data `{ revision, baseTip, from, to }` and moves the task to `accepted`. The `accepted` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
 
