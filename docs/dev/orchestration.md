@@ -39,7 +39,9 @@ The orchestrator waits in these cases:
 - The blocker is in any other state.
 - Two or more blockers of the ticket are open. The ticket waits until at most one is open, because `tasker start` refuses two ready blockers.
 
-The orchestrator reads the states each time it reads the board, and before each start.
+The orchestrator reads the states at three moments: each time it reads the board, before each start, and after a report of a ready state. A report of a ready state says that a task is in `awaiting_work_review`, `reviewing`, `reviewed` or `accepted`. The report can come from an agent or from another orchestrator. A report from another orchestrator comes through the messages of [the hold rule](#the-hold-rule) or of [the stacked-ticket rule](#the-stacked-ticket-rule). The sender sends only the reports that those rules already give, and a refused message or a missing answer is out of scope (#164).
+
+After a report of a ready state, the orchestrator lists the open issues that the task blocks: `gh issue view <issue> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. If the output is empty, no ticket waits on the task, and the step is complete. For each issue of the list, the orchestrator reads the milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The orchestrator keeps the tickets of its own milestone. If such a ticket can start by this rule and by the other rules of [Pick the tickets](#pick-the-tickets), the orchestrator starts it. If a command fails, the orchestrator tells the user the command and the error. Then no ticket starts at that moment, and no task changes. The tickets wait until the next read of the board or the next start.
 
 The broken-test ban of the second bullet of [Pick the tickets](#pick-the-tickets) still wins. See [A failed CI run](#a-failed-ci-run).
 
