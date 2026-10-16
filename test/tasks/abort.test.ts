@@ -30,6 +30,7 @@ describe("abortTask", () => {
         repoLockWaitMs: 300,
         ask: () => Promise.reject(new Error("no question expected")),
         note: () => {},
+        trackerIo: { stdout: () => {}, stderr: () => {} },
       });
       const worktree = started.task.worktreePath!;
       const cancelled = await abortTask(store, {

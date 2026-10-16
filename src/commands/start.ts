@@ -39,6 +39,8 @@ export async function startIssue(
   options: { repo?: string; base?: string },
 ): Promise<void> {
   const ref = resolveIssueKeyOrFail(io, issue, config, { repo: options.repo });
+  // The lines of the tracker writes come after the fields, so they wait in a buffer. The warnings go to stderr at once.
+  const trackerLines: string[] = [];
   const ask = () =>
     io.prompt === undefined
       ? Promise.reject(
@@ -59,6 +61,7 @@ export async function startIssue(
           repoLockWaitMs: REPO_LOCK_WAIT_MS,
           ask,
           note: (line) => io.stderr(`${line}\n`),
+          trackerIo: { stdout: (line) => trackerLines.push(line), stderr: io.stderr },
         }),
       ),
     // The bootstrap error comes first, then the tail of the log.
@@ -77,4 +80,5 @@ export async function startIssue(
       ["worktree", task.worktreePath],
     ]),
   );
+  trackerLines.forEach((line) => io.stdout(line));
 }

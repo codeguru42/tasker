@@ -1,3 +1,4 @@
+import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
@@ -9,6 +10,7 @@ import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
+import { runTrackerWrite, trackerTargets } from "./tracker-write.js";
 import { vcsForRepo } from "../vcs/provider.js";
 
 export interface StartRequest {
@@ -23,6 +25,8 @@ export interface StartRequest {
   ask: () => Promise<string>;
   // Prints one note of the base resolve.
   note: (line: string) => void;
+  // Gets the success lines and the warnings of the tracker writes.
+  trackerIo: Pick<Io, "stdout" | "stderr">;
 }
 
 export interface StartOutcome {
@@ -130,5 +134,35 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
       );
     }
   });
-  return { started: true, task: transitionTask(store, task.id, "workspace_ready") };
+  const ready = transitionTask(store, task.id, "workspace_ready");
+  if (repo.issueTracker.updateOnStart) {
+    const { assignee } = repo.issueTracker;
+    // The writes come after workspace_ready, so a failed start leaves the issue unmarked. A failed write only warns.
+    await runTrackerWrite(
+      store,
+      task.id,
+      {
+        action: "assign",
+        text: `assign ${ref.key} to ${assignee}`,
+        success: `assigned ${ref.key} to ${assignee} on the tracker`,
+        run: () => issueProvider.assign(ref, assignee, env),
+      },
+      request.trackerIo,
+    );
+    const target = trackerTargets(repo.issueTracker).inProgress;
+    if (target !== undefined) {
+      await runTrackerWrite(
+        store,
+        task.id,
+        {
+          action: "in_progress",
+          text: `mark ${ref.key} in progress`,
+          success: `marked ${ref.key} in progress on the tracker`,
+          run: () => issueProvider.transitionStatus(ref, target, env),
+        },
+        request.trackerIo,
+      );
+    }
+  }
+  return { started: true, task: ready };
 }
