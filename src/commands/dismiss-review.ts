@@ -10,19 +10,20 @@ import {
   withIssueTaskAsync,
 } from "./shared.js";
 
-// The positions that --finding names, or undefined without the option. It stops the command with exit code 1 when an
-// item is not a whole number of 1 or more, or when a position appears twice. Spaces around an item are permitted.
-function findingPositionsOrFail(io: Io, raw: string | undefined): number[] | undefined {
+// The positions that --finding names, as the text that the user typed after the trim, or undefined without the option. The
+// text keeps a very large number exact. The format check refuses a leading zero, so two items name the same position only
+// when their texts are the same. It stops the command with exit code 1 when an item is not a whole number of 1 or more, or
+// when a position appears twice. Spaces around an item are permitted.
+function findingPositionsOrFail(io: Io, raw: string | undefined): string[] | undefined {
   if (raw === undefined) return undefined;
   const items = raw.split(",").map((item) => item.trim());
   if (!items.every(isWholeNumberText)) {
     fail(io, `--finding must be a list of whole numbers of 1 or more, separated by commas: ${raw}`);
   }
-  const positions = items.map(Number);
-  const repeated = positions.filter((position, index) => positions.indexOf(position) !== index);
-  const lines = [...new Set(repeated)].map((position) => `--finding names ${position} more than once`);
+  const repeated = items.filter((item, index) => items.indexOf(item) !== index);
+  const lines = [...new Set(repeated)].map((item) => `--finding names ${item} more than once`);
   if (lines.length > 0) fail(io, lines.join("\n"));
-  return positions;
+  return items;
 }
 
 export const dismissReview: RegisterCommand = (program, io) => {

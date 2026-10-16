@@ -9,8 +9,9 @@ export interface DismissReviewRequest {
   // The task that the lookup found. The dismissal reads it again under the task lock.
   taskId: number;
   reason: string;
-  // The positions to dismiss. Without it, the command dismisses every open finding.
-  positions?: number[];
+  // The positions to dismiss, as the user typed them after the trim of the spaces. Without it, the command dismisses every
+  // open finding.
+  positions?: string[];
 }
 
 export interface ReviewDismissed {
@@ -41,16 +42,18 @@ async function dismissReviewLocked(store: TaskStore, request: DismissReviewReque
     if (positions.length === 0) throw new Error(`the latest review of ${task.issueKey} has no open finding`);
   } else {
     const lines: string[] = [];
-    for (const position of request.positions) {
-      const entry = findings.find((candidate) => candidate.position === position);
+    positions = [];
+    for (const text of request.positions) {
+      const entry = findings.find((candidate) => String(candidate.position) === text);
       if (entry === undefined) {
-        lines.push(`the latest review of ${task.issueKey} has no finding ${position}; it has ${findings.length}`);
+        lines.push(`the latest review of ${task.issueKey} has no finding ${text}; it has ${findings.length}`);
       } else if (entry.dismissed !== null) {
-        lines.push(`finding ${position} of ${task.issueKey} is already dismissed: ${entry.dismissed.reason}`);
+        lines.push(`finding ${text} of ${task.issueKey} is already dismissed: ${entry.dismissed.reason}`);
+      } else {
+        positions.push(entry.position);
       }
     }
     if (lines.length > 0) throw new Error(lines.join("\n"));
-    positions = request.positions;
   }
 
   positions = [...positions].sort((a, b) => a - b);
