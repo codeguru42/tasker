@@ -117,9 +117,9 @@ export function createGitProvider({
       const { clone } = pathsOf(ctx);
       return uncommittedChanges({ clone, env: ctx.env, path });
     },
-    async baseContainment(ctx, { path, baseRevision }) {
+    async baseContainment(ctx, { taskRef, baseRevision }) {
       const { clone } = pathsOf(ctx);
-      return fetchBaseContainment({ clone, env: ctx.env, sshKey: config.sshKey, path, baseRevision });
+      return fetchBaseContainment({ clone, env: ctx.env, sshKey: config.sshKey, branch: taskRef, baseRevision });
     },
     async reconcile(ctx, { path, baseRevision, strategy }) {
       const { clone } = pathsOf(ctx);

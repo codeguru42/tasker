@@ -2,7 +2,7 @@ import type { BaseContainment, UncommittedChange } from "../provider.js";
 import { assertRevisionInput, resolveRevision } from "./refs.js";
 import { isGitExit, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
-import { assertTaskWorktree, taskBranchRevision } from "./worktree.js";
+import { assertTaskBranch, assertTaskWorktree, taskBranchRevision } from "./worktree.js";
 
 // The fields of NUL-ended output: split on "\0" and drop the empty item after the last NUL.
 export function nulFields(text: string): string[] {
@@ -208,18 +208,23 @@ export async function fetchTips(o: {
   return { head, base };
 }
 
-// Fetches origin, then reads the head of the task worktree and the tip of the base, and says whether the head
-// contains the tip. It uses fetchTips(), so the fetch moves and prunes refs/remotes/origin/* in the clone, also when
-// a later read fails. A failure of the fetch or of a read rejects.
+// Fetches origin, then reads the tip of the task branch and the tip of the base, and says whether the branch contains
+// the tip of the base. It reads the exact ref refs/heads/<branch> in the clone, not HEAD of a worktree, so it needs no
+// worktree. A bad base text or a bad branch name causes no fetch. The fetch moves and prunes refs/remotes/origin/* in
+// the clone, also when a later read fails. It does not move refs/heads/*. A failure of the fetch or of a read rejects.
 export async function fetchBaseContainment(o: {
   clone: string;
   env: NodeJS.ProcessEnv;
   sshKey: string | undefined;
-  path: string;
+  branch: string;
   baseRevision: string;
 }): Promise<BaseContainment> {
-  const { clone, env } = o;
-  const { head, base } = await fetchTips(o);
-  const contains = await isAncestor({ clone, env, ancestor: base, descendant: head });
-  return { revision: head, baseTip: base, contains };
+  const { clone, env, sshKey, branch, baseRevision } = o;
+  assertRevisionInput(baseRevision);
+  assertTaskBranch(branch);
+  await fetchOrigin({ clone, env, sshKey });
+  const revision = await taskBranchRevision({ clone, env, branch });
+  const baseTip = await resolveRevision({ clone, env, value: baseRevision });
+  const contains = await isAncestor({ clone, env, ancestor: baseTip, descendant: revision });
+  return { revision, baseTip, contains };
 }

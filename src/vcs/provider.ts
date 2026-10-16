@@ -47,11 +47,11 @@ export interface ResolvedBase {
 }
 
 export interface BaseContainment {
-  // The head revision of the workspace.
+  // The revision of the tip of the task ref.
   revision: string;
   // The revision of the tip of the base after the fetch.
   baseTip: string;
-  // True when the workspace contains the tip of the base.
+  // True when the task ref contains the tip of the base.
   contains: boolean;
 }
 
@@ -134,9 +134,9 @@ export interface VcsProvider {
   changedPaths(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<string[]>;
   // The uncommitted changes of the workspace. An empty list means a clean workspace.
   uncommittedChanges(ctx: VcsContext, o: { path: string }): Promise<UncommittedChange[]>;
-  // Fetches the remote, reads the revision of the workspace and the tip of its base, and says whether the workspace
-  // contains the tip.
-  baseContainment(ctx: VcsContext, o: { path: string; baseRevision: string }): Promise<BaseContainment>;
+  // Fetches the remote, reads the tip of the task ref of a workspace and the tip of its base, and says whether the task
+  // ref contains the tip of the base.
+  baseContainment(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<BaseContainment>;
   // Moves the workspace onto baseRevision and gives its new head revision.
   // It does not fetch. Run resolveBase first, which fetches.
   // A conflict rejects with ReconcileConflictError (src/vcs/errors.ts).
