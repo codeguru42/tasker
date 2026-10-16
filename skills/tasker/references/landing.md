@@ -13,9 +13,8 @@ On success, the command prints the line `merged <issue key>` on stdout. Then it 
 - `landed: <revision> on origin/<base>` after a push.
 - `already on origin/<base>: <revision>. Nothing pushed.` when the work was on the base already.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the task lock and of the clone lock belong to this group:
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors), of the task lock and of the clone lock belong to this group:
 
-- The task is in another state. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task has no branch. The error is `the task of <issue key> has no branch`.
 - The task has no base. The error is `the task of <issue key> has no base`.
 - The base is a local branch of the clone. The error is `the base of <issue key> is a local branch of the clone: <base>; tasker merge pushes only to a branch on origin`.
@@ -39,9 +38,8 @@ The command fetches `origin`. Then it reads the tip of the task branch in the cl
 
 On success, the command prints the line `marked <issue key> landed at <revision>` on stdout. The revision is the tip of the task branch.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the task lock and of the clone lock belong to this group:
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the wrong state, of the task lock and of the clone lock belong to this group:
 
-- The task is in another state. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task has no branch. The error is `the task of <issue key> has no branch`.
 - The task has no base. The error is `the task of <issue key> has no base`.
 - The task has no base revision. The error is `the task of <issue key> has no base revision`.
@@ -60,9 +58,7 @@ The command prints one line on stdout for each step that ran: `removed the workt
 
 If the write to the tracker fails, the exit code stays 0 and the task still goes to `finished`. The command prints the warning `warning: cannot mark <issue key> done on the tracker: <error>` on stderr. The error can span two lines. To finish the write, mark the issue done on the tracker yourself.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the task lock and of the clone lock belong to this group:
-
-- The task is in another state, `finished` included. The error is the [wrong-state error](../SKILL.md#shared-errors).
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the wrong state, of the task lock and of the clone lock apply to this command.
 
 The task goes to `cleanup_failed` when a step fails after the move to `finishing`. The error is `finishing failed: <reason>`. The command prints the same error on stderr and stops with exit code 1. For example, git refuses to remove a worktree with uncommitted changes.
 

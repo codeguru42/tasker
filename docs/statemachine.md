@@ -313,7 +313,7 @@ The rules of the table:
 
 - The primary command is the clear next step. A state with two or more choices for the user has no primary command.
 - `abort` is the last command of each row.
-- A terminal state has no row. `tasker show` prints no command line for it, `tasker status` prints an empty cell, and the wrong-state error has no extra sentence.
+- A terminal state has no row.
 - The table is the one home of the states that each command accepts. A command accepts a state when the row of that state names the command. The wrong-state error lists these states in the order of the states in `src/state/machine.ts`.
 - A command can have a rule that the table cannot hold. That rule stays next to the table check of the command. For example, `start` also continues a task in `failed` that failed in `provisioning`. The rule lives in `src/tasks/start.ts`.
 - A later ticket that adds a command or an edge adds its row.

@@ -31,9 +31,8 @@ For a task that failed in `provisioning`, the steps of `tasker start` run with n
 
 The output of the next command follows: the output of `tasker start`, `tasker plan`, `tasker execute` or `tasker verify`. The next command keeps its own errors and its own exit code. If it fails, the task goes to `failed` again with a new error, and you can run `tasker retry` again. For the origin `refining`, the command prints `run tasker refine <issue key> "<feedback>" again` and exits with code 0.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task and of the task lock belong to this group:
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
-- The task is not in `failed`. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task failed in a state that retry has no step for. The error is `the task of <issue key> failed in <state>; tasker retry has no step for it`.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is `--resume-execute applies only to a task that failed in verifying`.
 

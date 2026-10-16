@@ -24,9 +24,8 @@ On success, the command prints these lines on stdout:
 
 The command stops with exit code 1 and prints the error on stderr in these cases.
 
-These errors leave the task in its state. The command writes no event, no session and no transcript. The shared errors of no task and of the task lock belong to this group:
+These errors leave the task in its state. The command writes no event, no session and no transcript. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
-- The task is not in `approved`. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task is approved, but no revision is pinned. The error is `the task of <issue key> is approved, but no revision is pinned`.
 - The plan file of the pinned revision cannot be read. The error is `cannot read the plan file <path> of revision v<N>: <error>`.
 - The todos hold a dependency cycle. The error names the todos of the cycle.
@@ -63,9 +62,8 @@ On success, the command prints these lines on stdout:
 
 The command stops with exit code 1 and prints the error on stderr in these cases.
 
-These errors leave the task in its state. The command writes no event and no verify run. The shared errors of no task and of the task lock belong to this group:
+These errors leave the task in its state. The command writes no event and no verify run. The shared errors of no task, of the wrong state and of the task lock belong to this group:
 
-- The task is not in `executed`. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task has no worktree. The error is `the task of <issue key> has no worktree`.
 
 These errors move the task to the state `failed`. The shared unexpected error belongs to this group:
