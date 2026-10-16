@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, finish, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, finish, retry and accept, and of the result of an assistant run. The reference files of the user doc [SKILL.md](../../skills/tasker/SKILL.md), one for each phase in `skills/tasker/references/`, show the output.
 
 The commands abort, plan, refine, approve, unapprove, execute, accept, merge, mark-landed and finish share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
 

@@ -9,7 +9,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/data-root.md](docs/dev/data-root.md): the folders and the database.
 - [docs/dev/version-control.md](docs/dev/version-control.md): the git code: the git boundary, how tasker uses git, the git environment, provision, the ssh key, the push guard, publish and land, the doctor checks and the repo slug.
 - [docs/dev/doctor.md](docs/dev/doctor.md): the code that all doctor checks share: the timeout rules and the signal rule.
-- [skills/tasker/SKILL.md](skills/tasker/SKILL.md): the commands.
+- [skills/tasker/SKILL.md](skills/tasker/SKILL.md): the index of the commands, with one reference file for each phase in skills/tasker/references/.
 - [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a rebase conflict.
 - [docs/dev/orchestration.md](docs/dev/orchestration.md): the rules for an orchestrator that runs tickets from the project board through the installed tasker.
 - [docs/dev/planning.md](docs/dev/planning.md): the rules for a planning session that plans a milestone and writes its issues: the order of the work, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the operator.
