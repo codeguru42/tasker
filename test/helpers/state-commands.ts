@@ -33,7 +33,7 @@ const EXPECTED: Record<string, Expected> = {
   quota_blocked: ABORT_ONLY,
   awaiting_quota_approval: ABORT_ONLY,
   interrupted: ABORT_ONLY,
-  failed: { primary: "retry", commands: ["retry", "abort"] },
+  failed: { primary: "retry", commands: ["retry", "refine", "abort"] },
 };
 
 // The row of a state, or undefined for a terminal or unknown state.

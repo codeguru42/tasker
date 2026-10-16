@@ -19,7 +19,7 @@ const ACTIVE_STATES = STATES.filter((state) => !TERMINAL_STATES.has(state));
 const ACCEPTED: Record<TaskCommand, readonly string[]> = {
   start: ["provisioning"],
   plan: ["workspace_ready"],
-  refine: ["awaiting_plan_review", "reviewed"],
+  refine: ["awaiting_plan_review", "reviewed", "failed"],
   approve: ["awaiting_plan_review"],
   unapprove: ["approved"],
   execute: ["approved"],
@@ -145,7 +145,7 @@ describe("errorSentence", () => {
 
   it("gives the next command and the others for a state with a primary command", () => {
     expect(errorSentence("failed", key)).toBe(
-      "next: tasker retry codeguru42/tasker#5 (also: tasker abort codeguru42/tasker#5)",
+      "next: tasker retry codeguru42/tasker#5 (also: tasker refine codeguru42/tasker#5, tasker abort codeguru42/tasker#5)",
     );
   });
 

@@ -14,7 +14,7 @@ import type { Task } from "../../src/store/store.js";
 import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { NO_OWN_COMMITS } from "../../src/vcs/git/changes.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
@@ -32,12 +32,14 @@ import {
   databasePathOf,
   dayAt,
   eventsOf,
+  failTaskFrom,
+  failVerifyRun,
   latestTaskOf,
   lockNames,
   readRunMarker,
   withDataRootStore,
 } from "../helpers/store.js";
-import { promotionContextExpected } from "../helpers/review.js";
+import { failureContextExpected, promotionContextExpected } from "../helpers/review.js";
 import {
   expectNoAssistantRun,
   type PlanFixture,
@@ -50,6 +52,7 @@ import { wrongStateError } from "../helpers/state-commands.js";
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 const FEEDBACK = "Use main as the base branch.";
+const VERIFY_ERROR = "verify command 1 failed: npm test: exit code 1.\nboom";
 
 // A null feedback leaves the argument out.
 const runRefine = (feedback: string | null = FEEDBACK, key = KEY, ...extra: string[]) =>
@@ -383,6 +386,45 @@ describe("a promotion from reviewed", () => {
   });
 });
 
+describe("a refine from failed", () => {
+  it("records revision v2 with the feedback after a verify failure", async () => {
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
+    const { dataRoot } = fixture.started;
+    withDataRootStore(dataRoot, (store) => {
+      store.approvePlanRevision(fixture.task.id, 1, "approved");
+      failVerifyRun(store, dataRoot, fixture.task, {}, undefined, VERIFY_ERROR);
+    });
+    const before = eventsOf(dataRoot, KEY);
+
+    const result = await runRefine(FEEDBACK);
+
+    const task = latestTaskOf(dataRoot, KEY);
+    const revision = planRevisionOf(dataRoot, task.id, 2);
+    expect(result.code).toBe(0);
+    const stdin = fixture.claude.calls()[0].stdin;
+    expect(stdin).toContain(`<context>${failureContextExpected("verifying", VERIFY_ERROR)}</context>`);
+    expect(stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
+    expect(task.state).toBe("awaiting_plan_review");
+    expect(revision).toMatchObject({ version: 2, source: "refine", feedback: FEEDBACK });
+    expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
+      { type: "transition", data: { from: "failed", to: "refining" } },
+      { type: "usage", data: expect.anything() },
+      { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
+      { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },
+    ]);
+  });
+});
+
+describe("the help of refine", () => {
+  it("names the failed case", async () => {
+    const { code, help } = await runHelp(refine, "refine");
+
+    expect(code).toBe(0);
+    expect(help).toContain("of a task in failed with the error of the failure and your instruction for the fix");
+    expect(help).toContain("required in awaiting_plan_review and in failed");
+  });
+});
+
 describe("a check before any write", () => {
   const stream = answerStream(V2_ANSWER);
   const NO_OPEN_FINDING = `the latest review of ${KEY} has no open finding; run tasker dismiss-review or tasker review`;
@@ -402,7 +444,7 @@ describe("a check before any write", () => {
     expectNoWrite(fixture, task, before, state);
   };
 
-  it("refuses a task that is not in awaiting_plan_review or reviewed", async () => {
+  it("refuses a task that is not in awaiting_plan_review, reviewed or failed", async () => {
     const fixture = await useRefineFixture({ stream });
     withDataRootStore(fixture.started.dataRoot, (store) => transitionTask(store, fixture.task.id, "approved"));
 
@@ -410,7 +452,7 @@ describe("a check before any write", () => {
       fixture,
       fixture.task,
       "approved",
-      wrongStateError("approved", KEY, "refine", "awaiting_plan_review or reviewed"),
+      wrongStateError("approved", KEY, "refine", "awaiting_plan_review, reviewed or failed"),
     );
   });
 
@@ -460,6 +502,35 @@ describe("a check before any write", () => {
     });
 
     await expectRefused(fixture, task, "awaiting_plan_review", `the task of ${KEY} has no plan revision`);
+  });
+
+  it("refuses a task in failed with no plan revision", async () => {
+    const fixture = await usePlanFixture({ stream });
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
+    withDataRootStore(fixture.started.dataRoot, (store) => {
+      seedPlanSession(store, task.id);
+      failTaskFrom(store, task.id, "planning");
+    });
+
+    await expectRefused(
+      fixture,
+      task,
+      "failed",
+      `the task of ${KEY} failed in planning and has no plan revision; run tasker retry ${KEY}`,
+    );
+  });
+
+  it("refuses a refine from failed without feedback", async () => {
+    const fixture = await useRefineFixture({ stream });
+    withDataRootStore(fixture.started.dataRoot, (store) => failTaskFrom(store, fixture.task.id, "verifying"));
+
+    await expectRefused(
+      fixture,
+      fixture.task,
+      "failed",
+      "the feedback is missing; tasker refine needs it unless the task is in reviewed",
+      null,
+    );
   });
 
   describe.each(STARTS)("$name", ({ start, feedback, from }) => {
