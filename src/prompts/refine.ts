@@ -51,3 +51,9 @@ export function promotionContextText(
 export function reviewFeedbackContextText(revision: string, verifyRun: number | undefined): string {
   return `The operator read the committed work at ${revision} and asks for a revision of the plan. ${verifySentence(verifyRun)} The work that is done stays. Plan only the work that is still needed on top of it.`;
 }
+
+// The context of a refine from a task in failed. origin is the state that the task left when it failed. error is the
+// error of the failure, which can have more than one line, so the instruction line goes on its own line.
+export function failureContextText(origin: string, error: string): string {
+  return `The task failed in ${origin}: ${error}\nThe operator gives an instruction for the fix.`;
+}
