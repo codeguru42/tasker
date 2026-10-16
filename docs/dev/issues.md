@@ -8,6 +8,7 @@ This page gives the steps and the GitHub facts for the planning session when it 
 - Right before each post, the planning session searches all the issues of the repo, open and closed, by title and by body, for the same change. Other sessions file issues at the same time, so the list changes between two turns. An example search is `gh issue list --state all --search "<words> in:title,body" --limit 1000`.
 - If an issue already covers the change, the planning session offers the operator an extension of that issue (its body or its links) instead of a new issue. The planning session tells the operator what each draft has that the other one does not have.
 - The planning session writes all text that goes to GitHub with the simple-english skill: titles, bodies, comments, milestone descriptions and the text of project fields. This list is the full scope of the rule for the planning session. The simple-english bullet of [Limits](orchestration.md#limits) of orchestration.md gives the same rule for the orchestrator and its agents.
+- For a priority label on an issue, see [The body of an issue](planning.md#the-body-of-an-issue) of planning.md.
 
 ## The blocked-by links
 
