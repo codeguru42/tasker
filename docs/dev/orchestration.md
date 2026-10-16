@@ -331,13 +331,15 @@ After the refine, the agent continues as the verify-failure rule says. When the 
 
 ### The session check
 
-The session check runs the rebase of the commit check on a detached HEAD at the tip of the task branch, so that a rebase that stops or fails cannot leave the task branch in the middle of a rebase. The session does these steps in its worktree, on the task branch, with the base commit of the feedback:
+The session check runs the rebase of the commit check directly on the task branch. The check commands only run the tests and change no commit. The last paragraph of [the commit check](#the-commit-check) gives the facts of this rebase during and after its run. At the end, HEAD is on the task branch. If the rebase stops for another reason, `git rebase --abort` puts the task branch back at its tip, with HEAD on the task branch.
 
-1. Run `git switch --detach <task branch>`. If the command fails, stop and report. The task branch stays as it was, and the worktree stays on it.
-2. Do steps 5, 6 and 8 of [the commit check](#the-commit-check), with the base commit of the feedback: the `git rebase --exec` command, the notes and `git rebase --continue`, and the tip check. The result is the list of broken commits, oldest first. The rebase keeps the same commits.
-3. If a rebase is still in progress after the check, for example after an error, run `git rebase --abort`. A rebase is in progress when the folder `$(git rev-parse --git-path rebase-merge)` exists. If the abort fails, stop and report. The task branch stays as it was, and the worktree stays in the rebase.
-4. Run `git switch <task branch>` to return to the task branch. If the command fails, stop and report. The task branch stays as it was, and the worktree stays on the detached HEAD.
-5. If the check stopped with an error, stop and report after the return. The task branch stays as it was.
+If the session stops in the middle of the rebase, the worktree stays in the rebase. Step 2 covers this case when the session goes on.
+
+The session does these steps in its worktree, on the task branch, with the base commit of the feedback:
+
+1. Do steps 5, 6 and 8 of [the commit check](#the-commit-check): the `git rebase --exec` command, the notes and `git rebase --continue`, and the tip check. Step 2 takes the place of step 7 of the commit check. If the rebase exits with 0, the result is the list of broken commits, oldest first. The list can be empty. Then no rebase is in progress, so step 2 does nothing, and step 3 does not stop. If the rebase stops for another reason, or another error occurs, for example the rebase does not start or a command of step 8 of the commit check cannot run, go on with step 2.
+2. If a rebase is still in progress after step 1, run `git rebase --abort`. A rebase is in progress when the folder `$(git rev-parse --git-path rebase-merge)` exists. If the abort fails, stop and report. The worktree stays in the rebase, and the task branch stays at its tip.
+3. If step 1 ended with such a stop or error, stop and report. The task branch stays at its tip, with HEAD on the task branch.
 
 ### The manual fix
 
