@@ -102,9 +102,9 @@ describe("reviewTask checks", () => {
 
   it("refuses a task branch that the clone does not have", async () => {
     const work = await useReviewFixture(CONTROL);
-    withDataRootStore(work.dataRoot, (store) => store.updateTask(work.task.id, { branch: "tasker/missing" }));
+    withDataRootStore(work.dataRoot, (store) => store.updateTask(work.task.id, { branch: "issue-99-missing" }));
 
-    await expectRefused(work, "cannot resolve the task branch: tasker/missing");
+    await expectRefused(work, "cannot resolve the task branch: issue-99-missing");
   });
 
   it("fails at once when another process holds the task lock", async () => {

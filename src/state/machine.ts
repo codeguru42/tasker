@@ -1,5 +1,6 @@
 import type {
   NewEvent,
+  NewReview,
   RetryWrites,
   NewPlanRevision,
   NewVerifyRun,
@@ -219,6 +220,11 @@ export function transitionWithPlanRevision(
   revision: NewPlanRevision,
 ): Task {
   return store.addPlanRevision(id, revision, to, transitionCheck("transition", to));
+}
+
+// Inserts the review and its findings, appends its review event and moves the task to `to`, in one transaction.
+export function transitionWithReview(store: TaskStore, id: number, to: TaskState, review: NewReview): Task {
+  return store.addReview(id, review, to, transitionCheck("transition", to));
 }
 
 // Inserts the verify run, appends its verify_run event and moves the task to `to` with one transition event

@@ -152,7 +152,7 @@ export interface VerifyRun extends NewVerifyRun {
 
 export interface NewReview {
   number: number;
-  // The revision of the worktree that the review read. The findings describe this one tree.
+  // The tip of the task branch that the review read. The findings describe this one tree.
   revision: string;
   // The prompt version of the run, for example review@3f9a1c04b2e7.
   prompt: string;
