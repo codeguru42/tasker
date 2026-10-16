@@ -4,7 +4,7 @@ These commands review the work, dismiss findings, accept the work and print a re
 
 ## `tasker review`
 
-Reviews the committed work of a task in the state `awaiting_work_review` in a new session of the assistant, and records the findings: `tasker review <issue>`. The task goes through `reviewing` to `reviewed`. When the review has no findings, the task goes back to `awaiting_work_review`.
+Reviews the committed work of a task in the state `awaiting_work_review` in a new session of the assistant, and records the findings: `tasker review <issue>`. With feedback, the command has [another form](#the-feedback-form). The task goes through `reviewing` to `reviewed`. When the review has no findings, the task goes back to `awaiting_work_review`.
 
 Each review runs in a new session with the model of the review role. The review is an independent pass, and the conversation of the plan does not bias it. The assistant runs in plan mode in the worktree of the task. The time limit is the value of `planTimeoutMin`.
 
@@ -36,6 +36,21 @@ These errors move the task to the state `failed`. The shared quota stop is the e
 - The answer is not valid. The error is `the assistant returned findings that tasker refuses:`, then one line for each problem.
 
 No command resumes a failed or stopped review yet.
+
+### The feedback form
+
+Continues the plan session of a task in the state `awaiting_work_review` with your feedback on the committed work, and records the next plan revision: `tasker review <issue> [<feedback>]`. Quote the feedback as one argument. The task goes through `refining` to `awaiting_plan_review`. The command runs no automated review in this form.
+
+The command works as [`tasker refine`](plan.md#tasker-refine) does. It continues the recorded plan session, and the new revision has the source `review-feedback`. The context in the prompt holds the revision that you read, which is the tip of the task branch, and the number of the latest verify run. If the task has no verify run, the context says so. The context names no review. The feedback block holds your feedback and nothing else. The new revision plans only the work that is still needed on top of the committed work.
+
+On success, the command prints the lines of [`tasker plan`](plan.md#tasker-plan). The first line is `refined <issue key> as revision v<N>`. The overlap warning follows on stderr.
+
+The command stops with exit code 1 and prints the error on stderr in these cases:
+
+- The feedback is empty or has only white space. The error is `the feedback is empty`. The task stays in its state.
+- The task is not in `awaiting_work_review`. The error is the [wrong state](../SKILL.md#shared-errors) error.
+- The task has no worktree, no branch or no base revision, or the clone has no such task branch. The errors are the branch errors of the automated review above.
+- The run step fails. The errors are those of [`tasker refine`](plan.md#tasker-refine), and the exit code of a failed run is the exit code of a failed review.
 
 ## `tasker dismiss-review`
 

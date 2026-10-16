@@ -119,7 +119,7 @@ Prints one verify run and the log of each command, in any state. See [the refere
 
 ### `tasker review`
 
-Reviews the committed work of a task in `awaiting_work_review`, and records the findings. See [the reference](references/work-review.md#tasker-review).
+Reviews the committed work of a task in `awaiting_work_review`, and records the findings. With your feedback, it continues the plan session instead and records the next plan revision. See [the reference](references/work-review.md#tasker-review).
 
 ### `tasker dismiss-review`
 
