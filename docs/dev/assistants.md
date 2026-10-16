@@ -226,7 +226,6 @@ The reasons for the design:
 - The whole plan goes in the first turn only. One session holds it.
 - The plan comes from the plan file. A fresh session has no memory of it.
 - The todos and the resolved questions go in the prompt. The execute session never sees the planning conversation.
-- The turn prompts share their text in `EXECUTE_TURN_RULES`, and every execute block uses the data sentence of `SHARED_RULES`. As a result, one change updates every prompt.
 - The fix prompt spells out the rule texts and does not point at rule numbers. A fix turn can be the first turn of a resumed session, and that session never saw an `execute-todo` prompt.
 
 The turn result is a strict object: `result` is `done` or `blocked`, and `reason` is optional. An extra key or an unknown value is no result, and it is never read as `done`. The read of a result never throws. A `blocked` result with no reason gets a fixed reason.
@@ -243,7 +242,7 @@ The answer is a complete revision, never a list of changes. A change list leaves
 
 The open questions keep their ids across rounds. As a result, an answered question drops out, and an open question stays trackable.
 
-The plan, refine and review prompts share their common rules in one place in the code. As a result, one change updates each of them.
+The prompts share their common rules in one place in the code, for example the data sentence of each block. The turn prompts of the execute run also share their text in one place. As a result, one change updates each of them.
 
 ### The review prompt and the findings answer
 
