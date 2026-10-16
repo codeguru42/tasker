@@ -45,10 +45,8 @@ Removes the worktree and the local task branch of an active task, and moves the 
 
 The command prints one line for each step that ran, then `cancelled <issue>`. The steps are the discard of the uncommitted changes (only with `--force`), the removal of the worktree and the deletion of the branch. A step that has nothing to do prints no line. The files under `artifacts/` stay.
 
-The command stops with exit code 1 and prints the error on stderr in these cases:
+The command stops with exit code 1 and prints the error on stderr in these cases. The shared errors of the task lock and of the clone lock belong to this list:
 
 - The task is `finished` or `cancelled`. The error names the state. A task in any other state, `failed` included, can be aborted.
 - The worktree has uncommitted changes and you did not pass `--force`. The error lists each change, then says `tasker abort --force discards them`. Commit the changes or pass `--force`.
-- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
-- Another command holds the clone for more than 5 minutes. The error says that the lock is busy. Run the command again.
 - A step fails. The task keeps its state, so run the command again. The second run finishes the steps that are left.

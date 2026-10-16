@@ -71,7 +71,7 @@ On success, the command prints the same lines as `tasker plan`, but the first li
 
 The command stops with exit code 1 and prints the error on stderr in these cases.
 
-These errors leave the task in its state. The command writes nothing. The shared errors of the task lock and of the prompt archive belong to this group:
+These errors leave the task in its state. The command writes nothing. The shared errors of no task, of the task lock and of the prompt archive belong to this group:
 
 - The task is not in `awaiting_plan_review` or `reviewed`. The error names the state.
 - The task is in `awaiting_plan_review` and you give no feedback. The error is `the feedback is missing; tasker refine needs it unless the task is in reviewed`.
@@ -84,7 +84,7 @@ These errors leave the task in its state. The command writes nothing. The shared
 
 A refused check leaves the task, the files and the events as they were. Fix the cause, then run the same command again.
 
-These errors move the task to the state `failed`. The shared quota stop is the exception:
+These errors move the task to the state `failed`. The shared quota stop is the exception. The shared unexpected error belongs to this group:
 
 - The assistant fails or runs longer than the time limit. The error is `refining failed: <reason>` or `refining timed out after <n> min`.
 - The assistant returns a plan that tasker refuses. The error lists each problem.
@@ -161,7 +161,7 @@ questions:
 The command prints an error and exits with code 1 in these cases:
 
 - The task has no plan revision. The error is `the task of <issue key> has no plan revision; run tasker plan first`. This error also comes with `--version`.
-- The task has no revision `N`. The error is `the task of <issue key> has no plan revision v<N>`.
+- The task has no revision `N` of `--version <N>`. The error is `the task of <issue key> has no plan revision v<N>`.
 - The plan file is missing. The error is `no plan file at <path>`. This does not apply to `--path`.
 - tasker cannot read the plan file. The error is `cannot read the plan file <path>: <error>`. `<error>` is the error code, for example `EISDIR`, or else the error message. This does not apply to `--path`.
 
@@ -184,4 +184,4 @@ The state is `open`, `answered in v<N+1>: <answer>`, or `answered in v<N+1>` whe
 The command prints an error and exits with code 1 in these cases:
 
 - The task has no plan revision. The error is `the task of <issue key> has no plan revision; run tasker plan first`. This error also comes with `--version`.
-- The task has no revision `N`. The error is `the task of <issue key> has no plan revision v<N>`.
+- The task has no revision `N` of `--version <N>`. The error is `the task of <issue key> has no plan revision v<N>`.

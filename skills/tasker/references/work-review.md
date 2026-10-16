@@ -31,7 +31,7 @@ These errors leave the task in its state. The command writes no event, no sessio
 - The commits of the branch cannot be read. The error is the error of git.
 - The prompt cannot be archived. A prompt that tasker archived before the failure stays in the prompt archive.
 
-These errors move the task to the state `failed`. The shared quota stop is the exception:
+These errors move the task to the state `failed`. The shared quota stop is the exception. The shared unexpected error belongs to this group:
 
 - The assistant fails or runs out of time. The error is `reviewing failed: <reason>` or `reviewing timed out after <n> min`.
 - The answer is not valid. The error is `the assistant returned findings that tasker refuses:`, then one line for each problem.
@@ -95,4 +95,4 @@ The count is `no findings`, `1 finding` or `<n> findings`. It counts all finding
 The command prints an error and exits with code 1 in these cases:
 
 - The task has no review. The error is `the task of <issue key> has no review; run tasker review first`. This error also comes with `--review`.
-- The task has no review `N`. The error is `the task of <issue key> has no review <N>; it has <total>`.
+- The task has no review `N` of `--review <N>`. The error is `the task of <issue key> has no review <N>; it has <total>`.

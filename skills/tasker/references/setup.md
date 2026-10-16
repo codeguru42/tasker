@@ -6,7 +6,7 @@ These commands check or change the setup of tasker. They need no task. [Shared e
 
 Prints the configuration as JSON, with the defaults filled in.
 
-If the key does not exist, the command prints an error and exits with code 1.
+If the repo key of `--repo` does not exist, the command prints an error and exits with code 1.
 
 ## `tasker doctor`
 
@@ -36,7 +36,7 @@ Prints or sets the model and the effort of each assistant role for the repo of a
 
 `<model>` and `--effort` need `--role`. The roles are `plan`, `execute` and `review`.
 
-If the key fits more than one repo and you do not give `--repo`, the active task of the issue picks the repo. If no repo, or more than one repo, has an active task for the issue, the command prints an error.
+If the issue key fits more than one repo and you do not give `--repo`, the active task of the issue picks the repo. If no repo, or more than one repo, has an active task for the issue, the command prints an error.
 
 Without `<model>` and `--effort`, the command prints one line for each role, in the order plan, execute, review, as `<role>: <model> (effort <effort>)`, for example `plan: opus (effort high)`. With `--role`, it prints only that role.
 

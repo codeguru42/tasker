@@ -68,9 +68,17 @@ Each task is in one state. Each command entry names the state that the command n
 
 Prints the configuration as JSON, with the defaults filled in, and needs no task. See [the reference](references/setup.md#tasker-show-config).
 
+### `tasker doctor`
+
+Makes sure that the configuration, the data root, git, `gh`, `claude` and the accounts work, and needs no task. See [the reference](references/setup.md#tasker-doctor).
+
+### `tasker model`
+
+Prints or sets the model and the effort of each assistant role for the repo of an issue. It needs no task and changes no task. See [the reference](references/setup.md#tasker-model).
+
 ### `tasker start`
 
-Makes a task for an issue and takes it to `workspace_ready`, and needs no active task or a task that stopped before `workspace_ready`. See [the reference](references/start.md#tasker-start).
+Makes a task for an issue and takes it to `workspace_ready`, or changes nothing when the active task of the issue is already past `workspace_ready`. See [the reference](references/start.md#tasker-start).
 
 ### `tasker plan`
 
@@ -88,6 +96,14 @@ Approves the newest plan revision of a task in `awaiting_plan_review`. See [the 
 
 Takes back the approval of the pinned plan revision of a task in `approved`. See [the reference](references/plan.md#tasker-unapprove).
 
+### `tasker show-plan`
+
+Prints one plan revision of the task of an issue, in any state. See [the reference](references/plan.md#tasker-show-plan).
+
+### `tasker show-questions`
+
+Prints the questions of one plan revision, each with its state, in any state. See [the reference](references/plan.md#tasker-show-questions).
+
 ### `tasker execute`
 
 Carries out the pinned plan revision of a task in `approved`, one turn for each todo. See [the reference](references/build.md#tasker-execute).
@@ -95,6 +111,10 @@ Carries out the pinned plan revision of a task in `approved`, one turn for each 
 ### `tasker verify`
 
 Runs the verify commands of the repo for a task in `executed`, and records the run. See [the reference](references/build.md#tasker-verify).
+
+### `tasker show-verify`
+
+Prints one verify run and the log of each command, in any state. See [the reference](references/build.md#tasker-show-verify).
 
 ### `tasker review`
 
@@ -104,9 +124,9 @@ Reviews the committed work of a task in `awaiting_work_review`, and records the 
 
 Dismisses open findings of the latest review of a task in `reviewed`, with one reason. See [the reference](references/work-review.md#tasker-dismiss-review).
 
-### `tasker retry`
+### `tasker show-review`
 
-Moves a task in `failed` back to the state before the step that failed, and runs that step again. See [the reference](references/recovery.md#tasker-retry).
+Prints one review and its findings with their status, in any state. See [the reference](references/work-review.md#tasker-show-review).
 
 ### `tasker accept`
 
@@ -124,9 +144,17 @@ Records that the work of a task in `accepted`, `pushed` or `in_peer_review` land
 
 Cleans up a task in `landed` or `cleanup_failed`. See [the reference](references/landing.md#tasker-finish).
 
+### `tasker retry`
+
+Moves a task in `failed` back to the state before the step that failed, and runs that step again. See [the reference](references/recovery.md#tasker-retry).
+
 ### `tasker abort`
 
 Cancels an active task and removes its worktree and local branch. It needs any state except `finished` and `cancelled`. See [the reference](references/recovery.md#tasker-abort).
+
+### `tasker status`
+
+Lists the tasks by issue key and state, and needs no task. See [the reference](references/inspect.md#tasker-status).
 
 ### `tasker show`
 
@@ -135,31 +163,3 @@ Prints the details of the task of an issue, in any state. See [the reference](re
 ### `tasker show-bootstrap`
 
 Prints the bootstrap log of the task of an issue, in any state. See [the reference](references/inspect.md#tasker-show-bootstrap).
-
-### `tasker show-plan`
-
-Prints one plan revision of the task of an issue, in any state. See [the reference](references/plan.md#tasker-show-plan).
-
-### `tasker show-questions`
-
-Prints the questions of one plan revision, each with its state, in any state. See [the reference](references/plan.md#tasker-show-questions).
-
-### `tasker show-verify`
-
-Prints one verify run and the log of each command, in any state. See [the reference](references/build.md#tasker-show-verify).
-
-### `tasker show-review`
-
-Prints one review and its findings with their status, in any state. See [the reference](references/work-review.md#tasker-show-review).
-
-### `tasker status`
-
-Lists the tasks by issue key and state, and needs no task. See [the reference](references/inspect.md#tasker-status).
-
-### `tasker doctor`
-
-Makes sure that the configuration, the data root, git, `gh`, `claude` and the accounts work, and needs no task. See [the reference](references/setup.md#tasker-doctor).
-
-### `tasker model`
-
-Prints or sets the model and the effort of each assistant role for the repo of an issue. It needs no task and changes no task. See [the reference](references/setup.md#tasker-model).

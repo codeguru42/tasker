@@ -35,7 +35,7 @@ These errors leave the task in its state. The command writes no event, no sessio
 - The provider refuses the model of the recorded execute session. The error is `the execute session of <issue key> runs on <model>, and <provider> refuses it: <reason>`.
 - The prompt cannot be archived. A prompt that tasker archived before the failure stays in the prompt archive.
 
-These errors move the task to the state `failed`. The shared quota stop is the exception:
+These errors move the task to the state `failed`. The shared quota stop is the exception. The shared unexpected error belongs to this group:
 
 - A turn reports `blocked` or gives no result. The error is `<turn> reported blocked: <reason>` or `<turn> reported no result: <detail>`. The turn is ``todo `<id>` (<title>)`` or `the fix turn for the verify failure`.
 - The assistant fails or a turn runs out of time. The error is `executing failed: <reason>` or `executing timed out after <n> min`. When no time is left before a turn, the error is `executing <turn> timed out after <n> min`.
@@ -68,7 +68,7 @@ These errors leave the task in its state. The command writes no event and no ver
 - The task is not in `executed`. The error is `the task of <issue key> is in <state>; tasker verify needs executed`.
 - The task has no worktree. The error is `the task of <issue key> has no worktree`.
 
-These errors move the task to the state `failed`:
+These errors move the task to the state `failed`. The shared unexpected error belongs to this group:
 
 - The worktree cannot be read before the run. The error is `cannot read the uncommitted changes of the worktree before the run: <error>`. The command records no run.
 - The worktree has changes before the run. The command records the run as `dirty_before` with no command. The error has two lines. The first line is `the worktree had uncommitted changes before the verify run: <list>`. The list gives the status of git and the path of each change. The second line tells you to run `tasker retry <issue key> --resume-execute`, so that the execute run finishes the changes.
@@ -104,5 +104,5 @@ If a log file cannot be read, its block holds the line `(log not readable: <erro
 The command prints an error and exits with code 1 in these cases:
 
 - The task has no verify run. The error is `the task of <issue key> has no verify run; run tasker verify first`. This error also comes with `--run`.
-- The task has no run `N`. The error is `the task of <issue key> has no verify run <N>; it has <count>`.
-- The run has no log for command `N`. The error is `verify run <N> of <issue key> has no log for command <k>; it ran <m> commands`.
+- The task has no run `N` of `--run <N>`. The error is `the task of <issue key> has no verify run <N>; it has <count>`.
+- The run has no log for command `N` of `--command <N>`. The error is `verify run <N> of <issue key> has no log for command <k>; it ran <m> commands`.
