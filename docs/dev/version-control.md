@@ -153,6 +153,8 @@ The push guard has three layers:
 2. Layer 2 is the `pre-push` hook of the clone. Provision writes it. See below.
 3. Layer 3 is the tip of a branch on the remote. A read of the tip before a run and after it shows a push that skipped the hook.
 
+Layer 3 cannot see a push that moves the tip and then moves it back within one turn, because it compares only the tips before and after.
+
 ### The hook
 
 Provision writes the hook on each run, through a `.tmp` file and a rename. A deleted or edited hook comes back at the next provision. On a fresh clone, `git init --bare` makes `hooks/` first, with the files of the git template. The hook is a `/bin/sh` script that needs `rm`.
@@ -173,7 +175,7 @@ These cases skip the hook:
 
 Layer 1 and layer 3 cover these cases.
 
-The hook alone does not cover them. A caller that runs an assistant must apply the deny rule of layer 1. `tasker execute` also compares the tips of layer 3: it reads the tip of the task branch before the run and after each turn, and a moved tip fails the task. The plan and review roles do not compare the tips yet, because they run in the plan mode.
+The hook alone does not cover them. A caller that runs an assistant must apply the deny rule of layer 1. `tasker execute` compares the tips of the task branch for layer 3, as [tasks.md](tasks.md#execute) says. The plan and review roles do not compare the tips yet, because they run in the plan mode.
 
 The token files are outside the bare clone and outside each worktree. The sandbox of the assistant must not have a write path that covers them. This doc makes no other promise about a sandbox.
 

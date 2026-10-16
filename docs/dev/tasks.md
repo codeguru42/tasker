@@ -278,5 +278,3 @@ These reasons explain its rules:
 - The check is read-only toward `origin`. The work landed outside tasker, so tasker only records it.
 - The check reads the tip of the task ref in the clone and not the worktree, for the same reason as the on-base check of [Merge](#merge).
 - The fetch holds the repo lock, because the fetch changes the refs of the clone. [The locks table](data-root.md#locks-table) requires it.
-
-- Layer 3 of the push guard cannot see a push that moves the tip and then moves it back within one turn. It compares only the tips before and after.
