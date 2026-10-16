@@ -2,7 +2,7 @@
 
 This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
-The commands abort, plan, refine, approve, unapprove, execute and accept share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. A refused approve or unapprove also leaves the plan revisions as they were.
+The commands abort, plan, refine, approve, unapprove, execute, accept, merge and mark-landed share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
 
 ## Start
 
@@ -225,7 +225,7 @@ The command has these limits:
 
 ## Retry
 
-`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. `tasker retry` resumes a task in `failed` for the origins of its table.
+`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. An origin that the table does not hold gets no retry, and the command refuses it.
 
 The move, the delete of the sessions, the todo marks, the fix turn and one `retry` event share one transaction. The `retry` event has the data `{ origin, target, resumeExecute, from, to }` and takes the place of the `transition` event for this move. A retry of a task that failed in `provisioning` does not move the task, so it writes the `retry` event alone, with `{ origin, target, resumeExecute }`.
 
@@ -257,7 +257,7 @@ The base can move after the check of `tasker accept`. Then `tasker merge` fails,
 
 `tasker merge` lands the work of a task in `accepted` on the base branch of `origin`. The task goes through `merging` to `landed`.
 
-The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the branch, the stored base, the base revision and the repo lock. A refused merge leaves the task and the events as they were. After the check, the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task branch and the tip of the base. If the base does not contain the work, the command pushes it with `vcs.land`. The last write is one transaction that appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. If a step fails after the move to `merging`, the task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not wait for CI.
+Its checks cover the task, the state, the branch, the stored base, the base revision and the repo lock. After the check, the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task branch and the tip of the base. If the base does not contain the work, the command pushes it with `vcs.land`. The last write is one transaction that appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. The `landed` event takes the place of the `transition` event for this move. If a step fails after the move to `merging`, the task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not wait for CI.
 
 These reasons explain its rules:
 
@@ -265,13 +265,12 @@ These reasons explain its rules:
 - The on-base check runs first, so a second run after a crash lands with no second push. The check reads the clone, so a missing worktree cannot cause a second push.
 - The repo lock covers the fetch and the push, because both change the refs of the clone. [The locks table](data-root.md#locks-table) requires it.
 - The command takes the repo lock before the move to `merging`, so a busy lock changes no state.
-- The move to `landed` writes one `landed` event with `revision`, `base`, `pushed`, `from` and `to` in place of the `transition` event, in the same transaction. The `executed` and `accepted` events work in the same way.
 
 ## Mark landed
 
 `tasker mark-landed` records that the work of a task in `accepted`, `pushed` or `in_peer_review` already landed on the base branch outside tasker. The task goes to `landed`.
 
-The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the branch, the stored base and the base revision. A refused command leaves the task and the events as they were. Then it takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base does not contain the work, the command stops with an error. The last write is one transaction that appends one `marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`. The `marked_landed` event takes the place of the `transition` event for this move.
+Its checks cover the task, the state, the branch, the stored base and the base revision. Then it takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base does not contain the work, the command stops with an error. The fetch can still move the refs of `origin` in the clone, also when the command stops with this error. The last write is one transaction that appends one `marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`. The `marked_landed` event takes the place of the `transition` event for this move.
 
 These reasons explain its rules:
 
