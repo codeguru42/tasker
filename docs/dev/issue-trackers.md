@@ -24,7 +24,7 @@ The registry is the only place that reads `issueTracker.provider`. One configura
 
 `gh` gets no input stream. Its output goes to pipes, never to the terminal, and nothing is logged.
 
-Each call that acts on a repo must name the repo, because tasker removes `GH_REPO`, and without a repo `gh` reads the repo from the git folder of its cwd.
+[The environment](#the-environment) gives the rule that each call that acts on a repo names its repo.
 
 An abort stops the call. It also stops the token call under the rule in [The token](#the-token). The version read makes no token call, because the version needs no login.
 
@@ -45,7 +45,7 @@ The environment of the token call is in [The environment](#the-environment).
 
 ## The environment
 
-- tasker removes each token variable, `GH_HOST` and `GH_REPO` of the caller. As a result, only the token of the account counts, and each call must name its repo (see [runGh()](#rungh)).
+- tasker removes each token variable, `GH_HOST` and `GH_REPO` of the caller. As a result, only the token of the account counts. Each call that acts on a repo must name the repo, because tasker removes `GH_REPO`, and without a repo `gh` reads the repo from the git folder of its cwd.
 - gh gets no prompt, no update notice and no color.
 - Other names pass as they are, for example `GH_CONFIG_DIR`.
 - tasker does not add `process.env`.
