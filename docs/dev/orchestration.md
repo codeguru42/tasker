@@ -39,7 +39,14 @@ The orchestrator waits in these cases:
 - The blocker is in any other state.
 - Two or more blockers of the ticket are open. The ticket waits until at most one is open, because `tasker start` refuses two ready blockers.
 
-The orchestrator reads the states at three moments: each time it reads the board, before each start, and after a report of a ready state. A report of a ready state says that a task is in `awaiting_work_review`, `reviewing`, `reviewed` or `accepted`. The report can come from an agent or from another orchestrator. A report from another orchestrator comes through the messages of [the hold rule](#the-hold-rule) or of [the stacked-ticket rule](#the-stacked-ticket-rule). The sender sends only the reports that those rules already give, and a refused message or a missing answer is out of scope (#164).
+The orchestrator reads the states at four moments:
+
+- Each time it reads the board
+- Before each start
+- After a report of a ready state
+- After a new link of [the link offer](#the-link-offer)
+
+A report of a ready state says that a task is in `awaiting_work_review`, `reviewing`, `reviewed` or `accepted`. The report can come from an agent or from another orchestrator. A report from another orchestrator comes through the messages of [the hold rule](#the-hold-rule) or of [the stacked-ticket rule](#the-stacked-ticket-rule). The sender sends only the reports that those rules already give, and a refused message or a missing answer is out of scope (#164).
 
 After a report of a ready state, the orchestrator lists the open issues that the task blocks: `gh issue view <issue> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. If the output is empty, no ticket waits on the task, and the step is complete. For each issue of the list, the orchestrator reads the milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The orchestrator keeps the tickets of its own milestone. If such a ticket can start by this rule and by the other rules of [Pick the tickets](#pick-the-tickets), the orchestrator starts it. If a command fails, the orchestrator tells the user the command and the error. Then no ticket starts at that moment, and no task changes. The tickets wait until the next read of the board or the next start.
 
@@ -74,7 +81,7 @@ This rule covers a ticket of the milestone of the orchestrator. The ticket can s
 
 The orchestrator offers the user a link: the ticket is blocked by the issue of that task. The orchestrator follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
 
-- If the user approves, the orchestrator runs `gh issue edit <ticket> --add-blocked-by <issue of the task>`. While the task is not ready to stack, [the stacking rule](#the-stacking-rule) makes the ticket wait. When the task is ready to stack, the ticket can start as a stacked ticket on the task. For that pair, [the stacking rule](#the-stacking-rule) wins over the sentence "Start the second ticket after the first one lands." of the shared-file bullet. [The stacked-ticket rule](#the-stacked-ticket-rule) then sets the landing order, with the task first.
+- If the user approves, the orchestrator runs `gh issue edit <ticket> --add-blocked-by <issue of the task>`. If `gh issue edit` succeeds, the orchestrator reads the states of the blockers of the ticket at once. If the ticket can start by [the stacking rule](#the-stacking-rule) and by the other rules of [Pick the tickets](#pick-the-tickets), the orchestrator starts it. Otherwise, the ticket waits. For example, [the stacking rule](#the-stacking-rule) makes the ticket wait while the task is not ready to stack. When the task is ready to stack, the ticket can start as a stacked ticket on the task. For that pair, [the stacking rule](#the-stacking-rule) wins over the sentence "Start the second ticket after the first one lands." of the shared-file bullet. [The stacked-ticket rule](#the-stacked-ticket-rule) then sets the landing order, with the task first.
 - If `gh issue edit` fails, the orchestrator tells the user the command and the error. The ticket has no new link.
 - If the user declines, or if `gh issue edit` fails, the shared-file bullet applies, and the ticket starts after the task lands. The stacking rule still applies to the other blockers of the ticket. After that answer or that failure, the orchestrator makes no new offer for that ticket and that task. The user can still ask for the link at any time.
 - In each case, the move rule of [Pick the tickets](#pick-the-tickets) still wins. For a stacked ticket, the second exception of [the stacking rule](#the-stacking-rule) says this.
