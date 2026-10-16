@@ -311,7 +311,7 @@ Each review runs in a new session with the model of the review role. The review 
 
 The prompt holds the commits of the task branch and the text of the earlier reviews. Each earlier review shows its findings with their status, and the operator feedback of each plan revision that followed it.
 
-The findings wait in `reviewed`, because the operator reads them first. The command records the tip of the task branch as the revision of the review, so the findings describe one tree. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
+The findings wait in `reviewed`, because the operator reads them first. The command records the tip of the task branch as the revision of the review, because the findings describe one tree. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
 
 Each review gets a number. The first review of a task is review 1, and a later review gets the next number. tasker records the session of each review. No command continues it yet.
 

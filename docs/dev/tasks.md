@@ -178,7 +178,7 @@ These reasons explain its rules:
 - Each review runs in a new session. The review is then an independent pass that the plan conversation does not bias.
 - The review runs in plan mode with the limits of the plan role. [assistants.md](assistants.md#the-plan-and-review-roles) and [assistants.md](assistants.md#the-review-prompt-and-the-findings-answer) give the rules.
 - The findings rest in `reviewed`, because the operator reads them first. A review with no findings moves the task back to `awaiting_work_review`.
-- The review records the tip of the task branch, so the findings describe one tree. [data-root.md](data-root.md#reviews-table) gives the reason. The review reads the commits of the task branch, so the tip of that branch names the tree that the review read. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
+- The review records the tip of the task branch, because the findings describe one tree. [data-root.md](data-root.md#reviews-table) gives the reason. The review reads the commits of the task branch, so the tip of that branch names the tree that the review read. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
 - tasker records the review session although no command continues it yet. [assistants.md](assistants.md#the-session-id) gives the rule of the session id.
 
 ## Retry
