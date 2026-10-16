@@ -48,17 +48,17 @@ The learned default is the row of the repo in the `default_base_branches` table.
 - tasker asks at most once for each repo, unless a learned value later stops existing.
 - A learned value that is missing is deleted before the question runs. If the question or its check then fails, the learned value stays deleted.
 
-## Workspaces
+## Worktrees
 
 The workspace of a task is a git worktree on a task branch. The worktree comes from the bare clone of the repo. No worktree function talks to the remote, so none needs the ssh key environment.
+
+### The worktree guard
 
 Git with a wrong working folder changes another repo. The assistant can write the `.git` file of a worktree and its admin dir (`<clone>/worktrees/<name>`), and git follows both. A git call in a changed worktree can read a configuration that the assistant chose. So each function that runs git in a worktree first makes sure that the worktree is a worktree of the clone, that it has a `.git` file, and that it uses its own admin dir in the clone. This check reads files and runs no git.
 
 One fact of the check catches a `.git` file that names the admin dir of another task worktree of the same clone. The `gitdir` file of the admin dir must name the `.git` file of the worktree. A rewritten `gitdir` file never reaches this check, because the list of worktrees then shows another path.
 
 Git lists the real path of a worktree. For a path through a symlink, git lists the real parent folder.
-
-Create does not use the guard.
 
 ### The branch name
 
@@ -70,14 +70,17 @@ The shape check runs after the name check. A function that writes or deletes a b
 
 ### Create
 
-Create is idempotent (safe to run again), so `tasker start` can continue a failed attempt.
+Create is idempotent (safe to run again), so `tasker start` can continue a failed attempt. Create does not use the guard.
 
 - The check that the path is empty runs before `git worktree add`, because git makes the new branch before it reads the path.
-- A new branch has no upstream (`--no-track`). A reused branch keeps its commits and its configuration, and it does not move to the base.
+- A new branch has no upstream (`--no-track`).
+- A failed `git worktree add` can leave the new branch, and the next create reuses it. A reused branch keeps its commits and its configuration, and it does not move to the base.
+- A stopped `git worktree add` can leave an admin folder in the clone with only a `locked` file. Git does not list it, and the next create uses a new admin name.
+- For an unlocked worktree whose folder is gone, create removes that worktree entry and adds the worktree again.
 
 Create does not repair a locked worktree that has no `.git` file or a detached head. No git command repairs one worktree without `--force`: `git worktree remove` refuses a locked worktree, `git worktree repair` changes every broken worktree of the clone, and `git worktree prune` acts on every entry that it can prune. The error names the lock and the reason, so a person can decide.
 
-The repair of the `initializing` lock trusts the lock. Git sets this lock while `git worktree add` runs, so the folder holds no work of the task. A person who locks a worktree with the reason `initializing` by hand also gets the `git reset --hard`.
+The repair of the `initializing` lock trusts the lock. Git sets this lock while `git worktree add` runs, so the folder holds no work of the task. The repair runs `git reset --hard`, so it writes the committed files over a partial checkout. A person who locks a worktree with the reason `initializing` by hand also gets the `git reset --hard`.
 
 ### Remove
 
@@ -96,13 +99,6 @@ The delete uses `-D`, because a task branch is usually not merged in the clone. 
 ### Discard
 
 `git reset --hard` runs first, so a deleted `.gitignore` comes back before `git clean` reads it. `git clean -ffd` (two `f`) also deletes a nested git repo. There is no `-x`, so ignored files stay and do not block a later remove.
-
-### Side effects
-
-- A stopped `git worktree add` can leave an admin folder in the clone with only a `locked` file. Git does not list it, and the next create uses a new admin name.
-- A failed `git worktree add` can leave the new branch. The next create reuses it.
-- The repair of the `initializing` lock writes the committed files over a partial checkout.
-- For an unlocked worktree whose folder is gone, create removes that worktree entry and adds the worktree again.
 
 ## Diff and changes
 
@@ -129,7 +125,7 @@ The order in each function is: the input checks, then the worktree guard, then t
 - `rev-list --count <head> --not` with no others counts every commit that the head reaches.
 - Only exit code 1 of `merge-base --is-ancestor` means "no". Exit code 128, for example for a revision that the clone does not have, is an error.
 - A staged rename gives a delete and an add.
-- A function that takes a worktree path throws the errors of the guard. [The guard text](#workspaces-1) gives the reasons.
+- A function that takes a worktree path throws the errors of the guard. [The guard text](#the-worktree-guard) gives the reasons.
 
 ### Side effects
 

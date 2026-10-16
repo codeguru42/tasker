@@ -26,7 +26,7 @@ Import boundary: no file under `src/` outside `src/vcs/` imports from `src/vcs/g
 
 This section describes the design.
 
-tasker makes one bare clone for each repo that it owns. A bare clone has no work tree. tasker starts each task in its own worktree, which it makes from the bare clone, on its task branch (see [workspaces.md](workspaces.md#workspaces-1)). [data-root.md](data-root.md#folders) gives the folders.
+tasker makes one bare clone for each repo that it owns. A bare clone has no work tree. tasker starts each task in its own worktree, which it makes from the bare clone, on its task branch (see [workspaces.md](workspaces.md#worktrees)). [data-root.md](data-root.md#folders) gives the folders.
 
 tasker never works directly in the bare clone. Task work happens only in the worktree of the task.
 
@@ -129,7 +129,7 @@ One `git commit` in a worktree writes new objects in `objects/`, the branch ref 
 
 - The paths do not cover all of the clone folder, and not `hooks/` or `config`, because the later git calls of tasker run them.
 - The paths do not cover the folder of the publish tokens (see [Push guard](#push-guard)).
-- The worktree guard runs first (see [workspaces.md](workspaces.md#workspaces-1)).
+- The worktree guard runs first (see [workspaces.md](workspaces.md#the-worktree-guard)).
 - Two `git rev-parse` calls read the clone folder and the admin dir, because one call prints two paths on two lines and a path can hold a newline. The code does not use `--path-format=absolute`, because that option needs git 2.31.
 - The code creates `logs/` when it is missing. A fresh bare clone has no `logs/`, and a sandbox cannot bind a missing path.
 - A sandboxed commit with these paths exits with 0. It prints `Unable to create '<clone>/packed-refs.lock': Read-only file system` to stderr, because `packed-refs` is not writable.
