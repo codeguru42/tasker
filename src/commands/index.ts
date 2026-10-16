@@ -4,6 +4,7 @@ import { accept } from "./accept.js";
 import { approve } from "./approve.js";
 import { doctor } from "./doctor.js";
 import { execute } from "./execute.js";
+import { merge } from "./merge.js";
 import { model } from "./model.js";
 import { show } from "./show.js";
 import { plan } from "./plan.js";
@@ -39,6 +40,7 @@ export const commands: RegisterCommand[] = [
   review,
   retry,
   accept,
+  merge,
   abort,
   status,
   doctor,

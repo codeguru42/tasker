@@ -406,6 +406,43 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 A fetch that ran still moves the refs of `origin` in the clone, also when the command stops with an error.
 
+### `tasker merge`
+
+Lands the work of a task in the state `accepted` on the base branch of `origin`: `tasker merge <issue>`. The task goes through the state `merging` to the state `landed`. tasker does not wait for CI.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+The command fetches `origin`. Then it reads the tip of the task branch in the clone and the tip of the base on `origin`. If the tip of the base contains the task branch, the work is on the base already, and the command pushes nothing. If not, the command pushes the tip of the task branch to the base on `origin` with one publish token. The command moves the task to `merging` before the fetch, and to `landed` after the push.
+
+On success, the command prints the line `merged <issue key>` on stdout. Then it prints one of these lines:
+
+- `landed: <revision> on origin/<base>` after a push.
+- `already on origin/<base>: <revision>. Nothing pushed.` when the work was on the base already.
+
+The command writes one event of the type `landed` with the data `{ revision, base, pushed, from, to }`. It writes no `transition` event for this move.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is in another state. The error is `the task of <issue key> is in <state>; tasker merge needs accepted`.
+- The task has no branch. The error is `the task of <issue key> has no branch`.
+- The task has no base. The error is `the task of <issue key> has no base`.
+- The base is a local branch of the clone. The error is `the base of <issue key> is a local branch of the clone: <base>; tasker merge pushes only to a branch on origin`.
+- The task has no base revision. The error is `the task of <issue key> has no base revision`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- Another command holds the clone for more than 5 minutes. The error says that the lock is busy. Run the command again.
+
+The task goes to `failed` with the error `merging failed: <reason>` when one of these steps fails after the move to `merging`. The command prints the same error on stderr and stops with exit code 1:
+
+- The fetch or the read of a ref.
+- The land. The reason is the error of the land.
+- The record of the result after a push. The reason is `pushed <revision> to origin/<base>, but tasker cannot record the result: <error>`. The push happened, so the work is on `origin`.
+
+The base can move on `origin` after `tasker accept`. Then the land fails, nothing moves on `origin`, and the task goes to `failed` from `merging`.
+
+A crash during the command leaves the task in `merging` with its run marker.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.

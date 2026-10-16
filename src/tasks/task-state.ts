@@ -35,6 +35,12 @@ export function requireBranch(task: Task): string {
   return task.branch;
 }
 
+// The base of the task. Throws when the task has none.
+export function requireBase(task: Task): string {
+  if (task.base === null) throw new Error(`the task of ${task.issueKey} has no base`);
+  return task.base;
+}
+
 // The revision of the newest base event of the task. Throws when the task has none.
 export function requireBaseRevision(store: TaskStore, task: Task): string {
   const revision = baseRevisionOf(store, task.id);
