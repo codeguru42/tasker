@@ -12,18 +12,26 @@ import {
 
 // The positions that --finding names, as the text that the user typed after the trim, or undefined without the option. The
 // text keeps a very large number exact. The format check refuses a leading zero, so two items name the same position only
-// when their texts are the same. It stops the command with exit code 1 when an item is not a whole number of 1 or more, or
-// when a position appears twice. Spaces around an item are permitted.
-function findingPositionsOrFail(io: Io, raw: string | undefined): string[] | undefined {
-  if (raw === undefined) return undefined;
-  const items = raw.split(",").map((item) => item.trim());
-  if (!items.every(isWholeNumberText)) {
-    fail(io, `--finding must be a list of whole numbers of 1 or more, separated by commas: ${raw}`);
+// when their texts are the same. It stops the command with exit code 1 when the option is given more than once, when an item
+// is not a whole number of 1 or more, or when a position appears twice in one value. It reports each problem on its own
+// line, in one run. Spaces around an item are permitted.
+function findingPositionsOrFail(io: Io, values: string[] | undefined): string[] | undefined {
+  if (values === undefined) return undefined;
+  const lines: string[] = [];
+  if (values.length > 1) {
+    lines.push("--finding given more than once; give all positions in one list, for example --finding 1,3");
   }
-  const repeated = items.filter((item, index) => items.indexOf(item) !== index);
-  const lines = [...new Set(repeated)].map((item) => `--finding names ${item} more than once`);
+  for (const value of values) {
+    const items = value.split(",").map((item) => item.trim());
+    if (!items.every(isWholeNumberText)) {
+      lines.push(`--finding must be a list of whole numbers of 1 or more, separated by commas: ${value}`);
+      continue;
+    }
+    const repeated = items.filter((item, index) => items.indexOf(item) !== index);
+    lines.push(...[...new Set(repeated)].map((item) => `--finding names ${item} more than once`));
+  }
   if (lines.length > 0) fail(io, lines.join("\n"));
-  return items;
+  return values[0].split(",").map((item) => item.trim());
 }
 
 export const dismissReview: RegisterCommand = (program, io) => {
@@ -37,9 +45,10 @@ export const dismissReview: RegisterCommand = (program, io) => {
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option(
       "--finding <ids>",
-      "Dismiss only the findings at these positions, separated by commas, for example 1,3. The default is every open finding",
+      "Dismiss only the findings at these positions, as one list separated by commas, for example 1,3. Give the option one time. The default is every open finding",
+      (value: string, previous: string[] | undefined) => [...(previous ?? []), value],
     )
-    .action(async (issue: string, reason: string, options: { repo?: string; finding?: string }) => {
+    .action(async (issue: string, reason: string, options: { repo?: string; finding?: string[] }) => {
       const positions = findingPositionsOrFail(io, options.finding);
       const config = loadConfigOrFail(io);
       const dismissed = await orFailAsync(io, () =>
