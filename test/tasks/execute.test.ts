@@ -130,7 +130,7 @@ describe("executeTask checks", () => {
 
   it("refuses a run when the remote cannot be read before the run", async () => {
     const fixture = await useExecuteFixture({});
-    const repo = fixture.config.repos[fixture.started.repoKey]!;
+    const repo = fixture.config.repos[fixture.started.repoKey];
     const config: Config = {
       ...fixture.config,
       repos: {
@@ -203,12 +203,12 @@ describe("executeTask turns", () => {
 
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(2);
-    expect(calls[0]!.stdin).toBe(`${prefix}\n${todoPrompt("a")}`);
-    expect(calls[1]!.stdin).toBe(todoPrompt("b"));
-    const id = argAfter(calls[0]!.argv, "--session-id");
+    expect(calls[0].stdin).toBe(`${prefix}\n${todoPrompt("a")}`);
+    expect(calls[1].stdin).toBe(todoPrompt("b"));
+    const id = argAfter(calls[0].argv, "--session-id");
     expect(id).toBeDefined();
-    expect(calls[0]!.argv).not.toContain("--resume");
-    expect(argAfter(calls[1]!.argv, "--resume")).toBe(id);
+    expect(calls[0].argv).not.toContain("--resume");
+    expect(argAfter(calls[1].argv, "--resume")).toBe(id);
     expect(withDataRootStore(dataRoot, (store) => store.executeSession(fixture.task.id, 1)?.sessionId)).toBe(id);
     expect(result).toMatchObject({ version: 1, todosDone: 2, todosTotal: 2, fixTurnDone: false, denials: 0 });
   });
@@ -224,9 +224,9 @@ describe("executeTask turns", () => {
 
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
-    expect(argAfter(calls[0]!.argv, "--resume")).toBe(TEST_EXECUTE_SESSION_ID);
-    expect(calls[0]!.stdin).toBe(todoPrompt("b"));
-    expect(eventTypes(fixture, ["executed"])[0]!.data).toMatchObject({
+    expect(argAfter(calls[0].argv, "--resume")).toBe(TEST_EXECUTE_SESSION_ID);
+    expect(calls[0].stdin).toBe(todoPrompt("b"));
+    expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
       prompts: [promptVersion(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT)],
     });
   });
@@ -367,7 +367,7 @@ describe("executeTask turns", () => {
     expect(result).toMatchObject({ todosDone: 2, todosTotal: 2, fixTurnDone: false });
     expect(fixture.claude.calls()).toEqual([]);
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("executed");
-    expect(eventTypes(fixture, ["executed"])[0]!.data).toEqual({
+    expect(eventTypes(fixture, ["executed"])[0].data).toEqual({
       version: 1,
       prompts: [],
       from: "executing",
@@ -393,8 +393,8 @@ describe("executeTask turns", () => {
     expect(second.result).toMatchObject({ todosDone: 2, todosTotal: 2 });
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(3);
-    expect(argAfter(calls[2]!.argv, "--resume")).toBe(argAfter(calls[0]!.argv, "--session-id"));
-    expect(calls[2]!.stdin).toBe(todoPrompt("b"));
+    expect(argAfter(calls[2].argv, "--resume")).toBe(argAfter(calls[0].argv, "--session-id"));
+    expect(calls[2].stdin).toBe(todoPrompt("b"));
     expect(transcriptLines(executeTranscriptPath(dataRoot, fixture.task, 1))).toEqual([
       ...doneStream,
       ...blocked,
@@ -414,14 +414,14 @@ describe("executeTask fix turn", () => {
 
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(2);
-    expect(calls[1]!.stdin).toBe(fixPrompt());
-    expect(argAfter(calls[1]!.argv, "--resume")).toBe(argAfter(calls[0]!.argv, "--session-id"));
+    expect(calls[1].stdin).toBe(fixPrompt());
+    expect(argAfter(calls[1].argv, "--resume")).toBe(argAfter(calls[0].argv, "--session-id"));
     expect(eventTypes(fixture, ["fix_turn_started", "fix_turn_done", "executed"]).map((event) => event.type)).toEqual([
       "fix_turn_started",
       "fix_turn_done",
       "executed",
     ]);
-    expect(eventTypes(fixture, ["executed"])[0]!.data).toMatchObject({
+    expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
       prompts: [
         promptVersion(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT),
         promptVersion(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT),
@@ -446,8 +446,8 @@ describe("executeTask fix turn", () => {
 
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.stdin).toBe(`${expectedPrefix(fixture, ONE, new Set(["a"]))}\n${fixPrompt()}`);
-    expect(eventTypes(fixture, ["executed"])[0]!.data).toMatchObject({
+    expect(calls[0].stdin).toBe(`${expectedPrefix(fixture, ONE, new Set(["a"]))}\n${fixPrompt()}`);
+    expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
       prompts: [
         promptVersion(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT),
         promptVersion(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT),
@@ -494,7 +494,7 @@ describe("executeTask denials and sandbox cleanup", () => {
       "permission_denials",
       "executed",
     ]);
-    expect(eventTypes(fixture, ["permission_denials"])[0]!.data).toEqual({
+    expect(eventTypes(fixture, ["permission_denials"])[0].data).toEqual({
       denials: [seen("git push"), seen("rm -rf x")],
     });
     expect(result).toMatchObject({ denials: 2 });

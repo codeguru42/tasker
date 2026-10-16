@@ -162,7 +162,7 @@ describe("signalListenerCounts", () => {
       process.off("SIGTERM", noop);
     });
 
-    expect(signalListenerCounts()).toEqual([before[0]! + 1, before[1]! + 1]);
+    expect(signalListenerCounts()).toEqual([before[0] + 1, before[1] + 1]);
   });
 });
 

@@ -69,8 +69,8 @@ describe("tasker retry", () => {
     expect(result.out).toContain(`planned ${KEY} as revision v1`);
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
-    expect(argAfter(calls[0]!.argv, "--session-id")).toBeDefined();
-    expect(calls[0]!.argv).not.toContain("--resume");
+    expect(argAfter(calls[0].argv, "--session-id")).toBeDefined();
+    expect(calls[0].argv).not.toContain("--resume");
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
     expect(retryEvents(dataRoot)).toEqual([
       { origin: "planning", target: "workspace_ready", resumeExecute: false, from: "failed", to: "workspace_ready" },
@@ -119,8 +119,8 @@ describe("tasker retry", () => {
     expect(result.out).toContain("todos: 2 of 2 done");
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
-    expect(argAfter(calls[0]!.argv, "--session-id")).toBeDefined();
-    expect(calls[0]!.argv).not.toContain("--resume");
+    expect(argAfter(calls[0].argv, "--session-id")).toBeDefined();
+    expect(calls[0].argv).not.toContain("--resume");
     expect(latestTaskOf(dataRoot, KEY).state).toBe("executed");
     expect(retryEvents(dataRoot)).toEqual([
       { origin: "executing", target: "approved", resumeExecute: false, from: "failed", to: "approved" },
@@ -165,9 +165,9 @@ describe("tasker retry", () => {
     expect(result.out).toContain("fix turn: done");
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
-    expect(argAfter(calls[0]!.argv, "--resume")).toBe(TEST_EXECUTE_SESSION_ID);
-    expect(calls[0]!.stdin).toContain("verify command 1 failed: npm test: exit code 1.");
-    expect(calls[0]!.stdin).toContain("boom in test");
+    expect(argAfter(calls[0].argv, "--resume")).toBe(TEST_EXECUTE_SESSION_ID);
+    expect(calls[0].stdin).toContain("verify command 1 failed: npm test: exit code 1.");
+    expect(calls[0].stdin).toContain("boom in test");
     withDataRootStore(dataRoot, (store) => {
       expect(store.executeTodoProgress(fixture.task.id, 1).map((entry) => entry.state)).toEqual(["done", "done"]);
       expect(store.executeFixTurnState(fixture.task.id, 1)).toBe("done");

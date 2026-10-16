@@ -450,7 +450,7 @@ describe("forwardSignals", () => {
 
     const forward = forwardSignals();
 
-    expect(signalListenerCounts()).toEqual([before[0]! + 1, before[1]! + 1]);
+    expect(signalListenerCounts()).toEqual([before[0] + 1, before[1] + 1]);
     forward.stop();
     expect(signalListenerCounts()).toEqual(before);
   });

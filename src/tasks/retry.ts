@@ -111,9 +111,9 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
 function runOfFailure(store: TaskStore, events: readonly TaskEvent[]): VerifyRun | undefined {
   const index = lastFailIndex(events);
   if (index <= 0) return undefined;
-  const latest = store.latestVerifyRun(events[index]!.taskId);
+  const latest = store.latestVerifyRun(events[index].taskId);
   if (latest === undefined) return undefined;
-  const before = events[index - 1]!;
+  const before = events[index - 1];
   const data = before.data as { number?: unknown } | null;
   return before.type === "verify_run" && data?.number === latest.number ? latest : undefined;
 }

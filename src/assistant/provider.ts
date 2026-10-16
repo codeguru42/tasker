@@ -181,5 +181,5 @@ export function assistantDoctorChecks(config: Config): Check[] {
     config,
     (repo) => repo.assistant.provider,
     (key, repo): AssistantDoctorRepo => ({ key, assistant: repo.assistant }),
-  ).flatMap(([id, repos]) => providerFor(repos[0]!.key, id).doctorChecks(repos));
+  ).flatMap(([id, repos]) => providerFor(repos[0].key, id).doctorChecks(repos));
 }

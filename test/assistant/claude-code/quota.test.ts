@@ -249,7 +249,7 @@ describe("quotaStopOf", () => {
 
   it("gives the flat resetsAt when the unified entry differs", () => {
     const events = claudeSampleEvents("quota-stop");
-    const info = events[2]!.rate_limit_info as Record<string, unknown>;
+    const info = events[2].rate_limit_info as Record<string, unknown>;
     info.resetsAt = 42;
 
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 42 });

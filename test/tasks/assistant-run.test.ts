@@ -37,7 +37,7 @@ const denyPaths = (env: NodeJS.ProcessEnv, repos: readonly RepoReadDenyPaths[] =
   executeReadDenyPaths({ env, repos });
 
 // The models of the task repo in the configuration of a fixture.
-const modelsOf = (fixture: AssistantRunFixture) => fixture.config.repos[fixture.started.repoKey]!.assistant.models;
+const modelsOf = (fixture: AssistantRunFixture) => fixture.config.repos[fixture.started.repoKey].assistant.models;
 
 // The call helper of prepareTaskPlanModeRun(). The test builds the fixture, so that it can still read the
 // fake claude when the prepare throws. task changes the task of the fixture, for example to drop its worktree.
@@ -99,7 +99,7 @@ const prepareAndStartExecute = async (
     });
     const outcomes = [];
     for (const input of run.starts ?? [{ prompt: "p" }]) outcomes.push(await prepared.start(input));
-    return { prepared, outcomes, outcome: outcomes[0]! };
+    return { prepared, outcomes, outcome: outcomes[0] };
   });
   const { vcs, ctx } = vcsForRepo(config, started.repoKey, env);
   return { ...fixture, env, ...result, surface: vcs.assistantSurface(ctx), models: modelsOf(fixture) };
@@ -188,7 +188,7 @@ describe("prepareTaskPlanModeRun", () => {
     const { prepared, outcome, events } = await runPlanMode(fixture, { jsonSchema: schema });
 
     expect(outcome.kind).toBe("success");
-    const call = claude.calls()[0]!;
+    const call = claude.calls()[0];
     expect(flagValues(call.argv, "--session-id")).toEqual([prepared.sessionId]);
     expect(prepared.sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(flagValues(call.argv, "--model")).toEqual([models.plan.model]);
@@ -219,7 +219,7 @@ describe("prepareTaskPlanModeRun", () => {
     await runPlanMode(fixture, { role: "review", jsonSchema: schema });
     const { claude } = fixture;
 
-    const call = claude.calls()[0]!;
+    const call = claude.calls()[0];
     expect(flagValues(call.argv, "--model")).toEqual([models.review.model]);
     expect(flagValues(call.argv, "--effort")).toEqual([models.review.effort]);
     expect(flagValues(call.argv, "--permission-mode")).toEqual(["plan"]);
@@ -257,7 +257,7 @@ describe("prepareTaskPlanModeRun", () => {
       session: { resume: true, sessionId: TEST_SESSION_ID, recorded },
     });
 
-    const { argv } = claude.calls()[0]!;
+    const { argv } = claude.calls()[0];
     expect(prepared.sessionId).toBe(TEST_SESSION_ID);
     expect(flagValues(argv, "--resume")).toEqual([TEST_SESSION_ID]);
     expect(argv).not.toContain("--session-id");
@@ -310,7 +310,7 @@ describe("prepareTaskExecuteRun", () => {
       claude: { stream: claudeSample("plain") },
     });
 
-    const { argv } = claude.calls()[0]!;
+    const { argv } = claude.calls()[0];
     const wt = started.worktree;
     expect(flagValues(argv, "--permission-mode")).toEqual(["dontAsk"]);
     expect(flagValues(argv, "--model")).toEqual([models.execute.model]);
@@ -347,7 +347,7 @@ describe("prepareTaskExecuteRun", () => {
       claude: { stream: claudeSample("plain") },
     });
 
-    expect(claude.calls()[0]!.settings).toMatchObject({
+    expect(claude.calls()[0].settings).toMatchObject({
       sandbox: {
         filesystem: {
           allowWrite: await surface.sandboxWritePaths(started.worktree),
@@ -365,7 +365,7 @@ describe("prepareTaskExecuteRun", () => {
       otherRepo: { key: "codeguru42/other", sshKey: join(keys, "b_key") },
     });
 
-    const denyRead = (claude.calls()[0]!.settings as { sandbox: { filesystem: { denyRead: string[] } } }).sandbox
+    const denyRead = (claude.calls()[0].settings as { sandbox: { filesystem: { denyRead: string[] } } }).sandbox
       .filesystem.denyRead;
     expect(denyRead).toEqual(
       expect.arrayContaining([
@@ -391,7 +391,7 @@ describe("prepareTaskExecuteRun", () => {
       { starts: [{ prompt: "p", jsonSchema }] },
     );
 
-    expect(flagValues(claude.calls()[0]!.argv, "--json-schema")).toEqual([JSON.stringify(jsonSchema)]);
+    expect(flagValues(claude.calls()[0].argv, "--json-schema")).toEqual([JSON.stringify(jsonSchema)]);
     expect(outcome.kind).toBe("success");
     expect(readTurnResult(outcome.kind === "success" ? outcome.structuredOutput : undefined)).toEqual({ kind: "done" });
   });
@@ -421,10 +421,10 @@ describe("prepareTaskExecuteRun", () => {
     );
 
     const [first, second] = claude.calls();
-    expect(flagValues(first!.argv, "--session-id")).toEqual([prepared.sessionId]);
-    expect(first!.argv).not.toContain("--resume");
-    expect(flagValues(second!.argv, "--resume")).toEqual([prepared.sessionId]);
-    expect(second!.argv).not.toContain("--session-id");
+    expect(flagValues(first.argv, "--session-id")).toEqual([prepared.sessionId]);
+    expect(first.argv).not.toContain("--resume");
+    expect(flagValues(second.argv, "--resume")).toEqual([prepared.sessionId]);
+    expect(second.argv).not.toContain("--session-id");
   });
 
   it("continues a recorded session with --resume on every start", async () => {
@@ -452,7 +452,7 @@ describe("prepareTaskExecuteRun", () => {
         { claude: { stream: claudeSample("plain") } },
         { env: edit },
       );
-      return { rules: flagValues(claude.calls()[0]!.argv, "--allowedTools")!, env };
+      return { rules: flagValues(claude.calls()[0].argv, "--allowedTools")!, env };
     }
 
     it("names the folder of CLAUDE_CONFIG_DIR and not HOME/.claude", async () => {

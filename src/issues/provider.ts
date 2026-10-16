@@ -109,5 +109,5 @@ export function issueDoctorChecks(config: Config): Check[] {
     config,
     (repo) => repo.issueTracker.provider,
     (key, repo): IssueDoctorRepo => ({ key, issueTracker: repo.issueTracker }),
-  ).flatMap(([, repos]) => issueProviderFor(config, repos[0]!.key).doctorChecks(repos));
+  ).flatMap(([, repos]) => issueProviderFor(config, repos[0].key).doctorChecks(repos));
 }

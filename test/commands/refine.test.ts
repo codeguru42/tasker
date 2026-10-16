@@ -50,7 +50,7 @@ const V1_ANSWER = validPlanAnswer({
 const V2_ANSWER = validPlanAnswer({
   plan_markdown: "## Summary\n\nAdd the b module and its test, test first.\n",
   todos: [{ id: "only-todo", title: "Do the work", description: "Do all of it.", depends_on: [] }],
-  questions: [V1_ANSWER.questions[1]!],
+  questions: [V1_ANSWER.questions[1]],
 });
 
 const refinePromptPath = (dataRoot: string) =>
@@ -129,7 +129,7 @@ describe("refine", () => {
     const result = await runRefine();
 
     expect(result.code).toBe(0);
-    const argv = fixture.claude.calls()[0]!.argv;
+    const argv = fixture.claude.calls()[0].argv;
     expect(argv[argv.indexOf("--resume") + 1]).toBe(TEST_SESSION_ID);
     expect(argv).not.toContain("--session-id");
     expect(argv[argv.indexOf("--model") + 1]).toBe("opus");
@@ -140,7 +140,7 @@ describe("refine", () => {
 
     await runRefine();
 
-    const stdin = fixture.claude.calls()[0]!.stdin;
+    const stdin = fixture.claude.calls()[0].stdin;
     expect(stdin).toContain(`<current-plan>${V1_ANSWER.plan_markdown}</current-plan>`);
     expect(stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
     expect(stdin).toContain(`<open-questions>${openQuestionsText(V1_ANSWER.questions)}</open-questions>`);
@@ -153,7 +153,7 @@ describe("refine", () => {
 
     await runRefine();
 
-    const stdin = fixture.claude.calls()[0]!.stdin;
+    const stdin = fixture.claude.calls()[0].stdin;
     const block = /<branch-commits>([\s\S]*)<\/branch-commits>/.exec(stdin)?.[1];
     expect(block).toContain("src/b.ts");
     expect(block).not.toContain(NO_OWN_COMMITS);

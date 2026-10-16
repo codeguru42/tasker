@@ -60,7 +60,7 @@ describe("createClaudeCodeProvider run", () => {
 
     const calls = fake.calls();
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.argv).toEqual([
+    expect(calls[0].argv).toEqual([
       "-p",
       "--output-format",
       "stream-json",
@@ -72,7 +72,7 @@ describe("createClaudeCodeProvider run", () => {
       "--effort",
       "low",
     ]);
-    expect(calls[0]!.stdin).toBe("say hello");
+    expect(calls[0].stdin).toBe("say hello");
     expect(outcome).toEqual({
       kind: "success",
       sessionId: TEST_SESSION_ID,
@@ -100,7 +100,7 @@ describe("createClaudeCodeProvider run", () => {
 
     await createClaudeCodeProvider().run(input(fake, { env }));
 
-    const names = fake.calls()[0]!.envNames;
+    const names = fake.calls()[0].envNames;
     expect(names).toContain("CLAUDE_CONFIG_DIR");
     for (const name of ["GH_TOKEN", "SSH_AUTH_SOCK", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "TASKER_CONFIG"]) {
       expect(names).not.toContain(name);
@@ -111,8 +111,8 @@ describe("createClaudeCodeProvider run", () => {
     const { outcome, fake } = await run({ stream: claudeSample("resume") }, { resume: true });
 
     expect(outcome.kind).toBe("success");
-    expect(fake.calls()[0]!.argv).toContain("--resume");
-    expect(fake.calls()[0]!.argv).not.toContain("--session-id");
+    expect(fake.calls()[0].argv).toContain("--resume");
+    expect(fake.calls()[0].argv).not.toContain("--session-id");
   });
 
   it("gives the structured output of a run with a schema", async () => {
@@ -121,7 +121,7 @@ describe("createClaudeCodeProvider run", () => {
     const { outcome, fake } = await run({ stream: claudeSample("json-schema") }, { jsonSchema: schema });
 
     expect(outcome).toMatchObject({ kind: "success", structuredOutput: { word: "hello" } });
-    expect(fake.calls()[0]!.argv).toContain(JSON.stringify(schema));
+    expect(fake.calls()[0].argv).toContain(JSON.stringify(schema));
   });
 
   it("fails when a schema was given and the result has no structured output", async () => {
@@ -156,7 +156,7 @@ describe("createClaudeCodeProvider run", () => {
 
   it("keeps the events before a cut last line, and fails with no result", async () => {
     const lines = claudeSample("plain");
-    const stream = [...lines.slice(0, 3), lines[3]!.slice(0, 60)];
+    const stream = [...lines.slice(0, 3), lines[3].slice(0, 60)];
     const events: AssistantEvent[] = [];
 
     const { outcome } = await run({ stream }, { onEvent: (event) => events.push(event) });
@@ -487,7 +487,7 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
     const { outcome, fake, tmpRoot } = await sandboxed({ stream: claudeSample("plain") });
 
     expect(outcome.kind).toBe("success");
-    const call = fake.calls()[0]!;
+    const call = fake.calls()[0];
     expect(call.settings).toEqual({
       sandbox: {
         enabled: true,
@@ -515,8 +515,8 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
   it("gives no settings and no cleanup for a run with no sandbox", async () => {
     const { outcome, fake } = await run({ stream: claudeSample("plain") });
 
-    expect(fake.calls()[0]!.argv).not.toContain("--settings");
-    expect(fake.calls()[0]!).not.toHaveProperty("settings");
+    expect(fake.calls()[0].argv).not.toContain("--settings");
+    expect(fake.calls()[0]).not.toHaveProperty("settings");
     expect(outcome).not.toHaveProperty("sandboxCleanup");
   });
 

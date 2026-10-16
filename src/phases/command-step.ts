@@ -156,7 +156,7 @@ export function readLogTail(path: string, maxLines: number, maxBytes: number): s
       } else {
         // One line is longer than the window. Skip the continuation bytes of a character that the window cuts.
         begin = 1;
-        while (begin < bytes.length && (bytes[begin]! & 0xc0) === 0x80) begin++;
+        while (begin < bytes.length && (bytes[begin] & 0xc0) === 0x80) begin++;
       }
     }
     return withLineEnds(textLines(bytes.subarray(begin).toString("utf8")).slice(-maxLines));

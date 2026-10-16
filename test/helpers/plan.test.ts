@@ -68,10 +68,10 @@ describe("validPlanAnswer", () => {
 
   it("gives separate objects for each call", () => {
     const first = validPlanAnswer();
-    first.todos[0]!.title = "changed";
+    first.todos[0].title = "changed";
     first.files_changed.push("x");
 
-    expect(validPlanAnswer().todos[0]!.title).toBe("Add the a module");
+    expect(validPlanAnswer().todos[0].title).toBe("Add the a module");
     expect(validPlanAnswer().files_changed).toEqual(["src/a.ts", "test/a.test.ts"]);
   });
 });

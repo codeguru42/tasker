@@ -97,7 +97,7 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
   const resume = request.resume;
   const selected = request.resume
     ? createSessionProvider(request.recorded)
-    : createAssistantProvider(task.repoKey, config.repos[task.repoKey]!, role);
+    : createAssistantProvider(task.repoKey, config.repos[task.repoKey], role);
   const sessionId = request.resume ? request.sessionId : randomUUID();
   return {
     worktree,
@@ -127,7 +127,7 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
         sessionDir,
         // Under "ask", the caller handles paid usage, so the run has no overage stop.
         overageStop:
-          config.repos[task.repoKey]!.overagePolicy === "decline"
+          config.repos[task.repoKey].overagePolicy === "decline"
             ? { approvedResetsAt: req.approvedResetsAt }
             : undefined,
         onSpawn: (pid) => store.setRunChildPid(task.id, pid),

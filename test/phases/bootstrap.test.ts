@@ -49,9 +49,9 @@ describe("runBootstrap", () => {
     const log = readLog(dirs.logsDir);
     expect(log).toMatch(HEADER);
     const lines = commands.map((command) => `$ ${command}\n--- exit code 0\n`);
-    expect(log.indexOf(lines[0]!)).toBeGreaterThan(-1);
-    expect(log.indexOf(lines[1]!)).toBeGreaterThan(log.indexOf(lines[0]!));
-    expect(log.indexOf(lines[2]!)).toBeGreaterThan(log.indexOf(lines[1]!));
+    expect(log.indexOf(lines[0])).toBeGreaterThan(-1);
+    expect(log.indexOf(lines[1])).toBeGreaterThan(log.indexOf(lines[0]));
+    expect(log.indexOf(lines[2])).toBeGreaterThan(log.indexOf(lines[1]));
   });
 
   it("writes the marker after the last command succeeds", async () => {

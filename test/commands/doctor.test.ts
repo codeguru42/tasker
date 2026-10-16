@@ -167,7 +167,7 @@ describe("doctor", () => {
     await createVcsProvider({
       remote: fixture.origin.path,
       vcs: { provider: "git", config: {} },
-    } as Parameters<typeof createVcsProvider>[0]).provision(fixture.context);
+    }).provision(fixture.context);
     const clone = repoPaths(fixture.context.dataRoot, "tasker").clone;
     const originBefore = treeSnapshot(fixture.origin.path);
     const cloneBefore = treeSnapshot(clone);

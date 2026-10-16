@@ -45,7 +45,7 @@ describe("claudeSample", () => {
     const lines = claudeSample("plain");
 
     expect(lines).toHaveLength(4);
-    expect(JSON.parse(lines[0]!)).toMatchObject({ type: "system", subtype: "init" });
+    expect(JSON.parse(lines[0])).toMatchObject({ type: "system", subtype: "init" });
     expect(JSON.parse(lines.at(-1)!)).toMatchObject({ type: "result" });
   });
 });
@@ -90,9 +90,9 @@ describe("claudeSampleEvents", () => {
   });
 
   it("gives new objects for each call", () => {
-    claudeSampleEvents("plain")[0]!.type = "changed";
+    claudeSampleEvents("plain")[0].type = "changed";
 
-    expect(claudeSampleEvents("plain")[0]!.type).toBe("system");
+    expect(claudeSampleEvents("plain")[0].type).toBe("system");
   });
 });
 
@@ -123,7 +123,7 @@ describe("claudeSampleWithResult", () => {
 
 describe("claudeRateLimitEvent", () => {
   it("gives the parsed capture when it has no edit", () => {
-    expect(claudeRateLimitEvent()).toEqual(JSON.parse(claudeSample("rate-limit-warning")[0]!));
+    expect(claudeRateLimitEvent()).toEqual(JSON.parse(claudeSample("rate-limit-warning")[0]));
   });
 
   it("applies the edit to rate_limit_info", () => {
@@ -206,9 +206,9 @@ describe("useFakeClaude", () => {
     expect(result.stdout).toBe(`${stream.join("\n")}\n`);
     const calls = fake.calls();
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.argv).toEqual(["-p", "--model", "opus"]);
-    expect(calls[0]!.stdin).toBe("say hello");
-    expect(calls[0]!.envNames).toEqual(expect.arrayContaining(["HOME", "PATH"]));
+    expect(calls[0].argv).toEqual(["-p", "--model", "opus"]);
+    expect(calls[0].stdin).toBe("say hello");
+    expect(calls[0].envNames).toEqual(expect.arrayContaining(["HOME", "PATH"]));
   });
 
   it("gives [] before the fake runs, and one call for each run", () => {
@@ -262,7 +262,7 @@ describe("useFakeClaude", () => {
     const result = runClaude(env, ["-p"]);
 
     expect(result.status).toBe(0);
-    const names = fake.calls()[0]!.envNames;
+    const names = fake.calls()[0].envNames;
     expect(names).toEqual(expect.arrayContaining(["HOME", "PATH"]));
     expect(names).not.toContain("TASKER_FAKE_CLAUDE_EXIT");
     expect(names).not.toContain("FAKE_CLAUDE_EXIT");
@@ -351,7 +351,7 @@ describe("useFakeClaude with settings and placeholders", () => {
     runClaude(fake.env, ["-p"]);
 
     const calls = fake.calls();
-    expect(calls[0]!.settings).toEqual(settings);
+    expect(calls[0].settings).toEqual(settings);
     expect(calls[1]).not.toHaveProperty("settings");
   });
 

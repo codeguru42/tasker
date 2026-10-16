@@ -37,7 +37,7 @@ describe("tasker execute", () => {
   });
 
   it("prints the fix turn line when the run did the fix turn", async () => {
-    const fixture = await useExecuteFixture({ stream: turnResultStream("done") }, { answer: { todos: [TODOS[0]!] } });
+    const fixture = await useExecuteFixture({ stream: turnResultStream("done") }, { answer: { todos: [TODOS[0]] } });
     withDataRootStore(fixture.started.dataRoot, (store) => seedExecuteFixTurn(store, fixture.task.id, 1, "queued"));
 
     const result = await runExecute();
@@ -76,7 +76,7 @@ describe("tasker execute", () => {
   it("exits with 1 and prints no output line when a turn fails", async () => {
     const fixture = await useExecuteFixture(
       { stream: turnResultStream("blocked", "No disk.") },
-      { answer: { todos: [TODOS[0]!] } },
+      { answer: { todos: [TODOS[0]] } },
     );
 
     const result = await runExecute();
@@ -86,7 +86,7 @@ describe("tasker execute", () => {
   });
 
   it("takes the repo from --repo", async () => {
-    await useExecuteFixture({ stream: turnResultStream("done") }, { answer: { todos: [TODOS[0]!] } });
+    await useExecuteFixture({ stream: turnResultStream("done") }, { answer: { todos: [TODOS[0]] } });
 
     const result = await runExecute(KEY, "--repo", REPO);
 

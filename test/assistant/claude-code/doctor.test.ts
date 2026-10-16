@@ -130,7 +130,7 @@ describe("the claude-code provider checks", () => {
   it("gives one version check for the repos on darwin", () => {
     const checks = createClaudeCodeProvider({ platform: "darwin" }).doctorChecks([
       ...repos,
-      { ...repos[0]!, key: "other" },
+      { ...repos[0], key: "other" },
     ]);
 
     expect(checks.map((check) => check.name)).toEqual(["claude version"]);
@@ -139,7 +139,7 @@ describe("the claude-code provider checks", () => {
   it("gives the two sandbox program checks once for the repos on linux", () => {
     const checks = createClaudeCodeProvider({ platform: "linux" }).doctorChecks([
       ...repos,
-      { ...repos[0]!, key: "other" },
+      { ...repos[0], key: "other" },
     ]);
 
     expect(checks.map((check) => check.name)).toEqual(["claude version", "sandbox: bwrap", "sandbox: socat"]);

@@ -5,7 +5,7 @@ import type { FakeClaudeControl } from "../helpers/fake-claude.js";
 import { writePlaceholder } from "./placeholder.js";
 
 const [controlPath, ...args] = process.argv.slice(2);
-const control = JSON.parse(readFileSync(controlPath!, "utf8")) as FakeClaudeControl & { logPath: string };
+const control = JSON.parse(readFileSync(controlPath, "utf8")) as FakeClaudeControl & { logPath: string };
 
 if (control.ignoreSigterm) process.on("SIGTERM", () => {});
 if (control.sigtermStream) {
@@ -39,7 +39,7 @@ const earlierRuns = existsSync(control.logPath)
       .filter((line) => !isVersionCall((JSON.parse(line) as { argv: string[] }).argv)).length
   : 0;
 const settingsIndex = args.indexOf("--settings");
-const settings = settingsIndex === -1 ? undefined : (JSON.parse(args[settingsIndex + 1]!) as unknown);
+const settings = settingsIndex === -1 ? undefined : (JSON.parse(args[settingsIndex + 1]) as unknown);
 appendFileSync(
   control.logPath,
   `${JSON.stringify({ argv: args, stdin, envNames: Object.keys(process.env).sort(), settings })}\n`,
@@ -60,7 +60,7 @@ const answer = isVersion
 if (!isVersion) for (const path of control.placeholders ?? []) writePlaceholder(process.cwd(), path);
 if (!isVersion && turn.exec !== undefined) {
   const [program, ...programArgs] = turn.exec;
-  const ran = spawnSync(program!, programArgs, { cwd: process.cwd(), stdio: "ignore" });
+  const ran = spawnSync(program, programArgs, { cwd: process.cwd(), stdio: "ignore" });
   if (ran.status !== 0) {
     await write(process.stderr, `fake claude: exec failed: ${ran.error?.message ?? `exit ${ran.status}`}\n`);
     process.exit(99);

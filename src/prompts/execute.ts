@@ -109,7 +109,7 @@ export function resolvedQuestionsText(questions: readonly ResolvedQuestion[]): s
   }
   return groups
     .map((group) => {
-      const { version, answer } = group[0]!;
+      const { version, answer } = group[0];
       return [
         `Resolved in v${version}:`,
         ...group.flatMap(({ question }) => [

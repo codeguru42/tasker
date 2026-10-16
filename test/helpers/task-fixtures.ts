@@ -201,7 +201,7 @@ export async function useAssistantRunFixture(options: {
     GH_TOKEN: "gho_secret",
     SSH_AUTH_SOCK: "/tmp/agent.sock",
   };
-  const taskRepo = started.config.repos[started.repoKey]!;
+  const taskRepo = started.config.repos[started.repoKey];
   const withKey = (repo: typeof taskRepo, sshKey: string | undefined): typeof taskRepo =>
     sshKey === undefined ? repo : { ...repo, vcs: { provider: "git", config: { sshKey } } };
   const repos = { [started.repoKey]: withKey(taskRepo, options.sshKey) };

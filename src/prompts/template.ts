@@ -25,7 +25,7 @@ function countOf(text: string, part: string): number {
 }
 
 export function fillTemplate(name: string, template: string, values: Readonly<Record<string, string>>): string {
-  const tokens = new Set([...template.matchAll(TOKEN)].map((match) => match[1]!));
+  const tokens = new Set([...template.matchAll(TOKEN)].map((match) => match[1]));
   for (const token of tokens) {
     if (!Object.hasOwn(values, token)) throw new Error(`prompt ${name} needs a value for {{${token}}}`);
   }
@@ -41,7 +41,7 @@ export function fillTemplate(name: string, template: string, values: Readonly<Re
   }
 
   return template.replace(TOKEN, (_match, token: string) => {
-    const value = values[token]!;
+    const value = values[token];
     const tag = UNTRUSTED_TOKENS[token];
     if (tag === undefined) return value;
     return value.replace(new RegExp(`<(\\s*\\/\\s*${escapeRegExp(tag)}\\b)`, "gi"), "&lt;$1");

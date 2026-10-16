@@ -296,8 +296,8 @@ export function failTask(store: TaskStore, id: number, message: string): Task {
 // The index of the last transition event into failed, or -1 when events has none.
 export function lastFailIndex(events: readonly TaskEvent[]): number {
   for (let i = events.length - 1; i >= 0; i--) {
-    const data = events[i]!.data as { to?: unknown } | null;
-    if (events[i]!.type === "transition" && data?.to === "failed") return i;
+    const data = events[i].data as { to?: unknown } | null;
+    if (events[i].type === "transition" && data?.to === "failed") return i;
   }
   return -1;
 }
@@ -307,7 +307,7 @@ export function lastFailIndex(events: readonly TaskEvent[]): number {
 export function failedFromEvents(events: readonly TaskEvent[]): TaskState | undefined {
   const index = lastFailIndex(events);
   if (index < 0) return undefined;
-  const from = (events[index]!.data as { from?: unknown }).from;
+  const from = (events[index].data as { from?: unknown }).from;
   return typeof from === "string" && isTaskState(from) ? from : undefined;
 }
 

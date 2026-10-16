@@ -23,7 +23,7 @@ describe("numberOf", () => {
 
 describe("parseLine", () => {
   it("parses a line that holds an object", () => {
-    const line = claudeSample("plain")[1]!;
+    const line = claudeSample("plain")[1];
 
     expect(parseLine(line)).toEqual(JSON.parse(line));
   });
@@ -31,7 +31,7 @@ describe("parseLine", () => {
   it.each([
     ["an empty line", ""],
     ["a line that does not parse", "not json"],
-    ["a cut line", claudeSample("plain")[1]!.slice(0, 80)],
+    ["a cut line", claudeSample("plain")[1].slice(0, 80)],
     ["a number", "3"],
     ["a string", '"text"'],
     ["null", "null"],
@@ -79,7 +79,7 @@ describe("readStream result and denials", () => {
 
   it("skips an item that is not an object or has no string tool_name", () => {
     const events = claudeSampleWithResult("denied-tool", (result) => {
-      const good = (result.permission_denials as Record<string, unknown>[])[0]!;
+      const good = (result.permission_denials as Record<string, unknown>[])[0];
       const noName = { ...good };
       delete noName.tool_name;
       result.permission_denials = ["text", null, noName, { ...good, tool_name: 5 }, good];
@@ -106,7 +106,7 @@ describe("readStream reportedModel", () => {
     subagent.parent_tool_use_id = "toolu_01TjGQvm7AaDRBgi1f4Jq2WY";
     messageOf(subagent).model = "claude-sonnet-5-5";
 
-    expect(readStream([events[0]!, subagent, ...events.slice(1)]).reportedModel).toBe("claude-haiku-5-5");
+    expect(readStream([events[0], subagent, ...events.slice(1)]).reportedModel).toBe("claude-haiku-5-5");
   });
 
   it("skips a synthetic message", () => {
@@ -114,7 +114,7 @@ describe("readStream reportedModel", () => {
     const synthetic = copyOf(events[1]);
     messageOf(synthetic).model = "<synthetic>";
 
-    expect(readStream([events[0]!, synthetic, ...events.slice(1)]).reportedModel).toBe("claude-haiku-5-5");
+    expect(readStream([events[0], synthetic, ...events.slice(1)]).reportedModel).toBe("claude-haiku-5-5");
   });
 
   it("gives the message model when init has two suffixes", () => {
@@ -136,7 +136,7 @@ describe("readStream reportedModel", () => {
   it("gives no model when no assistant event exists", () => {
     const events = claudeSampleEvents("plain");
 
-    expect(readStream([events[0]!, events[3]!]).reportedModel).toBeUndefined();
+    expect(readStream([events[0], events[3]]).reportedModel).toBeUndefined();
   });
 
   it("does not read modelUsage", () => {

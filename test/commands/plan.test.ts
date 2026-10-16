@@ -103,7 +103,7 @@ describe("plan", () => {
 
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.stdin).toContain(`Key: ${KEY}\nTitle: Issue 5`);
+    expect(calls[0].stdin).toContain(`Key: ${KEY}\nTitle: Issue 5`);
   });
 
   it("records the session before the spawn, with the provider, model and effort of the plan role", async () => {
@@ -113,7 +113,7 @@ describe("plan", () => {
 
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const session = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(task.id));
-    const argv = fixture.claude.calls()[0]!.argv;
+    const argv = fixture.claude.calls()[0].argv;
     expect(argv[argv.indexOf("--session-id") + 1]).toBe(session?.sessionId);
     expect(session).toMatchObject({ provider: "claude-code", model: "opus", effort: "high" });
   });
@@ -127,7 +127,7 @@ describe("plan", () => {
     const result = await runPlan();
 
     expect(result.code).toBe(0);
-    const argv = fixture.claude.calls()[0]!.argv;
+    const argv = fixture.claude.calls()[0].argv;
     expect(argv[argv.indexOf("--resume") + 1]).toBe(TEST_SESSION_ID);
     expect(argv).not.toContain("--session-id");
     const rows = withDataRootStore(fixture.started.dataRoot, (store) =>

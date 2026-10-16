@@ -13,7 +13,7 @@ function firstDependency<T extends OrderTodo>(todo: T, left: readonly T[]): T {
 // One cycle of left, found from its first todo. Left holds no ready todo, so each todo has a dependency in left.
 function findCycle<T extends OrderTodo>(left: readonly T[]): T[] {
   const path: T[] = [];
-  let current = left[0]!;
+  let current = left[0];
   while (!path.includes(current)) {
     path.push(current);
     current = firstDependency(current, left);

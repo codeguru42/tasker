@@ -94,7 +94,7 @@ describe.each(PROMPTS)("$name", ({ name, template, values, tags }) => {
 
 describe("EXECUTE_PROMPT", () => {
   it("puts the commit rules in as rule 5", () => {
-    const filled = fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, PROMPTS[0]!.values);
+    const filled = fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, PROMPTS[0].values);
 
     expect(rulesOf(filled)[4]).toBe("5. Commit as the repository does.");
   });

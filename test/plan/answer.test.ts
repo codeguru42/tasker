@@ -51,7 +51,7 @@ describe("checkPlanAnswer: the schema", () => {
 
   it("refuses a todo id that is not kebab-case", () => {
     const answer = validPlanAnswer({
-      todos: [{ ...validPlanAnswer().todos[0]!, id: "Write_Test" }, validPlanAnswer().todos[1]!],
+      todos: [{ ...validPlanAnswer().todos[0], id: "Write_Test" }, validPlanAnswer().todos[1]],
     });
 
     expect(problemsOf(answer)).toEqual(["todos.0.id: must be kebab-case"]);
@@ -59,7 +59,7 @@ describe("checkPlanAnswer: the schema", () => {
 
   it("refuses an empty todo title", () => {
     const answer = validPlanAnswer({
-      todos: [{ ...validPlanAnswer().todos[0]!, title: "" }, validPlanAnswer().todos[1]!],
+      todos: [{ ...validPlanAnswer().todos[0], title: "" }, validPlanAnswer().todos[1]],
     });
 
     expect(problemsOf(answer)).toEqual(["todos.0.title: Too small: expected string to have >=1 characters"]);
@@ -78,7 +78,7 @@ describe("checkPlanAnswer: the schema", () => {
 
   it("refuses an extra key in a todo", () => {
     const answer = validPlanAnswer({
-      todos: [{ ...validPlanAnswer().todos[0]!, extra: 1 } as never, validPlanAnswer().todos[1]!],
+      todos: [{ ...validPlanAnswer().todos[0], extra: 1 } as never, validPlanAnswer().todos[1]],
     });
 
     expect(problemsOf(answer)).toEqual(["todos.0.extra: unrecognized key"]);
@@ -86,7 +86,7 @@ describe("checkPlanAnswer: the schema", () => {
 
   it("refuses an extra key in a question", () => {
     const answer = validPlanAnswer({
-      questions: [{ ...validPlanAnswer().questions[0]!, extra: 1 } as never],
+      questions: [{ ...validPlanAnswer().questions[0], extra: 1 } as never],
     });
 
     expect(problemsOf(answer)).toEqual(["questions.0.extra: unrecognized key"]);
@@ -111,8 +111,8 @@ describe("checkPlanAnswer: the schema", () => {
     const answer = {
       ...validPlanAnswer({
         todos: [
-          { ...validPlanAnswer().todos[0]!, id: "Bad_Id", title: "", description: "  x  " },
-          validPlanAnswer().todos[1]!,
+          { ...validPlanAnswer().todos[0], id: "Bad_Id", title: "", description: "  x  " },
+          validPlanAnswer().todos[1],
         ],
       }),
       extra: 1,
@@ -132,7 +132,7 @@ describe("checkPlanAnswer: the schema", () => {
 describe("checkPlanAnswer: the checks after the schema", () => {
   function withTodo(change: Partial<PlanAnswer["todos"][number]>, index = 0): PlanAnswer {
     const todos = validPlanAnswer().todos;
-    todos[index] = { ...todos[index]!, ...change };
+    todos[index] = { ...todos[index], ...change };
     return validPlanAnswer({ todos });
   }
 
@@ -169,7 +169,7 @@ describe("checkPlanAnswer: the checks after the schema", () => {
   });
 
   it("refuses a duplicate question id", () => {
-    const question = validPlanAnswer().questions[0]!;
+    const question = validPlanAnswer().questions[0];
 
     expect(problemsOf(validPlanAnswer({ questions: [question, question] }))).toEqual([
       'questions.1.id: duplicate question id "base-branch"',
@@ -198,8 +198,8 @@ describe("checkPlanAnswer: the checks after the schema", () => {
     const answer = validPlanAnswer({
       plan_markdown: "## Summary\n\nshort\n",
       todos: [
-        { ...validPlanAnswer().todos[0]!, title: "ab" },
-        { ...validPlanAnswer().todos[1]!, id: "write-test", depends_on: ["nope"] },
+        { ...validPlanAnswer().todos[0], title: "ab" },
+        { ...validPlanAnswer().todos[1], id: "write-test", depends_on: ["nope"] },
       ],
     });
 

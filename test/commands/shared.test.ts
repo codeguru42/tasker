@@ -275,7 +275,7 @@ describe("withIssueTaskAsync", () => {
     const [task] = seedTasks(dataRoot, [
       { issueKey: KEY, repoKey: REPO, state: "planning", at: "2026-01-01T00:00:00.000Z" },
     ]);
-    return task!;
+    return task;
   }
 
   it("calls fn with the store, the task and the ref", async () => {

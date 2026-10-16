@@ -19,7 +19,7 @@ function seeded(
   const [task] = seedTasks(dataRoot, [
     { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state, at: dayAt(1), ...extra },
   ]);
-  return { dataRoot, id: task!.id };
+  return { dataRoot, id: task.id };
 }
 
 describe("taskById", () => {

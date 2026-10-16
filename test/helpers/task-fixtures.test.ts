@@ -113,13 +113,13 @@ describe("useAssistantRunFixture", () => {
 
     const { repoKey } = fixture.started;
     expect(Object.keys(fixture.config.repos)).toEqual([repoKey, "codeguru42/other"]);
-    expect(fixture.config.repos[repoKey]!.vcs).toEqual({ provider: "git", config: { sshKey: "/keys/a_key" } });
-    expect(fixture.config.repos["codeguru42/other"]!.vcs).toEqual({
+    expect(fixture.config.repos[repoKey].vcs).toEqual({ provider: "git", config: { sshKey: "/keys/a_key" } });
+    expect(fixture.config.repos["codeguru42/other"].vcs).toEqual({
       provider: "git",
       config: { sshKey: "/keys/b_key" },
     });
     expect(Object.keys(fixture.started.config.repos)).toEqual([repoKey]);
-    expect(fixture.started.config.repos[repoKey]!.vcs).toEqual({ provider: "git", config: {} });
+    expect(fixture.started.config.repos[repoKey].vcs).toEqual({ provider: "git", config: {} });
   });
 
   it("gives an env with the fake claude first and the secrets that the child must not get", async () => {
@@ -441,7 +441,7 @@ describe("TO_WORK_REVIEW", () => {
     const steps: TaskState[] = ["workspace_ready", ...TO_WORK_REVIEW];
 
     steps.slice(1).forEach((to, index) => {
-      expect(canTransition(steps[index]!, to)).toBe(true);
+      expect(canTransition(steps[index], to)).toBe(true);
     });
   });
 });
@@ -450,7 +450,7 @@ describe("moveTaskThrough", () => {
   const seedReadyTask = () => {
     const dataRoot = useTempDir("tasker-move-");
     const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "workspace_ready", at: dayAt(1) }]);
-    return { dataRoot, id: task!.id };
+    return { dataRoot, id: task.id };
   };
   const move = (dataRoot: string, id: number, states: Parameters<typeof moveTaskThrough>[2]) =>
     withDataRootStore(dataRoot, (store) => ({

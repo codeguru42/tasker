@@ -48,7 +48,7 @@ function lineSplitter(onLine: (line: string) => void) {
 // The tail can start inside a UTF-8 character. A character has at most 3 bytes after its first byte.
 function decodeTail(tail: Buffer): string {
   let start = 0;
-  while (start < 3 && start < tail.length && (tail[start]! & 0xc0) === 0x80) start++;
+  while (start < 3 && start < tail.length && (tail[start] & 0xc0) === 0x80) start++;
   return tail.subarray(start).toString("utf8");
 }
 

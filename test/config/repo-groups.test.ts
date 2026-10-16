@@ -23,7 +23,7 @@ describe("reposByProvider", () => {
   it("gives the values of doctorRepo with the key and the repo", () => {
     const config = configWithTrackers({ r1: github("a") });
     expect(reposByProvider(config, account, (key, repo) => ({ key, tracker: repo.issueTracker }))).toEqual([
-      ["a", [{ key: "r1", tracker: config.repos.r1!.issueTracker }]],
+      ["a", [{ key: "r1", tracker: config.repos.r1.issueTracker }]],
     ]);
   });
 

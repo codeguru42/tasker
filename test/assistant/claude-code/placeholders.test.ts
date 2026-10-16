@@ -79,7 +79,7 @@ describe("removePlaceholders", () => {
     expect(result).toEqual({ removed: [".gitconfig"] });
     expect(existsSync(join(cwd, ".bashrc"))).toBe(true);
     expect(tracked).toHaveBeenCalledTimes(1);
-    expect(tracked.mock.calls[0]![0]).toEqual([".bashrc", ".gitconfig"]);
+    expect(tracked.mock.calls[0][0]).toEqual([".bashrc", ".gitconfig"]);
   });
 
   it("makes no trackedPaths call with no candidate", async () => {
@@ -234,6 +234,6 @@ describe("removePlaceholders", () => {
     await removePlaceholders(cwd, tracked);
 
     expect(tracked).toHaveBeenCalledTimes(1);
-    expect(tracked.mock.calls[0]![0].filter((path) => path.startsWith(".claude/"))).toEqual([]);
+    expect(tracked.mock.calls[0][0].filter((path) => path.startsWith(".claude/"))).toEqual([]);
   });
 });
