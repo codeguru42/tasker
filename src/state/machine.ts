@@ -295,6 +295,16 @@ export function transitionWithAcceptance(store: TaskStore, id: number, revision:
   return store.endRun(id, "accepted", transitionCheck("accepted", "accepted", { revision, baseTip }));
 }
 
+// Appends the landed event { revision, base, pushed, from, to } and moves the task to landed, in one transaction.
+// An illegal edge writes nothing.
+export function transitionWithLanding(
+  store: TaskStore,
+  id: number,
+  landing: { revision: string; base: string; pushed: boolean },
+): Task {
+  return store.endRun(id, "landed", transitionCheck("landed", "landed", landing));
+}
+
 export function failTask(store: TaskStore, id: number, message: string): Task {
   return transitionTask(store, id, "failed", { error: message });
 }
