@@ -117,7 +117,7 @@ The check ignores a suffix right after the patch number, for example `-rc.1`, so
 
 ### Auth
 
-The login remediation applies only when a new login is the fix. See [Auth status](#auth-status).
+[Auth status](#auth-status) says when the login remediation applies.
 
 ### Project
 
