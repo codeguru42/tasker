@@ -240,7 +240,10 @@ describe("parseConfig repos", () => {
   });
 });
 
-type Repo = { issueTracker: Record<string, unknown>; assistant: Record<string, unknown> };
+interface Repo {
+  issueTracker: Record<string, unknown>;
+  assistant: Record<string, unknown>;
+}
 
 function parsedRepo(raw: unknown): Repo {
   return parseConfig(raw, {}, home).repos.tasker;

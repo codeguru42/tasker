@@ -108,7 +108,10 @@ export function gitSshCommand(env: NodeJS.ProcessEnv): string | undefined {
   return env.GIT_SSH ? undefined : BATCH_SSH_COMMAND;
 }
 
-type Location = { kind: "cwd" | "gitDir"; path: string };
+interface Location {
+  kind: "cwd" | "gitDir";
+  path: string;
+}
 
 // Runs git with args (the subcommand first) and resolves with its stdout.
 // Git starts one time for each call.
