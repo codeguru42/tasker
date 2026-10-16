@@ -29,6 +29,7 @@ const expectRefused = (fixture: Pick<StartFixture, "dataRoot">, error: string | 
   expectCommandRefused({ dataRoot: fixture.dataRoot, key: KEY }, runMarkLanded, error);
 
 // Lands the work, moves the task through states, and expects mark-landed to record the landing from the last state.
+// It also expects that origin keeps the head of main and that no run marker stays.
 const expectMarkedFrom = async (states: Parameters<typeof moveTaskThrough>[2], from: string) => {
   const accepted = await useAcceptedTask();
   await landAcceptedTask(accepted);
@@ -47,29 +48,12 @@ const expectMarkedFrom = async (states: Parameters<typeof moveTaskThrough>[2], f
       data: { revision: accepted.revision, baseTip: accepted.revision, from, to: "landed" },
     },
   ]);
+  expect(await accepted.origin.branchHead("main")).toBe(accepted.revision);
+  expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
 };
 
 describe("tasker mark-landed", () => {
-  it("records a landing on the base and moves the task to landed", async () => {
-    const accepted = await useAcceptedTask();
-    await landAcceptedTask(accepted);
-    const before = eventsOf(accepted.dataRoot, KEY);
-
-    const result = await runMarkLanded();
-
-    expect(result).toEqual({ code: 0, out: `marked ${KEY} landed at ${accepted.revision}\n`, err: "" });
-    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
-    const events = eventsOf(accepted.dataRoot, KEY);
-    expect(events.slice(0, before.length)).toEqual(before);
-    expect(events.slice(before.length)).toEqual([
-      {
-        type: "marked_landed",
-        data: { revision: accepted.revision, baseTip: accepted.revision, from: "accepted", to: "landed" },
-      },
-    ]);
-    expect(await accepted.origin.branchHead("main")).toBe(accepted.revision);
-    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
-  });
+  it("records a landing on the base and moves the task to landed", () => expectMarkedFrom([], "accepted"));
 
   it("records a landing for a task in pushed", () => expectMarkedFrom(["pushing", "pushed"], "pushed"));
 
