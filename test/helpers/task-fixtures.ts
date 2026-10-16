@@ -360,22 +360,24 @@ export interface ReviewedRefineFixture extends RefineFixture {
 }
 
 // useRefineFixture, then v1 is approved, a passed verify run is seeded (unless options.verifyRun is false) and a review
-// is seeded (options.review on top of the defaults of seedReview), so the task is in reviewed. With review: null, no
-// review is seeded and the task goes to reviewed with no review. Call it inside a test.
+// is seeded (options.review on top of the defaults of seedReview), so the task is in options.state (reviewed by
+// default). With review: null, no review is seeded and the task goes to options.state with no review.
+// Call it inside a test.
 export async function useReviewedRefineFixture(
   control: FakeClaudeControl,
   options: Parameters<typeof useRefineFixture>[1] & {
     verifyRun?: boolean;
     review?: Partial<Omit<NewReview, "number">> | null;
+    state?: "reviewed" | "awaiting_work_review";
   } = {},
 ): Promise<ReviewedRefineFixture> {
-  const { verifyRun, review, ...refineOptions } = options;
+  const { verifyRun, review, state = "reviewed", ...refineOptions } = options;
   const fixture = await useRefineFixture(control, refineOptions);
   return withDataRootStore(fixture.started.dataRoot, (store) => {
     store.approvePlanRevision(fixture.task.id, 1, "approved");
     const run = verifyRun === false ? undefined : seedVerifyRun(store, fixture.started.dataRoot, fixture.task);
-    const seeded = review === null ? undefined : seedReview(store, fixture.task.id, review ?? {});
-    if (review === null) store.endRun(fixture.task.id, "reviewed");
+    const seeded = review === null ? undefined : seedReview(store, fixture.task.id, review ?? {}, state);
+    if (review === null) store.endRun(fixture.task.id, state);
     return { ...fixture, task: store.getTask(fixture.task.id)!, review: seeded, verifyRun: run };
   });
 }

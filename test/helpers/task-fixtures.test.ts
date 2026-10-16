@@ -342,6 +342,33 @@ describe("useReviewedRefineFixture", () => {
     expect(withDataRootStore(fixture.started.dataRoot, (store) => store.latestReview(fixture.task.id))).toBeUndefined();
   });
 
+  it("leaves the task in awaiting_work_review with review 1 for state: awaiting_work_review", async () => {
+    const fixture = await useReviewedRefineFixture({}, { state: "awaiting_work_review" });
+
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("awaiting_work_review");
+    expect(fixture.task.state).toBe("awaiting_work_review");
+    expect(fixture.review?.number).toBe(1);
+    expect(fixture.verifyRun?.number).toBe(1);
+  });
+
+  it("leaves the task in awaiting_work_review with no review for that state and review: null", async () => {
+    const fixture = await useReviewedRefineFixture({}, { state: "awaiting_work_review", review: null });
+
+    expect(fixture.review).toBeUndefined();
+    expect(fixture.task.state).toBe("awaiting_work_review");
+    expect(withDataRootStore(fixture.started.dataRoot, (store) => store.latestReview(fixture.task.id))).toBeUndefined();
+  });
+
+  it("leaves the task in awaiting_work_review with no verify run for that state and verifyRun: false", async () => {
+    const fixture = await useReviewedRefineFixture({}, { state: "awaiting_work_review", verifyRun: false });
+
+    expect(fixture.verifyRun).toBeUndefined();
+    expect(fixture.task.state).toBe("awaiting_work_review");
+    expect(
+      withDataRootStore(fixture.started.dataRoot, (store) => store.latestVerifyRun(fixture.task.id)),
+    ).toBeUndefined();
+  });
+
   it("gives the findings of options.review to the review", async () => {
     const fixture = await useReviewedRefineFixture({}, { review: { findings: [] } });
 

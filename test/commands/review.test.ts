@@ -1,15 +1,24 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { review } from "../../src/commands/review.js";
+import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
 import { REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
 import { formatFindings } from "../../src/review/findings-text.js";
 import { reviewTranscriptPath } from "../../src/store/layout.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
-import { argAfter, claudeSample } from "../helpers/fake-claude.js";
-import { answerStream, seedPlanRevision, transcriptLines } from "../helpers/plan.js";
-import { reviewFinding, validReviewAnswer } from "../helpers/review.js";
+import { TEST_SESSION_ID, argAfter, claudeSample } from "../helpers/fake-claude.js";
+import { overlapWarningText } from "../helpers/overlap.js";
+import {
+  answerStream,
+  planRevisionOf,
+  seedPlanRevision,
+  seedTaskWithPlanFiles,
+  transcriptLines,
+  validPlanAnswer,
+} from "../helpers/plan.js";
+import { reviewFeedbackContextExpected, reviewFinding, validReviewAnswer } from "../helpers/review.js";
 import {
   databasePathOf,
   dayAt,
@@ -20,12 +29,25 @@ import {
   withDataRootStore,
   reviewSessionRows,
 } from "../helpers/store.js";
-import { expectCommandRefused, taskBranchTipOf, useReviewFixture, useSeededTask } from "../helpers/task-fixtures.js";
+import {
+  expectCommandRefused,
+  expectNoAssistantRun,
+  taskBranchTipOf,
+  useRefineFixture,
+  useReviewedRefineFixture,
+  useReviewFixture,
+  useSeededTask,
+} from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 
 const runReview = (key = KEY, ...extra: string[]) => runCommand(review, "review", key, ...extra);
+
+const FEEDBACK = "Keep the loop and add a test for the empty list.";
+
+const runReviewFeedback = (feedback: string, key = KEY, ...extra: string[]) =>
+  runCommand(review, "review", key, feedback, ...extra);
 
 const reviewsOf = (dataRoot: string, taskId: number) =>
   withDataRootStore(dataRoot, (store) => store.listReviews(taskId));
@@ -218,5 +240,219 @@ describe("a refused review", () => {
       () => runReview(),
       `${wrongStateError("workspace_ready", KEY, "review", "awaiting_work_review")}\n`,
     );
+  });
+});
+
+// A task in awaiting_work_review with v1 approved, a passed verify run and review 1.
+const startFeedback = (
+  control: Parameters<typeof useReviewedRefineFixture>[0],
+  options: Parameters<typeof useReviewedRefineFixture>[1] = {},
+) => useReviewedRefineFixture(control, { ...options, state: "awaiting_work_review" });
+
+const V2_ANSWER = validPlanAnswer({
+  plan_markdown: "## Summary\n\nAdd the empty list test.\n",
+  todos: [{ id: "only-todo", title: "Do the work", description: "Do all of it.", depends_on: [] }],
+});
+
+describe("review with feedback", () => {
+  it("records revision v2 with the source review-feedback and the feedback", async () => {
+    const stream = answerStream(V2_ANSWER);
+    const fixture = await startFeedback({ stream });
+    const { dataRoot } = fixture.started;
+    const before = eventsOf(dataRoot, KEY);
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    const task = latestTaskOf(dataRoot, KEY);
+    const revision = planRevisionOf(dataRoot, task.id, 2);
+    expect(result.code).toBe(0);
+    expect(result.err).toBe("");
+    expect(result.out.split("\n")).toEqual([
+      `refined ${KEY} as revision v2`,
+      `plan: ${planRevisionPath(dataRoot, task, 2)}`,
+      expect.stringMatching(/^prompt: /),
+      "todos:",
+      "- only-todo: Do the work",
+      "questions: 0",
+      "",
+    ]);
+    expect(task.state).toBe("awaiting_plan_review");
+    expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
+    expect(revision).toMatchObject({ version: 2, source: "review-feedback", feedback: FEEDBACK, answer: V2_ANSWER });
+    expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
+      { type: "transition", data: { from: "awaiting_work_review", to: "refining" } },
+      { type: "usage", data: expect.anything() },
+      { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
+      { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },
+    ]);
+    expect(transcriptLines(planTranscriptPath(dataRoot, task, 2))).toHaveLength(stream.length);
+    expect(reviewsOf(dataRoot, task.id).map((item) => item.number)).toEqual([1]);
+  });
+
+  it("continues the recorded plan session", async () => {
+    const fixture = await startFeedback({ stream: answerStream(V2_ANSWER) });
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    expect(result.code).toBe(0);
+    const argv = fixture.claude.calls()[0].argv;
+    expect(argv[argv.indexOf("--resume") + 1]).toBe(TEST_SESSION_ID);
+    expect(argv).not.toContain("--session-id");
+  });
+
+  it("gives the revision of the work, the verify run and the feedback on the stdin", async () => {
+    const fixture = await startFeedback({ stream: answerStream(V2_ANSWER) });
+    const tip = await taskBranchTipOf({ clone: fixture.started.clone, env: fixture.started.env, task: fixture.task });
+
+    await runReviewFeedback(FEEDBACK);
+
+    const stdin = fixture.claude.calls()[0].stdin;
+    expect(stdin).toContain(`<context>${reviewFeedbackContextExpected(tip, 1)}</context>`);
+    expect(stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
+  });
+
+  it("says that no verify run is recorded for a task with no verify run", async () => {
+    const fixture = await startFeedback({ stream: answerStream(V2_ANSWER) }, { verifyRun: false });
+    const tip = await taskBranchTipOf({ clone: fixture.started.clone, env: fixture.started.env, task: fixture.task });
+
+    await runReviewFeedback(FEEDBACK);
+
+    expect(fixture.claude.calls()[0].stdin).toContain(`<context>${reviewFeedbackContextExpected(tip, null)}</context>`);
+  });
+
+  it("names no review in the context, also for a task with a seeded review", async () => {
+    const fixture = await startFeedback({ stream: answerStream(V2_ANSWER) });
+    const tip = await taskBranchTipOf({ clone: fixture.started.clone, env: fixture.started.env, task: fixture.task });
+
+    await runReviewFeedback(FEEDBACK);
+
+    const stdin = fixture.claude.calls()[0].stdin;
+    const context = /<context>([\s\S]*)<\/context>/.exec(stdin)?.[1];
+    expect(context).toBe(reviewFeedbackContextExpected(tip, 1));
+    expect(stdin).not.toContain("The loop skips the last item.");
+    expect(stdin).not.toContain("The count is off by one.");
+  });
+
+  it.each(["", "   "])("refuses the feedback %j as empty and changes nothing", async (feedback) => {
+    const fixture = await startFeedback({ stream: answerStream(V2_ANSWER) });
+    const { dataRoot } = fixture.started;
+
+    await expectCommandRefused(fixture.started, () => runReviewFeedback(feedback), "the feedback is empty\n");
+
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_work_review");
+    expectNoAssistantRun(fixture);
+    expect(planRevisionOf(dataRoot, fixture.task.id, 2)).toBeUndefined();
+  });
+
+  it("refuses a task in awaiting_plan_review and changes nothing", async () => {
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
+
+    await expectCommandRefused(
+      fixture.started,
+      () => runReviewFeedback(FEEDBACK),
+      `${wrongStateError("awaiting_plan_review", KEY, "review", "awaiting_work_review")}\n`,
+    );
+
+    expectNoAssistantRun(fixture);
+    expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toBeUndefined();
+  });
+
+  it("fails the task when the assistant fails", async () => {
+    const fixture = await startFeedback({ stream: answerStream(V2_ANSWER), exitCode: 1, stderr: "boom" });
+    const { dataRoot } = fixture.started;
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toMatch(/^refining failed: .+\n$/);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
+    expect(planRevisionOf(dataRoot, fixture.task.id, 2)).toBeUndefined();
+  });
+
+  it("fails the task when the assistant runs longer than the plan limit", { timeout: 15_000 }, async () => {
+    const fixture = await startFeedback(
+      { stream: claudeSample("plain").slice(0, 2), untilStopped: true },
+      { limits: { planTimeoutMin: 0.05 } },
+    );
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toBe("refining timed out after 0.05 min\n");
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
+  });
+
+  it("blocks the task on a quota stop", async () => {
+    const fixture = await startFeedback({ stream: claudeSample("quota-stop"), exitCode: 1 });
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    expect(result.code).toBe(1);
+    expect(result.out).toMatch(/^refining stopped by a quota limit; /);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("quota_blocked");
+  });
+
+  it("fails the task for an answer that tasker refuses, and writes no v2", async () => {
+    const fixture = await startFeedback({ stream: answerStream(validPlanAnswer({ todos: [] })) });
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toMatch(/^the assistant returned a plan that tasker refuses:/);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
+    expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toBeUndefined();
+  });
+
+  it("refuses a task with no plan session and changes nothing", async () => {
+    const fixture = await startFeedback({ stream: answerStream(V2_ANSWER) });
+    withDataRootStore(fixture.started.dataRoot, (store) => store.clearPlanSession(fixture.task.id));
+
+    await expectCommandRefused(
+      fixture.started,
+      () => runReviewFeedback(FEEDBACK),
+      `the task of ${KEY} has no plan session\n`,
+    );
+
+    expectNoAssistantRun(fixture);
+  });
+
+  it("warns of a shared file with the last line of tasker plan", async () => {
+    const fixture = await startFeedback({
+      stream: answerStream(validPlanAnswer({ files_changed: ["src/a.ts"] })),
+    });
+    seedTaskWithPlanFiles(
+      fixture.started.dataRoot,
+      { issueKey: "codeguru42/tasker#6", repoKey: "codeguru42/tasker", state: "awaiting_plan_review", at: dayAt(3) },
+      ["src/a.ts"],
+    );
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toMatch(/^refined /);
+    expect(result.err).toBe(
+      overlapWarningText(
+        [{ issueKey: "codeguru42/tasker#6", state: "awaiting_plan_review", files: ["src/a.ts"] }],
+        ["tasker does not refuse. Decide before you approve."],
+      ),
+    );
+  });
+
+  it("still runs the automated review without feedback", async () => {
+    const fixture = await startFeedback({ stream: answerStream(validReviewAnswer()) });
+
+    const result = await runReview();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toMatch(new RegExp(`^reviewed ${KEY}: review 2, 1 finding\n`));
+    expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toBeUndefined();
+  });
+
+  it("shows the feedback argument in the help", async () => {
+    const result = await runHelp(review, "review");
+
+    expect(result.code).toBe(0);
+    expect(result.help).toContain("<issue> [feedback]");
+    expect(result.help).toContain("Your feedback on the committed work, quoted as one argument.");
   });
 });
