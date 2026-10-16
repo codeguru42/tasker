@@ -235,7 +235,7 @@ A lease skips the fast-forward check of git. For this reason, tasker makes sure 
 
 The delete needs the lease, because a plain delete of a branch that origin does not have succeeds with a warning. After a failed push, tasker reads the tip again, so a branch that is already gone is not an error.
 
-### Side effects
+### Side effects of publish and land
 
 - Each push, also a push that git then rejects, uses one token, because the hook deletes the token before git sends anything.
 - A failed push changes nothing on origin.
@@ -282,7 +282,7 @@ The probe is the one place that starts ssh directly, because git has no command 
 - `/proc` is read at most once for each call, and only when a stale lock exists.
 - Doctor deletes nothing.
 
-### Side effects
+### Side effects of the doctor checks
 
 - The checks write nothing.
 - ssh writes `known_hosts` only when the ssh configuration of the user permits it.
