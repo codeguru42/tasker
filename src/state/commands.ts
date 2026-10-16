@@ -90,3 +90,14 @@ export function nextCell(state: string): string {
   if (row.primary === undefined) return row.commands.join(", ");
   return `${row.primary} (also: ${row.commands.filter((c) => c !== row.primary).join(", ")})`;
 }
+
+// The sentence that the wrong-state error ends with. No row gives undefined.
+export function errorSentence(state: string, issueKey: string): string | undefined {
+  const row = stateCommands(state);
+  if (row === undefined) return undefined;
+  const others = (row.primary === undefined ? row.commands : row.commands.filter((c) => c !== row.primary)).map((c) =>
+    render(c, issueKey),
+  );
+  if (row.primary === undefined) return `commands: ${others.join(", ")}`;
+  return `next: ${render(row.primary, issueKey)} (also: ${others.join(", ")})`;
+}
