@@ -71,8 +71,9 @@ function structuredOutputStream(output: unknown, edit?: (result: AssistantEvent)
   }).map((event) => JSON.stringify(event));
 }
 
-// The stdout lines of a fake claude run that succeeds with answer as its structured output.
-export function planAnswerStream(answer: unknown): string[] {
+// The stdout lines of a fake claude run that succeeds with answer as its structured output. It serves any structured
+// answer: a plan, a review or another.
+export function answerStream(answer: unknown): string[] {
   return structuredOutputStream(answer);
 }
 

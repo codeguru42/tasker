@@ -4,7 +4,7 @@ import { checkPlanAnswer } from "../../src/plan/answer.js";
 import { planRevisionPath } from "../../src/store/layout.js";
 import { TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID } from "./fake-claude.js";
 import {
-  planAnswerStream,
+  answerStream,
   planRevisionOf,
   recordPlanRevisions,
   recordTestPlanRevision,
@@ -389,10 +389,10 @@ describe("seedExecuteTodoStates", () => {
   });
 });
 
-describe("planAnswerStream", () => {
+describe("answerStream", () => {
   it("gives a last line whose structured_output is the answer", () => {
     const answer = validPlanAnswer({ summary: ["Another."] });
-    const lines = planAnswerStream(answer);
+    const lines = answerStream(answer);
     expect(JSON.parse(lines.at(-1)!)).toMatchObject({ structured_output: answer });
   });
 });

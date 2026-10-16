@@ -13,7 +13,7 @@ import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
 import {
-  planAnswerStream,
+  answerStream,
   planRevisionOf,
   seedPlanSession,
   seedTaskWithPlanFiles,
@@ -75,7 +75,7 @@ const expectNoWrite = (
 
 describe("refine", () => {
   it("records revision v2 with the feedback and moves the task back to awaiting_plan_review", async () => {
-    const stream = planAnswerStream(V2_ANSWER);
+    const stream = answerStream(V2_ANSWER);
     const fixture = await useRefineFixture({ stream }, { answer: V1_ANSWER });
     const { dataRoot } = fixture.started;
     const before = eventsOf(dataRoot, KEY);
@@ -124,7 +124,7 @@ describe("refine", () => {
         },
       },
     };
-    const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER) }, { repo });
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { repo });
 
     const result = await runRefine();
 
@@ -136,7 +136,7 @@ describe("refine", () => {
   });
 
   it("gives the plan, the feedback, the open questions and the branch commits on the stdin", async () => {
-    const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER) }, { answer: V1_ANSWER });
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { answer: V1_ANSWER });
 
     await runRefine();
 
@@ -148,7 +148,7 @@ describe("refine", () => {
   });
 
   it("gives the commits of the branch on the stdin", async () => {
-    const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER) });
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
     await commitInWorktree(fixture.started.worktree, fixture.started.env, { file: "src/b.ts" });
 
     await runRefine();
@@ -160,7 +160,7 @@ describe("refine", () => {
   });
 
   it("counts a question that the new revision leaves out as answered by the feedback", async () => {
-    const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER) }, { answer: V1_ANSWER });
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { answer: V1_ANSWER });
 
     await runRefine();
 
@@ -173,7 +173,7 @@ describe("refine", () => {
   });
 
   it("fails the task when the assistant fails", async () => {
-    const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER), exitCode: 1, stderr: "boom" });
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER), exitCode: 1, stderr: "boom" });
     const { dataRoot } = fixture.started;
 
     const result = await runRefine();
@@ -213,7 +213,7 @@ describe("refine", () => {
   });
 
   it("fails the task for an answer that tasker refuses, and writes no v2", async () => {
-    const fixture = await useRefineFixture({ stream: planAnswerStream(validPlanAnswer({ todos: [] })) });
+    const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer({ todos: [] })) });
 
     const result = await runRefine();
 
@@ -225,7 +225,7 @@ describe("refine", () => {
 
   it("warns of a shared file with the last line of tasker plan", async () => {
     const fixture = await useRefineFixture({
-      stream: planAnswerStream(validPlanAnswer({ files_changed: ["src/a.ts"] })),
+      stream: answerStream(validPlanAnswer({ files_changed: ["src/a.ts"] })),
     });
     seedTaskWithPlanFiles(
       fixture.started.dataRoot,
@@ -247,7 +247,7 @@ describe("refine", () => {
 
   describe("a failure before the run", () => {
     it("fails at once when another process holds the task lock", async () => {
-      const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER) });
+      const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
       const { dataRoot } = fixture.started;
       const before = eventsOf(dataRoot, KEY);
       const name = taskLockName(REPO, KEY);
@@ -267,7 +267,7 @@ describe("refine", () => {
     });
 
     it("fails when the plan file of the newest revision is missing", async () => {
-      const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER) });
+      const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
       const { dataRoot } = fixture.started;
       const before = eventsOf(dataRoot, KEY);
       const path = planRevisionPath(dataRoot, fixture.task, 1);
@@ -283,7 +283,7 @@ describe("refine", () => {
     });
 
     it("fails when the prompt cannot be archived", async () => {
-      const fixture = await useRefineFixture({ stream: planAnswerStream(V2_ANSWER) });
+      const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
       const { dataRoot } = fixture.started;
       const before = eventsOf(dataRoot, KEY);
       const prompts = join(dataRoot, "prompts");
@@ -300,7 +300,7 @@ describe("refine", () => {
 });
 
 describe("a check before any write", () => {
-  const stream = planAnswerStream(V2_ANSWER);
+  const stream = answerStream(V2_ANSWER);
 
   const expectRefused = async (fixture: PlanFixture, task: Task, state: string, error: string, feedback = FEEDBACK) => {
     const before = eventsOf(fixture.started.dataRoot, KEY);

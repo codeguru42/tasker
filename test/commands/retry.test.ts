@@ -3,7 +3,7 @@ import { retry } from "../../src/commands/retry.js";
 import { runCommand } from "../helpers/cli.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
 import {
-  planAnswerStream,
+  answerStream,
   planTodo,
   seedExecuteSession,
   seedExecuteTodoStates,
@@ -54,7 +54,7 @@ describe("tasker retry", () => {
   });
 
   it("runs tasker plan in a new session for a task that failed in planning", async () => {
-    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const { dataRoot, repoKey } = fixture.started;
     withDataRootStore(dataRoot, (store) => {
       const task = store.findLatestTask(repoKey, KEY)!;
@@ -78,7 +78,7 @@ describe("tasker retry", () => {
   });
 
   it("prints a hint and runs nothing for a task that failed in refining", async () => {
-    const fixture = await useRefineFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
     const { dataRoot } = fixture.started;
     withDataRootStore(dataRoot, (store) => failTaskFrom(store, fixture.task.id, "refining"));
 

@@ -11,7 +11,7 @@ import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
 import {
-  planAnswerStream,
+  answerStream,
   planRevisionOf,
   seedPlanRevision,
   seedPlanSession,
@@ -59,7 +59,7 @@ const expectNoRun = (fixture: Fixture) => {
 describe("plan", () => {
   it("records revision v1 and moves the task to awaiting_plan_review", async () => {
     const answer = validPlanAnswer();
-    const fixture = await usePlanFixture({ stream: planAnswerStream(answer) });
+    const fixture = await usePlanFixture({ stream: answerStream(answer) });
 
     const result = await runPlan();
 
@@ -97,7 +97,7 @@ describe("plan", () => {
   });
 
   it("gives the issue text on the stdin of the assistant", async () => {
-    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
 
     await runPlan();
 
@@ -107,7 +107,7 @@ describe("plan", () => {
   });
 
   it("records the session before the spawn, with the provider, model and effort of the plan role", async () => {
-    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
 
     await runPlan();
 
@@ -119,7 +119,7 @@ describe("plan", () => {
   });
 
   it("continues a recorded plan session and records no second one", async () => {
-    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     withDataRootStore(fixture.started.dataRoot, (store) =>
       seedPlanSession(store, latestTaskOf(fixture.started.dataRoot, KEY).id),
     );
@@ -137,7 +137,7 @@ describe("plan", () => {
   });
 
   it("writes one JSON line of the transcript for each line of the stream", async () => {
-    const stream = planAnswerStream(validPlanAnswer());
+    const stream = answerStream(validPlanAnswer());
     const fixture = await usePlanFixture({ stream });
 
     await runPlan();
@@ -149,7 +149,7 @@ describe("plan", () => {
   });
 
   it("fails the task when the assistant fails, and a second run keeps the transcript", async () => {
-    const stream = planAnswerStream(validPlanAnswer());
+    const stream = answerStream(validPlanAnswer());
     const fixture = await usePlanFixture({ stream, exitCode: 1, stderr: "boom" });
 
     const first = await runPlan();
@@ -189,7 +189,7 @@ describe("plan", () => {
   });
 
   it("fails the task for an answer that tasker refuses, and writes no row", async () => {
-    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer({ todos: [] })) });
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer({ todos: [] })) });
 
     const result = await runPlan();
 
@@ -205,7 +205,7 @@ describe("plan", () => {
   });
 
   it("fails the task with no planning failed prefix when the plan file cannot be written", async () => {
-    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const plansDir = taskPlansDir(fixture.started.dataRoot, task);
     mkdirSync(dirname(plansDir), { recursive: true });
@@ -221,7 +221,7 @@ describe("plan", () => {
   });
 
   it("fails the task with planning failed when the last transaction throws after the plan file is written", async () => {
-    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     withRawDatabase(databasePathOf(fixture.started.dataRoot), (db) =>
       db.exec(
@@ -244,7 +244,7 @@ describe("plan", () => {
 
   it("replaces a stale v1.md with the plan", async () => {
     const answer = validPlanAnswer();
-    const fixture = await usePlanFixture({ stream: planAnswerStream(answer) });
+    const fixture = await usePlanFixture({ stream: answerStream(answer) });
     const path = planRevisionPath(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY), 1);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, "left by a stopped run");
@@ -256,7 +256,7 @@ describe("plan", () => {
   });
 
   it("fails the task with planning failed when an error occurs after the move to planning", async () => {
-    const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const path = planTranscriptPath(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY), 1);
     mkdirSync(path, { recursive: true });
 
@@ -286,7 +286,7 @@ describe("plan", () => {
     });
 
     it("fails at once when another process holds the task lock", async () => {
-      const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+      const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
       const name = taskLockName(REPO, KEY);
       const holder = startLockHolder(databasePathOf(fixture.started.dataRoot), name);
       await holder.attempt;
@@ -307,7 +307,7 @@ describe("plan", () => {
     });
 
     it("fails when the issue cannot be read", async () => {
-      const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+      const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
       fakeGh(dirname(fixture.started.configPath), {}, [
         ghTokenAnswer("codeguru42", "gho_test"),
         {
@@ -326,7 +326,7 @@ describe("plan", () => {
     });
 
     it("fails for a task that is not in workspace_ready, and reads no issue", async () => {
-      const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+      const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
       withDataRootStore(fixture.started.dataRoot, (store) =>
         transitionTask(store, latestTaskOf(fixture.started.dataRoot, KEY).id, "failed", { error: "earlier" }),
       );
@@ -345,7 +345,7 @@ describe("plan", () => {
     });
 
     it("fails when the prompt cannot be archived", async () => {
-      const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
+      const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
       const prompts = join(fixture.started.dataRoot, "prompts");
       chmodSync(prompts, 0o555);
       onTestFinished(() => chmodSync(prompts, 0o755));
@@ -367,7 +367,7 @@ describe("the overlap warning", () => {
     issues: [5, ...numbers].map((number) => ({ project: REPO, number })),
   });
   const planFixture = (files: string[], ...numbers: number[]) =>
-    usePlanFixture({ stream: planAnswerStream(validPlanAnswer({ files_changed: files })) }, issues(...numbers));
+    usePlanFixture({ stream: answerStream(validPlanAnswer({ files_changed: files })) }, issues(...numbers));
 
   it("warns of a shared file from the plan of a task in flight", async () => {
     const fixture = await planFixture(["src/a.ts", "test/a.test.ts"]);
@@ -502,7 +502,7 @@ describe("the overlap warning", () => {
 
   it("prints no warning after a failure or a quota stop", async () => {
     for (const control of [
-      { stream: planAnswerStream(validPlanAnswer({ files_changed: ["src/a.ts"] })), exitCode: 1, stderr: "boom" },
+      { stream: answerStream(validPlanAnswer({ files_changed: ["src/a.ts"] })), exitCode: 1, stderr: "boom" },
       { stream: claudeSample("quota-stop"), exitCode: 1 },
     ]) {
       const fixture = await usePlanFixture(control);
