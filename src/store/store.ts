@@ -193,6 +193,8 @@ export interface RetryWrites {
   clearPlanSession?: boolean;
   // The version of the pinned revision whose execute session goes.
   clearExecuteSession?: number;
+  // The review number whose review session goes.
+  clearReviewSession?: number;
   // Marks every todo of the version done and queues the fix turn of the version.
   resumeExecute?: { version: number; fixTurn: NewExecuteFixTurn };
 }
@@ -368,8 +370,10 @@ export interface TaskStore extends LockStore {
   // because tasker review records the session before its run, for the rule of docs/dev/assistants.md that
   // each session is recorded before its run. A task has one review session for each number.
   recordReviewSession(taskId: number, number: number, session: NewSession): StoredSession;
-  // Deletes the review session of a review number. A missing row is not an error. tasker retry, a later
-  // ticket, calls it.
+  // Deletes the review session of a review number. A missing row is not an error. The reason is the same as for
+  // clearPlanSession. This is a method of the store interface, and no code in src calls it: tasker retry runs the same
+  // step inside the transaction of the move, through retryTask. Code in src that changes a task must use retryTask, so
+  // that the move and the write stay one step.
   clearReviewSession(taskId: number, number: number): void;
   // The writes of a retry beside the move: the move to state, the run marker delete, the writes and the event of
   // check, in one transaction. A throw of any step writes nothing.
@@ -1372,6 +1376,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (writes.clearPlanSession === true) deleteSessionStep(taskId, { role: "plan" });
         if (writes.clearExecuteSession !== undefined) {
           deleteSessionStep(taskId, { role: "execute", planVersion: writes.clearExecuteSession });
+        }
+        if (writes.clearReviewSession !== undefined) {
+          deleteSessionStep(taskId, { role: "review", reviewNumber: writes.clearReviewSession });
         }
         if (writes.resumeExecute !== undefined) {
           const { version, fixTurn } = writes.resumeExecute;
