@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   fail,
   issueKeyOrFail,
+  numberedRowOrFail,
   orFail,
   orFailAsync,
   repoKeyOrFail,
@@ -386,5 +387,63 @@ describe("withFinalLineEnd", () => {
     ["", "\n"],
   ])("turns %j into %j", (text, expected) => {
     expect(withFinalLineEnd(text)).toBe(expected);
+  });
+});
+
+function rowOf(io: ReturnType<typeof captureIo>, rows: string[], number: string | undefined): string {
+  return numberedRowOrFail(io, "o/r#1", {
+    name: "thing",
+    command: "make",
+    total: rows.length,
+    number,
+    newest: () => rows.at(-1),
+    get: (n) => rows[n - 1],
+  });
+}
+
+describe("numberedRowOrFail", () => {
+  it("returns the newest row when the number is undefined and writes nothing", () => {
+    const io = captureIo();
+
+    expect(rowOf(io, ["a", "b"], undefined)).toBe("b");
+    expect(io.out).toEqual([]);
+    expect(io.err).toEqual([]);
+  });
+
+  it("returns the row with the number", () => {
+    const io = captureIo();
+
+    expect(rowOf(io, ["a", "b"], "1")).toBe("a");
+    expect(io.err).toEqual([]);
+  });
+
+  it.each([undefined, "2"])("stops the command with exit code 1 when there are no rows, for %s", (number) => {
+    const io = captureIo();
+
+    const error = thrownBy(() => rowOf(io, [], number));
+
+    expect(error).toBeInstanceOf(CommanderError);
+    expect((error as CommanderError).exitCode).toBe(1);
+    expect(io.err).toEqual(["the task of o/r#1 has no thing; run tasker make first\n"]);
+    expect(io.out).toEqual([]);
+  });
+
+  it("stops the command with exit code 1 for a number above the total", () => {
+    const io = captureIo();
+
+    const error = thrownBy(() => rowOf(io, ["a", "b"], "3"));
+
+    expect((error as CommanderError).exitCode).toBe(1);
+    expect(io.err).toEqual(["the task of o/r#1 has no thing 3; it has 2\n"]);
+    expect(io.out).toEqual([]);
+  });
+
+  it("prints a very large number as typed", () => {
+    const io = captureIo();
+    const huge = "9".repeat(30);
+
+    thrownBy(() => rowOf(io, ["a"], huge));
+
+    expect(io.err).toEqual([`the task of o/r#1 has no thing ${huge}; it has 1\n`]);
   });
 });
