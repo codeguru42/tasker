@@ -52,7 +52,7 @@ Two triggers make the table append-only. An `UPDATE` or a `DELETE` on `events` f
 
 ## `plan_revisions` table
 
-The table has one row for each plan that the assistant returned for a task. A revision is one such plan. A later revision comes from the feedback of the operator on an earlier one.
+The table has one row for each plan that the assistant returned for a task. A revision is one such plan. A later revision comes from the feedback of the operator on an earlier one. A revision with the source `review` comes from the open findings of a review, with the feedback of the operator or none.
 
 These rules hold:
 
@@ -61,7 +61,7 @@ These rules hold:
 - A task can have many approved revisions over its life. The pinned revision is the approved revision with the highest version.
 - Only the newest revision can be approved. Only the pinned revision can lose its approval. The approve and the clear of an approval share one transaction with the state move and the event, so a refused move leaves no approval behind.
 - The insert of a revision shares one transaction with its `plan_revision` event and the state move, so a refused move leaves no row behind.
-- A question is resolved when the next revision has no question with the same id. The answer is the feedback of that next revision. A question of the newest revision is open.
+- A question is resolved when the next revision has no question with the same id. The answer is the feedback of that next revision. A question that a `review` revision leaves out without feedback has no answer text. A question of the newest revision is open.
 
 The table has no check on the source of a revision, because later tickets add sources.
 
@@ -153,7 +153,7 @@ These rules hold:
 - A dismissal is written once and needs a reason, because the next review reads it. After that the row does not change, and no store write deletes a row.
 - A dismissal that names a missing finding or a dismissed finding writes nothing. The same holds when the dismissal names other findings that are open.
 - A dismissal that names no finding is an error, and it writes nothing.
-- An open finding still needs a decision of the operator: a dismissal or a fix in a later plan. So the task stays in its state until no finding of the review is open.
+- An open finding still needs a decision of the operator: a dismissal or a fix in a later plan. So the task stays in `reviewed` until no finding of the review is open, or until a refine promotes the findings to a plan.
 
 ## `default_base_branches` table
 

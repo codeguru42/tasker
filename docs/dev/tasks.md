@@ -117,14 +117,21 @@ The read takes no repo lock. It changes nothing in the clone, and a wait for the
 
 `tasker refine` continues the plan session of a task in `awaiting_plan_review` with the feedback of the operator, and records the next plan revision. The task goes to `refining`, then back to `awaiting_plan_review`.
 
+`tasker refine` also runs on a task in `reviewed`. This is a promotion: the open findings of the latest review go to the plan session, and the next revision has the source `review`. The feedback is optional in `reviewed`, and it is required in `awaiting_plan_review`.
+
 The steps run in this order.
 
-1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it reads a file. A refused refine changes nothing, as the intro says, so the operator can fix the cause and run the same command again.
+1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it reads a file. In `reviewed`, it also checks that the latest review has an open finding. A refused refine changes nothing, as the intro says, so the operator can fix the cause and run the same command again.
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base revision and the commits of the task branch.
-3. The command fills the prompt, archives the template and continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for the recorded model. The session is already recorded, so refine records no session.
+3. The command fills the prompt, with the open findings in the context block for a promotion, archives the template and continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for the recorded model. The session is already recorded, so refine records no session.
 4. The command moves the task to `refining` and runs the assistant. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
 
 [The refine prompt](assistants.md#the-refine-prompt) says what the prompt asks for. The new revision is a complete plan. A question that it leaves out counts as answered by the feedback, and the store computes this. The next revision goes to the next free version, and its transcript goes to the file of that version.
+
+A promotion keeps the findings out of the feedback and leaves them open:
+
+- The findings go in the context block, because the stored feedback holds only the words of the operator. [The `plan_revisions` table](data-root.md#plan_revisions-table) says that `tasker show-questions` prints the feedback as the answer of a question.
+- The promoted findings stay open, because the next review decides if the work fixed them. [The review prompt and the findings answer](assistants.md#the-review-prompt-and-the-findings-answer) says how the next review reads them.
 
 ## Approve
 
@@ -223,7 +230,6 @@ These links give the rules:
 The command has these limits:
 
 - A dismissal acts only on the findings of the latest review.
-- No command sends the findings of a review to a plan yet.
 
 ## Retry
 
@@ -235,7 +241,7 @@ These reasons explain its rules:
 
 - A plan or execute run can fail before its first turn. Its recorded session id then names no conversation, so a new run must not continue it. Retry deletes the session of the failed step, and the next run starts a new session.
 - A verify failure usually belongs to no todo. So `--resume-execute` marks every todo done and queues one fix turn that gets the failure. The todos do not run again.
-- A refine needs feedback, and tasker can refuse a plan again. So retry runs nothing for the origin `refining`. It prints a hint, and you decide the next feedback.
+- A refine from `awaiting_plan_review` needs feedback, and tasker can refuse a plan again. So retry runs nothing for the origin `refining`. It prints a hint, and you decide the next feedback.
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait, so retry must release the lock first.
 - The fix turn gets the tail of the log from tasker, not from the sandbox. The log is in the data root, outside the worktree, and the sandbox gives the shell only the worktree. The bound of 200 lines and 64 KiB keeps a large log out of the prompt.
 - The tail comes only from the verify run of this failure. Some verify failures record no run, and then the latest run belongs to an earlier verify. Its log gives the fix turn false data, so the fix turn gets no tail.
