@@ -1,5 +1,5 @@
 import { DatabaseSync, type StatementSync } from "node:sqlite";
-import type { AssistantProviderId, Effort, RecordedSession } from "../assistant/provider.js";
+import type { AssistantEvent, AssistantProviderId, Effort, RecordedSession } from "../assistant/provider.js";
 import type { PlanAnswer } from "../plan/answer.js";
 import type { Finding } from "../review/answer.js";
 import type { FindingEntry } from "../review/findings-text.js";
@@ -55,6 +55,14 @@ export interface Task {
   attempt: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// The last quota event of a repo, as the provider sent it, with the time when tasker got it.
+export interface QuotaEventRecord {
+  repoKey: string;
+  provider: AssistantProviderId;
+  receivedAt: string;
+  event: AssistantEvent;
 }
 
 export interface NewTask {
@@ -382,6 +390,10 @@ export interface TaskStore extends LockStore {
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
   forgetDefaultBaseBranch(repoKey: string, branch: string): void;
+  // Saves event as the last quota event of the repo. It replaces the record that the repo has.
+  recordQuotaEvent(repoKey: string, provider: AssistantProviderId, event: AssistantEvent): void;
+  // The quota event records sorted by repo key: all of them, or only the record of repoKey.
+  listQuotaEvents(repoKey?: string): QuotaEventRecord[];
   close(): void;
 }
 
@@ -728,6 +740,14 @@ function setUp(db: DatabaseSync) {
          branch = excluded.branch, updated_at = excluded.updated_at`,
     ),
     deleteDefaultBaseBranch: db.prepare("DELETE FROM default_base_branches WHERE repo_key = ? AND branch = ?"),
+    upsertQuotaEvent: db.prepare(
+      `INSERT INTO quota_events (repo_key, provider, event, received_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(repo_key) DO UPDATE SET
+         provider = excluded.provider, event = excluded.event, received_at = excluded.received_at`,
+    ),
+    selectQuotaEvents: db.prepare("SELECT * FROM quota_events ORDER BY repo_key"),
+    selectQuotaEventOfRepo: db.prepare("SELECT * FROM quota_events WHERE repo_key = ?"),
   };
 }
 
@@ -1433,6 +1453,24 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       immediateTransaction(db, () => {
         statements.deleteDefaultBaseBranch.run(repoKey, branch);
       });
+    },
+
+    recordQuotaEvent(repoKey, provider, event) {
+      immediateTransaction(db, () => {
+        statements.upsertQuotaEvent.run(repoKey, provider, JSON.stringify(event), now().toISOString());
+      });
+    },
+
+    listQuotaEvents(repoKey) {
+      const rows = (
+        repoKey === undefined ? statements.selectQuotaEvents.all() : statements.selectQuotaEventOfRepo.all(repoKey)
+      ) as { repo_key: string; provider: string; event: string; received_at: string }[];
+      return rows.map((row) => ({
+        repoKey: row.repo_key,
+        provider: row.provider as AssistantProviderId,
+        receivedAt: row.received_at,
+        event: JSON.parse(row.event) as AssistantEvent,
+      }));
     },
 
     tryLock(name) {

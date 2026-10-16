@@ -124,4 +124,10 @@ CREATE TABLE review_findings (
 );
 ALTER TABLE sessions ADD COLUMN review_number INTEGER;
 CREATE UNIQUE INDEX sessions_task_review ON sessions (task_id, review_number) WHERE role = 'review';`,
+  `CREATE TABLE quota_events (
+  repo_key TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  event TEXT NOT NULL,
+  received_at TEXT NOT NULL
+);`,
 ];
