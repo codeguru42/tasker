@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RegisterCommand } from "../../src/cli.js";
-import { captureIo, greet, runCommand, runHelp } from "./cli.js";
+import { captureIo, greet, helpText, runCommand, runHelp } from "./cli.js";
 
 describe("runCommand", () => {
   it("gives the help text and code 0 for --help", async () => {
@@ -60,5 +60,14 @@ describe("captureIo", () => {
     const io = captureIo({ answers: [] });
     await expect(io.prompt?.("more? ")).rejects.toThrow();
     expect(io.questions).toEqual(["more? "]);
+  });
+});
+
+describe("helpText", () => {
+  it("gives the help text of tasker with the given commands", async () => {
+    const text = await helpText([greet]);
+
+    expect(text).toContain("greet");
+    expect(text).toContain("Say hello");
   });
 });
