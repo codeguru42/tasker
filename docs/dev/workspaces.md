@@ -20,8 +20,6 @@ The resolve of the base and the containment read of the diff part fetch. No work
 
 ## Base branch
 
-The resolve has no step for the blocker of a stacked task.
-
 ### Forms
 
 The stored form of a base is one of these:
@@ -33,7 +31,7 @@ Names such as `-x` and `a..b` pass the parse of the text that a user types. [The
 
 ### The resolve
 
-The checks that need no git run first, so a bad input causes no fetch and no write.
+The checks that need no git run first, so a bad input causes no fetch and no write. The resolve has no step for the blocker of a stacked task.
 
 The source order is: the issue hint, then `--base`, then the learned default, then `defaultBaseBranch`, then a question.
 
@@ -48,10 +46,7 @@ The learned default is the row of the repo in the `default_base_branches` table.
 - A value from the configuration default or from the answer is saved only after the branch exists in the clone.
 - A hint and `--base` store nothing.
 - tasker asks at most once for each repo, unless a learned value later stops existing.
-
-### Side effects
-
-A learned value that is missing is deleted before the question runs. If the question or its check then fails, the learned value stays deleted.
+- A learned value that is missing is deleted before the question runs. If the question or its check then fails, the learned value stays deleted.
 
 ## Workspaces
 
