@@ -38,6 +38,7 @@ The limits of this rule:
 - Each signal that comes while the same command runs goes to the command. A second Ctrl-C reaches the command again.
 - Between two commands, no handler exists. A Ctrl-C then stops tasker at once.
 - After the run, the default comes back. A SIGTERM ends tasker.
+- If the command does not start, each signal that came while it started gets its default action. A SIGINT or a SIGTERM then ends tasker.
 - If tasker dies by SIGKILL, it cannot pass the signal. The process group of the command keeps running.
 
 ## The terminal and the output
