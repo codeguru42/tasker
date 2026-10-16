@@ -1,5 +1,6 @@
 import { CommanderError } from "commander";
-import type { RegisterCommand } from "../cli.js";
+import type { Io, RegisterCommand } from "../cli.js";
+import type { Config } from "../config/schema.js";
 import { findingCountText, formatFindings } from "../review/findings-text.js";
 import { reviewFeedbackTask } from "../tasks/review-feedback.js";
 import { reviewTask } from "../tasks/review.js";
@@ -35,21 +36,26 @@ export const review: RegisterCommand = (program, io) => {
         });
         return;
       }
-      const result = await orFailAsync(io, () =>
-        withIssueTaskAsync(io, config, issue, { repo: options.repo }, (store, found, ref) =>
-          reviewTask(store, { config, ref, taskId: found.id, env: process.env, io }),
-        ),
-      );
-      if ("exitCode" in result) {
-        throw new CommanderError(result.exitCode, "tasker.review", "the review run did not succeed");
-      }
-      io.stdout(
-        [
-          `reviewed ${result.issueKey}: review ${result.number}, ${findingCountText(result.findings.length)}`,
-          `${formatFindings(result.findings)}prompt: ${result.promptPath}`,
-          `transcript: ${result.transcriptPath}`,
-          "",
-        ].join("\n"),
-      );
+      await reviewIssue(io, config, issue, { repo: options.repo });
     });
 };
+
+// The steps and the output of the automated review of tasker review. tasker retry runs them too.
+export async function reviewIssue(io: Io, config: Config, issue: string, options: { repo?: string }): Promise<void> {
+  const result = await orFailAsync(io, () =>
+    withIssueTaskAsync(io, config, issue, { repo: options.repo }, (store, found, ref) =>
+      reviewTask(store, { config, ref, taskId: found.id, env: process.env, io }),
+    ),
+  );
+  if ("exitCode" in result) {
+    throw new CommanderError(result.exitCode, "tasker.review", "the review run did not succeed");
+  }
+  io.stdout(
+    [
+      `reviewed ${result.issueKey}: review ${result.number}, ${findingCountText(result.findings.length)}`,
+      `${formatFindings(result.findings)}prompt: ${result.promptPath}`,
+      `transcript: ${result.transcriptPath}`,
+      "",
+    ].join("\n"),
+  );
+}
