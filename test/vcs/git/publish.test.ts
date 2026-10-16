@@ -9,7 +9,17 @@ import { taskBranchName } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
-import { NOT_TASK_BRANCHES, NO_TOKEN, addCloneCommit, gitCloneTokens, gitRecorderEnv, makeGitClone, makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
+import {
+  NOT_TASK_BRANCHES,
+  NO_TOKEN,
+  addCloneCommit,
+  gitCloneTokens,
+  gitRecorderEnv,
+  makeGitClone,
+  makeGitOrigin,
+  sshKeyArgs,
+  type GitOrigin,
+} from "../../helpers/git.js";
 
 const BRANCH = taskBranchName("issue-1", "task");
 
@@ -161,12 +171,7 @@ describe("publish, land and delete", () => {
       expect(await origin.branchHead(BRANCH)).toBe(revision);
       expect(await origin.branchHead("main")).toBe(main);
       expect(pushes()).toEqual([
-        [
-          "push",
-          `--force-with-lease=refs/heads/${BRANCH}:`,
-          "origin",
-          `refs/heads/${BRANCH}:refs/heads/${BRANCH}`,
-        ],
+        ["push", `--force-with-lease=refs/heads/${BRANCH}:`, "origin", `refs/heads/${BRANCH}:refs/heads/${BRANCH}`],
       ]);
       expectNoTokenFile();
       await expectPushNeedsToken();
@@ -298,10 +303,7 @@ describe("publish, land and delete", () => {
       it("names the branch when the remote does not answer", async () => {
         await addCloneCommit(clone, env, BRANCH);
 
-        const error = await failureOf(
-          publish({ remote: join(origin.dir, "missing.git") }),
-          Error,
-        );
+        const error = await failureOf(publish({ remote: join(origin.dir, "missing.git") }), Error);
 
         expect(error.message.startsWith(named)).toBe(true);
         expectNoTokenFile();
@@ -309,9 +311,7 @@ describe("publish, land and delete", () => {
 
       it.each(["abc", "main"])("refuses the published revision %j before any git call", async (published) => {
         const error = await failureOf(publish({ published }), Error);
-        expect(error.message).toBe(
-          `the published revision is not a full revision: ${JSON.stringify(published)}`,
-        );
+        expect(error.message).toBe(`the published revision is not a full revision: ${JSON.stringify(published)}`);
         expect(gitCalls()).toEqual([]);
       });
 
@@ -382,8 +382,7 @@ describe("publish, land and delete", () => {
       it("refuses a local base", async () => {
         await expectRefusedBeforeAnyGitCall(
           (revision) => ({ base: "refs/heads/main", revision }),
-          (revision) =>
-            `cannot land ${revision} on the base branch: refs/heads/main: the base is a local branch`,
+          (revision) => `cannot land ${revision} on the base branch: refs/heads/main: the base is a local branch`,
         );
       });
 
@@ -420,9 +419,7 @@ describe("publish, land and delete", () => {
 
         const error = await failureOf(land({ revision }), Error);
 
-        expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(
-          true,
-        );
+        expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(true);
         expect(await origin.branchHead("main")).toBe(moved);
         expectNoTokenFile();
       });
@@ -430,14 +427,9 @@ describe("publish, land and delete", () => {
       it("names the base and the revision when the remote does not answer", async () => {
         const revision = await addCloneCommit(clone, env, BRANCH);
 
-        const error = await failureOf(
-          land({ revision, remote: join(origin.dir, "missing.git") }),
-          Error,
-        );
+        const error = await failureOf(land({ revision, remote: join(origin.dir, "missing.git") }), Error);
 
-        expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(
-          true,
-        );
+        expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(true);
         expectNoTokenFile();
       });
     });
@@ -537,10 +529,7 @@ describe("publish, land and delete", () => {
       it("names the branch when the remote does not answer", async () => {
         const published = await addCloneCommit(clone, env, BRANCH);
 
-        const error = await failureOf(
-          remove({ published, remote: join(origin.dir, "missing.git") }),
-          Error,
-        );
+        const error = await failureOf(remove({ published, remote: join(origin.dir, "missing.git") }), Error);
 
         expect(error.message.startsWith(named)).toBe(true);
         expectNoTokenFile();

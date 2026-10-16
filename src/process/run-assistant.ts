@@ -53,8 +53,7 @@ function decodeTail(tail: Buffer): string {
 }
 
 export type AssistantResult =
-  | (GroupResult & { started: true; stderrTail: string })
-  | { started: false; notFound: boolean; error: string };
+  (GroupResult & { started: true; stderrTail: string }) | { started: false; notFound: boolean; error: string };
 
 // Runs file with args as an assistant child in a new process group and session.
 // The prompt goes to stdin, and stdin closes after it. Each line of stdout goes to onLine.
@@ -91,7 +90,8 @@ export async function runAssistant(
   if (pid === undefined) {
     forward.stop();
     const error = await new Promise<NodeJS.ErrnoException>((resolve) => child.once("error", resolve));
-    if (error.code === "ENOENT") return { started: false, notFound: true, error: new CommandNotFoundError(file, "not-on-path").message };
+    if (error.code === "ENOENT")
+      return { started: false, notFound: true, error: new CommandNotFoundError(file, "not-on-path").message };
     return { started: false, notFound: false, error: `cannot start ${file}: ${error.message}` };
   }
   child.stdin.on("error", () => {}); // the result comes from the exit, and an EPIPE only means that the child exited before it read the whole prompt

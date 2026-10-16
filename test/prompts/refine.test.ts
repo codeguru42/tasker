@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  REFINE_PROMPT,
-  REFINE_PROMPT_NAME,
-  openQuestionsText,
-} from "../../src/prompts/refine.js";
+import { REFINE_PROMPT, REFINE_PROMPT_NAME, openQuestionsText } from "../../src/prompts/refine.js";
 import { SHARED_RULES } from "../../src/prompts/shared.js";
 import { fillTemplate } from "../../src/prompts/template.js";
 
@@ -56,11 +52,8 @@ describe("openQuestionsText", () => {
   });
 
   it("joins the lines of two questions in input order", () => {
-    expect(
-      openQuestionsText([
-        QUESTION,
-        { id: "q-two", question: "Which name?", context: "None is set." },
-      ]),
-    ).toBe(`${QUESTION_LINE}\n- \`q-two\`: Which name? (None is set.)`);
+    expect(openQuestionsText([QUESTION, { id: "q-two", question: "Which name?", context: "None is set." }])).toBe(
+      `${QUESTION_LINE}\n- \`q-two\`: Which name? (None is set.)`,
+    );
   });
 });

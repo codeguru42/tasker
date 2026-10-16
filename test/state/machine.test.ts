@@ -24,7 +24,13 @@ import {
   type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
-import { seedExecuteSession, seedPinnedPlanRevision, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
+import {
+  seedExecuteSession,
+  seedPinnedPlanRevision,
+  seedPlanRevision,
+  seedPlanSession,
+  validPlanAnswer,
+} from "../helpers/plan.js";
 import { moveTaskThrough, TO_WORK_REVIEW } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -119,21 +125,15 @@ describe("rule edges", () => {
     expect(canTransition(state, "cancelled")).toBe(true);
   });
 
-  it.each(NON_TERMINAL.filter((s) => s !== "failed"))(
-    "allows %s -> failed",
-    (state) => {
-      expect(canTransition(state, "failed")).toBe(true);
-    },
-  );
+  it.each(NON_TERMINAL.filter((s) => s !== "failed"))("allows %s -> failed", (state) => {
+    expect(canTransition(state, "failed")).toBe(true);
+  });
 
-  it.each(["finished", "cancelled"] as TaskState[])(
-    "allows no edge out of %s",
-    (terminal) => {
-      for (const to of STATES) {
-        expect(canTransition(terminal, to)).toBe(false);
-      }
-    },
-  );
+  it.each(["finished", "cancelled"] as TaskState[])("allows no edge out of %s", (terminal) => {
+    for (const to of STATES) {
+      expect(canTransition(terminal, to)).toBe(false);
+    }
+  });
 
   it("refuses failed -> failed", () => {
     expect(canTransition("failed", "failed")).toBe(false);
@@ -163,19 +163,63 @@ const SPECIFIC: Record<string, string[]> = {
   finishing: ["finished", "cleanup_failed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   cleanup_failed: ["finishing", "updating_branch"],
   updating_branch: [
-    "workspace_ready", "awaiting_plan_review", "approved", "executed", "awaiting_work_review",
-    "reviewed", "accepted", "pushed", "in_peer_review", "failed", "cleanup_failed",
-    "quota_blocked", "awaiting_quota_approval", "interrupted",
+    "workspace_ready",
+    "awaiting_plan_review",
+    "approved",
+    "executed",
+    "awaiting_work_review",
+    "reviewed",
+    "accepted",
+    "pushed",
+    "in_peer_review",
+    "failed",
+    "cleanup_failed",
+    "quota_blocked",
+    "awaiting_quota_approval",
+    "interrupted",
   ],
-  quota_blocked: ["workspace_ready", "awaiting_plan_review", "approved", "awaiting_work_review", "accepted", "reviewed"],
-  awaiting_quota_approval: ["workspace_ready", "awaiting_plan_review", "approved", "awaiting_work_review", "accepted", "reviewed"],
+  quota_blocked: [
+    "workspace_ready",
+    "awaiting_plan_review",
+    "approved",
+    "awaiting_work_review",
+    "accepted",
+    "reviewed",
+  ],
+  awaiting_quota_approval: [
+    "workspace_ready",
+    "awaiting_plan_review",
+    "approved",
+    "awaiting_work_review",
+    "accepted",
+    "reviewed",
+  ],
   interrupted: [
-    "workspace_ready", "awaiting_plan_review", "approved", "awaiting_work_review", "accepted", "reviewed",
-    "executed", "in_peer_review", "pushed", "cleanup_failed", "landed",
+    "workspace_ready",
+    "awaiting_plan_review",
+    "approved",
+    "awaiting_work_review",
+    "accepted",
+    "reviewed",
+    "executed",
+    "in_peer_review",
+    "pushed",
+    "cleanup_failed",
+    "landed",
   ],
   failed: [
-    "provisioning", "workspace_ready", "awaiting_plan_review", "approved", "executed", "accepted",
-    "awaiting_work_review", "reviewed", "in_peer_review", "refining", "pushed", "updating_branch",
+    "provisioning",
+    "workspace_ready",
+    "awaiting_plan_review",
+    "approved",
+    "executed",
+    "accepted",
+    "awaiting_work_review",
+    "reviewed",
+    "in_peer_review",
+    "refining",
+    "pushed",
+    "updating_branch",
   ],
 };
 
@@ -270,9 +314,7 @@ describe("task transitions", () => {
 
     it("names both states when a terminal task moves", () => {
       const task = store.createTask(newTask("finished"));
-      expect(() => transitionTask(store, task.id, "cancelled")).toThrow(
-        /finished.*cancelled/,
-      );
+      expect(() => transitionTask(store, task.id, "cancelled")).toThrow(/finished.*cancelled/);
     });
 
     it("refuses a stored state that is not a known state", () => {
@@ -283,9 +325,7 @@ describe("task transitions", () => {
     });
 
     it("keeps the store error for a missing task", () => {
-      expect(() => transitionTask(store, 999, "planning")).toThrow(
-        "task not found: 999",
-      );
+      expect(() => transitionTask(store, 999, "planning")).toThrow("task not found: 999");
     });
 
     it("writes one transition event after the created event", () => {
@@ -609,7 +649,13 @@ describe("task transitions", () => {
     it("moves to failed with an error that failedFrom reads", () => {
       const task = store.createTask(newTask("executed"));
       transitionTask(store, task.id, "verifying");
-      transitionWithVerifyRun(store, task.id, "failed", { ...run, result: "failed", failingCommand: 1 }, { error: "boom" });
+      transitionWithVerifyRun(
+        store,
+        task.id,
+        "failed",
+        { ...run, result: "failed", failingCommand: 1 },
+        { error: "boom" },
+      );
       expect(store.getTask(task.id)!.state).toBe("failed");
       expect(store.listEvents(task.id).at(-1)?.data).toEqual({ error: "boom", from: "verifying", to: "failed" });
       expect(failedFrom(store, task.id)).toBe("verifying");
@@ -651,9 +697,7 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("planning"));
       failTask(store, task.id, "boom");
       const before = store.listEvents(task.id);
-      expect(() => failTask(store, task.id, "again")).toThrow(
-        "illegal state transition: failed -> failed",
-      );
+      expect(() => failTask(store, task.id, "again")).toThrow("illegal state transition: failed -> failed");
       expect(store.getTask(task.id)!.state).toBe("failed");
       expect(store.listEvents(task.id)).toEqual(before);
     });
@@ -716,7 +760,9 @@ describe("task transitions", () => {
       transitionTask(store, task.id, "refining");
       failTask(store, task.id, "boom again");
       const events = store.listEvents(task.id);
-      const fails = events.flatMap((event, i) => ((event.data as { to?: string } | undefined)?.to === "failed" ? [i] : []));
+      const fails = events.flatMap((event, i) =>
+        (event.data as { to?: string } | undefined)?.to === "failed" ? [i] : [],
+      );
       expect(fails).toHaveLength(2);
       expect(lastFailIndex(events)).toBe(fails[1]);
     });

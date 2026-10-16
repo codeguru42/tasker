@@ -63,9 +63,7 @@ export async function startIssue(
       ),
     // The bootstrap error comes first, then the tail of the log.
     (error) =>
-      error instanceof BootstrapFailedError
-        ? `${error.message}\n${error.tail.trimEnd()}`
-        : errorMessage(error),
+      error instanceof BootstrapFailedError ? `${error.message}\n${error.tail.trimEnd()}` : errorMessage(error),
   );
   const { task } = outcome;
   if (!outcome.started) io.stdout("task already started\n");

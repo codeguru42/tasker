@@ -103,10 +103,7 @@ describe("readGithubIssue", () => {
   });
 
   it.each([
-    [
-      "a missing repo",
-      "GraphQL: Could not resolve to a Repository with the name 'octo/repo'. (repository)\n",
-    ],
+    ["a missing repo", "GraphQL: Could not resolve to a Repository with the name 'octo/repo'. (repository)\n"],
     ["a server error", "HTTP 502"],
   ])("passes %s through as a GhError", async (_name, stderr) => {
     const fake = fakeGh(dir, {}, [
@@ -118,8 +115,7 @@ describe("readGithubIssue", () => {
   });
 
   it("names the key of an issue that does not exist", async () => {
-    const stderr =
-      "GraphQL: Could not resolve to an issue or pull request with the number of 7. (repository.issue)\n";
+    const stderr = "GraphQL: Could not resolve to an issue or pull request with the number of 7. (repository.issue)\n";
     const fake = fakeGh(dir, {}, [
       ghTokenAnswer("octo", "gho_test"),
       { args: viewArgs("7", "octo/repo"), stderr, exitCode: 1 },

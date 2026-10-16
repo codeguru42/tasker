@@ -69,7 +69,9 @@ describe("recordPlanRevision", () => {
       mkdirSync(dirname(plansDir), { recursive: true });
       writeFileSync(plansDir, "a file, not a folder");
 
-      const error = thrownBy(() => recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: "text\n" }) }));
+      const error = thrownBy(() =>
+        recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: "text\n" }) }),
+      );
 
       expect(error).toBeInstanceOf(PlanFileWriteError);
       expect((error as Error).message).toMatch(/^cannot write the plan file of revision v1: /);
@@ -80,7 +82,9 @@ describe("recordPlanRevision", () => {
 
   it("writes no file for a task that does not exist", () => {
     withDataRootStore(dataRoot, (store) => {
-      const error = thrownBy(() => recordTestPlanRevision(store, dataRoot, 9999, { answer: validPlanAnswer({ plan_markdown: "text\n" }) }));
+      const error = thrownBy(() =>
+        recordTestPlanRevision(store, dataRoot, 9999, { answer: validPlanAnswer({ plan_markdown: "text\n" }) }),
+      );
 
       expect((error as Error).message).toBe("task not found: 9999");
       expect(existsSync(taskPlansDir(dataRoot, { issueKey: newTask.issueKey, attempt: 1 }))).toBe(false);

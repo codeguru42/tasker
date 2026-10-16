@@ -4,14 +4,7 @@ import { detailSuffix } from "../../detail-suffix.js";
 import { ReconcileConflictError } from "../errors.js";
 import { LOCAL_PREFIX } from "../local-branch.js";
 import type { ReconcileStrategy, UncommittedChange } from "../provider.js";
-import {
-  isAncestor,
-  jsonPathList,
-  nulFields,
-  uncommittedRefusal,
-  worktreeChanges,
-  worktreeHead,
-} from "./changes.js";
+import { isAncestor, jsonPathList, nulFields, uncommittedRefusal, worktreeChanges, worktreeHead } from "./changes.js";
 import { assertRevision, assertRevisionInput, resolveRevision } from "./refs.js";
 import { GitError, isGitExit, runGit } from "./run.js";
 import { assertTaskBranchNameAndShape, assertTaskWorktree } from "./worktree.js";
@@ -99,10 +92,7 @@ export async function worktreeState(o: {
 // with an exit code for this, and the text of "git status" is not stable. So it asks git for the
 // real path of each state file with "rev-parse --git-path" and tests that the file exists.
 // The path can be relative to the target or absolute, so it resolves against the target.
-async function inProgress(
-  target: string,
-  env: NodeJS.ProcessEnv,
-): Promise<{ rebase: boolean; merge: boolean }> {
+async function inProgress(target: string, env: NodeJS.ProcessEnv): Promise<{ rebase: boolean; merge: boolean }> {
   const exists = async (name: string): Promise<boolean> => {
     const found = await runGit(["rev-parse", "--git-path", name], { cwd: target, env });
     return existsSync(resolve(target, found.trim()));
@@ -134,8 +124,7 @@ async function restoreAt(target: string, env: NodeJS.ProcessEnv, start: StartSta
   );
   await attempt(["clean", "-fd"]);
   const found: FoundState = { ...(await stateAt(target, env)), ...(await inProgress(target, env)) };
-  const right =
-    !wrongPlace(start, found) && found.changes.length === 0 && !found.rebase && !found.merge;
+  const right = !wrongPlace(start, found) && found.changes.length === 0 && !found.rebase && !found.merge;
   if (right) return;
   const n = found.changes.length;
   const where = found.branch === undefined ? "detached" : `on the branch ${found.branch}`;
@@ -265,9 +254,7 @@ async function unmergedPaths(target: string, env: NodeJS.ProcessEnv): Promise<st
 }
 
 function strategyArgs(strategy: ReconcileStrategy, base: string): string[] {
-  return strategy === "rebase"
-    ? ["rebase", ...REBASE_OPTIONS, base]
-    : ["merge", ...MERGE_OPTIONS, base];
+  return strategy === "rebase" ? ["rebase", ...REBASE_OPTIONS, base] : ["merge", ...MERGE_OPTIONS, base];
 }
 
 // Brings the task worktree onto the base with a rebase or a merge. The base is a full revision
@@ -314,11 +301,7 @@ export interface ResyncResult {
 }
 
 // The one rule for the result: moved is true for every case except "none".
-async function resyncResult(
-  target: string,
-  env: NodeJS.ProcessEnv,
-  how: ResyncResult["how"],
-): Promise<ResyncResult> {
+async function resyncResult(target: string, env: NodeJS.ProcessEnv, how: ResyncResult["how"]): Promise<ResyncResult> {
   return { moved: how !== "none", how, head: await worktreeHead(target, env) };
 }
 

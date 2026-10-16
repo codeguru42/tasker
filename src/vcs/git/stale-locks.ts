@@ -55,8 +55,7 @@ export function findStaleLocks(clone: string, nowMs: number, deadline: number): 
 }
 
 export type ProcView =
-  | { readable: true; openFiles: ReadonlySet<string>; gitCwds: readonly string[] }
-  | { readable: false; reason: string };
+  { readable: true; openFiles: ReadonlySet<string>; gitCwds: readonly string[] } | { readable: false; reason: string };
 
 // Reads the open files of every process, and the folder of every git process, from procRoot.
 // A part of a process that gives an error (EACCES, ENOENT) is skipped.
@@ -97,10 +96,7 @@ export function readProcView(procRoot: string): ProcView {
 
 // A function that reads procRoot at the first call and gives the same view at each later call.
 // On a platform that is not Linux, it gives undefined, and it reads nothing.
-export function onceProcView(
-  procRoot: string,
-  platform: NodeJS.Platform,
-): () => ProcView | undefined {
+export function onceProcView(procRoot: string, platform: NodeJS.Platform): () => ProcView | undefined {
   if (platform !== "linux") {
     return () => undefined;
   }

@@ -6,12 +6,7 @@ import { verifyCommandLogPath } from "../../src/store/layout.js";
 import type { Task } from "../../src/store/store.js";
 import { retryTask } from "../../src/tasks/retry.js";
 import { configWithTrackers } from "../helpers/config.js";
-import {
-  seedApprovedTask,
-  seedExecuteSession,
-  seedExecuteTodoStates,
-  seedPlanSession,
-} from "../helpers/plan.js";
+import { seedApprovedTask, seedExecuteSession, seedExecuteTodoStates, seedPlanSession } from "../helpers/plan.js";
 import { expectRefusedWithoutChange } from "../helpers/task-fixtures.js";
 import { eventsOf, failTaskFrom, failVerifyRun, latestTaskOf, withDataRootStore } from "../helpers/store.js";
 
@@ -82,9 +77,27 @@ describe("retryTask origins", () => {
     sessions: { plan: boolean; execute: boolean };
   }[] = [
     { origin: "provisioning", target: "provisioning", next: "start", state: "failed", sessions: kept },
-    { origin: "planning", target: "workspace_ready", next: "plan", state: "workspace_ready", sessions: { ...kept, plan: false } },
-    { origin: "refining", target: "awaiting_plan_review", next: "refine", state: "awaiting_plan_review", sessions: kept },
-    { origin: "executing", target: "approved", next: "execute", state: "approved", sessions: { ...kept, execute: false } },
+    {
+      origin: "planning",
+      target: "workspace_ready",
+      next: "plan",
+      state: "workspace_ready",
+      sessions: { ...kept, plan: false },
+    },
+    {
+      origin: "refining",
+      target: "awaiting_plan_review",
+      next: "refine",
+      state: "awaiting_plan_review",
+      sessions: kept,
+    },
+    {
+      origin: "executing",
+      target: "approved",
+      next: "execute",
+      state: "approved",
+      sessions: { ...kept, execute: false },
+    },
     { origin: "verifying", target: "executed", next: "verify", state: "executed", sessions: kept },
   ];
 
@@ -128,7 +141,10 @@ describe("retryTask --resume-execute", () => {
     withDataRootStore(dataRoot, (store) => {
       expect(store.executeTodoProgress(task.id, 1).map((entry) => entry.state)).toEqual(["done", "done"]);
     });
-    expect(withDataRootStore(dataRoot, (store) => store.queuedExecuteFixTurn(task.id, 1))).toMatchObject({ verifyFailure: "command 2 failed", verifyLogTail: "log b\n" });
+    expect(withDataRootStore(dataRoot, (store) => store.queuedExecuteFixTurn(task.id, 1))).toMatchObject({
+      verifyFailure: "command 2 failed",
+      verifyLogTail: "log b\n",
+    });
     const last = eventsOf(dataRoot, KEY).at(-1);
     expect(last).toEqual({
       type: "retry",
@@ -164,7 +180,10 @@ describe("retryTask --resume-execute", () => {
 
       await retry(dataRoot, task, true);
 
-      expect(withDataRootStore(dataRoot, (store) => store.queuedExecuteFixTurn(task.id, 1))).toMatchObject({ verifyFailure: message, verifyLogTail: null });
+      expect(withDataRootStore(dataRoot, (store) => store.queuedExecuteFixTurn(task.id, 1))).toMatchObject({
+        verifyFailure: message,
+        verifyLogTail: null,
+      });
     });
 
     it("for a run with no failing command", async () => {
@@ -178,7 +197,10 @@ describe("retryTask --resume-execute", () => {
 
     it("for a failing command that never started and has no log", async () => {
       const { dataRoot, task } = approvedTask();
-      failedVerify(dataRoot, task, { result: "failed", commands: ["a", "b"], failingCommand: 3 }, ["log a\n", "log b\n"]);
+      failedVerify(dataRoot, task, { result: "failed", commands: ["a", "b"], failingCommand: 3 }, [
+        "log a\n",
+        "log b\n",
+      ]);
 
       await retry(dataRoot, task, true);
 
@@ -192,7 +214,10 @@ describe("retryTask --resume-execute", () => {
 
       await retry(dataRoot, task, true);
 
-      expect(withDataRootStore(dataRoot, (store) => store.queuedExecuteFixTurn(task.id, 1))).toMatchObject({ verifyFailure: "command 2 failed", verifyLogTail: null });
+      expect(withDataRootStore(dataRoot, (store) => store.queuedExecuteFixTurn(task.id, 1))).toMatchObject({
+        verifyFailure: "command 2 failed",
+        verifyLogTail: null,
+      });
     });
   });
 });

@@ -5,7 +5,14 @@ import { showPlan } from "../../src/commands/show-plan.js";
 import { planRevisionPath } from "../../src/store/layout.js";
 import { runCommand } from "../helpers/cli.js";
 import { useThreeRepoDataRoot } from "../helpers/config.js";
-import { OPEN_QUESTION_BLOCK, recordPlanRevisions, seedPlanReviewTask, seedPlanRevision, seedPlanningTask, validPlanAnswer } from "../helpers/plan.js";
+import {
+  OPEN_QUESTION_BLOCK,
+  recordPlanRevisions,
+  seedPlanReviewTask,
+  seedPlanRevision,
+  seedPlanningTask,
+  validPlanAnswer,
+} from "../helpers/plan.js";
 import { withDataRootStore } from "../helpers/store.js";
 
 const TASKER = "codeguru42/tasker";
@@ -39,11 +46,16 @@ describe("show-plan", () => {
 
   it("prints the newest revision by default", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordPlanRevisions(dataRoot, task, {}, {
-      source: "refine",
-      feedback: "Use main.",
-      answer: validPlanAnswer({ plan_markdown: "## Summary\n\nThe second plan of the a module.\n" }),
-    });
+    recordPlanRevisions(
+      dataRoot,
+      task,
+      {},
+      {
+        source: "refine",
+        feedback: "Use main.",
+        answer: validPlanAnswer({ plan_markdown: "## Summary\n\nThe second plan of the a module.\n" }),
+      },
+    );
 
     const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
@@ -53,11 +65,16 @@ describe("show-plan", () => {
 
   it("prints the revision of --version", async () => {
     const { dataRoot, task } = seedPlanningTask();
-    recordPlanRevisions(dataRoot, task, {}, {
-      source: "refine",
-      feedback: "Use main.",
-      answer: validPlanAnswer({ plan_markdown: "## Summary\n\nThe second plan of the a module.\n" }),
-    });
+    recordPlanRevisions(
+      dataRoot,
+      task,
+      {},
+      {
+        source: "refine",
+        feedback: "Use main.",
+        answer: validPlanAnswer({ plan_markdown: "## Summary\n\nThe second plan of the a module.\n" }),
+      },
+    );
 
     const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
 
@@ -120,7 +137,12 @@ describe("show-plan", () => {
 
     it("prints the answer of a question that a later revision answered", async () => {
       const { dataRoot, task } = seedPlanningTask();
-      recordPlanRevisions(dataRoot, task, {}, { source: "refine", feedback: "Use main.\nNot develop.", ...withoutQuestions });
+      recordPlanRevisions(
+        dataRoot,
+        task,
+        {},
+        { source: "refine", feedback: "Use main.\nNot develop.", ...withoutQuestions },
+      );
 
       const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER, "--version", "1");
 
@@ -157,10 +179,12 @@ describe("show-plan", () => {
 
     const result = await runCommand(showPlan, "show-plan", KEY, "--repo", TASKER);
 
-    expect(result.out.endsWith(
-      "todos:\n  one: First\n  second line\n    Line a\n    Line b\n    depends on: none\n" +
-        "questions:\n  q: Which?\n    Context a\n    Context b\n    open\n",
-    )).toBe(true);
+    expect(
+      result.out.endsWith(
+        "todos:\n  one: First\n  second line\n    Line a\n    Line b\n    depends on: none\n" +
+          "questions:\n  q: Which?\n    Context a\n    Context b\n    open\n",
+      ),
+    ).toBe(true);
   });
 
   it("puts todos on its own line when the plan text has no final line end", async () => {

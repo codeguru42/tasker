@@ -53,18 +53,14 @@ describe("sshAccount", () => {
     const ssh = setup({ greet: "octocat", repo: "serve" });
     const key = `${dir}/key`;
     expect(await probe(ssh, key)).toEqual({ state: "found", account: "octocat" });
-    expect(readArgLog(ssh.logPath)).toEqual([
-      [...sshKeyArgs(key), "-T", "--", "tasker.invalid"],
-    ]);
+    expect(readArgLog(ssh.logPath)).toEqual([[...sshKeyArgs(key), "-T", "--", "tasker.invalid"]]);
   });
 
   it.each([`it's-key`, "~/k"])("passes the key %s to ssh as it is", async (name) => {
     const ssh = setup({ greet: "octocat", repo: "serve" });
     const key = name.startsWith("~/") ? name : `${dir}/${name}`;
     expect(await probe(ssh, key)).toEqual({ state: "found", account: "octocat" });
-    expect(readArgLog(ssh.logPath)).toEqual([
-      [...sshKeyArgs(key), "-T", "--", "tasker.invalid"],
-    ]);
+    expect(readArgLog(ssh.logPath)).toEqual([[...sshKeyArgs(key), "-T", "--", "tasker.invalid"]]);
   });
 
   it("gives the port to ssh", async () => {

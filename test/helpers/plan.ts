@@ -233,11 +233,7 @@ export function seedExecuteFixTurn(
 
 // Records a plan session for the task with TEST_SESSION_ID and the plan model of the test
 // configurations, unless the call changes them.
-export function seedPlanSession(
-  store: TaskStore,
-  taskId: number,
-  change: Partial<NewSession> = {},
-): StoredSession {
+export function seedPlanSession(store: TaskStore, taskId: number, change: Partial<NewSession> = {}): StoredSession {
   return store.recordPlanSession(taskId, {
     sessionId: TEST_SESSION_ID,
     provider: "claude-code",

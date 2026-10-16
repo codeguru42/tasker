@@ -63,7 +63,10 @@ export function overlapWarning(overlaps: readonly TaskOverlap[], lastLines: read
   const lines = [
     "WARNING: this plan changes files that other tasks in flight also change.",
     "The task that lands second can get merge conflicts and redo its work.",
-    ...overlaps.flatMap((overlap) => [`  ${overlap.issueKey} (${overlap.state}):`, ...overlap.files.map((f) => `    ${f}`)]),
+    ...overlaps.flatMap((overlap) => [
+      `  ${overlap.issueKey} (${overlap.state}):`,
+      ...overlap.files.map((f) => `    ${f}`),
+    ]),
     ...lastLines,
   ];
   return `${lines.join("\n")}\n`;

@@ -45,11 +45,7 @@ export function issueKeyMatches(rawKey: string, config: Config): IssueRef[] {
   for (const [repoKey, repoConfig] of Object.entries(config.repos)) {
     let ref: IssueRef | undefined;
     try {
-      ref = KEY_PARSERS[repoConfig.issueTracker.provider](
-        rawKey,
-        repoKey,
-        projectOf(repoKey, repoConfig.issueTracker),
-      );
+      ref = KEY_PARSERS[repoConfig.issueTracker.provider](rawKey, repoKey, projectOf(repoKey, repoConfig.issueTracker));
     } catch (error) {
       if (!(error instanceof IssueKeyError)) throw error;
       rejection ??= error;
@@ -62,11 +58,7 @@ export function issueKeyMatches(rawKey: string, config: Config): IssueRef[] {
   return matches;
 }
 
-export function resolveIssueKey(
-  rawKey: string,
-  config: Config,
-  options: ResolveOptions = {},
-): IssueRef {
+export function resolveIssueKey(rawKey: string, config: Config, options: ResolveOptions = {}): IssueRef {
   const { repo } = options;
   if (repo !== undefined && !Object.hasOwn(config.repos, repo)) {
     throw new IssueKeyError(
@@ -87,10 +79,7 @@ export function resolveIssueKey(
   }
   const [only, ...others] = matches;
   if (only === undefined) {
-    throw new IssueKeyError(
-      rawKey,
-      `no configured repo has the project of issue key ${JSON.stringify(rawKey)}`,
-    );
+    throw new IssueKeyError(rawKey, `no configured repo has the project of issue key ${JSON.stringify(rawKey)}`);
   }
   if (others.length > 0) {
     const keys = matches.map((ref) => JSON.stringify(ref.repoKey)).join(", ");

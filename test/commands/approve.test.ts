@@ -31,7 +31,14 @@ const approvedEvent = (version: number, openQuestions: number) => ({
 
 // What a refused approve must leave: the state, the events and each approved_at as before.
 const expectNoWrite = (dataRoot: string, taskId: number, before: ReturnType<typeof planStateSnapshot>) => {
-  expect(planStateSnapshot(dataRoot, KEY, taskId, before.approvedAt.map((_, i) => i + 1))).toEqual(before);
+  expect(
+    planStateSnapshot(
+      dataRoot,
+      KEY,
+      taskId,
+      before.approvedAt.map((_, i) => i + 1),
+    ),
+  ).toEqual(before);
 };
 
 const question = (id: string, text: string) => ({ id, question: text, context: "No context." });

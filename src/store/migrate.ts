@@ -11,9 +11,7 @@ export function migrate(db: DatabaseSync, migrations: readonly string[]): void {
   immediateTransaction(db, () => {
     const found = schemaVersion(db);
     if (found > migrations.length) {
-      throw new Error(
-        `database schema version ${found} is newer than this tasker supports (${migrations.length})`,
-      );
+      throw new Error(`database schema version ${found} is newer than this tasker supports (${migrations.length})`);
     }
     for (let i = found; i < migrations.length; i++) {
       db.exec(migrations[i]);

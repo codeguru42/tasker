@@ -3,7 +3,18 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
-import { TEST_SESSION_ID, claudeOverageEvent, claudeRateLimitEvent, claudeSample, claudeSampleEvents, claudeSampleWithResult, runInput, type FakeClaude, type FakeClaudeControl, useFakeClaude } from "../../helpers/fake-claude.js";
+import {
+  TEST_SESSION_ID,
+  claudeOverageEvent,
+  claudeRateLimitEvent,
+  claudeSample,
+  claudeSampleEvents,
+  claudeSampleWithResult,
+  runInput,
+  type FakeClaude,
+  type FakeClaudeControl,
+  useFakeClaude,
+} from "../../helpers/fake-claude.js";
 import { writeFakeSandboxPrograms } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 
@@ -158,8 +169,8 @@ describe("createClaudeCodeProvider run", () => {
   it("fails with the text of a result that has is_error true, before the exit code", async () => {
     const stream = lines(
       claudeSampleWithResult("plain", (result) => {
-      result["is_error"] = true;
-      result["result"] = "Credit balance is too low";
+        result["is_error"] = true;
+        result["result"] = "Credit balance is too low";
       }),
     );
 
@@ -175,9 +186,9 @@ describe("createClaudeCodeProvider run", () => {
   it("falls back to the subtype when an error result has no text", async () => {
     const stream = lines(
       claudeSampleWithResult("plain", (result) => {
-      result["is_error"] = true;
-      result["subtype"] = "error_during_execution";
-      delete result["result"];
+        result["is_error"] = true;
+        result["subtype"] = "error_during_execution";
+        delete result["result"];
       }),
     );
 
@@ -189,9 +200,9 @@ describe("createClaudeCodeProvider run", () => {
   it("falls back to a general text when an error result has no text and no subtype", async () => {
     const stream = lines(
       claudeSampleWithResult("plain", (result) => {
-      result["is_error"] = true;
-      delete result["result"];
-      delete result["subtype"];
+        result["is_error"] = true;
+        delete result["result"];
+        delete result["subtype"];
       }),
     );
 
@@ -203,7 +214,7 @@ describe("createClaudeCodeProvider run", () => {
   it("gives the denials of a result that has is_error true", async () => {
     const stream = lines(
       claudeSampleWithResult("denied-tool", (result) => {
-      result["is_error"] = true;
+        result["is_error"] = true;
       }),
     );
 
@@ -238,7 +249,10 @@ describe("createClaudeCodeProvider run", () => {
   });
 
   it("gives timeout at the deadline, before the exit code", { timeout: 15_000 }, async () => {
-    const { outcome } = await run({ stream: claudeSample("plain").slice(0, 2), sleepMs: 20_000, exitCode: 3 }, { timeoutMs: 3000 });
+    const { outcome } = await run(
+      { stream: claudeSample("plain").slice(0, 2), sleepMs: 20_000, exitCode: 3 },
+      { timeoutMs: 3000 },
+    );
 
     expect(outcome.kind).toBe("timeout");
     expect(outcome.events).toHaveLength(2);
@@ -356,7 +370,10 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
   });
 
   it("gives success when the approved window is the one that is spent", async () => {
-    const { outcome } = await run({ stream: fullWith(claudeOverageEvent()) }, { overageStop: { approvedResetsAt: 1792206000 } });
+    const { outcome } = await run(
+      { stream: fullWith(claudeOverageEvent()) },
+      { overageStop: { approvedResetsAt: 1792206000 } },
+    );
 
     expect(outcome.kind).toBe("success");
   });
@@ -411,7 +428,11 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
   });
 
   describe("when the deadline fires first", () => {
-    const control = () => ({ stream: head(), sigtermStream: [JSON.stringify(claudeOverageEvent())], untilStopped: true });
+    const control = () => ({
+      stream: head(),
+      sigtermStream: [JSON.stringify(claudeOverageEvent())],
+      untilStopped: true,
+    });
 
     it("gives overage, because the outcome rests on the event", { timeout: 20_000 }, async () => {
       const { outcome } = await run(control(), { overageStop: {}, timeoutMs: 3000 });
@@ -452,7 +473,12 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
     const tmpRoot = realpathSync(useTempDir("tasker-claude-tmp-"));
     const cwd = useTempDir("tasker-claude-cwd-");
     const outcome = await createClaudeCodeProvider({ platform: options.platform ?? "linux", tmpRoot }).run(
-      runInput({ cwd, env: fake.env, sandbox: { ...limits, ...(options.sharedFolder ? { sharedFolder: options.sharedFolder } : {}) }, ...options.overrides }),
+      runInput({
+        cwd,
+        env: fake.env,
+        sandbox: { ...limits, ...(options.sharedFolder ? { sharedFolder: options.sharedFolder } : {}) },
+        ...options.overrides,
+      }),
     );
     return { outcome, fake, tmpRoot, cwd };
   }

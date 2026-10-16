@@ -40,28 +40,23 @@ describe("show-config", () => {
     });
 
     expect(code).toBe(0);
-    const expected = loadConfig({ TASKER_CONFIG: written.path }).repos[
-      "codeguru42/other"
-    ];
+    const expected = loadConfig({ TASKER_CONFIG: written.path }).repos["codeguru42/other"];
     expect(io.out.join("")).toBe(`${JSON.stringify(expected, null, 2)}\n`);
   });
 
-  it.each(["missing", "toString"])(
-    "reports the repo key %s that does not exist",
-    async (key) => {
-      useConfigFile(() => JSON.stringify(validConfig()));
-      const io = captureIo();
+  it.each(["missing", "toString"])("reports the repo key %s that does not exist", async (key) => {
+    useConfigFile(() => JSON.stringify(validConfig()));
+    const io = captureIo();
 
-      const code = await run(["show-config", "--repo", key], {
-        commands: [showConfig],
-        io,
-      });
+    const code = await run(["show-config", "--repo", key], {
+      commands: [showConfig],
+      io,
+    });
 
-      expect(code).toBe(1);
-      expect(io.out).toEqual([]);
-      expect(io.err.join("")).toBe(`repo key not found: ${key}\n`);
-    },
-  );
+    expect(code).toBe(1);
+    expect(io.out).toEqual([]);
+    expect(io.err.join("")).toBe(`repo key not found: ${key}\n`);
+  });
 
   it("prints the loader errors for an invalid configuration", async () => {
     const written = useConfigFile(() => JSON.stringify({ ...validConfig(), bogus: 1 }));

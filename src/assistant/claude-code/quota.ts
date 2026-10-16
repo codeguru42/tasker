@@ -69,7 +69,10 @@ export function overageStopOf(event: AssistantEvent, overageStop: OverageStop): 
 }
 
 // The facts of a quota stop when the rate limit stopped the run, else undefined.
-export function quotaStopOf(events: readonly AssistantEvent[], exitCode: number | null): { resetsAt?: number } | undefined {
+export function quotaStopOf(
+  events: readonly AssistantEvent[],
+  exitCode: number | null,
+): { resetsAt?: number } | undefined {
   if (exitCode === 0) return undefined;
   const last = events.at(-1);
   if (last?.["type"] !== "result" || last["terminal_reason"] !== "api_error" || last["api_error_status"] !== 429) {

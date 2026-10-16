@@ -4,9 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createDefaultIo, type RegisterCommand, run } from "../src/cli.js";
 import { captureIo, greet } from "./helpers/cli.js";
 
-const packageVersion: string = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-).version;
+const packageVersion: string = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 
 describe("run", () => {
   it("prints the package version for --version", async () => {
@@ -208,9 +206,7 @@ describe("createDefaultIo", () => {
       setTimeout(() => reject(new Error("the prompt did not settle")), 1000).unref();
     });
 
-    await expect(Promise.race([answer, unsettled])).rejects.toThrow(
-      "no answer: the question was cancelled",
-    );
+    await expect(Promise.race([answer, unsettled])).rejects.toThrow("no answer: the question was cancelled");
     expect(s.stdin.isPaused()).toBe(true);
   });
 });

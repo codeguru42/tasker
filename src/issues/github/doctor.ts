@@ -55,56 +55,50 @@ export function ghVersionCheck(timeoutMs = 5000): Check {
 }
 
 export function ghAuthCheck(account: string, timeoutMs = 15000): Check {
-  return timedCheck(
-    { name: `gh auth: ${account}`, required: true, timeoutMs },
-    async (env, { signal }) => {
-      const status = await authStatus(account, env, { signal });
-      if (status.ok) {
-        return { status: "ok", detail: status.detail };
-      }
-      if (!status.needsLogin) {
-        return { status: "error", detail: status.detail };
-      }
-      return {
-        status: "error",
-        detail: status.detail,
-        remediation: `Run \`gh auth login --hostname github.com\` and log in as ${account}.`,
-      };
-    },
-  );
+  return timedCheck({ name: `gh auth: ${account}`, required: true, timeoutMs }, async (env, { signal }) => {
+    const status = await authStatus(account, env, { signal });
+    if (status.ok) {
+      return { status: "ok", detail: status.detail };
+    }
+    if (!status.needsLogin) {
+      return { status: "error", detail: status.detail };
+    }
+    return {
+      status: "error",
+      detail: status.detail,
+      remediation: `Run \`gh auth login --hostname github.com\` and log in as ${account}.`,
+    };
+  });
 }
 
 export function ghProjectCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
-  return timedCheck(
-    { name: `gh project: ${repo.key}`, required: true, timeoutMs },
-    async (env, { signal }) => {
-      const account = accountOf(repo);
-      const project = projectOf(repo.key, repo.issueTracker);
-      try {
-        await runGh(["repo", "view", project, "--json", "nameWithOwner"], {
-          account,
-          env,
-          signal,
-        });
-      } catch (error) {
-        // Only a failure of the repo view call itself is a project problem. Every other error (the
-        // token call, gh not installed, a signal, an abort) passes to the shared wrapper, which gives
-        // error with its message and no remediation, or the timeout result.
-        if (!(error instanceof GhError && error.subcommand === "repo view" && error.exitCode !== null)) {
-          throw error;
-        }
-        return {
-          status: "error",
-          detail: `${repo.key}: the account ${account} cannot see the project ${project}: ${error.message}`,
-          remediation: `Make sure that issueTracker.project of ${repo.key} names the repo on GitHub, and that the account ${account} can see it.`,
-        };
+  return timedCheck({ name: `gh project: ${repo.key}`, required: true, timeoutMs }, async (env, { signal }) => {
+    const account = accountOf(repo);
+    const project = projectOf(repo.key, repo.issueTracker);
+    try {
+      await runGh(["repo", "view", project, "--json", "nameWithOwner"], {
+        account,
+        env,
+        signal,
+      });
+    } catch (error) {
+      // Only a failure of the repo view call itself is a project problem. Every other error (the
+      // token call, gh not installed, a signal, an abort) passes to the shared wrapper, which gives
+      // error with its message and no remediation, or the timeout result.
+      if (!(error instanceof GhError && error.subcommand === "repo view" && error.exitCode !== null)) {
+        throw error;
       }
       return {
-        status: "ok",
-        detail: `${repo.key}: the account ${account} can see the project ${project}`,
+        status: "error",
+        detail: `${repo.key}: the account ${account} cannot see the project ${project}: ${error.message}`,
+        remediation: `Make sure that issueTracker.project of ${repo.key} names the repo on GitHub, and that the account ${account} can see it.`,
       };
-    },
-  );
+    }
+    return {
+      status: "ok",
+      detail: `${repo.key}: the account ${account} can see the project ${project}`,
+    };
+  });
 }
 
 // A label that tasker writes to an issue, and what happens when it is missing.
@@ -147,49 +141,46 @@ function isNotFound(error: unknown): boolean {
 
 // The check only reads. Each label is one GET with no fields. It never creates a label.
 export function ghLabelsCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
-  return timedCheck(
-    { name: `gh labels: ${repo.key}`, required: true, timeoutMs },
-    async (env, { signal }) => {
-      const labels = labelsToRead(repo);
-      if (labels.length === 0) {
-        return { status: "ok", detail: `${repo.key}: no label to check` };
-      }
-      const account = accountOf(repo);
-      const project = projectOf(repo.key, repo.issueTracker);
-      let status: CheckStatus = "ok";
-      const lines: string[] = [];
-      const missingKeys: string[] = [];
-      for (const label of labels) {
-        const text = `the label ${JSON.stringify(label.name)} of ${label.configKey}`;
-        try {
-          await runGh(["api", `repos/${project}/labels/${encodeURIComponent(label.name)}`], {
-            account,
-            env,
-            signal,
-          });
-          lines.push(`${text} exists`);
-        } catch (error) {
-          if (!isNotFound(error)) {
-            throw error;
-          }
-          lines.push(`${text} does not exist in ${project}: ${label.reason}`);
-          missingKeys.push(label.configKey);
-          if (SEVERITY[label.missing] > SEVERITY[status]) {
-            status = label.missing;
-          }
+  return timedCheck({ name: `gh labels: ${repo.key}`, required: true, timeoutMs }, async (env, { signal }) => {
+    const labels = labelsToRead(repo);
+    if (labels.length === 0) {
+      return { status: "ok", detail: `${repo.key}: no label to check` };
+    }
+    const account = accountOf(repo);
+    const project = projectOf(repo.key, repo.issueTracker);
+    let status: CheckStatus = "ok";
+    const lines: string[] = [];
+    const missingKeys: string[] = [];
+    for (const label of labels) {
+      const text = `the label ${JSON.stringify(label.name)} of ${label.configKey}`;
+      try {
+        await runGh(["api", `repos/${project}/labels/${encodeURIComponent(label.name)}`], {
+          account,
+          env,
+          signal,
+        });
+        lines.push(`${text} exists`);
+      } catch (error) {
+        if (!isNotFound(error)) {
+          throw error;
+        }
+        lines.push(`${text} does not exist in ${project}: ${label.reason}`);
+        missingKeys.push(label.configKey);
+        if (SEVERITY[label.missing] > SEVERITY[status]) {
+          status = label.missing;
         }
       }
-      const detail = [`${repo.key}:`, ...lines].join("\n");
-      if (missingKeys.length === 0) {
-        return { status, detail };
-      }
-      return {
-        status,
-        detail,
-        remediation: `Create each missing label in ${project} on GitHub, or change ${missingKeys.join(" and ")}.`,
-      };
-    },
-  );
+    }
+    const detail = [`${repo.key}:`, ...lines].join("\n");
+    if (missingKeys.length === 0) {
+      return { status, detail };
+    }
+    return {
+      status,
+      detail,
+      remediation: `Create each missing label in ${project} on GitHub, or change ${missingKeys.join(" and ")}.`,
+    };
+  });
 }
 
 // The doctor checks of the repos that use the github tracker, in this order:

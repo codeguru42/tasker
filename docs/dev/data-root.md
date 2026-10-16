@@ -6,28 +6,28 @@ tasker keeps all of its data under one folder, the `dataRoot` of the configurati
 
 tasker makes each folder that is missing. It does not remove or change anything that exists, so a second start on the same `dataRoot` is safe.
 
-| Path | Content |
-| --- | --- |
-| `<dataRoot>/clones/` | The folders of each repo: the bare clone, the publish tokens and the worktrees. |
-| `<dataRoot>/clones/<slug>/bare-repo` | The bare clone of one repo. The name must not end in `.git`. [version-control.md](version-control.md#sandbox-write-paths) gives the reason. |
-| `<dataRoot>/clones/<slug>/bare-repo.incomplete` | The marker of a clone that is not complete. Provision writes it before `git init` and removes it after the first fetch of a fresh clone. If a later step fails, the marker stays, and the next provision deletes the clone folder and makes the clone again. |
-| `<dataRoot>/clones/<slug>/bare-repo/tasker-ssh.config` | The include file with the ssh command (`core.sshCommand`). Provision writes it, and `include.path` links it. See [docs/dev/version-control.md](version-control.md#provision). |
-| `<dataRoot>/clones/<slug>/publish-tokens/` | The publish tokens of one repo. |
-| `<dataRoot>/clones/<slug>/worktrees/` | The worktrees of the tasks of one repo. |
-| `<dataRoot>/clones/<slug>/worktrees/<shortRef>/` | The worktree of one task. |
-| `<dataRoot>/artifacts/` | The files that tasks produce. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/` | The files of one attempt of a task. The issue slug comes from the issue key. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/` | The plan files of one attempt. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/v<N>.md` | The plan text of revision N, a copy of the plan for people. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/sessions/` | The folder of the assistant sessions of one attempt. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/` | The transcripts of one attempt. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/plan-v<N>.jsonl` | The transcript of the planning run of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker plan` and `tasker refine` write it. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/execute-v<N>.jsonl` | The transcript of the execute runs of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker execute` writes it, and the runs of one revision share it. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/` | The logs of verify run `<number>` of one attempt. |
-| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/verify-<position>.log` | The log of the verify command at position `<position>` of the configured list, from 1. `tasker verify` writes it, and `tasker show-verify` reads it. |
-| `<dataRoot>/prompts/` | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks. |
-| `<dataRoot>/prompts/<version>.md` | One file for each prompt version. |
-| `<dataRoot>/tasker.db` | The SQLite database of the task store. |
+| Path                                                                                           | Content                                                                                                                                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<dataRoot>/clones/`                                                                           | The folders of each repo: the bare clone, the publish tokens and the worktrees.                                                                                                                                                                              |
+| `<dataRoot>/clones/<slug>/bare-repo`                                                           | The bare clone of one repo. The name must not end in `.git`. [version-control.md](version-control.md#sandbox-write-paths) gives the reason.                                                                                                                  |
+| `<dataRoot>/clones/<slug>/bare-repo.incomplete`                                                | The marker of a clone that is not complete. Provision writes it before `git init` and removes it after the first fetch of a fresh clone. If a later step fails, the marker stays, and the next provision deletes the clone folder and makes the clone again. |
+| `<dataRoot>/clones/<slug>/bare-repo/tasker-ssh.config`                                         | The include file with the ssh command (`core.sshCommand`). Provision writes it, and `include.path` links it. See [docs/dev/version-control.md](version-control.md#provision).                                                                                |
+| `<dataRoot>/clones/<slug>/publish-tokens/`                                                     | The publish tokens of one repo.                                                                                                                                                                                                                              |
+| `<dataRoot>/clones/<slug>/worktrees/`                                                          | The worktrees of the tasks of one repo.                                                                                                                                                                                                                      |
+| `<dataRoot>/clones/<slug>/worktrees/<shortRef>/`                                               | The worktree of one task.                                                                                                                                                                                                                                    |
+| `<dataRoot>/artifacts/`                                                                        | The files that tasks produce.                                                                                                                                                                                                                                |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/`                                               | The files of one attempt of a task. The issue slug comes from the issue key.                                                                                                                                                                                 |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/`                                         | The plan files of one attempt.                                                                                                                                                                                                                               |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/plans/v<N>.md`                                  | The plan text of revision N, a copy of the plan for people.                                                                                                                                                                                                  |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/sessions/`                                      | The folder of the assistant sessions of one attempt.                                                                                                                                                                                                         |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/`                                   | The transcripts of one attempt.                                                                                                                                                                                                                              |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/plan-v<N>.jsonl`                    | The transcript of the planning run of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker plan` and `tasker refine` write it.                                                                                        |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/execute-v<N>.jsonl`                 | The transcript of the execute runs of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker execute` writes it, and the runs of one revision share it.                                                                 |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/`                      | The logs of verify run `<number>` of one attempt.                                                                                                                                                                                                            |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/verify-<position>.log` | The log of the verify command at position `<position>` of the configured list, from 1. `tasker verify` writes it, and `tasker show-verify` reads it.                                                                                                         |
+| `<dataRoot>/prompts/`                                                                          | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks.                                                                                                                                                                 |
+| `<dataRoot>/prompts/<version>.md`                                                              | One file for each prompt version.                                                                                                                                                                                                                            |
+| `<dataRoot>/tasker.db`                                                                         | The SQLite database of the task store.                                                                                                                                                                                                                       |
 
 `<slug>` comes from the repo key. [version-control.md](version-control.md) describes the slug. The setup of the data root does not make the folders of a repo. Provision makes them. tasker never changes or deletes a file in `prompts/`.
 
@@ -118,13 +118,13 @@ These rules hold:
 
 The result of a run is one of these values:
 
-| Result | Meaning |
-| --- | --- |
-| `passed` | Every command exited with 0, and the worktree was clean before and after. |
-| `failed` | A command exited with another code, stopped by a signal, or failed to start. |
-| `timed_out` | The deadline came. |
+| Result         | Meaning                                                                           |
+| -------------- | --------------------------------------------------------------------------------- |
+| `passed`       | Every command exited with 0, and the worktree was clean before and after.         |
+| `failed`       | A command exited with another code, stopped by a signal, or failed to start.      |
+| `timed_out`    | The deadline came.                                                                |
 | `dirty_before` | The worktree had uncommitted changes before the first command, so no command ran. |
-| `dirty_after` | The commands passed but left uncommitted changes. |
+| `dirty_after`  | The commands passed but left uncommitted changes.                                 |
 
 `tasker verify` decides which result a run gets. The store only keeps it. The table refuses a result outside this list.
 

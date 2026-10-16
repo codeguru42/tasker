@@ -128,18 +128,14 @@ describe("runInGroup", () => {
     { name: "a spawn error", command: "exit 0", missingCwd: true, deadlineMs: MINUTE_MS },
     { name: "a timeout", command: "sleep 30", missingCwd: false, deadlineMs: 300 },
     { name: "a SIGKILL", command: IGNORE_TERM, missingCwd: false, deadlineMs: 300 },
-  ])(
-    "leaves the SIGINT and SIGTERM listener counts as before after $name",
-    { timeout: 20_000 },
-    async (row) => {
-      const before = signalListenerCounts();
-      const cwd = row.missingCwd ? join(useTempDir("tasker-run-group-"), "missing") : undefined;
+  ])("leaves the SIGINT and SIGTERM listener counts as before after $name", { timeout: 20_000 }, async (row) => {
+    const before = signalListenerCounts();
+    const cwd = row.missingCwd ? join(useTempDir("tasker-run-group-"), "missing") : undefined;
 
-      await runLogged(row.command, { cwd, deadline: Date.now() + row.deadlineMs }).catch(() => undefined);
+    await runLogged(row.command, { cwd, deadline: Date.now() + row.deadlineMs }).catch(() => undefined);
 
-      expect(signalListenerCounts()).toEqual(before);
-    },
-  );
+    expect(signalListenerCounts()).toEqual(before);
+  });
 
   it("leaves the SIGINT and SIGTERM listener counts as before after a spawn that throws", async () => {
     const before = signalListenerCounts();
@@ -272,7 +268,18 @@ function startFixture(
   const logPath = join(dir, "out.log");
   const child = spawn(
     process.execPath,
-    ["--import", "tsx", "test/fixtures/run-group-signal.ts", dir, logPath, String(deadlineMs), String(holdMs), command, extra.spawnSignal ?? "", ...(extra.file ? [extra.file] : [])],
+    [
+      "--import",
+      "tsx",
+      "test/fixtures/run-group-signal.ts",
+      dir,
+      logPath,
+      String(deadlineMs),
+      String(holdMs),
+      command,
+      extra.spawnSignal ?? "",
+      ...(extra.file ? [extra.file] : []),
+    ],
     { cwd: repoRoot },
   );
   const pid = child.pid;
@@ -322,7 +329,11 @@ describe("runInGroup with the signals of tasker", () => {
     "forwards %s to the group and keeps tasker alive",
     { timeout: 20_000 },
     async (signal) => {
-      const fixture = startFixture("echo noise; echo noise >&2; echo $$ > started; sleep 30; touch after", MINUTE_MS, 0);
+      const fixture = startFixture(
+        "echo noise; echo noise >&2; echo $$ > started; sleep 30; touch after",
+        MINUTE_MS,
+        0,
+      );
       await readPidFile(join(fixture.dir, "started"), 10_000);
       await waitForWatching(fixture.dir, 10_000);
 

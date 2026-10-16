@@ -14,7 +14,10 @@ export function planRevisionOrFail(io: Io, store: TaskStore, task: Task, version
   const latest = store.latestPlanRevision(task.id);
   if (latest === undefined) fail(io, `the task of ${task.issueKey} has no plan revision; run tasker plan first`);
   if (version === undefined) return latest;
-  return store.getPlanRevision(task.id, Number(version)) ?? fail(io, `the task of ${task.issueKey} has no plan revision v${version}`);
+  return (
+    store.getPlanRevision(task.id, Number(version)) ??
+    fail(io, `the task of ${task.issueKey} has no plan revision v${version}`)
+  );
 }
 
 // The first line of the plan commands, with no line end.

@@ -39,17 +39,13 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
       ? undefined
       : (await vcs.listWorkspaces(ctx)).find((e) => e.path === canonicalPath(task.worktreePath!));
   const changes =
-    entry !== undefined && existsSync(entry.path)
-      ? await vcs.uncommittedChanges(ctx, { path: entry.path })
-      : [];
+    entry !== undefined && existsSync(entry.path) ? await vcs.uncommittedChanges(ctx, { path: entry.path }) : [];
   if (changes.length > 0 && !request.force) {
     const lines = changes.map(uncommittedChangeText);
     throw new Error(
-      [
-        `the worktree has uncommitted changes: ${entry!.path}`,
-        ...lines,
-        "tasker abort --force discards them",
-      ].join("\n"),
+      [`the worktree has uncommitted changes: ${entry!.path}`, ...lines, "tasker abort --force discards them"].join(
+        "\n",
+      ),
     );
   }
   return withRepoLock(store, ref.repoKey, request.repoLockWaitMs, async () => {

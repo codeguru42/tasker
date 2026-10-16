@@ -109,10 +109,7 @@ export interface VcsProvider {
   // Makes the local copy of the remote and guards a push.
   provision(ctx: VcsContext): Promise<void>;
   // Makes the folder of a task on a new or an existing task ref, from baseRevision.
-  createWorkspace(
-    ctx: VcsContext,
-    o: { shortRef: string; title: string; baseRevision: string },
-  ): Promise<Workspace>;
+  createWorkspace(ctx: VcsContext, o: { shortRef: string; title: string; baseRevision: string }): Promise<Workspace>;
   // Removes the folder of a task. The task ref stays.
   removeWorkspace(ctx: VcsContext, o: { path: string }): Promise<void>;
   // The workspaces of the repo, each with its real path.
@@ -140,22 +137,13 @@ export interface VcsProvider {
   // Moves the workspace onto baseRevision and gives its new head revision.
   // It does not fetch. Run resolveBase first, which fetches.
   // A conflict rejects with ReconcileConflictError (src/vcs/errors.ts).
-  reconcile(
-    ctx: VcsContext,
-    o: { path: string; baseRevision: string; strategy: ReconcileStrategy },
-  ): Promise<string>;
+  reconcile(ctx: VcsContext, o: { path: string; baseRevision: string; strategy: ReconcileStrategy }): Promise<string>;
   // Pushes taskRef to the remote. published is the revision that the last publish gave.
-  publish(
-    ctx: VcsContext,
-    o: { taskRef: string; published: string | undefined },
-  ): Promise<PublishResult>;
+  publish(ctx: VcsContext, o: { taskRef: string; published: string | undefined }): Promise<PublishResult>;
   // Moves base on the remote to revision. It is a fast-forward.
   land(ctx: VcsContext, o: { base: string; revision: string }): Promise<void>;
   // Deletes taskRef on the remote when it is still at the published revision.
-  deleteRemoteTaskRef(
-    ctx: VcsContext,
-    o: { taskRef: string; published: string },
-  ): Promise<RemoteTaskRefDeletion>;
+  deleteRemoteTaskRef(ctx: VcsContext, o: { taskRef: string; published: string }): Promise<RemoteTaskRefDeletion>;
   // The tip of taskRef on the remote: present with its revision, or absent. A failed read rejects and never gives absent.
   remoteTaskRefTip(ctx: VcsContext, o: { taskRef: string }): Promise<RemoteTip>;
   // The text and the paths that the provider adds to the assistant of a task.

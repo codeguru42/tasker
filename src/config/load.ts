@@ -36,9 +36,6 @@ export function loadConfigFile(
   return { path, text, config: parseConfigText(text, path, env, homedir) };
 }
 
-export function loadConfig(
-  env: NodeJS.ProcessEnv = process.env,
-  homedir: string = osHomedir(),
-): Config {
+export function loadConfig(env: NodeJS.ProcessEnv = process.env, homedir: string = osHomedir()): Config {
   return loadConfigFile(env, homedir).config;
 }

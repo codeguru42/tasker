@@ -35,13 +35,7 @@ const WORKSPACE_STATE = {
 } as const;
 
 // Maps the neutral names of VcsProvider to the git functions. It adds no behavior.
-export function createGitProvider({
-  remote,
-  config,
-}: {
-  remote: string;
-  config: GitVcsConfig;
-}): VcsProvider {
+export function createGitProvider({ remote, config }: { remote: string; config: GitVcsConfig }): VcsProvider {
   // The paths of the repo of ctx in the data root.
   const pathsOf = (ctx: VcsContext) => repoPaths(ctx.dataRoot, ctx.repoKey);
   // The options that publish, land and the remote delete of a task ref share for ctx.

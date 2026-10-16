@@ -148,7 +148,9 @@ function providerFor(repoKey: string, id: AssistantProviderId): AssistantProvide
       return createClaudeCodeProvider();
     case "copilot":
     case "pi":
-      throw new ConfigError([`repos.${repoKey}.assistant.provider: the ${id} assistant is not available in this version`]);
+      throw new ConfigError([
+        `repos.${repoKey}.assistant.provider: the ${id} assistant is not available in this version`,
+      ]);
   }
 }
 

@@ -60,7 +60,13 @@ function outcomeOf(
   overage: { resetsAt?: number } | undefined,
 ): RunOutcome {
   const base = { sessionId: input.sessionId, ...outcomeFacts(events, facts) };
-  const fail = (reason: string): Failure => ({ kind: "failure", ...base, exitCode: run.code, signal: run.signal, reason });
+  const fail = (reason: string): Failure => ({
+    kind: "failure",
+    ...base,
+    exitCode: run.code,
+    signal: run.signal,
+    reason,
+  });
   if (overage !== undefined) return { kind: "quota", cause: "overage", ...base, ...overage };
   if (run.timedOut) return { kind: "timeout", ...base };
   const quotaStop = quotaStopOf(events, run.code);
@@ -140,9 +146,7 @@ export function createClaudeCodeProvider(
         return finish(failureWithNoExit(input, errorMessage(error), events));
       }
       if (!run.started) {
-        return finish(
-          failureWithNoExit(input, run.notFound ? CLAUDE_NOT_INSTALLED : run.error, events),
-        );
+        return finish(failureWithNoExit(input, run.notFound ? CLAUDE_NOT_INSTALLED : run.error, events));
       }
       return finish(outcomeOf(input, run, events, readStream(events), overage));
     },

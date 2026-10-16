@@ -88,9 +88,7 @@ describe("status", () => {
 
   it("prints no tasks when --repo names a repo without active tasks", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
-    seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: dayAt(2) },
-    ]);
+    seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "planning", at: dayAt(2) }]);
 
     const result = await runCommand(status, "status", "--repo", OTHER);
 
@@ -198,17 +196,14 @@ describe("status", () => {
     });
   });
 
-  it.each(["nobody/else#1", `${TASKER}#5`])(
-    "prints the error of the issue key %s",
-    async (key) => {
-      const written = useThreeRepoDataRoot();
-      const expected = `${issueKeyErrorMessage(key, written.path)}\n`;
+  it.each(["nobody/else#1", `${TASKER}#5`])("prints the error of the issue key %s", async (key) => {
+    const written = useThreeRepoDataRoot();
+    const expected = `${issueKeyErrorMessage(key, written.path)}\n`;
 
-      const result = await runCommand(status, "status", "--issue", key);
+    const result = await runCommand(status, "status", "--issue", key);
 
-      expect(result).toEqual({ code: 1, out: "", err: expected });
-    },
-  );
+    expect(result).toEqual({ code: 1, out: "", err: expected });
+  });
 
   it("passes --repo to the issue key, so that it picks one of two repos", async () => {
     const { dataRoot } = useThreeRepoDataRoot();

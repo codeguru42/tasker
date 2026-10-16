@@ -25,12 +25,7 @@ export const verify: RegisterCommand = (program, io) => {
 };
 
 // The steps and the output of tasker verify. tasker retry runs them too.
-export async function verifyIssue(
-  io: Io,
-  config: Config,
-  issue: string,
-  options: { repo?: string },
-): Promise<void> {
+export async function verifyIssue(io: Io, config: Config, issue: string, options: { repo?: string }): Promise<void> {
   const { key, result } = await orFailAsync(io, () =>
     withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
       key: found.issueKey,

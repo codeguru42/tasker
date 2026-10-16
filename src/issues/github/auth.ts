@@ -4,9 +4,7 @@ import type { AuthStatus } from "../provider.js";
 
 // A 401 of the gh api user call: the token is not valid.
 function isUnauthorized(error: GhError): boolean {
-  return (
-    error.subcommand === "api user" && error.exitCode === 1 && error.stderr.includes("(HTTP 401)")
-  );
+  return error.subcommand === "api user" && error.exitCode === 1 && error.stderr.includes("(HTTP 401)");
 }
 
 // Tells whether gh is logged in as account. It asks GitHub for the login of the token of the

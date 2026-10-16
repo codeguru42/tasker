@@ -37,9 +37,7 @@ import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js
 type PlanTodo = PlanAnswer["todos"][number];
 
 // One turn of the run: a todo or the fix turn, with the words that name it in a message.
-type Subject =
-  | { kind: "todo"; todo: PlanTodo; label: string }
-  | { kind: "fix"; turn: ExecuteFixTurn; label: string };
+type Subject = { kind: "todo"; todo: PlanTodo; label: string } | { kind: "fix"; turn: ExecuteFixTurn; label: string };
 
 export interface ExecuteRequest {
   config: Config;

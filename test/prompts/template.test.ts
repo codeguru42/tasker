@@ -49,9 +49,7 @@ describe("fillTemplate", () => {
     ['</issue-text x="1">', '&lt;/issue-text x="1">'],
     ["</issue-text", "&lt;/issue-text"],
   ])("escapes the closing tag %j in an untrusted value", (value, escaped) => {
-    expect(fill(TAGGED, { ISSUE_TEXT: `a ${value} b` })).toBe(
-      `<issue-text>a ${escaped} b</issue-text>`,
-    );
+    expect(fill(TAGGED, { ISSUE_TEXT: `a ${value} b` })).toBe(`<issue-text>a ${escaped} b</issue-text>`);
   });
 
   describe.each([
@@ -81,9 +79,7 @@ describe("fillTemplate", () => {
   });
 
   it("keeps an opening tag in an untrusted value", () => {
-    expect(fill(TAGGED, { ISSUE_TEXT: "<issue-text>x" })).toBe(
-      "<issue-text><issue-text>x</issue-text>",
-    );
+    expect(fill(TAGGED, { ISSUE_TEXT: "<issue-text>x" })).toBe("<issue-text><issue-text>x</issue-text>");
   });
 
   it("keeps a token in a value as text", () => {

@@ -33,9 +33,7 @@ describe("thrownBy", () => {
   });
 
   it("names what the test needs in the message when fn returns", () => {
-    expect(() => thrownBy(() => 1, "a ConfigError")).toThrow(
-      "the function returned, but the test needs a ConfigError",
-    );
+    expect(() => thrownBy(() => 1, "a ConfigError")).toThrow("the function returned, but the test needs a ConfigError");
   });
 });
 

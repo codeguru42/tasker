@@ -12,7 +12,15 @@ import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { planTodo, validPlanAnswer } from "./plan.js";
-import { dayAt, databasePathOf, latestTaskOf, lockNames, readRunMarker, seedTasks, withDataRootStore } from "./store.js";
+import {
+  dayAt,
+  databasePathOf,
+  latestTaskOf,
+  lockNames,
+  readRunMarker,
+  seedTasks,
+  withDataRootStore,
+} from "./store.js";
 import { useTempDir } from "./temp.js";
 import {
   expectNoAssistantRun,
@@ -197,7 +205,10 @@ describe("usePlanFixture", () => {
     expect(process.env.PATH!.startsWith(claude.binDir + delimiter)).toBe(true);
     expect(process.env.HOME).not.toBe(hostHome);
     expect(existsSync(process.env.HOME!)).toBe(true);
-    const state = withDataRootStore(started.dataRoot, (store) => store.findLatestTask(started.repoKey, started.key)?.state);
+    const state = withDataRootStore(
+      started.dataRoot,
+      (store) => store.findLatestTask(started.repoKey, started.key)?.state,
+    );
     expect(state).toBe("workspace_ready");
   });
 });
@@ -341,7 +352,9 @@ describe("expectRefusedWithoutChange", () => {
   it("fails when the call changes the state", async () => {
     const started = await useStartedTask();
     const call = async () => {
-      withDataRootStore(started.dataRoot, (store) => failTask(store, latestTaskOf(started.dataRoot, started.key).id, "x"));
+      withDataRootStore(started.dataRoot, (store) =>
+        failTask(store, latestTaskOf(started.dataRoot, started.key).id, "x"),
+      );
       throw new Error("refused");
     };
 
@@ -436,9 +449,7 @@ describe("TO_WORK_REVIEW", () => {
 describe("moveTaskThrough", () => {
   const seedReadyTask = () => {
     const dataRoot = useTempDir("tasker-move-");
-    const [task] = seedTasks(dataRoot, [
-      { issueKey: "a/b#1", repoKey: "a/b", state: "workspace_ready", at: dayAt(1) },
-    ]);
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "workspace_ready", at: dayAt(1) }]);
     return { dataRoot, id: task!.id };
   };
   const move = (dataRoot: string, id: number, states: Parameters<typeof moveTaskThrough>[2]) =>

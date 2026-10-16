@@ -24,10 +24,10 @@ export async function worktreeDiff(o: {
   assertRevisionInput(baseRevision);
   const target = await assertTaskWorktree({ clone, env, path });
   const base = await resolveRevision({ clone, env, value: baseRevision });
-  return runGit(
-    ["diff", "--no-renames", "--no-color", "--no-ext-diff", "--no-textconv", `${base}...HEAD`, "--"],
-    { cwd: target, env },
-  );
+  return runGit(["diff", "--no-renames", "--no-color", "--no-ext-diff", "--no-textconv", `${base}...HEAD`, "--"], {
+    cwd: target,
+    env,
+  });
 }
 
 // The paths that the task branch changes against its base, raw, in the order of git.
@@ -43,10 +43,10 @@ export async function changedPaths(o: {
   assertRevisionInput(baseRevision);
   const head = await taskBranchRevision({ clone, env, branch });
   const base = await resolveRevision({ clone, env, value: baseRevision });
-  const output = await runGit(
-    ["diff", "--no-renames", "-z", "--name-only", `${base}...${head}`, "--"],
-    { gitDir: clone, env },
-  );
+  const output = await runGit(["diff", "--no-renames", "-z", "--name-only", `${base}...${head}`, "--"], {
+    gitDir: clone,
+    env,
+  });
   return nulFields(output);
 }
 
@@ -122,14 +122,11 @@ export async function uncommittedChanges(o: {
 
 // The status read of uncommittedChanges() without the guard. The target must be the real path
 // that assertTaskWorktree() returns.
-export async function worktreeChanges(
-  target: string,
-  env: NodeJS.ProcessEnv,
-): Promise<UncommittedChange[]> {
-  const output = await runGit(
-    ["status", "--porcelain", "--untracked-files=normal", "--no-renames", "-z"],
-    { cwd: target, env: { ...env, GIT_OPTIONAL_LOCKS: "0" } },
-  );
+export async function worktreeChanges(target: string, env: NodeJS.ProcessEnv): Promise<UncommittedChange[]> {
+  const output = await runGit(["status", "--porcelain", "--untracked-files=normal", "--no-renames", "-z"], {
+    cwd: target,
+    env: { ...env, GIT_OPTIONAL_LOCKS: "0" },
+  });
   return nulFields(output).map((field) => ({
     status: field.slice(0, 2),
     path: field.slice(3),

@@ -19,10 +19,7 @@ export interface TimedCheckSpec {
 // timeout result, with no partial result.
 export function timedCheck(
   spec: TimedCheckSpec,
-  body: (
-    env: NodeJS.ProcessEnv,
-    limit: { signal: AbortSignal; deadline: number },
-  ) => Promise<CheckResult>,
+  body: (env: NodeJS.ProcessEnv, limit: { signal: AbortSignal; deadline: number }) => Promise<CheckResult>,
 ): Check {
   return {
     name: spec.name,

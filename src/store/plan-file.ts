@@ -4,12 +4,7 @@ import { errorMessage } from "../error-message.js";
 import { transitionWithPlanRevision, type TaskState } from "../state/machine.js";
 import { replaceFile } from "../replace-file.js";
 import { planRevisionPath } from "./layout.js";
-import {
-  type NewPlanRevision,
-  taskNotFound,
-  type Task,
-  type TaskStore,
-} from "./store.js";
+import { type NewPlanRevision, taskNotFound, type Task, type TaskStore } from "./store.js";
 
 // The text of the plan file of revision version, as it is on disk, so an edit by hand counts.
 // A failed read throws one message that names the path.

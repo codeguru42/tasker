@@ -2,11 +2,7 @@ import { renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openStore, type TaskStore } from "../../../src/store/store.js";
-import {
-  baseRevision,
-  parseBaseInput,
-  resolveBaseBranch,
-} from "../../../src/vcs/git/base-branch.js";
+import { baseRevision, parseBaseInput, resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
@@ -28,19 +24,14 @@ describe("parseBaseInput", () => {
     expect(parseBaseInput(input)).toBe(expected);
   });
 
-  it.each(["", "origin/", "refs/remotes/origin/", "refs/heads/"])(
-    "rejects the empty base %j",
-    (input) => {
-      expect(() => parseBaseInput(input)).toThrow("the base branch is empty");
-    },
-  );
+  it.each(["", "origin/", "refs/remotes/origin/", "refs/heads/"])("rejects the empty base %j", (input) => {
+    expect(() => parseBaseInput(input)).toThrow("the base branch is empty");
+  });
 
   it.each(["origin/refs/heads/x", "refs/remotes/origin/refs/heads/x"])(
     "rejects %j as a local branch behind a remote prefix",
     (input) => {
-      expect(() => parseBaseInput(input)).toThrow(
-        `the base branch is not a branch name: ${input}`,
-      );
+      expect(() => parseBaseInput(input)).toThrow(`the base branch is not a branch name: ${input}`);
     },
   );
 });
@@ -274,17 +265,13 @@ describe("resolveBaseBranch", () => {
 
     it("rejects an answer of ask that does not exist and stores nothing", async () => {
       answer = "nope";
-      await expect(resolve()).rejects.toThrow(
-        "the base branch does not exist on origin: nope (from the answer)",
-      );
+      await expect(resolve()).rejects.toThrow("the base branch does not exist on origin: nope (from the answer)");
       expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
     });
 
     it("rejects an answer of ask in the form refs/heads/<x>", async () => {
       answer = "refs/heads/main";
-      await expect(resolve()).rejects.toThrow(
-        "the base branch must name a remote branch: refs/heads/main",
-      );
+      await expect(resolve()).rejects.toThrow("the base branch must name a remote branch: refs/heads/main");
     });
 
     it("fails when defaultBaseBranch does not exist, without ask", async () => {

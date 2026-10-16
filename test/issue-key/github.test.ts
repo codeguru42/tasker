@@ -24,9 +24,7 @@ const NOT_GITHUB_KEYS = [
 
 describe("parseGithubKey", () => {
   it("parses an owner/repo#N key", () => {
-    expect(
-      parseGithubKey("codeguru42/tasker#8", "codeguru42/tasker"),
-    ).toStrictEqual({
+    expect(parseGithubKey("codeguru42/tasker#8", "codeguru42/tasker")).toStrictEqual({
       key: "codeguru42/tasker#8",
       repoKey: "codeguru42/tasker",
       shortRef: "issue-8",
@@ -34,13 +32,11 @@ describe("parseGithubKey", () => {
   });
 
   it("returns the repo key as passed", () => {
-    expect(parseGithubKey("Some-Org/my.repo_x#1234", "other-key")).toStrictEqual(
-      {
-        key: "Some-Org/my.repo_x#1234",
-        repoKey: "other-key",
-        shortRef: "issue-1234",
-      },
-    );
+    expect(parseGithubKey("Some-Org/my.repo_x#1234", "other-key")).toStrictEqual({
+      key: "Some-Org/my.repo_x#1234",
+      repoKey: "other-key",
+      shortRef: "issue-1234",
+    });
   });
 
   it.each(NOT_GITHUB_KEYS)("rejects %j", (rawKey) => {

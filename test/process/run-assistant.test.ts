@@ -3,7 +3,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CommandNotFoundError } from "../../src/process/run-child.js";
 import { runAssistant } from "../../src/process/run-assistant.js";
-import { readPidFile, savePid, signalListenerCounts, startFixture, waitForWatching, waitUntilGone } from "../helpers/processes.js";
+import {
+  readPidFile,
+  savePid,
+  signalListenerCounts,
+  startFixture,
+  waitForWatching,
+  waitUntilGone,
+} from "../helpers/processes.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
@@ -169,7 +176,10 @@ describe("runAssistant", () => {
   it("kills a leader that ignores SIGTERM 5 s after the abort", { timeout: 20_000 }, async () => {
     const dir = useTempDir("tasker-run-assistant-");
     const controller = new AbortController();
-    const running = runCollected('trap "" TERM; echo $$ > leader.pid; sleep 30', { cwd: dir, signal: controller.signal });
+    const running = runCollected('trap "" TERM; echo $$ > leader.pid; sleep 30', {
+      cwd: dir,
+      signal: controller.signal,
+    });
     const leaderPid = await readPidFile(join(dir, "leader.pid"), 5000);
     const abortedAt = performance.now();
 
@@ -223,7 +233,10 @@ describe("runAssistant", () => {
     const dir = useTempDir("tasker-run-assistant-");
     const start = Date.now();
 
-    const { result, lines } = await runCollected("setsid sh -c 'echo $$ > child.pid; exec sleep 30' & while [ ! -s child.pid ]; do sleep 0.05; done; echo one; exit 0", { cwd: dir });
+    const { result, lines } = await runCollected(
+      "setsid sh -c 'echo $$ > child.pid; exec sleep 30' & while [ ! -s child.pid ]; do sleep 0.05; done; echo one; exit 0",
+      { cwd: dir },
+    );
 
     expect(Date.now() - start).toBeLessThan(GRACE_MS);
     expect(lines).toEqual(["one"]);
@@ -231,16 +244,23 @@ describe("runAssistant", () => {
     await readPidFile(join(dir, "child.pid"), 5000);
   });
 
-  it("gives the last line with no line end when a process outside the group holds stdout", { timeout: 20_000 }, async () => {
-    const dir = useTempDir("tasker-run-assistant-");
-    const start = Date.now();
+  it(
+    "gives the last line with no line end when a process outside the group holds stdout",
+    { timeout: 20_000 },
+    async () => {
+      const dir = useTempDir("tasker-run-assistant-");
+      const start = Date.now();
 
-    const { lines } = await runCollected("setsid sh -c 'echo $$ > child.pid; exec sleep 30' & while [ ! -s child.pid ]; do sleep 0.05; done; printf tail; exit 0", { cwd: dir });
+      const { lines } = await runCollected(
+        "setsid sh -c 'echo $$ > child.pid; exec sleep 30' & while [ ! -s child.pid ]; do sleep 0.05; done; printf tail; exit 0",
+        { cwd: dir },
+      );
 
-    expect(Date.now() - start).toBeLessThan(GRACE_MS);
-    expect(lines).toEqual(["tail"]);
-    await readPidFile(join(dir, "child.pid"), 5000);
-  });
+      expect(Date.now() - start).toBeLessThan(GRACE_MS);
+      expect(lines).toEqual(["tail"]);
+      await readPidFile(join(dir, "child.pid"), 5000);
+    },
+  );
 
   it("reports a started run with all result keys", async () => {
     // /bin/sh, because the bash of some hosts writes a startup warning to stderr.
@@ -254,7 +274,11 @@ describe("runAssistant", () => {
 
     const { result, pids } = await runCollected("exit 0", { cwd });
 
-    expect(result).toEqual({ started: false, notFound: false, error: `cannot start /bin/bash: the folder ${cwd} does not exist` });
+    expect(result).toEqual({
+      started: false,
+      notFound: false,
+      error: `cannot start /bin/bash: the folder ${cwd} does not exist`,
+    });
     expect(pids).toEqual([]);
   });
 
@@ -263,7 +287,11 @@ describe("runAssistant", () => {
 
     const { result, pids } = await runCollected("exit 0", { cwd });
 
-    expect(result).toEqual({ started: false, notFound: false, error: `cannot start /bin/bash: the folder ${cwd} does not exist` });
+    expect(result).toEqual({
+      started: false,
+      notFound: false,
+      error: `cannot start /bin/bash: the folder ${cwd} does not exist`,
+    });
     expect(pids).toEqual([]);
   });
 
@@ -272,7 +300,11 @@ describe("runAssistant", () => {
 
     const { result, pids } = await runCollected("exit 0", { file });
 
-    expect(result).toEqual({ started: false, notFound: true, error: new CommandNotFoundError(file, "not-on-path").message });
+    expect(result).toEqual({
+      started: false,
+      notFound: true,
+      error: new CommandNotFoundError(file, "not-on-path").message,
+    });
     expect(pids).toEqual([]);
   });
 
@@ -289,7 +321,11 @@ describe("runAssistant", () => {
   it("gives the no-path error when the env has no PATH", async () => {
     const { result, pids } = await runCollected("exit 0", { file: "bash", env: {} });
 
-    expect(result).toEqual({ started: false, notFound: true, error: new CommandNotFoundError("bash", "no-path").message });
+    expect(result).toEqual({
+      started: false,
+      notFound: true,
+      error: new CommandNotFoundError("bash", "no-path").message,
+    });
     expect(pids).toEqual([]);
   });
 
@@ -366,7 +402,11 @@ describe("runAssistant with the signals of tasker", () => {
     { timeout: 20_000 },
     async (signal) => {
       const dir = useTempDir("tasker-run-assistant-");
-      const fixture = startFixture("run-assistant-signal.ts", [dir, "60000", "echo noise >&2; echo $$ > started; sleep 30"]);
+      const fixture = startFixture("run-assistant-signal.ts", [
+        dir,
+        "60000",
+        "echo noise >&2; echo $$ > started; sleep 30",
+      ]);
       await readPidFile(join(dir, "started"), 10_000);
       await waitForWatching(dir, 10_000);
 

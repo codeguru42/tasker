@@ -9,7 +9,14 @@ import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh, type FakeSsh } from "../../helpers/fake-ssh.js";
-import { gitRecorderEnv, localBranches, makeGitOrigin, sshKeyArgs, taskNames, type GitOrigin } from "../../helpers/git.js";
+import {
+  gitRecorderEnv,
+  localBranches,
+  makeGitOrigin,
+  sshKeyArgs,
+  taskNames,
+  type GitOrigin,
+} from "../../helpers/git.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 describe("provisionClone", () => {
@@ -41,9 +48,7 @@ describe("provisionClone", () => {
   }
 
   function revParse(ref: string): Promise<string> {
-    return runGit(["rev-parse", ref], { gitDir: clone, env: origin.env }).then((out) =>
-      out.trim(),
-    );
+    return runGit(["rev-parse", ref], { gitDir: clone, env: origin.env }).then((out) => out.trim());
   }
 
   it("rejects when the remote does not answer and creates no folder", async () => {
@@ -188,8 +193,7 @@ describe("provisionClone", () => {
   // The git config calls in log that write: the ones with --replace-all or --unset-all.
   function configWrites(log: string): string[][] {
     return readArgLog(log).filter(
-      (call) =>
-        call.includes("config") && (call.includes("--replace-all") || call.includes("--unset-all")),
+      (call) => call.includes("config") && (call.includes("--replace-all") || call.includes("--unset-all")),
     );
   }
 
@@ -241,9 +245,7 @@ describe("provisionClone", () => {
     await provision();
     await addLines("remote.origin.fetch", ["+refs/heads/*:refs/remotes/origin/*"]);
     await provision();
-    expect(await localConfigAll("remote.origin.fetch")).toEqual([
-      "+refs/heads/*:refs/remotes/origin/*",
-    ]);
+    expect(await localConfigAll("remote.origin.fetch")).toEqual(["+refs/heads/*:refs/remotes/origin/*"]);
   });
 
   it("writes a value that differs only in case", async () => {
@@ -291,9 +293,7 @@ describe("provisionClone", () => {
     await provision();
     await addLines("remote.origin.fetch", ["+refs/tags/*:refs/tags/*"]);
     await provision();
-    expect(await localConfigAll("remote.origin.fetch")).toEqual([
-      "+refs/heads/*:refs/remotes/origin/*",
-    ]);
+    expect(await localConfigAll("remote.origin.fetch")).toEqual(["+refs/heads/*:refs/remotes/origin/*"]);
   });
 
   describe("identity and signing", () => {
@@ -412,10 +412,7 @@ describe("provisionClone", () => {
     it("hides the key in the error when ssh refuses", async () => {
       fakeSsh(tmp, origin.env, "refuse");
       const key = join(tmp, "no such it's key");
-      const error = await failureOf(
-        provision({ remote, config: { sshKey: key }, env: ssh.env }),
-        Error,
-      );
+      const error = await failureOf(provision({ remote, config: { sshKey: key }, env: ssh.env }), Error);
       expect(error.message).toContain(remote);
       expect(error.message).not.toContain(key);
       expect(error.message).toContain("<sshKey>");
@@ -501,9 +498,7 @@ describe("provisionClone", () => {
       await provision();
       rmSync(join(clone, "hooks"), { recursive: true });
       writeFileSync(join(clone, "hooks"), "a file where the folder belongs");
-      await expect(provision()).rejects.toThrow(
-        `cannot install the pre-push hook in the clone: ${clone}`,
-      );
+      await expect(provision()).rejects.toThrow(`cannot install the pre-push hook in the clone: ${clone}`);
     });
   });
 });

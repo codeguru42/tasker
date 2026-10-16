@@ -49,11 +49,7 @@ async function commonGitDir(target: string, env: NodeJS.ProcessEnv): Promise<str
 }
 
 // The folder that the workspaces of the clone share: the common git dir of the task worktree.
-export async function sharedFolder(options: {
-  clone: string;
-  env: NodeJS.ProcessEnv;
-  path: string;
-}): Promise<string> {
+export async function sharedFolder(options: { clone: string; env: NodeJS.ProcessEnv; path: string }): Promise<string> {
   return commonGitDir(await assertTaskWorktree(options), options.env);
 }
 
@@ -71,10 +67,7 @@ export async function sandboxWritePaths(options: {
   const target = await assertTaskWorktree(options);
   // Two calls, not one: one call prints two paths on two lines, and a path can hold a newline.
   const common = await commonGitDir(target, env);
-  const admin = resolve(
-    target,
-    withoutLineEnd(await runGit(["rev-parse", "--git-dir"], { cwd: target, env })),
-  );
+  const admin = resolve(target, withoutLineEnd(await runGit(["rev-parse", "--git-dir"], { cwd: target, env })));
   const logs = join(common, "logs");
   mkdirSync(logs, { recursive: true });
   return [join(common, "objects"), join(common, "refs"), logs, admin];

@@ -38,23 +38,16 @@ describe("REVIEW_PROMPT", () => {
     ["EARLIER_REVIEWS", "earlier-reviews"],
     ["BRANCH_COMMITS", "branch-commits"],
   ])("escapes a closing %s tag in the value", (token, tag) => {
-    expect(fillReview({ ...VALUES, [token]: `a </${tag}> b` })).toContain(
-      `<${tag}>a &lt;/${tag}> b</${tag}>`,
-    );
+    expect(fillReview({ ...VALUES, [token]: `a </${tag}> b` })).toContain(`<${tag}>a &lt;/${tag}> b</${tag}>`);
   });
 
   it("throws when a value is missing", () => {
-    expect(() => fillReview({ BRANCH_COMMITS: "x" })).toThrow(
-      "prompt review needs a value for {{EARLIER_REVIEWS}}",
-    );
+    expect(() => fillReview({ BRANCH_COMMITS: "x" })).toThrow("prompt review needs a value for {{EARLIER_REVIEWS}}");
   });
 
-  it.each(["noQuestionSkill", "untrusted", "blockIsData", "fileAccess"] as const)(
-    "holds the shared rule %s",
-    (key) => {
-      expect(REVIEW_PROMPT).toContain(SHARED_RULES[key]);
-    },
-  );
+  it.each(["noQuestionSkill", "untrusted", "blockIsData", "fileAccess"] as const)("holds the shared rule %s", (key) => {
+    expect(REVIEW_PROMPT).toContain(SHARED_RULES[key]);
+  });
 
   it.each([SHARED_RULES.openPoints, SHARED_RULES.untrustedInPlan, "plan_markdown", "&lt;"])(
     "does not hold %j",

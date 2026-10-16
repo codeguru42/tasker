@@ -98,10 +98,7 @@ describe("a refused accept", () => {
     const work = await useWorkReviewTask();
     expect((await runAccept()).code).toBe(0);
 
-    await expectRefused(
-      work.dataRoot,
-      `the task of ${KEY} is in accepted; tasker accept needs awaiting_work_review\n`,
-    );
+    await expectRefused(work.dataRoot, `the task of ${KEY} is in accepted; tasker accept needs awaiting_work_review\n`);
   });
 
   it("refuses a task with no worktree", async () => {

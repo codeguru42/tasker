@@ -6,8 +6,7 @@ describe("tipMoved", () => {
   const a: RemoteTip = { state: "present", revision: "a".repeat(40) };
   const b: RemoteTip = { state: "present", revision: "b".repeat(40) };
   const absent: RemoteTip = { state: "absent" };
-  const moved = (from: string, to: string): string =>
-    `the tip of the branch on the remote moved from ${from} to ${to}`;
+  const moved = (from: string, to: string): string => `the tip of the branch on the remote moved from ${from} to ${to}`;
 
   it("gives undefined when the tip did not move", () => {
     expect(tipMoved(a, { ...a })).toBeUndefined();

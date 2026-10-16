@@ -30,7 +30,9 @@ export const showVerify: RegisterCommand = (program, io) => {
           fail(io, `the task of ${task.issueKey} has no verify run ${options.run}; it has ${total}`);
         }
         const run =
-          options.run === undefined ? store.latestVerifyRun(task.id)! : store.getVerifyRun(task.id, Number(options.run))!;
+          options.run === undefined
+            ? store.latestVerifyRun(task.id)!
+            : store.getVerifyRun(task.id, Number(options.run))!;
         const count = run.commands.length;
         if (options.command !== undefined && Number(options.command) > count) {
           fail(
@@ -41,9 +43,7 @@ export const showVerify: RegisterCommand = (program, io) => {
         const header = `${task.issueKey} verify run ${run.number} of ${total}: ${run.result} (${run.startedAt})\n`;
         if (count === 0) return { text: `${header}\nno logs: this run ran no command\n`, unreadable: false };
         const positions =
-          options.command === undefined
-            ? run.commands.map((_command, i) => i + 1)
-            : [Number(options.command)];
+          options.command === undefined ? run.commands.map((_command, i) => i + 1) : [Number(options.command)];
         let unreadable = false;
         const blocks = positions.map((position) => {
           const command = run.commands[position - 1];

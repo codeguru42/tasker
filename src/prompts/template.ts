@@ -24,11 +24,7 @@ function countOf(text: string, part: string): number {
   return text.split(part).length - 1;
 }
 
-export function fillTemplate(
-  name: string,
-  template: string,
-  values: Readonly<Record<string, string>>,
-): string {
+export function fillTemplate(name: string, template: string, values: Readonly<Record<string, string>>): string {
   const tokens = new Set([...template.matchAll(TOKEN)].map((match) => match[1]!));
   for (const token of tokens) {
     if (!Object.hasOwn(values, token)) throw new Error(`prompt ${name} needs a value for {{${token}}}`);

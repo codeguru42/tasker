@@ -157,19 +157,13 @@ describe("runGit", () => {
   it("reports that git is not installed when the env has no PATH", async () => {
     const withoutPath = { ...env };
     delete withoutPath.PATH;
-    const error = await failureOf(
-      runGit(["version"], { cwd: dir, env: withoutPath }),
-      GitNotInstalledError,
-    );
+    const error = await failureOf(runGit(["version"], { cwd: dir, env: withoutPath }), GitNotInstalledError);
     expect(error).toBeInstanceOf(GitNotInstalledError);
     expect(error.message).toBe("git is not installed: the env has no PATH");
   });
 
   it("reports that git is not installed when PATH is empty", async () => {
-    const error = await failureOf(
-      runGit(["version"], { cwd: dir, env: { ...env, PATH: "" } }),
-      GitNotInstalledError,
-    );
+    const error = await failureOf(runGit(["version"], { cwd: dir, env: { ...env, PATH: "" } }), GitNotInstalledError);
     expect(error).toBeInstanceOf(GitNotInstalledError);
     expect(error.message).toBe("git is not installed: the env has no PATH");
   });
@@ -182,19 +176,17 @@ describe("runGit", () => {
   });
 
   it("writes nothing to the terminal, also when git fails", async () => {
-    const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>(
-      (resolve, reject) => {
-        const child = spawn(process.execPath, ["--import", "tsx", "test/fixtures/git-quiet.ts"], {
-          cwd: repoRoot,
-        });
-        let stdout = "";
-        let stderr = "";
-        child.stdout.on("data", (chunk) => (stdout += chunk));
-        child.stderr.on("data", (chunk) => (stderr += chunk));
-        child.on("error", reject);
-        child.on("close", (code) => resolve({ code, stdout, stderr }));
-      },
-    );
+    const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
+      const child = spawn(process.execPath, ["--import", "tsx", "test/fixtures/git-quiet.ts"], {
+        cwd: repoRoot,
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (chunk) => (stdout += chunk));
+      child.stderr.on("data", (chunk) => (stderr += chunk));
+      child.on("error", reject);
+      child.on("close", (code) => resolve({ code, stdout, stderr }));
+    });
     expect(result).toEqual({ code: 0, stdout: "", stderr: "" });
   });
 });
@@ -339,10 +331,7 @@ describe("runGit keeps git from asking questions", () => {
   });
 
   it.runIf(existsSync("/proc/self/stat"))("keeps git in the process group of tasker", async () => {
-    writeFakeGit(
-      bin,
-      ["read -r pid comm state ppid pgrp rest < /proc/$$/stat", 'echo "$pgrp"'].join("\n"),
-    );
+    writeFakeGit(bin, ["read -r pid comm state ppid pgrp rest < /proc/$$/stat", 'echo "$pgrp"'].join("\n"));
     const stat = readFileSync("/proc/self/stat", "utf8");
     const pgrp = stat.slice(stat.lastIndexOf(")") + 2).split(" ")[2];
     const out = await runGit(["version"], { cwd: dir, env });

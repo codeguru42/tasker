@@ -9,11 +9,7 @@ import { isOlderVersion } from "../../doctor/version-compare.js";
 import type { GitVcsConfig } from "./config.js";
 import { GitError, GitNotInstalledError, isGitExit, runGit } from "./run.js";
 import { hideSshKey, remoteCwd, remoteNotAnswering, runRemoteGit } from "./ssh.js";
-import {
-  findStaleLocks,
-  onceProcView,
-  type ProcView,
-} from "./stale-locks.js";
+import { findStaleLocks, onceProcView, type ProcView } from "./stale-locks.js";
 import { type SshAccount, sshAccount, sshTarget } from "./ssh-account.js";
 import { withoutLineEnd } from "./worktree.js";
 
@@ -43,10 +39,7 @@ interface CheckSpec {
 // This layer only hides the ssh key in the detail and the remediation.
 function makeCheck(
   spec: CheckSpec,
-  body: (
-    env: NodeJS.ProcessEnv,
-    limit: { signal: AbortSignal; deadline: number },
-  ) => Promise<CheckResult>,
+  body: (env: NodeJS.ProcessEnv, limit: { signal: AbortSignal; deadline: number }) => Promise<CheckResult>,
 ): Check {
   const check = timedCheck(spec, body);
   return {
@@ -65,50 +58,42 @@ function makeCheck(
 
 export function gitVersionCheck(timeoutMs = 5000): Check {
   const remediation = `Install git ${MINIMUM_TEXT} or newer.`;
-  return makeCheck(
-    { name: "git version", required: true, timeoutMs, sshKey: undefined },
-    async (env, { signal }) => {
-      let output: string;
-      try {
-        output = await runGit(["version"], { cwd: remoteCwd(), env, signal });
-      } catch (error) {
-        if (error instanceof GitNotInstalledError) {
-          return {
-            status: "error",
-            detail: `git is not installed. tasker needs git ${MINIMUM_TEXT} or newer.`,
-            remediation,
-          };
-        }
-        throw error;
-      }
-      const line = firstLine(output);
-      const match = /^git version (\d+)\.(\d+)\S*/.exec(line);
-      if (match === null) {
-        return { status: "error", detail: `cannot read the git version from: ${line}` };
-      }
-      const found = line.slice("git version ".length).split(" ")[0];
-      const major = Number(match[1]);
-      const minor = Number(match[2]);
-      if (isOlderVersion([major, minor], [MINIMUM_GIT.major, MINIMUM_GIT.minor])) {
+  return makeCheck({ name: "git version", required: true, timeoutMs, sshKey: undefined }, async (env, { signal }) => {
+    let output: string;
+    try {
+      output = await runGit(["version"], { cwd: remoteCwd(), env, signal });
+    } catch (error) {
+      if (error instanceof GitNotInstalledError) {
         return {
           status: "error",
-          detail: `git ${found} is older than the minimum ${MINIMUM_TEXT}.`,
+          detail: `git is not installed. tasker needs git ${MINIMUM_TEXT} or newer.`,
           remediation,
         };
       }
-      return { status: "ok", detail: `git ${found} (minimum ${MINIMUM_TEXT})` };
-    },
-  );
+      throw error;
+    }
+    const line = firstLine(output);
+    const match = /^git version (\d+)\.(\d+)\S*/.exec(line);
+    if (match === null) {
+      return { status: "error", detail: `cannot read the git version from: ${line}` };
+    }
+    const found = line.slice("git version ".length).split(" ")[0];
+    const major = Number(match[1]);
+    const minor = Number(match[2]);
+    if (isOlderVersion([major, minor], [MINIMUM_GIT.major, MINIMUM_GIT.minor])) {
+      return {
+        status: "error",
+        detail: `git ${found} is older than the minimum ${MINIMUM_TEXT}.`,
+        remediation,
+      };
+    }
+    return { status: "ok", detail: `git ${found} (minimum ${MINIMUM_TEXT})` };
+  });
 }
 
 // The value of a git configuration key in the clone, as a commit reads it (the clone, then the
 // global files). An empty value and a missing value both give "".
-async function configValue(
-  clone: string,
-  key: string,
-  env: NodeJS.ProcessEnv,
-  signal: AbortSignal,
-): Promise<string> {
+async function configValue(clone: string, key: string, env: NodeJS.ProcessEnv, signal: AbortSignal): Promise<string> {
   try {
     return withoutLineEnd(await runGit(["config", "--get", key], { gitDir: clone, env, signal }));
   } catch (error) {
@@ -162,8 +147,7 @@ export function identityCheck(repo: GitDoctorRepo, timeoutMs = 5000): Check {
         return {
           status: "warn",
           detail: `a commit in the clone gets no ${missing}`,
-          remediation:
-            "Set vcs.config.authorName and vcs.config.authorEmail, or set a global git identity.",
+          remediation: "Set vcs.config.authorName and vcs.config.authorEmail, or set a global git identity.",
         };
       }
       return { status: "ok", detail: `a commit in the clone gets ${name} <${email}>` };
@@ -202,21 +186,14 @@ export function connectionCheck(repo: GitDoctorRepo, timeoutMs = 30000): Check {
     async (env, { signal }) => {
       let failure: GitError | undefined;
       try {
-        await runRemoteGit(
-          ["ls-remote", "--", remote, "HEAD"],
-          { cwd: remoteCwd(), env, signal },
-          sshKey,
-        );
+        await runRemoteGit(["ls-remote", "--", remote, "HEAD"], { cwd: remoteCwd(), env, signal }, sshKey);
       } catch (error) {
         if (!(error instanceof GitError)) {
           throw error;
         }
         failure = error;
       }
-      const account =
-        sshTarget(remote) === undefined
-          ? undefined
-          : await sshAccount({ remote, sshKey, env, signal });
+      const account = sshTarget(remote) === undefined ? undefined : await sshAccount({ remote, sshKey, env, signal });
       const text = account === undefined ? "" : `\n${accountText(account)}`;
       if (failure === undefined) {
         return { status: "ok", detail: `the remote answers: ${remote}${text}` };
@@ -232,11 +209,7 @@ export function connectionCheck(repo: GitDoctorRepo, timeoutMs = 30000): Check {
 
 // Reports lock files in the clone that nobody has written for a minute. It deletes nothing.
 // procView gives the view of /proc. The check calls it only when it finds a stale lock.
-export function staleLockCheck(
-  repo: GitDoctorRepo,
-  procView: () => ProcView | undefined,
-  timeoutMs = 10000,
-): Check {
+export function staleLockCheck(repo: GitDoctorRepo, procView: () => ProcView | undefined, timeoutMs = 10000): Check {
   return makeCheck(
     {
       name: `git lock files: ${repo.key}`,
@@ -273,13 +246,9 @@ export function staleLockCheck(
       }
       const notes: string[] = [];
       if (view === undefined) {
-        notes.push(
-          "tasker reads open files only on Linux, so it cannot tell whether a process uses these files.",
-        );
+        notes.push("tasker reads open files only on Linux, so it cannot tell whether a process uses these files.");
       } else if (!view.readable) {
-        notes.push(
-          `tasker cannot read /proc (${view.reason}), so it cannot tell whether a process uses these files.`,
-        );
+        notes.push(`tasker cannot read /proc (${view.reason}), so it cannot tell whether a process uses these files.`);
       }
       if (left.length === 0) {
         return { status: "ok", detail: skipped.join("\n") };
@@ -305,10 +274,6 @@ export function gitDoctorChecks(options: {
   const procView = onceProcView(options.procRoot, options.platform);
   return [
     gitVersionCheck(),
-    ...options.repos.flatMap((repo) => [
-      identityCheck(repo),
-      connectionCheck(repo),
-      staleLockCheck(repo, procView),
-    ]),
+    ...options.repos.flatMap((repo) => [identityCheck(repo), connectionCheck(repo), staleLockCheck(repo, procView)]),
   ];
 }

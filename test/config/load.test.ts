@@ -28,9 +28,7 @@ describe("loadConfig", () => {
 
   it("throws when the file is missing", () => {
     const path = join(dir, "missing.json");
-    expect(() => loadConfig({ TASKER_CONFIG: path }, home)).toThrow(
-      `config file not found: ${path}`,
-    );
+    expect(() => loadConfig({ TASKER_CONFIG: path }, home)).toThrow(`config file not found: ${path}`);
   });
 
   it("names the real error when the path cannot be read", () => {
@@ -47,9 +45,7 @@ describe("loadConfig", () => {
   it("throws when the file is not valid JSON", () => {
     const path = join(dir, "c.json");
     writeFileSync(path, "{");
-    expect(() => loadConfig({ TASKER_CONFIG: path }, home)).toThrow(
-      `config file is not valid JSON: ${path}`,
-    );
+    expect(() => loadConfig({ TASKER_CONFIG: path }, home)).toThrow(`config file is not valid JSON: ${path}`);
   });
 
   it("throws a ConfigError for a file that breaks the schema", () => {
@@ -71,9 +67,7 @@ describe("loadConfigFile", () => {
 
   it("throws the same error as loadConfig when the file is missing", () => {
     const path = join(dir, "missing.json");
-    expect(() => loadConfigFile({ TASKER_CONFIG: path }, home)).toThrow(
-      `config file not found: ${path}`,
-    );
+    expect(() => loadConfigFile({ TASKER_CONFIG: path }, home)).toThrow(`config file not found: ${path}`);
   });
 });
 
@@ -88,9 +82,7 @@ describe("parseConfigText", () => {
 
   it("throws when the text is not valid JSON", () => {
     const path = join(dir, "c.json");
-    expect(() => parseConfigText("{", path, {}, home)).toThrow(
-      `config file is not valid JSON: ${path}`,
-    );
+    expect(() => parseConfigText("{", path, {}, home)).toThrow(`config file is not valid JSON: ${path}`);
   });
 
   it("throws a ConfigError for text that breaks the schema", () => {

@@ -1,21 +1,9 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { jiraShortRef } from "../../../src/issue-key/short-ref.js";
 import { sandboxWritePaths } from "../../../src/vcs/git/assistant-surface.js";
-import {
-  fetchTips,
-  uncommittedChanges,
-  worktreeDiff,
-} from "../../../src/vcs/git/changes.js";
+import { fetchTips, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { shellQuote } from "../../../src/vcs/git/ssh.js";
 import {
@@ -47,11 +35,7 @@ describe("taskBranchName", () => {
     ["PROJ-12", "Fix it", "PROJ-12-fix-it"],
     ["A-B9-3", "Fix it", "A-B9-3-fix-it"],
     ["PROJ-X-12", "Fix it", "PROJ-X-12-fix-it"],
-    [
-      "acme-atlassian-net-browse-PROJ-12",
-      "Fix it",
-      "acme-atlassian-net-browse-PROJ-12-fix-it",
-    ],
+    ["acme-atlassian-net-browse-PROJ-12", "Fix it", "acme-atlassian-net-browse-PROJ-12-fix-it"],
     ["x-y-example-com-browse-Q-1", "Fix it", "x-y-example-com-browse-Q-1-fix-it"],
   ])("joins %s and the title %j into %s", (shortRef, title, expected) => {
     expect(taskBranchName(shortRef, title)).toBe(expected);
@@ -75,14 +59,9 @@ describe("taskBranchName with a bad short ref", () => {
     "A_B9-3",
     "PROJ_X-12",
     "acme.atlassian.net-browse-PROJ-12",
-  ])(
-    "refuses the short ref %j",
-    (shortRef) => {
-      expect(() => taskBranchName(shortRef, "Fix it")).toThrow(
-        `not a safe short ref: ${JSON.stringify(shortRef)}`,
-      );
-    },
-  );
+  ])("refuses the short ref %j", (shortRef) => {
+    expect(() => taskBranchName(shortRef, "Fix it")).toThrow(`not a safe short ref: ${JSON.stringify(shortRef)}`);
+  });
 
   it("gives a short ref of exactly 100 characters alone", () => {
     const shortRef = `${"a".repeat(86)}-browse-PROJ-1`;
@@ -92,14 +71,12 @@ describe("taskBranchName with a bad short ref", () => {
 });
 
 describe("assertTaskBranchShape", () => {
-  it.each([
-    "issue-7",
-    "issue-7-fix-it",
-    "PROJ-X-12-fix-it",
-    "jira-example-com-browse-PROJ-X-12-fix-it",
-  ])("accepts %s", (branch) => {
-    expect(() => assertTaskBranchShape(branch)).not.toThrow();
-  });
+  it.each(["issue-7", "issue-7-fix-it", "PROJ-X-12-fix-it", "jira-example-com-browse-PROJ-X-12-fix-it"])(
+    "accepts %s",
+    (branch) => {
+      expect(() => assertTaskBranchShape(branch)).not.toThrow();
+    },
+  );
 
   it.each([
     "issue-7-fix_it",
@@ -108,9 +85,7 @@ describe("assertTaskBranchShape", () => {
     "acme.atlassian.net-browse-PROJ-12-fix-it",
     "issue-7--x",
   ])("refuses %s", (branch) => {
-    expect(() => assertTaskBranchShape(branch)).toThrow(
-      `not a task branch: ${JSON.stringify(branch)}`,
-    );
+    expect(() => assertTaskBranchShape(branch)).toThrow(`not a task branch: ${JSON.stringify(branch)}`);
   });
 });
 
@@ -130,9 +105,7 @@ describe("assertTaskBranchNameAndShape", () => {
 
 describe("taskWorktreePath", () => {
   it("puts the worktree in the worktrees folder, named after the short ref", () => {
-    expect(taskWorktreePath("/data/worktrees/x", "issue-14")).toBe(
-      join("/data/worktrees/x", "issue-14"),
-    );
+    expect(taskWorktreePath("/data/worktrees/x", "issue-14")).toBe(join("/data/worktrees/x", "issue-14"));
   });
 });
 
@@ -166,16 +139,14 @@ describe("git fixture", () => {
       baseRevision: base,
       ...extra,
     });
-  const gitIn = (cwd: string, ...args: string[]) =>
-    runGit(args, { cwd, env }).then((out) => out.trim());
+  const gitIn = (cwd: string, ...args: string[]) => runGit(args, { cwd, env }).then((out) => out.trim());
   const list = () => listWorktrees({ clone, env });
   const head = (branch: string) =>
     runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {
       gitDir: clone,
       env,
     }).then((out) => out.trim());
-  const addWorktree = (...args: string[]) =>
-    runGit(["worktree", "add", ...args], { gitDir: clone, env });
+  const addWorktree = (...args: string[]) => runGit(["worktree", "add", ...args], { gitDir: clone, env });
   const remove = (extra: Partial<Parameters<typeof removeTaskWorktree>[0]> = {}) =>
     removeTaskWorktree({ clone, env, path: path(), ...extra });
 
@@ -377,8 +348,7 @@ describe("git fixture", () => {
   });
 
   describe("createTaskWorktree, stopped create", () => {
-    const lock = (...reason: string[]) =>
-      runGit(["worktree", "lock", ...reason, "--", path()], { gitDir: clone, env });
+    const lock = (...reason: string[]) => runGit(["worktree", "lock", ...reason, "--", path()], { gitDir: clone, env });
 
     it("repairs a worktree that a stopped checkout left, then unlocks it", async () => {
       await create();
@@ -483,13 +453,10 @@ describe("git fixture", () => {
       expect(await taskBranchExists({ clone, env, branch: MISSING_BRANCH })).toBe(false);
     });
 
-    it.each(["", "-x", "a..b", "HEAD"])(
-      "refuses the branch name %j before any git call",
-      async (branch) => {
-        const error = await failureOf(taskBranchExists({ clone, env: {}, branch }), Error);
-        expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
-      },
-    );
+    it.each(["", "-x", "a..b", "HEAD"])("refuses the branch name %j before any git call", async (branch) => {
+      const error = await failureOf(taskBranchExists({ clone, env: {}, branch }), Error);
+      expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
+    });
   });
 
   describe("deleteTaskBranch", () => {
@@ -516,13 +483,10 @@ describe("git fixture", () => {
       expect(await localBranches(clone, env)).toContain(`refs/heads/${BRANCH}`);
     });
 
-    it.each(["", "-x", "a..b", "HEAD"])(
-      "refuses the branch name %j before any git call",
-      async (branch) => {
-        const error = await failureOf(deleteBranch({ branch, env: {} }), Error);
-        expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
-      },
-    );
+    it.each(["", "-x", "a..b", "HEAD"])("refuses the branch name %j before any git call", async (branch) => {
+      const error = await failureOf(deleteBranch({ branch, env: {} }), Error);
+      expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
+    });
 
     it.each(NOT_TASK_BRANCHES)(
       "refuses the name %j, which has no task branch shape, before any git call",
@@ -532,12 +496,7 @@ describe("git fixture", () => {
       },
     );
 
-    describe.each([
-      "issue-17",
-      "PROJ-12",
-      jiraShortRef("acme.atlassian.net/browse/PROJ-12"),
-      jiraShortRef("A_B9-3"),
-    ])(
+    describe.each(["issue-17", "PROJ-12", jiraShortRef("acme.atlassian.net/browse/PROJ-12"), jiraShortRef("A_B9-3")])(
       "the result of taskBranchName() for %s",
       (shortRef) => {
         it.each(["Fix it", "", "word ".repeat(100)])("has the shape for the title %j", (title) => {
@@ -630,8 +589,7 @@ describe("git fixture", () => {
 
     // The admin dir of a worktree, read with a plain git call.
     const adminDir = (worktree: string) => gitIn(worktree, "rev-parse", "--git-dir");
-    const ownGitDirError = () =>
-      `the worktree does not use its own git dir in the clone: ${realpathSync(path())}`;
+    const ownGitDirError = () => `the worktree does not use its own git dir in the clone: ${realpathSync(path())}`;
     const marker = () => join(origin.dir, "fsmonitor-ran");
 
     // Points the commondir file of the worktree at a bare repo whose config runs a command
@@ -689,16 +647,9 @@ describe("git fixture", () => {
 
     it.each([
       ["discardWorktreeChanges", () => discardWorktreeChanges({ clone, env, path: path() })],
-      [
-        "worktreeDiff",
-        () => worktreeDiff({ clone, env, path: path(), baseRevision: base }),
-      ],
+      ["worktreeDiff", () => worktreeDiff({ clone, env, path: path(), baseRevision: base })],
       ["uncommittedChanges", () => uncommittedChanges({ clone, env, path: path() })],
-      [
-        "fetchTips",
-        () =>
-          fetchTips({ clone, env, sshKey: undefined, path: path(), baseRevision: base }),
-      ],
+      ["fetchTips", () => fetchTips({ clone, env, sshKey: undefined, path: path(), baseRevision: base })],
       ["sandboxWritePaths", () => sandboxWritePaths({ clone, env, path: path() })],
     ])("%s refuses a tampered worktree before git starts there", async (_name, call) => {
       await create();
@@ -740,13 +691,10 @@ describe("git fixture", () => {
       expect(error.message).toBe(`cannot resolve the task branch: ${BRANCH}`);
     });
 
-    it.each(["", "a..b", "x~1", "x^{commit}", "-x"])(
-      "refuses the branch name %j",
-      async (branch) => {
-        const error = await failureOf(revision({ branch }), Error);
-        expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
-      },
-    );
+    it.each(["", "a..b", "x~1", "x^{commit}", "-x"])("refuses the branch name %j", async (branch) => {
+      const error = await failureOf(revision({ branch }), Error);
+      expect(error.message).toBe(`not a task branch name: ${JSON.stringify(branch)}`);
+    });
   });
 
   describe("taskBranchName for any title", () => {

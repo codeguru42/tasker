@@ -1,11 +1,7 @@
 import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  findStaleLocks,
-  onceProcView,
-  readProcView,
-} from "../../../src/vcs/git/stale-locks.js";
+import { findStaleLocks, onceProcView, readProcView } from "../../../src/vcs/git/stale-locks.js";
 import { DeadlineError } from "../../../src/doctor/timed-check.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { writeFakeProc } from "../../helpers/processes.js";

@@ -88,9 +88,7 @@ describe("formatResult", () => {
   });
 
   it("pads a warn status to the same column", () => {
-    expect(formatResult({ name: "free space" }, { status: "warn", detail: "low" })).toBe(
-      "warn  free space: low\n",
-    );
+    expect(formatResult({ name: "free space" }, { status: "warn", detail: "low" })).toBe("warn  free space: low\n");
   });
 
   it("puts the other detail lines and the remediation lines after the first line, with an indent", () => {

@@ -62,9 +62,7 @@ describe("checkPlanAnswer: the schema", () => {
       todos: [{ ...validPlanAnswer().todos[0]!, title: "" }, validPlanAnswer().todos[1]!],
     });
 
-    expect(problemsOf(answer)).toEqual([
-      "todos.0.title: Too small: expected string to have >=1 characters",
-    ]);
+    expect(problemsOf(answer)).toEqual(["todos.0.title: Too small: expected string to have >=1 characters"]);
   });
 
   it("refuses a missing top-level field", () => {
@@ -139,9 +137,7 @@ describe("checkPlanAnswer: the checks after the schema", () => {
   }
 
   it("refuses a todo title that is a placeholder", () => {
-    expect(problemsOf(withTodo({ title: "ab" }))).toEqual([
-      "todos.0.title: is a placeholder, not real text",
-    ]);
+    expect(problemsOf(withTodo({ title: "ab" }))).toEqual(["todos.0.title: is a placeholder, not real text"]);
   });
 
   it("refuses a todo description that is a placeholder", () => {
@@ -153,9 +149,7 @@ describe("checkPlanAnswer: the checks after the schema", () => {
   it("refuses a plan with 19 characters after the heading", () => {
     const answer = validPlanAnswer({ plan_markdown: `## Summary\n\n${"a".repeat(19)}\n` });
 
-    expect(problemsOf(answer)).toEqual([
-      'plan_markdown: has no plan after the "## Summary" heading',
-    ]);
+    expect(problemsOf(answer)).toEqual(['plan_markdown: has no plan after the "## Summary" heading']);
   });
 
   it("accepts a plan with 20 characters after the heading", () => {
@@ -165,9 +159,7 @@ describe("checkPlanAnswer: the checks after the schema", () => {
   });
 
   it("refuses a plan with no todos", () => {
-    expect(problemsOf(validPlanAnswer({ todos: [] }))).toEqual([
-      "todos: a plan with no todos is not a plan",
-    ]);
+    expect(problemsOf(validPlanAnswer({ todos: [] }))).toEqual(["todos: a plan with no todos is not a plan"]);
   });
 
   it("refuses a duplicate todo id", () => {

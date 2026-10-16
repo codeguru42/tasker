@@ -96,12 +96,7 @@ export function loadConfigOrFail(io: Io): Config {
 }
 
 // The issue ref of rawKey. An IssueKeyError stops the command with exit code 1.
-export function resolveIssueKeyOrFail(
-  io: Io,
-  rawKey: string,
-  config: Config,
-  options: ResolveOptions,
-): IssueRef {
+export function resolveIssueKeyOrFail(io: Io, rawKey: string, config: Config, options: ResolveOptions): IssueRef {
   return issueKeyOrFail(io, () => resolveIssueKey(rawKey, config, options));
 }
 
@@ -125,7 +120,12 @@ export function formatFields(fields: [string, string | number | null | undefined
 export function formatColumns(rows: readonly (readonly string[])[]): string[] {
   const count = Math.max(0, ...rows.map((row) => row.length));
   const widths = Array.from({ length: count }, (_, i) => Math.max(...rows.map((row) => (row[i] ?? "").length)));
-  return rows.map((row) => row.map((cell, i) => cell.padEnd(widths[i])).join("  ").trimEnd());
+  return rows.map((row) =>
+    row
+      .map((cell, i) => cell.padEnd(widths[i]))
+      .join("  ")
+      .trimEnd(),
+  );
 }
 
 function openDataRootStore(config: Config): TaskStore {
@@ -143,10 +143,7 @@ export function withStore<T>(config: Config, fn: (store: TaskStore) => T): T {
 }
 
 // Like withStore, for an async fn: the store closes after the promise settles.
-export async function withStoreAsync<T>(
-  config: Config,
-  fn: (store: TaskStore) => Promise<T>,
-): Promise<T> {
+export async function withStoreAsync<T>(config: Config, fn: (store: TaskStore) => Promise<T>): Promise<T> {
   const store = openDataRootStore(config);
   try {
     return await fn(store);

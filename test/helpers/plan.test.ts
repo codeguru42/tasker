@@ -100,9 +100,12 @@ describe("seedPlanRevision", () => {
       seedPlanRevision(store, task.id);
 
       expect(store.getTask(task.id)?.state).toBe("awaiting_plan_review");
-      expect(store.listEvents(task.id).slice(before).map(({ type, data }) => ({ type, data }))).toEqual([
-        { type: "plan_revision", data: { version: 1, prompt: "plan@000000000000" } },
-      ]);
+      expect(
+        store
+          .listEvents(task.id)
+          .slice(before)
+          .map(({ type, data }) => ({ type, data })),
+      ).toEqual([{ type: "plan_revision", data: { version: 1, prompt: "plan@000000000000" } }]);
     });
   });
 
@@ -381,10 +384,7 @@ describe("seedExecuteTodoStates", () => {
 
       seedExecuteTodoStates(store, task.id, 1, {});
 
-      expect(store.executeTodoProgress(task.id, 1).map(({ state }) => state)).toEqual([
-        "not_started",
-        "not_started",
-      ]);
+      expect(store.executeTodoProgress(task.id, 1).map(({ state }) => state)).toEqual(["not_started", "not_started"]);
     });
   });
 });

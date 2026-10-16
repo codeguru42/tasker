@@ -2,9 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { pidIsLive } from "./pid.js";
 import { immediateTransaction } from "./transaction.js";
 
-export type LockAttempt =
-  | { held: true }
-  | { held: false; pid: number; acquiredAt: string };
+export type LockAttempt = { held: true } | { held: false; pid: number; acquiredAt: string };
 
 // The store functions that withLock needs. TaskStore has them.
 export interface LockStore {
@@ -25,8 +23,7 @@ export function taskLockName(repoKey: string, issueKey: string): string {
 export function tryLockIn(db: DatabaseSync, name: string, at: string): LockAttempt {
   return immediateTransaction(db, (): LockAttempt => {
     const row = db.prepare("SELECT pid, acquired_at FROM locks WHERE name = ?").get(name) as
-      | { pid: number; acquired_at: string }
-      | undefined;
+      { pid: number; acquired_at: string } | undefined;
     if (row !== undefined) {
       // The own pid is always live, so this check comes first.
       if (row.pid === process.pid) throw new Error(`this process already holds the lock ${name}`);
@@ -70,9 +67,7 @@ export async function withLock<T>(
 ): Promise<T> {
   const { waitMs } = options;
   if (!Number.isFinite(waitMs) || waitMs < 0) {
-    throw new RangeError(
-      `the wait for the lock ${name} must be a finite number of 0 or more ms, not ${waitMs}`,
-    );
+    throw new RangeError(`the wait for the lock ${name} must be a finite number of 0 or more ms, not ${waitMs}`);
   }
   const deadline = Date.now() + waitMs;
   for (;;) {

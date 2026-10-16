@@ -48,11 +48,7 @@ export function assertRevisionInput(value: string): void {
 }
 
 // A full revision stays as it is. A ref gives its SHA. A missing ref throws.
-export async function resolveRevision(o: {
-  clone: string;
-  env: NodeJS.ProcessEnv;
-  value: string;
-}): Promise<string> {
+export async function resolveRevision(o: { clone: string; env: NodeJS.ProcessEnv; value: string }): Promise<string> {
   const { clone, env, value } = o;
   assertRevisionInput(value);
   if (isFullRevision(value)) return value;

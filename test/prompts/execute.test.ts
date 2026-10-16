@@ -136,9 +136,7 @@ describe("todosText", () => {
   });
 
   it("indents each line of a description by two spaces", () => {
-    expect(text([planTodo("a", [], { description: "x\ny" })])).toBe(
-      ["- [ ] `a`: Do a", "  x", "  y"].join("\n"),
-    );
+    expect(text([planTodo("a", [], { description: "x\ny" })])).toBe(["- [ ] `a`: Do a", "  x", "  y"].join("\n"));
   });
 
   it("lists each dependency in the order of depends_on", () => {
@@ -147,13 +145,7 @@ describe("todosText", () => {
 
   it("applies the dependency order", () => {
     expect(text([planTodo("a", ["b"]), planTodo("b")])).toBe(
-      [
-        "- [ ] `b`: Do b",
-        "  The work of b.",
-        "- [ ] `a`: Do a",
-        "  The work of a.",
-        "  (depends on: b)",
-      ].join("\n"),
+      ["- [ ] `b`: Do b", "  The work of b.", "- [ ] `a`: Do a", "  The work of a.", "  (depends on: b)"].join("\n"),
     );
   });
 });
@@ -174,7 +166,12 @@ describe("resolvedQuestionsText", () => {
   type Question = Parameters<typeof resolvedQuestionsText>[0][number];
 
   function resolved(id: string, version: number, answer: string | null): Question {
-    return { question: { id, question: `Question ${id}?`, context: `Context of ${id}.` }, state: "resolved", version, answer };
+    return {
+      question: { id, question: `Question ${id}?`, context: `Context of ${id}.` },
+      state: "resolved",
+      version,
+      answer,
+    };
   }
 
   it("gives None. for no question", () => {

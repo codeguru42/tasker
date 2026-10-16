@@ -58,9 +58,7 @@ describe("readStream result and denials", () => {
   it("maps the denials of the result", () => {
     const facts = readStream(claudeSampleEvents("denied-tool"));
 
-    expect(facts.permissionDenials).toEqual([
-      { tool: "Write", input: { file_path: "/work/note.txt", content: "hi" } },
-    ]);
+    expect(facts.permissionDenials).toEqual([{ tool: "Write", input: { file_path: "/work/note.txt", content: "hi" } }]);
   });
 
   it("gives no denials for a result with none", () => {

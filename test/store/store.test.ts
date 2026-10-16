@@ -22,9 +22,23 @@ import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
 import { reviewFindingWithout } from "../helpers/review.js";
-import { seedExecuteSession, seedExecuteTodoStates, seedPlanRevision, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
+import {
+  seedExecuteSession,
+  seedExecuteTodoStates,
+  seedPlanRevision,
+  seedPlanSession,
+  validPlanAnswer,
+} from "../helpers/plan.js";
 import { deadPid, repoRoot, startFixture, startWriteLockHolder } from "../helpers/processes.js";
-import { newReview, readRunMarker, seedReview, tableNames, tableRowCount, withRawDatabase, withStoreFile } from "../helpers/store.js";
+import {
+  newReview,
+  readRunMarker,
+  seedReview,
+  tableNames,
+  tableRowCount,
+  withRawDatabase,
+  withStoreFile,
+} from "../helpers/store.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 // Makes a database that has only the first migrations, as an old version of tasker left it.
@@ -73,21 +87,15 @@ describe("task store", () => {
 
   // All rows of the execute_todos table, as raw rows.
   const readTodoRows = () =>
-    withRawDatabase(dbPath, (db) =>
-      db.prepare("SELECT * FROM execute_todos ORDER BY plan_version, todo_id").all(),
-    );
+    withRawDatabase(dbPath, (db) => db.prepare("SELECT * FROM execute_todos ORDER BY plan_version, todo_id").all());
 
   // All rows of the execute_fix_turns table, as raw rows.
   const readFixTurnRows = () =>
-    withRawDatabase(dbPath, (db) =>
-      db.prepare("SELECT * FROM execute_fix_turns ORDER BY plan_version").all(),
-    );
+    withRawDatabase(dbPath, (db) => db.prepare("SELECT * FROM execute_fix_turns ORDER BY plan_version").all());
 
   // The review rows of a task, as raw rows.
   const readReviewRows = (taskId: number) =>
-    withRawDatabase(dbPath, (db) =>
-      db.prepare("SELECT * FROM reviews WHERE task_id = ? ORDER BY number").all(taskId),
-    );
+    withRawDatabase(dbPath, (db) => db.prepare("SELECT * FROM reviews WHERE task_id = ? ORDER BY number").all(taskId));
 
   // The review finding rows of a task, as raw rows.
   const readFindingRows = (taskId: number) =>
@@ -122,9 +130,12 @@ describe("task store", () => {
   // Writes a raw run marker row for a task.
   const writeRunPid = (taskId: number, state: string, pid: number, childPid: number | null = null) => {
     withRawDatabase(dbPath, (db) => {
-      db.prepare(
-        "INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, ?, 't')",
-      ).run(taskId, state, pid, childPid);
+      db.prepare("INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, ?, 't')").run(
+        taskId,
+        state,
+        pid,
+        childPid,
+      );
     });
   };
 
@@ -299,17 +310,14 @@ describe("task store", () => {
       expect(rowCount()).toBe(2);
     });
 
-    it.each(["cancelled", "finished"])(
-      "creates a new active task after the first task is %s",
-      (state) => {
-        const first = store.createTask(newTask);
-        store.updateTask(first.id, { state });
-        const second = store.createTask(newTask);
-        expect(second.id).not.toBe(first.id);
-        expect(second.state).toBe("new");
-        expect(rowCount()).toBe(2);
-      },
-    );
+    it.each(["cancelled", "finished"])("creates a new active task after the first task is %s", (state) => {
+      const first = store.createTask(newTask);
+      store.updateTask(first.id, { state });
+      const second = store.createTask(newTask);
+      expect(second.id).not.toBe(first.id);
+      expect(second.state).toBe("new");
+      expect(rowCount()).toBe(2);
+    });
   });
 
   describe("find the active task and the latest task", () => {
@@ -379,9 +387,7 @@ describe("task store", () => {
       expect(ids(store.listTasks({ repoKey: "other" }))).toEqual([c.id]);
       expect(ids(store.listTasks({ issueKey: issueB }))).toEqual([b.id]);
       expect(ids(store.listTasks({ issueKey: issueA }))).toEqual([c.id, a.id]);
-      expect(
-        ids(store.listTasks({ repoKey: "tasker", issueKey: issueA })),
-      ).toEqual([a.id]);
+      expect(ids(store.listTasks({ repoKey: "tasker", issueKey: issueA }))).toEqual([a.id]);
     });
 
     it("lists the tasks in the given states", () => {
@@ -389,13 +395,8 @@ describe("task store", () => {
       store.updateTask(cancelled.id, { state: "cancelled" });
       const active = store.createTask(newTask);
       const finished = store.createTask({ ...newTask, state: "finished" });
-      expect(ids(store.listTasks({ states: ["cancelled"] }))).toEqual([
-        cancelled.id,
-      ]);
-      expect(ids(store.listTasks({ states: ["new", "finished"] }))).toEqual([
-        finished.id,
-        active.id,
-      ]);
+      expect(ids(store.listTasks({ states: ["cancelled"] }))).toEqual([cancelled.id]);
+      expect(ids(store.listTasks({ states: ["new", "finished"] }))).toEqual([finished.id, active.id]);
     });
 
     it("lists no task when states is an empty array", () => {
@@ -423,12 +424,8 @@ describe("task store", () => {
       const before = eventCount();
       withRawDatabase(dbPath, (db) => {
         insertRawTask(db, "tasker", "new");
-        expect(() => insertRawTask(db, "tasker", "planning")).toThrow(
-          /UNIQUE constraint failed/,
-        );
-        const row = db
-          .prepare("SELECT COUNT(*) AS n FROM tasks WHERE repo_key = 'tasker'")
-          .get() as { n: number };
+        expect(() => insertRawTask(db, "tasker", "planning")).toThrow(/UNIQUE constraint failed/);
+        const row = db.prepare("SELECT COUNT(*) AS n FROM tasks WHERE repo_key = 'tasker'").get() as { n: number };
         expect(row.n).toBe(1);
       });
       expect(eventCount()).toBe(before);
@@ -441,16 +438,13 @@ describe("task store", () => {
       });
     });
 
-    it.each(["cancelled", "finished"])(
-      "permits an active row after a %s row of the same repo and issue",
-      (state) => {
-        withRawDatabase(dbPath, (db) => {
-          insertRawTask(db, "tasker", state);
-          expect(() => insertRawTask(db, "tasker", "planning")).not.toThrow();
-          expect(tableRowCount(db, "tasks")).toBe(2);
-        });
-      },
-    );
+    it.each(["cancelled", "finished"])("permits an active row after a %s row of the same repo and issue", (state) => {
+      withRawDatabase(dbPath, (db) => {
+        insertRawTask(db, "tasker", state);
+        expect(() => insertRawTask(db, "tasker", "planning")).not.toThrow();
+        expect(tableRowCount(db, "tasks")).toBe(2);
+      });
+    });
 
     it("lists in the migration the same states as TERMINAL_STATES", () => {
       const list = /NOT IN \(([^)]*)\)/.exec(migrations[3])?.[1] ?? "";
@@ -528,9 +522,7 @@ describe("task store", () => {
   });
 
   it("throws when the task to update does not exist", () => {
-    expect(() => store.updateTask(999, { state: "x" })).toThrow(
-      "task not found: 999",
-    );
+    expect(() => store.updateTask(999, { state: "x" })).toThrow("task not found: 999");
   });
 
   it("passes the current task to the check", () => {
@@ -672,11 +664,7 @@ describe("task store", () => {
       store.appendEvent(b.id, "other");
       store.appendEvent(a.id, "two", { n: 2 });
       const events = store.listEvents(a.id);
-      expect(events.map((event) => event.type)).toEqual([
-        "created",
-        "one",
-        "two",
-      ]);
+      expect(events.map((event) => event.type)).toEqual(["created", "one", "two"]);
       expect(events[2].id).toBeGreaterThan(events[1].id);
       expect(events[2].data).toEqual({ n: 2 });
     });
@@ -690,12 +678,8 @@ describe("task store", () => {
       store.appendEvent(task.id, "one");
       const before = store.listEvents(task.id);
       withRawDatabase(dbPath, (db) => {
-        expect(() => db.exec("UPDATE events SET type = 'y'")).toThrow(
-          "events are append-only",
-        );
-        expect(() => db.exec("DELETE FROM events")).toThrow(
-          "events are append-only",
-        );
+        expect(() => db.exec("UPDATE events SET type = 'y'")).toThrow("events are append-only");
+        expect(() => db.exec("DELETE FROM events")).toThrow("events are append-only");
       });
       expect(store.listEvents(task.id)).toEqual(before);
     });
@@ -823,8 +807,22 @@ describe("task store", () => {
         },
       ]);
       expect(readFindingRows(task.id)).toMatchObject([
-        { number: 1, position: 1, file: input.findings[0]?.file, line: input.findings[0]?.line, dismissed_at: null, dismiss_reason: null },
-        { number: 1, position: 2, file: input.findings[1]?.file, line: input.findings[1]?.line, dismissed_at: null, dismiss_reason: null },
+        {
+          number: 1,
+          position: 1,
+          file: input.findings[0]?.file,
+          line: input.findings[0]?.line,
+          dismissed_at: null,
+          dismiss_reason: null,
+        },
+        {
+          number: 1,
+          position: 2,
+          file: input.findings[1]?.file,
+          line: input.findings[1]?.line,
+          dismissed_at: null,
+          dismiss_reason: null,
+        },
       ]);
     });
 
@@ -1076,9 +1074,7 @@ describe("task store", () => {
       makeOldDatabase(oldPath, 7);
       withRawDatabase(oldPath, (raw) => {
         insertRawTask(raw, "tasker", "planning");
-        raw
-          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'note', NULL)")
-          .run();
+        raw.prepare("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'note', NULL)").run();
         raw
           .prepare(
             "INSERT INTO plan_revisions (task_id, version, source, answer, prompt, created_at) VALUES (1, 1, 'plan', '{}', 'plan@000000000000', 't')",
@@ -1248,9 +1244,7 @@ describe("task store", () => {
       makeOldDatabase(oldPath, 6);
       withRawDatabase(oldPath, (raw) => {
         insertRawTask(raw, "tasker", "planning");
-        raw
-          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'note', NULL)")
-          .run();
+        raw.prepare("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'note', NULL)").run();
       });
       withStoreFile(
         oldPath,
@@ -1320,7 +1314,6 @@ describe("task store", () => {
         expect(store.nextPlanVersion(b.id)).toBe(1);
         expect(seedPlanRevision(store, b.id).version).toBe(1);
       });
-
     });
 
     describe("approval", () => {
@@ -1463,8 +1456,7 @@ describe("task store", () => {
     describe("questions", () => {
       const questionsOf = (taskId: number, version: number) => store.planQuestions(taskId, version);
 
-      const resolvedThrough = (taskId: number, version: number) =>
-        store.resolvedQuestionsThrough(taskId, version);
+      const resolvedThrough = (taskId: number, version: number) => store.resolvedQuestionsThrough(taskId, version);
 
       const a = { id: "a", question: "Which branch?", context: "No base is named." };
       const b = { id: "b", question: "Which test runner?", context: "Two exist." };
@@ -1539,9 +1531,7 @@ describe("task store", () => {
         it("gives only the questions that an earlier version resolves", () => {
           const task = store.createTask(newTask);
           seedThreeRevisions(task.id);
-          expect(resolvedThrough(task.id, 2)).toEqual([
-            { question: a, state: "resolved", version: 2, answer: "f2" },
-          ]);
+          expect(resolvedThrough(task.id, 2)).toEqual([{ question: a, state: "resolved", version: 2, answer: "f2" }]);
         });
 
         it("gives nothing for the first version", () => {
@@ -1714,7 +1704,11 @@ describe("task store", () => {
     it("refuses a version with no plan revision and writes nothing", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
-      expectNothingChanged(task.id, () => seedExecuteSession(store, task.id, 5, { sessionId: "s-1" }), `task ${task.id} has no plan revision 5`);
+      expectNothingChanged(
+        task.id,
+        () => seedExecuteSession(store, task.id, 5, { sessionId: "s-1" }),
+        `task ${task.id} has no plan revision 5`,
+      );
       expect(store.executeSession(task.id, 5)).toBeUndefined();
     });
 
@@ -2063,8 +2057,20 @@ describe("task store", () => {
       clock = new Date("2026-01-02T00:00:00.000Z");
       markTodosDone(task.id, 1);
       expect(readTodoRows()).toEqual([
-        { task_id: task.id, plan_version: 1, todo_id: "make-it-pass", state: "done", updated_at: "2026-01-02T00:00:00.000Z" },
-        { task_id: task.id, plan_version: 1, todo_id: "write-test", state: "done", updated_at: "2026-01-02T00:00:00.000Z" },
+        {
+          task_id: task.id,
+          plan_version: 1,
+          todo_id: "make-it-pass",
+          state: "done",
+          updated_at: "2026-01-02T00:00:00.000Z",
+        },
+        {
+          task_id: task.id,
+          plan_version: 1,
+          todo_id: "write-test",
+          state: "done",
+          updated_at: "2026-01-02T00:00:00.000Z",
+        },
       ]);
     });
 
@@ -2502,7 +2508,13 @@ describe("task store", () => {
           { type: "transition", data: { to: "awaiting_work_review" } },
         ]);
         expect(readVerifyRows(task.id)).toMatchObject([
-          { task_id: task.id, number: 1, result: "failed", commands: '["npm run lint","npm test"]', failing_command: 2 },
+          {
+            task_id: task.id,
+            number: 1,
+            result: "failed",
+            commands: '["npm run lint","npm test"]',
+            failing_command: 2,
+          },
         ]);
       });
 
@@ -2637,11 +2649,7 @@ describe("task store", () => {
       it("refuses a spawning state as the target", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
         store.startRun(task.id, "executing");
-        expectNothingChanged(
-          task.id,
-          () => store.endRun(task.id, "planning"),
-          "planning is a spawning state",
-        );
+        expectNothingChanged(task.id, () => store.endRun(task.id, "planning"), "planning is a spawning state");
         expect(readRunMarker(dbPath, task.id)).toBeDefined();
       });
 
@@ -2711,92 +2719,69 @@ describe("task store", () => {
     });
   });
 
-  it(
-    "lets two processes write to one new database at once",
-    async () => {
-      const layout = createDataRoot(join(dir, "root"));
-      const count = 300;
-      const run = (issueKey: string) =>
-        new Promise<{ code: number | null; stderr: string }>((resolve, reject) => {
-          const child = spawn(
-            process.execPath,
-            [
-              "--import",
-              "tsx",
-              "test/fixtures/store-writer.ts",
-              layout.database,
-              issueKey,
-              String(count),
-            ],
-            { cwd: repoRoot },
-          );
-          let stderr = "";
-          child.stderr.on("data", (chunk) => (stderr += chunk));
-          child.on("error", reject);
-          child.on("close", (code) => resolve({ code, stderr }));
-        });
-
-      const results = await Promise.all([run("a/b#1"), run("a/b#2")]);
-      for (const result of results) {
-        expect(result.stderr).not.toContain("database is locked");
-        expect(result.code).toBe(0);
-      }
-
-      withStoreFile(layout.database, (reader) => {
-        withRawDatabase(layout.database, (db) => {
-          const tasks = db.prepare("SELECT id FROM tasks").all() as { id: number }[];
-          expect(tasks).toHaveLength(2);
-          for (const { id } of tasks) {
-            expect(reader.listEvents(id)).toHaveLength(count + 1);
-            expect(reader.getTask(id)?.state).toBe(String(count - 1));
-          }
-          expect(schemaVersion(db)).toBe(migrations.length);
-        });
+  it("lets two processes write to one new database at once", async () => {
+    const layout = createDataRoot(join(dir, "root"));
+    const count = 300;
+    const run = (issueKey: string) =>
+      new Promise<{ code: number | null; stderr: string }>((resolve, reject) => {
+        const child = spawn(
+          process.execPath,
+          ["--import", "tsx", "test/fixtures/store-writer.ts", layout.database, issueKey, String(count)],
+          { cwd: repoRoot },
+        );
+        let stderr = "";
+        child.stderr.on("data", (chunk) => (stderr += chunk));
+        child.on("error", reject);
+        child.on("close", (code) => resolve({ code, stderr }));
       });
-    },
-    60_000,
-  );
+
+    const results = await Promise.all([run("a/b#1"), run("a/b#2")]);
+    for (const result of results) {
+      expect(result.stderr).not.toContain("database is locked");
+      expect(result.code).toBe(0);
+    }
+
+    withStoreFile(layout.database, (reader) => {
+      withRawDatabase(layout.database, (db) => {
+        const tasks = db.prepare("SELECT id FROM tasks").all() as { id: number }[];
+        expect(tasks).toHaveLength(2);
+        for (const { id } of tasks) {
+          expect(reader.listEvents(id)).toHaveLength(count + 1);
+          expect(reader.getTask(id)?.state).toBe(String(count - 1));
+        }
+        expect(schemaVersion(db)).toBe(migrations.length);
+      });
+    });
+  }, 60_000);
 });
 
 describe("open of a new database", () => {
-  it(
-    "waits for another process that holds the write lock of a new database",
-    async () => {
-      const path = join(useTempDir("tasker-open-"), "tasker.db");
-      await startWriteLockHolder(path, 500);
+  it("waits for another process that holds the write lock of a new database", async () => {
+    const path = join(useTempDir("tasker-open-"), "tasker.db");
+    await startWriteLockHolder(path, 500);
 
-      withStoreFile(path, () => {});
+    withStoreFile(path, () => {});
 
-      withRawDatabase(path, (db) => {
-        expect(db.prepare("PRAGMA journal_mode").get()).toEqual({ journal_mode: "wal" });
-        expect(schemaVersion(db)).toBe(migrations.length);
-      });
-    },
-    20_000,
-  );
+    withRawDatabase(path, (db) => {
+      expect(db.prepare("PRAGMA journal_mode").get()).toEqual({ journal_mode: "wal" });
+      expect(schemaVersion(db)).toBe(migrations.length);
+    });
+  }, 20_000);
 
-  it(
-    "throws database is locked after the busy timeout when the write lock of a new database stays taken",
-    async () => {
-      const path = join(useTempDir("tasker-open-"), "tasker.db");
-      await startWriteLockHolder(path, 8000);
+  it("throws database is locked after the busy timeout when the write lock of a new database stays taken", async () => {
+    const path = join(useTempDir("tasker-open-"), "tasker.db");
+    await startWriteLockHolder(path, 8000);
 
-      const start = Date.now();
-      expect(() => openStore(path)).toThrow("database is locked");
-      expect(Date.now() - start).toBeGreaterThanOrEqual(4500);
-    },
-    20_000,
-  );
+    const start = Date.now();
+    expect(() => openStore(path)).toThrow("database is locked");
+    expect(Date.now() - start).toBeGreaterThanOrEqual(4500);
+  }, 20_000);
 
-  it(
-    "fails at once on an error that is not SQLITE_BUSY on the switch to WAL",
-    () => {
-      const path = useTempFile("tasker-open-", "tasker.db", "x".repeat(4096));
+  it("fails at once on an error that is not SQLITE_BUSY on the switch to WAL", () => {
+    const path = useTempFile("tasker-open-", "tasker.db", "x".repeat(4096));
 
-      const start = Date.now();
-      expect(() => openStore(path)).toThrow("file is not a database");
-      expect(Date.now() - start).toBeLessThan(1000);
-    },
-    20_000,
-  );
+    const start = Date.now();
+    expect(() => openStore(path)).toThrow("file is not a database");
+    expect(Date.now() - start).toBeLessThan(1000);
+  }, 20_000);
 });

@@ -142,10 +142,7 @@ describe("authStatus", () => {
       { args: loginArgs, stdout: "octo\n", delaySeconds: 5 },
     ]);
     const start = Date.now();
-    const error = await failureOf(
-      auth.authStatus("octo", fake.env, { signal: AbortSignal.timeout(100) }),
-      Error,
-    );
+    const error = await failureOf(auth.authStatus("octo", fake.env, { signal: AbortSignal.timeout(100) }), Error);
     expect(error.name).toBe("AbortError");
     expect(Date.now() - start).toBeLessThan(2000);
     expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs, loginArgs]);

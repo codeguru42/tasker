@@ -23,9 +23,7 @@ describe("expandPath", () => {
   });
 
   it("throws for a variable that is not set", () => {
-    expect(() => expandPath("$MISSING/x", {}, home)).toThrow(
-      "references undefined environment variable $MISSING",
-    );
+    expect(() => expandPath("$MISSING/x", {}, home)).toThrow("references undefined environment variable $MISSING");
   });
 
   it("throws for a variable that is empty", () => {

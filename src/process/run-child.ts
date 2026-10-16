@@ -97,13 +97,7 @@ export class ChildCommandError extends Error {
   readonly stderr: string;
   readonly exitCode: number | null;
 
-  constructor(
-    message: string,
-    subcommand: string,
-    stdout: string,
-    stderr: string,
-    exitCode: number | null,
-  ) {
+  constructor(message: string, subcommand: string, stdout: string, stderr: string, exitCode: number | null) {
     super(message);
     this.subcommand = subcommand;
     this.stdout = stdout;

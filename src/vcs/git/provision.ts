@@ -107,10 +107,7 @@ async function applyConfig(
 function writeIncludeFile(clone: string, sshKey: string | undefined): void {
   let content = "";
   if (sshKey !== undefined) {
-    const value = sshCommand(sshKey)
-      .replaceAll("\\", "\\\\")
-      .replaceAll('"', '\\"')
-      .replaceAll("\n", "\\n");
+    const value = sshCommand(sshKey).replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("\n", "\\n");
     content = `[core]\n\tsshCommand = "${value}"\n`;
   }
   replaceFile(join(clone, INCLUDE_FILE), content, { followSymlink: false });
@@ -149,11 +146,7 @@ async function syncConfig(
 
 // Every local line of key in the clone. --null keeps a value with a newline whole, and --local
 // reads only the clone configuration, with no include. Exit code 1 means that the key has no line.
-async function localLines(
-  clone: string,
-  key: string,
-  env: NodeJS.ProcessEnv,
-): Promise<string[]> {
+async function localLines(clone: string, key: string, env: NodeJS.ProcessEnv): Promise<string[]> {
   try {
     const out = await runGit(["config", "--local", "--null", "--get-all", key], {
       gitDir: clone,
@@ -170,11 +163,7 @@ async function localLines(
 }
 
 // One git config write in the clone. When it fails and config.lock exists, the clone is locked.
-async function setConfig(
-  clone: string,
-  args: readonly string[],
-  env: NodeJS.ProcessEnv,
-): Promise<void> {
+async function setConfig(clone: string, args: readonly string[], env: NodeJS.ProcessEnv): Promise<void> {
   try {
     await runGit(["config", ...args], { gitDir: clone, env });
   } catch (error) {

@@ -18,8 +18,7 @@ import type { Task, TaskStore } from "../store/store.js";
 import { type AssistantSurface, vcsForRepo } from "../vcs/provider.js";
 
 export type AssistantSessionRequest =
-  | { resume: false }
-  | { resume: true; sessionId: string; recorded: RecordedSession };
+  { resume: false } | { resume: true; sessionId: string; recorded: RecordedSession };
 
 // The input that both entry points take.
 export interface TaskRunRequest {
@@ -250,10 +249,7 @@ export interface RepoReadDenyPaths {
 // The list covers every configured repo, because with the key of any repo the shell can push to that repo.
 // Each entry goes in only when the variables that it needs are set. Every value comes from env, never from
 // the home folder of the host. A path that does not exist still goes in the list.
-export function executeReadDenyPaths(o: {
-  env: NodeJS.ProcessEnv;
-  repos: readonly RepoReadDenyPaths[];
-}): string[] {
+export function executeReadDenyPaths(o: { env: NodeJS.ProcessEnv; repos: readonly RepoReadDenyPaths[] }): string[] {
   const { env, repos } = o;
   const home = isSet(env.HOME) ? env.HOME : undefined;
   const fromEnv: string[] = [];

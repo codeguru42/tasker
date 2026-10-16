@@ -148,18 +148,15 @@ describe("show", () => {
     });
   });
 
-  it.each(["nobody/else#1", `${TASKER}#5`])(
-    "prints the error of the issue key %s and opens no store",
-    async (key) => {
-      const written = useThreeRepoDataRoot();
-      const expected = `${issueKeyErrorMessage(key, written.path)}\n`;
+  it.each(["nobody/else#1", `${TASKER}#5`])("prints the error of the issue key %s and opens no store", async (key) => {
+    const written = useThreeRepoDataRoot();
+    const expected = `${issueKeyErrorMessage(key, written.path)}\n`;
 
-      const result = await runShow(key);
+    const result = await runShow(key);
 
-      expect(result).toEqual({ code: 1, out: "", err: expected });
-      expect(existsSync(join(written.dataRoot, "tasker.db"))).toBe(false);
-    },
-  );
+    expect(result).toEqual({ code: 1, out: "", err: expected });
+    expect(existsSync(join(written.dataRoot, "tasker.db"))).toBe(false);
+  });
 
   it("passes --repo to the issue key, so that it picks one of two repos", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
@@ -258,9 +255,7 @@ describe("show", () => {
 
   it("prints no todo block for a task with no pinned revision", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
-    const [task] = seedTasks(dataRoot, [
-      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "executed", at: dayAt(4) },
-    ]);
+    const [task] = seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "executed", at: dayAt(4) }]);
     withDataRootStore(
       dataRoot,
       (store) => {
@@ -284,7 +279,11 @@ describe("show", () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedPinnedTask(dataRoot, { todoStates: { "write-test": "done" } });
 
-    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS + PADDED_BLOCK });
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
+      code: 0,
+      err: "",
+      out: EXECUTED_FIELDS + PADDED_BLOCK,
+    });
   });
 
   it("prints the state in progress", async () => {
@@ -348,11 +347,7 @@ describe("show", () => {
     expect(code).toBe(0);
     // Commander wraps the long lines of the help, so compare with single spaces.
     const help = out.replace(/\s+/g, " ");
-    expect(help).toContain(
-      "Print the details of the task of an issue: the active task, else the newest one",
-    );
-    expect(help).toContain(
-      "Use the repo with this key when two repos share the project of the issue",
-    );
+    expect(help).toContain("Print the details of the task of an issue: the active task, else the newest one");
+    expect(help).toContain("Use the repo with this key when two repos share the project of the issue");
   });
 });

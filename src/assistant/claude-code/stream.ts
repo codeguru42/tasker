@@ -47,7 +47,9 @@ function reportedModelOf(events: readonly AssistantEvent[]): string | undefined 
     }
   }
   if (messageModel === undefined) return undefined;
-  const init = events.find((event) => event["type"] === "system" && event["subtype"] === "init" && typeof event["model"] === "string");
+  const init = events.find(
+    (event) => event["type"] === "system" && event["subtype"] === "init" && typeof event["model"] === "string",
+  );
   const initModel = init?.["model"] as string | undefined;
   if (initModel?.startsWith(messageModel) && /^\[[^[\]]+\]$/.test(initModel.slice(messageModel.length))) {
     return initModel;

@@ -38,10 +38,7 @@ export interface GitOrigin {
   path: string;
   env: NodeJS.ProcessEnv;
   // Adds one commit to branch and returns the new commit SHA.
-  addCommit(
-    branch: string,
-    change?: { file?: string; content?: string; message?: string },
-  ): Promise<string>;
+  addCommit(branch: string, change?: { file?: string; content?: string; message?: string }): Promise<string>;
   // Makes branch name at the head of from (default "main").
   createBranch(name: string, from?: string): Promise<void>;
   // The head SHA of branch, or undefined when the branch is missing.
@@ -126,9 +123,7 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
       );
       await runGit(["fetch", "origin"], { cwd: work, env });
       await runGit(["checkout", "-B", branch, `origin/${branch}`], { cwd: work, env });
-      const sha = await writeAndCommit(work, env, target, change.content ?? message, message, [
-        "--allow-empty",
-      ]);
+      const sha = await writeAndCommit(work, env, target, change.content ?? message, message, ["--allow-empty"]);
       await runGit(["push", "origin", `HEAD:refs/heads/${branch}`], { cwd: work, env });
       return sha;
     },
@@ -140,10 +135,10 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
     async branchHead(branch) {
       assertBranchName(branch);
       try {
-        const out = await runGit(
-          ["rev-parse", "--verify", "--quiet", `refs/heads/${branch}^{commit}`],
-          { gitDir: path, env },
-        );
+        const out = await runGit(["rev-parse", "--verify", "--quiet", `refs/heads/${branch}^{commit}`], {
+          gitDir: path,
+          env,
+        });
         return out.trim();
       } catch (error) {
         if (error instanceof GitError && error.exitCode === 1 && error.stdout === "") {
@@ -173,8 +168,7 @@ export async function addCloneCommit(
       throw new Error(`a name must not start with "-": ${JSON.stringify(name)}`);
     }
   }
-  const git = (...args: string[]) =>
-    runGit(args, { gitDir: clone, env }).then((out) => out.trim());
+  const git = (...args: string[]) => runGit(args, { gitDir: clone, env }).then((out) => out.trim());
   const ref = `refs/heads/${branch}`;
   const base =
     parent ??
@@ -226,11 +220,7 @@ export async function commitInWorktree(
   env: NodeJS.ProcessEnv,
   change: { file: string; content?: string; message?: string },
 ): Promise<string> {
-  const target = resolveInside(
-    worktree,
-    change.file,
-    "commitInWorktree needs a file inside the worktree",
-  );
+  const target = resolveInside(worktree, change.file, "commitInWorktree needs a file inside the worktree");
   worktreeCommitCount += 1;
   const message = change.message ?? `worktree commit ${worktreeCommitCount}`;
   return writeAndCommit(worktree, env, target, change.content ?? message, message, []);
@@ -253,11 +243,7 @@ export const NOT_TASK_BRANCHES = [
 export const NO_TOKEN = "tasker: the push has no valid publish token";
 
 // The task branch and the worktree folder of a GitHub issue number, as tasker makes them.
-export function taskNames(
-  worktrees: string,
-  issueNumber: number,
-  title = "x",
-): { branch: string; worktree: string } {
+export function taskNames(worktrees: string, issueNumber: number, title = "x"): { branch: string; worktree: string } {
   const shortRef = githubShortRef(String(issueNumber));
   return {
     branch: taskBranchName(shortRef, title),
@@ -309,10 +295,7 @@ export function writeGitRecorder(binDir: string, logPath: string): void {
 // Writes the git recorder of writeGitRecorder() into <dir>/gitbin, with its log at <dir>/git.log.
 // It returns base with that folder first on PATH, and the path of the log. The PATH of base is
 // the tail, so the other programs of base (for example a fake ssh) stay on PATH.
-export function gitRecorderEnv(
-  dir: string,
-  base: NodeJS.ProcessEnv,
-): { env: NodeJS.ProcessEnv; log: string } {
+export function gitRecorderEnv(dir: string, base: NodeJS.ProcessEnv): { env: NodeJS.ProcessEnv; log: string } {
   const bin = join(dir, "gitbin");
   const log = join(dir, "git.log");
   writeGitRecorder(bin, log);

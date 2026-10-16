@@ -26,14 +26,7 @@ describe("runGh", () => {
     gh = await import("../../../src/issues/github/run.js");
   });
 
-  const tokenArgs = (account: string) => [
-    "auth",
-    "token",
-    "--hostname",
-    "github.com",
-    "--user",
-    account,
-  ];
+  const tokenArgs = (account: string) => ["auth", "token", "--hostname", "github.com", "--user", account];
 
   it("resolves with the stdout of gh, not trimmed", async () => {
     const fake = fakeGh(dir, {}, [
@@ -45,10 +38,7 @@ describe("runGh", () => {
   });
 
   it("reads the token before the call", async () => {
-    const fake = fakeGh(dir, {}, [
-      ghTokenAnswer("octo", "gho_test"),
-      { args: ["api", "user"], stdout: "{}" },
-    ]);
+    const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: ["api", "user"], stdout: "{}" }]);
     await gh.runGh(["api", "user"], { account: "octo", env: fake.env });
     expect(fake.calls()).toEqual([
       { args: tokenArgs("octo"), ghToken: undefined, env: {} },
@@ -57,10 +47,7 @@ describe("runGh", () => {
   });
 
   it("reads the token one time for two calls of one account", async () => {
-    const fake = fakeGh(dir, {}, [
-      ghTokenAnswer("octo", "gho_test"),
-      { args: ["api", "user"], stdout: "{}" },
-    ]);
+    const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: ["api", "user"], stdout: "{}" }]);
     const options = { account: "octo", env: fake.env };
     await gh.runGh(["api", "user"], options);
     await gh.runGh(["api", "user"], options);
@@ -70,10 +57,7 @@ describe("runGh", () => {
   });
 
   it("reads the token one time for two calls at the same time", async () => {
-    const fake = fakeGh(dir, {}, [
-      ghTokenAnswer("octo", "gho_test"),
-      { args: ["api", "user"], stdout: "{}" },
-    ]);
+    const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: ["api", "user"], stdout: "{}" }]);
     const options = { account: "octo", env: fake.env };
     await Promise.all([gh.runGh(["api", "user"], options), gh.runGh(["api", "user"], options)]);
     const tokenCalls = fake.calls().filter((call) => call.args[0] === "auth");
@@ -148,19 +132,17 @@ describe("runGh", () => {
   });
 
   it("writes nothing to the terminal, also when gh fails", async () => {
-    const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>(
-      (resolve, reject) => {
-        const child = spawn(process.execPath, ["--import", "tsx", "test/fixtures/gh-quiet.ts"], {
-          cwd: repoRoot,
-        });
-        let stdout = "";
-        let stderr = "";
-        child.stdout.on("data", (chunk) => (stdout += chunk));
-        child.stderr.on("data", (chunk) => (stderr += chunk));
-        child.on("error", reject);
-        child.on("close", (code) => resolve({ code, stdout, stderr }));
-      },
-    );
+    const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
+      const child = spawn(process.execPath, ["--import", "tsx", "test/fixtures/gh-quiet.ts"], {
+        cwd: repoRoot,
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (chunk) => (stdout += chunk));
+      child.stderr.on("data", (chunk) => (stderr += chunk));
+      child.on("error", reject);
+      child.on("close", (code) => resolve({ code, stdout, stderr }));
+    });
     expect(result).toEqual({ code: 0, stdout: "", stderr: "" });
   });
 
@@ -207,11 +189,7 @@ describe("runGh", () => {
       expect(Date.now() - start).toBeLessThan(800);
       expect(await b).toBe("{}");
       await gh.runGh(apiUser, { account: "octo", env: fake.env });
-      expect(fake.calls().map((call) => call.args)).toEqual([
-        tokenArgs("octo"),
-        apiUser,
-        apiUser,
-      ]);
+      expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs("octo"), apiUser, apiUser]);
     });
 
     it("stops the token read when every caller stopped, and the next call reads again", async () => {
@@ -254,9 +232,7 @@ describe("runGh", () => {
 
   describe("readGhVersion", () => {
     it("resolves with the stdout of gh --version and sends no token", async () => {
-      const fake = fakeGh(dir, {}, [
-        { args: ["--version"], stdout: "gh version 2.101.0 (2026-09-15)\n" },
-      ]);
+      const fake = fakeGh(dir, {}, [{ args: ["--version"], stdout: "gh version 2.101.0 (2026-09-15)\n" }]);
       expect(await gh.readGhVersion(fake.env)).toBe("gh version 2.101.0 (2026-09-15)\n");
       expect(fake.calls()).toEqual([{ args: ["--version"], ghToken: undefined, env: {} }]);
     });
@@ -271,10 +247,7 @@ describe("runGh", () => {
     it("rejects with an AbortError when the signal aborts", async () => {
       const fake = fakeGh(dir, {}, [{ args: ["--version"], stdout: "x", delaySeconds: 5 }]);
       const start = Date.now();
-      const error = await failureOf(
-        gh.readGhVersion(fake.env, { signal: AbortSignal.timeout(100) }),
-        Error,
-      );
+      const error = await failureOf(gh.readGhVersion(fake.env, { signal: AbortSignal.timeout(100) }), Error);
       expect(error.name).toBe("AbortError");
       expect(Date.now() - start).toBeLessThan(2000);
       expect(fake.calls()).toEqual([{ args: ["--version"], ghToken: undefined, env: {} }]);
@@ -290,10 +263,7 @@ describe("runGh", () => {
         ghTokenAnswer("octo", "gho_test"),
         { args: ["issue", "view", "7"], stderr: "boom\n", exitCode: 1 },
       ]);
-      const error = await failureOf(
-        gh.runGh(["issue", "view", "7"], { account: "octo", env: fake.env }),
-        gh.GhError,
-      );
+      const error = await failureOf(gh.runGh(["issue", "view", "7"], { account: "octo", env: fake.env }), gh.GhError);
       expect(error.message).toBe("gh issue view failed with exit code 1: boom");
       expect(error.subcommand).toBe("issue view");
       expect(error.stderr).toBe("boom\n");
@@ -306,14 +276,8 @@ describe("runGh", () => {
       [["api", "user"], "api user"],
       [["issue", "view", "7"], "issue view"],
     ])("names the subcommand of %j as %s", async (args, subcommand) => {
-      const fake = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        { args, exitCode: 1 },
-      ]);
-      const error = await failureOf(
-        gh.runGh(args, { account: "octo", env: fake.env }),
-        gh.GhError,
-      );
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args, exitCode: 1 }]);
+      const error = await failureOf(gh.runGh(args, { account: "octo", env: fake.env }), gh.GhError);
       expect(error.subcommand).toBe(subcommand);
     });
 
@@ -329,10 +293,7 @@ describe("runGh", () => {
 
     it("rejects with a GhNotInstalledError when the env has no PATH", async () => {
       const fake = fakeGh(dir, {}, []);
-      const error = await failureOf(
-        gh.runGh(apiUser, { account: "octo", env: {} }),
-        gh.GhNotInstalledError,
-      );
+      const error = await failureOf(gh.runGh(apiUser, { account: "octo", env: {} }), gh.GhNotInstalledError);
       expect(error.message).toContain("gh is not installed");
       expect(fake.calls()).toEqual([]);
     });
@@ -345,10 +306,7 @@ describe("runGh", () => {
           exitCode: 1,
         },
       ]);
-      const error = await failureOf(
-        gh.runGh(apiUser, { account: "ghost", env: fake.env }),
-        gh.GhLoginError,
-      );
+      const error = await failureOf(gh.runGh(apiUser, { account: "ghost", env: fake.env }), gh.GhLoginError);
       expect(error.message).toContain("run `gh auth login --hostname github.com` and log in as ghost");
       expect(error.message).toContain("no oauth token found for github.com account ghost");
       expect(error.account).toBe("ghost");
@@ -371,10 +329,7 @@ describe("runGh", () => {
         },
       ]);
       await failureOf(gh.runGh(apiUser, { account: "octo", env: failing.env }), gh.GhLoginError);
-      const working = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        { args: apiUser, stdout: "{}" },
-      ]);
+      const working = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: apiUser, stdout: "{}" }]);
       await expect(gh.runGh(apiUser, { account: "octo", env: working.env })).resolves.toBe("{}");
     });
 
@@ -383,10 +338,7 @@ describe("runGh", () => {
         ghTokenAnswer("octo", token),
         { args: apiUser, stdout: `out ${token}`, stderr: `err ${token}\n`, exitCode: 1 },
       ]);
-      const error = await failureOf(
-        gh.runGh(apiUser, { account: "octo", env: fake.env }),
-        gh.GhError,
-      );
+      const error = await failureOf(gh.runGh(apiUser, { account: "octo", env: fake.env }), gh.GhError);
       expectNoToken(error, token);
       expect(error.message).toContain("***");
       expect(error.stderr).toContain("***");
@@ -401,10 +353,7 @@ describe("runGh", () => {
           exitCode: 1,
         },
       ]);
-      const error = await failureOf(
-        gh.runGh(apiUser, { account: "octo", env: fake.env }),
-        gh.GhLoginError,
-      );
+      const error = await failureOf(gh.runGh(apiUser, { account: "octo", env: fake.env }), gh.GhLoginError);
       expectNoToken(error, token);
     });
 
@@ -416,10 +365,7 @@ describe("runGh", () => {
           killWith: "TERM",
         },
       ]);
-      const error = await failureOf(
-        gh.runGh(apiUser, { account: "octo", env: fake.env }),
-        gh.GhError,
-      );
+      const error = await failureOf(gh.runGh(apiUser, { account: "octo", env: fake.env }), gh.GhError);
       expect(error.message).toBe("gh auth token was stopped by signal SIGTERM");
       expect(error.stdout).toBe("");
       expectNoToken(error, token);
@@ -430,10 +376,7 @@ describe("runGh", () => {
         ghTokenAnswer("octo", token),
         { args: apiUser, stdout: `out ${token}`, stderr: `err ${token}`, killWith: "TERM" },
       ]);
-      const error = await failureOf(
-        gh.runGh(apiUser, { account: "octo", env: fake.env }),
-        gh.GhError,
-      );
+      const error = await failureOf(gh.runGh(apiUser, { account: "octo", env: fake.env }), gh.GhError);
       expectNoToken(error, token);
     });
   });

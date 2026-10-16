@@ -7,10 +7,7 @@ export interface SshTarget {
   port?: string;
 }
 
-export type SshAccount =
-  | { state: "found"; account: string }
-  | { state: "none" }
-  | { state: "git-ssh" };
+export type SshAccount = { state: "found"; account: string } | { state: "none" } | { state: "git-ssh" };
 
 const SSH_URL = /^(?:ssh|git\+ssh|ssh\+git):\/\/([^/]*)/i;
 

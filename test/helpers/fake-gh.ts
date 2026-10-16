@@ -99,11 +99,7 @@ export function writeFakeGh(
     lines.push(`  exit ${answer.exitCode ?? 0}`, "fi");
     body.push(...lines);
   }
-  body.push(
-    logLine(`${logPath}.unanswered`),
-    "printf 'fake gh: no answer for: %s\\n' \"$*\" >&2",
-    "exit 99",
-  );
+  body.push(logLine(`${logPath}.unanswered`), "printf 'fake gh: no answer for: %s\\n' \"$*\" >&2", "exit 99");
   writeFakeCommand(binDir, "gh", body.join("\n"));
 }
 

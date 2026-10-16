@@ -32,7 +32,8 @@ describe("checkReviewAnswer: valid answers", () => {
     const output = answerOf(reviewFindingWithout("line", "category"));
     const result = check(output);
     expect(result).toEqual({ ok: true, answer: output });
-    if (result.ok) expect(Object.keys(result.answer.findings[0] ?? {}).sort()).toEqual(["failure_scenario", "file", "summary"]);
+    if (result.ok)
+      expect(Object.keys(result.answer.findings[0] ?? {}).sort()).toEqual(["failure_scenario", "file", "summary"]);
   });
 
   it("passes a category of another word", () => {
@@ -60,7 +61,9 @@ describe("checkReviewAnswer: the schema", () => {
   });
 
   it("gives a problem for a missing summary", () => {
-    expect(problemsOf(answerOf(reviewFindingWithout("summary")))).toEqual(["findings.0.summary: Invalid input: expected string, received undefined"]);
+    expect(problemsOf(answerOf(reviewFindingWithout("summary")))).toEqual([
+      "findings.0.summary: Invalid input: expected string, received undefined",
+    ]);
   });
 
   it("gives a problem for missing findings", () => {
@@ -68,7 +71,9 @@ describe("checkReviewAnswer: the schema", () => {
   });
 
   it.each([0, -1])("gives a problem for a line of %i", (line) => {
-    expect(problemsOf(answerOf(reviewFinding({ line })))).toEqual(["findings.0.line: Too small: expected number to be >=1"]);
+    expect(problemsOf(answerOf(reviewFinding({ line })))).toEqual([
+      "findings.0.line: Too small: expected number to be >=1",
+    ]);
   });
 
   it("gives a problem for a line that is not a whole number", () => {
@@ -114,10 +119,7 @@ describe("checkReviewAnswer: the clean step", () => {
   });
 
   it("reports all problems of one run", () => {
-    const output = answerOf(
-      reviewFinding({ file: "./", summary: "ab" }),
-      reviewFinding({ failure_scenario: "x" }),
-    );
+    const output = answerOf(reviewFinding({ file: "./", summary: "ab" }), reviewFinding({ failure_scenario: "x" }));
     expect(problemsOf(output)).toEqual([
       `findings.0.file: ${EMPTY_FILE}`,
       `findings.0.summary: ${PLACEHOLDER}`,

@@ -10,10 +10,27 @@ import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
-import { planAnswerStream, planRevisionOf, seedPlanRevision, seedPlanSession, seedTaskWithPlanFiles, transcriptLines, validPlanAnswer } from "../helpers/plan.js";
+import {
+  planAnswerStream,
+  planRevisionOf,
+  seedPlanRevision,
+  seedPlanSession,
+  seedTaskWithPlanFiles,
+  transcriptLines,
+  validPlanAnswer,
+} from "../helpers/plan.js";
 import { overlapWarningText } from "../helpers/overlap.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore, withRawDatabase } from "../helpers/store.js";
+import {
+  databasePathOf,
+  dayAt,
+  eventsOf,
+  latestTaskOf,
+  lockNames,
+  readRunMarker,
+  withDataRootStore,
+  withRawDatabase,
+} from "../helpers/store.js";
 import { expectNoAssistantRun, startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -103,7 +120,9 @@ describe("plan", () => {
 
   it("continues a recorded plan session and records no second one", async () => {
     const fixture = await usePlanFixture({ stream: planAnswerStream(validPlanAnswer()) });
-    withDataRootStore(fixture.started.dataRoot, (store) => seedPlanSession(store, latestTaskOf(fixture.started.dataRoot, KEY).id));
+    withDataRootStore(fixture.started.dataRoot, (store) =>
+      seedPlanSession(store, latestTaskOf(fixture.started.dataRoot, KEY).id),
+    );
 
     const result = await runPlan();
 
@@ -111,7 +130,9 @@ describe("plan", () => {
     const argv = fixture.claude.calls()[0]!.argv;
     expect(argv[argv.indexOf("--resume") + 1]).toBe(TEST_SESSION_ID);
     expect(argv).not.toContain("--session-id");
-    const rows = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(latestTaskOf(fixture.started.dataRoot, KEY).id));
+    const rows = withDataRootStore(fixture.started.dataRoot, (store) =>
+      store.planSession(latestTaskOf(fixture.started.dataRoot, KEY).id),
+    );
     expect(rows?.sessionId).toBe(TEST_SESSION_ID);
   });
 
@@ -162,7 +183,9 @@ describe("plan", () => {
     expect(result.code).toBe(1);
     expect(result.out).toMatch(/^planning stopped by a quota limit; /);
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("quota_blocked");
-    expect(readRunMarker(databasePathOf(fixture.started.dataRoot), latestTaskOf(fixture.started.dataRoot, KEY).id)).toBeUndefined();
+    expect(
+      readRunMarker(databasePathOf(fixture.started.dataRoot), latestTaskOf(fixture.started.dataRoot, KEY).id),
+    ).toBeUndefined();
   });
 
   it("fails the task for an answer that tasker refuses, and writes no row", async () => {
@@ -170,8 +193,7 @@ describe("plan", () => {
 
     const result = await runPlan();
 
-    const message =
-      "the assistant returned a plan that tasker refuses:\n  - todos: a plan with no todos is not a plan";
+    const message = "the assistant returned a plan that tasker refuses:\n  - todos: a plan with no todos is not a plan";
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     expect(result).toEqual({ code: 1, out: "", err: `${message}\n` });
     expect(task.state).toBe("failed");
@@ -275,7 +297,11 @@ describe("plan", () => {
       expect(result.out).toBe("");
       expect(result.err).toMatch(new RegExp(`^the lock ${name} is busy: process ${holder.pid} took it at .+\\n$`));
       expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("workspace_ready");
-      expect(withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(latestTaskOf(fixture.started.dataRoot, KEY).id))).toBeUndefined();
+      expect(
+        withDataRootStore(fixture.started.dataRoot, (store) =>
+          store.planSession(latestTaskOf(fixture.started.dataRoot, KEY).id),
+        ),
+      ).toBeUndefined();
       expect(fixture.claude.calls()).toEqual([]);
       expect(lockNames(fixture.started.dataRoot)).toEqual([name]);
     });
@@ -355,10 +381,15 @@ describe("the overlap warning", () => {
 
     expect(result.code).toBe(0);
     expect(result.err).toBe(
-      overlapWarningText([{ issueKey: "codeguru42/tasker#7", state: "awaiting_plan_review", files: ["src/a.ts"] }], LAST),
+      overlapWarningText(
+        [{ issueKey: "codeguru42/tasker#7", state: "awaiting_plan_review", files: ["src/a.ts"] }],
+        LAST,
+      ),
     );
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
-    const other = withDataRootStore(fixture.started.dataRoot, (store) => store.findLatestTask(REPO, "codeguru42/tasker#7"));
+    const other = withDataRootStore(fixture.started.dataRoot, (store) =>
+      store.findLatestTask(REPO, "codeguru42/tasker#7"),
+    );
     expect(other?.state).toBe("awaiting_plan_review");
   });
 
@@ -422,7 +453,12 @@ describe("the overlap warning", () => {
     const fixture = await planFixture(["test/a.test.ts"], 6);
     const task = await startTaskWithCommits(fixture.started, 6, ["src/b.ts"]);
     withDataRootStore(fixture.started.dataRoot, (store) => {
-      seedPlanRevision(store, task.id, { answer: validPlanAnswer({ files_changed: ["test/a.test.ts"] }) }, "workspace_ready");
+      seedPlanRevision(
+        store,
+        task.id,
+        { answer: validPlanAnswer({ files_changed: ["test/a.test.ts"] }) },
+        "workspace_ready",
+      );
       store.updateTask(task.id, { branch: "issue-6-gone" });
     });
 
@@ -434,7 +470,10 @@ describe("the overlap warning", () => {
       /^note: cannot read the files of the task branch of codeguru42\/tasker#6: .*cannot resolve the task branch: issue-6-gone/,
     );
     expect(lines.slice(1).join("\n")).toBe(
-      overlapWarningText([{ issueKey: "codeguru42/tasker#6", state: "workspace_ready", files: ["test/a.test.ts"] }], LAST),
+      overlapWarningText(
+        [{ issueKey: "codeguru42/tasker#6", state: "workspace_ready", files: ["test/a.test.ts"] }],
+        LAST,
+      ),
     );
   });
 

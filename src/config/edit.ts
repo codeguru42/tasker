@@ -6,12 +6,7 @@ import { isObject } from "../object.js";
 // The loader requires models.plan, .execute and .review, each with model and effort, and the command loads the
 // file before the edit. As a result, the role always exists in text. The function throws when the path is not an
 // object. It never makes the key, so it never writes a default.
-export function setRoleModel(
-  text: string,
-  repoKey: string,
-  role: AssistantRole,
-  change: Partial<ModelChoice>,
-): string {
+export function setRoleModel(text: string, repoKey: string, role: AssistantRole, change: Partial<ModelChoice>): string {
   const raw: unknown = JSON.parse(text);
   const steps = ["repos", repoKey, "assistant", "models", role];
   let node = raw;

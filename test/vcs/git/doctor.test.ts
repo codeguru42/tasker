@@ -16,7 +16,14 @@ import { runGit } from "../../../src/vcs/git/run.js";
 import { type ProcView, readProcView } from "../../../src/vcs/git/stale-locks.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
-import { gitTestEnv, makeGitClone, makeGitOrigin, sshKeyArgs, type GitOrigin, writeFakeGit } from "../../helpers/git.js";
+import {
+  gitTestEnv,
+  makeGitClone,
+  makeGitOrigin,
+  sshKeyArgs,
+  type GitOrigin,
+  writeFakeGit,
+} from "../../helpers/git.js";
 import { writeFakeProc } from "../../helpers/processes.js";
 import { ageFile, treeSnapshot, useTempDir } from "../../helpers/temp.js";
 
@@ -229,9 +236,7 @@ describe("connectionCheck", () => {
     const result = await connectionCheck(repo(missing)).run(origin.env);
     expect(result.status).toBe("error");
     expect(result.detail).toContain(`the remote does not answer: ${missing}`);
-    expect(result.remediation).toBe(
-      "Make sure that remote names the repo and that the remote answers.",
-    );
+    expect(result.remediation).toBe("Make sure that remote names the repo and that the remote answers.");
   });
 
   it("gives ok with the account for an ssh remote that answers", async () => {
@@ -396,9 +401,7 @@ describe("staleLockCheck", () => {
   });
 
   it("gives ok with no clone yet when the clone is missing", async () => {
-    const result = await staleLockCheck(repo(join(origin.dir, "missing.git")), view()).run(
-      origin.env,
-    );
+    const result = await staleLockCheck(repo(join(origin.dir, "missing.git")), view()).run(origin.env);
     expect(result.status).toBe("ok");
     expect(result.detail).toBe("no clone yet");
     expect(result.remediation).toBeUndefined();

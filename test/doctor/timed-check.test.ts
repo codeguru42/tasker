@@ -30,10 +30,12 @@ describe("timedCheck", () => {
   });
 
   it("gives the timeout result when the body waits past the limit", async () => {
-    const check = timedCheck(spec, (_env, { signal }) =>
-      new Promise((_resolve, reject) => {
-        signal.addEventListener("abort", () => reject(signal.reason));
-      }),
+    const check = timedCheck(
+      spec,
+      (_env, { signal }) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason));
+        }),
     );
     expect(await check.run({})).toEqual({
       status: "error",

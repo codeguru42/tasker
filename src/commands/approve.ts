@@ -20,9 +20,7 @@ function approvalText(approved: Approved): string {
   const head = `approved ${approved.issueKey} at revision v${approved.version}\n`;
   const count = approved.openQuestions.length;
   if (count === 0) return `${head}no open questions\n`;
-  const lines = approved.openQuestions.map(
-    ({ id, question }) => `${indented("  ", `${id}: ${question}`)}\n`,
-  );
+  const lines = approved.openQuestions.map(({ id, question }) => `${indented("  ", `${id}: ${question}`)}\n`);
   return `${head}${count === 1 ? "1 open question:" : `${count} open questions:`}\n${lines.join("")}`;
 }
 

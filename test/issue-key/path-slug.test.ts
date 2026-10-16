@@ -22,18 +22,12 @@ describe("pathSlug", () => {
     ["a mixed-case repo key", "CodeGuru42/Tasker", "CodeGuru42-Tasker"],
     ["an issue key", "codeguru42/tasker#10", "codeguru42-tasker-10"],
     ["a dot in a name", "my repo.v2", "my-repo-v2"],
-    [
-      "a Jira key with a site",
-      "jira.example.com/browse/PROJ_X-12",
-      "jira-example-com-browse-PROJ-X-12",
-    ],
+    ["a Jira key with a site", "jira.example.com/browse/PROJ_X-12", "jira-example-com-browse-PROJ-X-12"],
   ])("gives the slug for %s", (_label, input, expected) => {
     expect(pathSlug(input)).toBe(expected);
   });
 
   it.each(["", "///", "._-", "ä😀"])("throws for %j", (value) => {
-    expect(() => pathSlug(value)).toThrow(
-      `cannot make a path slug from ${JSON.stringify(value)}`,
-    );
+    expect(() => pathSlug(value)).toThrow(`cannot make a path slug from ${JSON.stringify(value)}`);
   });
 });

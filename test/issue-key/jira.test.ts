@@ -46,9 +46,7 @@ describe("parseJiraKey", () => {
   });
 
   it("parses a <site>/browse/PROJ-N key", () => {
-    expect(
-      parseJiraKey("example.atlassian.net/browse/PROJ-7", "r"),
-    ).toStrictEqual({
+    expect(parseJiraKey("example.atlassian.net/browse/PROJ-7", "r")).toStrictEqual({
       key: "example.atlassian.net/browse/PROJ-7",
       repoKey: "r",
       shortRef: "example-atlassian-net-browse-PROJ-7",
@@ -56,9 +54,7 @@ describe("parseJiraKey", () => {
   });
 
   it("stores the site in lower case", () => {
-    expect(
-      parseJiraKey("Example.Atlassian.NET/browse/PROJ-7", "r"),
-    ).toStrictEqual({
+    expect(parseJiraKey("Example.Atlassian.NET/browse/PROJ-7", "r")).toStrictEqual({
       key: "example.atlassian.net/browse/PROJ-7",
       repoKey: "r",
       shortRef: "example-atlassian-net-browse-PROJ-7",
@@ -66,9 +62,7 @@ describe("parseJiraKey", () => {
   });
 
   it("gives - for each _ in the project of a site key", () => {
-    expect(
-      parseJiraKey("jira.example.com/browse/PROJ_X-12", "r"),
-    ).toStrictEqual({
+    expect(parseJiraKey("jira.example.com/browse/PROJ_X-12", "r")).toStrictEqual({
       key: "jira.example.com/browse/PROJ_X-12",
       repoKey: "r",
       shortRef: "jira-example-com-browse-PROJ-X-12",

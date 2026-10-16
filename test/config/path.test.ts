@@ -8,9 +8,7 @@ describe("resolveConfigPath", () => {
   });
 
   it("uses XDG_CONFIG_HOME when TASKER_CONFIG is not set", () => {
-    expect(resolveConfigPath({ XDG_CONFIG_HOME: "/xdg" }, "/home/me")).toBe(
-      "/xdg/tasker/config.json",
-    );
+    expect(resolveConfigPath({ XDG_CONFIG_HOME: "/xdg" }, "/home/me")).toBe("/xdg/tasker/config.json");
   });
 
   it("falls back to the XDG default under the home directory", () => {

@@ -77,11 +77,7 @@ async function runGraphql(
 
 // Every issue that blocks the issue of ref, with its state, in the order that GitHub gives.
 // Owner, name and cursor go as strings (-f): -F turns 123 or true into a number or a Boolean.
-export async function readGithubBlockers(
-  ref: IssueRef,
-  account: string,
-  env: NodeJS.ProcessEnv,
-): Promise<Blocker[]> {
+export async function readGithubBlockers(ref: IssueRef, account: string, env: NodeJS.ProcessEnv): Promise<Blocker[]> {
   const parts = splitGithubKey(ref.key);
   const [owner, name] = parts.project.split("/");
   const bad = (reason: string) =>

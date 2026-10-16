@@ -20,9 +20,7 @@ export class ActiveTaskError extends Error {
     repoKey: string,
     state: string,
   ) {
-    super(
-      `the issue ${issueKey} already has an active task in the repo ${repoKey}: task ${taskId} is in ${state}`,
-    );
+    super(`the issue ${issueKey} already has an active task in the repo ${repoKey}: task ${taskId} is in ${state}`);
     this.name = "ActiveTaskError";
   }
 }
@@ -222,25 +220,13 @@ export interface TaskStore extends LockStore {
   findLatestTask(repoKey: string, issueKey: string): Task | undefined;
   // A low-level write with no run marker rule. A state move goes through transitionTask.
   // The event that check returns is appended in the same transaction as the row write.
-  updateTask(
-    id: number,
-    changes: TaskChanges,
-    check?: (current: Task) => NewEvent | void,
-  ): Task;
+  updateTask(id: number, changes: TaskChanges, check?: (current: Task) => NewEvent | void): Task;
   // Moves the task into a spawning state and writes its run marker with the pid of this process,
   // in one transaction. The event that check returns is appended in the same transaction.
-  startRun(
-    id: number,
-    state: string,
-    check?: (current: Task) => NewEvent | void,
-  ): Task;
+  startRun(id: number, state: string, check?: (current: Task) => NewEvent | void): Task;
   // Moves the task to a state that is not spawning and deletes its run marker, in one transaction.
   // The current state can be any state. The marker of any process goes, and a missing marker is not an error.
-  endRun(
-    id: number,
-    state: string,
-    check?: (current: Task) => NewEvent | void,
-  ): Task;
+  endRun(id: number, state: string, check?: (current: Task) => NewEvent | void): Task;
   // Tells if the run of a task in a spawning state is alive. The process of tasker decides, never the child.
   runStatus(id: number): RunStatus;
   // Adds the pid of the child to the run marker of this process.
@@ -310,21 +296,11 @@ export interface TaskStore extends LockStore {
   // Moves the task to a state that is not spawning, deletes its run marker and sets the approval time
   // of the revision, in one transaction. Only the newest revision can be approved.
   // The event that check returns is appended in the same transaction.
-  approvePlanRevision(
-    taskId: number,
-    version: number,
-    state: string,
-    check?: (current: Task) => NewEvent | void,
-  ): Task;
+  approvePlanRevision(taskId: number, version: number, state: string, check?: (current: Task) => NewEvent | void): Task;
   // Moves the task to a state that is not spawning, deletes its run marker and clears the approval
   // of revision version, in one transaction. Only the pinned revision can be cleared: another version throws and
   // writes nothing. The event that check returns is appended in the same transaction.
-  clearPlanApproval(
-    taskId: number,
-    version: number,
-    state: string,
-    check?: (current: Task) => NewEvent | void,
-  ): Task;
+  clearPlanApproval(taskId: number, version: number, state: string, check?: (current: Task) => NewEvent | void): Task;
   // The questions of a revision with their state. The newest revision has only open questions.
   // A resolved question names the next version, and its answer is the feedback of that version.
   planQuestions(taskId: number, version: number): PlanQuestionState[];
@@ -384,12 +360,7 @@ export interface TaskStore extends LockStore {
   clearReviewSession(taskId: number, number: number): void;
   // The writes of a retry beside the move: the move to state, the run marker delete, the writes and the event of
   // check, in one transaction. A throw of any step writes nothing.
-  retryTask(
-    taskId: number,
-    state: string,
-    writes: RetryWrites,
-    check?: (current: Task) => NewEvent | void,
-  ): Task;
+  retryTask(taskId: number, state: string, writes: RetryWrites, check?: (current: Task) => NewEvent | void): Task;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -528,8 +499,7 @@ function toFindingEntry(row: ReviewFindingRow): FindingEntry {
   const finding: Finding = { file: row.file, summary: row.summary, failure_scenario: row.failure_scenario };
   if (row.line !== null) finding.line = row.line;
   if (row.category !== null) finding.category = row.category;
-  const dismissed =
-    row.dismissed_at === null ? null : { at: row.dismissed_at, reason: row.dismiss_reason as string };
+  const dismissed = row.dismissed_at === null ? null : { at: row.dismissed_at, reason: row.dismiss_reason as string };
   return { position: row.position, finding, dismissed };
 }
 
@@ -556,18 +526,12 @@ function toStoredSession(row: PlanSessionRow | undefined): StoredSession | undef
 
 // The key of a session row of a task: its role, and the plan revision or the review number that goes with it.
 type SessionKey =
-  | { role: "plan" }
-  | { role: "execute"; planVersion: number }
-  | { role: "review"; reviewNumber: number };
+  { role: "plan" } | { role: "execute"; planVersion: number } | { role: "review"; reviewNumber: number };
 
 // The role, plan version and review number of a key, as the parameters of a session statement. A part that the
 // key does not have is NULL.
 function keyParams(key: SessionKey): [string, number | null, number | null] {
-  return [
-    key.role,
-    key.role === "execute" ? key.planVersion : null,
-    key.role === "review" ? key.reviewNumber : null,
-  ];
+  return [key.role, key.role === "execute" ? key.planVersion : null, key.role === "review" ? key.reviewNumber : null];
 }
 
 // The time that a process waits for a lock that another process holds.
@@ -621,17 +585,13 @@ function setUp(db: DatabaseSync) {
        RETURNING *`,
     ),
     selectTask: db.prepare("SELECT * FROM tasks WHERE id = ?"),
-    selectActiveTask: db.prepare(
-      `SELECT * FROM tasks WHERE repo_key = ? AND issue_key = ? AND ${ACTIVE}`,
-    ),
+    selectActiveTask: db.prepare(`SELECT * FROM tasks WHERE repo_key = ? AND issue_key = ? AND ${ACTIVE}`),
     selectLatestTask: db.prepare(
       `SELECT * FROM tasks WHERE repo_key = ? AND issue_key = ?
        ORDER BY (${ACTIVE}) DESC, id DESC LIMIT 1`,
     ),
     // The count covers all repos, because the issue key is the same in each of them.
-    selectNextAttempt: db.prepare(
-      "SELECT COALESCE(MAX(attempt), 0) + 1 AS next FROM tasks WHERE issue_key = ?",
-    ),
+    selectNextAttempt: db.prepare("SELECT COALESCE(MAX(attempt), 0) + 1 AS next FROM tasks WHERE issue_key = ?"),
     updateTask: db.prepare(
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
@@ -643,30 +603,22 @@ function setUp(db: DatabaseSync) {
       "INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, NULL, ?)",
     ),
     selectRunMarker: db.prepare("SELECT state, pid FROM run_markers WHERE task_id = ?"),
-    setRunChildPid: db.prepare(
-      "UPDATE run_markers SET child_pid = ? WHERE task_id = ? AND pid = ?",
-    ),
+    setRunChildPid: db.prepare("UPDATE run_markers SET child_pid = ? WHERE task_id = ? AND pid = ?"),
     selectRunStatus: db.prepare(
       `SELECT tasks.state, run_markers.pid, run_markers.child_pid
        FROM tasks LEFT JOIN run_markers ON run_markers.task_id = tasks.id
        WHERE tasks.id = ?`,
     ),
     deleteRunMarker: db.prepare("DELETE FROM run_markers WHERE task_id = ?"),
-    insertEvent: db.prepare(
-      "INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *",
-    ),
-    selectEvents: db.prepare(
-      "SELECT * FROM events WHERE task_id = ? ORDER BY id",
-    ),
+    insertEvent: db.prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, ?, ?, ?) RETURNING *"),
+    selectEvents: db.prepare("SELECT * FROM events WHERE task_id = ? ORDER BY id"),
     insertPlanRevision: db.prepare(
       `INSERT INTO plan_revisions
          (task_id, version, source, feedback, answer, prompt, approved_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
        RETURNING *`,
     ),
-    selectPlanRevision: db.prepare(
-      "SELECT * FROM plan_revisions WHERE task_id = ? AND version = ?",
-    ),
+    selectPlanRevision: db.prepare("SELECT * FROM plan_revisions WHERE task_id = ? AND version = ?"),
     selectLatestPlanRevision: db.prepare(
       "SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version DESC LIMIT 1",
     ),
@@ -689,9 +641,7 @@ function setUp(db: DatabaseSync) {
        ON CONFLICT(task_id, plan_version, todo_id)
        DO UPDATE SET state = excluded.state, updated_at = excluded.updated_at`,
     ),
-    selectExecuteTodos: db.prepare(
-      "SELECT todo_id, state FROM execute_todos WHERE task_id = ? AND plan_version = ?",
-    ),
+    selectExecuteTodos: db.prepare("SELECT todo_id, state FROM execute_todos WHERE task_id = ? AND plan_version = ?"),
     upsertExecuteFixTurn: db.prepare(
       `INSERT INTO execute_fix_turns (task_id, plan_version, verify_failure, verify_log_tail, queued_at, done_at)
        VALUES (?, ?, ?, ?, ?, NULL)
@@ -712,21 +662,15 @@ function setUp(db: DatabaseSync) {
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
     ),
-    selectNextVerifyRun: db.prepare(
-      "SELECT COALESCE(MAX(number), 0) + 1 AS next FROM verify_runs WHERE task_id = ?",
-    ),
+    selectNextVerifyRun: db.prepare("SELECT COALESCE(MAX(number), 0) + 1 AS next FROM verify_runs WHERE task_id = ?"),
     insertVerifyRun: db.prepare(
       `INSERT INTO verify_runs (task_id, number, result, commands, failing_command, started_at, ended_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     ),
     selectVerifyRun: db.prepare("SELECT * FROM verify_runs WHERE task_id = ? AND number = ?"),
-    selectLatestVerifyRun: db.prepare(
-      "SELECT * FROM verify_runs WHERE task_id = ? ORDER BY number DESC LIMIT 1",
-    ),
+    selectLatestVerifyRun: db.prepare("SELECT * FROM verify_runs WHERE task_id = ? ORDER BY number DESC LIMIT 1"),
     selectVerifyRunCount: db.prepare("SELECT COUNT(*) AS n FROM verify_runs WHERE task_id = ?"),
-    selectNextReview: db.prepare(
-      "SELECT COALESCE(MAX(number), 0) + 1 AS next FROM reviews WHERE task_id = ?",
-    ),
+    selectNextReview: db.prepare("SELECT COALESCE(MAX(number), 0) + 1 AS next FROM reviews WHERE task_id = ?"),
     insertReview: db.prepare(
       `INSERT INTO reviews (task_id, number, revision, prompt, started_at, ended_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -757,21 +701,15 @@ function setUp(db: DatabaseSync) {
       `SELECT * FROM plan_revisions WHERE task_id = ? AND approved_at IS NOT NULL
        ORDER BY version DESC LIMIT 1`,
     ),
-    setPlanApproval: db.prepare(
-      "UPDATE plan_revisions SET approved_at = ? WHERE task_id = ? AND version = ?",
-    ),
-    selectDefaultBaseBranch: db.prepare(
-      "SELECT branch FROM default_base_branches WHERE repo_key = ?",
-    ),
+    setPlanApproval: db.prepare("UPDATE plan_revisions SET approved_at = ? WHERE task_id = ? AND version = ?"),
+    selectDefaultBaseBranch: db.prepare("SELECT branch FROM default_base_branches WHERE repo_key = ?"),
     upsertDefaultBaseBranch: db.prepare(
       `INSERT INTO default_base_branches (repo_key, branch, updated_at)
        VALUES (?, ?, ?)
        ON CONFLICT(repo_key) DO UPDATE SET
          branch = excluded.branch, updated_at = excluded.updated_at`,
     ),
-    deleteDefaultBaseBranch: db.prepare(
-      "DELETE FROM default_base_branches WHERE repo_key = ? AND branch = ?",
-    ),
+    deleteDefaultBaseBranch: db.prepare("DELETE FROM default_base_branches WHERE repo_key = ? AND branch = ?"),
   };
 }
 
@@ -791,9 +729,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   }
 
   function readPlanRevision(taskId: number, version: number): PlanRevision | undefined {
-    return toPlanRevision(
-      statements.selectPlanRevision.get(taskId, version) as PlanRevisionRow | undefined,
-    );
+    return toPlanRevision(statements.selectPlanRevision.get(taskId, version) as PlanRevisionRow | undefined);
   }
 
   function readSession(taskId: number, key: SessionKey): StoredSession | undefined {
@@ -831,12 +767,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
   // Records the session of a key once, in one transaction. requireKey runs after the task check and can throw
   // when the thing that the key names is missing.
-  function recordSession(
-    taskId: number,
-    key: SessionKey,
-    session: NewSession,
-    requireKey?: () => void,
-  ): StoredSession {
+  function recordSession(taskId: number, key: SessionKey, session: NewSession, requireKey?: () => void): StoredSession {
     return immediateTransaction(db, () => {
       const task = readTask(taskId);
       if (task === undefined) throw taskNotFound(taskId);
@@ -869,15 +800,11 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
   }
 
   function readLatestPlanRevision(taskId: number): PlanRevision | undefined {
-    return toPlanRevision(
-      statements.selectLatestPlanRevision.get(taskId) as PlanRevisionRow | undefined,
-    );
+    return toPlanRevision(statements.selectLatestPlanRevision.get(taskId) as PlanRevisionRow | undefined);
   }
 
   function readPinnedPlanRevision(taskId: number): PlanRevision | undefined {
-    return toPlanRevision(
-      statements.selectPinnedPlanRevision.get(taskId) as PlanRevisionRow | undefined,
-    );
+    return toPlanRevision(statements.selectPinnedPlanRevision.get(taskId) as PlanRevisionRow | undefined);
   }
 
   // Runs a next-number statement of a task. The caller holds the task lock or a transaction.
@@ -907,12 +834,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
   // Inserts one event. It starts no transaction, because immediateTransaction() is not reentrant.
   // The caller runs it inside its own transaction.
-  function writeEvent(
-    taskId: number,
-    at: string,
-    type: string,
-    data: unknown,
-  ): TaskEvent {
+  function writeEvent(taskId: number, at: string, type: string, data: unknown): TaskEvent {
     const row = statements.insertEvent.get(
       taskId,
       at,
@@ -1098,16 +1020,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         // A task that starts in a terminal state is not active, so it cannot clash.
         const active = isTerminalState(task.state)
           ? undefined
-          : (statements.selectActiveTask.get(task.repoKey, task.issueKey) as
-              | TaskRow
-              | undefined);
+          : (statements.selectActiveTask.get(task.repoKey, task.issueKey) as TaskRow | undefined);
         if (active !== undefined) {
-          throw new ActiveTaskError(
-            active.id,
-            task.issueKey,
-            task.repoKey,
-            active.state,
-          );
+          throw new ActiveTaskError(active.id, task.issueKey, task.repoKey, active.state);
         }
         const at = now().toISOString();
         const { next } = statements.selectNextAttempt.get(task.issueKey) as {
@@ -1162,19 +1077,11 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     findActiveTask(repoKey, issueKey) {
-      return toTask(
-        statements.selectActiveTask.get(repoKey, issueKey) as
-          | TaskRow
-          | undefined,
-      );
+      return toTask(statements.selectActiveTask.get(repoKey, issueKey) as TaskRow | undefined);
     },
 
     findLatestTask(repoKey, issueKey) {
-      return toTask(
-        statements.selectLatestTask.get(repoKey, issueKey) as
-          | TaskRow
-          | undefined,
-      );
+      return toTask(statements.selectLatestTask.get(repoKey, issueKey) as TaskRow | undefined);
     },
 
     updateTask(id, changes, check) {
@@ -1187,9 +1094,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           throw new Error(`${state} is not a spawning state`);
         }
         // A dead process also keeps its marker. A later recovery clears it.
-        const marker = statements.selectRunMarker.get(id) as
-          | { state: string; pid: number }
-          | undefined;
+        const marker = statements.selectRunMarker.get(id) as { state: string; pid: number } | undefined;
         if (marker !== undefined) {
           throw new RunMarkerExistsError(id, marker.state, marker.pid);
         }
@@ -1206,8 +1111,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       // commit in between and make an ended run look dead.
       return immediateTransaction(db, (): RunStatus => {
         const row = statements.selectRunStatus.get(id) as
-          | { state: string; pid: number | null; child_pid: number | null }
-          | undefined;
+          { state: string; pid: number | null; child_pid: number | null } | undefined;
         if (row === undefined) {
           throw taskNotFound(id);
         }
@@ -1228,9 +1132,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     appendEvent(taskId, type, data) {
-      return immediateTransaction(db, () =>
-        writeEvent(taskId, now().toISOString(), type, data),
-      );
+      return immediateTransaction(db, () => writeEvent(taskId, now().toISOString(), type, data));
     },
 
     listEvents(taskId) {
@@ -1399,8 +1301,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     queuedExecuteFixTurn(taskId, version) {
       const row = statements.selectQueuedExecuteFixTurn.get(taskId, version) as
-        | { verify_failure: string; verify_log_tail: string | null; queued_at: string }
-        | undefined;
+        { verify_failure: string; verify_log_tail: string | null; queued_at: string } | undefined;
       if (row === undefined) return undefined;
       return {
         verifyFailure: row.verify_failure,
@@ -1410,9 +1311,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     executeFixTurnState(taskId, version) {
-      const row = statements.selectExecuteFixTurnDoneAt.get(taskId, version) as
-        | { done_at: string | null }
-        | undefined;
+      const row = statements.selectExecuteFixTurnDoneAt.get(taskId, version) as { done_at: string | null } | undefined;
       if (row === undefined) return undefined;
       return row.done_at === null ? "queued" : "done";
     },
@@ -1471,9 +1370,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           throw noPlanRevision(taskId, version);
         }
         if (version !== latest.version) {
-          throw new Error(
-            `task ${taskId}: plan revision ${version} is not the newest revision (${latest.version})`,
-          );
+          throw new Error(`task ${taskId}: plan revision ${version} is not the newest revision (${latest.version})`);
         }
         statements.setPlanApproval.run(at, taskId, version);
       });
@@ -1496,9 +1393,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     latestPlanRevision: readLatestPlanRevision,
 
     getDefaultBaseBranch(repoKey) {
-      const row = statements.selectDefaultBaseBranch.get(repoKey) as
-        | { branch: string }
-        | undefined;
+      const row = statements.selectDefaultBaseBranch.get(repoKey) as { branch: string } | undefined;
       return row?.branch;
     },
 

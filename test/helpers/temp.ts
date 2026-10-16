@@ -61,13 +61,7 @@ export function treeSnapshot(folder: string): TreeEntry[] {
     for (const name of readdirSync(current)) {
       const path = join(current, name);
       const stat = lstatSync(path);
-      const type = stat.isDirectory()
-        ? "directory"
-        : stat.isFile()
-          ? "file"
-          : stat.isSymbolicLink()
-            ? "link"
-            : "other";
+      const type = stat.isDirectory() ? "directory" : stat.isFile() ? "file" : stat.isSymbolicLink() ? "link" : "other";
       entries.push({ path: relative(folder, path), type, size: stat.size, mtimeMs: stat.mtimeMs });
       if (type === "directory") {
         walk(path);

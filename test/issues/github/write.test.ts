@@ -106,7 +106,7 @@ describe("markGithubInProgress", () => {
     expect(error.key).toBe("octo/repo#7");
     expect(error.configKey).toBe("issueTracker.inProgressLabel");
     expect(error.message).toBe(
-      "could not add the label \"wip\" of issueTracker.inProgressLabel to octo/repo#7: gh issue edit failed with exit code 1: failed to update https://github.com/octo/repo/issues/7: HTTP 502\nfailed to update 1 issue",
+      'could not add the label "wip" of issueTracker.inProgressLabel to octo/repo#7: gh issue edit failed with exit code 1: failed to update https://github.com/octo/repo/issues/7: HTTP 502\nfailed to update 1 issue',
     );
     expect(fake.calls()).toHaveLength(2);
   });

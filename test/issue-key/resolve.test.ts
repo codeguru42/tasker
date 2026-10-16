@@ -6,20 +6,8 @@ import { parseConfig } from "../../src/config/schema.js";
 import { configWithTrackers, threeRepoConfig, type Trackers } from "../helpers/config.js";
 import { failureOf } from "../helpers/errors.js";
 
-type RefRow = [
-  label: string,
-  trackers: Trackers,
-  rawKey: string,
-  options: ResolveOptions,
-  expected: IssueRef,
-];
-type ErrorRow = [
-  label: string,
-  trackers: Trackers,
-  rawKey: string,
-  options: ResolveOptions,
-  message: string,
-];
+type RefRow = [label: string, trackers: Trackers, rawKey: string, options: ResolveOptions, expected: IssueRef];
+type ErrorRow = [label: string, trackers: Trackers, rawKey: string, options: ResolveOptions, message: string];
 
 const GITHUB_MESSAGE = (rawKey: string): string =>
   `not a GitHub issue key: ${JSON.stringify(rawKey)} (expected owner/repo#N)`;
@@ -30,11 +18,7 @@ describe("resolveIssueKey", () => {
   }
 
   // The IssueKeyError of the resolve. It fails the test when the resolve gives a ref.
-  function resolveFailure(
-    rawKey: string,
-    trackers: Trackers,
-    options: ResolveOptions,
-  ): Promise<IssueKeyError> {
+  function resolveFailure(rawKey: string, trackers: Trackers, options: ResolveOptions): Promise<IssueKeyError> {
     return failureOf(
       Promise.resolve().then(() => resolveWith(rawKey, trackers, options)),
       IssueKeyError,
@@ -223,24 +207,18 @@ describe("resolveIssueKey", () => {
     ],
   ];
 
-  it.each(REF_ROWS)(
-    "holds for any input: %s gives a ref",
-    (_label, trackers, rawKey, options, expected) => {
-      const result = resolveWith(rawKey, trackers, options);
-      expect(result).toStrictEqual(expected);
-      // The stored key is a GitHub key, and the short ref has the same number.
-      expect(parseGithubKey(result.key, result.repoKey).shortRef).toBe(result.shortRef);
-    },
-  );
+  it.each(REF_ROWS)("holds for any input: %s gives a ref", (_label, trackers, rawKey, options, expected) => {
+    const result = resolveWith(rawKey, trackers, options);
+    expect(result).toStrictEqual(expected);
+    // The stored key is a GitHub key, and the short ref has the same number.
+    expect(parseGithubKey(result.key, result.repoKey).shortRef).toBe(result.shortRef);
+  });
 
-  it.each(ERROR_ROWS)(
-    "holds for any input: %s gives an error",
-    async (_label, trackers, rawKey, options, message) => {
-      const error = await resolveFailure(rawKey, trackers, options);
-      expect(error.key).toBe(rawKey);
-      expect(error.message).toBe(message);
-    },
-  );
+  it.each(ERROR_ROWS)("holds for any input: %s gives an error", async (_label, trackers, rawKey, options, message) => {
+    const error = await resolveFailure(rawKey, trackers, options);
+    expect(error.key).toBe(rawKey);
+    expect(error.message).toBe(message);
+  });
 });
 
 describe("issueKeyMatches", () => {

@@ -25,12 +25,10 @@ describe("createVcsProvider", () => {
     await provider.provision(fixture.context);
     const { clone } = repoPaths(fixture.context.dataRoot, fixture.context.repoKey);
     const env = fixture.context.env;
-    expect((await runGit(["config", "--get", "user.name"], { gitDir: clone, env })).trim()).toBe(
-      "Provider Test",
+    expect((await runGit(["config", "--get", "user.name"], { gitDir: clone, env })).trim()).toBe("Provider Test");
+    expect((await runGit(["config", "--get", "remote.origin.url"], { gitDir: clone, env })).trim()).toBe(
+      fixture.origin.path,
     );
-    expect(
-      (await runGit(["config", "--get", "remote.origin.url"], { gitDir: clone, env })).trim(),
-    ).toBe(fixture.origin.path);
   });
 });
 

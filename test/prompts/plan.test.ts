@@ -13,9 +13,7 @@ describe("PLAN_PROMPT_NAME", () => {
 
 describe("planIssueText", () => {
   it("gives the key, the title and the description on four lines", () => {
-    expect(planIssueText({ ...ISSUE, body: "Body" })).toBe(
-      "Key: o/r#1\nTitle: Add a thing\nDescription:\nBody",
-    );
+    expect(planIssueText({ ...ISSUE, body: "Body" })).toBe("Key: o/r#1\nTitle: Add a thing\nDescription:\nBody");
   });
 });
 

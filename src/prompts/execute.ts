@@ -112,7 +112,10 @@ export function resolvedQuestionsText(questions: readonly ResolvedQuestion[]): s
       const { version, answer } = group[0]!;
       return [
         `Resolved in v${version}:`,
-        ...group.flatMap(({ question }) => [`- \`${question.id}\`: ${question.question}`, `  context: ${question.context}`]),
+        ...group.flatMap(({ question }) => [
+          `- \`${question.id}\`: ${question.question}`,
+          `  context: ${question.context}`,
+        ]),
         `Answered by the feedback given for v${version}:`,
         answer ?? "(no feedback given)",
       ].join("\n");

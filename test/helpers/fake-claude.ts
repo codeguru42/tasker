@@ -38,7 +38,10 @@ export interface FakeClaudeControl {
 }
 
 // The fields of FakeClaudeControl that one call can set for itself.
-export type FakeClaudeTurn = Pick<FakeClaudeControl, "stream" | "stderr" | "exitCode" | "sleepMs" | "untilStopped" | "exec">;
+export type FakeClaudeTurn = Pick<
+  FakeClaudeControl,
+  "stream" | "stderr" | "exitCode" | "sleepMs" | "untilStopped" | "exec"
+>;
 
 // One call that the fake claude logged.
 export interface FakeClaudeCall {
@@ -62,7 +65,9 @@ export interface FakeClaude {
 // The lines of test/fixtures/claude-streams/<name>.jsonl, with no empty last item.
 export function claudeSample(name: string): string[] {
   const path = fileURLToPath(new URL(`../fixtures/claude-streams/${name}.jsonl`, import.meta.url));
-  return readFileSync(path, "utf8").split("\n").filter((line) => line !== "");
+  return readFileSync(path, "utf8")
+    .split("\n")
+    .filter((line) => line !== "");
 }
 
 // Each line of a sample, parsed. Each call parses again, so each call gives new objects.

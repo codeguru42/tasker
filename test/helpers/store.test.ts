@@ -51,9 +51,7 @@ describe("seedTasks", () => {
       ["2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.000Z"],
     ]);
     withDataRootStore(dataRoot, (store) => {
-      expect(store.listTasks({ states: ["planning", "finished"] }).map((t) => t.id)).toEqual(
-        tasks.map((t) => t.id),
-      );
+      expect(store.listTasks({ states: ["planning", "finished"] }).map((t) => t.id)).toEqual(tasks.map((t) => t.id));
     });
   });
 });
@@ -112,9 +110,7 @@ describe("latestTaskOf", () => {
 describe("databasePathOf", () => {
   it("gives the database file that withDataRootStore opens", () => {
     const dataRoot = join(useTempDir("tasker-dbpath-"), "data");
-    const [seeded] = seedTasks(dataRoot, [
-      { issueKey: "a/b#1", repoKey: "a/b", state: "planning", at: dayAt(1) },
-    ]);
+    const [seeded] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "planning", at: dayAt(1) }]);
 
     const found = withStoreFile(databasePathOf(dataRoot), (store) => store.getTask(seeded.id));
 

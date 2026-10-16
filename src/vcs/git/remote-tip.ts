@@ -18,11 +18,7 @@ export async function remoteTip(options: {
   const ref = `${LOCAL_PREFIX}${branch}`;
   let output: string;
   try {
-    output = await runRemoteGit(
-      ["ls-remote", "--", remote, ref],
-      { cwd: remoteCwd(), env },
-      sshKey,
-    );
+    output = await runRemoteGit(["ls-remote", "--", remote, ref], { cwd: remoteCwd(), env }, sshKey);
   } catch (error) {
     if (!(error instanceof GitError)) {
       throw error;

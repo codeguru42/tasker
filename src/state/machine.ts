@@ -1,4 +1,12 @@
-import type { NewEvent, RetryWrites, NewPlanRevision, NewVerifyRun, Task, TaskEvent, TaskStore } from "../store/store.js";
+import type {
+  NewEvent,
+  RetryWrites,
+  NewPlanRevision,
+  NewVerifyRun,
+  Task,
+  TaskEvent,
+  TaskStore,
+} from "../store/store.js";
 
 export const STATES = [
   "provisioning",
@@ -33,10 +41,7 @@ export const STATES = [
 
 export type TaskState = (typeof STATES)[number];
 
-export const TERMINAL_STATES: ReadonlySet<TaskState> = new Set<TaskState>([
-  "finished",
-  "cancelled",
-]);
+export const TERMINAL_STATES: ReadonlySet<TaskState> = new Set<TaskState>(["finished", "cancelled"]);
 
 export function isTaskState(value: string): value is TaskState {
   return (STATES as readonly string[]).includes(value);
@@ -82,13 +87,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
   verifying: ["awaiting_work_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   // Work review.
   awaiting_work_review: ["reviewing", "refining", "accepted", "updating_branch"],
-  reviewing: [
-    "awaiting_work_review",
-    "reviewed",
-    "quota_blocked",
-    "awaiting_quota_approval",
-    "interrupted",
-  ],
+  reviewing: ["awaiting_work_review", "reviewed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   reviewed: ["refining", "awaiting_work_review", "updating_branch"],
   // Landing.
   accepted: ["landed", "merging", "pushing", "refining", "updating_branch"],
@@ -98,13 +97,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
   in_peer_review: ["landed", "merging", "updating_branch"],
   merging: ["landed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   landed: ["finishing"],
-  finishing: [
-    "finished",
-    "cleanup_failed",
-    "quota_blocked",
-    "awaiting_quota_approval",
-    "interrupted",
-  ],
+  finishing: ["finished", "cleanup_failed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   cleanup_failed: ["finishing", "updating_branch"],
   finished: [],
   // Update branch.
@@ -213,12 +206,7 @@ function transitionCheck(type: string, to: TaskState, detail?: TransitionDetail)
 // one transaction. A move into a spawning state writes the marker, and each other move deletes it.
 // The target alone picks the store function, so no read of the task happens outside the transaction.
 // An illegal edge writes nothing: no state change, no marker change and no event.
-export function transitionTask(
-  store: TaskStore,
-  id: number,
-  to: TaskState,
-  detail?: TransitionDetail,
-): Task {
+export function transitionTask(store: TaskStore, id: number, to: TaskState, detail?: TransitionDetail): Task {
   const check = transitionCheck("transition", to, detail);
   return isSpawningState(to) ? store.startRun(id, to, check) : store.endRun(id, to, check);
 }
@@ -265,7 +253,12 @@ export function transitionWithRetry(
 // Approves revision version, appends the approved event { version, openQuestions, from, to } and moves the task to
 // approved, in one transaction. An illegal edge writes nothing.
 export function transitionWithPlanApproval(store: TaskStore, id: number, version: number, openQuestions: number): Task {
-  return store.approvePlanRevision(id, version, "approved", transitionCheck("approved", "approved", { version, openQuestions }));
+  return store.approvePlanRevision(
+    id,
+    version,
+    "approved",
+    transitionCheck("approved", "approved", { version, openQuestions }),
+  );
 }
 
 // Clears the approval of the pinned revision version, appends the unapproved event { version, from, to } and moves

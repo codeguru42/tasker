@@ -10,11 +10,7 @@ export interface RemoteDefaultBranchOptions {
 // so it needs no clone. It throws when the remote has no symbolic HEAD.
 export async function remoteDefaultBranch(options: RemoteDefaultBranchOptions): Promise<string> {
   const { remote, sshKey, env } = options;
-  const out = await runRemoteGit(
-    ["ls-remote", "--symref", "--", remote, "HEAD"],
-    { cwd: remoteCwd(), env },
-    sshKey,
-  );
+  const out = await runRemoteGit(["ls-remote", "--symref", "--", remote, "HEAD"], { cwd: remoteCwd(), env }, sshKey);
   for (const line of out.split("\n")) {
     const match = /^ref: refs\/heads\/(.+)\tHEAD$/.exec(line);
     if (match !== null) {

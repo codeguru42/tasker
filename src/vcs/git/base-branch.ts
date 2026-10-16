@@ -100,9 +100,7 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
   const configured = options.defaultBaseBranch;
   if (learned === undefined && configured !== undefined) {
     if (!(await exists(clone, env, configured))) {
-      throw new Error(
-        `the base branch does not exist on origin: ${configured} (from defaultBaseBranch)`,
-      );
+      throw new Error(`the base branch does not exist on origin: ${configured} (from defaultBaseBranch)`);
     }
     return learn(configured, "config");
   }

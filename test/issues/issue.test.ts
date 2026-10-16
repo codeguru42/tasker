@@ -33,12 +33,9 @@ describe("baseBranchHint", () => {
     expect(baseBranchHint(issueWith(["bug", label]))).toBe(hint);
   });
 
-  it.each(["BASE:x", "Base:x", " base:x", "bug fix", "basement"])(
-    "gives undefined for the label %j",
-    (label) => {
-      expect(baseBranchHint(issueWith([label]))).toBeUndefined();
-    },
-  );
+  it.each(["BASE:x", "Base:x", " base:x", "bug fix", "basement"])("gives undefined for the label %j", (label) => {
+    expect(baseBranchHint(issueWith([label]))).toBeUndefined();
+  });
 
   it.each(["base:", "base:   ", "base: \t "])("throws BaseHintError for the empty label %j", (label) => {
     const issue = issueWith([label]);
@@ -56,9 +53,18 @@ describe("baseBranchHint", () => {
   });
 
   it.each([
-    [["base:main", "bug", "base:dev"], ["base:main", "base:dev"]],
-    [["base:a", "base:b", "base:c"], ["base:a", "base:b", "base:c"]],
-    [["base:", "base:main"], ["base:", "base:main"]],
+    [
+      ["base:main", "bug", "base:dev"],
+      ["base:main", "base:dev"],
+    ],
+    [
+      ["base:a", "base:b", "base:c"],
+      ["base:a", "base:b", "base:c"],
+    ],
+    [
+      ["base:", "base:main"],
+      ["base:", "base:main"],
+    ],
   ])("throws BaseHintError for the labels %j", (labels, found) => {
     let error: unknown;
     try {

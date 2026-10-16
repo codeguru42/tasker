@@ -14,13 +14,7 @@ export interface RunGhOptions {
 }
 
 export class GhError extends ChildCommandError {
-  constructor(
-    message: string,
-    subcommand: string,
-    stdout: string,
-    stderr: string,
-    exitCode: number | null,
-  ) {
+  constructor(message: string, subcommand: string, stdout: string, stderr: string, exitCode: number | null) {
     super(message, subcommand, stdout, stderr, exitCode);
     this.name = "GhError";
   }
@@ -143,10 +137,7 @@ export function runGh(args: readonly string[], options: RunGhOptions): Promise<s
 
 // Runs `gh --version` with the env of runGh() and no token, and resolves with its stdout.
 // The version check needs no login, so it makes no token call. signal stops gh.
-export function readGhVersion(
-  env: NodeJS.ProcessEnv,
-  options: { signal?: AbortSignal } = {},
-): Promise<string> {
+export function readGhVersion(env: NodeJS.ProcessEnv, options: { signal?: AbortSignal } = {}): Promise<string> {
   return spawnGh(["--version"], ghEnv(env), { signal: options.signal });
 }
 
@@ -167,11 +158,7 @@ function ghEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 // The token of account: the read of another call, or a new read. The caller waits for the read
 // until it settles or until signal aborts. See the doc comment of runGh() for the rules.
 // Two calls at the same time for one account start one token call.
-function accountToken(
-  account: string,
-  env: NodeJS.ProcessEnv,
-  signal: AbortSignal | undefined,
-): Promise<string> {
+function accountToken(account: string, env: NodeJS.ProcessEnv, signal: AbortSignal | undefined): Promise<string> {
   const entry = tokens.get(account) ?? startRead(account, env);
   entry.waiters += 1;
   return new Promise<string>((resolve, reject) => {
@@ -222,11 +209,7 @@ function startRead(account: string, env: NodeJS.ProcessEnv): TokenRead {
 }
 
 // Reads the token of account. The token call never puts its stdout into an error.
-async function readToken(
-  account: string,
-  env: NodeJS.ProcessEnv,
-  signal: AbortSignal,
-): Promise<string> {
+async function readToken(account: string, env: NodeJS.ProcessEnv, signal: AbortSignal): Promise<string> {
   const args = ["auth", "token", "--hostname", GITHUB_HOST, "--user", account];
   let stdout: string;
   try {
@@ -252,8 +235,7 @@ async function spawnGh(
   env: NodeJS.ProcessEnv,
   mode: { dropStdout?: boolean; token?: string; signal?: AbortSignal } = {},
 ): Promise<string> {
-  const hide = (text: string) =>
-    mode.token === undefined ? text : text.split(mode.token).join(REDACTED);
+  const hide = (text: string) => (mode.token === undefined ? text : text.split(mode.token).join(REDACTED));
   let result: ChildResult;
   try {
     result = await runChild("gh", args, { env, signal: mode.signal });

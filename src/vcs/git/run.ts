@@ -23,13 +23,7 @@ export type GitLocation = { cwd: string } | { gitDir: string };
 export type RunGitOptions = GitLocation & { env: NodeJS.ProcessEnv; signal?: AbortSignal };
 
 export class GitError extends ChildCommandError {
-  constructor(
-    message: string,
-    subcommand: string,
-    stdout: string,
-    stderr: string,
-    exitCode: number | null,
-  ) {
+  constructor(message: string, subcommand: string, stdout: string, stderr: string, exitCode: number | null) {
     super(message, subcommand, stdout, stderr, exitCode);
     this.name = "GitError";
   }
@@ -136,9 +130,7 @@ export function runGit(args: readonly string[], options: RunGitOptions): Promise
     return Promise.reject(new GitNotInstalledError(errorMessage(error)));
   }
   const location: Location =
-    "gitDir" in options
-      ? { kind: "gitDir", path: options.gitDir }
-      : { kind: "cwd", path: options.cwd };
+    "gitDir" in options ? { kind: "gitDir", path: options.gitDir } : { kind: "cwd", path: options.cwd };
   if (!isFolder(location.path)) {
     return Promise.reject(folderError(location));
   }
@@ -180,7 +172,13 @@ async function spawnGit(
   if (code === 0) {
     return stdout;
   }
-  throw new GitError(childFailureMessage("git", subcommand, code, stopSignal, stderr), subcommand, stdout, stderr, code);
+  throw new GitError(
+    childFailureMessage("git", subcommand, code, stopSignal, stderr),
+    subcommand,
+    stdout,
+    stderr,
+    code,
+  );
 }
 
 function isFolder(path: string): boolean {

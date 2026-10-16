@@ -60,9 +60,7 @@ describe("show-verify", () => {
   });
 
   it("adds a final line end to a log that has none, and keeps one that has it", async () => {
-    const { dataRoot, task } = seedRuns([
-      { change: { commands: ["a", "b"] }, logs: ["no end", "has end\n"] },
-    ]);
+    const { dataRoot, task } = seedRuns([{ change: { commands: ["a", "b"] }, logs: ["no end", "has end\n"] }]);
     const path1 = verifyCommandLogPath(dataRoot, task, 1, 1);
     const path2 = verifyCommandLogPath(dataRoot, task, 1, 2);
 
@@ -206,8 +204,7 @@ describe("show-verify", () => {
     expect(result).toEqual({
       code: 1,
       out: "",
-      err:
-        "--run must be a whole number of 1 or more: 0\n" + "--command must be a whole number of 1 or more: 01\n",
+      err: "--run must be a whole number of 1 or more: 0\n" + "--command must be a whole number of 1 or more: 01\n",
     });
   });
 

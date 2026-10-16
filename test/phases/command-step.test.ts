@@ -1,7 +1,14 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { commandFailureMessage, NO_OUTPUT_LINE, readCommandLog, readLogTail, textLines, withLineEnds } from "../../src/phases/command-step.js";
+import {
+  commandFailureMessage,
+  NO_OUTPUT_LINE,
+  readCommandLog,
+  readLogTail,
+  textLines,
+  withLineEnds,
+} from "../../src/phases/command-step.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
 describe("commandFailureMessage", () => {
@@ -47,11 +54,15 @@ describe("readCommandLog", () => {
   });
 
   it("gives all the lines of a short log with the real count", () => {
-    expect(readCommandLog(useTempFile("tasker-read-log-", "verify.log", "1\n2\n3\n"), 20).tail).toBe("the last 3 lines of the log:\n1\n2\n3\n");
+    expect(readCommandLog(useTempFile("tasker-read-log-", "verify.log", "1\n2\n3\n"), 20).tail).toBe(
+      "the last 3 lines of the log:\n1\n2\n3\n",
+    );
   });
 
   it("counts a last line with no line end", () => {
-    expect(readCommandLog(useTempFile("tasker-read-log-", "verify.log", "1\n2"), 20).tail).toBe("the last 2 lines of the log:\n1\n2\n");
+    expect(readCommandLog(useTempFile("tasker-read-log-", "verify.log", "1\n2"), 20).tail).toBe(
+      "the last 2 lines of the log:\n1\n2\n",
+    );
   });
 
   it("says that the log is missing", () => {
@@ -66,15 +77,21 @@ describe("readCommandLog", () => {
   });
 
   it("has no output for a header and an outcome line", () => {
-    expect(readCommandLog(useTempFile("tasker-read-log-", "verify.log", "$ exit 3\n--- exit code 3\n"), 20).noOutput).toBe(true);
+    expect(
+      readCommandLog(useTempFile("tasker-read-log-", "verify.log", "$ exit 3\n--- exit code 3\n"), 20).noOutput,
+    ).toBe(true);
   });
 
   it("has output for a log with output", () => {
-    expect(readCommandLog(useTempFile("tasker-read-log-", "verify.log", "$ ls\nfile\n--- exit code 0\n"), 20).noOutput).toBe(false);
+    expect(
+      readCommandLog(useTempFile("tasker-read-log-", "verify.log", "$ ls\nfile\n--- exit code 0\n"), 20).noOutput,
+    ).toBe(false);
   });
 
   it("has no output for a header and an error line", () => {
-    expect(readCommandLog(useTempFile("tasker-read-log-", "verify.log", "$ nope\n--- spawn ENOENT\n"), 20).noOutput).toBe(true);
+    expect(
+      readCommandLog(useTempFile("tasker-read-log-", "verify.log", "$ nope\n--- spawn ENOENT\n"), 20).noOutput,
+    ).toBe(true);
   });
 });
 

@@ -27,7 +27,15 @@ import { isInside } from "../../../src/real-path.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
-import { commitInWorktree, gitCloneTokens, gitRecorderEnv, makeGitClone, makeGitOrigin, taskNames, type GitOrigin } from "../../helpers/git.js";
+import {
+  commitInWorktree,
+  gitCloneTokens,
+  gitRecorderEnv,
+  makeGitClone,
+  makeGitOrigin,
+  taskNames,
+  type GitOrigin,
+} from "../../helpers/git.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const EXPECTED = [
@@ -36,11 +44,7 @@ const EXPECTED = [
 ].join("\n\n");
 
 // The bwrap arguments: / read-only, each path of writable open for writes.
-function bwrapArgs(
-  writable: readonly string[],
-  cwd: string,
-  command: readonly string[],
-): string[] {
+function bwrapArgs(writable: readonly string[], cwd: string, command: readonly string[]): string[] {
   return [
     "--ro-bind",
     "/",
@@ -56,12 +60,7 @@ function bwrapArgs(
 }
 
 // Runs command in bwrap with the env of the fixture.
-function inSandbox(
-  writable: readonly string[],
-  cwd: string,
-  env: NodeJS.ProcessEnv,
-  command: readonly string[],
-) {
+function inSandbox(writable: readonly string[], cwd: string, env: NodeJS.ProcessEnv, command: readonly string[]) {
   const result = spawnSync("bwrap", bwrapArgs(writable, cwd, command), { env, encoding: "utf8" });
   if (result.error !== undefined) throw result.error;
   return result;
@@ -95,9 +94,7 @@ describe("assistant surface values", () => {
   });
 
   it.each(["~alice/.ssh/id", "~", "keys/id_tasker", "./id_tasker"])("throws for the ssh key %s", (key) => {
-    expect(() => readDenyPaths({ sshKey: key })).toThrow(
-      `cannot resolve the ssh key path for the sandbox: ${key}`,
-    );
+    expect(() => readDenyPaths({ sshKey: key })).toThrow(`cannot resolve the ssh key path for the sandbox: ${key}`);
   });
 
   it("gives no path when no ssh key is set", () => {
@@ -140,9 +137,7 @@ describe("assistant surface values", () => {
     it("expands a ~/ ssh key with the home folder", () => {
       // A folder name that no home folder has, so the test does not depend on the host.
       const folder = `.tasker-test-missing-${randomUUID()}`;
-      expect(readDenyPaths({ sshKey: `~/${folder}/id_tasker` })).toEqual([
-        `${userInfo().homedir}/${folder}/id_tasker`,
-      ]);
+      expect(readDenyPaths({ sshKey: `~/${folder}/id_tasker` })).toEqual([`${userInfo().homedir}/${folder}/id_tasker`]);
     });
 
     it("gives the path alone for a missing key file", () => {
@@ -180,9 +175,7 @@ describe("task worktree operations", () => {
   describe("sandboxWritePaths", () => {
     const writePaths = (path = worktree) => sandboxWritePaths({ clone, env, path });
     const adminDir = () =>
-      runGit(["rev-parse", "--git-dir"], { cwd: worktree, env }).then((out) =>
-        out.replace(/\r?\n$/, ""),
-      );
+      runGit(["rev-parse", "--git-dir"], { cwd: worktree, env }).then((out) => out.replace(/\r?\n$/, ""));
 
     it("gives objects, refs, logs and the admin dir, in this order", async () => {
       const real = realpathSync(clone);
@@ -207,11 +200,7 @@ describe("task worktree operations", () => {
       const real = realpathSync(clone);
       const paths = await writePaths();
       expect(paths).not.toContain(real);
-      for (const protectedPath of [
-        join(real, "hooks"),
-        join(real, "config"),
-        realpathSync(tokens),
-      ]) {
+      for (const protectedPath of [join(real, "hooks"), join(real, "config"), realpathSync(tokens)]) {
         for (const path of paths) {
           expect(isInside(path, protectedPath)).toBe(false);
           expect(isInside(protectedPath, path)).toBe(false);
@@ -239,18 +228,12 @@ describe("task worktree operations", () => {
       mkdirSync(tokens, { recursive: true });
       const realWorktree = realpathSync(worktree);
       const writable = [realWorktree, ...(await writePaths())];
-      const tip = () =>
-        runGit(["rev-parse", `refs/heads/${branch}`], { gitDir: clone, env });
+      const tip = () => runGit(["rev-parse", `refs/heads/${branch}`], { gitDir: clone, env });
       const before = await tip();
       writeFileSync(join(worktree, "sandboxed.txt"), "sandboxed\n");
       const add = inSandbox(writable, realWorktree, env, ["git", "add", "-A"]);
       expect(add.status).toBe(0);
-      const commit = inSandbox(writable, realWorktree, env, [
-        "git",
-        "commit",
-        "-m",
-        "sandboxed commit",
-      ]);
+      const commit = inSandbox(writable, realWorktree, env, ["git", "commit", "-m", "sandboxed commit"]);
       expect(commit.status).toBe(0);
       expect(await tip()).not.toBe(before);
       const subject = await runGit(["log", "-1", "--format=%s"], { cwd: worktree, env });
@@ -263,13 +246,7 @@ describe("task worktree operations", () => {
       ]) {
         const existed = existsSync(file);
         const content = existed ? readFileSync(file) : undefined;
-        const write = inSandbox(writable, realWorktree, env, [
-          "sh",
-          "-c",
-          'printf x >> "$1"',
-          "sh",
-          file,
-        ]);
+        const write = inSandbox(writable, realWorktree, env, ["sh", "-c", 'printf x >> "$1"', "sh", file]);
         expect(write.status).not.toBe(0);
         expect(existsSync(file)).toBe(existed);
         if (content !== undefined) expect(readFileSync(file)).toEqual(content);

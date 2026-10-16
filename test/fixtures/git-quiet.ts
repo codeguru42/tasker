@@ -26,9 +26,7 @@ try {
   // git clone writes "Cloning into ..." to stderr on success.
   await runGit(["clone", source, join(dir, "copy")], { cwd: dir, env });
   // A failing git must not write to the terminal either.
-  await expectGitError(
-    runGit(["rev-parse", "--verify", "no-such-ref"], { cwd: join(dir, "copy"), env }),
-  );
+  await expectGitError(runGit(["rev-parse", "--verify", "no-such-ref"], { cwd: join(dir, "copy"), env }));
   await expectGitError(runGit(["checkout", "no-such-branch"], { cwd: source, env }));
 } catch (error) {
   console.error(error);

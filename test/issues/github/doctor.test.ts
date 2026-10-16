@@ -68,9 +68,7 @@ describe("gh doctor checks", () => {
       expect(result.status).toBe(status);
       expect(result.detail).toBe(detail);
       expect(result.remediation).toBe(
-        status === "error" && detail.includes("older")
-          ? "Install gh 2.40.0 or newer."
-          : undefined,
+        status === "error" && detail.includes("older") ? "Install gh 2.40.0 or newer." : undefined,
       );
       expect(fake.calls()).toEqual([{ args: versionArgs, ghToken: undefined, env: {} }]);
     });
@@ -120,10 +118,7 @@ describe("gh doctor checks", () => {
     });
 
     it("is ok when the token is for the account", async () => {
-      const fake = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        { args: loginArgs, stdout: "octo\n" },
-      ]);
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: loginArgs, stdout: "octo\n" }]);
       expect(await doctor.ghAuthCheck("octo").run(fake.env)).toEqual({
         status: "ok",
         detail: "gh is logged in as octo",
@@ -132,10 +127,7 @@ describe("gh doctor checks", () => {
     });
 
     it("gives error and a remediation for another login", async () => {
-      const fake = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        { args: loginArgs, stdout: "hubot\n" },
-      ]);
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: loginArgs, stdout: "hubot\n" }]);
       expect(await doctor.ghAuthCheck("octo").run(fake.env)).toEqual({
         status: "error",
         detail: "the token of the account octo is for the login hubot",
@@ -145,9 +137,7 @@ describe("gh doctor checks", () => {
     });
 
     it("gives error and a remediation when the token call fails", async () => {
-      const fake = fakeGh(dir, {}, [
-        { args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 },
-      ]);
+      const fake = fakeGh(dir, {}, [{ args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 }]);
       expect(await doctor.ghAuthCheck("octo").run(fake.env)).toEqual({
         status: "error",
         detail:
@@ -181,10 +171,7 @@ describe("gh doctor checks", () => {
     });
 
     it("gives error and no remediation when a signal stops gh", async () => {
-      const fake = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        { args: loginArgs, killWith: "TERM" },
-      ]);
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: loginArgs, killWith: "TERM" }]);
       expect(await doctor.ghAuthCheck("octo").run(fake.env)).toStrictEqual({
         status: "error",
         detail: "gh api user was stopped by signal SIGTERM",
@@ -264,10 +251,7 @@ describe("gh doctor checks", () => {
     });
 
     it("uses the repo key as the project when issueTracker.project is not set", async () => {
-      const fake = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        { args: viewArgs("octo/keyed"), stdout: "{}" },
-      ]);
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: viewArgs("octo/keyed"), stdout: "{}" }]);
       const check = doctor.ghProjectCheck(githubRepo("octo/keyed", { project: undefined }));
       expect(await check.run(fake.env)).toEqual({
         status: "ok",
@@ -277,8 +261,7 @@ describe("gh doctor checks", () => {
     });
 
     it("gives error and a remediation when the project cannot be seen", async () => {
-      const stderr =
-        "GraphQL: Could not resolve to a Repository with the name 'octo/nope'. (repository)\n";
+      const stderr = "GraphQL: Could not resolve to a Repository with the name 'octo/nope'. (repository)\n";
       const fake = fakeGh(dir, {}, [
         ghTokenAnswer("octo", "gho_test"),
         { args: viewArgs("octo/nope"), stderr, exitCode: 1 },
@@ -294,9 +277,7 @@ describe("gh doctor checks", () => {
     });
 
     it("gives error with no remediation when the token call fails", async () => {
-      const fake = fakeGh(dir, {}, [
-        { args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 },
-      ]);
+      const fake = fakeGh(dir, {}, [{ args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 }]);
       const check = doctor.ghProjectCheck(githubRepo("octo/repo"));
       expect(await check.run(fake.env)).toStrictEqual({
         status: "error",
@@ -402,11 +383,7 @@ describe("gh doctor checks", () => {
     });
 
     it("gives warn for a missing done label, after it reads the in-progress label", async () => {
-      const fake = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        found("wip"),
-        notFound("done"),
-      ]);
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), found("wip"), notFound("done")]);
       expect(await doctor.ghLabelsCheck(bothLabels).run(fake.env)).toEqual({
         status: "warn",
         detail:
@@ -418,11 +395,7 @@ describe("gh doctor checks", () => {
     });
 
     it("gives error when both labels are missing, and names both keys", async () => {
-      const fake = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        notFound("wip"),
-        notFound("done"),
-      ]);
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), notFound("wip"), notFound("done")]);
       expect(await doctor.ghLabelsCheck(bothLabels).run(fake.env)).toEqual({
         status: "error",
         detail:
@@ -437,9 +410,7 @@ describe("gh doctor checks", () => {
       const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), found("wip"), found("done")]);
       expect(await doctor.ghLabelsCheck(bothLabels).run(fake.env)).toEqual({
         status: "ok",
-        detail:
-          `main:\nthe label "wip" of ${IN_PROGRESS} exists\n` +
-          `the label "done" of ${DONE} exists`,
+        detail: `main:\nthe label "wip" of ${IN_PROGRESS} exists\n` + `the label "done" of ${DONE} exists`,
       });
       expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip"), labelArgs("done")]);
     });
@@ -457,17 +428,13 @@ describe("gh doctor checks", () => {
       const repo = githubRepo("main", { updateOnStart: true, inProgressLabel: "wip" });
       expect(await doctor.ghLabelsCheck(repo).run(fake.env)).toEqual({
         status: "error",
-        detail:
-          "gh api repos/octo/repo/labels/wip failed with exit code 1: gh: Bad credentials (HTTP 401)",
+        detail: "gh api repos/octo/repo/labels/wip failed with exit code 1: gh: Bad credentials (HTTP 401)",
       });
       expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip")]);
     });
 
     it("gives the timeout result when gh is slow", async () => {
-      const fake = fakeGh(dir, {}, [
-        ghTokenAnswer("octo", "gho_test"),
-        { ...found("wip"), delaySeconds: 5 },
-      ]);
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { ...found("wip"), delaySeconds: 5 }]);
       const repo = githubRepo("main", { updateOnStart: true, inProgressLabel: "wip" });
       const start = Date.now();
       expect(await doctor.ghLabelsCheck(repo, 200).run(fake.env)).toEqual({

@@ -68,13 +68,7 @@ describe("start", () => {
     });
     expect(existsSync(join(names.worktree, "bootstrap.ran"))).toBe(true);
     const events = eventsOf(dataRoot, KEY);
-    expect(events.map((event) => event.type)).toEqual([
-      "created",
-      "base",
-      "workspace",
-      "bootstrap",
-      "transition",
-    ]);
+    expect(events.map((event) => event.type)).toEqual(["created", "base", "workspace", "bootstrap", "transition"]);
     expect(events[1].data).toMatchObject({ base: "main", source: "config" });
     expect(events[2].data).toMatchObject({ path: names.worktree, taskRef: names.branch, state: "created" });
     expect(events[3].data).toMatchObject({ status: "ok" });
@@ -165,9 +159,7 @@ describe("start", () => {
 
     const result = await runCommand(start, "start", KEY, "--base", "nope");
 
-    expect(expectFailed(fixture.dataRoot, result)).toBe(
-      "the base branch does not exist: nope (from --base)",
-    );
+    expect(expectFailed(fixture.dataRoot, result)).toBe("the base branch does not exist: nope (from --base)");
   });
 
   it("fails the task for two base labels", async () => {
@@ -191,11 +183,7 @@ describe("start", () => {
     const result = await runCommand(start, "start", KEY);
 
     expectFailed(fixture.dataRoot, result, "tasker saved main as the default base branch of codeguru42/tasker.\n");
-    expect(eventsOf(fixture.dataRoot, KEY).map((event) => event.type)).toEqual([
-      "created",
-      "base",
-      "transition",
-    ]);
+    expect(eventsOf(fixture.dataRoot, KEY).map((event) => event.type)).toEqual(["created", "base", "transition"]);
   });
 
   it("fails the task when bootstrap fails and prints the tail of the log", async () => {
@@ -213,13 +201,7 @@ describe("start", () => {
         `${error}\nthe last 20 lines of the log:\n${tail}--- exit code 3\n`,
     );
     const events = eventsOf(fixture.dataRoot, KEY);
-    expect(events.map((event) => event.type)).toEqual([
-      "created",
-      "base",
-      "workspace",
-      "bootstrap",
-      "transition",
-    ]);
+    expect(events.map((event) => event.type)).toEqual(["created", "base", "workspace", "bootstrap", "transition"]);
     expect(events[3].data).toMatchObject({ status: "failed", index: 1, exitCode: 3, log });
     expect(events[4].data).toMatchObject({ from: "provisioning", to: "failed", error });
     expect(result.code).toBe(1);
@@ -246,8 +228,9 @@ describe("start", () => {
       expect(result.out).toContain("state: workspace_ready\n");
       const events = eventsOf(fixture.dataRoot, KEY);
       expect(events.filter((event) => event.type === "created")).toHaveLength(1);
-      expect(events.find((event) => event.type === "transition" && (event.data as { from: string }).from === "failed")?.data)
-        .toMatchObject({ from: "failed", to: "provisioning" });
+      expect(
+        events.find((event) => event.type === "transition" && (event.data as { from: string }).from === "failed")?.data,
+      ).toMatchObject({ from: "failed", to: "provisioning" });
       expect(events.filter((event) => event.type === "workspace").at(-1)?.data).toMatchObject({
         state: "reused-workspace",
       });
@@ -451,10 +434,7 @@ describe("start", () => {
         repo: { bootstrap: { commands: [command], env: [] } },
       });
 
-      const results = await Promise.all([
-        spawnTasker(["start", `${REPO}#5`]),
-        spawnTasker(["start", `${REPO}#6`]),
-      ]);
+      const results = await Promise.all([spawnTasker(["start", `${REPO}#5`]), spawnTasker(["start", `${REPO}#6`])]);
 
       expect(results.map((result) => result.code)).toEqual([0, 0]);
       expect(taskState(fixture.dataRoot, `${REPO}#5`)).toBe("workspace_ready");
@@ -472,9 +452,7 @@ describe("start", () => {
     expect(help).toContain(
       "Make a task for an issue and take it to workspace_ready: read the issue, make the clone, resolve the base, make the worktree and run bootstrap",
     );
-    expect(help).toContain(
-      "Use the repo with this key when two repos share the project of the issue",
-    );
+    expect(help).toContain("Use the repo with this key when two repos share the project of the issue");
     expect(help).toContain(
       "The base branch of this task only: a branch on origin, or refs/heads/<branch> for a local branch of the clone",
     );

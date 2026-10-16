@@ -150,7 +150,9 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
       store,
       task,
       io,
-      failed ? `verifying failed: ${reason}` : `the verify commands passed, but the run could not be recorded: ${reason}`,
+      failed
+        ? `verifying failed: ${reason}`
+        : `the verify commands passed, but the run could not be recorded: ${reason}`,
     );
   }
   if (failed) {

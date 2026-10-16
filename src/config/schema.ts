@@ -24,12 +24,10 @@ const EnvNameSchema = z
   .string()
   .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, "must be an environment variable name")
   .refine((name) => !name.startsWith("TASKER_"), {
-    message:
-      "must not start with TASKER_: a TASKER_ variable is tasker's own and is never handed to a phase",
+    message: "must not start with TASKER_: a TASKER_ variable is tasker's own and is never handed to a phase",
   })
   .refine((name) => !ALLOWED_ENV_NAMES.includes(name), {
-    message:
-      "must not be a name every phase already receives (such as HOME); remove it from env",
+    message: "must not be a name every phase already receives (such as HOME); remove it from env",
   });
 
 const VerifySchema = z.strictObject({
@@ -144,23 +142,25 @@ function checkModels(repo: unknown, ctx: z.RefinementCtx): void {
   }
 }
 
-const RepoSchema = z.strictObject({
-  remote: nonEmpty,
-  issueTracker: IssueTrackerSchema,
-  assistant: AssistantSchema,
-  verify: VerifySchema,
-  bootstrap: BootstrapSchema.default({ commands: [], env: [] }),
-  defaultBaseBranch: nonEmpty
-    .refine((name) => !name.startsWith(LOCAL_PREFIX), {
-      message: "must name a remote branch, not a local branch in the form refs/heads/<x>",
-    })
-    .optional(),
-  overagePolicy: z.enum(["decline", "ask"]).default("decline"),
-  quotaApprovalThreshold: z.number().gt(0).max(1).default(0.9),
-  updateBranchStrategy: z.enum(["rebase", "merge"]).default("rebase"),
-  forge: ForgeSchema.optional(),
-  vcs: VcsSchema.default({ provider: "git", config: {} }),
-}).superRefine(checkModels, { when: () => true });
+const RepoSchema = z
+  .strictObject({
+    remote: nonEmpty,
+    issueTracker: IssueTrackerSchema,
+    assistant: AssistantSchema,
+    verify: VerifySchema,
+    bootstrap: BootstrapSchema.default({ commands: [], env: [] }),
+    defaultBaseBranch: nonEmpty
+      .refine((name) => !name.startsWith(LOCAL_PREFIX), {
+        message: "must name a remote branch, not a local branch in the form refs/heads/<x>",
+      })
+      .optional(),
+    overagePolicy: z.enum(["decline", "ask"]).default("decline"),
+    quotaApprovalThreshold: z.number().gt(0).max(1).default(0.9),
+    updateBranchStrategy: z.enum(["rebase", "merge"]).default("rebase"),
+    forge: ForgeSchema.optional(),
+    vcs: VcsSchema.default({ provider: "git", config: {} }),
+  })
+  .superRefine(checkModels, { when: () => true });
 
 // A github tracker needs the account that runs gh. tasker checks the merged issueTracker,
 // so a definition under trackers can leave account out.
@@ -196,9 +196,7 @@ function prepareConfig(raw: unknown): Prepared {
   }
   let trackersBroken = false;
   if (copy.trackers !== undefined && !isObject(copy.trackers)) {
-    issues.push(
-      issueLine(["trackers"], "must be an object that maps each tracker name to its definition"),
-    );
+    issues.push(issueLine(["trackers"], "must be an object that maps each tracker name to its definition"));
     delete copy.trackers;
     trackersBroken = true;
   }
@@ -218,10 +216,7 @@ function prepareConfig(raw: unknown): Prepared {
     const at = ["repos", key, "issueTracker"];
     if (Object.hasOwn(issueTracker, "provider")) {
       issues.push(
-        issueLine(
-          [...at, "provider"],
-          `must not be set next to tracker; provider comes from tracker '${name}'`,
-        ),
+        issueLine([...at, "provider"], `must not be set next to tracker; provider comes from tracker '${name}'`),
       );
     }
     const own: Record<string, unknown> = { ...issueTracker };
@@ -239,19 +234,11 @@ function prepareConfig(raw: unknown): Prepared {
     }
     const definition = Object.hasOwn(trackers, name) ? trackers[name] : undefined;
     if (definition === undefined) {
-      issues.push(
-        issueLine(
-          [...at, "tracker"],
-          `names tracker '${name}', which is not defined under trackers`,
-        ),
-      );
+      issues.push(issueLine([...at, "tracker"], `names tracker '${name}', which is not defined under trackers`));
     }
     // Merge the raw definition, so the issueTracker schema applies the defaults once.
-    const validDefinition =
-      definition !== undefined && TrackerDefinitionSchema.safeParse(definition).success;
-    const merged = validDefinition
-      ? { ...(definition as Record<string, unknown>), ...own }
-      : placeholder;
+    const validDefinition = definition !== undefined && TrackerDefinitionSchema.safeParse(definition).success;
+    const merged = validDefinition ? { ...(definition as Record<string, unknown>), ...own } : placeholder;
     if (validDefinition) {
       // Never on the placeholder: the real error is already reported.
       issues.push(...githubAccountIssues(key, merged));

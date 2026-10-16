@@ -84,12 +84,7 @@ export function commandFailure(index: number, command: string, result: GroupResu
 }
 
 // The message of a failed command of a phase: the phase, the command, the outcome and the log.
-export function commandFailureMessage(
-  phase: string,
-  result: CommandFailure,
-  log: string,
-  timeoutMin: number,
-): string {
+export function commandFailureMessage(phase: string, result: CommandFailure, log: string, timeoutMin: number): string {
   const outcome =
     result.error !== undefined
       ? `could not start: ${result.error}`

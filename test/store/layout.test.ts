@@ -32,15 +32,13 @@ describe("dataRootLayout", () => {
 
 describe("taskArtifactsDir", () => {
   it("puts the files of an attempt under the slug of the issue key", () => {
-    expect(
-      taskArtifactsDir("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 }),
-    ).toBe("/d/artifacts/codeguru42-tasker-10/attempt-2");
+    expect(taskArtifactsDir("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 })).toBe(
+      "/d/artifacts/codeguru42-tasker-10/attempt-2",
+    );
   });
 
   it("keeps an issue key that has no unsafe character", () => {
-    expect(taskArtifactsDir("/d", { issueKey: "PROJ-7", attempt: 1 })).toBe(
-      "/d/artifacts/PROJ-7/attempt-1",
-    );
+    expect(taskArtifactsDir("/d", { issueKey: "PROJ-7", attempt: 1 })).toBe("/d/artifacts/PROJ-7/attempt-1");
   });
 
   it("makes no folder", () => {

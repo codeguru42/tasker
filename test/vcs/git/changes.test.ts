@@ -21,7 +21,15 @@ import { createTaskWorktree, removeTaskWorktree, taskBranchName } from "../../..
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
-import { addCloneCommit, commitInWorktree, makeGitClone, makeGitOrigin, sshKeyArgs, taskNames, type GitOrigin } from "../../helpers/git.js";
+import {
+  addCloneCommit,
+  commitInWorktree,
+  makeGitClone,
+  makeGitOrigin,
+  sshKeyArgs,
+  taskNames,
+  type GitOrigin,
+} from "../../helpers/git.js";
 
 const MISSING_BRANCH = taskBranchName("issue-99", "");
 
@@ -61,8 +69,7 @@ describe("git changes", () => {
   const containment = (extra: Partial<Parameters<typeof fetchBaseContainment>[0]> = {}) =>
     fetchBaseContainment({ clone, env, sshKey: undefined, branch, baseRevision: BASE, ...extra });
   // The tip of the base in the clone.
-  const baseTip = () =>
-    runGit(["rev-parse", BASE], { gitDir: clone, env }).then((out) => out.trim());
+  const baseTip = () => runGit(["rev-parse", BASE], { gitDir: clone, env }).then((out) => out.trim());
   // The tip of the task branch in the clone.
   const branchTip = () =>
     runGit(["rev-parse", `refs/heads/${branch}`], { gitDir: clone, env }).then((out) => out.trim());
@@ -235,8 +242,7 @@ describe("git changes", () => {
   });
 
   describe("hasCommitsNotIn", () => {
-    const has = (head: string, others: readonly string[]) =>
-      hasCommitsNotIn({ clone, env, head, others });
+    const has = (head: string, others: readonly string[]) => hasCommitsNotIn({ clone, env, head, others });
 
     it("is true for a branch commit that the base does not reach", async () => {
       const sha = await commitInWorktree(path, env, { file: "feature.txt" });
@@ -316,8 +322,7 @@ describe("git changes", () => {
   });
 
   describe("isAncestor", () => {
-    const ancestor = (a: string, d: string) =>
-      isAncestor({ clone, env, ancestor: a, descendant: d });
+    const ancestor = (a: string, d: string) => isAncestor({ clone, env, ancestor: a, descendant: d });
 
     it("is true for the base and a branch commit", async () => {
       const sha = await commitInWorktree(path, env, { file: "feature.txt" });

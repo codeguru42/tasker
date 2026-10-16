@@ -150,7 +150,10 @@ export async function taskWorkspaceState(
   started: Pick<StartedTask, "dataRoot" | "repoKey" | "key" | "worktree" | "branch" | "clone" | "env">,
 ): Promise<{ state: string | undefined; worktree: boolean; listed: boolean; branch: boolean }> {
   const { clone, env } = started;
-  const state = withDataRootStore(started.dataRoot, (store) => store.findLatestTask(started.repoKey, started.key)?.state);
+  const state = withDataRootStore(
+    started.dataRoot,
+    (store) => store.findLatestTask(started.repoKey, started.key)?.state,
+  );
   const listedPaths = (await listWorktrees({ clone, env })).map((entry) => entry.path);
   return {
     state,

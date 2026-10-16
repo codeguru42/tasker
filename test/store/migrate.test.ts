@@ -40,9 +40,7 @@ describe("migrate", () => {
 
   it("throws on a file version that is newer than the list", () => {
     db.exec("PRAGMA user_version = 5");
-    expect(() =>
-      migrate(db, ["CREATE TABLE a (x)", "CREATE TABLE b (x)"]),
-    ).toThrow(
+    expect(() => migrate(db, ["CREATE TABLE a (x)", "CREATE TABLE b (x)"])).toThrow(
       "database schema version 5 is newer than this tasker supports (2)",
     );
     expect(schemaVersion(db)).toBe(5);
@@ -57,8 +55,6 @@ describe("migrate", () => {
 
   it("throws the first error when the transaction is already gone", () => {
     // The second string ends the transaction itself, then fails.
-    expect(() =>
-      migrate(db, ["CREATE TABLE a (x)", "COMMIT; NOT SQL"]),
-    ).toThrow(/syntax error/);
+    expect(() => migrate(db, ["CREATE TABLE a (x)", "COMMIT; NOT SQL"])).toThrow(/syntax error/);
   });
 });

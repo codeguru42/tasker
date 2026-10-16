@@ -13,13 +13,10 @@ describe("fakeGh", () => {
     dir = useTempDir("tasker-fake-gh-");
   });
 
-  const run = (env: NodeJS.ProcessEnv, ...args: string[]) =>
-    spawnSync("gh", args, { env, encoding: "utf8" });
+  const run = (env: NodeJS.ProcessEnv, ...args: string[]) => spawnSync("gh", args, { env, encoding: "utf8" });
 
   it("answers a listed call with the stdout, stderr and exit code of its answer", () => {
-    const gh = fakeGh(dir, {}, [
-      { args: ["issue", "view", "7"], stdout: "out\n", stderr: "err\n", exitCode: 3 },
-    ]);
+    const gh = fakeGh(dir, {}, [{ args: ["issue", "view", "7"], stdout: "out\n", stderr: "err\n", exitCode: 3 }]);
     const result = run(gh.env, "issue", "view", "7");
     expect(result.stdout).toBe("out\n");
     expect(result.stderr).toBe("err\n");
@@ -36,9 +33,7 @@ describe("fakeGh", () => {
   });
 
   it("throws for a delay that is not a plain number of seconds", () => {
-    expect(() => fakeGh(dir, {}, [{ args: ["slow"], delaySeconds: -1 }])).toThrow(
-      "bad delay for the fake gh: -1",
-    );
+    expect(() => fakeGh(dir, {}, [{ args: ["slow"], delaySeconds: -1 }])).toThrow("bad delay for the fake gh: -1");
   });
 
   it("matches an argument with spaces, quotes and a newline", () => {
@@ -135,9 +130,7 @@ describe("fakeGh", () => {
   });
 
   it("throws for a killWith value that is not a signal name", () => {
-    expect(() =>
-      writeFakeGh(join(dir, "bin"), join(dir, "gh.log"), [{ args: [], killWith: "TERM; rm" }]),
-    ).toThrow();
+    expect(() => writeFakeGh(join(dir, "bin"), join(dir, "gh.log"), [{ args: [], killWith: "TERM; rm" }])).toThrow();
   });
 });
 

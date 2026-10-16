@@ -30,10 +30,7 @@ export function captureIo(options: { answers?: string[] } = {}): CapturedIo {
 }
 
 export const greet: RegisterCommand = (program) => {
-  program
-    .command("greet")
-    .description("Say hello")
-    .option("--name <name>", "Who to greet");
+  program.command("greet").description("Say hello").option("--name <name>", "Who to greet");
 };
 
 // Runs argv with only this command and gives the exit code and the whole stdout and stderr.

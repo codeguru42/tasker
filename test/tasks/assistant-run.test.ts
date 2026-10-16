@@ -343,7 +343,9 @@ describe("prepareTaskExecuteRun", () => {
   });
 
   it("runs the shell in the sandbox with the write paths and the read deny list", async () => {
-    const { claude, env, started, surface } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
+    const { claude, env, started, surface } = await prepareAndStartExecute({
+      claude: { stream: claudeSample("plain") },
+    });
 
     expect(claude.calls()[0]!.settings).toMatchObject({
       sandbox: {
@@ -446,7 +448,10 @@ describe("prepareTaskExecuteRun", () => {
   describe("the read rules of the skills", () => {
     // The allow rules of one start, with the env of the fixture edited by edit.
     async function allowRules(edit: (env: NodeJS.ProcessEnv) => NodeJS.ProcessEnv) {
-      const { claude, env } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } }, { env: edit });
+      const { claude, env } = await prepareAndStartExecute(
+        { claude: { stream: claudeSample("plain") } },
+        { env: edit },
+      );
       return { rules: flagValues(claude.calls()[0]!.argv, "--allowedTools")!, env };
     }
 

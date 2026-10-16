@@ -54,9 +54,9 @@ export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) =>
 
 // The names of the tables in db, in alphabetical order.
 export function tableNames(db: DatabaseSync): string[] {
-  const rows = db
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
-    .all() as { name: string }[];
+  const rows = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all() as {
+    name: string;
+  }[];
   return rows.map((row) => row.name);
 }
 
@@ -81,8 +81,7 @@ export function readRunMarker(dbPath: string, taskId: number) {
     dbPath,
     (db) =>
       db.prepare("SELECT * FROM run_markers WHERE task_id = ?").get(taskId) as
-        | { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string }
-        | undefined,
+        { task_id: number; state: string; pid: number; child_pid: number | null; started_at: string } | undefined,
   );
 }
 
@@ -150,7 +149,11 @@ export function writeBootstrapLog(dataRoot: string, task: Pick<Task, "issueKey" 
 }
 
 // The next number and the row of a verify run of task, with the defaults of a passed run of one command.
-function nextVerifyRunOf(store: TaskStore, taskId: number, change: Partial<Omit<NewVerifyRun, "number">>): NewVerifyRun {
+function nextVerifyRunOf(
+  store: TaskStore,
+  taskId: number,
+  change: Partial<Omit<NewVerifyRun, "number">>,
+): NewVerifyRun {
   return {
     number: store.nextVerifyRun(taskId),
     result: "passed",

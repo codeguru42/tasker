@@ -19,9 +19,7 @@ import { useTempDir } from "../../helpers/temp.js";
 
 describe("sshCommand", () => {
   it("quotes the key path and writes each ' as '\\''", () => {
-    expect(sshCommand("/k/it's my key")).toBe(
-      "ssh -i '/k/it'\\''s my key' -o IdentitiesOnly=yes -o BatchMode=yes",
-    );
+    expect(sshCommand("/k/it's my key")).toBe("ssh -i '/k/it'\\''s my key' -o IdentitiesOnly=yes -o BatchMode=yes");
   });
 });
 
@@ -95,11 +93,7 @@ describe("runRemoteGit", () => {
 
   async function failure(sshKey: string): Promise<GitError> {
     return failureOf(
-      runRemoteGit(
-        ["ls-remote", "--", ssh.remote("/repo.git")],
-        { cwd: dir, env: ssh.env },
-        sshKey,
-      ),
+      runRemoteGit(["ls-remote", "--", ssh.remote("/repo.git")], { cwd: dir, env: ssh.env }, sshKey),
       GitError,
     );
   }
@@ -156,10 +150,7 @@ describe("isLocalRemote", () => {
     expect(isLocalRemote(remote)).toBe(true);
   });
 
-  it.each(["host:path", "git@h:o/r", "ssh://h/x", "https://h/x"])(
-    "says that %s is not a local path",
-    (remote) => {
-      expect(isLocalRemote(remote)).toBe(false);
-    },
-  );
+  it.each(["host:path", "git@h:o/r", "ssh://h/x", "https://h/x"])("says that %s is not a local path", (remote) => {
+    expect(isLocalRemote(remote)).toBe(false);
+  });
 });

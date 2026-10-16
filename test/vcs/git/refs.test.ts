@@ -49,9 +49,7 @@ describe("refs", () => {
 
   describe("refRevision", () => {
     it("gives the SHA of the ref", async () => {
-      expect(await refRevision({ clone, env, ref: "refs/remotes/origin/main" })).toBe(
-        await origin.branchHead("main"),
-      );
+      expect(await refRevision({ clone, env, ref: "refs/remotes/origin/main" })).toBe(await origin.branchHead("main"));
     });
 
     it("gives undefined for a missing ref", async () => {
@@ -61,9 +59,7 @@ describe("refs", () => {
 
   describe("assertRevisionInput", () => {
     it.each(["main", "-x", "HEAD", "", "a..b"])("refuses %j", (value) => {
-      expect(() => assertRevisionInput(value)).toThrow(
-        `not a full revision or ref: ${JSON.stringify(value)}`,
-      );
+      expect(() => assertRevisionInput(value)).toThrow(`not a full revision or ref: ${JSON.stringify(value)}`);
     });
 
     it.each(["a".repeat(40), "refs/x"])("accepts %j", (value) => {
@@ -84,9 +80,9 @@ describe("refs", () => {
     });
 
     it("throws for a missing ref", async () => {
-      await expect(
-        resolveRevision({ clone, env, value: "refs/heads/missing" }),
-      ).rejects.toThrow("cannot resolve the revision: refs/heads/missing");
+      await expect(resolveRevision({ clone, env, value: "refs/heads/missing" })).rejects.toThrow(
+        "cannot resolve the revision: refs/heads/missing",
+      );
     });
 
     it("throws for another text", async () => {

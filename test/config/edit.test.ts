@@ -68,16 +68,12 @@ describe("setRoleModel", () => {
   });
 
   it("does not change the other repos", () => {
-    const result = JSON.parse(
-      setRoleModel(pretty(rawConfig()), "tasker", "plan", { model: "haiku", effort: "low" }),
-    );
+    const result = JSON.parse(setRoleModel(pretty(rawConfig()), "tasker", "plan", { model: "haiku", effort: "low" }));
 
     expect(result.repos.other).toEqual(rawConfig().repos.other);
   });
 
   it("throws for a repo key that has no repo", () => {
-    expect(() => setRoleModel(pretty(rawConfig()), "missing", "plan", { effort: "low" })).toThrow(
-      Error,
-    );
+    expect(() => setRoleModel(pretty(rawConfig()), "missing", "plan", { effort: "low" })).toThrow(Error);
   });
 });

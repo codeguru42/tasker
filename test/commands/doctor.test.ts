@@ -20,11 +20,7 @@ const GOOD_GH: FakeGhAnswer[] = [VERSION, ghTokenAnswer("codeguru42", "gho_test"
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RawConfig = Record<string, any>;
 
-async function setUp(
-  answers: readonly FakeGhAnswer[],
-  change: (raw: RawConfig) => void = () => {},
-  withClaude = true,
-) {
+async function setUp(answers: readonly FakeGhAnswer[], change: (raw: RawConfig) => void = () => {}, withClaude = true) {
   const fixture = await makeProviderFixture();
   onTestFinished(fixture.remove);
   const dir = useTempDir("tasker-doctor-");

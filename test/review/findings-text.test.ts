@@ -20,11 +20,15 @@ describe("formatFindings", () => {
   });
 
   it("leaves out the line when the finding has none", () => {
-    expect(format([entry({ finding: reviewFindingWithout("line") })]).split("\n")[0]).toBe("- [1] src/a.ts (correctness): The loop skips the last item.");
+    expect(format([entry({ finding: reviewFindingWithout("line") })]).split("\n")[0]).toBe(
+      "- [1] src/a.ts (correctness): The loop skips the last item.",
+    );
   });
 
   it("leaves out the category when the finding has none", () => {
-    expect(format([entry({ finding: reviewFindingWithout("category") })]).split("\n")[0]).toBe("- [1] src/a.ts:3: The loop skips the last item.");
+    expect(format([entry({ finding: reviewFindingWithout("category") })]).split("\n")[0]).toBe(
+      "- [1] src/a.ts:3: The loop skips the last item.",
+    );
   });
 
   it("prints the reason of a dismissed finding", () => {

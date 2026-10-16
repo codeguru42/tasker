@@ -25,12 +25,7 @@ export const plan: RegisterCommand = (program, io) => {
 };
 
 // The steps and the output of tasker plan. tasker retry runs them too.
-export async function planIssue(
-  io: Io,
-  config: Config,
-  issue: string,
-  options: { repo?: string },
-): Promise<void> {
+export async function planIssue(io: Io, config: Config, issue: string, options: { repo?: string }): Promise<void> {
   const result = await orFailAsync(io, () =>
     withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
       key: found.issueKey,

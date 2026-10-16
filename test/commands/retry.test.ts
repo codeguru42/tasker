@@ -12,7 +12,13 @@ import {
   validPlanAnswer,
 } from "../helpers/plan.js";
 import { eventsOf, failTaskFrom, failVerifyRun, latestTaskOf, withDataRootStore } from "../helpers/store.js";
-import { useExecuteFixture, usePlanFixture, useRefineFixture, useStartedTask, useVerifyFixture } from "../helpers/task-fixtures.js";
+import {
+  useExecuteFixture,
+  usePlanFixture,
+  useRefineFixture,
+  useStartedTask,
+  useVerifyFixture,
+} from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const TODOS = [planTodo("a"), planTodo("b", ["a"])];
@@ -86,7 +92,13 @@ describe("tasker retry", () => {
     expect(fixture.claude.calls()).toEqual([]);
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
     expect(retryEvents(dataRoot)).toEqual([
-      { origin: "refining", target: "awaiting_plan_review", resumeExecute: false, from: "failed", to: "awaiting_plan_review" },
+      {
+        origin: "refining",
+        target: "awaiting_plan_review",
+        resumeExecute: false,
+        from: "failed",
+        to: "awaiting_plan_review",
+      },
     ]);
   });
 

@@ -2,12 +2,7 @@ import type { RegisterCommand } from "../cli.js";
 import { indented } from "../indented.js";
 import { planRevisionPath } from "../store/layout.js";
 import type { PlanRevision, Task, TaskStore } from "../store/store.js";
-import {
-  formatQuestions,
-  planHeader,
-  planRevisionOrFail,
-  VERSION_OPTION_DESCRIPTION,
-} from "./plan-revision.js";
+import { formatQuestions, planHeader, planRevisionOrFail, VERSION_OPTION_DESCRIPTION } from "./plan-revision.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,

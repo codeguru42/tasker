@@ -29,8 +29,7 @@ interface LockRow {
 function readRow(dbPath: string, name: string): LockRow | undefined {
   return withRawDatabase(
     dbPath,
-    (db) =>
-      db.prepare("SELECT pid, acquired_at FROM locks WHERE name = ?").get(name) as LockRow | undefined,
+    (db) => db.prepare("SELECT pid, acquired_at FROM locks WHERE name = ?").get(name) as LockRow | undefined,
   );
 }
 
@@ -188,7 +187,10 @@ describe("named locks", () => {
     it("rejects with LockBusyError after waitMs", async () => {
       const { fake, calls } = fakeStore([BUSY]);
       const start = Date.now();
-      await failureOf(withLock(fake, "a", { waitMs: 600 }, () => {}), LockBusyError);
+      await failureOf(
+        withLock(fake, "a", { waitMs: 600 }, () => {}),
+        LockBusyError,
+      );
       expect(Date.now() - start).toBeGreaterThanOrEqual(600);
       expect(calls.tryLock.length).toBeGreaterThanOrEqual(2);
       expect(calls.tryLock.length).toBeLessThanOrEqual(4);
@@ -212,7 +214,10 @@ describe("named locks", () => {
       const { fake, calls } = fakeStore([{ held: true }], () => {
         throw new Error("unlock failed");
       });
-      const error = await failureOf(withLock(fake, NAME, { waitMs: 0 }, () => 1), Error);
+      const error = await failureOf(
+        withLock(fake, NAME, { waitMs: 0 }, () => 1),
+        Error,
+      );
       expect(error.message).toBe("unlock failed");
       expect(calls.unlock).toBe(1);
     });
@@ -245,50 +250,45 @@ describe("named locks", () => {
     it("leaves no timer behind after LockBusyError", async () => {
       const before = timerCount();
       const { fake } = fakeStore([BUSY]);
-      await failureOf(withLock(fake, "a", { waitMs: 300 }, () => {}), LockBusyError);
+      await failureOf(
+        withLock(fake, "a", { waitMs: 300 }, () => {}),
+        LockBusyError,
+      );
       expect(timerCount()).toBeLessThanOrEqual(before);
     });
 
-    it(
-      "rejects with LockBusyError while a child holds the lock",
-      async () => {
-        const child = startLockHolder(dbPath, NAME);
-        expect(await child.attempt).toEqual({ held: true });
-        const row = readRow(dbPath, NAME)!;
-        expect(row.pid).toBe(child.pid);
-        let ran = false;
-        const error = await failureOf(
-          withLock(store, NAME, { waitMs: 0 }, () => {
-            ran = true;
-          }),
-          LockBusyError,
-        );
-        expect(error.pid).toBe(child.pid);
-        expect(error.acquiredAt).toBe(row.acquired_at);
-        expect(error.message).toContain(NAME);
-        expect(error.message).toContain(String(child.pid));
-        expect(error.message).toContain(row.acquired_at);
-        expect(ran).toBe(false);
-      },
-      30_000,
-    );
-
-    it(
-      "takes the lock of a child that was killed",
-      async () => {
-        const child = startLockHolder(dbPath, NAME);
-        expect(await child.attempt).toEqual({ held: true });
-        expect(readRow(dbPath, NAME)?.pid).toBe(child.pid);
-        process.kill(child.pid, "SIGKILL");
-        await child.exited;
-        let ran = false;
-        await withLock(store, NAME, { waitMs: 0 }, () => {
+    it("rejects with LockBusyError while a child holds the lock", async () => {
+      const child = startLockHolder(dbPath, NAME);
+      expect(await child.attempt).toEqual({ held: true });
+      const row = readRow(dbPath, NAME)!;
+      expect(row.pid).toBe(child.pid);
+      let ran = false;
+      const error = await failureOf(
+        withLock(store, NAME, { waitMs: 0 }, () => {
           ran = true;
-        });
-        expect(ran).toBe(true);
-      },
-      30_000,
-    );
+        }),
+        LockBusyError,
+      );
+      expect(error.pid).toBe(child.pid);
+      expect(error.acquiredAt).toBe(row.acquired_at);
+      expect(error.message).toContain(NAME);
+      expect(error.message).toContain(String(child.pid));
+      expect(error.message).toContain(row.acquired_at);
+      expect(ran).toBe(false);
+    }, 30_000);
+
+    it("takes the lock of a child that was killed", async () => {
+      const child = startLockHolder(dbPath, NAME);
+      expect(await child.attempt).toEqual({ held: true });
+      expect(readRow(dbPath, NAME)?.pid).toBe(child.pid);
+      process.kill(child.pid, "SIGKILL");
+      await child.exited;
+      let ran = false;
+      await withLock(store, NAME, { waitMs: 0 }, () => {
+        ran = true;
+      });
+      expect(ran).toBe(true);
+    }, 30_000);
 
     describe("withTaskLock", () => {
       it("holds the task lock with no wait and deletes it after fn", async () => {
@@ -334,33 +334,26 @@ describe("named locks", () => {
     });
   });
 
-  it(
-    "gives a lock to exactly one of two processes that try at the same time",
-    async () => {
-      for (let round = 0; round < 5; round++) {
-        const name = `race-${round}`;
-        const goPath = join(dir, `go-${round}`);
-        const children = [
-          startLockHolder(dbPath, name, goPath),
-          startLockHolder(dbPath, name, goPath),
-        ];
-        await waitUntil(
-          () => children.every((child) => existsSync(`${goPath}.ready.${child.pid}`)),
-          30_000,
-          `the children of round ${round} are not ready`,
-        );
-        writeFileSync(goPath, "");
-        const attempts = await Promise.all(children.map((child) => child.attempt));
-        const winners = attempts.filter((attempt) => attempt.held);
-        const losers = attempts.filter((attempt) => !attempt.held);
-        expect(winners).toHaveLength(1);
-        expect(losers).toHaveLength(1);
-        const holder = children[attempts.findIndex((attempt) => attempt.held)];
-        expect(losers[0]).toMatchObject({ held: false, pid: holder.pid });
-        for (const child of children) process.kill(child.pid, "SIGKILL");
-        await Promise.all(children.map((child) => child.exited));
-      }
-    },
-    60_000,
-  );
+  it("gives a lock to exactly one of two processes that try at the same time", async () => {
+    for (let round = 0; round < 5; round++) {
+      const name = `race-${round}`;
+      const goPath = join(dir, `go-${round}`);
+      const children = [startLockHolder(dbPath, name, goPath), startLockHolder(dbPath, name, goPath)];
+      await waitUntil(
+        () => children.every((child) => existsSync(`${goPath}.ready.${child.pid}`)),
+        30_000,
+        `the children of round ${round} are not ready`,
+      );
+      writeFileSync(goPath, "");
+      const attempts = await Promise.all(children.map((child) => child.attempt));
+      const winners = attempts.filter((attempt) => attempt.held);
+      const losers = attempts.filter((attempt) => !attempt.held);
+      expect(winners).toHaveLength(1);
+      expect(losers).toHaveLength(1);
+      const holder = children[attempts.findIndex((attempt) => attempt.held)];
+      expect(losers[0]).toMatchObject({ held: false, pid: holder.pid });
+      for (const child of children) process.kill(child.pid, "SIGKILL");
+      await Promise.all(children.map((child) => child.exited));
+    }
+  }, 60_000);
 });

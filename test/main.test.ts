@@ -5,9 +5,7 @@ import { spawnTasker } from "./helpers/processes.js";
 
 const root = new URL("..", import.meta.url);
 
-const packageVersion: string = JSON.parse(
-  readFileSync(new URL("package.json", root), "utf8"),
-).version;
+const packageVersion: string = JSON.parse(readFileSync(new URL("package.json", root), "utf8")).version;
 
 describe("src/main.ts", () => {
   it("prints the package version for --version", async () => {

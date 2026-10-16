@@ -56,8 +56,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
   const active = store.findActiveTask(ref.repoKey, ref.key);
   const continues =
     active !== undefined &&
-    (active.state === "provisioning" ||
-      (active.state === "failed" && failedFrom(store, active.id) === "provisioning"));
+    (active.state === "provisioning" || (active.state === "failed" && failedFrom(store, active.id) === "provisioning"));
   if (active !== undefined && !continues) return { started: false, task: active };
   if (active === undefined && issue.state === "closed") throw new Error(`the issue is closed: ${ref.key}`);
   const task =
@@ -125,7 +124,10 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
     });
     store.appendEvent(task.id, "bootstrap", { ...result, log });
     if (result.status === "failed") {
-      throw new BootstrapFailedError(commandFailureMessage("bootstrap", result, log, timeoutMin), readCommandLog(log, 20).tail);
+      throw new BootstrapFailedError(
+        commandFailureMessage("bootstrap", result, log, timeoutMin),
+        readCommandLog(log, 20).tail,
+      );
     }
   });
   return { started: true, task: transitionTask(store, task.id, "workspace_ready") };

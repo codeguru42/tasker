@@ -35,7 +35,9 @@ export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
       const { cause, resetsAt } = outcome;
       transitionTask(store, task.id, "quota_blocked", resetsAt === undefined ? { cause } : { cause, resetsAt });
       const reset =
-        resetsAt === undefined ? "the reset time is unknown" : `it resets at ${new Date(resetsAt * 1000).toISOString()}`;
+        resetsAt === undefined
+          ? "the reset time is unknown"
+          : `it resets at ${new Date(resetsAt * 1000).toISOString()}`;
       io.stdout(`${phase} stopped by a quota limit; ${reset}\n`);
       return { exitCode: 1 };
     }

@@ -48,7 +48,10 @@ describe("createGithubProvider", () => {
 
   // The gh calls without the token call, which only the first run makes.
   const callsWithoutToken = (fake: ReturnType<typeof fakeGh>) =>
-    fake.calls().map((call) => call.args).filter((args) => args[0] !== "auth" || args[1] !== "token");
+    fake
+      .calls()
+      .map((call) => call.args)
+      .filter((args) => args[0] !== "auth" || args[1] !== "token");
 
   // Runs the member, then the direct call, with one fake gh. Gives the gh calls of each run.
   async function compareCalls(
@@ -171,8 +174,10 @@ describe("createGithubProvider", () => {
     fake.assertAnswered();
   });
 
-  it("gives the doctor checks of the repos in the list",() => {
-    const names = provider().doctorChecks(repos()).map((check) => check.name);
+  it("gives the doctor checks of the repos in the list", () => {
+    const names = provider()
+      .doctorChecks(repos())
+      .map((check) => check.name);
     expect(names).toEqual(doctorModule.githubDoctorChecks(repos()).map((check) => check.name));
     expect(names).toEqual(["gh version", "gh auth: octo", "gh project: octo/repo", "gh labels: octo/repo"]);
   });

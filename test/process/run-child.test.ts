@@ -1,12 +1,7 @@
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  ChildCommandError,
-  childFailureMessage,
-  CommandNotFoundError,
-  runChild,
-} from "../../src/process/run-child.js";
+import { ChildCommandError, childFailureMessage, CommandNotFoundError, runChild } from "../../src/process/run-child.js";
 import { failureOf } from "../helpers/errors.js";
 import { writeFakeCommand } from "../helpers/fake-commands.js";
 import { useTempDir } from "../helpers/temp.js";

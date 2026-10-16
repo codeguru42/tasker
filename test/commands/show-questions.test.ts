@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { showQuestions } from "../../src/commands/show-questions.js";
 import { runCommand } from "../helpers/cli.js";
-import { OPEN_QUESTION_BLOCK, recordPlanRevisions, seedPlanRevision, seedPlanningTask, validPlanAnswer } from "../helpers/plan.js";
+import {
+  OPEN_QUESTION_BLOCK,
+  recordPlanRevisions,
+  seedPlanRevision,
+  seedPlanningTask,
+  validPlanAnswer,
+} from "../helpers/plan.js";
 import { withDataRootStore } from "../helpers/store.js";
 
 const TASKER = "codeguru42/tasker";

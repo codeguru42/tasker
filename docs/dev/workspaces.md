@@ -162,30 +162,30 @@ The clean check runs before any step, because the restore runs `checkout --force
 
 `--onto` applies only the commits of `<upstream>..HEAD`. The rebase options are:
 
-| Option | Reason |
-| --- | --- |
-| `--merge` | `rebase.backend=apply` uses `rebase-apply/`. This option forces `rebase-merge/`. |
-| `--no-autostash` | It stops `rebase.autoStash`. |
-| `--no-update-refs` | It stops `rebase.updateRefs`, which moves other local branches. |
-| `--no-rebase-merges` | It stops `rebase.rebaseMerges`, so the history stays linear. |
-| `--no-gpg-sign` | It stops a gpg failure from `commit.gpgSign`. |
-| `--no-verify` | It skips the `pre-rebase` hook. |
-| `--no-rerere-autoupdate` | It stops `rerere.autoUpdate`, so a conflict stays unmerged. |
+| Option                   | Reason                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| `--merge`                | `rebase.backend=apply` uses `rebase-apply/`. This option forces `rebase-merge/`. |
+| `--no-autostash`         | It stops `rebase.autoStash`.                                                     |
+| `--no-update-refs`       | It stops `rebase.updateRefs`, which moves other local branches.                  |
+| `--no-rebase-merges`     | It stops `rebase.rebaseMerges`, so the history stays linear.                     |
+| `--no-gpg-sign`          | It stops a gpg failure from `commit.gpgSign`.                                    |
+| `--no-verify`            | It skips the `pre-rebase` hook.                                                  |
+| `--no-rerere-autoupdate` | It stops `rerere.autoUpdate`, so a conflict stays unmerged.                      |
 
 The reasons for the options of the merge are:
 
-| Option | Reason |
-| --- | --- |
-| `-s ort` | It stops `pull.twohead`, which can drop the changes of the base. |
-| `--ff` | It stops `merge.ff=only`. |
-| `--commit` and `--no-squash` | They stop `branch.<name>.mergeOptions=--squash`. |
-| `--no-edit` | It stops `GIT_MERGE_AUTOEDIT=yes` from running an editor. |
-| `--no-log` | It stops `merge.log`, so the message stays the default. |
-| `--no-autostash` | It stops `merge.autoStash`. |
-| `--no-gpg-sign` | It stops a gpg failure from `commit.gpgSign`. |
-| `--no-verify` | It skips the `pre-merge-commit` and `commit-msg` hooks. |
-| `--no-verify-signatures` | It stops `merge.verifySignatures`. |
-| `--no-rerere-autoupdate` | It stops `rerere.autoUpdate`, so a conflict stays unmerged. |
+| Option                       | Reason                                                           |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `-s ort`                     | It stops `pull.twohead`, which can drop the changes of the base. |
+| `--ff`                       | It stops `merge.ff=only`.                                        |
+| `--commit` and `--no-squash` | They stop `branch.<name>.mergeOptions=--squash`.                 |
+| `--no-edit`                  | It stops `GIT_MERGE_AUTOEDIT=yes` from running an editor.        |
+| `--no-log`                   | It stops `merge.log`, so the message stays the default.          |
+| `--no-autostash`             | It stops `merge.autoStash`.                                      |
+| `--no-gpg-sign`              | It stops a gpg failure from `commit.gpgSign`.                    |
+| `--no-verify`                | It skips the `pre-merge-commit` and `commit-msg` hooks.          |
+| `--no-verify-signatures`     | It stops `merge.verifySignatures`.                               |
+| `--no-rerere-autoupdate`     | It stops `rerere.autoUpdate`, so a conflict stays unmerged.      |
 
 These settings need no option. `rebase.autoSquash` has no effect on a rebase that is not interactive. `merge.conflictStyle` changes only the markers, and the abort removes them. `pull.rebase` has no effect.
 

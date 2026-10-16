@@ -4,11 +4,7 @@ import { shellQuote } from "../../src/vcs/git/ssh.js";
 import { logLine, writeFakeCommand } from "./fake-commands.js";
 
 // How a fake ssh behaves (see writeFakeSsh()).
-export type FakeSshMode =
-  | "serve"
-  | "refuse"
-  | "hang"
-  | { greet: string; repo: "serve" | "missing" };
+export type FakeSshMode = "serve" | "refuse" | "hang" | { greet: string; repo: "serve" | "missing" };
 
 // Writes an executable ssh into binDir. Each call goes in the log at logPath (see readArgLog()).
 // "serve" runs the last argument in a shell, so the real git-upload-pack on PATH serves a local origin.
@@ -32,7 +28,7 @@ export function writeFakeSsh(binDir: string, logPath: string, mode: FakeSshMode)
       '  "~/"*) key="$home${2#"~"}" ;;',
       '  *) key="$2" ;;',
       "esac",
-      'printf \'Warning: Identity file %s not accessible: No such file or directory.\\n\' "$key" >&2',
+      "printf 'Warning: Identity file %s not accessible: No such file or directory.\\n' \"$key\" >&2",
       "echo 'Permission denied (publickey).' >&2",
       "exit 255",
     ];
@@ -66,11 +62,7 @@ export interface FakeSsh {
 
 // Writes a fake ssh into <dir>/bin with writeFakeSsh(), with the log <dir>/ssh.log.
 // A second call with the same dir replaces the script and keeps the log.
-export function fakeSsh(
-  dir: string,
-  baseEnv: NodeJS.ProcessEnv,
-  mode: FakeSshMode,
-): FakeSsh {
+export function fakeSsh(dir: string, baseEnv: NodeJS.ProcessEnv, mode: FakeSshMode): FakeSsh {
   const binDir = join(dir, "bin");
   const logPath = join(dir, "ssh.log");
   writeFakeSsh(binDir, logPath, mode);

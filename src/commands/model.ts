@@ -6,14 +6,7 @@ import { loadConfigFile, parseConfigText } from "../config/load.js";
 import { ASSISTANT_ROLES, EFFORTS, type Config } from "../config/schema.js";
 import { replaceFile } from "../replace-file.js";
 import { issueKeyMatches } from "../issue-key/resolve.js";
-import {
-  fail,
-  issueKeyOrFail,
-  orFail,
-  REPO_OPTION_DESCRIPTION,
-  resolveIssueKeyOrFail,
-  withStore,
-} from "./shared.js";
+import { fail, issueKeyOrFail, orFail, REPO_OPTION_DESCRIPTION, resolveIssueKeyOrFail, withStore } from "./shared.js";
 
 interface ModelOptions {
   role?: AssistantRole;

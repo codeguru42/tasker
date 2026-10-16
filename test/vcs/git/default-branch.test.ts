@@ -46,9 +46,9 @@ describe("remoteDefaultBranch", () => {
       gitDir: origin.path,
       env: origin.env,
     });
-    await expect(
-      remoteDefaultBranch({ remote: origin.path, sshKey: undefined, env: origin.env }),
-    ).rejects.toThrow(`the remote has no symbolic HEAD: ${origin.path}`);
+    await expect(remoteDefaultBranch({ remote: origin.path, sshKey: undefined, env: origin.env })).rejects.toThrow(
+      `the remote has no symbolic HEAD: ${origin.path}`,
+    );
   });
 
   it("passes the ssh key to ssh", async () => {

@@ -16,12 +16,7 @@ import { createGitProvider } from "../../../src/vcs/git/provider.js";
 import { remoteTip } from "../../../src/vcs/git/remote-tip.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
-import {
-  listWorktrees,
-  taskBranchExists,
-  taskBranchName,
-  taskWorktreePath,
-} from "../../../src/vcs/git/worktree.js";
+import { listWorktrees, taskBranchExists, taskBranchName, taskWorktreePath } from "../../../src/vcs/git/worktree.js";
 import { commitInWorktree, localBranches, makeProviderFixture, type ProviderFixture } from "../../helpers/git.js";
 
 describe("createGitProvider", () => {
@@ -74,9 +69,7 @@ describe("createGitProvider", () => {
       });
       await git.removeWorkspace(fixture.context, { path: workspace.path });
       expect(existsSync(workspace.path)).toBe(false);
-      expect(await localBranches(paths().clone, fixture.context.env)).toContain(
-        `refs/heads/${workspace.taskRef}`,
-      );
+      expect(await localBranches(paths().clone, fixture.context.env)).toContain(`refs/heads/${workspace.taskRef}`);
     });
   });
 
@@ -206,9 +199,7 @@ describe("createGitProvider", () => {
       const { git, path, taskRef } = await workspace();
       await git.removeWorkspace(fixture.context, { path });
       await git.deleteTaskRef(fixture.context, { taskRef });
-      expect(await localBranches(paths().clone, fixture.context.env)).not.toContain(
-        `refs/heads/${taskRef}`,
-      );
+      expect(await localBranches(paths().clone, fixture.context.env)).not.toContain(`refs/heads/${taskRef}`);
     });
 
     it("discards the changes of a workspace", async () => {
@@ -234,9 +225,7 @@ describe("createGitProvider", () => {
         baseRevision: resolved.revision,
         strategy: "rebase",
       });
-      expect(head).toBe(
-        (await runGit(["rev-parse", "HEAD"], { cwd: path, env: fixture.context.env })).trim(),
-      );
+      expect(head).toBe((await runGit(["rev-parse", "HEAD"], { cwd: path, env: fixture.context.env })).trim());
     });
   });
 
@@ -297,8 +286,7 @@ describe("createGitProvider", () => {
 
   describe("assistant surface and doctor checks", () => {
     const keyed = () => ({ sshKey: join(fixture.origin.dir, "keys", "id") });
-    const keyedProvider = () =>
-      createGitProvider({ remote: fixture.origin.path, config: keyed() });
+    const keyedProvider = () => createGitProvider({ remote: fixture.origin.path, config: keyed() });
 
     it("gives the text, the rules and the deny paths of the git code", () => {
       const surface = keyedProvider().assistantSurface(fixture.context);

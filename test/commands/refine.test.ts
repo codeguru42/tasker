@@ -12,10 +12,25 @@ import { NO_OWN_COMMITS } from "../../src/vcs/git/changes.js";
 import { runCommand } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
-import { planAnswerStream, planRevisionOf, seedPlanSession, seedTaskWithPlanFiles, transcriptLines, validPlanAnswer } from "../helpers/plan.js";
+import {
+  planAnswerStream,
+  planRevisionOf,
+  seedPlanSession,
+  seedTaskWithPlanFiles,
+  transcriptLines,
+  validPlanAnswer,
+} from "../helpers/plan.js";
 import { overlapWarningText } from "../helpers/overlap.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore } from "../helpers/store.js";
+import {
+  databasePathOf,
+  dayAt,
+  eventsOf,
+  latestTaskOf,
+  lockNames,
+  readRunMarker,
+  withDataRootStore,
+} from "../helpers/store.js";
 import { expectNoAssistantRun, type PlanFixture, useRefineFixture, usePlanFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -34,9 +49,7 @@ const V1_ANSWER = validPlanAnswer({
 });
 const V2_ANSWER = validPlanAnswer({
   plan_markdown: "## Summary\n\nAdd the b module and its test, test first.\n",
-  todos: [
-    { id: "only-todo", title: "Do the work", description: "Do all of it.", depends_on: [] },
-  ],
+  todos: [{ id: "only-todo", title: "Do the work", description: "Do all of it.", depends_on: [] }],
   questions: [V1_ANSWER.questions[1]!],
 });
 
@@ -289,13 +302,7 @@ describe("refine", () => {
 describe("a check before any write", () => {
   const stream = planAnswerStream(V2_ANSWER);
 
-  const expectRefused = async (
-    fixture: PlanFixture,
-    task: Task,
-    state: string,
-    error: string,
-    feedback = FEEDBACK,
-  ) => {
+  const expectRefused = async (fixture: PlanFixture, task: Task, state: string, error: string, feedback = FEEDBACK) => {
     const before = eventsOf(fixture.started.dataRoot, KEY);
 
     const result = await runRefine(feedback);

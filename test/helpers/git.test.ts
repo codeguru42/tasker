@@ -38,8 +38,7 @@ describe("makeGitOrigin", () => {
     origin.remove();
   });
 
-  const git = (...args: string[]) =>
-    runGit(args, { gitDir: origin.path, env: origin.env }).then((out) => out.trim());
+  const git = (...args: string[]) => runGit(args, { gitDir: origin.path, env: origin.env }).then((out) => out.trim());
 
   it("makes a bare origin with one commit on main", async () => {
     expect(await git("rev-parse", "--is-bare-repository")).toBe("true");
@@ -114,17 +113,13 @@ describe("makeGitOrigin", () => {
     "rejects the file %s and leaves main as it was",
     async (file) => {
       const before = await origin.branchHead("main");
-      await expect(origin.addCommit("main", { file })).rejects.toThrow(
-        "addCommit needs a file inside the work repo",
-      );
+      await expect(origin.addCommit("main", { file })).rejects.toThrow("addCommit needs a file inside the work repo");
       expect(await origin.branchHead("main")).toBe(before);
     },
   );
 
   it("rejects a branch name that starts with -", async () => {
-    await expect(origin.createBranch("-d")).rejects.toThrow(
-      "the branch name must not start with -",
-    );
+    await expect(origin.createBranch("-d")).rejects.toThrow("the branch name must not start with -");
     await expect(origin.addCommit("-x")).rejects.toThrow("the branch name must not start with -");
   });
 });
@@ -138,9 +133,7 @@ describe("taskNames", () => {
   });
 
   it("uses the title for the branch", () => {
-    expect(taskNames("/w", 5, "Add tasker show").branch).toBe(
-      taskBranchName("issue-5", "Add tasker show"),
-    );
+    expect(taskNames("/w", 5, "Add tasker show").branch).toBe(taskBranchName("issue-5", "Add tasker show"));
   });
 
   it("gives a branch with the shape of a task branch", () => {
@@ -161,14 +154,11 @@ describe("makeGitClone", () => {
 
   it("makes a bare clone inside the origin folder with the remote branches fetched", async () => {
     const clone = await makeGitClone(origin);
-    const git = (...args: string[]) =>
-      runGit(args, { gitDir: clone, env: origin.env }).then((out) => out.trim());
+    const git = (...args: string[]) => runGit(args, { gitDir: clone, env: origin.env }).then((out) => out.trim());
 
     expect(clone.startsWith(`${origin.dir}${sep}`)).toBe(true);
     expect(await git("rev-parse", "--is-bare-repository")).toBe("true");
-    expect(await git("rev-parse", "refs/remotes/origin/main")).toBe(
-      await origin.branchHead("main"),
-    );
+    expect(await git("rev-parse", "refs/remotes/origin/main")).toBe(await origin.branchHead("main"));
   });
 
   it("puts the clone at the repo folder of tasker under the clone-data data root", async () => {
@@ -197,8 +187,7 @@ describe("addCloneCommit", () => {
     origin.remove();
   });
 
-  const git = (...args: string[]) =>
-    runGit(args, { gitDir: clone, env: origin.env }).then((out) => out.trim());
+  const git = (...args: string[]) => runGit(args, { gitDir: clone, env: origin.env }).then((out) => out.trim());
 
   it("makes a new branch with origin main as the parent", async () => {
     const sha = await addCloneCommit(clone, origin.env, "b1");
@@ -234,10 +223,7 @@ describe("addCloneCommit", () => {
   });
 
   it("names the value that starts with a dash in the error", async () => {
-    const branchError = await failureOf(
-      addCloneCommit(clone, origin.env, "-x", "refs/remotes/origin/main"),
-      Error,
-    );
+    const branchError = await failureOf(addCloneCommit(clone, origin.env, "-x", "refs/remotes/origin/main"), Error);
     expect(branchError.message).toContain('"-x"');
     const parentError = await failureOf(addCloneCommit(clone, origin.env, taskBranchName("issue-1", "x"), "-p"), Error);
     expect(parentError.message).toContain('"-p"');
@@ -266,8 +252,7 @@ describe("commitInWorktree", () => {
     origin.remove();
   });
 
-  const git = (...args: string[]) =>
-    runGit(args, { cwd: worktree, env: origin.env }).then((out) => out.trim());
+  const git = (...args: string[]) => runGit(args, { cwd: worktree, env: origin.env }).then((out) => out.trim());
 
   it("commits the file and returns the new head", async () => {
     const sha = await commitInWorktree(worktree, origin.env, { file: "a/b.txt", content: "x" });
@@ -276,22 +261,15 @@ describe("commitInWorktree", () => {
   });
 
   it("throws for a file outside the worktree", async () => {
-    await expect(
-      commitInWorktree(worktree, origin.env, { file: "../x" }),
-    ).rejects.toThrow("commitInWorktree needs a file inside the worktree: ../x");
+    await expect(commitInWorktree(worktree, origin.env, { file: "../x" })).rejects.toThrow(
+      "commitInWorktree needs a file inside the worktree: ../x",
+    );
   });
 });
 
 describe("sshKeyArgs", () => {
   it("gives the six ssh arguments of a key", () => {
-    expect(sshKeyArgs("/k")).toEqual([
-      "-i",
-      "/k",
-      "-o",
-      "IdentitiesOnly=yes",
-      "-o",
-      "BatchMode=yes",
-    ]);
+    expect(sshKeyArgs("/k")).toEqual(["-i", "/k", "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes"]);
   });
 });
 

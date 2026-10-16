@@ -29,43 +29,43 @@ If the configuration is invalid, the command prints the errors from the "Errors"
 
 ## Top level
 
-| Key | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `dataRoot` | string | required | The folder where tasker keeps its data. tasker expands a leading `~` and each `$NAME` or `${NAME}` first. The result must be an absolute path. A variable that is not set or is empty is an error. |
-| `retentionDays` | number | `30` | How many days tasker keeps data. |
-| `dataRootMinFreeBytes` | positive number | `1073741824` | The free space that `dataRoot` must have, in bytes. |
-| `limits` | object | required | See [`limits`](#limits). |
-| `trackers` | object | `{}` | Named issue tracker definitions that repos share. See [`trackers`](#trackers). |
-| `repos` | object | required | Maps each repo key to a repo. See [`repos.<key>`](#reposkey). |
+| Key                    | Type            | Default      | Notes                                                                                                                                                                                              |
+| ---------------------- | --------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dataRoot`             | string          | required     | The folder where tasker keeps its data. tasker expands a leading `~` and each `$NAME` or `${NAME}` first. The result must be an absolute path. A variable that is not set or is empty is an error. |
+| `retentionDays`        | number          | `30`         | How many days tasker keeps data.                                                                                                                                                                   |
+| `dataRootMinFreeBytes` | positive number | `1073741824` | The free space that `dataRoot` must have, in bytes.                                                                                                                                                |
+| `limits`               | object          | required     | See [`limits`](#limits).                                                                                                                                                                           |
+| `trackers`             | object          | `{}`         | Named issue tracker definitions that repos share. See [`trackers`](#trackers).                                                                                                                     |
+| `repos`                | object          | required     | Maps each repo key to a repo. See [`repos.<key>`](#reposkey).                                                                                                                                      |
 
 The file has no `landing` key. If it has one, tasker reports this error: `landing: is not accepted: there is no landing setting; the command you run picks how a task lands`.
 
 ## `limits`
 
-| Key | Type | Default | Notes |
-| --- | --- | --- | --- |
+| Key                   | Type            | Default  | Notes                                     |
+| --------------------- | --------------- | -------- | ----------------------------------------- |
 | `bootstrapTimeoutMin` | positive number | required | Minutes that the bootstrap phase can run. |
-| `verifyTimeoutMin` | positive number | required | Minutes that the verify phase can run. |
-| `planTimeoutMin` | positive number | `30` | Minutes that the plan phase can run. |
-| `executeTimeoutMin` | positive number | `90` | Minutes that the execute phase can run. |
+| `verifyTimeoutMin`    | positive number | required | Minutes that the verify phase can run.    |
+| `planTimeoutMin`      | positive number | `30`     | Minutes that the plan phase can run.      |
+| `executeTimeoutMin`   | positive number | `90`     | Minutes that the execute phase can run.   |
 
 ## `repos.<key>`
 
 The key names the repo. It can contain `/`, for example `codeguru42/tasker`. An error path uses the key as it is.
 
-| Key | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `remote` | non-empty string | required | The remote address of the repo. Provision writes it as `remote.origin.url` of the bare clone on each run. For a relative local path, it writes the root of the file system followed by the path. |
-| `issueTracker` | object | required | See [`issueTracker`](#issuetracker). |
-| `assistant` | object | required | See [`assistant`](#assistant). |
-| `verify` | object | required | `commands`: list of non-empty strings with at least one item (required). Each command runs under `/bin/bash` in the worktree of the task, one at a time in the list order. One deadline, `limits.verifyTimeoutMin`, covers the whole list. The first command that fails stops the list. Only the exit codes count. The output of each command goes to its own log, not to the terminal. `env`: list of names (default `[]`). |
-| `bootstrap` | object | `{ "commands": [], "env": [] }` | `commands`: list of strings (default `[]`). Each command runs under `/bin/bash` in the worktree of the task, one at a time in the list order. One deadline, `limits.bootstrapTimeoutMin`, covers the whole list. The first command that fails stops the list. The output goes to the bootstrap log, not to the terminal. `env`: list of names (default `[]`). |
-| `defaultBaseBranch` | non-empty string | optional | The name of a branch on `origin` that tasks start from. tasker uses the value as it is and does not strip `origin/`. The form `refs/heads/<x>` fails with `repos.<key>.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>`. tasker uses the value only when no default is learned for the repo. If the branch exists, tasker saves it as the learned default. If not, the resolve fails. See [workspaces.md](dev/workspaces.md#base-branch). |
-| `overagePolicy` | `"decline"` or `"ask"` | `"decline"` | What to do when a task goes over the quota. Only the `claude-code` assistant reports quota events. |
-| `quotaApprovalThreshold` | number above 0 and at most 1 | `0.9` | The share of the quota at which approval is needed. Only the `claude-code` assistant reports quota events. |
-| `updateBranchStrategy` | `"rebase"` or `"merge"` | `"rebase"` | How to bring a branch up to date. |
-| `forge` | object | optional | See [`forge`](#forge). |
-| `vcs` | object | `{ "provider": "git", "config": {} }` | See [`vcs`](#vcs). |
+| Key                      | Type                         | Default                               | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------ | ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `remote`                 | non-empty string             | required                              | The remote address of the repo. Provision writes it as `remote.origin.url` of the bare clone on each run. For a relative local path, it writes the root of the file system followed by the path.                                                                                                                                                                                                                                                                                      |
+| `issueTracker`           | object                       | required                              | See [`issueTracker`](#issuetracker).                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `assistant`              | object                       | required                              | See [`assistant`](#assistant).                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `verify`                 | object                       | required                              | `commands`: list of non-empty strings with at least one item (required). Each command runs under `/bin/bash` in the worktree of the task, one at a time in the list order. One deadline, `limits.verifyTimeoutMin`, covers the whole list. The first command that fails stops the list. Only the exit codes count. The output of each command goes to its own log, not to the terminal. `env`: list of names (default `[]`).                                                          |
+| `bootstrap`              | object                       | `{ "commands": [], "env": [] }`       | `commands`: list of strings (default `[]`). Each command runs under `/bin/bash` in the worktree of the task, one at a time in the list order. One deadline, `limits.bootstrapTimeoutMin`, covers the whole list. The first command that fails stops the list. The output goes to the bootstrap log, not to the terminal. `env`: list of names (default `[]`).                                                                                                                         |
+| `defaultBaseBranch`      | non-empty string             | optional                              | The name of a branch on `origin` that tasks start from. tasker uses the value as it is and does not strip `origin/`. The form `refs/heads/<x>` fails with `repos.<key>.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>`. tasker uses the value only when no default is learned for the repo. If the branch exists, tasker saves it as the learned default. If not, the resolve fails. See [workspaces.md](dev/workspaces.md#base-branch). |
+| `overagePolicy`          | `"decline"` or `"ask"`       | `"decline"`                           | What to do when a task goes over the quota. Only the `claude-code` assistant reports quota events.                                                                                                                                                                                                                                                                                                                                                                                    |
+| `quotaApprovalThreshold` | number above 0 and at most 1 | `0.9`                                 | The share of the quota at which approval is needed. Only the `claude-code` assistant reports quota events.                                                                                                                                                                                                                                                                                                                                                                            |
+| `updateBranchStrategy`   | `"rebase"` or `"merge"`      | `"rebase"`                            | How to bring a branch up to date.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `forge`                  | object                       | optional                              | See [`forge`](#forge).                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `vcs`                    | object                       | `{ "provider": "git", "config": {} }` | See [`vcs`](#vcs).                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### `env` lists
 
@@ -82,23 +82,23 @@ Tasker always drops `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the envi
 
 This table describes the object after tasker merges a named tracker into it.
 
-| Key | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `provider` | `"github"` or `"jira"` | required | The kind of tracker. When `tracker` is set, the provider comes from the named tracker. The `jira` tracker is not available in this version. The loader still accepts the value. When tasker picks the provider of a repo with `jira`, it reports `repos.<key>.issueTracker.provider: the jira tracker is not available in this version`. |
-| `project` | non-empty string | optional | The project of the tracker. If it is missing, tasker uses the repo key. |
-| `match` | object | optional | `labels`: list of non-empty strings with at least one item. `components`: list of non-empty strings with at least one item. The object must name `labels` or `components`. |
-| `site` | non-empty string | optional | The site of the tracker. tasker stores it in lower case. |
-| `tracker` | non-empty string | optional | The name of an entry under `trackers`. |
-| `account` | non-empty string | optional | The account that tasker uses. The `github` tracker requires it, because tasker runs `gh` as this account. Without it, tasker reports `repos.<key>.issueTracker.account: is required for the github tracker`. |
-| `releaseBranchFieldId` | non-empty string | optional | The id of the field that holds the release branch. |
-| `releaseBranchField` | non-empty string | optional | The name of the field that holds the release branch. |
-| `updateOnStart` | boolean | `false` | Update the issue when work starts. |
-| `assignee` | non-empty string | `"@me"` | Who the issue goes to. |
-| `inProgressLabel` | non-empty string | optional | The label that marks an issue as in progress. |
-| `inProgressStatus` | non-empty string | optional | The status that marks an issue as in progress. |
-| `updateOnFinish` | boolean | `false` | Update the issue when work ends. |
-| `doneLabel` | non-empty string | optional | The label that marks an issue as done. |
-| `doneStatus` | non-empty string | optional | The status that marks an issue as done. |
+| Key                    | Type                   | Default  | Notes                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------- | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `provider`             | `"github"` or `"jira"` | required | The kind of tracker. When `tracker` is set, the provider comes from the named tracker. The `jira` tracker is not available in this version. The loader still accepts the value. When tasker picks the provider of a repo with `jira`, it reports `repos.<key>.issueTracker.provider: the jira tracker is not available in this version`. |
+| `project`              | non-empty string       | optional | The project of the tracker. If it is missing, tasker uses the repo key.                                                                                                                                                                                                                                                                  |
+| `match`                | object                 | optional | `labels`: list of non-empty strings with at least one item. `components`: list of non-empty strings with at least one item. The object must name `labels` or `components`.                                                                                                                                                               |
+| `site`                 | non-empty string       | optional | The site of the tracker. tasker stores it in lower case.                                                                                                                                                                                                                                                                                 |
+| `tracker`              | non-empty string       | optional | The name of an entry under `trackers`.                                                                                                                                                                                                                                                                                                   |
+| `account`              | non-empty string       | optional | The account that tasker uses. The `github` tracker requires it, because tasker runs `gh` as this account. Without it, tasker reports `repos.<key>.issueTracker.account: is required for the github tracker`.                                                                                                                             |
+| `releaseBranchFieldId` | non-empty string       | optional | The id of the field that holds the release branch.                                                                                                                                                                                                                                                                                       |
+| `releaseBranchField`   | non-empty string       | optional | The name of the field that holds the release branch.                                                                                                                                                                                                                                                                                     |
+| `updateOnStart`        | boolean                | `false`  | Update the issue when work starts.                                                                                                                                                                                                                                                                                                       |
+| `assignee`             | non-empty string       | `"@me"`  | Who the issue goes to.                                                                                                                                                                                                                                                                                                                   |
+| `inProgressLabel`      | non-empty string       | optional | The label that marks an issue as in progress.                                                                                                                                                                                                                                                                                            |
+| `inProgressStatus`     | non-empty string       | optional | The status that marks an issue as in progress.                                                                                                                                                                                                                                                                                           |
+| `updateOnFinish`       | boolean                | `false`  | Update the issue when work ends.                                                                                                                                                                                                                                                                                                         |
+| `doneLabel`            | non-empty string       | optional | The label that marks an issue as done.                                                                                                                                                                                                                                                                                                   |
+| `doneStatus`           | non-empty string       | optional | The status that marks an issue as done.                                                                                                                                                                                                                                                                                                  |
 
 ## `trackers`
 
@@ -114,13 +114,13 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 
 ## `assistant`
 
-| Key | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `provider` | `"claude-code"`, `"copilot"` or `"pi"` | required | The assistant to run. The loader accepts `copilot` and `pi`, but they are not available in this version. |
-| `models` | object | required | Has the keys `plan`, `execute` and `review`. All three are required. |
-| `trustedExtensions` | list of non-empty strings | `[]` | The extensions that the assistant can trust. |
-| `account` | non-empty string | optional | The account to use. |
-| `correctiveTurns` | integer, 0 or more | `1` | How many corrective turns the assistant can take. |
+| Key                 | Type                                   | Default  | Notes                                                                                                    |
+| ------------------- | -------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `provider`          | `"claude-code"`, `"copilot"` or `"pi"` | required | The assistant to run. The loader accepts `copilot` and `pi`, but they are not available in this version. |
+| `models`            | object                                 | required | Has the keys `plan`, `execute` and `review`. All three are required.                                     |
+| `trustedExtensions` | list of non-empty strings              | `[]`     | The extensions that the assistant can trust.                                                             |
+| `account`           | non-empty string                       | optional | The account to use.                                                                                      |
+| `correctiveTurns`   | integer, 0 or more                     | `1`      | How many corrective turns the assistant can take.                                                        |
 
 Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"` or `"high"`).
 
@@ -141,28 +141,28 @@ The command `tasker model` changes the model and the effort of one role in the f
 
 ## `forge`
 
-| Key | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `provider` | `"github"` | required | The kind of forge. |
-| `account` | non-empty string | required | The account to use. |
+| Key           | Type                                | Default   | Notes                        |
+| ------------- | ----------------------------------- | --------- | ---------------------------- |
+| `provider`    | `"github"`                          | required  | The kind of forge.           |
+| `account`     | non-empty string                    | required  | The account to use.          |
 | `mergeMethod` | `"merge"`, `"squash"` or `"rebase"` | `"merge"` | How to merge a pull request. |
 
 ## `vcs`
 
 `vcs` selects the version control provider of the repo. It also holds the configuration of that provider.
 
-| Key | Type | Default | Notes |
-| --- | --- | --- | --- |
+| Key        | Type    | Default | Notes                                                             |
+| ---------- | ------- | ------- | ----------------------------------------------------------------- |
 | `provider` | `"git"` | `"git"` | The kind of version control. `"git"` is the only permitted value. |
-| `config` | object | `{}` | The configuration of the provider. The provider validates it. |
+| `config`   | object  | `{}`    | The configuration of the provider. The provider validates it.     |
 
 For `"git"`, `config` takes these keys:
 
-| Key | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `authorName` | non-empty string | optional | The name of the author of a commit. Provision writes it as exactly one `user.name` line in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and removes every local `user.name` line on a complete clone, and git uses the global identity. |
-| `authorEmail` | non-empty string | optional | The email of the author of a commit. Provision writes it as exactly one `user.email` line in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and removes every local `user.email` line on a complete clone, and git uses the global identity. |
-| `sshKey` | non-empty string | optional | The path of the SSH key that git uses. Provision writes `core.sshCommand` in the clone (through the include file `tasker-ssh.config`) and sets `GIT_SSH_COMMAND` for each call to the remote. The command is `ssh -i '<key>' -o IdentitiesOnly=yes -o BatchMode=yes`. A key with a passphrase fails unless `ssh-agent` holds it. If it is missing, provision sets no ssh command for the clone. |
+| Key           | Type             | Default  | Notes                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------- | ---------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `authorName`  | non-empty string | optional | The name of the author of a commit. Provision writes it as exactly one `user.name` line in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and removes every local `user.name` line on a complete clone, and git uses the global identity.                                                                                                                   |
+| `authorEmail` | non-empty string | optional | The email of the author of a commit. Provision writes it as exactly one `user.email` line in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and removes every local `user.email` line on a complete clone, and git uses the global identity.                                                                                                                |
+| `sshKey`      | non-empty string | optional | The path of the SSH key that git uses. Provision writes `core.sshCommand` in the clone (through the include file `tasker-ssh.config`) and sets `GIT_SSH_COMMAND` for each call to the remote. The command is `ssh -i '<key>' -o IdentitiesOnly=yes -o BatchMode=yes`. A key with a passphrase fails unless `ssh-agent` holds it. If it is missing, provision sets no ssh command for the clone. |
 
 The key `repos.<key>.git` does not exist. tasker reports it as `repos.<key>.git: unrecognized key`. Put the git configuration under `vcs.config`.
 

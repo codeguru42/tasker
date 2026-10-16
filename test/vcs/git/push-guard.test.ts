@@ -1,11 +1,4 @@
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
@@ -143,10 +136,7 @@ describe("the pre-push hook", () => {
     });
     const other = join(paths.worktrees, "wt");
     await addWorktree("global", other);
-    const error = await failureOf(
-      runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: other, env }),
-      GitError,
-    );
+    const error = await failureOf(runGit(["push", "origin", "HEAD:refs/heads/x"], { cwd: other, env }), GitError);
     expect(error.stderr).toContain(NO_TOKEN);
     expect(await origin.branchHead("x")).toBeUndefined();
   });
@@ -157,8 +147,7 @@ describe("the pre-push hook", () => {
       location: { cwd: string } | { gitDir: string },
       env: NodeJS.ProcessEnv = origin.env,
       sshKey?: string,
-    ): Promise<void> =>
-      pushWithToken(args, { location, publishTokens: tokens, sshKey, env });
+    ): Promise<void> => pushWithToken(args, { location, publishTokens: tokens, sshKey, env });
 
     async function worktreeHead(): Promise<string> {
       return (await runGit(["rev-parse", "HEAD"], { cwd: wt, env: origin.env })).trim();
@@ -184,9 +173,7 @@ describe("the pre-push hook", () => {
     });
 
     it("rejects a push to a missing remote and leaves no token file", async () => {
-      await expect(
-        push([join(tmp, "missing.git"), "HEAD:refs/heads/x"], { cwd: wt }),
-      ).rejects.toBeInstanceOf(GitError);
+      await expect(push([join(tmp, "missing.git"), "HEAD:refs/heads/x"], { cwd: wt })).rejects.toBeInstanceOf(GitError);
       expect(readdirSync(tokens)).toEqual([]);
     });
 

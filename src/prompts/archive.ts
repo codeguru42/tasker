@@ -11,11 +11,7 @@ export function promptVersion(name: string, template: string): string {
   return `${name}@${createHash("sha256").update(template).digest("hex").slice(0, 12)}`;
 }
 
-export function archivePrompt(
-  dataRoot: string,
-  name: string,
-  template: string,
-): { version: string; path: string } {
+export function archivePrompt(dataRoot: string, name: string, template: string): { version: string; path: string } {
   const version = promptVersion(name, template);
   const dir = dataRootLayout(dataRoot).prompts;
   const path = join(dir, `${version}.md`);

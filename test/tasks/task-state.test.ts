@@ -37,7 +37,9 @@ describe("taskById", () => {
 describe("assertTaskState", () => {
   it("passes in the state", () => {
     const { dataRoot, id } = seeded("approved");
-    withDataRootStore(dataRoot, (store) => expect(() => assertTaskState(taskById(store, id), "approved", "execute")).not.toThrow());
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => assertTaskState(taskById(store, id), "approved", "execute")).not.toThrow(),
+    );
   });
 
   it("throws in another state", () => {

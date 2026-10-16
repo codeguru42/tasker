@@ -1,12 +1,4 @@
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  realpathSync,
-  statSync,
-} from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { errnoCode } from "../../errno.js";
 import { canonicalPath } from "../../real-path.js";
@@ -38,9 +30,7 @@ function slugOrUndefined(value: string): string | undefined {
 // True when name is one safe ref part: a path slug, at most MAX_BRANCH_LENGTH long, not "HEAD".
 // Git accepts each such name, and none starts with "-".
 function isTaskBranch(name: string): boolean {
-  return (
-    slugOrUndefined(name) === name && name.length <= MAX_BRANCH_LENGTH && name !== "HEAD"
-  );
+  return slugOrUndefined(name) === name && name.length <= MAX_BRANCH_LENGTH && name !== "HEAD";
 }
 
 // Throws unless name has the shape that taskBranchName() makes: a short ref alone,
@@ -89,10 +79,7 @@ export function taskWorktreePath(worktrees: string, shortRef: string): string {
 }
 
 // The worktrees of the clone, without the bare clone itself.
-export async function listWorktrees(options: {
-  clone: string;
-  env: NodeJS.ProcessEnv;
-}): Promise<WorkspaceEntry[]> {
+export async function listWorktrees(options: { clone: string; env: NodeJS.ProcessEnv }): Promise<WorkspaceEntry[]> {
   const out = await runGit(["worktree", "list", "--porcelain", "-z"], {
     gitDir: options.clone,
     env: options.env,
@@ -167,9 +154,7 @@ export async function createTaskWorktree(options: {
     throw new Error(`the worktree is locked: ${target} (${entry.lockReason})`);
   }
   if (entry !== undefined && entry.taskRef !== branch) {
-    throw new Error(
-      `the worktree path has another branch: ${target} (${entry.taskRef ?? "detached"})`,
-    );
+    throw new Error(`the worktree path has another branch: ${target} (${entry.taskRef ?? "detached"})`);
   }
   if (entry !== undefined) {
     if (hasGitFile(target)) return "reused-worktree";

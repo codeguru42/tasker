@@ -42,18 +42,14 @@ describe("startTask with a held repo lock", () => {
         ask: () => Promise.reject(new Error("no question expected")),
         note: () => {},
       };
-      const first = await startTask(store, { ...request, repoLockWaitMs: 300_000 }).catch(
-        (caught: unknown) => caught,
-      );
+      const first = await startTask(store, { ...request, repoLockWaitMs: 300_000 }).catch((caught: unknown) => caught);
       expect(first).toBeInstanceOf(BootstrapFailedError);
       const failed = store.findLatestTask(fixture.repoKey, "codeguru42/tasker#5");
       expect(failed?.state).toBe("failed");
 
       const holder = startLockHolder(createDataRoot(fixture.dataRoot).database, repoLockName(fixture.repoKey));
       await holder.attempt;
-      const second = await startTask(store, { ...request, repoLockWaitMs: 300 }).catch(
-        (caught: unknown) => caught,
-      );
+      const second = await startTask(store, { ...request, repoLockWaitMs: 300 }).catch((caught: unknown) => caught);
 
       expect(second).toBeInstanceOf(LockBusyError);
       const task = store.findLatestTask(fixture.repoKey, "codeguru42/tasker#5");

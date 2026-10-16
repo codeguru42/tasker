@@ -32,30 +32,17 @@ export function createDataRoot(dataRoot: string): DataRootLayout {
 }
 
 // The folder of the files of one attempt. It makes no folder.
-export function taskArtifactsDir(
-  dataRoot: string,
-  task: Pick<Task, "issueKey" | "attempt">,
-): string {
-  return join(
-    dataRootLayout(dataRoot).artifacts,
-    pathSlug(task.issueKey),
-    `attempt-${task.attempt}`,
-  );
+export function taskArtifactsDir(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">): string {
+  return join(dataRootLayout(dataRoot).artifacts, pathSlug(task.issueKey), `attempt-${task.attempt}`);
 }
 
 // The folder of the assistant sessions of one attempt. It makes no folder.
-export function taskSessionsDir(
-  dataRoot: string,
-  task: Pick<Task, "issueKey" | "attempt">,
-): string {
+export function taskSessionsDir(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">): string {
   return join(taskArtifactsDir(dataRoot, task), "sessions");
 }
 
 // The folder of the logs of one attempt. It makes no folder.
-export function taskLogsDir(
-  dataRoot: string,
-  task: Pick<Task, "issueKey" | "attempt">,
-): string {
+export function taskLogsDir(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">): string {
   return join(taskArtifactsDir(dataRoot, task), "logs");
 }
 
@@ -75,27 +62,17 @@ export function verifyCommandLogPath(
 }
 
 // The folder of the plan files of one attempt. It makes no folder.
-export function taskPlansDir(
-  dataRoot: string,
-  task: Pick<Task, "issueKey" | "attempt">,
-): string {
+export function taskPlansDir(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">): string {
   return join(taskArtifactsDir(dataRoot, task), "plans");
 }
 
 // The plan file of one revision. Each reader takes the path from here. It makes no file.
-export function planRevisionPath(
-  dataRoot: string,
-  task: Pick<Task, "issueKey" | "attempt">,
-  version: number,
-): string {
+export function planRevisionPath(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">, version: number): string {
   return join(taskPlansDir(dataRoot, task), `v${version}.md`);
 }
 
 // The folder of the transcripts of one attempt. It makes no folder.
-export function taskTranscriptsDir(
-  dataRoot: string,
-  task: Pick<Task, "issueKey" | "attempt">,
-): string {
+export function taskTranscriptsDir(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">): string {
   return join(taskArtifactsDir(dataRoot, task), "transcripts");
 }
 

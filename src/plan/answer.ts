@@ -59,9 +59,7 @@ export function checkPlanAnswer(output: unknown): PlanCheck {
   answer.todos.forEach((todo, i) => {
     todo.depends_on.forEach((dependency, j) => {
       if (!todoIds.has(dependency)) {
-        problems.push(
-          `todos.${i}.depends_on.${j}: todo "${todo.id}" depends on unknown todo id "${dependency}"`,
-        );
+        problems.push(`todos.${i}.depends_on.${j}: todo "${todo.id}" depends on unknown todo id "${dependency}"`);
       }
     });
   });

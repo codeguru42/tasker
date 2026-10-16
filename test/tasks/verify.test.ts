@@ -7,9 +7,22 @@ import { verifyCommandLogPath, verifyRunDir } from "../../src/store/layout.js";
 import { verifyTask } from "../../src/tasks/verify.js";
 import { captureIo } from "../helpers/cli.js";
 import { readPidFile, waitUntil } from "../helpers/processes.js";
-import { databasePathOf, eventsOf, latestTaskOf, lockNames, readRunMarker, seedVerifyRun, withDataRootStore } from "../helpers/store.js";
+import {
+  databasePathOf,
+  eventsOf,
+  latestTaskOf,
+  lockNames,
+  readRunMarker,
+  seedVerifyRun,
+  withDataRootStore,
+} from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
-import { expectRefusedWithoutChange, taskRefOf, useVerifyFixture, type VerifyFixture } from "../helpers/task-fixtures.js";
+import {
+  expectRefusedWithoutChange,
+  taskRefOf,
+  useVerifyFixture,
+  type VerifyFixture,
+} from "../helpers/task-fixtures.js";
 
 // Runs verifyTask for the task of the fixture.
 async function runVerifyTask(fixture: VerifyFixture) {
@@ -41,9 +54,7 @@ describe("verifyTask checks", () => {
 
   it("refuses a task with no worktree", async () => {
     const fixture = await useVerifyFixture({ commands: ["true"] });
-    withDataRootStore(fixture.config.dataRoot, (store) =>
-      store.updateTask(fixture.task.id, { worktreePath: null }),
-    );
+    withDataRootStore(fixture.config.dataRoot, (store) => store.updateTask(fixture.task.id, { worktreePath: null }));
 
     await expectRefusedWithoutChange(
       fixture.started,
@@ -105,7 +116,12 @@ function failedRunOf(fixture: VerifyFixture, number = 1) {
   const { dataRoot, key } = fixture.started;
   const row = withDataRootStore(dataRoot, (store) => store.getVerifyRun(fixture.task.id, number));
   const last = eventsOf(dataRoot, key).at(-1);
-  return { row, state: latestTaskOf(dataRoot, key).state, event: last, error: (last?.data as { error?: string }).error };
+  return {
+    row,
+    state: latestTaskOf(dataRoot, key).state,
+    event: last,
+    error: (last?.data as { error?: string }).error,
+  };
 }
 
 describe("verifyTask command failure", () => {
@@ -218,7 +234,11 @@ describe("verifyTask uncommitted changes", () => {
     expect(result).toEqual({ exitCode: 1 });
     const found = failedRunOf(fixture);
     expect(found.state).toBe("failed");
-    expect(found.row).toMatchObject({ result: "dirty_after", commands: ["touch made-by-verify"], failingCommand: null });
+    expect(found.row).toMatchObject({
+      result: "dirty_after",
+      commands: ["touch made-by-verify"],
+      failingCommand: null,
+    });
     expect(found.error).toBe(message);
     expect(io.err.join("")).toBe(`${message}\n`);
   });

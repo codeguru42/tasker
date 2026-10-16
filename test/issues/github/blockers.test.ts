@@ -4,7 +4,13 @@ import { readGithubBlockers } from "../../../src/issues/github/blockers.js";
 import { GhError } from "../../../src/issues/github/run.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
 import { failureOf } from "../../helpers/errors.js";
-import { blockersGraphqlArgs as graphqlArgs, blockersNode as node, blockersPageJson as pageJson, fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import {
+  blockersGraphqlArgs as graphqlArgs,
+  blockersNode as node,
+  blockersPageJson as pageJson,
+  fakeGh,
+  ghTokenAnswer,
+} from "../../helpers/fake-gh.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
@@ -80,10 +86,7 @@ describe("readGithubBlockers", () => {
   });
 
   it.each([
-    [
-      "a page with more pages and no cursor",
-      [{ hasNextPage: true, endCursor: null }],
-    ],
+    ["a page with more pages and no cursor", [{ hasNextPage: true, endCursor: null }]],
     [
       "a second page that gives the same cursor again",
       [
@@ -93,7 +96,7 @@ describe("readGithubBlockers", () => {
     ],
   ])("gives bad output for %s", async (_name, pages) => {
     const answers = pages.map((pageInfo, index) => ({
-      args: graphqlArgs("octo", "repo", "7", index === 0 ? undefined : pages[index - 1].endCursor ?? undefined),
+      args: graphqlArgs("octo", "repo", "7", index === 0 ? undefined : (pages[index - 1].endCursor ?? undefined)),
       stdout: pageJson([], pageInfo),
     }));
     const fake = fakeWith(...answers);
@@ -119,10 +122,7 @@ describe("readGithubBlockers", () => {
     ["output that is not JSON", "not json"],
     ["an answer with no data", "{}"],
     ["an unknown state", pageJson([node(3, "DRAFT", "octo/repo")])],
-    [
-      "a node with no repository",
-      pageJson([{ number: 3, state: "OPEN" }]),
-    ],
+    ["a node with no repository", pageJson([{ number: 3, state: "OPEN" }])],
     ["a name that does not form a key", pageJson([node(3, "OPEN", "bad")])],
     ["a null blockedBy with no errors", JSON.stringify({ data: { repository: { issue: { blockedBy: null } } } })],
     ["errors that are not a list", JSON.stringify({ data: null, errors: "bad" })],
@@ -215,9 +215,7 @@ describe("readGithubBlockers", () => {
     });
     const error = await failureOf(readGithubBlockers(ref, "octo", fake.env), IssueReadError);
     expect(error.key).toBe("octo/repo#7");
-    expect(error.message).toBe(
-      "gh api graphql gave errors for octo/repo#7: Resource not accessible by integration",
-    );
+    expect(error.message).toBe("gh api graphql gave errors for octo/repo#7: Resource not accessible by integration");
   });
 
   it("gives the GraphQL errors when a node is null", async () => {

@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunOutcome } from "../../../src/assistant/provider.js";
 import { overageStopOf, quotaStopOf } from "../../../src/assistant/claude-code/quota.js";
-import { TEST_SESSION_ID, claudeOverageEvent, claudeRateLimitEvent, claudeSampleEvents, claudeSampleWithResult } from "../../helpers/fake-claude.js";
+import {
+  TEST_SESSION_ID,
+  claudeOverageEvent,
+  claudeRateLimitEvent,
+  claudeSampleEvents,
+  claudeSampleWithResult,
+} from "../../helpers/fake-claude.js";
 
 function outcomeWith(events: AssistantEvent[]): RunOutcome {
   return { kind: "success", sessionId: TEST_SESSION_ID, events, permissionDenials: [], usage: "unavailable" };
@@ -258,7 +264,11 @@ describe("quotaStopOf", () => {
 
   it("does not count a later allowed event", () => {
     const events = claudeSampleEvents("quota-stop");
-    events.splice(3, 0, claudeRateLimitEvent((info) => void (info["status"] = "allowed")));
+    events.splice(
+      3,
+      0,
+      claudeRateLimitEvent((info) => void (info["status"] = "allowed")),
+    );
 
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 1791906000 });
   });

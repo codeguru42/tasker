@@ -55,9 +55,7 @@ describe("parseConfig top level", () => {
   it("rejects a relative dataRoot", () => {
     const raw = validConfig();
     raw.dataRoot = "data";
-    expect(issuesOf(raw)).toContainEqual(
-      expect.stringMatching(/^dataRoot: must resolve to an absolute path/),
-    );
+    expect(issuesOf(raw)).toContainEqual(expect.stringMatching(/^dataRoot: must resolve to an absolute path/));
   });
 
   it("rejects a dataRoot with an undefined variable", () => {
@@ -72,8 +70,7 @@ describe("parseConfig top level", () => {
     ["repos", (raw: Record<string, unknown>) => delete raw.repos],
     [
       "limits.verifyTimeoutMin",
-      (raw: Record<string, unknown>) =>
-        delete (raw.limits as Record<string, unknown>).verifyTimeoutMin,
+      (raw: Record<string, unknown>) => delete (raw.limits as Record<string, unknown>).verifyTimeoutMin,
     ],
   ])("reports a missing %s", (path, remove) => {
     const raw = validConfig();
@@ -115,9 +112,7 @@ describe("parseConfig top level", () => {
     } catch (error) {
       const config = error as ConfigError;
       expect(config.issues).toHaveLength(2);
-      expect(config.message).toBe(
-        `Invalid configuration:\n${config.issues.map((line) => `  - ${line}`).join("\n")}`,
-      );
+      expect(config.message).toBe(`Invalid configuration:\n${config.issues.map((line) => `  - ${line}`).join("\n")}`);
       return;
     }
     throw new Error("expected parseConfig to throw");
@@ -210,9 +205,7 @@ describe("parseConfig repos", () => {
   it("rejects a defaultBaseBranch in the form refs/heads/<x>", () => {
     const raw = validConfig();
     raw.repos.tasker.defaultBaseBranch = "refs/heads/main";
-    expect(issuesOf(raw)).toContain(
-      BAD_DEFAULT_BASE_BRANCH,
-    );
+    expect(issuesOf(raw)).toContain(BAD_DEFAULT_BASE_BRANCH);
   });
 
   it("reports a bad defaultBaseBranch together with an error in another repo", () => {
@@ -222,9 +215,7 @@ describe("parseConfig repos", () => {
     raw.repos.other.defaultBaseBranch = "main";
     raw.repos.other.verify.commands = [];
     const issues = issuesOf(raw);
-    expect(issues).toContain(
-      BAD_DEFAULT_BASE_BRANCH,
-    );
+    expect(issues).toContain(BAD_DEFAULT_BASE_BRANCH);
     expectIssueAt(issues, "repos.other.verify.commands");
   });
 
@@ -290,9 +281,7 @@ describe("parseConfig issueTracker", () => {
   it("rejects an empty match", () => {
     const raw = validConfig();
     raw.repos.tasker.issueTracker.match = {};
-    expect(issuesOf(raw)).toContain(
-      "repos.tasker.issueTracker.match: must name labels or components",
-    );
+    expect(issuesOf(raw)).toContain("repos.tasker.issueTracker.match: must name labels or components");
   });
 
   it("rejects empty match labels", () => {
@@ -436,9 +425,7 @@ describe("parseConfig assistant", () => {
     it("adds no model issue when assistant is a string", () => {
       const raw = validConfig();
       raw.repos.tasker.assistant = "claude-code";
-      expect(issuesOf(raw)).toEqual([
-        "repos.tasker.assistant: Invalid input: expected object, received string",
-      ]);
+      expect(issuesOf(raw)).toEqual(["repos.tasker.assistant: Invalid input: expected object, received string"]);
     });
 
     it("adds no model issue when models is missing", () => {
@@ -605,10 +592,7 @@ describe.each(["verify", "bootstrap"])("parseConfig %s.env", (phase) => {
 describe("parseConfig named trackers", () => {
   const acme = { provider: "jira", updateOnStart: true, inProgressStatus: "In Progress" };
 
-  function withTracker(
-    issueTracker: Record<string, unknown>,
-    trackers: unknown = { acme },
-  ): Record<string, unknown> {
+  function withTracker(issueTracker: Record<string, unknown>, trackers: unknown = { acme }): Record<string, unknown> {
     const raw = validConfig();
     raw.trackers = trackers;
     raw.repos.tasker.issueTracker = issueTracker;

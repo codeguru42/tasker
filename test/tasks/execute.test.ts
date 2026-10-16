@@ -33,7 +33,12 @@ import {
   turnResultStream,
 } from "../helpers/plan.js";
 import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
-import { type ExecuteFixture, expectRefusedWithoutChange, taskRefOf, useExecuteFixture } from "../helpers/task-fixtures.js";
+import {
+  type ExecuteFixture,
+  expectRefusedWithoutChange,
+  taskRefOf,
+  useExecuteFixture,
+} from "../helpers/task-fixtures.js";
 
 // Runs executeTask for the task of the fixture. change replaces fields of the request.
 async function runExecute(fixture: ExecuteFixture, change: Partial<ExecuteRequest> = {}) {
@@ -78,7 +83,9 @@ async function expectRefused(
 describe("executeTask checks", () => {
   it("refuses a task that is not in approved", async () => {
     const fixture = await useExecuteFixture({});
-    withDataRootStore(fixture.config.dataRoot, (store) => transitionTask(store, fixture.task.id, "awaiting_plan_review"));
+    withDataRootStore(fixture.config.dataRoot, (store) =>
+      transitionTask(store, fixture.task.id, "awaiting_plan_review"),
+    );
 
     await expectRefused(
       fixture,
@@ -258,7 +265,10 @@ describe("executeTask turns", () => {
   });
 
   it("fails the task with the label when a turn reports blocked", async () => {
-    const fixture = await useExecuteFixture({ stream: turnResultStream("blocked", "No disk.") }, { answer: { todos: TODOS } });
+    const fixture = await useExecuteFixture(
+      { stream: turnResultStream("blocked", "No disk.") },
+      { answer: { todos: TODOS } },
+    );
 
     const { result, io } = await runExecute(fixture);
 

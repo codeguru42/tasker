@@ -1,9 +1,7 @@
 import { IssueKeyError, type IssueRef } from "./ref.js";
 import { ISSUE_NUMBER, JIRA_PROJECT, jiraShortRef, SITE_LABEL } from "./short-ref.js";
 
-const JIRA_KEY = new RegExp(
-  `^(?:(${SITE_LABEL}(?:\\.${SITE_LABEL})*)\\/browse\\/)?(${JIRA_PROJECT}-${ISSUE_NUMBER})$`,
-);
+const JIRA_KEY = new RegExp(`^(?:(${SITE_LABEL}(?:\\.${SITE_LABEL})*)\\/browse\\/)?(${JIRA_PROJECT}-${ISSUE_NUMBER})$`);
 
 export function parseJiraKey(rawKey: string, repoKey: string): IssueRef {
   const match = JIRA_KEY.exec(rawKey);

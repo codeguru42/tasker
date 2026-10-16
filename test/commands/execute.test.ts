@@ -57,7 +57,9 @@ describe("tasker execute", () => {
 
   it("refuses a task that is not in approved, with the message on stderr and no write", async () => {
     const fixture = await useExecuteFixture({ stream: turnResultStream("done") });
-    withDataRootStore(fixture.started.dataRoot, (store) => transitionTask(store, fixture.task.id, "awaiting_plan_review"));
+    withDataRootStore(fixture.started.dataRoot, (store) =>
+      transitionTask(store, fixture.task.id, "awaiting_plan_review"),
+    );
     const events = eventsOf(fixture.started.dataRoot, KEY);
 
     const result = await runExecute();

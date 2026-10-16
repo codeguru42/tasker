@@ -16,7 +16,14 @@ import type { ReconcileStrategy } from "../../../src/vcs/provider.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree, taskBranchName } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
-import { commitInWorktree, makeGitClone, makeGitOrigin, taskNames, type GitOrigin, writeGitFailAfter } from "../../helpers/git.js";
+import {
+  commitInWorktree,
+  makeGitClone,
+  makeGitOrigin,
+  taskNames,
+  type GitOrigin,
+  writeGitFailAfter,
+} from "../../helpers/git.js";
 
 describe("git reconcile", () => {
   let origin: GitOrigin;
@@ -52,10 +59,8 @@ describe("git reconcile", () => {
   const state = (extra: Partial<Parameters<typeof worktreeState>[0]> = {}) =>
     worktreeState({ clone, env, path, ...extra });
 
-  const reconcile = (
-    strategy: ReconcileStrategy,
-    extra: Partial<Parameters<typeof reconcileWorktree>[0]> = {},
-  ) => reconcileWorktree({ clone, env, path, baseRevision: BASE, strategy, ...extra });
+  const reconcile = (strategy: ReconcileStrategy, extra: Partial<Parameters<typeof reconcileWorktree>[0]> = {}) =>
+    reconcileWorktree({ clone, env, path, baseRevision: BASE, strategy, ...extra });
   // A task commit and a base commit that change the same file. It gives the base tip.
   const conflictSetup = async () => {
     await commitInWorktree(path, env, { file: "shared.txt", content: "task" });
@@ -63,18 +68,13 @@ describe("git reconcile", () => {
   };
   const onto = (extra: Partial<Parameters<typeof rebaseOnto>[0]> = {}) =>
     rebaseOnto({ clone, env, path, upstream: "", onto: BASE, ...extra });
-  const resync = (
-    strategy: ReconcileStrategy,
-    extra: Partial<Parameters<typeof resyncWorktree>[0]> = {},
-  ) => resyncWorktree({ clone, env, path, baseRevision: BASE, strategy, ...extra });
-  const restore = (
-    start: StartState,
-    extra: Partial<Parameters<typeof restoreWorktree>[0]> = {},
-  ) => restoreWorktree({ clone, env, path, start, ...extra });
+  const resync = (strategy: ReconcileStrategy, extra: Partial<Parameters<typeof resyncWorktree>[0]> = {}) =>
+    resyncWorktree({ clone, env, path, baseRevision: BASE, strategy, ...extra });
+  const restore = (start: StartState, extra: Partial<Parameters<typeof restoreWorktree>[0]> = {}) =>
+    restoreWorktree({ clone, env, path, start, ...extra });
   // Tells whether a rebase or a merge is in progress. It does not use the code under test.
   const inProgressNow = async () => {
-    const exists = async (name: string) =>
-      existsSync(resolve(target, await git("rev-parse", "--git-path", name)));
+    const exists = async (name: string) => existsSync(resolve(target, await git("rev-parse", "--git-path", name)));
     return {
       rebase: (await exists("rebase-merge")) || (await exists("rebase-apply")),
       merge: await exists("MERGE_HEAD"),
@@ -171,10 +171,7 @@ describe("git reconcile", () => {
       const start = await state();
       const plain = join(origin.dir, "plain");
       mkdirSync(plain);
-      const error = await failureOf(
-        restore({ head: start.head, branch: "main" }, { path: plain }),
-        Error,
-      );
+      const error = await failureOf(restore({ head: start.head, branch: "main" }, { path: plain }), Error);
       expect(error.message).toBe('not a task branch: "main"');
     });
 
@@ -187,11 +184,13 @@ describe("git reconcile", () => {
       const detachedHead = await git("rev-parse", "HEAD");
       // The failed checkout has already staged the removal of the base file.
       const error = await failureOf(restore(start), Error);
-      expect(error.message.startsWith(
-        `cannot restore the worktree: ${target}: HEAD is at ${detachedHead}, detached, 1 uncommitted changes. ` +
-          `Run these git commands in the worktree, in this order: ` +
-          `git checkout --force -B ${branch} ${start.head}: `,
-      )).toBe(true);
+      expect(
+        error.message.startsWith(
+          `cannot restore the worktree: ${target}: HEAD is at ${detachedHead}, detached, 1 uncommitted changes. ` +
+            `Run these git commands in the worktree, in this order: ` +
+            `git checkout --force -B ${branch} ${start.head}: `,
+        ),
+      ).toBe(true);
       expect(error.message).toContain(`${branch}.lock`);
       expect(error.message).not.toContain("git rebase --abort");
     });
@@ -278,9 +277,7 @@ describe("git reconcile", () => {
       const start = await state();
       const error = await failureOf(reconcile(strategy), ReconcileConflictError);
       expect(error.paths).toEqual(["shared.txt"]);
-      expect(error.message).toBe(
-        `the ${strategy} onto ${base} stopped on conflicts: ${target}: "shared.txt"`,
-      );
+      expect(error.message).toBe(`the ${strategy} onto ${base} stopped on conflicts: ${target}: "shared.txt"`);
       await expectAsBefore(start);
     });
   });
@@ -308,9 +305,7 @@ describe("git reconcile", () => {
       const start = await state();
       const error = await failureOf(onto({ upstream, onto: tip }), ReconcileConflictError);
       expect(error.paths).toEqual(["shared.txt"]);
-      expect(error.message).toBe(
-        `the rebase onto ${tip} stopped on conflicts: ${target}: "shared.txt"`,
-      );
+      expect(error.message).toBe(`the rebase onto ${tip} stopped on conflicts: ${target}: "shared.txt"`);
       await expectAsBefore(start);
     });
   });
@@ -393,9 +388,7 @@ describe("restoreCommands", () => {
   });
 
   it("checks out the branch again when the head is wrong", () => {
-    expect(restoreCommands(onBranch, { ...right, head: B })).toEqual([
-      `git checkout --force -B ${BRANCH} ${A}`,
-    ]);
+    expect(restoreCommands(onBranch, { ...right, head: B })).toEqual([`git checkout --force -B ${BRANCH} ${A}`]);
   });
 
   it("checks out the branch again when HEAD is detached", () => {
@@ -406,21 +399,15 @@ describe("restoreCommands", () => {
 
   it("detaches again when a detached start finds a branch", () => {
     const detached: StartState = { head: A, branch: undefined };
-    expect(restoreCommands(detached, { ...right, branch: BRANCH })).toEqual([
-      `git checkout --force --detach ${A}`,
-    ]);
+    expect(restoreCommands(detached, { ...right, branch: BRANCH })).toEqual([`git checkout --force --detach ${A}`]);
   });
 
   it("cleans untracked files", () => {
-    expect(restoreCommands(onBranch, { ...right, changes: [untracked] })).toEqual([
-      "git clean -fd",
-    ]);
+    expect(restoreCommands(onBranch, { ...right, changes: [untracked] })).toEqual(["git clean -fd"]);
   });
 
   it("resets tracked changes", () => {
-    expect(restoreCommands(onBranch, { ...right, changes: [tracked] })).toEqual([
-      "git reset --hard",
-    ]);
+    expect(restoreCommands(onBranch, { ...right, changes: [tracked] })).toEqual(["git reset --hard"]);
   });
 
   it("gives no reset when a checkout is in the list", () => {

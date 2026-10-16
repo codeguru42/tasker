@@ -17,12 +17,20 @@ describe("modelIssue", () => {
     expect(modelIssue("claude-code", model)).toBeUndefined();
   });
 
-  it.each(["gpt-5", "Opus", "claude-", "claude-Opus-5", "claude_opus", "opus[2m]", "opus [1m]", "opus[1m][1m]", "[1m]", " opus"])(
-    "rejects the claude-code model %j",
-    (model) => {
-      expect(modelIssue("claude-code", model)).toBe(`is not a claude-code model: ${model}`);
-    },
-  );
+  it.each([
+    "gpt-5",
+    "Opus",
+    "claude-",
+    "claude-Opus-5",
+    "claude_opus",
+    "opus[2m]",
+    "opus [1m]",
+    "opus[1m][1m]",
+    "[1m]",
+    " opus",
+  ])("rejects the claude-code model %j", (model) => {
+    expect(modelIssue("claude-code", model)).toBe(`is not a claude-code model: ${model}`);
+  });
 
   it.each(["copilot", "pi"] as const)("accepts every model for %s", (provider) => {
     expect(modelIssue(provider, "gpt-5")).toBeUndefined();

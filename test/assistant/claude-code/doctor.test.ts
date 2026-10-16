@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "../../../src/assistant/claude-code/doctor.js";
+import {
+  claudeModelCheck,
+  claudeVersionCheck,
+  sandboxProgramCheck,
+} from "../../../src/assistant/claude-code/doctor.js";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import { validConfig } from "../../helpers/config.js";
 import { useFakeClaude } from "../../helpers/fake-claude.js";
@@ -146,8 +150,10 @@ describe("the claude-code provider checks", () => {
   });
 
   it("gives one model check for a model", () => {
-    expect(createClaudeCodeProvider().modelChecks("opus").map((check) => check.name)).toEqual([
-      "claude model: opus",
-    ]);
+    expect(
+      createClaudeCodeProvider()
+        .modelChecks("opus")
+        .map((check) => check.name),
+    ).toEqual(["claude model: opus"]);
   });
 });
