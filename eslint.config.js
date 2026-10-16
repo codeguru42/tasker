@@ -64,7 +64,6 @@ export default tseslint.config(
   // removes that rule from this block.
   {
     rules: {
-      "@typescript-eslint/await-thenable": "off",
       "@typescript-eslint/prefer-nullish-coalescing": "off",
     },
   },

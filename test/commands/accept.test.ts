@@ -72,7 +72,7 @@ describe("accept", () => {
   it("accepts a task whose base is a local branch at the tip", async () => {
     const work = await useWorkReviewTask();
     await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: work.clone, env: work.env });
-    await appendBase(work, "refs/heads/x", "refs/heads/x");
+    appendBase(work, "refs/heads/x", "refs/heads/x");
     const tip = await revisionOf(work, "refs/heads/x");
 
     const result = await runAccept();
@@ -163,7 +163,7 @@ describe("a refused accept", () => {
     const work = await useWorkReviewTask();
     const head = await branchTipOf(work);
     await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: work.clone, env: work.env });
-    await appendBase(work, "refs/heads/x", "refs/heads/x");
+    appendBase(work, "refs/heads/x", "refs/heads/x");
     const tip = await addCloneCommit(work.clone, work.env, "x");
 
     await expectRefused(
@@ -174,7 +174,7 @@ describe("a refused accept", () => {
 
   it("refuses a base that origin does not have", async () => {
     const work = await useWorkReviewTask();
-    await appendBase(work, "gone", "refs/remotes/origin/gone");
+    appendBase(work, "gone", "refs/remotes/origin/gone");
 
     await expectRefused(
       work.dataRoot,
