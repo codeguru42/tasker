@@ -592,7 +592,7 @@ describe("executeTask push guard", () => {
 
   const pushMessage = async (fixture: ExecuteFixture): Promise<string> => {
     const sha = await fixture.started.origin.branchHead("main");
-    return `push detected on ${fixture.started.branch}: the tip of the branch on the remote moved from absent to ${sha}`;
+    return `push detected on ${fixture.started.branch}: the tip of the branch on the remote moved from absent to ${String(sha)}`;
   };
 
   it("fails the task and keeps the todo done when the tip moved after a done turn", async () => {

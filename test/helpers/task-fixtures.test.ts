@@ -55,7 +55,7 @@ describe("useStartFixture", () => {
     const fixture = await useStartFixture();
 
     expect(process.env.TASKER_CONFIG).toBe(fixture.configPath);
-    expect(process.env.PATH?.startsWith(`${fixture.gh.env.PATH}${delimiter}`)).toBe(true);
+    expect(process.env.PATH?.startsWith(`${String(fixture.gh.env.PATH)}${delimiter}`)).toBe(true);
   });
 
   it("answers the read of issue 5 through the fake gh", async () => {

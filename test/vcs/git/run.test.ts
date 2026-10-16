@@ -119,7 +119,7 @@ describe("runGit", () => {
     const error = await failureOf(
       runGit(["version"], {
         cwd: dir,
-        env: { ...env, PATH: `${binDir}:${env.PATH}` },
+        env: { ...env, PATH: `${binDir}:${String(env.PATH)}` },
         signal: AbortSignal.timeout(100),
       }),
       Error,

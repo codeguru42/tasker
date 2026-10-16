@@ -126,7 +126,9 @@ export function identityCheck(repo: GitDoctorRepo, timeoutMs = 5000): Check {
         { option: "authorEmail", key: "user.email", want: repo.config.authorEmail, found: email },
       ];
       const mismatches = fields
-        .filter((field) => field.want !== undefined && field.want !== field.found)
+        .filter(
+          (field): field is typeof field & { want: string } => field.want !== undefined && field.want !== field.found,
+        )
         .map((field) =>
           field.found === ""
             ? `vcs.config.${field.option} is "${field.want}", but a commit in the clone gets no ${field.key}`

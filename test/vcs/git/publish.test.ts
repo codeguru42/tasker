@@ -279,7 +279,7 @@ describe("publish, land and delete", () => {
 
         await expectRefusedWithNoPush(
           () => publish({ published: undefined }),
-          `${moved}: tasker never published it, origin has ${main}`,
+          `${moved}: tasker never published it, origin has ${String(main)}`,
           main,
         );
       });

@@ -71,7 +71,7 @@ export async function useStartFixture(
   ]);
   useProcessEnv({
     TASKER_CONFIG: written.path,
-    PATH: `${gh.env.PATH}${delimiter}${process.env.PATH}`,
+    PATH: `${String(gh.env.PATH)}${delimiter}${String(process.env.PATH)}`,
   });
   return { origin, dataRoot: written.dataRoot, configPath: written.path, gh, repoKey, config: loadConfig() };
 }

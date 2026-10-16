@@ -93,7 +93,7 @@ describe("gitVersionCheck", () => {
     const binDir = join(dir, "bin");
     writeFakeGit(binDir, "exec sleep 5");
     const started = Date.now();
-    const result = await gitVersionCheck(200).run({ ...env, PATH: `${binDir}:${env.PATH}` });
+    const result = await gitVersionCheck(200).run({ ...env, PATH: `${binDir}:${String(env.PATH)}` });
     expect(result).toEqual({ status: "error", detail: "the check did not finish in 200 ms" });
     expect(Date.now() - started).toBeLessThan(2000);
   });
@@ -270,7 +270,7 @@ describe("connectionCheck", () => {
     const ssh = fakeSsh(origin.dir, origin.env, "refuse");
     const result = await connectionCheck(repo(ssh.remote(origin.path), { sshKey: key })).run(ssh.env);
     expect(result.status).toBe("error");
-    const texts = `${result.detail}\n${result.remediation}`;
+    const texts = `${result.detail}\n${String(result.remediation)}`;
     expect(texts).not.toContain(key);
     expect(texts).not.toContain(name);
     expect(texts).not.toContain(userInfo().homedir);

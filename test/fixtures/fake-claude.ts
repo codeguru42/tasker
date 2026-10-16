@@ -62,7 +62,7 @@ if (!isVersion && turn.exec !== undefined) {
   const [program, ...programArgs] = turn.exec;
   const ran = spawnSync(program, programArgs, { cwd: process.cwd(), stdio: "ignore" });
   if (ran.status !== 0) {
-    await write(process.stderr, `fake claude: exec failed: ${ran.error?.message ?? `exit ${ran.status}`}\n`);
+    await write(process.stderr, `fake claude: exec failed: ${ran.error?.message ?? `exit ${String(ran.status)}`}\n`);
     process.exit(99);
   }
 }

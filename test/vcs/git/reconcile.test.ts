@@ -255,7 +255,7 @@ describe("git reconcile", () => {
       const bin = join(origin.dir, "bin");
       writeGitFailAfter(bin, "rebase");
       const error = await failureOf(
-        reconcile("rebase", { env: { ...env, PATH: `${bin}${delimiter}${process.env.PATH}` } }),
+        reconcile("rebase", { env: { ...env, PATH: `${bin}${delimiter}${String(process.env.PATH)}` } }),
         GitError,
       );
       expect(error.subcommand).toBe("rebase");

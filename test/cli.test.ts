@@ -21,7 +21,7 @@ describe("run", () => {
       program
         .command("sp")
         .option("--version <n>", "The plan version")
-        .action((options: { version?: string }) => io.stdout(`${options.version}\n`));
+        .action((options: { version?: string }) => io.stdout(`${String(options.version)}\n`));
     };
     const io = captureIo();
 

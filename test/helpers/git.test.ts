@@ -276,7 +276,7 @@ describe("sshKeyArgs", () => {
 describe("gitRecorderEnv", () => {
   it("puts the recorder first on the PATH of the base env and keeps the other values", () => {
     const dir = useTempDir("tasker-recorder-");
-    const base = { ...gitTestEnv(dir), PATH: `/other${delimiter}${process.env.PATH}`, MARK: "kept" };
+    const base = { ...gitTestEnv(dir), PATH: `/other${delimiter}${String(process.env.PATH)}`, MARK: "kept" };
     const { env, log } = gitRecorderEnv(dir, base);
     expect(env.PATH).toBe(`${join(dir, "gitbin")}${delimiter}${base.PATH}`);
     expect(env.MARK).toBe("kept");
@@ -285,7 +285,7 @@ describe("gitRecorderEnv", () => {
 
   it("logs each git call and runs the real git", async () => {
     const dir = useTempDir("tasker-recorder-");
-    const base = { ...gitTestEnv(dir), PATH: `/other${delimiter}${process.env.PATH}`, MARK: "kept" };
+    const base = { ...gitTestEnv(dir), PATH: `/other${delimiter}${String(process.env.PATH)}`, MARK: "kept" };
     const { env, log } = gitRecorderEnv(dir, base);
     const out = await runGit(["version"], { cwd: dir, env });
     expect(out).toMatch(/^git version /);

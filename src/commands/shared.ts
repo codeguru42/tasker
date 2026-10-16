@@ -29,7 +29,7 @@ export function fail(io: Io, message: string): never {
 // The caller keeps the raw strings, so that a very large number prints as the user typed it.
 export function wholeNumberOptionsOrFail(io: Io, options: Record<string, string | undefined>): void {
   const problems = Object.entries(options)
-    .filter(([, raw]) => raw !== undefined && !/^[1-9][0-9]*$/.test(raw))
+    .filter((entry): entry is [string, string] => entry[1] !== undefined && !/^[1-9][0-9]*$/.test(entry[1]))
     .map(([name, raw]) => `${name} must be a whole number of 1 or more: ${raw}`);
   if (problems.length > 0) fail(io, problems.join("\n"));
 }

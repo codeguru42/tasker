@@ -41,7 +41,7 @@ function endsWithNewline(path: string): boolean {
 function outcomeLine(result: GroupResult): string {
   if (result.timedOut) return `--- timed out: sent SIGTERM${result.killed ? ", then SIGKILL" : ""}`;
   if (result.signal !== null) return `--- signal ${result.signal}`;
-  return `--- exit code ${result.code}`;
+  return `--- exit code ${String(result.code)}`;
 }
 
 // Runs one command under /bin/bash in cwd until the deadline. The log gets the command line,
@@ -91,7 +91,7 @@ export function commandFailureMessage(phase: string, result: CommandFailure, log
       : result.timedOut
         ? `timed out after ${timeoutMin} min`
         : result.signal === undefined
-          ? `exit code ${result.exitCode}`
+          ? `exit code ${String(result.exitCode)}`
           : `stopped by signal ${result.signal}`;
   return `${phase} command ${result.index} failed: ${result.command}: ${outcome}. The log is ${log}.`;
 }

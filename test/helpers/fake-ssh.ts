@@ -67,7 +67,7 @@ export function fakeSsh(dir: string, baseEnv: NodeJS.ProcessEnv, mode: FakeSshMo
   const logPath = join(dir, "ssh.log");
   writeFakeSsh(binDir, logPath, mode);
   return {
-    env: { ...baseEnv, PATH: `${binDir}${delimiter}${process.env.PATH}` },
+    env: { ...baseEnv, PATH: `${binDir}${delimiter}${String(process.env.PATH)}` },
     logPath,
     remote: (path) => `ssh://tasker.invalid${path}`,
   };

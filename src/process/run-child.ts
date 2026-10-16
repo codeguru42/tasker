@@ -114,6 +114,6 @@ export function childFailureMessage(
   signal: NodeJS.Signals | null,
   stderr: string,
 ): string {
-  if (code === null) return `${tool} ${subcommand} was stopped by signal ${signal}`;
+  if (code === null) return `${tool} ${subcommand} was stopped by signal ${String(signal)}`;
   return `${tool} ${subcommand} failed with exit code ${code}${detailSuffix(stderr.trim())}`;
 }

@@ -329,8 +329,8 @@ describe("prepareTaskExecuteRun", () => {
       expectedRule("NotebookEdit", `${wt}/**`),
       "Agent",
       "Task",
-      expectedRule("Read", `${env.HOME}/.claude/skills/**`),
-      expectedRule("Read", `${env.HOME}/.claude/plugins/**`),
+      expectedRule("Read", `${String(env.HOME)}/.claude/skills/**`),
+      expectedRule("Read", `${String(env.HOME)}/.claude/plugins/**`),
     ]);
     expect(flagValues(argv, "--disallowedTools")).toEqual([
       "Bash(git push:*)",
@@ -471,8 +471,8 @@ describe("prepareTaskExecuteRun", () => {
 
       expect(rules).toEqual(
         expect.arrayContaining([
-          expectedRule("Read", `${env.HOME}/.claude/skills/**`),
-          expectedRule("Read", `${env.HOME}/.claude/plugins/**`),
+          expectedRule("Read", `${String(env.HOME)}/.claude/skills/**`),
+          expectedRule("Read", `${String(env.HOME)}/.claude/plugins/**`),
         ]),
       );
     });

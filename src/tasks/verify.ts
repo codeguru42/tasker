@@ -37,9 +37,11 @@ export async function verifyTask(store: TaskStore, request: VerifyRequest): Prom
 }
 
 // What the outcome step found. A fail outcome records no verify run. A record outcome does.
+type RecordedRun = Omit<NewVerifyRun, "endedAt">;
 type VerifyOutcome =
   | { kind: "fail"; message: string }
-  | { kind: "record"; run: Omit<NewVerifyRun, "endedAt">; to: TaskState; message?: string };
+  | { kind: "record"; run: RecordedRun; to: "failed"; message: string }
+  | { kind: "record"; run: RecordedRun; to: Exclude<TaskState, "failed"> };
 
 async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<VerifyTaskResult> {
   const { config, env, io } = request;
@@ -135,14 +137,13 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
   }
   if (outcome.kind === "fail") return failRun(store, task, io, outcome.message);
 
-  const failed = outcome.to === "failed";
   try {
     transitionWithVerifyRun(
       store,
       task.id,
       outcome.to,
       { ...outcome.run, endedAt: new Date().toISOString() },
-      failed ? { error: outcome.message } : undefined,
+      outcome.to === "failed" ? { error: outcome.message } : undefined,
     );
   } catch (error) {
     const reason = errorMessage(error);
@@ -150,12 +151,12 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
       store,
       task,
       io,
-      failed
+      outcome.to === "failed"
         ? `verifying failed: ${reason}`
         : `the verify commands passed, but the run could not be recorded: ${reason}`,
     );
   }
-  if (failed) {
+  if (outcome.to === "failed") {
     io.stderr(`${outcome.message}\n`);
     return { exitCode: 1 };
   }

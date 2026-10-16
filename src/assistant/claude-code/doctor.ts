@@ -33,7 +33,7 @@ export function claudeVersionCheck(timeoutMs = 5000): Check {
       const stderr = firstLine(child.stderr);
       return {
         status: "error",
-        detail: `claude --version exited ${child.code}${detailSuffix(stderr)}`,
+        detail: `claude --version exited ${String(child.code)}${detailSuffix(stderr)}`,
       };
     }
     return { status: "ok", detail: firstLine(child.stdout) };

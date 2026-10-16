@@ -75,7 +75,7 @@ function outcomeOf(
   const { result } = facts;
   if (result?.is_error === true) return fail(errorResultReason(result));
   if (run.code !== 0) {
-    return fail(`claude exited ${run.code}${detailSuffix(run.stderrTail.trim())}`);
+    return fail(`claude exited ${String(run.code)}${detailSuffix(run.stderrTail.trim())}`);
   }
   if (result === undefined) return fail("the assistant ended with no result");
   if (input.jsonSchema === undefined) return { kind: "success", ...base };

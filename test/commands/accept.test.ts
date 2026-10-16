@@ -20,7 +20,7 @@ const revisionOf = (work: Pick<WorkReviewTask, "clone" | "env">, ref: string) =>
   runGit(["rev-parse", ref], { gitDir: work.clone, env: work.env }).then((out) => out.trim());
 
 // The tip of the task branch in the clone.
-const branchTipOf = (work: WorkReviewTask) => revisionOf(work, `refs/heads/${work.task.branch}`);
+const branchTipOf = (work: WorkReviewTask) => revisionOf(work, `refs/heads/${String(work.task.branch)}`);
 
 // Appends a base event to the task.
 const appendBase = (work: WorkReviewTask, base: string, revision: string) =>
@@ -140,7 +140,7 @@ describe("a refused accept", () => {
 
     await expectRefused(
       work.dataRoot,
-      `the branch ${work.task.branch} (${head}) does not contain the tip of the base ${BASE} (${tip})\n`,
+      `the branch ${String(work.task.branch)} (${head}) does not contain the tip of the base ${BASE} (${tip})\n`,
     );
     expect(await revisionOf(work, BASE)).toBe(tip);
   });
@@ -155,7 +155,7 @@ describe("a refused accept", () => {
 
     await expectRefused(
       work.dataRoot,
-      `the branch ${work.task.branch} (${revision}) does not contain the tip of the base ${BASE} (${tip})\n`,
+      `the branch ${String(work.task.branch)} (${revision}) does not contain the tip of the base ${BASE} (${tip})\n`,
     );
   });
 
@@ -168,7 +168,7 @@ describe("a refused accept", () => {
 
     await expectRefused(
       work.dataRoot,
-      `the branch ${work.task.branch} (${head}) does not contain the tip of the base refs/heads/x (${tip})\n`,
+      `the branch ${String(work.task.branch)} (${head}) does not contain the tip of the base refs/heads/x (${tip})\n`,
     );
   });
 
