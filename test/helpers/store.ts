@@ -177,12 +177,9 @@ export function writeBootstrapLog(dataRoot: string, task: Pick<Task, "issueKey" 
   writeFileSync(path, text);
 }
 
-// The next number and the row of a verify run of task, with the defaults of a passed run of one command.
-function nextVerifyRunOf(
-  store: TaskStore,
-  taskId: number,
-  change: Partial<Omit<NewVerifyRun, "number">>,
-): NewVerifyRun {
+// A new verify run of task with the defaults of a passed run of one command. The number defaults to the next number
+// of the store. change replaces the defaults that it names, the number too.
+export function newVerifyRun(store: TaskStore, taskId: number, change: Partial<NewVerifyRun> = {}): NewVerifyRun {
   return {
     number: store.nextVerifyRun(taskId),
     result: "passed",
@@ -219,7 +216,7 @@ export function seedVerifyRun(
   logs?: readonly string[],
   state = "awaiting_work_review",
 ): VerifyRun {
-  const run = nextVerifyRunOf(store, task.id, change);
+  const run = newVerifyRun(store, task.id, change);
   writeVerifyLogs(dataRoot, task, run, logs);
   store.addVerifyRun(task.id, run, state);
   return store.getVerifyRun(task.id, run.number)!;
@@ -285,7 +282,7 @@ export function failVerifyRun(
   logs?: readonly string[],
   error = "verify failed: test",
 ): VerifyRun {
-  const run = nextVerifyRunOf(store, task.id, change);
+  const run = newVerifyRun(store, task.id, change);
   writeVerifyLogs(dataRoot, task, run, logs);
   store.startRun(task.id, "verifying");
   transitionWithVerifyRun(store, task.id, "failed", run, { error });
