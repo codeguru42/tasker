@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { type FindingEntry, formatFindings } from "../../src/review/findings-text.js";
+import { type FindingEntry, findingCountText, formatFindings } from "../../src/review/findings-text.js";
 import { reviewFinding, reviewFindingWithout } from "../helpers/review.js";
 
 function format(entries: readonly FindingEntry[]): string {
   return formatFindings(entries);
+}
+
+function countOf(count: number): string {
+  return findingCountText(count);
 }
 
 function entry(change: Partial<FindingEntry> = {}): FindingEntry {
@@ -68,5 +72,16 @@ describe("formatFindings", () => {
         "  failure scenario: A list of two items gives only the first one.\n" +
         "  status: open\n",
     );
+  });
+});
+
+describe("findingCountText", () => {
+  it.each([
+    [0, "no findings"],
+    [1, "1 finding"],
+    [2, "2 findings"],
+    [10, "10 findings"],
+  ])("gives the text of %i findings", (count, text) => {
+    expect(countOf(count)).toBe(text);
   });
 });
