@@ -66,17 +66,16 @@ The sandbox follows the rules in [Sandbox](#sandbox). Its write paths and its sh
 - The folder of the publish tokens of every configured repo. The version control gives it.
 - The configuration of tasker.
 
-With the key of any repo, the shell can push to that repo, because the network stays open. This is the reason for the items of every configured repo in the list. Each path of the list is absolute, because the shell runs in the worktree.
+With the key of any repo, the shell can push to that repo, because the network stays open (see the limits of [Sandbox](#sandbox)). This is the reason for the items of every configured repo in the list. Each path of the list is absolute, because the shell runs in the worktree.
 
 Each entry goes in only when the variables that name it are set. A path that does not exist still goes in the list. The `claude` program reads its own credentials outside the sandbox, so the list denies only the shell.
 
 ### The environment of the shell
 
-The filter of the phases drops the GitHub token and the ssh agent of the operator (see [phases.md](phases.md)). As a result, the shell of the assistant has no GitHub token and no ssh agent of the operator. The read deny list adds the ssh key and the publish tokens of every configured repo, so the shell cannot read them either.
+The filter of the phases drops the GitHub token and the ssh agent of the operator (see [phases.md](phases.md)). As a result, the shell of the assistant has no GitHub token and no ssh agent of the operator. The shell also cannot read the paths of the [read deny list](#the-execute-role).
 
-### The limits of these roles
+### The limits of the roles
 
-- The network stays open.
 - The assistant can read files that the lists do not name.
 - The plan mode lets the assistant write its plan file under the configuration folder of `claude`, outside the worktree.
 
@@ -132,7 +131,6 @@ Each setting has a reason:
 
 - `claude` must refuse to start when it cannot build the sandbox. A run with less confinement is the case that "refuse, never drop" forbids.
 - A command must never leave the sandbox. The setting that allows this is off. The schema of `claude` says that a command which asks to leave the sandbox is then ignored, and tasker relies on that text. No host test ran this case.
-- The network stays open to all domains, because the assistant must reach its own service and the package hosts.
 - The write and deny paths are those of the caller, and the provider adds none.
 
 The provider refuses a sandbox before it starts the program in three cases:
@@ -153,7 +151,7 @@ After each sandboxed run that reached the start, the provider removes these plac
 
 The limits of the sandbox:
 
-- The network stays open.
+- The network stays open to all domains, because the assistant must reach its own service and the package hosts.
 - Only the shell of the assistant is in the sandbox. The `claude` program is not.
 - A shell command can write `objects/`, `refs/` and `logs/` of the clone, because `git commit` needs them. See the known limit in [version-control.md](version-control.md#sandbox-write-paths).
 - While a sandboxed run is live, it holds a placeholder `config.lock` in the bare clone. The provision of another task in the same repo fails only when a value of the clone configuration changed while this file exists.
