@@ -77,8 +77,7 @@ describe.each(PROMPTS)("$name", ({ name, template, values, tags }) => {
   });
 
   it.each(Object.keys(values))("throws when the value of %s is missing", (token) => {
-    const rest = { ...values };
-    delete rest[token];
+    const rest = Object.fromEntries(Object.entries(values).filter(([name]) => name !== token));
 
     expect(() => fillTemplate(name, template, rest)).toThrow(`prompt ${name} needs a value for {{${token}}}`);
   });

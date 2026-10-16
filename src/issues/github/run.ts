@@ -58,14 +58,14 @@ function subcommandOf(args: readonly string[]): string {
 }
 
 // See the doc comment of runGh().
-const REMOVED_GH_VARS = [
+const REMOVED_GH_VARS: readonly string[] = [
   "GH_TOKEN",
   "GITHUB_TOKEN",
   "GH_ENTERPRISE_TOKEN",
   "GITHUB_ENTERPRISE_TOKEN",
   "GH_HOST",
   "GH_REPO",
-] as const;
+];
 
 // One read of the token for each account in this process. A failed read is not kept.
 // waiters counts the callers of runGh() that wait for the read. stop stops the token call.
@@ -143,10 +143,9 @@ export function readGhVersion(env: NodeJS.ProcessEnv, options: { signal?: AbortS
 
 // See the doc comment of runGh().
 function ghEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const result: NodeJS.ProcessEnv = { ...env };
-  for (const name of REMOVED_GH_VARS) {
-    delete result[name];
-  }
+  const result: NodeJS.ProcessEnv = Object.fromEntries(
+    Object.entries(env).filter(([name]) => !REMOVED_GH_VARS.includes(name)),
+  );
   return {
     ...result,
     GH_PROMPT_DISABLED: "1",

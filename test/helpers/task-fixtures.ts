@@ -52,15 +52,14 @@ export async function useStartFixture(
   const { origin } = provider;
   const repoKey = "codeguru42/tasker";
   const raw = validConfig();
-  const repo: Record<string, unknown> = {
-    ...raw.repos.tasker,
-    remote: options.remote ?? origin.path,
-    defaultBaseBranch: "main",
-    ...options.repo,
-  };
-  for (const [name, value] of Object.entries(repo)) {
-    if (value === undefined) delete repo[name];
-  }
+  const repo: Record<string, unknown> = Object.fromEntries(
+    Object.entries({
+      ...raw.repos.tasker,
+      remote: options.remote ?? origin.path,
+      defaultBaseBranch: "main",
+      ...options.repo,
+    }).filter(([, value]) => value !== undefined),
+  );
   raw.repos = { [repoKey]: repo };
   raw.limits = { ...raw.limits, ...options.limits };
   const written = writeDataRootConfig(raw);

@@ -14,8 +14,7 @@ export function reviewFinding(change: Partial<Finding> = {}): Finding {
 // reviewFinding() without the named keys.
 export function reviewFindingWithout<K extends keyof Finding>(...keys: K[]): Omit<Finding, K> {
   const finding: Partial<Finding> = reviewFinding();
-  for (const key of keys) delete finding[key];
-  return finding as Omit<Finding, K>;
+  return Object.fromEntries(Object.entries(finding).filter(([name]) => !keys.includes(name as K))) as Omit<Finding, K>;
 }
 
 export function validReviewAnswer(change: Partial<ReviewAnswer> = {}): ReviewAnswer {

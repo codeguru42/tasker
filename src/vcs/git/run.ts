@@ -46,7 +46,7 @@ const BATCH_SSH_COMMAND = "ssh -o BatchMode=yes";
 // The repo-local git variables. The list is the output of `git rev-parse --local-env-vars`
 // (git 2.47.3), plus GIT_NAMESPACE. Each of them can change the repo, the index or the
 // object store that git uses, or add configuration for this one run of git.
-const REPO_LOCAL_GIT_VARS = [
+const REPO_LOCAL_GIT_VARS: readonly string[] = [
   "GIT_ALTERNATE_OBJECT_DIRECTORIES",
   "GIT_CONFIG",
   "GIT_CONFIG_PARAMETERS",
@@ -63,7 +63,7 @@ const REPO_LOCAL_GIT_VARS = [
   "GIT_SHALLOW_FILE",
   "GIT_COMMON_DIR",
   "GIT_NAMESPACE",
-] as const;
+];
 
 // The pairs that GIT_CONFIG_COUNT counts. They go away with it.
 const CONFIG_PAIR_VAR = /^GIT_CONFIG_(KEY|VALUE)_\d+$/;
@@ -80,15 +80,11 @@ const CONFIG_PAIR_VAR = /^GIT_CONFIG_(KEY|VALUE)_\d+$/;
 // goes away, and GIT_SSH_COMMAND is set to the command. The command is the one of the
 // caller, or ssh in batch mode, which asks no question and fails instead.
 function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const result: NodeJS.ProcessEnv = { ...env, GIT_TERMINAL_PROMPT: "0" };
-  for (const name of REPO_LOCAL_GIT_VARS) {
-    delete result[name];
-  }
-  for (const name of Object.keys(result)) {
-    if (CONFIG_PAIR_VAR.test(name)) {
-      delete result[name];
-    }
-  }
+  const result: NodeJS.ProcessEnv = Object.fromEntries(
+    Object.entries({ ...env, GIT_TERMINAL_PROMPT: "0" }).filter(
+      ([name]) => !REPO_LOCAL_GIT_VARS.includes(name) && !CONFIG_PAIR_VAR.test(name),
+    ),
+  );
   const command = gitSshCommand(env);
   if (command === undefined) {
     delete result.GIT_SSH_COMMAND; // an empty value; the GIT_SSH of the caller stays
