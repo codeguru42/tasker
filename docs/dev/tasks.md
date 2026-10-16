@@ -185,20 +185,21 @@ These reasons explain its rules:
 
 `tasker dismiss-review` dismisses open findings of the latest review of a task in `reviewed`, with one reason. It runs in this order:
 
-1. Take the task lock, with no wait.
-2. Read the task again. Make sure that it is in `reviewed`.
-3. Make sure that the reason is not empty.
-4. Read the latest review. Make sure that the task has one.
-5. With `--finding`, make sure that each named position exists and is open. Without it, take every open position. Make sure that at least one position is open.
-6. Write the dismissals, the `review_dismissed` event and, when no finding is open, the move to `awaiting_work_review`, in one transaction.
+1. Read the task again, and make sure that it is in `reviewed`.
+2. Make sure that the reason is not empty.
+3. Read the latest review, and make sure that the task has one.
+4. With `--finding`, make sure that each named position exists and is open. Without it, take every open position, and make sure that at least one exists.
+5. Write the dismissals and the `review_dismissed` event in one transaction. If no finding is open after that, the move to `awaiting_work_review` is part of the same transaction.
 
-These reasons explain its rules:
+These links give the rules:
 
-- The command makes all its checks before the first write, so a refused command writes nothing. One line for each bad position shows the user every problem in one run.
-- The `--finding` checks come before tasker reads the configuration, because they need no task.
-- The move and the dismissals share one transaction, so a task cannot stay in `reviewed` with no open finding.
 - [data-root.md](data-root.md#review_findings-table) gives the rule for the reason and the rule for an open finding.
 - The next review does not report a declined finding again. [assistants.md](assistants.md#the-review-prompt-and-the-findings-answer) gives the rule.
+
+The command has these limits:
+
+- A dismissal acts only on the findings of the latest review.
+- No command sends the findings of a review to a plan yet.
 
 ## Retry
 
@@ -248,6 +249,6 @@ These reasons explain its rules:
 - A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
 - The plan reads the title and the body of the issue. It does not read the comments.
 - `tasker retry` resumes a task in `failed` for the origins of its table. No command resumes a task in `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`, and a second `tasker execute` works only on a task in `approved`.
-- No command resumes a review that failed or stopped yet (`tasker retry` M8, `tasker resume` M9). `tasker dismiss-review` is the only command that acts on the findings of a review yet. No command sends the findings to a plan yet.
+- No command resumes a review that failed or stopped yet (`tasker retry` M8, `tasker resume` M9).
 - Layer 3 of the push guard cannot see a push that moves the tip and then moves it back within one turn. It compares only the tips before and after.
 - The base can move after the check of `tasker accept`. Then `tasker merge` fails, and nothing moves on `origin`.
