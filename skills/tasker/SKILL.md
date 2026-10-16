@@ -468,6 +468,33 @@ The base can move on `origin` after `tasker accept`. Then the land fails, nothin
 
 A crash during the command leaves the task in `merging` with its run marker.
 
+### `tasker mark-landed`
+
+Records that the work of a task in the state `accepted`, `pushed` or `in_peer_review` already landed on the base branch outside tasker: `tasker mark-landed <issue>`. The task goes to the state `landed`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+The command fetches `origin`. Then it reads the tip of the task branch in the clone and makes sure that the tip of the base contains it. For a local base, the tip is the tip of the local branch in the clone. The command never pushes.
+
+On success, the command prints the line `marked <issue key> landed at <revision>` on stdout. The revision is the tip of the task branch.
+
+The command writes one event of the type `marked_landed` with the data `{ revision, baseTip, from, to }`. It writes no `transition` event.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is in another state. The error is `the task of <issue key> is in <state>; tasker mark-landed needs accepted, pushed or in_peer_review`.
+- The task has no branch. The error is `the task of <issue key> has no branch`.
+- The task has no base. The error is `the task of <issue key> has no base`.
+- The task has no base revision. The error is `the task of <issue key> has no base revision`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- Another command holds the clone for more than 5 minutes. The error says that the lock is busy. Run the command again.
+- The fetch or the read of the base fails, for example because `origin` has no such base. The error is `cannot read the base tip: <error>`.
+- The base does not contain the task branch. The error is `the branch <branch> (<revision>) is not on the base <base revision> (<base tip>)`. The base revision is the ref that the check compared, for example `refs/remotes/origin/main`.
+
+A fetch that ran still moves the refs of `origin` in the clone, also when the command stops with an error.
+
 ### `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.

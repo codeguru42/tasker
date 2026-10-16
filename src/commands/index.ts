@@ -4,6 +4,7 @@ import { accept } from "./accept.js";
 import { approve } from "./approve.js";
 import { doctor } from "./doctor.js";
 import { execute } from "./execute.js";
+import { markLanded } from "./mark-landed.js";
 import { merge } from "./merge.js";
 import { model } from "./model.js";
 import { show } from "./show.js";
@@ -43,6 +44,7 @@ export const commands: RegisterCommand[] = [
   retry,
   accept,
   merge,
+  markLanded,
   abort,
   status,
   doctor,
