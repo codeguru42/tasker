@@ -87,7 +87,7 @@ Runs the assistant in plan mode for a task in `workspace_ready`, and records the
 
 ### `tasker refine`
 
-Continues the plan session of a task in `awaiting_plan_review` or `reviewed`, and records the next plan revision. See [the reference](references/plan.md#tasker-refine).
+Continues the plan session of a task in `awaiting_plan_review`, `reviewed` or `failed`, and records the next plan revision. See [the reference](references/plan.md#tasker-refine).
 
 ### `tasker approve`
 

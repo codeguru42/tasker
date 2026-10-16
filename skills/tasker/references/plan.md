@@ -56,11 +56,13 @@ The warning and the notes only inform. They never stop the command, and they nev
 
 ## `tasker refine`
 
-Continues the plan session of a task in the state `awaiting_plan_review` or `reviewed`, and records the next plan revision: `tasker refine <issue> [<feedback>]`. The task goes to the state `refining`, then to `awaiting_plan_review`.
+Continues the plan session of a task in the state `awaiting_plan_review`, `reviewed` or `failed`, and records the next plan revision: `tasker refine <issue> [<feedback>]`. The task goes to the state `refining`, then to `awaiting_plan_review`.
 
 In `reviewed`, the open findings of the latest review go to the plan session, so that the next revision fixes them. The revision has the source `review`. The findings stay open, and the next review decides if the work fixed them.
 
-`[<feedback>]` is your feedback on the newest plan revision. Quote it as one argument. It is required in `awaiting_plan_review`. In `reviewed`, it is optional and is your guidance on the open findings.
+In `failed`, the task must have a plan revision. The context gives the state that the task left when it failed and the error of the failure. Your feedback is the instruction for the fix. The revision has the source `refine`.
+
+`[<feedback>]` is your feedback on the newest plan revision. Quote it as one argument. It is required in `awaiting_plan_review` and in `failed`. In `reviewed`, it is optional and is your guidance on the open findings.
 
 Each revision is a complete plan. When the new revision leaves out a question of the revision before it, that question counts as answered by the feedback. `tasker show-questions` shows the answer. A promotion from `reviewed` with no feedback gives that question no answer text. `tasker show-questions` then prints `answered in v<N>`.
 
@@ -72,9 +74,10 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 These errors leave the task in its state. The command writes nothing. The shared errors of no task, of the wrong state, of the task lock and of the prompt archive belong to this group:
 
-- The task is in `awaiting_plan_review` and you give no feedback. The error is `the feedback is missing; tasker refine needs it unless the task is in reviewed`.
+- The task is in `awaiting_plan_review` or `failed` and you give no feedback. The error is `the feedback is missing; tasker refine needs it unless the task is in reviewed`.
 - The feedback is empty or has only spaces. The error is `the feedback is empty`.
 - The task is in `reviewed`, and its latest review has no open finding or does not exist. The error is `the latest review of <issue> has no open finding; run tasker dismiss-review or tasker review`.
+- The task is in `failed` and has no plan revision. The error is `the task of <issue key> failed in <origin> and has no plan revision; run tasker retry <issue key>`.
 - The task has no plan revision or no plan session. The error says which one is missing.
 - The provider refuses the recorded model. The error names the session, the model, the provider and the reason.
 - The plan file of the newest revision cannot be read. The error is `cannot read the plan file <path> of revision v<N>: <error>`. Restore the file, then run the command again.
