@@ -129,7 +129,7 @@ To defer a ticket means that the user moves its issue to a later milestone, for 
 
 1. Tell the agent of the ticket to stop. A message to an agent that has ended starts it again (see "Terms" in "Quota"). The agent stops after its current `tasker` command ends. It runs no other `tasker` command. Before its final report, it removes the task worktree as [the own-worktree rule](#the-own-worktree-rule) says. The remove changes no task, and the task keeps its state. Then it gives its final report.
 2. Leave the task in its state. Do not run `tasker abort`, unless the user tells you to.
-3. Delete the job of the agent, as "Delete the job" in "Quota" says.
+3. Delete the jobs of the agent, as "Delete the job" in "Quota" says.
 4. Move the issue to the milestone that the user names: `gh issue edit <number> --milestone "<milestone>"`.
 5. Move the card of the ticket to Todo. The ticket waits in Todo of its new milestone.
 6. Post a comment on the issue that starts with `## Parked task`, with the findings of the final report, so that the next agent can start from them. Examples are the state of the task, the open plan questions, the answers so far and the facts that the agent tested.
@@ -586,11 +586,12 @@ If a case says that the orchestrator schedules the next job, the orchestrator fi
 
 ### Delete the job
 
-- When the agent reports that it ran `tasker finish`, for example in its final report, the orchestrator must delete the job of that ticket with CronDelete. A task in `landed` keeps its job and its slot until then, unless another bullet of this section applies, for example after a stop in the CI wait. A report of a failed run is not a stop, so the job stays until `tasker finish`.
-- When the orchestrator cancels an agent, the orchestrator must delete the job of that agent with CronDelete.
-- If an agent stops for another reason and the orchestrator does not start it again, the orchestrator must delete the job of that agent with CronDelete.
-- When the user defers a ticket that has a task in flight (see [the defer rule](#the-defer-rule)), the orchestrator must delete the job of that agent with CronDelete.
+- When the agent reports that it ran `tasker finish`, for example in its final report, the orchestrator must delete each job of that ticket whose id still lives with CronDelete. A task in `landed` keeps its jobs and its slot until then, unless another bullet of this section applies, for example after a stop in the CI wait. A report of a failed run is not a stop, so the jobs stay until `tasker finish`.
+- When the orchestrator cancels an agent, the orchestrator must delete each job of that agent whose id still lives with CronDelete.
+- If an agent stops for another reason and the orchestrator does not start it again, the orchestrator must delete each job of that agent whose id still lives with CronDelete.
+- When the user defers a ticket that has a task in flight (see [the defer rule](#the-defer-rule)), the orchestrator must delete each job of that agent whose id still lives with CronDelete.
 - In each of these cases, the orchestrator frees the slot of the agent. This also applies when the agent has no job. The schedule-all rule also leaves out this agent until the orchestrator starts it again, as "Schedule a job when an agent starts" says.
+- If CronDelete fails, the orchestrator tells the user the tool and the error. The job stays. When the job fires, the case of "When the job fires" for its state applies. An example is the case of a finished task, which schedules nothing.
 
 ### Do not use these
 
@@ -611,7 +612,7 @@ A handoff starts in one of two ways:
 After the start, the old orchestrator does these steps:
 
 1. Start no new ticket.
-2. Wait until each task in flight lands. For each landing, do the usual steps: delete the job (see [Delete the job](#delete-the-job)), do [the re-read rule](#the-re-read-rule) and do [the notice rule](#the-notice-rule). The reason: a job lives only in the session of the orchestrator (see [Terms](#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
+2. Wait until each task in flight lands. For each landing, do the usual steps: delete the jobs (see [Delete the job](#delete-the-job)), do [the re-read rule](#the-re-read-rule) and do [the notice rule](#the-notice-rule). The reason: a job lives only in the session of the orchestrator (see [Terms](#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
 3. Write the handoff file `$HOME/Documents/tasker/handoff/<date>-<role>.md`, for example `2026-10-15-docs-orchestrator.md`. If a file with that name exists, add a number, for example `2026-10-15-docs-orchestrator-2.md`.
 4. Give the path of the file in the reply to the user.
 
