@@ -480,12 +480,13 @@ The ban covers only the start of a ticket. A task in flight is not a start, so t
 
 ## Quota
 
-The quota belongs to the whole account. If a task stops in `quota_blocked`, the orchestrator and all the agents also have no tokens. No session can act until the quota resets. For this reason, the orchestrator must plan the resume before the quota runs out. The orchestrator does this with one cron job for each agent.
+The quota belongs to the whole account. If a task stops in `quota_blocked`, the orchestrator and all the agents also have no tokens. No session can act until the quota resets. For this reason, the orchestrator must plan the resume before the quota runs out. The orchestrator does this with up to two cron jobs for each agent: a five-hour job and a seven-day job.
 
 ### Terms
 
 - The reset time is the time when the quota of the account becomes available again. The quota resets at the exact reset time.
 - A cron job (a job, on this page) is a prompt that the orchestrator schedules for a time. A one-shot job fires one time and then deletes itself. A job fires only while the orchestrator is idle. A job lives only in the session of the orchestrator.
+- The five-hour job is the job for the five-hour reset time. The seven-day job is the job for the seven-day reset time. On this page, "an agent has a job", "has no job" and "an agent without a job" mean the five-hour job. A seven-day job alone does not count.
 - An agent is running while it works on its turn. An agent has ended when its turn is over, for example after a tasker command stops in `quota_blocked` or `interrupted`. A message to an agent that has ended starts the agent again, and the agent keeps its context.
 - `tasker show-quota` prints the last quota event of each repo as a JSON list. It has no `--json` flag. Each entry has `repo`, `provider`, `receivedAt` and `event`. `event` is the raw `rate_limit_event` of the assistant. For example:
 
@@ -501,30 +502,39 @@ The quota belongs to the whole account. If a task stops in `quota_blocked`, the 
   tasker show-quota | jq -r 'max_by(.receivedAt).event.rate_limit_info.unifiedWindows.five_hour.resetsAt'
   ```
 
-- The event is the last one that tasker saw, so its reset time can be in the past. A reset time in the past, or no entry, means "no reset time yet".
+- The orchestrator reads the seven-day reset time from the same entry, at `event.rate_limit_info.unifiedWindows.seven_day.resetsAt`. The value is in Unix seconds. For example:
+
+  ```bash
+  tasker show-quota | jq -r 'max_by(.receivedAt).event.rate_limit_info.unifiedWindows.seven_day.resetsAt'
+  ```
+
+- The event is the last one that tasker saw, so its reset time can be in the past. A reset time in the past, or no entry, means "no reset time yet". A seven-day reset time in the past, or no entry, means "no seven-day reset time yet".
 - The assistant sends a quota event early in each run, also when the usage is low. As a result, a reset time is known soon after a run starts.
 - If a task is in `quota_blocked`, `tasker show <issue>` prints the reset time of that stop in a line `resets at: <ISO time>`.
 
 ### The delay of each agent
 
-Each running agent has a slot and a delay. The delay is the number of minutes between the reset time and the job of the agent. The delays prevent a resume of all the agents at the same time.
+Each running agent has a slot and a delay. The delay is the number of minutes between a reset time and the job of the agent for that reset. The delays prevent a resume of all the agents at the same time.
 
 - There are 3 slots, one for each agent that can run at the same time. Slot 1 has a delay of 0 minutes. Slot 2 has a delay of 1 minute. Slot 3 has a delay of 2 minutes.
 - If the reset time falls on :00 or :30, the delay of each slot is 1 minute longer: 1, 2 and 3 minutes. The cron scheduler can fire a one-shot job on :00 or :30 up to 90 seconds early. That fire is before the reset, so it has no tokens, and the job is then gone.
-- The job time is the reset time plus the delay of the agent. The reset time falls on a full 10 minutes, for example 11:30. So the job time is a full minute.
+- The job time of a job is its reset time plus the delay of the agent. The reset time falls on a full 10 minutes, for example 11:30. So the job time is a full minute.
 - If the reset time is not a full minute, the orchestrator must round the job time up to the next full minute.
 - When the orchestrator starts an agent, the orchestrator must give the agent the free slot with the lowest number.
-- When the orchestrator schedules the next job for an agent, the agent keeps the same slot.
+- When the orchestrator schedules a job for an agent, a five-hour job or a seven-day job, the agent keeps the same slot.
 - The agent keeps its slot until the orchestrator frees it, as "Delete the job" says. Then the next agent that starts takes the slot.
 
 ### Schedule a job when an agent starts
 
 1. When the orchestrator starts an agent, the orchestrator must run `tasker show-quota` and read the reset time, as "Terms" says.
-2. If there is a reset time, the orchestrator must schedule a one-shot job for the job time of that agent. The orchestrator also follows the schedule-all rule in "When there is no reset time yet".
+2. If there is a reset time, the orchestrator must schedule a one-shot five-hour job for the job time of that agent. The orchestrator also follows the schedule-all rule in "When there is no reset time yet".
 3. If there is no reset time yet, the orchestrator starts the agent without a job and tells the agent that it has no job. For example, there is no reset time before the first run in the project. "When there is no reset time yet" gives the next steps.
 
 - When the orchestrator schedules a job, the prompt of the job must name the issue and the agent. The prompt must tell the orchestrator to do the steps of "When the job fires".
-- The orchestrator must keep the job id for each ticket.
+- The orchestrator must keep the id of each job of a ticket. A ticket has at most one five-hour job and one seven-day job.
+- For a seven-day job, the orchestrator must keep the seven-day reset time of the job with its id.
+- Each id, and the time stored with it, lives until its one-shot job fires or until CronDelete deletes it. A one-shot job deletes itself when it fires. After that, the ticket has no job of that kind.
+- A job that has not fired is a job whose id still lives.
 
 ### When there is no reset time yet
 
