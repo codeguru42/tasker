@@ -10,6 +10,7 @@ import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js"
 import { taskLockName } from "../../src/store/locks.js";
 import { NO_OWN_COMMITS } from "../../src/vcs/git/changes.js";
 import { runCommand } from "../helpers/cli.js";
+import { splitRoleModelsRepo } from "../helpers/config.js";
 import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
 import {
@@ -114,17 +115,7 @@ describe("refine", () => {
   });
 
   it("continues the recorded session with its recorded model, not the configured one", async () => {
-    const repo = {
-      assistant: {
-        provider: "claude-code",
-        models: {
-          plan: { model: "sonnet", effort: "low" },
-          execute: { model: "sonnet", effort: "medium" },
-          review: { model: "opus", effort: "high" },
-        },
-      },
-    };
-    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { repo });
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { repo: splitRoleModelsRepo() });
 
     const result = await runRefine();
 

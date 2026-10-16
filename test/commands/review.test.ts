@@ -7,6 +7,7 @@ import { formatFindings } from "../../src/review/findings-text.js";
 import { reviewTranscriptPath } from "../../src/store/layout.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
+import { splitRoleModelsRepo } from "../helpers/config.js";
 import { argAfter, claudeSample, useFakeClaudeOnPath } from "../helpers/fake-claude.js";
 import { answerStream, seedPlanRevision, transcriptLines } from "../helpers/plan.js";
 import { reviewFinding, validReviewAnswer } from "../helpers/review.js";
@@ -27,18 +28,6 @@ const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 
 const runReview = (key = KEY, ...extra: string[]) => runCommand(review, "review", key, ...extra);
-
-// The plan role uses sonnet and the review role uses opus, so the model of the run shows which role ran.
-const MODELS_REPO = {
-  assistant: {
-    provider: "claude-code",
-    models: {
-      plan: { model: "sonnet", effort: "low" },
-      execute: { model: "sonnet", effort: "medium" },
-      review: { model: "opus", effort: "high" },
-    },
-  },
-};
 
 // The tip of the task branch in the clone, read with git show-ref and not from HEAD of the worktree.
 const branchTipOf = (work: ReviewFixture) =>
@@ -66,7 +55,7 @@ describe("review", () => {
     const stream = answerStream(
       validReviewAnswer({ findings: [reviewFinding(), reviewFinding({ file: "src/b.ts" })] }),
     );
-    const work = await useReviewFixture({ stream }, { repo: MODELS_REPO });
+    const work = await useReviewFixture({ stream }, { repo: splitRoleModelsRepo() });
     const { dataRoot } = work;
     const revision = await branchTipOf(work);
     const before = eventsOf(dataRoot, KEY);
@@ -94,7 +83,7 @@ describe("review", () => {
   });
 
   it("runs a new session with the review model and gives the earlier reviews and the commits on stdin", async () => {
-    const work = await useReviewFixture({ stream: answerStream(validReviewAnswer()) }, { repo: MODELS_REPO });
+    const work = await useReviewFixture({ stream: answerStream(validReviewAnswer()) }, { repo: splitRoleModelsRepo() });
 
     const result = await runReview();
 

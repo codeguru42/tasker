@@ -7,6 +7,7 @@ import { IssueKeyError } from "../../src/issue-key/ref.js";
 import { resolveIssueKey } from "../../src/issue-key/resolve.js";
 import {
   issueKeyErrorMessage,
+  splitRoleModelsRepo,
   threeRepoConfig,
   useConfigFile,
   useThreeRepoDataRoot,
@@ -48,6 +49,26 @@ describe("threeRepoConfig", () => {
 
     expect(Object.keys(config.repos).sort()).toEqual(["codeguru42/other", "codeguru42/tasker", "fork"]);
     expect(config.repos.fork.issueTracker.project).toBe("codeguru42/tasker");
+  });
+});
+
+describe("splitRoleModelsRepo", () => {
+  it("passes parseConfig in the tasker repo, with a plan model that differs from the review model", () => {
+    const raw = validConfig();
+    raw.repos.tasker = { ...raw.repos.tasker, ...splitRoleModelsRepo() };
+
+    const { assistant } = parseConfig(raw, {}, "/home/me").repos.tasker;
+
+    expect(assistant.models.plan).toEqual({ model: "sonnet", effort: "low" });
+    expect(assistant.models.execute).toEqual({ model: "sonnet", effort: "medium" });
+    expect(assistant.models.review).toEqual({ model: "opus", effort: "high" });
+  });
+
+  it("gives a new object for each call", () => {
+    const first = splitRoleModelsRepo();
+    first.assistant.models.plan.model = "changed";
+
+    expect(splitRoleModelsRepo().assistant.models.plan.model).toBe("sonnet");
   });
 });
 

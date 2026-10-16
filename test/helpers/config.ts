@@ -45,6 +45,21 @@ export function writeTempConfig(raw: unknown): { dir: string; path: string } {
   return writeConfigFile(() => raw);
 }
 
+// The repo fields of a repo whose plan and review roles get different models (plan sonnet, review opus), so a test can
+// tell from the model of a run which role ran. A new object for each call, so a test can change it freely.
+export function splitRoleModelsRepo() {
+  return {
+    assistant: {
+      provider: "claude-code",
+      models: {
+        plan: { model: "sonnet", effort: "low" },
+        execute: { model: "sonnet", effort: "medium" },
+        review: { model: "opus", effort: "high" },
+      },
+    },
+  };
+}
+
 // Writes raw as config.json in a new temp dir, with dataRoot set to <dir>/data. The caller removes dir.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function writeDataRootConfig(raw: Record<string, any> = validConfig()): {
