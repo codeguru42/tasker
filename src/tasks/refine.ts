@@ -3,6 +3,7 @@ import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { archivePrompt } from "../prompts/archive.js";
 import {
+  failureContextText,
   openQuestionsText,
   PLAIN_REFINE_CONTEXT,
   promotionContextText,
@@ -10,6 +11,7 @@ import {
   REFINE_PROMPT_NAME,
 } from "../prompts/refine.js";
 import { fillTemplate } from "../prompts/template.js";
+import { failedOriginText, lastTransitionError } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
 import type { PlanRevisionSource, Task, TaskStore } from "../store/store.js";
@@ -31,7 +33,8 @@ export interface RefineRequest {
 }
 
 // Continues the plan session of the task with the feedback and records the next plan revision. A task in reviewed
-// needs no feedback: the open findings of its latest review go to the plan session.
+// needs no feedback: the open findings of its latest review go to the plan session. A task in failed needs the
+// feedback as its instruction for the fix: the origin and the error of the failure go to the plan session.
 // The task lock covers all the steps. It does not wait.
 export async function refineTask(store: TaskStore, request: RefineRequest): Promise<PlanResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => refineLocked(store, request));
@@ -50,6 +53,24 @@ function promotionContext(store: TaskStore, task: Task): string {
   return promotionContextText(review, open, store.latestVerifyRun(task.id)?.number);
 }
 
+// The context of a refine from failed: the origin and the error of the failure. The task needs a plan revision.
+function failureContext(store: TaskStore, task: Task): string {
+  const events = store.listEvents(task.id);
+  if (store.latestPlanRevision(task.id) === undefined) {
+    throw new Error(
+      `the task of ${task.issueKey} failed in ${failedOriginText(events)} and has no plan revision; run tasker retry ${task.issueKey}`,
+    );
+  }
+  return failureContextText(failedOriginText(events), lastTransitionError(events) ?? "");
+}
+
+// The context and the source of the plan revision of a refine, by the state of the task.
+function refineContext(store: TaskStore, task: Task): { context: string; source: PlanRevisionSource } {
+  if (task.state === "reviewed") return { context: promotionContext(store, task), source: "review" };
+  if (task.state === "failed") return { context: failureContext(store, task), source: "refine" };
+  return { context: PLAIN_REFINE_CONTEXT, source: "refine" };
+}
+
 async function refineLocked(store: TaskStore, request: RefineRequest): Promise<PlanResult> {
   const { config, env, io, feedback } = request;
   const task = taskInState(store, request.taskId, "refine");
@@ -58,8 +79,8 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
     throw new Error("the feedback is missing; tasker refine needs it unless the task is in reviewed");
   }
   if (feedback?.trim() === "") throw new Error("the feedback is empty");
-  const context = promotion ? promotionContext(store, task) : PLAIN_REFINE_CONTEXT;
-  return runRefine(store, { config, env, io, task, source: promotion ? "review" : "refine", context, feedback });
+  const { context, source } = refineContext(store, task);
+  return runRefine(store, { config, env, io, task, source, context, feedback });
 }
 
 export interface RefineRun {
