@@ -32,6 +32,7 @@ import {
   expectRefusedWithoutChange,
   landAcceptedTask,
   moveTaskThrough,
+  seedAcceptedTask,
   startIssueTask,
   startTaskWithCommits,
   taskBranchTipOf,
@@ -523,6 +524,30 @@ describe("landAcceptedTask", () => {
     await landAcceptedTask(accepted);
 
     expect(await accepted.origin.branchHead("main")).toBe(accepted.revision);
+  });
+});
+
+describe("seedAcceptedTask", () => {
+  it("seeds the task of issue 5 in accepted with the given branch and base", () => {
+    const dataRoot = useTempDir("tasker-seed-accepted-");
+
+    const task = seedAcceptedTask({ dataRoot }, { branch: "tasker/five", base: "main" });
+
+    expect(task).toMatchObject({
+      issueKey: "codeguru42/tasker#5",
+      repoKey: "codeguru42/tasker",
+      state: "accepted",
+      branch: "tasker/five",
+      base: "main",
+    });
+    expect(latestTaskOf(dataRoot, "codeguru42/tasker#5").id).toBe(task.id);
+  });
+
+  it("leaves the branch and the base empty when it gets none", () => {
+    const task = seedAcceptedTask({ dataRoot: useTempDir("tasker-seed-accepted-") });
+
+    expect(task.branch).toBeNull();
+    expect(task.base).toBeNull();
   });
 });
 

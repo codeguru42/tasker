@@ -7,18 +7,17 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
-  dayAt,
   databasePathOf,
   eventsOf,
   lastErrorOf,
   latestTaskOf,
   readRunMarker,
-  seedTasks,
   withDataRootStore,
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
   landAcceptedTask,
+  seedAcceptedTask,
   useAcceptedTask,
   useStartFixture,
   useWorkReviewTask,
@@ -39,10 +38,6 @@ const expectRefused = async (fixture: Pick<StartFixture, "dataRoot" | "origin">,
   expect(readRunMarker(databasePathOf(fixture.dataRoot), latestTaskOf(fixture.dataRoot, KEY).id)).toBeUndefined();
   expect(await fixture.origin.branchHead("main")).toBe(head);
 };
-
-// Seeds the task of issue 5 in accepted, with the given branch and base.
-const seedAccepted = (fixture: StartFixture, extra: { branch?: string; base?: string } = {}) =>
-  seedTasks(fixture.dataRoot, [{ issueKey: KEY, repoKey: REPO, state: "accepted", at: dayAt(1), ...extra }]);
 
 describe("tasker merge", () => {
   it("lands the work on the base of origin and moves the task to landed", async () => {
@@ -135,21 +130,21 @@ describe("tasker merge", () => {
 
     it("refuses a task with no branch", async () => {
       const fixture = await useStartFixture();
-      seedAccepted(fixture);
+      seedAcceptedTask(fixture);
 
       await expectRefused(fixture, `the task of ${KEY} has no branch\n`);
     });
 
     it("refuses a task with no base", async () => {
       const fixture = await useStartFixture();
-      seedAccepted(fixture, { branch: "tasker/five" });
+      seedAcceptedTask(fixture, { branch: "tasker/five" });
 
       await expectRefused(fixture, `the task of ${KEY} has no base\n`);
     });
 
     it("refuses a base that is a local branch of the clone", async () => {
       const fixture = await useStartFixture();
-      seedAccepted(fixture, { branch: "tasker/five", base: "refs/heads/x" });
+      seedAcceptedTask(fixture, { branch: "tasker/five", base: "refs/heads/x" });
 
       await expectRefused(
         fixture,
@@ -159,7 +154,7 @@ describe("tasker merge", () => {
 
     it("refuses a task with no base revision", async () => {
       const fixture = await useStartFixture();
-      seedAccepted(fixture, { branch: "tasker/five", base: "main" });
+      seedAcceptedTask(fixture, { branch: "tasker/five", base: "main" });
 
       await expectRefused(fixture, `the task of ${KEY} has no base revision\n`);
     });

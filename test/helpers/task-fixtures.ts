@@ -419,6 +419,16 @@ export async function useWorkReviewTask(
   return { ...fixture, key, task, clone: repoPaths(fixture.dataRoot, fixture.repoKey).clone, env: fixture.origin.env };
 }
 
+// Seeds the task of issue 5 in accepted, with the given branch and base.
+export function seedAcceptedTask(
+  fixture: Pick<StartFixture, "dataRoot">,
+  extra: { branch?: string; base?: string } = {},
+): Task {
+  return seedTasks(fixture.dataRoot, [
+    { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state: "accepted", at: dayAt(1), ...extra },
+  ])[0];
+}
+
 export interface AcceptedTask extends WorkReviewTask {
   // The tip of the task branch that tasker accept recorded.
   revision: string;
