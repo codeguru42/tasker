@@ -9,9 +9,9 @@ const ALL_KEYS = {
   doneStatus: "Done",
 };
 
-// Calls trackerTargets for a tracker of the provider with the keys. The cast gives a partial tracker.
-function targetsOf(provider: "github" | "jira", keys: Record<string, string> = {}) {
-  return trackerTargets({ provider, ...keys });
+// Calls trackerTargets for a tracker of the provider with the keys.
+function targetsOf(provider: RepoConfig["issueTracker"]["provider"], keys: Partial<typeof ALL_KEYS> = {}) {
+  return trackerTargets({ provider, updateOnStart: false, assignee: "@me", updateOnFinish: false, ...keys });
 }
 
 describe("trackerTargets", () => {
