@@ -243,7 +243,7 @@ These reasons explain its rules:
 
 `tasker mark-landed` records that the work of a task in `accepted`, `pushed` or `in_peer_review` already landed on the base branch outside tasker. The task goes to `landed`.
 
-The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the branch, the stored base and the base revision. A refused command leaves the task and the events as they were. Then it takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with `vcs.taskRefOnBase`. If the base does not contain the work, the command stops with an error. The last write is one transaction that appends one `marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`.
+The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the branch, the stored base and the base revision. A refused command leaves the task and the events as they were. Then it takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base does not contain the work, the command stops with an error. The last write is one transaction that appends one `marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`.
 
 These reasons explain its rules:
 
