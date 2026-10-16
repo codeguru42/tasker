@@ -202,9 +202,9 @@ The plan and the feedback of a refine run also stand in a tag, and the fill trea
 
 The open questions of a refine run also stand in an untrusted tag. The plan session writes them after it reads the issue text of a third party, so a question can carry injected text.
 
-The execute prompts use the same rule for these tags: `approved-plan`, `todos`, `resolved-questions`, `current-todo`, `verify-failure` and `verify-log`. The plan session wrote the plan, the todos and the questions from the issue text of a third party. The verify failure and its log can quote the output of code that the task wrote. The commit rules are not in a tag, because tasker writes them.
+The execute prompts use the same rule for these untrusted tags: `approved-plan`, `todos`, `resolved-questions`, `current-todo`, `verify-failure` and `verify-log`. The plan session wrote the plan, the todos and the questions from the issue text of a third party. The verify failure and its log can quote code that the task wrote, and the output of that code. The commit rules are not in a tag, because tasker writes them.
 
-The review prompt uses two tags. The findings in `earlier-reviews` are untrusted, because earlier runs wrote them from the text of the branch. The block `branch-commits` is untrusted, because an execute run wrote it from the issue text of a third party.
+The findings in `earlier-reviews` of the review prompt are untrusted, because earlier runs wrote them from the text of the branch. The block `branch-commits` of the refine prompt and the review prompt is untrusted, because an execute run wrote it from the issue text of a third party.
 
 ### What the plan prompt asks for
 
@@ -226,8 +226,6 @@ The reasons for the design:
 - The whole plan goes in the first turn only. One session holds it.
 - The plan comes from the plan file. A fresh session has no memory of it.
 - The todos and the resolved questions go in the prompt. The execute session never sees the planning conversation.
-- The todos and the questions are in untrusted tags, because the plan session wrote them from the issue text of a third party.
-- The verify failure is untrusted data, because its output can quote code that the task wrote.
 - The turn prompts share their text in `EXECUTE_TURN_RULES`, and every execute block uses the data sentence of `SHARED_RULES`. As a result, one change updates every prompt.
 - The fix prompt spells out the rule texts and does not point at rule numbers. A fix turn can be the first turn of a resumed session, and that session never saw an `execute-todo` prompt.
 
@@ -239,7 +237,7 @@ The todos run in the order of their dependencies. The plan check refuses a depen
 
 Tasker reads the plan back from its plan file. As a result, the revision does not depend on how much of a long session the assistant still remembers.
 
-The branch commits go in the prompt. An execute run is a separate session, so the refine session has not seen them. Their work is done, and the revision plans only the work that is still needed. The commits are untrusted, because an execute run wrote them from the issue text of a third party.
+The branch commits go in the prompt. An execute run is a separate session, so the refine session has not seen them. Their work is done, and the revision plans only the work that is still needed.
 
 The answer is a complete revision, never a list of changes. A change list leaves the execute run with only part of the plan. The list `files_changed` covers the whole revision, for the same reason as in "What the plan prompt asks for".
 
