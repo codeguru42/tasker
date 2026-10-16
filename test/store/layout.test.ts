@@ -8,6 +8,7 @@ import {
   executeTranscriptPath,
   planRevisionPath,
   planTranscriptPath,
+  reviewTranscriptPath,
   taskArtifactsDir,
   taskLogsDir,
   taskPlansDir,
@@ -159,6 +160,21 @@ describe("planTranscriptPath", () => {
   it("makes no file and no folder", () => {
     const root = useTempDir("tasker-data-");
     const path = planTranscriptPath(root, { issueKey: "PROJ-7", attempt: 1 }, 1);
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
+  });
+});
+
+describe("reviewTranscriptPath", () => {
+  it("names the transcript of a review review-<N>.jsonl in the transcripts folder", () => {
+    expect(reviewTranscriptPath("/d", { issueKey: "codeguru42/tasker#10", attempt: 2 }, 3)).toBe(
+      "/d/artifacts/codeguru42-tasker-10/attempt-2/transcripts/review-3.jsonl",
+    );
+  });
+
+  it("makes no file and no folder", () => {
+    const root = useTempDir("tasker-data-");
+    const path = reviewTranscriptPath(root, { issueKey: "PROJ-7", attempt: 1 }, 1);
     expect(existsSync(path)).toBe(false);
     expect(existsSync(dataRootLayout(root).artifacts)).toBe(false);
   });
