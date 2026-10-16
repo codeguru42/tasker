@@ -2,11 +2,11 @@
 
 All code that starts `git` lives in `src/vcs/git/`.
 
+[workspaces.md](workspaces.md#reconcile) gives the rules of reconcile. [Doctor checks](#doctor-checks) gives the rules of the git doctor checks.
+
 ## The git folder
 
 No folder of `src/` outside `src/vcs/git/` starts git. A boundary test enforces this rule. The test has two known gaps: it cannot find a module name that the code builds at run time, and it cannot find a git name that the code builds at run time.
-
-[workspaces.md](workspaces.md#reconcile) gives the rules of reconcile. [Doctor checks](#doctor-checks) gives the rules of the git doctor checks.
 
 ## The provider interface
 
