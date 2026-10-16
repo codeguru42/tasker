@@ -62,7 +62,7 @@ A complete clone has no marker and is not cloned again. This is the path of a co
 - The cwd of `ls-remote` and `init` is the root of the file system, so a relative remote path resolves against `/` and names the same repo in `ls-remote` and in the fetch.
 - Provision uses `init --bare` and `remote add`, and not `git clone --bare`. `clone --bare` copies each remote branch to `refs/heads/*`, and these copies do not move on fetch, so they become old. In the clone of tasker, `refs/heads/*` holds only task branches. `HEAD` of the clone names a branch that does not exist, and no tasker code reads it. The default branch comes from the symbolic HEAD of the remote.
 - `--object-format=sha1` overrides `init.defaultObjectFormat` and `GIT_DEFAULT_HASH`, because a sha256 clone cannot fetch from a sha1 remote. tasker reads only 40-hex revisions, so a sha256 remote is out of scope.
-- `--prune` removes the remote-tracking refs of branches that the remote deleted. The fetch brings the tags that point into the fetched branches, as git does by default.
+- [The fetch](workspaces.md#the-fetch) gives the prune of the fetch. The fetch brings the tags that point into the fetched branches, as git does by default.
 
 A failure leaves files on disk. If a step after the `init` fails, the parent folder, the marker and the clone folder stay, with the clone folder in the state that the failed step left it. If the removal of the marker fails, the clone is complete, but the marker stays. In each case, the next provision takes the recovery path. A failed hook write on the path of a complete clone rejects before the fetch. That path has no marker, so the next provision takes it again, and the config writes of that run are already done.
 
@@ -70,7 +70,7 @@ A changed `remote` has these effects at the next provision:
 
 - Provision fetches from the new remote into the same clone.
 - The task branches in `refs/heads/*` and the objects of the old remote stay in the bare clone.
-- `git fetch --prune` removes the remote-tracking refs `refs/remotes/origin/*` that the new remote does not have. It updates the others to the new remote, with force, because the refspec starts with `+`.
+- The prune of the fetch removes each `refs/remotes/origin/*` ref that the new remote does not have (see [The fetch](workspaces.md#the-fetch)). The fetch updates the others to the new remote, with force, because the refspec starts with `+`.
 - A URL that a person set by hand in the clone goes back to the URL from the configuration.
 
 Provision finds a held lock from the `config.lock` file and never from the text of git. Every other git error passes through with the ssh key hidden (see [The ssh key](#the-ssh-key)).
