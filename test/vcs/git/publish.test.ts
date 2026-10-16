@@ -8,13 +8,14 @@ import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "../../../
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { taskBranchName } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
-import { readArgLog } from "../../helpers/fake-commands.js";
+import { readArgLog, realCommandPath } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
 import {
   NOT_TASK_BRANCHES,
   NO_TOKEN,
   addCloneCommit,
   gitCloneTokens,
+  gitBeforePushEnv,
   gitRecorderEnv,
   makeGitClone,
   makeGitOrigin,
@@ -340,12 +341,16 @@ describe("publish, land and delete", () => {
 
   describe("landOnBase", () => {
     it("lands a child of the base by fast-forward", async () => {
+      const tip = await origin.branchHead("main");
+      if (tip === undefined) throw new Error("origin has no main");
       const revision = await addCloneCommit(clone, env, BRANCH);
 
       await land({ revision });
 
       expect(await origin.branchHead("main")).toBe(revision);
-      expect(pushes()).toEqual([["push", "origin", `${revision}:refs/heads/main`]]);
+      expect(pushes()).toEqual([
+        ["push", `--force-with-lease=refs/heads/main:${tip}`, "origin", `${revision}:refs/heads/main`],
+      ]);
       expectNoTokenFile();
       await expectPushNeedsToken();
     });
@@ -410,6 +415,50 @@ describe("publish, land and delete", () => {
           },
           () => `the revision is not a full revision: "${short}"`,
         );
+      });
+    });
+
+    describe("when someone else changes the base after the tip read", () => {
+      it("refuses the push when someone deletes the base", async () => {
+        const revision = await addCloneCommit(clone, env, BRANCH);
+        const racing = gitBeforePushEnv(join(origin.dir, "before-push"), env, [
+          realCommandPath("git"),
+          "--git-dir",
+          origin.path,
+          "update-ref",
+          "-d",
+          "refs/heads/main",
+        ]);
+
+        const error = await failureOf(land({ revision, env: racing }), Error);
+
+        expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(true);
+        expect(error.message).toContain("stale info");
+        expect(await origin.branchHead("main")).toBeUndefined();
+        expectNoTokenFile();
+      });
+
+      it("refuses the push when someone moves the base", async () => {
+        const old = await origin.branchHead("main");
+        if (old === undefined) throw new Error("origin has no main");
+        await origin.addCommit("main");
+        await fetchOrigin({ clone, env, sshKey: undefined });
+        const revision = await addCloneCommit(clone, env, BRANCH);
+        const racing = gitBeforePushEnv(join(origin.dir, "before-push"), env, [
+          realCommandPath("git"),
+          "--git-dir",
+          origin.path,
+          "update-ref",
+          "refs/heads/main",
+          old,
+        ]);
+
+        const error = await failureOf(land({ revision, env: racing }), Error);
+
+        expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(true);
+        expect(error.message).toContain("stale info");
+        expect(await origin.branchHead("main")).toBe(old);
+        expectNoTokenFile();
       });
     });
 
