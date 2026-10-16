@@ -1,9 +1,8 @@
-import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { failureOf } from "../../helpers/errors.js";
 import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
-import { repoRoot } from "../../helpers/processes.js";
+import { startFixture } from "../../helpers/processes.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 // Fails when token is in the error: its text, its stack, any own property, or a cause.
@@ -132,18 +131,10 @@ describe("runGh", () => {
   });
 
   it("writes nothing to the terminal, also when gh fails", async () => {
-    const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
-      const child = spawn(process.execPath, ["--import", "tsx", "test/fixtures/gh-quiet.ts"], {
-        cwd: repoRoot,
-      });
-      let stdout = "";
-      let stderr = "";
-      child.stdout.on("data", (chunk) => (stdout += String(chunk)));
-      child.stderr.on("data", (chunk) => (stderr += String(chunk)));
-      child.on("error", reject);
-      child.on("close", (code) => resolve({ code, stdout, stderr }));
-    });
-    expect(result).toEqual({ code: 0, stdout: "", stderr: "" });
+    const child = startFixture("gh-quiet.ts", []);
+    await expect(child.exited).resolves.toEqual({ code: 0, signal: null });
+    expect(child.stdout()).toBe("");
+    expect(child.stderr()).toBe("");
   });
 
   describe("signal", () => {

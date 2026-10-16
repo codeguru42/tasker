@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -29,7 +28,7 @@ import {
   seedPlanSession,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { deadPid, repoRoot, startFixture, startWriteLockHolder } from "../helpers/processes.js";
+import { deadPid, startFixture, startWriteLockHolder } from "../helpers/processes.js";
 import {
   newReview,
   newVerifyRun,
@@ -2762,18 +2761,11 @@ describe("task store", () => {
   it("lets two processes write to one new database at once", async () => {
     const layout = createDataRoot(join(dir, "root"));
     const count = 300;
-    const run = (issueKey: string) =>
-      new Promise<{ code: number | null; stderr: string }>((resolve, reject) => {
-        const child = spawn(
-          process.execPath,
-          ["--import", "tsx", "test/fixtures/store-writer.ts", layout.database, issueKey, String(count)],
-          { cwd: repoRoot },
-        );
-        let stderr = "";
-        child.stderr.on("data", (chunk) => (stderr += String(chunk)));
-        child.on("error", reject);
-        child.on("close", (code) => resolve({ code, stderr }));
-      });
+    const run = async (issueKey: string) => {
+      const child = startFixture("store-writer.ts", [layout.database, issueKey, String(count)]);
+      const { code } = await child.exited;
+      return { code, stderr: child.stderr() };
+    };
 
     const results = await Promise.all([run("a/b#1"), run("a/b#2")]);
     for (const result of results) {

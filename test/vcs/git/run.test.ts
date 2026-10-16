@@ -1,11 +1,10 @@
-import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { GitError, GitNotInstalledError, gitSshCommand, isGitExit, runGit } from "../../../src/vcs/git/run.js";
 import { failureOf } from "../../helpers/errors.js";
 import { gitTestEnv, writeFakeGit } from "../../helpers/git.js";
-import { repoRoot } from "../../helpers/processes.js";
+import { startFixture } from "../../helpers/processes.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 describe("runGit", () => {
@@ -176,18 +175,10 @@ describe("runGit", () => {
   });
 
   it("writes nothing to the terminal, also when git fails", async () => {
-    const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
-      const child = spawn(process.execPath, ["--import", "tsx", "test/fixtures/git-quiet.ts"], {
-        cwd: repoRoot,
-      });
-      let stdout = "";
-      let stderr = "";
-      child.stdout.on("data", (chunk) => (stdout += String(chunk)));
-      child.stderr.on("data", (chunk) => (stderr += String(chunk)));
-      child.on("error", reject);
-      child.on("close", (code) => resolve({ code, stdout, stderr }));
-    });
-    expect(result).toEqual({ code: 0, stdout: "", stderr: "" });
+    const child = startFixture("git-quiet.ts", []);
+    await expect(child.exited).resolves.toEqual({ code: 0, signal: null });
+    expect(child.stdout()).toBe("");
+    expect(child.stderr()).toBe("");
   });
 });
 
