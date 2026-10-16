@@ -1,4 +1,4 @@
-import { acceptedStates, errorSentence, type TaskCommand } from "../state/commands.js";
+import { acceptedStates, acceptsState, errorSentence, type TaskCommand } from "../state/commands.js";
 import type { TaskState } from "../state/machine.js";
 import { baseRevisionOf } from "./base-revision.js";
 import { taskNotFound, type Task, type TaskStore } from "../store/store.js";
@@ -20,9 +20,9 @@ function statesText(states: readonly TaskState[]): string {
 // Throws when the state of the task is not one that the command accepts. The table of the commands of each state
 // gives these states. The command is the name of the tasker command.
 export function assertTaskState(task: Task, command: TaskCommand): void {
-  const allowed = acceptedStates(command);
-  if (!allowed.includes(task.state as TaskState)) {
-    const message = `the task of ${task.issueKey} is in ${task.state}; tasker ${command} needs ${statesText(allowed)}`;
+  if (!acceptsState(command, task.state)) {
+    const allowed = statesText(acceptedStates(command));
+    const message = `the task of ${task.issueKey} is in ${task.state}; tasker ${command} needs ${allowed}`;
     const sentence = errorSentence(task.state, task.issueKey);
     throw new Error(sentence === undefined ? message : `${message}. ${sentence}`);
   }

@@ -6,8 +6,8 @@ import { bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
 import { commandFailureMessage, readCommandLog } from "../phases/command-step.js";
 import { childEnv } from "../process/child-env.js";
 import { errorMessage } from "../error-message.js";
-import { acceptedStates } from "../state/commands.js";
-import { failedFrom, failTask, transitionTask, type TaskState } from "../state/machine.js";
+import { acceptsState } from "../state/commands.js";
+import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
@@ -65,7 +65,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
   // provisioning, so that rule stays here.
   const continues =
     active !== undefined &&
-    (acceptedStates("start").includes(active.state as TaskState) ||
+    (acceptsState("start", active.state) ||
       (active.state === "failed" && failedFrom(store, active.id) === "provisioning"));
   if (active !== undefined && !continues) return { started: false, task: active };
   if (active === undefined && issue.state === "closed") throw new Error(`the issue is closed: ${ref.key}`);

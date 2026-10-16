@@ -62,9 +62,14 @@ export function stateCommands(state: string): StateCommands | undefined {
   return isTaskState(state) ? STATE_COMMANDS[state] : undefined;
 }
 
+// True when the row of the state names the command. A terminal or unknown state has no row and gives false.
+export function acceptsState(command: TaskCommand, state: string): boolean {
+  return stateCommands(state)?.commands.includes(command) ?? false;
+}
+
 // The states whose row names the command, in the order of STATES.
 export function acceptedStates(command: TaskCommand): TaskState[] {
-  return STATES.filter((state) => STATE_COMMANDS[state]?.commands.includes(command) ?? false);
+  return STATES.filter((state) => acceptsState(command, state));
 }
 
 // The command as the user types it for the task of the issue key.

@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
-import { acceptedStates } from "../state/commands.js";
-import { transitionTask, type TaskState } from "../state/machine.js";
+import { acceptsState } from "../state/commands.js";
+import { transitionTask } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { cleanUpTaskWorkspace, findTaskWorkspace } from "./workspace-cleanup.js";
@@ -31,7 +31,7 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
   const { config, ref, report } = request;
   const task = store.getTask(request.taskId);
   if (task === undefined) throw new Error(`no task with the id ${request.taskId}`);
-  if (!acceptedStates("abort").includes(task.state as TaskState)) {
+  if (!acceptsState("abort", task.state)) {
     throw new Error(`the task of ${task.issueKey} is ${task.state}: tasker abort works only on an active task`);
   }
   const { vcs, ctx } = vcsForRepo(config, ref.repoKey, request.env);
