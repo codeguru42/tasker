@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { STATES, TERMINAL_STATES } from "../../src/state/machine.js";
-import { acceptedStates, showLines, stateCommands, type TaskCommand } from "../../src/state/commands.js";
+import { acceptedStates, nextCell, showLines, stateCommands, type TaskCommand } from "../../src/state/commands.js";
 import { helpText } from "../helpers/cli.js";
 import { expectedStateCommands } from "../helpers/state-commands.js";
 import { commandsInHelp } from "../skill-coverage.js";
@@ -88,5 +88,24 @@ describe("showLines", () => {
 
   it.each(["finished", "cancelled", "nonsense"])("gives no line for %s", (state) => {
     expect(showLines(state, key)).toEqual([]);
+  });
+});
+
+describe("nextCell", () => {
+  it("gives the primary command and the other commands for a state with a primary command", () => {
+    expect(nextCell("workspace_ready")).toBe("plan (also: abort)");
+    expect(nextCell("approved")).toBe("execute (also: unapprove, abort)");
+  });
+
+  it("gives the commands for a state with no primary command", () => {
+    expect(nextCell("awaiting_plan_review")).toBe("refine, approve, abort");
+  });
+
+  it("gives abort for a state that only aborts", () => {
+    expect(nextCell("executing")).toBe("abort");
+  });
+
+  it.each(["finished", "cancelled", "nonsense"])("gives an empty string for %s", (state) => {
+    expect(nextCell(state)).toBe("");
   });
 });

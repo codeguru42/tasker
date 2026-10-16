@@ -29,13 +29,13 @@ describe("status", () => {
       code: 0,
       err: "",
       out:
-        "ISSUE                REPO               STATE      UPDATED\n" +
-        "codeguru42/other#7   codeguru42/other   executing  2026-01-03T00:00:00.000Z\n" +
-        "codeguru42/tasker#5  codeguru42/tasker  planning   2026-01-02T00:00:00.000Z\n",
+        "ISSUE                REPO               STATE      UPDATED                   NEXT\n" +
+        "codeguru42/other#7   codeguru42/other   executing  2026-01-03T00:00:00.000Z  abort\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  planning   2026-01-02T00:00:00.000Z  abort\n",
     });
   });
 
-  it("prints the four columns, the newest change first and the higher id first on a tie", async () => {
+  it("prints the five columns, the newest change first and the higher id first on a tie", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(
       dataRoot,
@@ -59,12 +59,12 @@ describe("status", () => {
       code: 0,
       err: "",
       out:
-        "ISSUE                REPO               STATE      UPDATED\n" +
-        "codeguru42/tasker#5  codeguru42/tasker  planning   2026-01-04T00:00:00.000Z\n" +
-        "codeguru42/tasker#4  codeguru42/tasker  planning   2026-01-04T00:00:00.000Z\n" +
-        "codeguru42/tasker#2  codeguru42/tasker  planning   2026-01-03T00:00:00.000Z\n" +
-        "codeguru42/tasker#3  codeguru42/tasker  executing  2026-01-02T00:00:00.000Z\n" +
-        "codeguru42/tasker#1  codeguru42/tasker  planning   2026-01-01T00:00:00.000Z\n",
+        "ISSUE                REPO               STATE      UPDATED                   NEXT\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  planning   2026-01-04T00:00:00.000Z  abort\n" +
+        "codeguru42/tasker#4  codeguru42/tasker  planning   2026-01-04T00:00:00.000Z  abort\n" +
+        "codeguru42/tasker#2  codeguru42/tasker  planning   2026-01-03T00:00:00.000Z  abort\n" +
+        "codeguru42/tasker#3  codeguru42/tasker  executing  2026-01-02T00:00:00.000Z  abort\n" +
+        "codeguru42/tasker#1  codeguru42/tasker  planning   2026-01-01T00:00:00.000Z  abort\n",
     });
   });
 
@@ -95,6 +95,25 @@ describe("status", () => {
     expect(result).toEqual({ code: 0, err: "", out: "no tasks\n" });
   });
 
+  it("prints the next commands of the state in the last column", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "workspace_ready", at: dayAt(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "awaiting_plan_review", at: dayAt(3) },
+    ]);
+
+    const result = await runCommand(status, "status");
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "ISSUE                REPO               STATE                 UPDATED                   NEXT\n" +
+        "codeguru42/other#7   codeguru42/other   awaiting_plan_review  2026-01-03T00:00:00.000Z  refine, approve, abort\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  workspace_ready       2026-01-02T00:00:00.000Z  plan (also: abort)\n",
+    });
+  });
+
   it("lists only the tasks of the repo that --repo names", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
@@ -108,8 +127,8 @@ describe("status", () => {
       code: 0,
       err: "",
       out:
-        "ISSUE                REPO               STATE     UPDATED\n" +
-        "codeguru42/tasker#5  codeguru42/tasker  planning  2026-01-02T00:00:00.000Z\n",
+        "ISSUE                REPO               STATE     UPDATED                   NEXT\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  planning  2026-01-02T00:00:00.000Z  abort\n",
     });
   });
 
@@ -125,12 +144,12 @@ describe("status", () => {
   it.each([
     [
       "finished",
-      "ISSUE                REPO               STATE     UPDATED\n" +
+      "ISSUE                REPO               STATE     UPDATED                   NEXT\n" +
         "codeguru42/tasker#1  codeguru42/tasker  finished  2026-01-04T00:00:00.000Z\n",
     ],
     [
       "cancelled",
-      "ISSUE               REPO              STATE      UPDATED\n" +
+      "ISSUE               REPO              STATE      UPDATED                   NEXT\n" +
         "codeguru42/other#2  codeguru42/other  cancelled  2026-01-05T00:00:00.000Z\n",
     ],
   ])("lists only the %s tasks for --state", async (state, out) => {
@@ -172,8 +191,8 @@ describe("status", () => {
       code: 0,
       err: "",
       out:
-        "ISSUE                REPO               STATE     UPDATED\n" +
-        "codeguru42/tasker#5  codeguru42/tasker  planning  2026-01-02T00:00:00.000Z\n",
+        "ISSUE                REPO               STATE     UPDATED                   NEXT\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  planning  2026-01-02T00:00:00.000Z  abort\n",
     });
   });
 
@@ -191,8 +210,8 @@ describe("status", () => {
       code: 0,
       err: "",
       out:
-        "ISSUE               REPO              STATE      UPDATED\n" +
-        "codeguru42/other#7  codeguru42/other  executing  2026-01-03T00:00:00.000Z\n",
+        "ISSUE               REPO              STATE      UPDATED                   NEXT\n" +
+        "codeguru42/other#7  codeguru42/other  executing  2026-01-03T00:00:00.000Z  abort\n",
     });
   });
 
@@ -218,8 +237,8 @@ describe("status", () => {
       code: 0,
       err: "",
       out:
-        "ISSUE                REPO  STATE     UPDATED\n" +
-        "codeguru42/tasker#5  fork  planning  2026-01-03T00:00:00.000Z\n",
+        "ISSUE                REPO  STATE     UPDATED                   NEXT\n" +
+        "codeguru42/tasker#5  fork  planning  2026-01-03T00:00:00.000Z  abort\n",
     });
   });
 
@@ -236,7 +255,7 @@ describe("status", () => {
       code: 0,
       err: "",
       out:
-        "ISSUE               REPO              STATE      UPDATED\n" +
+        "ISSUE               REPO              STATE      UPDATED                   NEXT\n" +
         "codeguru42/other#7  codeguru42/other  cancelled  2026-01-02T00:00:00.000Z\n",
     });
   });
