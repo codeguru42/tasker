@@ -56,7 +56,9 @@ Cleans up a task in the state `landed` or `cleanup_failed`: `tasker finish <issu
 
 The command removes the worktree of the task. Then it deletes the local task branch. It moves the task to `finishing` before the first step, and to `finished` after the last step.
 
-The command prints one line on stdout for each step that ran: `removed the worktree <path>` and `deleted the branch <branch>`. A step with nothing to do prints no line. Then the command prints the line `finished <issue key>`.
+The command prints one line on stdout for each step that ran: `removed the worktree <path>` and `deleted the branch <branch>`. A step with nothing to do prints no line. If `issueTracker.updateOnFinish` is `true`, the command then marks the issue done on the tracker and prints `marked <issue key> done on the tracker`. At the end, the command prints the line `finished <issue key>`.
+
+If the write to the tracker fails, the exit code stays 0 and the task still goes to `finished`. The command prints the warning `warning: cannot mark <issue key> done on the tracker: <error>` on stderr. The error can span two lines. To finish the write, mark the issue done on the tracker yourself.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the task lock and of the clone lock belong to this group:
 

@@ -31,12 +31,27 @@ The command picks the base branch from the first source that has one:
 
 If you press Ctrl-C at the question, the command stops. The task goes to the state `failed` with the error `no answer: the question was cancelled`. Run the command again to continue it.
 
-The question and the notes of the base step go to stderr. As a result, stdout holds only the six lines.
+The question and the notes of the base step go to stderr. As a result, stdout holds only the six lines and the lines of the tracker writes.
+
+If `issueTracker.updateOnStart` is `true`, the command writes to the issue tracker after the task reaches `workspace_ready`. It prints one line on stdout for each write that works, after the six lines:
+
+- `assigned <issue key> to <assignee> on the tracker`
+- `marked <issue key> in progress on the tracker`
+
+If the configuration has no in-progress label, the command only assigns the issue and prints only the first line.
+
+A write that fails does not change the exit code, which stays 0, and does not change the task, which stays in `workspace_ready`. The command prints a warning on stderr at once, with the error of the tracker:
+
+- `warning: cannot assign <issue key> to <assignee> on the tracker: <error>`
+- `warning: cannot mark <issue key> in progress on the tracker: <error>`
+
+The error can span two lines. To finish the write, mark the issue on the tracker yourself.
 
 The command stops with exit code 1 and prints the error on stderr in these cases:
 
 - The configuration or the issue key is not valid. Fix it, then run the command again.
 - The issue does not exist, or it is closed and has no task. The error names the issue. Open the issue again or use another one.
+- The issue has no task, `issueTracker.updateOnStart` is `true`, you did not pass `--reclaim`, and the issue already has the in-progress label. The error is `the issue <issue key> already has the in-progress marker <label>. Pass --reclaim to start it anyway, or remove the marker on the tracker.` The command makes no task and no write. Pass `--reclaim`, or remove the label on the tracker.
 - Another start of the same issue is running. The error says that the lock is busy. Wait until it ends.
 - The base branch is not known and stdin is not a terminal. The error is `no base branch for <repo>: pass --base <branch> to tasker start, or set repos.<repo>.defaultBaseBranch`. Pass `--base <branch>` or set `defaultBaseBranch` for the repo.
 - A step fails. The task goes to the state `failed` with the error. Fix the cause, then run the command again.
