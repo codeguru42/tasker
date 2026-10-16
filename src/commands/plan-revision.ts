@@ -4,7 +4,8 @@ import type { Config } from "../config/schema.js";
 import { indented } from "../indented.js";
 import type { PlanResult } from "../tasks/plan-run.js";
 import type { PlanQuestionState, PlanRevision, Task, TaskStore } from "../store/store.js";
-import { fail, warnOverlaps } from "./shared.js";
+import type { IssueRef } from "../issue-key/ref.js";
+import { fail, orFailAsync, warnOverlaps, withIssueTaskAsync } from "./shared.js";
 
 export const VERSION_OPTION_DESCRIPTION =
   "Use this plan revision: a whole number of 1 or more. The default is the newest revision";
@@ -48,16 +49,17 @@ export function formatQuestions(states: PlanQuestionState[]): string {
 // The last lines of the overlap warning after a plan or a refine: the task waits in awaiting_plan_review for the approve.
 const PLAN_OVERLAP_LAST_LINES: readonly string[] = ["tasker does not refuse. Decide before you approve."];
 
-// Prints the lines of a new plan revision with firstLine first, then the overlap warning on stderr.
-// A result with exitCode stops the command: the run step already printed the message.
-export async function reportPlanRun(
+// Prints the lines of a new plan revision, with "<verb> <issue key> as revision v<N>" first, then the overlap warning on
+// stderr. A result with exitCode stops the command: the run step already printed the message.
+async function reportPlanRun(
   io: Io,
   config: Config,
   o: {
     command: "plan" | "refine" | "review";
     taskId: number;
     result: PlanResult;
-    firstLine: (version: number) => string;
+    verb: "planned" | "refined";
+    key: string;
   },
 ): Promise<void> {
   const { result } = o;
@@ -66,7 +68,7 @@ export async function reportPlanRun(
   }
   io.stdout(
     [
-      o.firstLine(result.version),
+      `${o.verb} ${o.key} as revision v${result.version}`,
       `plan: ${result.planPath}`,
       `prompt: ${result.promptPath}`,
       "todos:",
@@ -81,4 +83,27 @@ export async function reportPlanRun(
     env: process.env,
     lastLines: PLAN_OVERLAP_LAST_LINES,
   });
+}
+
+// Finds the task of the issue, runs the step that records a plan revision, and prints its lines.
+// tasker plan, tasker refine and the feedback form of tasker review use it.
+export async function runPlanCommand(
+  io: Io,
+  config: Config,
+  issue: string,
+  options: { repo?: string },
+  o: {
+    command: "plan" | "refine" | "review";
+    verb: "planned" | "refined";
+    run: (store: TaskStore, ref: IssueRef, taskId: number) => Promise<PlanResult>;
+  },
+): Promise<void> {
+  const { key, taskId, result } = await orFailAsync(io, () =>
+    withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
+      key: found.issueKey,
+      taskId: found.id,
+      result: await o.run(store, ref, found.id),
+    })),
+  );
+  await reportPlanRun(io, config, { command: o.command, taskId, result, verb: o.verb, key });
 }

@@ -1,11 +1,10 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { review } from "../../src/commands/review.js";
-import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js";
+import { planRevisionPath, planTranscriptPath, reviewTranscriptPath } from "../../src/store/layout.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
 import { REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
 import { formatFindings } from "../../src/review/findings-text.js";
-import { reviewTranscriptPath } from "../../src/store/layout.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
 import { TEST_SESSION_ID, argAfter, claudeSample } from "../helpers/fake-claude.js";

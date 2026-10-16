@@ -1,13 +1,7 @@
 import type { RegisterCommand } from "../cli.js";
 import { refineTask } from "../tasks/refine.js";
-import { reportPlanRun } from "./plan-revision.js";
-import {
-  ISSUE_ARGUMENT_DESCRIPTION,
-  loadConfigOrFail,
-  orFailAsync,
-  REPO_OPTION_DESCRIPTION,
-  withIssueTaskAsync,
-} from "./shared.js";
+import { runPlanCommand } from "./plan-revision.js";
+import { ISSUE_ARGUMENT_DESCRIPTION, loadConfigOrFail, REPO_OPTION_DESCRIPTION } from "./shared.js";
 
 export const refine: RegisterCommand = (program, io) => {
   program
@@ -23,18 +17,10 @@ export const refine: RegisterCommand = (program, io) => {
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .action(async (issue: string, feedback: string | undefined, options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
-      const { key, taskId, refined } = await orFailAsync(io, () =>
-        withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
-          key: found.issueKey,
-          taskId: found.id,
-          refined: await refineTask(store, { config, ref, taskId: found.id, feedback, env: process.env, io }),
-        })),
-      );
-      await reportPlanRun(io, config, {
+      await runPlanCommand(io, config, issue, options, {
         command: "refine",
-        taskId,
-        result: refined,
-        firstLine: (version) => `refined ${key} as revision v${version}`,
+        verb: "refined",
+        run: (store, ref, taskId) => refineTask(store, { config, ref, taskId, feedback, env: process.env, io }),
       });
     });
 };
