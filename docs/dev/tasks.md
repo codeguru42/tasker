@@ -20,7 +20,7 @@ The order follows what each step needs and what a failure can leave.
 
 Each start and each abort takes the task lock first and the repo lock second. No code takes a task lock while it holds a repo lock. As a result, two commands cannot wait for each other in a circle, so they cannot deadlock.
 
-The task lock does not wait. A second command for the same issue stops at once, because otherwise it repeats the work of the first one. The repo lock covers the steps that change the clone and the question for the base branch. The base step fetches first and asks only after the fetch, so the question falls inside the lock. The repo lock waits, because another task of the same repo usually holds it only for these short steps. The wait is long enough for a first fetch of a large repo.
+For each command that changes a task, the task lock does not wait. A second command for the same issue stops at once, because otherwise it repeats the work of the first one. The repo lock covers the steps that change the clone and the question for the base branch. The base step fetches first and asks only after the fetch, so the question falls inside the lock. The repo lock waits, because another task of the same repo usually holds it only for these short steps. The wait is long enough for a first fetch of a large repo.
 
 The rule that each command that changes a task takes the task lock has one home: [the locks table](data-root.md#locks-table).
 
@@ -76,7 +76,7 @@ The usage event and the move are two writes, not one. A crash between them leave
 
 `tasker plan` runs the assistant in plan mode in the worktree of a task in `workspace_ready`, and records the first plan revision. The task goes to `planning`, then to `awaiting_plan_review`.
 
-The steps run in this order, under the task lock. The command does not wait for the lock.
+The steps run in this order.
 
 1. The command makes all its checks and reads before the first write. A failure in this part changes no state, so the task stays in `workspace_ready`.
 2. The command records the session of the plan before it starts the assistant. [The session id](assistants.md#the-session-id) gives the reason. A task that already has a plan session continues it.
@@ -101,7 +101,7 @@ The read takes no repo lock. It changes nothing in the clone, and a wait for the
 
 `tasker refine` continues the plan session of a task in `awaiting_plan_review` with the feedback of the operator, and records the next plan revision. The task goes to `refining`, then back to `awaiting_plan_review`.
 
-The steps run in this order, under the task lock. The command does not wait for the lock.
+The steps run in this order.
 
 1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model. It makes these checks before any read of a file and before any write. A refused refine leaves the task, the files and the events as they were, so the operator can fix the cause and run the same command again.
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base revision and the commits of the task branch.
@@ -114,7 +114,7 @@ The steps run in this order, under the task lock. The command does not wait for 
 
 `tasker approve` approves the newest plan revision of a task in `awaiting_plan_review`. The task goes to `approved`.
 
-The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the pinned revision and the newest plan revision. A refused approve leaves the task, the revisions and the events as they were. The overlap warning comes after the checks and before the write.
+It makes all checks before any write: the task, the state, the pinned revision and the newest plan revision. A refused approve leaves the task, the revisions and the events as they were. The overlap warning comes after the checks and before the write.
 
 The write is one transaction. It sets the approval time of the revision, appends one `approved` event with the data `{ version, openQuestions, from, to }`, and moves the task to `approved`. The `approved` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
 
@@ -122,7 +122,7 @@ Open questions do not stop an approval. The operator decides, and the count in t
 
 The approval lives on the revision, not on the task. A task has one approved revision for each cycle, and an older approval stays when a newer revision is approved.
 
-`tasker unapprove` takes back the approval of a task in `approved`. The task goes back to `awaiting_plan_review`. The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state and the pinned revision. A refused unapprove leaves the task, the revisions and the events as they were.
+`tasker unapprove` takes back the approval of a task in `approved`. The task goes back to `awaiting_plan_review`. It makes all checks before any write: the task, the state and the pinned revision. A refused unapprove leaves the task, the revisions and the events as they were.
 
 The write is one transaction. It clears the approval time of the pinned revision, appends one `unapproved` event with the data `{ version, from, to }`, and moves the task to `awaiting_plan_review`. The `unapproved` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing. An older approved revision stays approved, because the command clears only the pinned one.
 
@@ -132,7 +132,7 @@ The command works only in `approved`. The state alone sets the limit "before exe
 
 `tasker execute` carries out the pinned plan revision of a task in `approved` in the execute session of the assistant. The task goes to `executing`, then to `executed`. The command runs one turn for each todo that is not `done`, in the dependency order. Then it runs the queued fix turn of the revision, when the store has one. The command does not run the verify commands.
 
-The steps run in this order, under the task lock. The command does not wait for the lock.
+The steps run in this order.
 
 1. The command makes all its checks before the first write: the state, the pinned revision, the plan file, the order of the todos, the base revision, the branch, the remote tip and the recorded model. The read of the remote tip gives the tip before the run. A refused execute leaves the task, the files and the events as they were.
 2. The command fills the prompts and archives only the prompts that the run sends. It records a new session only when the run has a turn.
@@ -218,7 +218,7 @@ The command has these limits:
 
 `tasker accept` records that a person accepts the work of a task in `awaiting_work_review`. The task goes to `accepted`.
 
-The command runs under the task lock and does not wait for the lock. It holds the repo lock for the fetch, as [the locks table](data-root.md#locks-table) requires. It makes all checks before any write: the task, the state, the worktree, the branch, the stored base revision and the fetch of `origin` with the read of the base tip. A refused accept leaves the task and the events as they were. The fetch can still move the refs of `origin` in the clone.
+It holds the repo lock for the fetch, as [the locks table](data-root.md#locks-table) requires. It makes all checks before any write: the task, the state, the worktree, the branch, the stored base revision and the fetch of `origin` with the read of the base tip. A refused accept leaves the task and the events as they were. The fetch can still move the refs of `origin` in the clone.
 
 The write is one transaction. It appends one `accepted` event with the data `{ revision, baseTip, from, to }` and moves the task to `accepted`. The `accepted` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
 
