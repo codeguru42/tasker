@@ -184,6 +184,24 @@ export async function fetchOrigin(o: {
   await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, sshKey);
 }
 
+// Fetches origin, then reads the tip of the task branch and the tip of the base. A bad base text or a bad branch name
+// causes no fetch. The fetch moves and prunes refs/remotes/origin/* in the clone, also when a later read fails.
+async function fetchTaskAndBaseTips(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  sshKey: string | undefined;
+  branch: string;
+  baseRevision: string;
+}): Promise<{ revision: string; baseTip: string }> {
+  const { clone, env, sshKey, branch, baseRevision } = o;
+  assertRevisionInput(baseRevision);
+  assertTaskBranch(branch);
+  await fetchOrigin({ clone, env, sshKey });
+  const revision = await taskBranchRevision({ clone, env, branch });
+  const baseTip = await resolveRevision({ clone, env, value: baseRevision });
+  return { revision, baseTip };
+}
+
 // Fetches origin, then reads the tip of the task branch and the tip of the base, and says whether the branch contains
 // the tip of the base. It reads the exact ref refs/heads/<branch> in the clone, not HEAD of a worktree, so it needs no
 // worktree. A bad base text or a bad branch name causes no fetch. The fetch moves and prunes refs/remotes/origin/* in
@@ -195,12 +213,7 @@ export async function fetchBaseContainment(o: {
   branch: string;
   baseRevision: string;
 }): Promise<BaseContainment> {
-  const { clone, env, sshKey, branch, baseRevision } = o;
-  assertRevisionInput(baseRevision);
-  assertTaskBranch(branch);
-  await fetchOrigin({ clone, env, sshKey });
-  const revision = await taskBranchRevision({ clone, env, branch });
-  const baseTip = await resolveRevision({ clone, env, value: baseRevision });
-  const contains = await isAncestor({ clone, env, ancestor: baseTip, descendant: revision });
+  const { revision, baseTip } = await fetchTaskAndBaseTips(o);
+  const contains = await isAncestor({ clone: o.clone, env: o.env, ancestor: baseTip, descendant: revision });
   return { revision, baseTip, contains };
 }
