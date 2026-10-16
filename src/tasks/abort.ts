@@ -5,6 +5,7 @@ import { canonicalPath } from "../real-path.js";
 import { isTerminalState, transitionTask } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
+import { cleanUpTaskWorkspace } from "./workspace-cleanup.js";
 import { uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
 
 export interface AbortRequest {
@@ -49,18 +50,13 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
     );
   }
   return withRepoLock(store, ref.repoKey, request.repoLockWaitMs, async () => {
-    if (entry !== undefined) {
-      if (changes.length > 0) {
-        await vcs.discardWorkspaceChanges(ctx, { path: entry.path });
-        report(`discarded the uncommitted changes of ${entry.path}`);
-      }
-      await vcs.removeWorkspace(ctx, { path: entry.path });
-      report(`removed the worktree ${entry.path}`);
+    if (entry !== undefined && changes.length > 0) {
+      await vcs.discardWorkspaceChanges(ctx, { path: entry.path });
+      report(`discarded the uncommitted changes of ${entry.path}`);
     }
-    if (task.branch !== null && (await vcs.taskRefExists(ctx, { taskRef: task.branch }))) {
-      await vcs.deleteTaskRef(ctx, { taskRef: task.branch });
-      report(`deleted the branch ${task.branch}`);
-    }
+    // The shared function lists the workspaces again under the repo lock. That list is the check that the target
+    // still exists.
+    await cleanUpTaskWorkspace(vcs, ctx, task, report);
     return transitionTask(store, task.id, "cancelled");
   });
 }
