@@ -145,6 +145,27 @@ export async function expectRefusedWithoutChange(
   return error;
 }
 
+// Runs run, expects exit code 1, no stdout and the error on stderr (the exact text, or a match of the RegExp), and
+// expects that the state and the events of the latest task of key did not change.
+export async function expectCommandRefused(
+  target: Pick<StartedTask, "dataRoot" | "key">,
+  run: () => Promise<{ code: number; out: string; err: string }>,
+  error: string | RegExp,
+): Promise<void> {
+  const { dataRoot, key } = target;
+  const state = latestTaskOf(dataRoot, key).state;
+  const events = eventsOf(dataRoot, key);
+
+  const result = await run();
+
+  expect(result.code).toBe(1);
+  expect(result.out).toBe("");
+  if (typeof error === "string") expect(result.err).toBe(error);
+  else expect(result.err).toMatch(error);
+  expect(latestTaskOf(dataRoot, key).state).toBe(state);
+  expect(eventsOf(dataRoot, key)).toEqual(events);
+}
+
 // Runs useStartFixture(options), then tasker start for issue 5. It makes no assertion, so a test
 // with a failing bootstrap can use it. Call it inside a test.
 export async function useStartedTask(options: Parameters<typeof useStartFixture>[0] = {}): Promise<StartedTask> {

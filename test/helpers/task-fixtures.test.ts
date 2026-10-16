@@ -23,6 +23,7 @@ import {
 } from "./store.js";
 import { useTempDir } from "./temp.js";
 import {
+  expectCommandRefused,
   expectNoAssistantRun,
   expectRefusedWithoutChange,
   moveTaskThrough,
@@ -392,6 +393,51 @@ describe("expectRefusedWithoutChange", () => {
     };
 
     await expect(expectRefusedWithoutChange(started, call, "refused")).rejects.toThrow();
+  });
+});
+
+describe("expectCommandRefused", () => {
+  const refused = (err: string) => () => Promise.resolve({ code: 1, out: "", err });
+
+  it("passes for a refusal with the exact error", async () => {
+    const started = await useStartedTask();
+
+    await expectCommandRefused(started, refused("refused: reason\n"), "refused: reason\n");
+  });
+
+  it("passes for a refusal whose error matches the RegExp", async () => {
+    const started = await useStartedTask();
+
+    await expectCommandRefused(started, refused("refused: reason\n"), /^refused: /);
+  });
+
+  it("fails when the error is not the exact text", async () => {
+    const started = await useStartedTask();
+
+    await expect(expectCommandRefused(started, refused("refused: reason\n"), "refused")).rejects.toThrow();
+  });
+
+  it("fails when the exit code is not 1 or stdout is not empty", async () => {
+    const started = await useStartedTask();
+
+    await expect(
+      expectCommandRefused(started, () => Promise.resolve({ code: 0, out: "", err: "x" }), "x"),
+    ).rejects.toThrow();
+    await expect(
+      expectCommandRefused(started, () => Promise.resolve({ code: 1, out: "y", err: "x" }), "x"),
+    ).rejects.toThrow();
+  });
+
+  it("fails when the run writes an event and returns code 1", async () => {
+    const started = await useStartedTask();
+    const run = async () => {
+      withDataRootStore(started.dataRoot, (store) =>
+        store.appendEvent(latestTaskOf(started.dataRoot, started.key).id, "note"),
+      );
+      return { code: 1, out: "", err: "x" };
+    };
+
+    await expect(expectCommandRefused(started, run, "x")).rejects.toThrow();
   });
 });
 

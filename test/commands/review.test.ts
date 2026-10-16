@@ -21,7 +21,7 @@ import {
   withDataRootStore,
   reviewSessionRows,
 } from "../helpers/store.js";
-import { useReviewFixture, useSeededTask, type ReviewFixture } from "../helpers/task-fixtures.js";
+import { expectCommandRefused, useReviewFixture, useSeededTask, type ReviewFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -219,16 +219,11 @@ describe("a review that does not finish", () => {
 describe("a refused review", () => {
   it("prints the error and changes nothing", async () => {
     const fixture = await useSeededTask({ stream: answerStream(validReviewAnswer()) }, { state: "workspace_ready" });
-    const before = eventsOf(fixture.dataRoot, KEY);
 
-    const result = await runReview();
-
-    expect(result).toEqual({
-      code: 1,
-      out: "",
-      err: `the task of ${KEY} is in workspace_ready; tasker review needs awaiting_work_review\n`,
-    });
-    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("workspace_ready");
-    expect(eventsOf(fixture.dataRoot, KEY)).toEqual(before);
+    await expectCommandRefused(
+      { dataRoot: fixture.dataRoot, key: KEY },
+      () => runReview(),
+      `the task of ${KEY} is in workspace_ready; tasker review needs awaiting_work_review\n`,
+    );
   });
 });

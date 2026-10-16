@@ -13,6 +13,7 @@ import {
 } from "../helpers/plan.js";
 import { eventsOf, failTaskFrom, failVerifyRun, latestTaskOf, withDataRootStore } from "../helpers/store.js";
 import {
+  expectCommandRefused,
   useExecuteFixture,
   usePlanFixture,
   useRefineFixture,
@@ -194,17 +195,12 @@ describe("tasker retry", () => {
   it("refuses a task that is not in failed and changes nothing", async () => {
     const fixture = await useVerifyFixture({ commands: ["true"] });
     const { dataRoot } = fixture.started;
-    const events = eventsOf(dataRoot, KEY);
 
-    const result = await runRetry();
-
-    expect(result).toEqual({
-      code: 1,
-      out: "",
-      err: `the task of ${KEY} is in executed; tasker retry needs failed\n`,
-    });
-    expect(latestTaskOf(dataRoot, KEY).state).toBe("executed");
-    expect(eventsOf(dataRoot, KEY)).toEqual(events);
+    await expectCommandRefused(
+      { dataRoot, key: KEY },
+      () => runRetry(),
+      `the task of ${KEY} is in executed; tasker retry needs failed\n`,
+    );
   });
 
   it("prints the description of the command and of its options for --help", async () => {

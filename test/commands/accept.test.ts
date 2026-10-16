@@ -7,7 +7,12 @@ import { runCommand } from "../helpers/cli.js";
 import { addCloneCommit, commitInWorktree } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { dayAt, databasePathOf, eventsOf, latestTaskOf, seedTasks, withDataRootStore } from "../helpers/store.js";
-import { useStartFixture, useWorkReviewTask, type WorkReviewTask } from "../helpers/task-fixtures.js";
+import {
+  expectCommandRefused,
+  useStartFixture,
+  useWorkReviewTask,
+  type WorkReviewTask,
+} from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -28,20 +33,9 @@ const appendBase = (work: WorkReviewTask, base: string, revision: string) =>
     store.appendEvent(work.task.id, "base", { base, revision, source: "explicit" }),
   );
 
-// Runs accept, expects exit code 1 and the error, and expects that the state and the events did not change.
-const expectRefused = async (dataRoot: string, error: string | RegExp) => {
-  const state = latestTaskOf(dataRoot, KEY).state;
-  const events = eventsOf(dataRoot, KEY);
-
-  const result = await runAccept();
-
-  expect(result.code).toBe(1);
-  expect(result.out).toBe("");
-  if (typeof error === "string") expect(result.err).toBe(error);
-  else expect(result.err).toMatch(error);
-  expect(latestTaskOf(dataRoot, KEY).state).toBe(state);
-  expect(eventsOf(dataRoot, KEY)).toEqual(events);
-};
+// Runs accept and expects a refusal that changes nothing.
+const expectRefused = (dataRoot: string, error: string | RegExp) =>
+  expectCommandRefused({ dataRoot, key: KEY }, () => runAccept(), error);
 
 describe("accept", () => {
   it("accepts a task whose branch contains the tip of the base", async () => {
