@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dismissReview } from "../../src/commands/dismiss-review.js";
 import { taskLockName } from "../../src/store/locks.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { useConfigFile, useThreeRepoDataRoot } from "../helpers/config.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { reviewFinding } from "../helpers/review.js";
@@ -22,6 +22,7 @@ const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 const REASON = "Not a bug.";
 const FINDING_ERROR = "--finding must be a list of whole numbers of 1 or more, separated by commas: ";
+const REPEATED_ERROR = "--finding given more than once; give all positions in one list, for example --finding 1,3";
 const NO_OPEN_LINE = "no open findings; the task is in awaiting_work_review\n";
 
 const runDismiss = (...args: string[]) => runCommand(dismissReview, "dismiss-review", KEY, ...args, "--repo", REPO);
@@ -82,7 +83,7 @@ describe("dismiss-review", () => {
   });
 
   it("dismisses some findings and keeps the task in reviewed", async () => {
-    const { dataRoot } = seedReviewed([THREE_FINDINGS]);
+    const { dataRoot, task } = seedReviewed([THREE_FINDINGS]);
 
     const result = await runDismiss(REASON, "--finding", "3,1");
 
@@ -96,6 +97,10 @@ describe("dismiss-review", () => {
       type: "review_dismissed",
       data: { number: 1, positions: [1, 3], reason: REASON },
     });
+    const [[first, second, third]] = dismissalsOf(dataRoot, task.id);
+    expect(first).not.toBeNull();
+    expect(second).toBeNull();
+    expect(third).not.toBeNull();
   });
 
   it("allows spaces around the items of --finding", async () => {
@@ -150,6 +155,15 @@ describe("dismiss-review", () => {
     expect(older).toEqual([null, null]);
     expect(latest.every((dismissed) => dismissed !== null)).toBe(true);
   });
+
+  it("prints the description of --finding for --help", async () => {
+    const { code, help } = await runHelp(dismissReview, "dismiss-review");
+
+    expect(code).toBe(0);
+    expect(help).toContain(
+      "Dismiss only the findings at these positions, as one list separated by commas, for example 1,3. Give the option one time.",
+    );
+  });
 });
 
 describe("a refused --finding", () => {
@@ -179,6 +193,44 @@ describe("a refused --finding", () => {
     const result = await runDismiss(REASON, "--finding", "0");
 
     expect(result).toEqual({ code: 1, out: "", err: `${FINDING_ERROR}0\n` });
+  });
+
+  it("refuses --finding given two times", async () => {
+    const { dataRoot, task } = seedReviewed();
+
+    await expectRefusedWithoutWrite(
+      { dataRoot, taskId: task.id },
+      [REASON, "--finding", "1", "--finding", "2"],
+      `${REPEATED_ERROR}\n`,
+    );
+  });
+
+  it("refuses --finding given three times", async () => {
+    const { dataRoot, task } = seedReviewed([THREE_FINDINGS]);
+
+    await expectRefusedWithoutWrite(
+      { dataRoot, taskId: task.id },
+      [REASON, "--finding", "1", "--finding", "2", "--finding", "3"],
+      `${REPEATED_ERROR}\n`,
+    );
+  });
+
+  it("reports a repeated --finding and a bad value in one run", async () => {
+    const { dataRoot, task } = seedReviewed();
+
+    await expectRefusedWithoutWrite(
+      { dataRoot, taskId: task.id },
+      [REASON, "--finding", "1", "--finding", "a"],
+      `${REPEATED_ERROR}\n${FINDING_ERROR}a\n`,
+    );
+  });
+
+  it("reads a repeated --finding before the configuration", async () => {
+    useConfigFile(() => "not json");
+
+    const result = await runDismiss(REASON, "--finding", "1", "--finding", "2");
+
+    expect(result).toEqual({ code: 1, out: "", err: `${REPEATED_ERROR}\n` });
   });
 });
 
