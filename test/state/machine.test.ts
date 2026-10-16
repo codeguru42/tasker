@@ -15,6 +15,7 @@ import {
   transitionTask,
   transitionWithAcceptance,
   transitionWithExecution,
+  transitionWithLanding,
   transitionWithPlanApproval,
   transitionWithPlanRevision,
   transitionWithPlanUnapproval,
@@ -572,6 +573,42 @@ describe("task transitions", () => {
       transitionTask(store, task.id, "executed");
       const before = store.listEvents(task.id);
       expect(() => accept(task.id)).toThrow("illegal state transition: executed -> accepted");
+      expect(store.getTask(task.id)!.state).toBe("executed");
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithLanding", () => {
+    const land = (id: number) => transitionWithLanding(store, id, { revision: "head-sha", base: "main", pushed: true });
+
+    it("writes one landed event in place of the transition event and deletes the run marker", () => {
+      const task = store.createTask(newTask("workspace_ready"));
+      moveTaskThrough(store, task.id, [...TO_WORK_REVIEW, "accepted", "merging"]);
+      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      const before = store.listEvents(task.id);
+
+      const moved = land(task.id);
+
+      expect(moved.state).toBe("landed");
+      const events = store.listEvents(task.id);
+      expect(events.slice(0, before.length)).toEqual(before);
+      expect(events.slice(before.length).map((e) => e.type)).toEqual(["landed"]);
+      expect(events[events.length - 1].data).toEqual({
+        revision: "head-sha",
+        base: "main",
+        pushed: true,
+        from: "merging",
+        to: "landed",
+      });
+      expect(store.runStatus(task.id)).toEqual({ status: "none" });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("approved"));
+      transitionTask(store, task.id, "executing");
+      transitionTask(store, task.id, "executed");
+      const before = store.listEvents(task.id);
+      expect(() => land(task.id)).toThrow("illegal state transition: executed -> landed");
       expect(store.getTask(task.id)!.state).toBe("executed");
       expect(store.listEvents(task.id)).toEqual(before);
     });
