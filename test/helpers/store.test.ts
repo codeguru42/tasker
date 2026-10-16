@@ -654,7 +654,7 @@ describe("withDataRootStore", () => {
   });
 });
 
-const setup = (state: string) => {
+const seedTaskIn = (state: string) => {
   const dataRoot = join(useTempDir("tasker-fail-from-"), "data");
   const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state, at: dayAt(1) }]);
   return { dataRoot, task };
@@ -664,7 +664,7 @@ describe("failTaskFrom", () => {
   it.each(["verifying", "provisioning", "planning"] as const)(
     "fails the task from %s with the default message",
     (origin) => {
-      const { dataRoot, task } = setup("workspace_ready");
+      const { dataRoot, task } = seedTaskIn("workspace_ready");
 
       withDataRootStore(dataRoot, (store) => {
         failTaskFrom(store, task.id, origin);
@@ -677,7 +677,7 @@ describe("failTaskFrom", () => {
   );
 
   it("uses the given message", () => {
-    const { dataRoot, task } = setup("approved");
+    const { dataRoot, task } = seedTaskIn("approved");
 
     withDataRootStore(dataRoot, (store) => {
       failTaskFrom(store, task.id, "executing", "boom");
@@ -690,7 +690,7 @@ describe("failTaskFrom", () => {
 
 describe("failRefineFrom", () => {
   it.each(["reviewed", "failed"] as const)("fails the task in refining after a move from %s", (refineOrigin) => {
-    const { dataRoot, task } = setup("workspace_ready");
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
 
     withDataRootStore(dataRoot, (store) => {
       failRefineFrom(store, task.id, refineOrigin);
@@ -703,7 +703,7 @@ describe("failRefineFrom", () => {
   });
 
   it("uses the given message", () => {
-    const { dataRoot, task } = setup("reviewed");
+    const { dataRoot, task } = seedTaskIn("reviewed");
 
     withDataRootStore(dataRoot, (store) => {
       failRefineFrom(store, task.id, "reviewed", "boom");
