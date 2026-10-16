@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, merge, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -203,7 +203,21 @@ The write is one transaction. It appends one `accepted` event with the data `{ r
 These reasons explain its rules:
 
 - The base check runs here and not at the landing. As a result, a base that moved while the task waited in review shows before a person lands it.
-- Accept only records the decision of a person. The landing (M10) is the one step that changes origin. As a result, a refused or an accepted task leaves origin as it was, and the person still decides to land in a separate step.
+- Accept only records the decision of a person. `tasker merge` is the one step that changes origin. As a result, a refused or an accepted task leaves origin as it was, and the person still decides to land in a separate step.
+
+## Merge
+
+`tasker merge` lands the work of a task in `accepted` on the base branch of `origin`. The task goes through `merging` to `landed`.
+
+The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the branch, the stored base, the base revision and the repo lock. A refused merge leaves the task and the events as they were. After the check, the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task branch and the tip of the base. If the base does not contain the work, the command pushes it with `vcs.land`. The last write is one transaction that appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. If a step fails after the move to `merging`, the task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not wait for CI.
+
+These reasons explain its rules:
+
+- `tasker merge` runs no check of its own before the push. The land fails before the push when the revision does not build on the tip of the base on origin. The lease refuses the push when the base moves after the read. In both cases nothing moves on origin. [version-control.md](version-control.md#land) gives the mechanism.
+- The on-base check runs first, so a second run after a crash lands with no second push. The check reads the clone, so a missing worktree cannot cause a second push.
+- The repo lock covers the fetch and the push, because both change the refs of the clone. [The locks table](data-root.md#locks-table) requires it.
+- The command takes the repo lock before the move to `merging`, so a busy lock changes no state.
+- The move to `landed` writes one `landed` event with `revision`, `base`, `pushed`, `from` and `to` in place of the `transition` event, in the same transaction. The `executed` and `accepted` events work in the same way.
 
 ## Limits
 
@@ -211,10 +225,10 @@ These reasons explain its rules:
 - An issue that closes after its task exists does not stop a second run. The closed check runs only when no task exists.
 - A person who does not answer the question for the base branch holds the repo lock. Another start of the same repo then waits, and it stops with the lock error at the end of its wait.
 - The start does not assign the issue and does not mark it in progress. It has no option to take over a lock of a live process, and no stacked base.
-- The abort does not delete the task branch on `origin`. No command publishes a task branch before M10.
+- The abort does not delete the task branch on `origin`. `tasker merge` pushes only the base branch, and no command publishes a task branch.
 - A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
 - The plan reads the title and the body of the issue. It does not read the comments.
 - `tasker retry` resumes a task in `failed` for the origins of its table. No command resumes a task in `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`, and a second `tasker execute` works only on a task in `approved`.
 - No command resumes a review that failed or stopped yet (`tasker retry` M8, `tasker resume` M9). No command acts on the findings of a review yet.
 - Layer 3 of the push guard cannot see a push that moves the tip and then moves it back within one turn. It compares only the tips before and after.
-- The base can move after the check of `tasker accept`, so the land (M10) refuses a push that is not a fast-forward.
+- The base can move after the check of `tasker accept`. Then `tasker merge` fails, and nothing moves on `origin`.
