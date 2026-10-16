@@ -66,6 +66,12 @@ export function realCommandPath(name: string): string {
   throw new Error(`no ${name} found on PATH`);
 }
 
+// The PATH text with folder first, then the PATH of base. It gives folder alone when base has no
+// PATH or an empty PATH.
+export function pathWithFirst(folder: string, base: NodeJS.ProcessEnv): string {
+  return base.PATH === undefined || base.PATH === "" ? folder : `${folder}${delimiter}${base.PATH}`;
+}
+
 // path with each folder that holds an entry named program replaced, in the same place, by a new
 // temp folder (see useTempDir()) with links to the other entries. A folder with no such entry
 // stays as it is. As a result, program is not found, and every other program of the path still runs.

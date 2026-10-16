@@ -1,5 +1,5 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { provisionClone } from "../../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../../src/vcs/git/repo-paths.js";
@@ -7,7 +7,7 @@ import { GitError, runGit } from "../../src/vcs/git/run.js";
 import { shellQuote } from "../../src/vcs/git/ssh.js";
 import { taskBranchName, taskWorktreePath } from "../../src/vcs/git/worktree.js";
 import type { VcsContext } from "../../src/vcs/provider.js";
-import { logLine, realCommandPath, writeFakeCommand } from "./fake-commands.js";
+import { logLine, pathWithFirst, realCommandPath, writeFakeCommand } from "./fake-commands.js";
 import { makeTempDir } from "./temp.js";
 
 // The fixed author and committer of every commit that a git test makes.
@@ -299,8 +299,7 @@ export function gitRecorderEnv(dir: string, base: NodeJS.ProcessEnv): { env: Nod
   const bin = join(dir, "gitbin");
   const log = join(dir, "git.log");
   writeGitRecorder(bin, log);
-  const path = base.PATH === undefined || base.PATH === "" ? bin : `${bin}${delimiter}${base.PATH}`;
-  return { env: { ...base, PATH: path }, log };
+  return { env: { ...base, PATH: pathWithFirst(bin, base) }, log };
 }
 
 // Writes a git wrapper into <dir>/gitbin-before-push. When an argument of a call is push, the
@@ -324,8 +323,7 @@ export function gitBeforePushEnv(dir: string, base: NodeJS.ProcessEnv, command: 
       `exec ${shellQuote(realCommandPath("git"))} "$@"`,
     ].join("\n"),
   );
-  const path = base.PATH === undefined || base.PATH === "" ? bin : `${bin}${delimiter}${base.PATH}`;
-  return { ...base, PATH: path };
+  return { ...base, PATH: pathWithFirst(bin, base) };
 }
 
 // Writes a git wrapper into binDir. It runs the real git with the same arguments. Then it exits
