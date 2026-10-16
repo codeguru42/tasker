@@ -55,6 +55,15 @@ export interface BaseContainment {
   contains: boolean;
 }
 
+export interface TaskRefOnBase {
+  // The revision of the tip of the task ref.
+  revision: string;
+  // The revision of the tip of the base after the fetch.
+  baseTip: string;
+  // True when the tip of the base contains the task ref.
+  onBase: boolean;
+}
+
 export interface UncommittedChange {
   // The two status characters of git, for example " M", "??", "D " or "A ".
   status: string;
@@ -136,6 +145,9 @@ export interface VcsProvider {
   // Fetches the remote, reads the tip of the task ref of a workspace and the tip of its base, and says whether the task
   // ref contains the tip of the base.
   baseContainment(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<BaseContainment>;
+  // Fetches the remote, reads the tip of the local task ref and the tip of its base, and says whether the base
+  // contains the task ref. It reads the local copy and needs no workspace.
+  taskRefOnBase(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<TaskRefOnBase>;
   // Moves the workspace onto baseRevision and gives its new head revision.
   // It does not fetch. Run resolveBase first, which fetches.
   // A conflict rejects with ReconcileConflictError (src/vcs/errors.ts).

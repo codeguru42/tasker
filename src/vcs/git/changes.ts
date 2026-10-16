@@ -1,4 +1,4 @@
-import type { BaseContainment, UncommittedChange } from "../provider.js";
+import type { BaseContainment, TaskRefOnBase, UncommittedChange } from "../provider.js";
 import { assertRevisionInput, resolveRevision } from "./refs.js";
 import { isGitExit, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
@@ -216,4 +216,20 @@ export async function fetchBaseContainment(o: {
   const { revision, baseTip } = await fetchTaskAndBaseTips(o);
   const contains = await isAncestor({ clone: o.clone, env: o.env, ancestor: baseTip, descendant: revision });
   return { revision, baseTip, contains };
+}
+
+// Fetches origin, then reads the tip of the task branch and the tip of the base, and says whether the base contains
+// the task branch. It reads the exact ref refs/heads/<branch> in the clone, so it needs no worktree. A bad base text or
+// a bad branch name causes no fetch. The fetch moves and prunes refs/remotes/origin/* in the clone, also when a later
+// read fails. It does not move refs/heads/*. A failure of the fetch or of a read rejects.
+export async function fetchOnBase(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  sshKey: string | undefined;
+  branch: string;
+  baseRevision: string;
+}): Promise<TaskRefOnBase> {
+  const { revision, baseTip } = await fetchTaskAndBaseTips(o);
+  const onBase = await isAncestor({ clone: o.clone, env: o.env, ancestor: revision, descendant: baseTip });
+  return { revision, baseTip, onBase };
 }

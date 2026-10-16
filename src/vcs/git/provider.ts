@@ -9,7 +9,14 @@ import {
   trackedPaths,
 } from "./assistant-surface.js";
 import { resolveBaseBranch } from "./base-branch.js";
-import { changedPaths, fetchBaseContainment, ownCommitsText, uncommittedChanges, worktreeDiff } from "./changes.js";
+import {
+  changedPaths,
+  fetchBaseContainment,
+  fetchOnBase,
+  ownCommitsText,
+  uncommittedChanges,
+  worktreeDiff,
+} from "./changes.js";
 import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "./publish.js";
 import { gitDoctorChecks } from "./doctor.js";
 import { installPushHook } from "./push-guard.js";
@@ -119,6 +126,10 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
     async baseContainment(ctx, { taskRef, baseRevision }) {
       const { clone } = pathsOf(ctx);
       return fetchBaseContainment({ clone, env: ctx.env, sshKey: config.sshKey, branch: taskRef, baseRevision });
+    },
+    async taskRefOnBase(ctx, { taskRef, baseRevision }) {
+      const { clone } = pathsOf(ctx);
+      return fetchOnBase({ clone, env: ctx.env, sshKey: config.sshKey, branch: taskRef, baseRevision });
     },
     async reconcile(ctx, { path, baseRevision, strategy }) {
       const { clone } = pathsOf(ctx);
