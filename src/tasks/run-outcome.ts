@@ -1,6 +1,6 @@
 import type { RunOutcome } from "../assistant/provider.js";
 import type { Io } from "../cli.js";
-import { failTask, type TaskState, transitionTask } from "../state/machine.js";
+import { type TaskState, transitionTask } from "../state/machine.js";
 import type { Task, TaskStore } from "../store/store.js";
 
 export type SuccessOutcome = Extract<RunOutcome, { kind: "success" }>;
@@ -44,10 +44,15 @@ export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
   }
 }
 
-// The message is the error of the event and the line on stderr. Each command that fails the task after its run
-// uses it, so the steps have one home.
-export function failRun(store: TaskStore, task: Task, io: Io, message: string): { exitCode: number } {
-  failTask(store, task.id, message);
+// Moves the task to `to` with the message as the error of the event, prints the message on stderr and gives exit
+// code 1. The caller picks the target state.
+export function failRunTo(store: TaskStore, task: Task, io: Io, to: TaskState, message: string): { exitCode: number } {
+  transitionTask(store, task.id, to, { error: message });
   io.stderr(`${message}\n`);
   return { exitCode: 1 };
+}
+
+// Moves the task to failed with failRunTo. Each command that fails the task after its run uses it.
+export function failRun(store: TaskStore, task: Task, io: Io, message: string): { exitCode: number } {
+  return failRunTo(store, task, io, "failed", message);
 }
