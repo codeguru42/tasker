@@ -52,7 +52,7 @@ Two triggers make the table append-only. An `UPDATE` or a `DELETE` on `events` f
 
 ## `plan_revisions` table
 
-The table has one row for each plan that the assistant returned for a task. A revision is one such plan. A later revision comes from the feedback of the operator on an earlier one. A revision with the source `review` comes from the open findings of a review, with the feedback of the operator or none.
+The table has one row for each plan that the assistant returned for a task. A revision is one such plan. A later revision comes from the feedback of the operator on an earlier one, or, with the source `review`, from the open findings of a review, with the feedback of the operator or none.
 
 These rules hold:
 

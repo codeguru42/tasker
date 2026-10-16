@@ -130,7 +130,7 @@ The steps run in this order.
 
 A promotion keeps the findings out of the feedback and leaves them open:
 
-- The findings go in the context block, because the stored feedback holds only the words of the operator. [The `plan_revisions` table](data-root.md#plan_revisions-table) says that `tasker show-questions` prints the feedback as the answer of a question.
+- The findings go in the context block, because the stored feedback holds only the words of the operator. The feedback of a revision is the answer of a question ([the `plan_revisions` table](data-root.md#plan_revisions-table)), and `tasker show-questions` prints that answer.
 - The promoted findings stay open, because the next review decides if the work fixed them. [The review prompt and the findings answer](assistants.md#the-review-prompt-and-the-findings-answer) says how the next review reads them.
 
 ## Approve
@@ -241,7 +241,7 @@ These reasons explain its rules:
 
 - A plan or execute run can fail before its first turn. Its recorded session id then names no conversation, so a new run must not continue it. Retry deletes the session of the failed step, and the next run starts a new session.
 - A verify failure usually belongs to no todo. So `--resume-execute` marks every todo done and queues one fix turn that gets the failure. The todos do not run again.
-- A refine from `awaiting_plan_review` needs feedback, and tasker can refuse a plan again. So retry runs nothing for the origin `refining`. It prints a hint, and you decide the next feedback.
+- A refine needs feedback, and tasker can refuse a plan again. So retry runs nothing for the origin `refining`. It prints a hint, and you decide the next feedback.
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait, so retry must release the lock first.
 - The fix turn gets the tail of the log from tasker, not from the sandbox. The log is in the data root, outside the worktree, and the sandbox gives the shell only the worktree. The bound of 200 lines and 64 KiB keeps a large log out of the prompt.
 - The tail comes only from the verify run of this failure. Some verify failures record no run, and then the latest run belongs to an earlier verify. Its log gives the fix turn false data, so the fix turn gets no tail.
