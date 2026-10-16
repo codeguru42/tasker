@@ -8,6 +8,7 @@ import { taskLogsDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "../helpers/cli.js";
+import { githubWriteAnswer, trackerWriteCalls } from "../helpers/fake-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -23,6 +24,7 @@ import {
 import {
   expectCommandRefused,
   moveTaskThrough,
+  trackerRepo,
   taskWorkspaceState,
   useAcceptedTask,
   useLandedTask,
@@ -162,5 +164,79 @@ describe("finish", () => {
         branch: false,
       });
     });
+  });
+});
+
+describe("finish with the tracker write", () => {
+  const LABEL_CALL = ["issue", "edit", "5", "-R", REPO, "--add-label", "done"];
+  const CLOSE_CALL = ["issue", "close", "5", "-R", REPO, "--reason", "completed"];
+  const labelAnswer = (failure: { stderr: string; exitCode: number } | object = {}) =>
+    githubWriteAnswer({ project: REPO, number: 5, verb: "edit", rest: ["--add-label", "done"], ...failure });
+  const doneEvents = (dataRoot: string) =>
+    eventsOf(dataRoot, KEY)
+      .filter((event) => event.type === "tracker_update")
+      .map((event) => event.data);
+
+  it("adds the done label after the cleanup and before the move to finished", async () => {
+    const landed = await useLandedTask({
+      repo: trackerRepo({ updateOnFinish: true, doneLabel: "done" }),
+      ghAnswers: [labelAnswer()],
+    });
+    const { dataRoot, worktree, branch } = landed;
+
+    const result = await runFinish();
+
+    expect(result).toEqual({
+      code: 0,
+      out:
+        `removed the worktree ${canonicalPath(worktree)}\ndeleted the branch ${branch}\n` +
+        `marked ${KEY} done on the tracker\nfinished ${KEY}\n`,
+      err: "",
+    });
+    expect(trackerWriteCalls(landed.gh)).toEqual([LABEL_CALL]);
+    const events = eventsOf(dataRoot, KEY);
+    expect(events.at(-2)).toEqual({ type: "tracker_update", data: { action: "done", result: "ok" } });
+    expect(events.at(-1)?.data).toMatchObject({ from: "finishing", to: "finished" });
+  });
+
+  it("closes the issue as completed when there is no done label", async () => {
+    const landed = await useLandedTask({
+      repo: trackerRepo({ updateOnFinish: true }),
+      ghAnswers: [githubWriteAnswer({ project: REPO, number: 5, verb: "close", rest: ["--reason", "completed"] })],
+    });
+
+    const result = await runFinish();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`marked ${KEY} done on the tracker\n`);
+    expect(trackerWriteCalls(landed.gh)).toEqual([CLOSE_CALL]);
+  });
+
+  it("warns for a failed write, exits with 0 and still finishes the task", async () => {
+    const landed = await useLandedTask({
+      repo: trackerRepo({ updateOnFinish: true, doneLabel: "done" }),
+      ghAnswers: [labelAnswer({ stderr: "cannot label\n", exitCode: 1 })],
+    });
+
+    const result = await runFinish();
+
+    expect(result.code).toBe(0);
+    expect(result.out).not.toContain("on the tracker");
+    expect(result.out.endsWith(`finished ${KEY}\n`)).toBe(true);
+    const [event] = doneEvents(landed.dataRoot) as { action: string; result: string; error: string }[];
+    expect(event).toEqual({ action: "done", result: "failed", error: expect.stringContaining("cannot label") });
+    expect(result.err).toBe(`warning: cannot mark ${KEY} done on the tracker: ${event.error}\n`);
+    expect(latestTaskOf(landed.dataRoot, KEY).state).toBe("finished");
+    expect(trackerWriteCalls(landed.gh)).toEqual([LABEL_CALL]);
+  });
+
+  it("makes no write and no event when updateOnFinish is false", async () => {
+    const landed = await useLandedTask({ repo: trackerRepo({ updateOnFinish: false, doneLabel: "done" }) });
+
+    const result = await runFinish();
+
+    expect(result.code).toBe(0);
+    expect(trackerWriteCalls(landed.gh)).toEqual([]);
+    expect(doneEvents(landed.dataRoot)).toEqual([]);
   });
 });
