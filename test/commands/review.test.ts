@@ -8,7 +8,7 @@ import { reviewTranscriptPath } from "../../src/store/layout.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
-import { argAfter, claudeSample, useFakeClaudeOnPath } from "../helpers/fake-claude.js";
+import { argAfter, claudeSample } from "../helpers/fake-claude.js";
 import { answerStream, seedPlanRevision, transcriptLines } from "../helpers/plan.js";
 import { reviewFinding, validReviewAnswer } from "../helpers/review.js";
 import {
@@ -18,14 +18,12 @@ import {
   latestTaskOf,
   readRunMarker,
   seedReview,
-  seedTasks,
   withDataRootStore,
   reviewSessionRows,
 } from "../helpers/store.js";
-import { useReviewFixture, useStartFixture, type ReviewFixture } from "../helpers/task-fixtures.js";
+import { useReviewFixture, useSeededTask, type ReviewFixture } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
-const REPO = "codeguru42/tasker";
 
 const runReview = (key = KEY, ...extra: string[]) => runCommand(review, "review", key, ...extra);
 
@@ -220,9 +218,7 @@ describe("a review that does not finish", () => {
 
 describe("a refused review", () => {
   it("prints the error and changes nothing", async () => {
-    const fixture = await useStartFixture();
-    useFakeClaudeOnPath({ stream: answerStream(validReviewAnswer()) });
-    seedTasks(fixture.dataRoot, [{ issueKey: KEY, repoKey: REPO, state: "workspace_ready", at: dayAt(1) }]);
+    const fixture = await useSeededTask({ stream: answerStream(validReviewAnswer()) }, { state: "workspace_ready" });
     const before = eventsOf(fixture.dataRoot, KEY);
 
     const result = await runReview();

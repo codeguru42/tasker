@@ -5,20 +5,16 @@ import { reviewTranscriptPath } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { reviewTask } from "../../src/tasks/review.js";
 import { captureIo } from "../helpers/cli.js";
-import { useFakeClaudeOnPath } from "../helpers/fake-claude.js";
 import { answerStream } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { validReviewAnswer } from "../helpers/review.js";
+import { databasePathOf, latestTaskOf, lockNames, withDataRootStore, reviewSessionRows } from "../helpers/store.js";
 import {
-  databasePathOf,
-  dayAt,
-  latestTaskOf,
-  lockNames,
-  seedTasks,
-  withDataRootStore,
-  reviewSessionRows,
-} from "../helpers/store.js";
-import { expectRefusedWithoutChange, taskRefOf, useReviewFixture, useStartFixture } from "../helpers/task-fixtures.js";
+  expectRefusedWithoutChange,
+  taskRefOf,
+  useReviewFixture,
+  useSeededTask as useSharedSeededTask,
+} from "../helpers/task-fixtures.js";
 import type { FakeClaude } from "../helpers/fake-claude.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -58,12 +54,8 @@ async function expectRefused(target: ReviewTarget, message: string) {
 const CONTROL = { stream: answerStream(validReviewAnswer()) };
 
 // A started fixture with a fake claude, and the task of KEY seeded in state with the given worktree and branch.
-async function useSeededTask(change: { state: string; worktreePath?: string; branch?: string }) {
-  const fixture = await useStartFixture();
-  const claude = useFakeClaudeOnPath(CONTROL);
-  seedTasks(fixture.dataRoot, [{ issueKey: KEY, repoKey: REPO, at: dayAt(1), ...change }]);
-  return { dataRoot: fixture.dataRoot, config: fixture.config, claude };
-}
+const useSeededTask = (change: { state: string; worktreePath?: string; branch?: string }) =>
+  useSharedSeededTask(CONTROL, change);
 
 describe("reviewTask checks", () => {
   it("refuses a task that is not in awaiting_work_review", async () => {

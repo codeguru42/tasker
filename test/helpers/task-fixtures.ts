@@ -20,8 +20,30 @@ import { type FakeClaude, type FakeClaudeControl, useFakeClaude, useFakeClaudeOn
 import { type FakeGh, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
 import { type GitOrigin, commitInWorktree, localBranches, makeProviderFixture, taskNames } from "./git.js";
 import { recordTestPlanRevision, seedPlanSession, validPlanAnswer } from "./plan.js";
-import { eventsOf, latestTaskOf, lockNames, withDataRootStore } from "./store.js";
+import { type SeedTask, dayAt, eventsOf, latestTaskOf, lockNames, seedTasks, withDataRootStore } from "./store.js";
 import { useProcessEnv, useTempHome } from "./temp.js";
+
+export interface SeededTaskFixture {
+  dataRoot: string;
+  config: Config;
+  claude: FakeClaude;
+  repoKey: string;
+  key: string;
+}
+
+// The setup of a test that needs one seeded task and no started one: useStartFixture(), a fake claude with control
+// first on PATH (see useFakeClaudeOnPath()), then the task of issue 5 in the repo of the fixture, seeded with seed (see
+// seedTasks) at dayAt(1). Call it inside a test.
+export async function useSeededTask(
+  control: FakeClaudeControl,
+  seed: Omit<SeedTask, "issueKey" | "repoKey" | "at">,
+): Promise<SeededTaskFixture> {
+  const fixture = await useStartFixture();
+  const claude = useFakeClaudeOnPath(control);
+  const key = `${fixture.repoKey}#5`;
+  seedTasks(fixture.dataRoot, [{ issueKey: key, repoKey: fixture.repoKey, at: dayAt(1), ...seed }]);
+  return { dataRoot: fixture.dataRoot, config: fixture.config, claude, repoKey: fixture.repoKey, key };
+}
 
 export interface StartFixture {
   origin: GitOrigin;

@@ -37,6 +37,7 @@ import {
   usePlanFixture,
   useStartedTask,
   useReviewFixture,
+  useSeededTask,
   useStartFixture,
   useVerifyFixture,
   useWorkReviewTask,
@@ -73,6 +74,25 @@ describe("useStartFixture", () => {
     const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
 
     expect(fixture.config.repos[fixture.repoKey].defaultBaseBranch).toBeUndefined();
+  });
+});
+
+describe("useSeededTask", () => {
+  it("seeds the task of issue 5 and puts a fake claude first on PATH", async () => {
+    const seeded = await useSeededTask(
+      { stream: ["one"] },
+      { state: "executed", worktreePath: "/work/tree", branch: "tasker/five" },
+    );
+
+    expect(seeded.key).toBe("codeguru42/tasker#5");
+    expect(seeded.repoKey).toBe("codeguru42/tasker");
+    expect(latestTaskOf(seeded.dataRoot, seeded.key)).toMatchObject({
+      state: "executed",
+      worktreePath: "/work/tree",
+      branch: "tasker/five",
+    });
+    expect(String(process.env.PATH).startsWith(seeded.claude.binDir + delimiter)).toBe(true);
+    expect(seeded.claude.calls()).toEqual([]);
   });
 });
 
