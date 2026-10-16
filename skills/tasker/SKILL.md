@@ -300,6 +300,44 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The run passed, but tasker cannot record it. The task goes to the state `failed`, and the error is `the verify commands passed, but the run could not be recorded: <error>`.
 - An unexpected error occurs after the run has started. The task goes to the state `failed`, and the error is `verifying failed: <error>`.
 
+### `tasker review`
+
+Reviews the committed work of a task in the state `awaiting_work_review` in a new session of the assistant, and records the findings: `tasker review <issue>`. The task goes through `reviewing` to `reviewed`. When the review has no findings, the task goes back to `awaiting_work_review`.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+Each review runs in a new session with the model of the review role. The review is an independent pass, and the conversation of the plan does not bias it. The assistant runs in plan mode in the worktree of the task. The time limit is the value of `planTimeoutMin`.
+
+The prompt holds the commits of the task branch and the text of the earlier reviews. Each earlier review shows its findings with their status, and the operator feedback of each plan revision that followed it.
+
+The findings wait in `reviewed`, because the operator reads them first. The command records the tip of the task branch as the revision of the review, so the findings describe one tree. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
+
+Each review gets a number. The first review of a task is review 1, and a later review gets the next number. tasker records the session of each review. No command continues it yet.
+
+On success, the command prints these lines on stdout:
+
+- `reviewed <issue key>: review <N>, <count>`. The count is `no findings`, `1 finding` or `<n> findings`.
+- The findings. Each finding has three lines: `- [<position>] <file>:<line> (<category>): <summary>`, `failure scenario: <text>` and `status: open`. With no findings, the line is `no findings`.
+- `prompt: <path>`, the archived prompt.
+- `transcript: <path>`, the file `transcripts/review-<N>.jsonl`.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In the first seven cases, the task keeps its state. The command writes no event, no session and no transcript:
+
+- The issue has no task. The error names the issue and the repo.
+- The task is not in `awaiting_work_review`. The error is `the task of <issue key> is in <state>; tasker review needs awaiting_work_review`.
+- The task has no worktree, no branch or no base revision. The error is `the task of <issue key> has no worktree`, `the task of <issue key> has no branch` or `the task of <issue key> has no base revision`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+- The clone has no such task branch, or git cannot read the tip of the branch. The error is `cannot resolve the task branch: <branch>` or the error of git.
+- The commits of the branch cannot be read. The error is the error of git.
+- The prompt cannot be archived. Fix the cause, then run the command again. A prompt that tasker archived before the failure stays in the prompt archive.
+- The assistant fails or runs out of time. The task goes to the state `failed`, and the error is `reviewing failed: <reason>` or `reviewing timed out after <n> min`.
+- The answer is not valid. The task goes to the state `failed`, and the error is `the assistant returned findings that tasker refuses:`, then one line for each problem.
+- An unexpected error occurs after the run has started. The task goes to the state `failed`, and the error is `reviewing failed: <error>`.
+- A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
+
+The command writes one `transition` event into `reviewing`, one `usage` event, one `review` event with the data `{ number, revision, findings }`, and one `transition` event out of `reviewing`. A failed run writes the `usage` event and no `review` event. No command resumes a failed or stopped review yet.
+
 ### `tasker retry`
 
 Moves a task in the state `failed` back to the state before the step that failed, and runs that step again: `tasker retry <issue>`.
