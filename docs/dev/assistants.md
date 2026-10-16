@@ -68,6 +68,7 @@ The filter of the phases drops the GitHub token and the ssh agent of the operato
 
 ### The limits of the roles
 
+- The network stays open.
 - The assistant can read files that the lists do not name.
 - The plan mode lets the assistant write its plan file under the configuration folder of `claude`, outside the worktree.
 
