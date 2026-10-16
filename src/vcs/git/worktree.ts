@@ -231,7 +231,7 @@ function readGuardFile(file: string): string | undefined {
 function usesOwnGitDir(clone: string, target: string): boolean {
   const realClone = realpathSync(clone);
   const dotGit = readGuardFile(join(target, ".git"));
-  if (dotGit === undefined || !dotGit.startsWith("gitdir: ")) return false;
+  if (!dotGit?.startsWith("gitdir: ")) return false;
   const admin = resolve(target, dotGit.slice("gitdir: ".length));
   if (dirname(admin) !== join(realClone, "worktrees")) return false;
   const common = readGuardFile(join(admin, "commondir"));

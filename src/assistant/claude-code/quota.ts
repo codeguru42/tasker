@@ -90,7 +90,7 @@ export function detectQuotaApprovalWarning(outcome: RunOutcome, threshold: numbe
   let kept: QuotaApprovalWarning | undefined;
   for (const event of outcome.events) {
     const info = rateLimitInfoOf(event);
-    if (info === undefined || info.status !== "allowed_warning") continue;
+    if (info?.status !== "allowed_warning") continue;
     kept = relevantWindow(info) ?? kept;
   }
   return kept !== undefined && kept.utilization >= threshold ? kept : undefined;

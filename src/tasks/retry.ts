@@ -88,6 +88,8 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
     if (pinned === undefined) throw new Error(`the task of ${task.issueKey} has no pinned plan revision`);
     const run = runOfFailure(store, events);
     const logPath =
+      // A chain is false for a missing run, so the code would call verifyCommandLogPath with no run. The missing run must give undefined.
+      // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
       run === undefined || run.failingCommand === null
         ? undefined
         : verifyCommandLogPath(config.dataRoot, task, run.number, run.failingCommand);

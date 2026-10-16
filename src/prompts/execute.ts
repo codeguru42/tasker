@@ -101,7 +101,7 @@ export function resolvedQuestionsText(questions: readonly ResolvedQuestion[]): s
   const groups: ResolvedQuestion[][] = [];
   for (const entry of questions) {
     const last = groups.at(-1)?.[0];
-    if (last !== undefined && last.version === entry.version && last.answer === entry.answer) {
+    if (last?.version === entry.version && last.answer === entry.answer) {
       groups.at(-1)!.push(entry);
     } else {
       groups.push([entry]);
