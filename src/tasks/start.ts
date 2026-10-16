@@ -25,6 +25,8 @@ export interface StartRequest {
   ask: () => Promise<string>;
   // Prints one note of the base resolve.
   note: (line: string) => void;
+  // Starts also when the issue already has the in-progress marker.
+  reclaim: boolean;
   // Gets the success lines and the warnings of the tracker writes.
   trackerIo: Pick<Io, "stdout" | "stderr">;
 }
@@ -63,6 +65,15 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
     (active.state === "provisioning" || (active.state === "failed" && failedFrom(store, active.id) === "provisioning"));
   if (active !== undefined && !continues) return { started: false, task: active };
   if (active === undefined && issue.state === "closed") throw new Error(`the issue is closed: ${ref.key}`);
+  if (active === undefined && repo.issueTracker.updateOnStart && !request.reclaim) {
+    // The check runs before the task exists, so a refused start leaves no task and no event.
+    const marker = trackerTargets(repo.issueTracker).inProgress;
+    if (marker !== undefined && issueProvider.inProgressMarker(issue, marker)) {
+      throw new Error(
+        `the issue ${ref.key} already has the in-progress marker ${marker}. Pass --reclaim to start it anyway, or remove the marker on the tracker.`,
+      );
+    }
+  }
   const task =
     active === undefined
       ? store.createTask({

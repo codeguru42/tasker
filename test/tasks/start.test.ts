@@ -21,6 +21,7 @@ describe("startTask with a held repo lock", () => {
         repoLockWaitMs: 300,
         ask: () => Promise.reject(new Error("no question expected")),
         note: () => {},
+        reclaim: false,
         trackerIo: { stdout: () => {}, stderr: () => {} },
       }).catch((caught: unknown) => caught);
 
@@ -42,6 +43,7 @@ describe("startTask with a held repo lock", () => {
         env: process.env,
         ask: () => Promise.reject(new Error("no question expected")),
         note: () => {},
+        reclaim: false,
         trackerIo: { stdout: () => {}, stderr: () => {} },
       };
       const first = await startTask(store, { ...request, repoLockWaitMs: 300_000 }).catch((caught: unknown) => caught);

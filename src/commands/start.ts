@@ -25,9 +25,10 @@ export const start: RegisterCommand = (program, io) => {
       "--base <branch>",
       "The base branch of this task only: a branch on origin, or refs/heads/<branch> for a local branch of the clone",
     )
-    .action(async (issue: string, options: { repo?: string; base?: string }) => {
+    .option("--reclaim", "Start the task also when the issue already has the in-progress marker on the tracker")
+    .action(async (issue: string, options: { repo?: string; base?: string; reclaim?: boolean }) => {
       const config = loadConfigOrFail(io);
-      await startIssue(io, config, issue, { repo: options.repo, base: options.base });
+      await startIssue(io, config, issue, { repo: options.repo, base: options.base, reclaim: options.reclaim });
     });
 };
 
@@ -36,7 +37,7 @@ export async function startIssue(
   io: Io,
   config: Config,
   issue: string,
-  options: { repo?: string; base?: string },
+  options: { repo?: string; base?: string; reclaim?: boolean },
 ): Promise<void> {
   const ref = resolveIssueKeyOrFail(io, issue, config, { repo: options.repo });
   // The lines of the tracker writes come after the fields, so they wait in a buffer. The warnings go to stderr at once.
@@ -57,6 +58,7 @@ export async function startIssue(
           config,
           ref,
           base: options.base,
+          reclaim: options.reclaim === true,
           env: process.env,
           repoLockWaitMs: REPO_LOCK_WAIT_MS,
           ask,
