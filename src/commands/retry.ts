@@ -2,6 +2,7 @@ import type { RegisterCommand } from "../cli.js";
 import { retryTask } from "../tasks/retry.js";
 import { executeIssue } from "./execute.js";
 import { planIssue } from "./plan.js";
+import { reviewIssue } from "./review.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
@@ -42,6 +43,14 @@ export const retry: RegisterCommand = (program, io) => {
         case "refine":
           io.stdout(`run tasker refine ${key} "<feedback>" again\n`);
           break;
+        case "refine-findings":
+          io.stdout(
+            `run tasker refine ${key} again to act on the findings, or tasker dismiss-review ${key} "<reason>"\n`,
+          );
+          break;
+        case "review-feedback":
+          io.stdout(`run tasker review ${key} "<feedback>" again\n`);
+          break;
         case "start":
           await startIssue(io, config, issue, repo);
           break;
@@ -53,6 +62,9 @@ export const retry: RegisterCommand = (program, io) => {
           break;
         case "verify":
           await verifyIssue(io, config, issue, repo);
+          break;
+        case "review":
+          await reviewIssue(io, config, issue, repo);
           break;
       }
     });
