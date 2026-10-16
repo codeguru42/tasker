@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
@@ -6,9 +5,8 @@ import { type GroupResult, forwardSignals, runInGroup, signalGroup } from "../..
 import {
   isAlive,
   readPidFile,
-  repoRoot,
-  savePid,
   signalListenerCounts,
+  startFixture,
   startSleeper,
   waitForWatching,
   waitUntil,
@@ -238,7 +236,7 @@ describe("signalGroup", () => {
   });
 });
 
-interface Fixture {
+interface GroupFixture {
   pid: number;
   dir: string;
   logPath: string;
@@ -258,56 +256,34 @@ interface Fixture {
 }
 
 // Starts the fixture script, which runs command with runInGroup in its own process.
-function startFixture(
+function startGroupFixture(
   command: string,
   deadlineMs: number,
   holdMs: number,
   extra: { spawnSignal?: NodeJS.Signals; file?: string } = {},
-): Fixture {
+): GroupFixture {
   const dir = useTempDir("tasker-run-group-fixture-");
   const logPath = join(dir, "out.log");
-  const child = spawn(
-    process.execPath,
-    [
-      "--import",
-      "tsx",
-      "test/fixtures/run-group-signal.ts",
-      dir,
-      logPath,
-      String(deadlineMs),
-      String(holdMs),
-      command,
-      extra.spawnSignal ?? "",
-      ...(extra.file ? [extra.file] : []),
-    ],
-    { cwd: repoRoot },
-  );
-  const pid = child.pid;
-  if (pid === undefined) throw new Error("the fixture did not start");
-  savePid(pid);
-  let stdout = "";
-  let stderr = "";
-  child.stdout.on("data", (chunk) => (stdout += String(chunk)));
-  child.stderr.on("data", (chunk) => (stderr += String(chunk)));
-  let exited = false;
-  const exit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
-    child.on("exit", (code, signal) => {
-      exited = true;
-      resolve({ code, signal });
-    });
-  });
-  return {
-    pid,
+  const child = startFixture("run-group-signal.ts", [
     dir,
     logPath,
-    stdout: () => stdout,
-    stderr: () => stderr,
-    exit,
-    send: (signal) => child.kill(signal),
-    line: async () => {
-      await waitUntil(() => stdout.includes("\n"), 15_000, "the fixture printed no line");
-      return JSON.parse(stdout);
-    },
+    String(deadlineMs),
+    String(holdMs),
+    command,
+    extra.spawnSignal ?? "",
+    ...(extra.file ? [extra.file] : []),
+  ]);
+  let exited = false;
+  void child.exited.then(() => (exited = true));
+  return {
+    pid: child.pid,
+    dir,
+    logPath,
+    stdout: child.stdout,
+    stderr: child.stderr,
+    exit: child.exited,
+    send: (signal) => process.kill(child.pid, signal),
+    line: async () => JSON.parse(await child.firstLine),
     exitsWithin: (ms) =>
       waitUntil(() => exited, ms, "the fixture still runs").then(
         () => "exited" as const,
@@ -329,7 +305,7 @@ describe("runInGroup with the signals of tasker", () => {
     "forwards %s to the group and keeps tasker alive",
     { timeout: 20_000 },
     async (signal) => {
-      const fixture = startFixture(
+      const fixture = startGroupFixture(
         "echo noise; echo noise >&2; echo $$ > started; sleep 30; touch after",
         MINUTE_MS,
         0,
@@ -354,7 +330,9 @@ describe("runInGroup with the signals of tasker", () => {
     "forwards %s that comes while the child starts to the group",
     { timeout: 20_000 },
     async (signal) => {
-      const fixture = startFixture("echo $$ > started; sleep 30; touch after", MINUTE_MS, 0, { spawnSignal: signal });
+      const fixture = startGroupFixture("echo $$ > started; sleep 30; touch after", MINUTE_MS, 0, {
+        spawnSignal: signal,
+      });
 
       expect(await fixture.exit).toEqual({ code: 0, signal: null });
       const { result, before, after } = await fixture.line();
@@ -366,7 +344,7 @@ describe("runInGroup with the signals of tasker", () => {
 
   it("drops a signal that comes while a child that cannot start starts", { timeout: 20_000 }, async () => {
     const file = join(useTempDir("tasker-run-group-"), "missing");
-    const fixture = startFixture("exit 0", MINUTE_MS, 0, { spawnSignal: "SIGTERM", file });
+    const fixture = startGroupFixture("exit 0", MINUTE_MS, 0, { spawnSignal: "SIGTERM", file });
 
     expect(await fixture.exit).toEqual({ code: 0, signal: null });
     const { error, before, after } = await fixture.line();
@@ -375,7 +353,7 @@ describe("runInGroup with the signals of tasker", () => {
   });
 
   it("forwards a second SIGINT to the same command", { timeout: 20_000 }, async () => {
-    const fixture = startFixture(
+    const fixture = startGroupFixture(
       "trap 'echo int >> ints' INT; echo $$ > started; while :; do sleep 0.05; done",
       MINUTE_MS,
       0,
@@ -397,7 +375,7 @@ describe("runInGroup with the signals of tasker", () => {
   });
 
   it("lets a SIGTERM after the run end tasker", { timeout: 20_000 }, async () => {
-    const fixture = startFixture("exit 0", MINUTE_MS, 30_000);
+    const fixture = startGroupFixture("exit 0", MINUTE_MS, 30_000);
     await fixture.line();
 
     fixture.send("SIGTERM");
@@ -406,14 +384,14 @@ describe("runInGroup with the signals of tasker", () => {
   });
 
   it("exits on its own within 3 s after a fast command", { timeout: 20_000 }, async () => {
-    const fixture = startFixture("exit 0", MINUTE_MS, 0);
+    const fixture = startGroupFixture("exit 0", MINUTE_MS, 0);
     await fixture.line();
 
     expect(await fixture.exitsWithin(3000)).toBe("exited");
   });
 
   it("exits on its own within 3 s after a SIGKILL timeout", { timeout: 20_000 }, async () => {
-    const fixture = startFixture(IGNORE_TERM, 300, 0);
+    const fixture = startGroupFixture(IGNORE_TERM, 300, 0);
     const { result } = await fixture.line();
 
     expect(result?.killed).toBe(true);
