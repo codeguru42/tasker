@@ -54,6 +54,30 @@ export function githubIssueAnswer(issue: {
   };
 }
 
+// The answer of one tracker write: gh issue edit or gh issue close for an issue. rest holds the flags after -R project.
+export function githubWriteAnswer(write: {
+  project: string;
+  number: number;
+  verb: "edit" | "close";
+  rest: readonly string[];
+  stderr?: string;
+  exitCode?: number;
+}): FakeGhAnswer {
+  return {
+    args: ["issue", write.verb, String(write.number), "-R", write.project, ...write.rest],
+    stderr: write.stderr,
+    exitCode: write.exitCode,
+  };
+}
+
+// The argument lists of the calls of gh that wrote to an issue (issue edit or issue close), in order.
+export function trackerWriteCalls(gh: FakeGh): string[][] {
+  return gh
+    .calls()
+    .map((call) => call.args)
+    .filter(([command, verb]) => command === "issue" && (verb === "edit" || verb === "close"));
+}
+
 const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const signalNamePattern = /^[A-Z0-9]+$/;
 

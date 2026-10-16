@@ -30,7 +30,7 @@ import { failureOf } from "./errors.js";
 import { validConfig, writeDataRootConfig } from "./config.js";
 import { useFakeSandboxBin } from "./fake-commands.js";
 import { type FakeClaude, type FakeClaudeControl, useFakeClaude, useFakeClaudeOnPath } from "./fake-claude.js";
-import { type FakeGh, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
+import { type FakeGh, type FakeGhAnswer, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
 import {
   type GitOrigin,
   commitInWorktree,
@@ -75,6 +75,12 @@ export async function useSeededTask(
   return { dataRoot: fixture.dataRoot, config: fixture.config, claude, repoKey: fixture.repoKey, key };
 }
 
+// The repo option of useStartFixture for the github tracker of the fixture: the provider and the account, then keys.
+// A test names only the keys that differ, for example trackerRepo({ updateOnStart: true }).
+export function trackerRepo(keys: Record<string, unknown>): { issueTracker: Record<string, unknown> } {
+  return { issueTracker: { provider: "github", account: "codeguru42", ...keys } };
+}
+
 export interface StartFixture {
   origin: GitOrigin;
   dataRoot: string;
@@ -88,6 +94,7 @@ export interface StartFixture {
 // uses it as the remote, and a fake gh that answers the token call and the read of each issue.
 // The default issue is codeguru42/tasker#5. A key of options.repo that is undefined is removed.
 // options.limits changes the limits of the configuration file.
+// options.ghAnswers adds answers to the fake gh, after the token and issue answers.
 // The fake gh comes first on the PATH, so the real gh never runs and git still runs.
 // Call it inside a test. After the test, it removes the folders and restores the env.
 export async function useStartFixture(
@@ -97,6 +104,8 @@ export async function useStartFixture(
     remote?: string;
     // Limits of the configuration to change, for example { planTimeoutMin: 0.05 }.
     limits?: Record<string, number>;
+    // More answers of the fake gh. They come after the token and issue answers.
+    ghAnswers?: readonly FakeGhAnswer[];
   } = {},
 ): Promise<StartFixture> {
   const provider = await makeProviderFixture();
@@ -119,6 +128,7 @@ export async function useStartFixture(
   const gh = fakeGh(written.dir, {}, [
     ghTokenAnswer("codeguru42", "gho_test"),
     ...(options.issues ?? [{ project: repoKey, number: 5 }]).map(githubIssueAnswer),
+    ...(options.ghAnswers ?? []),
   ]);
   useProcessEnv({
     TASKER_CONFIG: written.path,

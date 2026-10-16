@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -11,6 +11,7 @@ import { changedPaths } from "../../src/vcs/git/changes.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { failureOf } from "./errors.js";
+import { githubWriteAnswer, trackerWriteCalls } from "./fake-gh.js";
 import { commitInWorktree, localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { planTodo, validPlanAnswer } from "./plan.js";
@@ -49,6 +50,7 @@ import {
   useStartedTask,
   useReviewFixture,
   useSeededTask,
+  trackerRepo,
   useStartFixture,
   useVerifyFixture,
   useWorkReviewTask,
@@ -726,5 +728,43 @@ describe("moveTaskThrough", () => {
 
     expect(task.state).toBe("workspace_ready");
     expect(transitions).toEqual([]);
+  });
+});
+
+describe("useStartFixture with ghAnswers", () => {
+  it("adds the answers after the token and issue answers", async () => {
+    const answer = githubWriteAnswer({
+      project: "codeguru42/tasker",
+      number: 5,
+      verb: "edit",
+      rest: ["--add-assignee", "@me"],
+    });
+    const fixture = await useStartFixture({ ghAnswers: [answer] });
+    const result = spawnSync("gh", [...answer.args], { env: fixture.gh.env, encoding: "utf8" });
+
+    expect(result.status).toBe(0);
+    expect(trackerWriteCalls(fixture.gh)).toEqual([[...answer.args]]);
+  });
+});
+
+describe("trackerRepo", () => {
+  it("gives the github provider and the account, then the keys", () => {
+    expect(trackerRepo({ updateOnStart: true, assignee: "bob" })).toEqual({
+      issueTracker: { provider: "github", account: "codeguru42", updateOnStart: true, assignee: "bob" },
+    });
+  });
+
+  it("lets a key replace the account", () => {
+    expect(trackerRepo({ account: "other" }).issueTracker.account).toBe("other");
+  });
+
+  it("reaches the configuration through useStartFixture", async () => {
+    const fixture = await useStartFixture({ repo: trackerRepo({ updateOnStart: true, inProgressLabel: "wip" }) });
+
+    expect(fixture.config.repos[fixture.repoKey].issueTracker).toMatchObject({
+      provider: "github",
+      updateOnStart: true,
+      inProgressLabel: "wip",
+    });
   });
 });

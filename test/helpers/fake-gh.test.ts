@@ -3,7 +3,14 @@ import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { readGithubIssue } from "../../src/issues/github/issue.js";
-import { fakeGh, ghTokenAnswer, githubIssueAnswer, writeFakeGh } from "./fake-gh.js";
+import {
+  fakeGh,
+  ghTokenAnswer,
+  githubIssueAnswer,
+  githubWriteAnswer,
+  trackerWriteCalls,
+  writeFakeGh,
+} from "./fake-gh.js";
 import { useTempDir } from "./temp.js";
 
 describe("fakeGh", () => {
@@ -167,5 +174,63 @@ describe("githubIssueAnswer", () => {
     const issue = await readGithubIssue(ref, "octo", gh.env);
 
     expect(issue).toMatchObject({ title: "T", state: "closed", labels: ["bug"] });
+  });
+});
+
+describe("githubWriteAnswer", () => {
+  it("answers the edit call of an issue with the arguments after -R", () => {
+    const answer = githubWriteAnswer({
+      project: "octo/repo",
+      number: 7,
+      verb: "edit",
+      rest: ["--add-label", "done"],
+    });
+
+    expect(answer.args).toEqual(["issue", "edit", "7", "-R", "octo/repo", "--add-label", "done"]);
+    expect(answer.exitCode).toBeUndefined();
+  });
+
+  it("gives the stderr and the exit code of a failed close call", () => {
+    const answer = githubWriteAnswer({
+      project: "octo/repo",
+      number: 7,
+      verb: "close",
+      rest: ["--reason", "completed"],
+      stderr: "boom\n",
+      exitCode: 1,
+    });
+
+    expect(answer.args).toEqual(["issue", "close", "7", "-R", "octo/repo", "--reason", "completed"]);
+    expect(answer.stderr).toBe("boom\n");
+    expect(answer.exitCode).toBe(1);
+  });
+});
+
+describe("trackerWriteCalls", () => {
+  it("gives the arguments of the edit and close calls only, in order", () => {
+    const dir = useTempDir("tasker-write-calls-");
+    const gh = fakeGh(dir, {}, [
+      ghTokenAnswer("octo", "t"),
+      githubIssueAnswer({ project: "octo/repo", number: 7 }),
+      githubWriteAnswer({ project: "octo/repo", number: 7, verb: "edit", rest: ["--add-assignee", "@me"] }),
+      githubWriteAnswer({ project: "octo/repo", number: 7, verb: "close", rest: ["--reason", "completed"] }),
+    ]);
+    const run = (...args: string[]) => spawnSync("gh", args, { env: gh.env, encoding: "utf8" });
+
+    run("auth", "token", "--hostname", "github.com", "--user", "octo");
+    run("issue", "edit", "7", "-R", "octo/repo", "--add-assignee", "@me");
+    run("issue", "view", "7", "-R", "octo/repo", "--json", "number,title,body,url,labels,state");
+    run("issue", "close", "7", "-R", "octo/repo", "--reason", "completed");
+
+    expect(trackerWriteCalls(gh)).toEqual([
+      ["issue", "edit", "7", "-R", "octo/repo", "--add-assignee", "@me"],
+      ["issue", "close", "7", "-R", "octo/repo", "--reason", "completed"],
+    ]);
+  });
+
+  it("gives an empty list when gh made no write", () => {
+    const gh = fakeGh(useTempDir("tasker-write-calls-"), {}, []);
+
+    expect(trackerWriteCalls(gh)).toEqual([]);
   });
 });
