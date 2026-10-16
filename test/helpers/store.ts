@@ -124,6 +124,13 @@ export function eventsOf(dataRoot: string, issueKey: string): { type: string; da
   return withDataRootStore(dataRoot, (store) => store.listEvents(task.id).map(({ type, data }) => ({ type, data })));
 }
 
+// The data of each event of the type of the latest task of issueKey in the repo codeguru42/tasker, in order.
+export function eventDataOf(dataRoot: string, issueKey: string, type: string): unknown[] {
+  return eventsOf(dataRoot, issueKey)
+    .filter((event) => event.type === type)
+    .map((event) => event.data);
+}
+
 // The error of the last transition event of the task, or undefined when that event has no error.
 export function lastErrorOf(dataRoot: string, taskId: number): string | undefined {
   return withDataRootStore(dataRoot, (store) => lastTransitionError(store.listEvents(taskId)));

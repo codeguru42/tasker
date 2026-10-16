@@ -14,6 +14,7 @@ import { taskNames } from "./git.js";
 import {
   dayAt,
   databasePathOf,
+  eventDataOf,
   eventsOf,
   failTaskFrom,
   failVerifyRun,
@@ -86,6 +87,36 @@ describe("eventsOf", () => {
     expect((thrownBy(() => eventsOf(dataRoot, "codeguru42/tasker#9")) as Error).message).toBe(
       "no task of codeguru42/tasker#9",
     );
+  });
+});
+
+describe("eventDataOf", () => {
+  function seedFailedTask(): string {
+    const dataRoot = join(useTempDir("tasker-event-data-"), "data");
+    seedTasks(dataRoot, [
+      {
+        issueKey: "codeguru42/tasker#9",
+        repoKey: "codeguru42/tasker",
+        state: "provisioning",
+        at: dayAt(1),
+        failWith: "boom",
+      },
+    ]);
+    return dataRoot;
+  }
+
+  it("gives the data of the events of the type in order", () => {
+    const dataRoot = seedFailedTask();
+
+    expect(eventDataOf(dataRoot, "codeguru42/tasker#9", "transition")).toEqual([
+      { from: "provisioning", to: "failed", error: "boom" },
+    ]);
+  });
+
+  it("gives an empty list for a type with no event", () => {
+    const dataRoot = seedFailedTask();
+
+    expect(eventDataOf(dataRoot, "codeguru42/tasker#9", "tracker_update")).toEqual([]);
   });
 });
 
