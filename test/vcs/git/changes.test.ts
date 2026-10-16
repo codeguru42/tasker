@@ -59,10 +59,13 @@ describe("git changes", () => {
   const tips = (extra: Partial<Parameters<typeof fetchTips>[0]> = {}) =>
     fetchTips({ clone, env, sshKey: undefined, path, baseRevision: BASE, ...extra });
   const containment = (extra: Partial<Parameters<typeof fetchBaseContainment>[0]> = {}) =>
-    fetchBaseContainment({ clone, env, sshKey: undefined, path, baseRevision: BASE, ...extra });
+    fetchBaseContainment({ clone, env, sshKey: undefined, branch, baseRevision: BASE, ...extra });
   // The tip of the base in the clone.
   const baseTip = () =>
     runGit(["rev-parse", BASE], { gitDir: clone, env }).then((out) => out.trim());
+  // The tip of the task branch in the clone.
+  const branchTip = () =>
+    runGit(["rev-parse", `refs/heads/${branch}`], { gitDir: clone, env }).then((out) => out.trim());
   // Adds a commit to the base on origin and fetches it into the clone.
   const moveBase = async () => {
     await origin.addCommit("main", { file: "base-only.txt" });
@@ -461,7 +464,7 @@ describe("git changes", () => {
 
     it("reads a local base and does not move it", async () => {
       await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: clone, env });
-      const head = await git("rev-parse", "HEAD");
+      const head = await branchTip();
       expect(await containment({ baseRevision: "refs/heads/x" })).toEqual({
         revision: head,
         baseTip: head,
@@ -473,6 +476,22 @@ describe("git changes", () => {
         baseTip: tip,
         contains: false,
       });
+    });
+
+    it("reads the tip of the task branch, not a detached head of the worktree", async () => {
+      await git("switch", "--detach");
+      const detached = await commitInWorktree(path, env, { file: "detached.txt" });
+      const result = await containment();
+      expect(result).toEqual({ revision: await branchTip(), baseTip: await baseTip(), contains: true });
+      expect(result.revision).not.toBe(detached);
+    });
+
+    it("rejects a bad branch name before the fetch", async () => {
+      const before = await baseTip();
+      await origin.addCommit("main");
+      const error = await failureOf(containment({ branch: "HEAD" }), Error);
+      expect(error.message).toBe('not a task branch name: "HEAD"');
+      expect(await baseTip()).toBe(before);
     });
 
     it("rejects for a base that origin does not have", async () => {
