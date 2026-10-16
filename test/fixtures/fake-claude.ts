@@ -24,7 +24,7 @@ function write(stream: NodeJS.WriteStream, text: string): Promise<void> {
 async function readStdin(): Promise<string> {
   let text = "";
   process.stdin.setEncoding("utf8");
-  for await (const chunk of process.stdin) text += chunk;
+  for await (const chunk of process.stdin) text += String(chunk);
   return text;
 }
 

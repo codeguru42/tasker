@@ -227,7 +227,7 @@ export async function usePlanFixture(
 ): Promise<PlanFixture> {
   const started = await useStartedTask(options);
   const claude = useFakeClaude(control);
-  useProcessEnv({ ...useTempHome(), PATH: claude.binDir + delimiter + process.env.PATH });
+  useProcessEnv({ ...useTempHome(), PATH: `${claude.binDir}${delimiter}${String(process.env.PATH)}` });
   return { started, claude };
 }
 
@@ -281,7 +281,7 @@ export async function useExecuteFixture(
   } = {},
 ): Promise<ExecuteFixture> {
   const fixture = await usePlanFixture(control, { repo: options.repo, limits: options.limits });
-  useProcessEnv({ PATH: useFakeSandboxBin() + delimiter + process.env.PATH });
+  useProcessEnv({ PATH: `${useFakeSandboxBin()}${delimiter}${String(process.env.PATH)}` });
   const { dataRoot, repoKey, key } = fixture.started;
   return withDataRootStore(dataRoot, (store) => {
     const found = store.findLatestTask(repoKey, key)!;

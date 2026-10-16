@@ -31,11 +31,11 @@ export function startFixture(fixture: string, args: readonly string[]): FixtureC
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
-      stdout += chunk;
+      stdout += String(chunk);
       const end = stdout.indexOf("\n");
       if (end !== -1) resolve(stdout.slice(0, end));
     });
-    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.stderr.on("data", (chunk) => (stderr += String(chunk)));
     child.on("error", reject);
     // close comes after the stdio streams end, so the stderr is complete here.
     child.on("close", () => reject(new Error(`the child ${fixture} exited first: ${stderr}`)));
@@ -82,8 +82,8 @@ export function spawnTasker(
     let stderr = "";
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => (stdout += chunk));
-    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.stdout.on("data", (chunk) => (stdout += String(chunk)));
+    child.stderr.on("data", (chunk) => (stderr += String(chunk)));
     child.on("error", reject);
     child.on("close", (code) => resolve({ code, stdout, stderr }));
   });

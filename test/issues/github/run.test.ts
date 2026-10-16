@@ -138,8 +138,8 @@ describe("runGh", () => {
       });
       let stdout = "";
       let stderr = "";
-      child.stdout.on("data", (chunk) => (stdout += chunk));
-      child.stderr.on("data", (chunk) => (stderr += chunk));
+      child.stdout.on("data", (chunk) => (stdout += String(chunk)));
+      child.stderr.on("data", (chunk) => (stderr += String(chunk)));
       child.on("error", reject);
       child.on("close", (code) => resolve({ code, stdout, stderr }));
     });

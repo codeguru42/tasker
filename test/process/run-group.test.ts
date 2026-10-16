@@ -287,8 +287,8 @@ function startFixture(
   savePid(pid);
   let stdout = "";
   let stderr = "";
-  child.stdout.on("data", (chunk) => (stdout += chunk));
-  child.stderr.on("data", (chunk) => (stderr += chunk));
+  child.stdout.on("data", (chunk) => (stdout += String(chunk)));
+  child.stderr.on("data", (chunk) => (stderr += String(chunk)));
   let exited = false;
   const exit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
     child.on("exit", (code, signal) => {

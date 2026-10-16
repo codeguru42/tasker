@@ -2730,7 +2730,7 @@ describe("task store", () => {
           { cwd: repoRoot },
         );
         let stderr = "";
-        child.stderr.on("data", (chunk) => (stderr += chunk));
+        child.stderr.on("data", (chunk) => (stderr += String(chunk)));
         child.on("error", reject);
         child.on("close", (code) => resolve({ code, stderr }));
       });

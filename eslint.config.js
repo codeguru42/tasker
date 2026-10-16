@@ -64,7 +64,6 @@ export default tseslint.config(
   // removes that rule from this block.
   {
     rules: {
-      "@typescript-eslint/restrict-plus-operands": "off",
       "@typescript-eslint/prefer-optional-chain": "off",
       "@typescript-eslint/await-thenable": "off",
       "@typescript-eslint/prefer-nullish-coalescing": "off",
