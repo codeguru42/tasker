@@ -14,7 +14,7 @@ The existence check: a base exists when `git show-ref --verify --quiet -- <revis
 
 ## The fetch
 
-Each fetch moves and prunes `refs/remotes/origin/*` in the clone, also when a later step fails. A failed fetch stores and deletes nothing. The fetch uses the ssh key of the repo (see [version-control.md](version-control.md#the-ssh-key)). The base is read after the fetch, because the fetch can make or move the ref.
+Each fetch moves and prunes `refs/remotes/origin/*` in the clone, also when a later step fails. The prune removes each `refs/remotes/origin/*` ref of a branch that the remote deleted. A failed fetch stores and deletes nothing. The fetch uses the ssh key of the repo (see [version-control.md](version-control.md#the-ssh-key)). The base is read after the fetch, because the fetch can make or move the ref.
 
 The resolve of the base and the containment read of the diff part fetch. No worktree or reconcile function fetches, so the caller resolves the base first.
 
