@@ -20,6 +20,7 @@ import {
   transitionWithPlanRevision,
   transitionWithPlanUnapproval,
   transitionWithRetry,
+  transitionWithReviewDismissal,
   transitionWithVerifyRun,
   type TaskState,
   type TransitionDetail,
@@ -32,8 +33,12 @@ import {
   seedPlanSession,
   validPlanAnswer,
 } from "../helpers/plan.js";
+import { seedReview } from "../helpers/store.js";
 import { moveTaskThrough, TO_WORK_REVIEW } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
+
+const dismissFindings = (store: TaskStore, id: number, positions: number[], reason = "Not a bug.") =>
+  transitionWithReviewDismissal(store, id, 1, positions, reason);
 
 describe("spawning states", () => {
   it("has the ten spawning states", () => {
@@ -513,6 +518,42 @@ describe("task transitions", () => {
       );
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBe(approvedAt);
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithReviewDismissal", () => {
+    it("dismisses some findings and keeps the task in reviewed", () => {
+      const task = store.createTask(newTask("reviewed"));
+      seedReview(store, task.id);
+      expect(dismissFindings(store, task.id, [1])).toEqual([2]);
+      expect(store.getTask(task.id)!.state).toBe("reviewed");
+      const last = store.listEvents(task.id).at(-1)!;
+      expect(last.type).toBe("review_dismissed");
+      expect(last.data).toEqual({ number: 1, positions: [1], reason: "Not a bug." });
+    });
+
+    it("moves the task to awaiting_work_review on the last dismissal", () => {
+      const task = store.createTask(newTask("reviewed"));
+      seedReview(store, task.id);
+      expect(dismissFindings(store, task.id, [1, 2])).toEqual([]);
+      expect(store.getTask(task.id)!.state).toBe("awaiting_work_review");
+      const events = store.listEvents(task.id).slice(-2);
+      expect(events.map((e) => e.type)).toEqual(["review_dismissed", "transition"]);
+      expect(events[0].data).toEqual({ number: 1, positions: [1, 2], reason: "Not a bug." });
+      expect(events[1].data).toEqual({ from: "reviewed", to: "awaiting_work_review" });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("reviewed"));
+      seedReview(store, task.id, {}, "workspace_ready");
+      const before = store.listEvents(task.id);
+      const dismissals = store.getReview(task.id, 1)!.findings.map((f) => f.dismissed);
+      expect(() => dismissFindings(store, task.id, [1, 2])).toThrow(
+        "illegal state transition: workspace_ready -> awaiting_work_review",
+      );
+      expect(store.getTask(task.id)!.state).toBe("workspace_ready");
+      expect(store.getReview(task.id, 1)!.findings.map((f) => f.dismissed)).toEqual(dismissals);
       expect(store.listEvents(task.id)).toEqual(before);
     });
   });
