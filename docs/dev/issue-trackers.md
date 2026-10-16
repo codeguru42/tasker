@@ -4,7 +4,7 @@
 
 ## The GitHub folder
 
-All code that starts `gh` is in `src/issues/github/`. No file outside `src/issues/` imports from it, and a command gets a provider from the registry (see [The issue provider](#the-issue-provider)). A boundary test enforces both rules. The test has two known gaps: it cannot find a module name that the code builds at run time, and it cannot find a command name that the code builds at run time.
+All code that starts `gh` is in `src/issues/github/`. No file outside `src/issues/` imports from it, and a command gets a provider from the registry (see [The issue provider](#the-issue-provider)). A [boundary test](code-conventions.md#tests) enforces both rules.
 
 ## The issue provider
 

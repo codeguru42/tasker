@@ -28,7 +28,7 @@ A github repo matches when the `owner/repo` part of the key equals the project. 
 
 A jira repo never matches, because the Jira project match does not exist yet. Its parser runs only to give the parser error.
 
-No file in `src/issue-key/` imports from `src/issues/`, because that import pulls in the registry and the gh code. A boundary test enforces this rule.
+No file in `src/issue-key/` imports from `src/issues/`, because that import pulls in the registry and the gh code. A [boundary test](code-conventions.md#tests) enforces this rule.
 
 The unknown repo check of `--repo` uses the own keys of the configuration only, so `constructor` and `__proto__` are unknown repo keys.
 

@@ -6,7 +6,7 @@ All code that starts `git` lives in `src/vcs/git/`.
 
 ## The git folder
 
-No folder of `src/` outside `src/vcs/git/` starts git. A boundary test enforces this rule. The test has two known gaps: it cannot find a module name that the code builds at run time, and it cannot find a git name that the code builds at run time.
+No folder of `src/` outside `src/vcs/git/` starts git. A [boundary test](code-conventions.md#tests) enforces this rule.
 
 ## The provider interface
 
@@ -18,7 +18,7 @@ One factory is the only place that picks a provider. It reads `vcs.provider`. Gi
 - Push guard rule: a provider that cannot guard a push refuses to provision, and it never runs with a weaker guard. The git provider guards a push with the pre-push hook that provision writes (see [Push guard](#push-guard)).
 - Limit: each git provider gives its own version check, and its lock-file check reads `/proc` in its own call. A doctor run over two git repos has two version checks and can read `/proc` two times.
 
-Import boundary: no file under `src/` outside `src/vcs/` imports from `src/vcs/git/`. A boundary test enforces this rule. Files under `test/` are out of scope, because the tests of the git code import it. The test cannot find a module name that the code builds at run time.
+Import boundary: no file under `src/` outside `src/vcs/` imports from `src/vcs/git/`. A [boundary test](code-conventions.md#tests) enforces this rule. Files under `test/` are out of scope, because the tests of the git code import it.
 
 [code-conventions.md](code-conventions.md#add-an-operation-to-the-version-control-provider) gives the steps to add an operation.
 
