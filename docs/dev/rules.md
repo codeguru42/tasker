@@ -59,7 +59,7 @@ A case is one kind of input that a function serves. Examples are a role of an as
 
 - The code is the source of truth. The docs do not describe anything that a reader can learn from the code directly. Examples are the names of functions, files, helpers, types and table columns, and the signatures, arguments, flags, return values and steps of a function.
 - The rule above has one exception: a rule in a doc can name the file or folder that it applies to. For example, a rule can say where a kind of code goes, or which folder an import rule covers. "Put shared test helpers in `test/helpers/`" is such a rule, and it is allowed. The exception is narrow. A doc still does not list the functions, helpers or types of a file. A plain list of the files of a folder is not allowed either. A list that gives the purpose of each folder or file that it names is allowed, for example a layout or an index.
-- The docs give only what the code cannot show. They give the purpose of a part, the reasons for a design and the rules that apply across files. They also give the limits and the facts about outside tools. An example of a fact about an outside tool is a git behavior that a flag guards against. A user does not read the code. As a result, the user docs (`docs/config.md`, `skills/tasker/SKILL.md` and `skills/tasker/references/`) describe the behavior that a user sees, for example the commands, the flags and the configuration.
+- The docs give only what the code cannot show. They give the purpose of a part, the reasons for a design and the rules that apply across files. They also give the limits and the facts about outside tools. An example of a fact about an outside tool is a git behavior that a flag guards against. A user does not read the code. As a result, the user docs (`README.md`, `docs/config.md`, `skills/tasker/SKILL.md` and `skills/tasker/references/`) describe the behavior that a user sees, for example the commands, the flags and the configuration.
 - Update the docs in the same change as the code.
 - Put a new command in the index `skills/tasker/SKILL.md`, in the reference file of its phase under `skills/tasker/references/`, and in the `--help` output.
 - Write the docs with the simple-english skill. The skill holds the rules of the text, for example the banned words and the sentence limits.
@@ -68,6 +68,7 @@ A case is one kind of input that a function serves. Examples are a role of an as
 ## AGENTS.md
 
 - `AGENTS.md` is an index. Each line is a one-line description plus a link to the file that has the details.
+- `AGENTS.md` is the index of the docs for the development of tasker. It does not explain how to use tasker, so an index line need not list each command or each section of its file.
 - Do not put rule text in `AGENTS.md`.
 - To add a topic, put its details in its own file under `docs/`. Then add one line to `AGENTS.md`.
 - `CLAUDE.md` has one line, `@AGENTS.md`, and nothing else.
