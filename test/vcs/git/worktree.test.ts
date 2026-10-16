@@ -682,7 +682,7 @@ describe("git fixture", () => {
     });
 
     it("does not read another ref through the git name rules", async () => {
-      const sha = (await origin.branchHead("main")) as string;
+      const sha = (await origin.branchHead("main"))!;
       await runGit(["update-ref", `refs/heads/refs/heads/${BRANCH}`, sha], {
         gitDir: clone,
         env,

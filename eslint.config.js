@@ -64,7 +64,6 @@ export default tseslint.config(
   // removes that rule from this block.
   {
     rules: {
-      "@typescript-eslint/non-nullable-type-assertion-style": "off",
       "@typescript-eslint/prefer-includes": "off",
       "@typescript-eslint/no-unnecessary-template-expression": "off",
       "@typescript-eslint/consistent-type-definitions": "off",

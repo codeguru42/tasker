@@ -499,7 +499,7 @@ function toFindingEntry(row: ReviewFindingRow): FindingEntry {
   const finding: Finding = { file: row.file, summary: row.summary, failure_scenario: row.failure_scenario };
   if (row.line !== null) finding.line = row.line;
   if (row.category !== null) finding.category = row.category;
-  const dismissed = row.dismissed_at === null ? null : { at: row.dismissed_at, reason: row.dismiss_reason as string };
+  const dismissed = row.dismissed_at === null ? null : { at: row.dismissed_at, reason: row.dismiss_reason! };
   return { position: row.position, finding, dismissed };
 }
 
@@ -1198,7 +1198,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     listReviews(taskId) {
       const rows = statements.selectReviews.all(taskId) as unknown as ReviewRow[];
-      return rows.map((row) => toReview(row) as Review);
+      return rows.map((row) => toReview(row)!);
     },
 
     dismissReviewFindings(taskId, number, positions, reason, state, check) {

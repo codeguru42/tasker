@@ -42,7 +42,7 @@ describe("remoteDefaultBranch", () => {
 
   it("throws when HEAD of the origin is detached", async () => {
     const sha = await origin.branchHead("main");
-    await runGit(["update-ref", "--no-deref", "HEAD", sha as string], {
+    await runGit(["update-ref", "--no-deref", "HEAD", sha!], {
       gitDir: origin.path,
       env: origin.env,
     });
