@@ -158,6 +158,20 @@ describe("createGitProvider", () => {
       expect(moved.trim()).toBe(tip);
     });
 
+    it("fetches origin and says whether the base contains the task ref", async () => {
+      const { git, path, taskRef } = await workspace();
+      const env = fixture.context.env;
+      const head = await commitInWorktree(path, env, { file: "a.txt" });
+      const tip = await fixture.origin.addCommit("main");
+      expect(await git.taskRefOnBase(fixture.context, { taskRef, baseRevision: base })).toEqual({
+        revision: head,
+        baseTip: tip,
+        onBase: false,
+      });
+      const moved = await runGit(["rev-parse", base], { gitDir: paths().clone, env });
+      expect(moved.trim()).toBe(tip);
+    });
+
     it("gives the changed paths like changedPaths", async () => {
       const { git, path, taskRef } = await workspace();
       await commitInWorktree(path, fixture.context.env, { file: "a.txt" });

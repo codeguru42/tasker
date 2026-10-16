@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   changedPaths,
   fetchBaseContainment,
+  fetchOnBase,
   fetchOrigin,
   hasCommitsNotIn,
   isAncestor,
@@ -65,6 +66,8 @@ describe("git changes", () => {
     uncommittedChanges({ clone, env, path, ...extra });
   const containment = (extra: Partial<Parameters<typeof fetchBaseContainment>[0]> = {}) =>
     fetchBaseContainment({ clone, env, sshKey: undefined, branch, baseRevision: BASE, ...extra });
+  const onBase = (extra: Partial<Parameters<typeof fetchOnBase>[0]> = {}) =>
+    fetchOnBase({ clone, env, sshKey: undefined, branch, baseRevision: BASE, ...extra });
   // The tip of the base in the clone.
   const baseTip = () => runGit(["rev-parse", BASE], { gitDir: clone, env }).then((out) => out.trim());
   // The tip of the task branch in the clone.
@@ -436,6 +439,41 @@ describe("git changes", () => {
       const before = await baseTip();
       renameSync(origin.path, `${origin.path}-moved`);
       const error = await failureOf(containment(), GitError);
+      expect(error.subcommand).toBe("fetch");
+      expect(await baseTip()).toBe(before);
+    });
+  });
+
+  describe("fetchOnBase", () => {
+    it("says that the base on origin does not contain a commit on top of it", async () => {
+      const head = await commitInWorktree(path, env, { file: "work.txt" });
+      expect(await onBase()).toEqual({ revision: head, baseTip: await baseTip(), onBase: false });
+    });
+
+    it("says that the base contains a branch with no own commit", async () => {
+      const tip = await baseTip();
+      expect(await onBase()).toEqual({ revision: tip, baseTip: tip, onBase: true });
+    });
+
+    it("says that the base contains the branch after origin took its head, and fetches it", async () => {
+      const head = await commitInWorktree(path, env, { file: "work.txt" });
+      await runGit(["fetch", clone, `refs/heads/${branch}:refs/heads/main`], { gitDir: origin.path, env });
+      expect(await onBase()).toEqual({ revision: head, baseTip: head, onBase: true });
+      expect(await baseTip()).toBe(head);
+    });
+
+    it("rejects a bad branch name before the fetch", async () => {
+      const before = await baseTip();
+      await origin.addCommit("main");
+      const error = await failureOf(onBase({ branch: "HEAD" }), Error);
+      expect(error.message).toBe('not a task branch name: "HEAD"');
+      expect(await baseTip()).toBe(before);
+    });
+
+    it("rejects with the error of git when the fetch fails and keeps the base tip", async () => {
+      const before = await baseTip();
+      renameSync(origin.path, `${origin.path}-moved`);
+      const error = await failureOf(onBase(), GitError);
       expect(error.subcommand).toBe("fetch");
       expect(await baseTip()).toBe(before);
     });
