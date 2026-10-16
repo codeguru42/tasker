@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, lstatSync } from "node:fs";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
 import {
@@ -13,6 +13,7 @@ import {
   runInput,
   TEST_SESSION_ID,
   useFakeClaude,
+  useFakeClaudeOnPath,
   writePlaceholder,
 } from "./fake-claude.js";
 import { realCommandPath } from "./fake-commands.js";
@@ -390,5 +391,17 @@ describe("argAfter", () => {
 
   it("gives undefined when the flag is missing and nothing is at index 0", () => {
     expect(argAfter([], "--resume")).toBeUndefined();
+  });
+});
+
+describe("useFakeClaudeOnPath", () => {
+  it("puts the fake first on PATH and gives the process a new HOME", () => {
+    const before = process.env.HOME;
+    const fake = useFakeClaudeOnPath({ stream: ["one"] });
+
+    expect(process.env.PATH?.startsWith(`${fake.binDir}${delimiter}`)).toBe(true);
+    expect(process.env.HOME).not.toBe(before);
+    expect(existsSync(process.env.HOME!)).toBe(true);
+    expect(runClaude(process.env, []).stdout).toBe("one\n");
   });
 });

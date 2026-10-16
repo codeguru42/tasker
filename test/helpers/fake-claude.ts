@@ -1,10 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AssistantEvent, RunInput } from "../../src/assistant/provider.js";
 import { shellQuote } from "../../src/vcs/git/ssh.js";
 import { writeFakeCommand } from "./fake-commands.js";
-import { useTempDir } from "./temp.js";
+import { useProcessEnv, useTempDir, useTempHome } from "./temp.js";
 
 // What the fake claude does (see useFakeClaude()).
 export interface FakeClaudeControl {
@@ -157,4 +157,12 @@ export { writePlaceholder } from "../fixtures/placeholder.js";
 // The argument after flag in argv of a claude call, for example the id after --session-id.
 export function argAfter(argv: string[], flag: string): string | undefined {
   return argv[argv.indexOf(flag) + 1];
+}
+
+// useFakeClaude(control), then process.env gets the fake first on PATH and a temp HOME and XDG_CONFIG_HOME for this test.
+// Call it inside a test.
+export function useFakeClaudeOnPath(control: FakeClaudeControl): FakeClaude {
+  const claude = useFakeClaude(control);
+  useProcessEnv({ ...useTempHome(), PATH: `${claude.binDir}${delimiter}${String(process.env.PATH)}` });
+  return claude;
 }

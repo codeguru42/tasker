@@ -16,7 +16,7 @@ import { runCommand } from "./cli.js";
 import { failureOf } from "./errors.js";
 import { validConfig, writeDataRootConfig } from "./config.js";
 import { useFakeSandboxBin } from "./fake-commands.js";
-import { type FakeClaude, type FakeClaudeControl, useFakeClaude } from "./fake-claude.js";
+import { type FakeClaude, type FakeClaudeControl, useFakeClaude, useFakeClaudeOnPath } from "./fake-claude.js";
 import { type FakeGh, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
 import { type GitOrigin, commitInWorktree, localBranches, makeProviderFixture, taskNames } from "./git.js";
 import { recordTestPlanRevision, seedPlanSession, validPlanAnswer } from "./plan.js";
@@ -226,8 +226,7 @@ export async function usePlanFixture(
   options?: Parameters<typeof useStartFixture>[0],
 ): Promise<PlanFixture> {
   const started = await useStartedTask(options);
-  const claude = useFakeClaude(control);
-  useProcessEnv({ ...useTempHome(), PATH: `${claude.binDir}${delimiter}${String(process.env.PATH)}` });
+  const claude = useFakeClaudeOnPath(control);
   return { started, claude };
 }
 
