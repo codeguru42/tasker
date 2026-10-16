@@ -105,6 +105,10 @@ export const TEST_SESSION_ID = "e5f6ebac-a40e-48af-befc-f9a7d1af4c5b";
 // The id of an execute session. It differs from TEST_SESSION_ID, because a session id is unique in the whole table.
 export const TEST_EXECUTE_SESSION_ID = "3c9d1a52-7b4e-4f0a-9d86-2e5a8c1b7f34";
 
+// The id of a review session. It differs from TEST_SESSION_ID and TEST_EXECUTE_SESSION_ID, because a session id is
+// unique in the whole table.
+export const TEST_REVIEW_SESSION_ID = "9b2e7d41-6c3a-4f58-8e1d-5a7c0f2b9e63";
+
 // A run input with the defaults of the assistant provider tests, new for each call. Later tickets use it
 // for each provider. A test that starts a child passes a real cwd and env.
 export function runInput(overrides: Partial<RunInput> = {}): RunInput {

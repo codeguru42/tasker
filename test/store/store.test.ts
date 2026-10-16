@@ -26,6 +26,7 @@ import {
   seedExecuteTodoStates,
   seedPlanRevision,
   seedPlanSession,
+  seedReviewSession,
   validPlanAnswer,
 } from "../helpers/plan.js";
 import { deadPid, startFixture, startWriteLockHolder } from "../helpers/processes.js";
@@ -1932,6 +1933,16 @@ describe("task store", () => {
       expect(store.executeSession(task.id, 1)).toBeUndefined();
       expect(store.executeSession(task.id, 2)?.sessionId).toBe("s-2");
       expect(store.planSession(task.id)).toBeDefined();
+    });
+
+    it("clears the review session of the given number only", () => {
+      const task = failedTask();
+      seedReviewSession(store, task.id, 1, { sessionId: "r-1" });
+      seedReviewSession(store, task.id, 2, { sessionId: "r-2" });
+
+      store.retryTask(task.id, "awaiting_work_review", { clearReviewSession: 2 }, retryCheck);
+
+      expect(readSessionRows()).toMatchObject([{ role: "review", review_number: 1, session_id: "r-1" }]);
     });
 
     it("marks every todo done and queues the fix turn", () => {

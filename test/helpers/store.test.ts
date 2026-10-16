@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { failedFrom, lastTransitionError, transitionTask } from "../../src/state/machine.js";
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
-import type { NewSession, TaskStore } from "../../src/store/store.js";
+import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
+import { seedPlanSession, seedReviewSession } from "./plan.js";
 import { findingEntries, reviewFinding } from "./review.js";
 import { useTempDir } from "./temp.js";
 import { useThreeRepoDataRoot } from "./config.js";
@@ -847,22 +848,15 @@ describe("seedTaskWithReviews", () => {
 });
 
 describe("reviewSessionRows", () => {
-  const session = (sessionId: string): NewSession => ({
-    sessionId,
-    provider: "claude-code",
-    model: "opus",
-    effort: "high",
-  });
-
   it("gives the review sessions of the task in the order of review_number", () => {
     const dataRoot = join(useTempDir("tasker-review-rows-"), "data");
     const [first, second] = withDataRootStore(dataRoot, (store) => {
       const one = store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
       const two = store.createTask({ issueKey: "a/b#2", repoKey: "a/b", state: "planning" });
-      store.recordReviewSession(one.id, 2, session("review-two"));
-      store.recordReviewSession(one.id, 1, session("review-one"));
-      store.recordPlanSession(one.id, session("plan-one"));
-      store.recordReviewSession(two.id, 1, session("other-task"));
+      seedReviewSession(store, one.id, 2, { sessionId: "review-two" });
+      seedReviewSession(store, one.id, 1, { sessionId: "review-one" });
+      seedPlanSession(store, one.id, { sessionId: "plan-one" });
+      seedReviewSession(store, two.id, 1, { sessionId: "other-task" });
       return [one, two];
     });
 
@@ -877,7 +871,7 @@ describe("reviewSessionRows", () => {
     const dataRoot = join(useTempDir("tasker-review-rows-"), "data");
     const task = withDataRootStore(dataRoot, (store) => {
       const created = store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
-      store.recordPlanSession(created.id, session("plan-one"));
+      seedPlanSession(store, created.id, { sessionId: "plan-one" });
       return created;
     });
 

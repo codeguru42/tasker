@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { checkPlanAnswer } from "../../src/plan/answer.js";
 import { planRevisionPath } from "../../src/store/layout.js";
-import { TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID } from "./fake-claude.js";
+import { TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID, TEST_SESSION_ID } from "./fake-claude.js";
 import {
   answerStream,
   planRevisionOf,
@@ -15,6 +15,7 @@ import {
   seedPlanReviewTask,
   seedPlanRevision,
   seedPlanSession,
+  seedReviewSession,
   seedPlanningTask,
   planStateSnapshot,
   planTodo,
@@ -25,7 +26,7 @@ import {
   turnResultStream,
   validPlanAnswer,
 } from "./plan.js";
-import { dayAt, eventsOf, seedTask, withDataRootStore } from "./store.js";
+import { dayAt, eventsOf, reviewSessionRows, seedTask, withDataRootStore } from "./store.js";
 import { useTempDir, useTempFile } from "./temp.js";
 
 describe("seedTaskWithPlanFiles", () => {
@@ -325,6 +326,40 @@ describe("seedPlanSession", () => {
       const task = seedTask(store);
 
       const session = seedPlanSession(store, task.id, { sessionId: "x", effort: "low" });
+
+      expect(session).toMatchObject({ sessionId: "x", effort: "low", model: "opus", provider: "claude-code" });
+    });
+  });
+});
+
+describe("seedReviewSession", () => {
+  it("records TEST_REVIEW_SESSION_ID for the review number with the plan model of the test configurations", () => {
+    const dataRoot = useTempDir("tasker-seed-");
+    const task = withDataRootStore(dataRoot, (store) => {
+      const created = seedTask(store);
+
+      const session = seedReviewSession(store, created.id, 2);
+
+      expect(session).toEqual({
+        sessionId: TEST_REVIEW_SESSION_ID,
+        repoKey: "a/b",
+        provider: "claude-code",
+        model: "opus",
+        effort: "high",
+      });
+      return created;
+    });
+
+    expect(reviewSessionRows(dataRoot, task.id).map((row) => [row.review_number, row.session_id])).toEqual([
+      [2, TEST_REVIEW_SESSION_ID],
+    ]);
+  });
+
+  it("uses the values that the call changes", () => {
+    withDataRootStore(useTempDir("tasker-seed-"), (store) => {
+      const task = seedTask(store);
+
+      const session = seedReviewSession(store, task.id, 1, { sessionId: "x", effort: "low" });
 
       expect(session).toMatchObject({ sessionId: "x", effort: "low", model: "opus", provider: "claude-code" });
     });

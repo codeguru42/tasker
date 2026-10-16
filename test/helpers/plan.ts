@@ -14,7 +14,12 @@ import {
   type TaskStore,
 } from "../../src/store/store.js";
 import { runCommand } from "./cli.js";
-import { claudeSampleWithResult, TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID } from "./fake-claude.js";
+import {
+  claudeSampleWithResult,
+  TEST_EXECUTE_SESSION_ID,
+  TEST_REVIEW_SESSION_ID,
+  TEST_SESSION_ID,
+} from "./fake-claude.js";
 import { useThreeRepoDataRoot } from "./config.js";
 import { dayAt, eventsOf, latestTaskOf, type SeedTask, seedTasks, withDataRootStore } from "./store.js";
 
@@ -237,6 +242,23 @@ export function seedExecuteFixTurn(
 export function seedPlanSession(store: TaskStore, taskId: number, change: Partial<NewSession> = {}): StoredSession {
   return store.recordPlanSession(taskId, {
     sessionId: TEST_SESSION_ID,
+    provider: "claude-code",
+    model: "opus",
+    effort: "high",
+    ...change,
+  });
+}
+
+// Records the review session of a review number with TEST_REVIEW_SESSION_ID and the plan model of the test
+// configurations, unless the call changes them.
+export function seedReviewSession(
+  store: TaskStore,
+  taskId: number,
+  number: number,
+  change: Partial<NewSession> = {},
+): StoredSession {
+  return store.recordReviewSession(taskId, number, {
+    sessionId: TEST_REVIEW_SESSION_ID,
     provider: "claude-code",
     model: "opus",
     effort: "high",
