@@ -12,10 +12,15 @@ The command reads the origin. The origin is the state that the task left when it
 
 - `provisioning`: the command does not move the task. `tasker start` moves it from `failed` to `provisioning`, and the command runs it.
 - `planning`: the task goes to `workspace_ready`. The command deletes the plan session, so that the next run starts a new session. Then it runs `tasker plan`.
-- `refining`: the task goes to `awaiting_plan_review`. Nothing runs. The command prints a hint, because a refine needs new feedback from you.
+- `refining`, when the origin of the refine is `awaiting_plan_review` or `failed`: the task goes to `awaiting_plan_review`. Nothing runs. The command prints a hint, because a refine needs new feedback from you.
+- `refining`, when the origin of the refine is `reviewed`: the task goes to `reviewed`. Nothing runs. The command prints a hint, because the findings can change what you want.
+- `refining`, when the origin of the refine is `awaiting_work_review`: the task goes to `awaiting_work_review`. Nothing runs. The command prints a hint, because the feedback can change what you want.
 - `executing`: the task goes to `approved`. The command deletes the execute session of the pinned revision, so that the next run starts a new session. Then it runs `tasker execute`. A todo that is `done` gets no new turn.
 - `verifying`: the task goes to `executed`, and the command runs `tasker verify`.
+- `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review number, so that the next run starts a new session. Then it runs `tasker review`.
 - `verifying` with `--resume-execute`: the task goes to `approved`. The command marks every todo of the pinned revision `done` and queues one fix turn. Then it runs `tasker execute`, which continues the execute session and runs only the fix turn.
+
+The origin of a refine is the state that the task left when the last refine started.
 
 The deleted session matters because a run that failed before its first turn recorded a session id that names no conversation. A new run must not continue it.
 
@@ -29,7 +34,11 @@ For the origin `provisioning`, the target is `provisioning`, so the line is `ret
 
 For a task that failed in `provisioning`, the steps of `tasker start` run with no `--base`. If they stop because no base branch is known, run `tasker start <issue> --base <branch>`. `tasker start` continues the same task.
 
-The output of the next command follows: the output of `tasker start`, `tasker plan`, `tasker execute` or `tasker verify`. The next command keeps its own errors and its own exit code. If it fails, the task goes to `failed` again with a new error, and you can run `tasker retry` again. For the origin `refining`, the command prints `run tasker refine <issue key> "<feedback>" again` and exits with code 0.
+The output of the next command follows: the output of `tasker start`, `tasker plan`, `tasker execute`, `tasker verify` or `tasker review`. The next command keeps its own errors and its own exit code. If it fails, the task goes to `failed` again with a new error, and you can run `tasker retry` again. For the origin `refining`, the command prints one line and exits with code 0. The line depends on the origin of the refine:
+
+- `awaiting_plan_review` or `failed`: `run tasker refine <issue key> "<feedback>" again`
+- `reviewed`: `run tasker refine <issue key> again to act on the findings, or tasker dismiss-review <issue key> "<reason>"`
+- `awaiting_work_review`: `run tasker review <issue key> "<feedback>" again`
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 

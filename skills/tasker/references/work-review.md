@@ -35,7 +35,7 @@ These errors move the task to the state `failed`. The shared quota stop is the e
 - The assistant fails or runs out of time. The error is `reviewing failed: <reason>` or `reviewing timed out after <n> min`.
 - The answer is not valid. The error is `the assistant returned findings that tasker refuses:`, then one line for each problem.
 
-No command resumes a failed or stopped review yet.
+[`tasker retry`](recovery.md#tasker-retry) runs a failed review again in a new session. No command resumes a stopped review yet.
 
 ### The feedback form
 
