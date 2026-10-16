@@ -82,3 +82,11 @@ export function showLines(state: string, issueKey: string): string[] {
   const also = row.commands.filter((c) => c !== row.primary).map((c) => render(c, issueKey));
   return [`next: ${render(row.primary, issueKey)}`, `also: ${also.join(", ")}`];
 }
+
+// The NEXT cell of tasker status. No row gives an empty string.
+export function nextCell(state: string): string {
+  const row = stateCommands(state);
+  if (row === undefined) return "";
+  if (row.primary === undefined) return row.commands.join(", ");
+  return `${row.primary} (also: ${row.commands.filter((c) => c !== row.primary).join(", ")})`;
+}

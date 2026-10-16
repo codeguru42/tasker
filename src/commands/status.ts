@@ -1,9 +1,10 @@
 import type { RegisterCommand } from "../cli.js";
+import { nextCell } from "../state/commands.js";
 import { isTaskState, STATES } from "../state/machine.js";
 import type { TaskFilter } from "../store/store.js";
 import { fail, formatColumns, loadConfigOrFail, repoKeyOrFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
 
-const HEADERS = ["ISSUE", "REPO", "STATE", "UPDATED"];
+const HEADERS = ["ISSUE", "REPO", "STATE", "UPDATED", "NEXT"];
 
 export const status: RegisterCommand = (program, io) => {
   program
@@ -34,7 +35,10 @@ export const status: RegisterCommand = (program, io) => {
       io.stdout(
         tasks.length === 0
           ? "no tasks\n"
-          : formatColumns([HEADERS, ...tasks.map((t) => [t.issueKey, t.repoKey, t.state, t.updatedAt])])
+          : formatColumns([
+              HEADERS,
+              ...tasks.map((t) => [t.issueKey, t.repoKey, t.state, t.updatedAt, nextCell(t.state)]),
+            ])
               .map((line) => `${line}\n`)
               .join(""),
       );
