@@ -215,6 +215,26 @@ describe("a refused dismiss-review", () => {
     );
   });
 
+  it("does not take two large positions with the same rounded value for a repeat", async () => {
+    const { dataRoot, task } = seedReviewed();
+
+    await expectRefusedWithoutWrite(
+      { dataRoot, taskId: task.id },
+      [REASON, "--finding", "9007199254740993,9007199254740992"],
+      `the latest review of ${KEY} has no finding 9007199254740993; it has 2\nthe latest review of ${KEY} has no finding 9007199254740992; it has 2\n`,
+    );
+  });
+
+  it("prints a very large position as the user typed it", async () => {
+    const { dataRoot, task } = seedReviewed();
+
+    await expectRefusedWithoutWrite(
+      { dataRoot, taskId: task.id },
+      [REASON, "--finding", "99999999999999999999"],
+      `the latest review of ${KEY} has no finding 99999999999999999999; it has 2\n`,
+    );
+  });
+
   it.each(["", "   "])("refuses the empty reason %j", async (reason) => {
     const { dataRoot, task } = seedReviewed();
 
