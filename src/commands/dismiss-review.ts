@@ -21,17 +21,17 @@ function findingPositionsOrFail(io: Io, values: string[] | undefined): string[] 
   if (values.length > 1) {
     lines.push("--finding given more than once; give all positions in one list, for example --finding 1,3");
   }
-  for (const value of values) {
-    const items = value.split(",").map((item) => item.trim());
+  const lists = values.map((value) => value.split(",").map((item) => item.trim()));
+  for (const [index, items] of lists.entries()) {
     if (!items.every(isWholeNumberText)) {
-      lines.push(`--finding must be a list of whole numbers of 1 or more, separated by commas: ${value}`);
+      lines.push(`--finding must be a list of whole numbers of 1 or more, separated by commas: ${values[index]}`);
       continue;
     }
-    const repeated = items.filter((item, index) => items.indexOf(item) !== index);
+    const repeated = items.filter((item, position) => items.indexOf(item) !== position);
     lines.push(...[...new Set(repeated)].map((item) => `--finding names ${item} more than once`));
   }
   if (lines.length > 0) fail(io, lines.join("\n"));
-  return values[0].split(",").map((item) => item.trim());
+  return lists[0];
 }
 
 export const dismissReview: RegisterCommand = (program, io) => {
