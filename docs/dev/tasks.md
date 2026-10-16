@@ -10,6 +10,8 @@ The commands abort, plan, refine, approve, unapprove, execute and accept share o
 
 `tasker start` makes a task for an issue and takes it to `workspace_ready`.
 
+The start does not assign the issue and does not mark it in progress. It has no option to take over a lock of a live process, and no stacked base.
+
 ### The order of the steps
 
 The order follows what each step needs and what a failure can leave.
@@ -26,6 +28,8 @@ For each command that changes a task, the task lock does not wait. A second comm
 
 The rule that each command that changes a task takes the task lock has one home: [the locks table](data-root.md#locks-table).
 
+A person who does not answer the question for the base branch holds the repo lock. Another start of the same repo then waits, and it stops with the lock error at the end of its wait.
+
 ### A second run
 
 A second run continues a task that did not reach `workspace_ready`. It does not make a second task.
@@ -35,6 +39,8 @@ A second run continues a task that did not reach `workspace_ready`. It does not 
 - A failure in a clone step or in bootstrap moves the task to `failed` with the error. The next run moves it back and continues.
 - A task that is past this step is not changed. The command only prints it.
 - The stored base stays on a second run. A `--base` option or a `base:` label wins and is stored as the new base.
+- A new base on a second run does not move a task branch that already exists. The stored base can differ from the real start point of the branch.
+- An issue that closes after its task exists does not stop a second run. The closed check runs only when no task exists.
 
 ### Why the events are separate
 
@@ -57,6 +63,10 @@ The compare of the stored worktree path uses the real path. The data root can go
 The abort removes its own worktree entry. It never prunes, because a prune drops the entries of other tasks too.
 
 The worktree goes before the branch. Git refuses to delete a branch that a worktree entry holds, also when the folder of the entry is gone.
+
+The abort does not delete the task branch on `origin`. `tasker merge` pushes only the base branch, and no command publishes a task branch.
+
+A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
 
 ## The result of an assistant run
 
@@ -88,6 +98,8 @@ The steps run in this order.
 6. The row, its event and the move to `awaiting_plan_review` share one transaction. [The plan_revisions table](data-root.md#plan_revisions-table) gives the rule.
 
 An error after the start of the run also moves the task to `failed`, with the prefix `planning failed:`. A failed write of the plan file moves it to `failed` too, with its own message. A crash of tasker leaves the task in `planning`, with its run marker. Until M9, `tasker abort` is the way out.
+
+The plan reads the title and the body of the issue. It does not read the comments. A second `tasker plan` works only on a task in `workspace_ready`.
 
 After a successful plan, the command warns when the plan changes files that another active task of the same repo also changes. [What the plan prompt asks for](assistants.md#what-the-plan-prompt-asks-for) says that tasker compares `files_changed` with the other tasks in flight. The purpose of the warning is to let an operator order the landings before the approve, because the task that lands second can get merge conflicts and redo its work.
 
@@ -147,6 +159,8 @@ The steps run in this order.
 
 The move to `executed` appends one `executed` event with the data `{ version, prompts, from, to }`. The `executed` event takes the place of the `transition` event for this move. `prompts` holds the versions of the prompts that the run sent.
 
+A second `tasker execute` works only on a task in `approved`.
+
 The reasons:
 
 - The session belongs to the pinned revision. A later run of the same revision continues the session, so the assistant keeps what it learned. A new revision gets a new session.
@@ -187,6 +201,8 @@ These reasons explain its rules:
 - The review records the tip of the task branch, because the findings describe one tree. [data-root.md](data-root.md#reviews-table) gives the reason. The review reads the commits of the task branch, so the tip of that branch names the tree that the review read. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
 - tasker records the review session although no command continues it yet. [assistants.md](assistants.md#the-session-id) gives the rule of the session id.
 
+No command resumes a review that failed or stopped yet (`tasker retry` M8, `tasker resume` M9).
+
 ## Dismiss-review
 
 `tasker dismiss-review` dismisses open findings of the latest review of a task in `reviewed`, with one reason. It runs in this order:
@@ -209,7 +225,7 @@ The command has these limits:
 
 ## Retry
 
-`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`.
+`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. `tasker retry` resumes a task in `failed` for the origins of its table.
 
 The move, the delete of the sessions, the todo marks, the fix turn and one `retry` event share one transaction. The `retry` event has the data `{ origin, target, resumeExecute, from, to }` and takes the place of the `transition` event for this move. A retry of a task that failed in `provisioning` does not move the task, so it writes the `retry` event alone, with `{ origin, target, resumeExecute }`.
 
@@ -234,6 +250,8 @@ These reasons explain its rules:
 
 - The base check runs here and not at the landing. As a result, a base that moved while the task waited in review shows before a person lands it.
 - Accept only records the decision of a person. `tasker merge` is the one step that changes origin. As a result, a refused or an accepted task leaves origin as it was, and the person still decides to land in a separate step.
+
+The base can move after the check of `tasker accept`. Then `tasker merge` fails, and nothing moves on `origin`.
 
 ## Merge
 
@@ -261,16 +279,4 @@ These reasons explain its rules:
 - The check reads the tip of the task ref in the clone and not the worktree, for the same reason as the on-base check of [Merge](#merge).
 - The fetch holds the repo lock, because the fetch changes the refs of the clone. [The locks table](data-root.md#locks-table) requires it.
 
-## Limits
-
-- A new base on a second run does not move a task branch that already exists. The stored base can differ from the real start point of the branch.
-- An issue that closes after its task exists does not stop a second run. The closed check runs only when no task exists.
-- A person who does not answer the question for the base branch holds the repo lock. Another start of the same repo then waits, and it stops with the lock error at the end of its wait.
-- The start does not assign the issue and does not mark it in progress. It has no option to take over a lock of a live process, and no stacked base.
-- The abort does not delete the task branch on `origin`. `tasker merge` pushes only the base branch, and no command publishes a task branch.
-- A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
-- The plan reads the title and the body of the issue. It does not read the comments.
-- `tasker retry` resumes a task in `failed` for the origins of its table. No command resumes a task in `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`, and a second `tasker execute` works only on a task in `approved`.
-- No command resumes a review that failed or stopped yet (`tasker retry` M8, `tasker resume` M9).
 - Layer 3 of the push guard cannot see a push that moves the tip and then moves it back within one turn. It compares only the tips before and after.
-- The base can move after the check of `tasker accept`. Then `tasker merge` fails, and nothing moves on `origin`.
