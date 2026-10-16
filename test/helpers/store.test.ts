@@ -7,7 +7,7 @@ import { failedFrom, lastTransitionError, transitionTask } from "../../src/state
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import type { NewSession, TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
-import { reviewFinding } from "./review.js";
+import { findingEntries, reviewFinding } from "./review.js";
 import { useTempDir } from "./temp.js";
 import { useThreeRepoDataRoot } from "./config.js";
 import { taskNames } from "./git.js";
@@ -676,7 +676,7 @@ describe("seedReview", () => {
         prompt: expected.prompt,
         startedAt: expected.startedAt,
         endedAt: expected.endedAt,
-        findings: expected.findings.map((finding, i) => ({ position: i + 1, finding, dismissed: null })),
+        findings: findingEntries(expected.findings),
       });
     });
   });

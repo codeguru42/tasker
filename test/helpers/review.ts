@@ -1,4 +1,5 @@
 import type { Finding, ReviewAnswer } from "../../src/review/answer.js";
+import type { FindingEntry } from "../../src/review/findings-text.js";
 
 export function reviewFinding(change: Partial<Finding> = {}): Finding {
   return {
@@ -38,4 +39,9 @@ const FINDING_TEXTS = {
 export function findingText(which: "first" | "second", position: number, status = "open"): string {
   const { head, scenario } = FINDING_TEXTS[which];
   return `- [${position}] ${head}\n  failure scenario: ${scenario}\n  status: ${status}\n`;
+}
+
+// The findings as open entries, with positions from 1.
+export function findingEntries(findings: readonly Finding[]): FindingEntry[] {
+  return findings.map((finding, i) => ({ position: i + 1, finding, dismissed: null }));
 }

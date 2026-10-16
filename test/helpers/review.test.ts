@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkReviewAnswer } from "../../src/review/answer.js";
-import { findingText, reviewFinding, reviewFindingWithout, validReviewAnswer } from "./review.js";
+import { findingEntries, findingText, reviewFinding, reviewFindingWithout, validReviewAnswer } from "./review.js";
 
 function finding(change?: Parameters<typeof reviewFinding>[0]) {
   return reviewFinding(change);
@@ -74,5 +74,19 @@ describe("findingText", () => {
     const result = text("first", 3, "dismissed: Not a bug.");
     expect(result.startsWith("- [3] ")).toBe(true);
     expect(result.endsWith("  status: dismissed: Not a bug.\n")).toBe(true);
+  });
+});
+
+describe("findingEntries", () => {
+  it("gives open entries with positions from 1", () => {
+    const second = reviewFinding({ file: "src/b.ts", line: 9 });
+    expect(findingEntries([reviewFinding(), second])).toEqual([
+      { position: 1, finding: reviewFinding(), dismissed: null },
+      { position: 2, finding: second, dismissed: null },
+    ]);
+  });
+
+  it("gives no entry for no finding", () => {
+    expect(findingEntries([])).toEqual([]);
   });
 });

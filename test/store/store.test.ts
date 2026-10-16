@@ -21,7 +21,7 @@ import {
 import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
-import { reviewFindingWithout } from "../helpers/review.js";
+import { findingEntries, reviewFindingWithout } from "../helpers/review.js";
 import {
   seedExecuteSession,
   seedExecuteTodoStates,
@@ -896,7 +896,7 @@ describe("task store", () => {
         prompt: input.prompt,
         startedAt: input.startedAt,
         endedAt: input.endedAt,
-        findings: input.findings.map((finding, i) => ({ position: i + 1, finding, dismissed: null })),
+        findings: findingEntries(input.findings),
       });
     });
 
