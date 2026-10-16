@@ -39,13 +39,13 @@ export interface IssueProvider {
   // or undefined for a key of another project. It throws the IssueKeyError of the parser for a
   // key of the wrong form. It takes the project because one provider serves many repos. It is the
   // entry of KEY_PARSERS in src/issue-key/resolve.ts.
-  parse(rawKey: string, repoKey: string, project: string): IssueRef | undefined;
+  parse: (rawKey: string, repoKey: string, project: string) => IssueRef | undefined;
   // Reads the issue.
   fetchIssue(ref: IssueRef, env: NodeJS.ProcessEnv): Promise<Issue>;
   // Whether the credentials work, and as which account. signal stops the call.
   authStatus(env: NodeJS.ProcessEnv, options?: { signal?: AbortSignal }): Promise<AuthStatus>;
   // A base branch named on the issue, or undefined. No tracker call.
-  baseBranchHint(issue: Issue): string | undefined;
+  baseBranchHint: (issue: Issue) => string | undefined;
   // Every blocker with its state. A provider with no blocking links gives [].
   blockingIssues(ref: IssueRef, env: NodeJS.ProcessEnv): Promise<Blocker[]>;
   // Adds an assignee. The caller passes issueTracker.assignee.
@@ -55,7 +55,7 @@ export interface IssueProvider {
   transitionStatus(ref: IssueRef, target: string, env: NodeJS.ProcessEnv): Promise<void>;
   // Whether the issue has the in-progress marker. target is issueTracker.inProgressLabel.
   // No tracker call.
-  inProgressMarker(issue: Issue, target: string | undefined): boolean;
+  inProgressMarker: (issue: Issue, target: string | undefined) => boolean;
   // Marks the issue done. target is issueTracker.doneLabel. With a label, the label is added and
   // the issue stays open. With undefined, the issue closes as completed. The caller reads
   // issueTracker.updateOnFinish to decide if it calls this write at all.

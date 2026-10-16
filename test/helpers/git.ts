@@ -43,7 +43,7 @@ export interface GitOrigin {
   createBranch(name: string, from?: string): Promise<void>;
   // The head SHA of branch, or undefined when the branch is missing.
   branchHead(branch: string): Promise<string | undefined>;
-  remove(): void;
+  remove: () => void;
 }
 
 // Git reads a name that starts with "-" as an option.
@@ -189,7 +189,7 @@ export async function addCloneCommit(
 export interface ProviderFixture {
   origin: GitOrigin;
   context: VcsContext;
-  remove(): void;
+  remove: () => void;
 }
 
 export async function makeProviderFixture(): Promise<ProviderFixture> {

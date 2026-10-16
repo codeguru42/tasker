@@ -107,7 +107,7 @@ export interface RemoteTaskRefDeletion {
  */
 export interface VcsProvider {
   // Makes the local copy of the remote and guards a push.
-  provision(ctx: VcsContext): Promise<void>;
+  provision: (ctx: VcsContext) => Promise<void>;
   // Makes the folder of a task on a new or an existing task ref, from baseRevision.
   createWorkspace(ctx: VcsContext, o: { shortRef: string; title: string; baseRevision: string }): Promise<Workspace>;
   // Removes the folder of a task. The task ref stays.
