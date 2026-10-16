@@ -1,4 +1,4 @@
-import type { Check, CheckStatus } from "../../doctor/check.js";
+import type { Check } from "../../doctor/check.js";
 import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import { isOlderVersion } from "../../doctor/version-compare.js";
@@ -105,11 +105,8 @@ export function ghProjectCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check 
 interface LabelToRead {
   configKey: string;
   name: string;
-  missing: "error" | "warn";
   reason: string;
 }
-
-const SEVERITY: Record<CheckStatus, number> = { ok: 0, warn: 1, error: 2 };
 
 // The labels that tasker writes with the configuration of the repo, in the order of use.
 function labelsToRead(repo: IssueDoctorRepo): LabelToRead[] {
@@ -119,16 +116,14 @@ function labelsToRead(repo: IssueDoctorRepo): LabelToRead[] {
     labels.push({
       configKey: "issueTracker.inProgressLabel",
       name: inProgressLabel,
-      missing: "error",
-      reason: "tasker start fails",
+      reason: "the in-progress write of each tasker start fails and only warns",
     });
   }
   if (updateOnFinish && doneLabel !== undefined) {
     labels.push({
       configKey: "issueTracker.doneLabel",
       name: doneLabel,
-      missing: "warn",
-      reason: "tasker finish only warns",
+      reason: "the done write of each tasker finish fails and only warns",
     });
   }
   return labels;
@@ -148,7 +143,6 @@ export function ghLabelsCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
     }
     const account = accountOf(repo);
     const project = projectOf(repo.key, repo.issueTracker);
-    let status: CheckStatus = "ok";
     const lines: string[] = [];
     const missingKeys: string[] = [];
     for (const label of labels) {
@@ -166,17 +160,15 @@ export function ghLabelsCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
         }
         lines.push(`${text} does not exist in ${project}: ${label.reason}`);
         missingKeys.push(label.configKey);
-        if (SEVERITY[label.missing] > SEVERITY[status]) {
-          status = label.missing;
-        }
       }
     }
     const detail = [`${repo.key}:`, ...lines].join("\n");
     if (missingKeys.length === 0) {
-      return { status, detail };
+      return { status: "ok", detail };
     }
+    // A missing label only makes a write warn, so the status is never an error.
     return {
-      status,
+      status: "warn",
       detail,
       remediation: `Create each missing label in ${project} on GitHub, or change ${missingKeys.join(" and ")}.`,
     };
