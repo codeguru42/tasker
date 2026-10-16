@@ -22,11 +22,11 @@ The resolve gives the one configured repo that owns the key. It runs with no net
 
 The project of a repo is its `issueTracker.project`. The [`project` row of the configuration](../config.md#issuetracker) gives the default.
 
-tasker does not guess the provider from the shape of a key. It tries the key against each repo, with the key parser of the provider of that repo. One provider object serves many repos, so the parser takes the project. The resolve uses the key parsers directly, not the provider registry. As a result, a jira repo still gives the parser error, and not the error of the registry.
+tasker does not guess the provider from the shape of a key. It tries the key against each repo, with the key parser of the provider of that repo. One provider object serves many repos, so the parser takes the project. The resolve uses the key parsers directly, not the provider registry.
 
 A github repo matches when the `owner/repo` part of the key equals the project. The compare folds only the ASCII letters `A` to `Z` to lower case. `toLowerCase()` is not safe, because the Kelvin sign U+212A lowers to `k`. With the ASCII fold, a match means that the project has the same ASCII characters as the key. As a result, the stored key is always a GitHub key.
 
-A jira repo never matches, because the Jira project match does not exist yet. Its parser runs only to give the parser error.
+A jira repo never matches, because the Jira project match does not exist yet. Its parser runs only to give the parser error, and the resolve gives that error and not the error of the registry.
 
 No file in `src/issue-key/` imports from `src/issues/`, because that import pulls in the registry and the gh code. A [boundary test](code-conventions.md#tests) enforces this rule.
 
