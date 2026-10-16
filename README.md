@@ -31,10 +31,13 @@ See the [configuration reference](docs/config.md) for the keys. Run `tasker show
 
 ## Run the checks
 
-Run `npm run check` to make sure that the code is correct. The command runs three steps in this order:
+Run `npm run check` to make sure that the code is correct. The command runs four steps in this order:
 
 1. `npm run typecheck` runs the TypeScript type check.
-2. `npm run lint` runs ESLint.
-3. `npm test` runs the Vitest tests.
+2. `npm run lint` runs ESLint, with the type-aware rules of typescript-eslint.
+3. `npm run format:check` runs the Prettier format check.
+4. `npm test` runs the Vitest tests.
+
+Run `npm run format` to write the format of Prettier. Run `npm run lint:fix` to fix the lint problems that ESLint can fix.
 
 The command stops at the first step that fails. It then exits with a non-zero code. GitHub Actions runs the same command on each push and pull request.

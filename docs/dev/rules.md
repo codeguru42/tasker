@@ -6,6 +6,9 @@ This page gives the rules for each change to this repo. [Code conventions](code-
 
 `npm run check` must pass before a change is complete.
 
+- Before each commit, run `npm run format` and `npm run lint:fix`. Then run `npm run check`. Commit only the result. A `test:` commit must also pass the format check and the lint (see [Commits](#commits) for the rule on its failing tests). `tasker verify` runs `npm run check`, so a format or lint problem fails the verify run before any review.
+- Run a tool of the repo through a script of `package.json`, not with `npx`. The tools are dev dependencies, so a script can call them by name. If a step needs a tool that has no script, add the script.
+
 ## Tests
 
 - Write the test first. Commit the failing test, then the code that makes it pass.
