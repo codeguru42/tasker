@@ -87,11 +87,11 @@ describe("doctor", () => {
     const { out } = await runCommand(doctor, "doctor");
 
     const lines = statusLines(out);
-    expect(lines.filter((line) => / gh version/.test(line))).toHaveLength(1);
-    expect(lines.filter((line) => / gh auth: codeguru42/.test(line))).toHaveLength(1);
+    expect(lines.filter((line) => line.includes(" gh version"))).toHaveLength(1);
+    expect(lines.filter((line) => line.includes(" gh auth: codeguru42"))).toHaveLength(1);
     expect(fake.calls().filter((call) => call.args[0] === "--version")).toHaveLength(1);
-    const ghVersionAt = lines.findIndex((line) => / gh version/.test(line));
-    const gitAfterGh = lines.slice(ghVersionAt).filter((line) => / git /.test(line));
+    const ghVersionAt = lines.findIndex((line) => line.includes(" gh version"));
+    const gitAfterGh = lines.slice(ghVersionAt).filter((line) => line.includes(" git "));
     expect(gitAfterGh).toEqual([]);
   });
 
