@@ -42,6 +42,7 @@ A key that does not match the form of its provider is an error. The error names 
 For each of these errors, the command prints the error on stderr and exits with code 1. A reference file names a shared error only when the command handles it in a different way.
 
 - The issue key does not resolve.
+- The task is in a state that the command does not accept. The error is `the task of <issue key> is in <state>; tasker <command> needs <states>`. For a state with a primary command, a sentence follows: `next: tasker <primary> <issue key> (also: tasker <other> <issue key>, ...)`. For a state with no primary command, this sentence follows: `commands: tasker <a> <issue key>, tasker <b> <issue key>, ...`. For `finished` and `cancelled`, no sentence follows. [The commands of each state](../../docs/statemachine.md#the-commands-of-each-state) gives the table.
 - The issue has no task. The error names the issue and the repo.
 - The configuration is missing or invalid.
 - Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
@@ -60,7 +61,7 @@ The commands `show`, `show-bootstrap`, `show-plan`, `show-questions`, `show-veri
 
 ## States
 
-Each task is in one state. Each command entry names the state that the command needs. [docs/statemachine.md](../../docs/statemachine.md) gives the states and the edges.
+Each task is in one state. Each command entry names the state that the command needs. [docs/statemachine.md](../../docs/statemachine.md) gives the states and the edges. `tasker show` and `tasker status` print the commands of the state of a task. [The commands of each state](../../docs/statemachine.md#the-commands-of-each-state) gives the table.
 
 ## Commands
 

@@ -15,7 +15,7 @@ On success, the command prints the line `merged <issue key>` on stdout. Then it 
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the task lock and of the clone lock belong to this group:
 
-- The task is in another state. The error is `the task of <issue key> is in <state>; tasker merge needs accepted`.
+- The task is in another state. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task has no branch. The error is `the task of <issue key> has no branch`.
 - The task has no base. The error is `the task of <issue key> has no base`.
 - The base is a local branch of the clone. The error is `the base of <issue key> is a local branch of the clone: <base>; tasker merge pushes only to a branch on origin`.
@@ -41,7 +41,7 @@ On success, the command prints the line `marked <issue key> landed at <revision>
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the task lock and of the clone lock belong to this group:
 
-- The task is in another state. The error is `the task of <issue key> is in <state>; tasker mark-landed needs accepted, pushed or in_peer_review`.
+- The task is in another state. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task has no branch. The error is `the task of <issue key> has no branch`.
 - The task has no base. The error is `the task of <issue key> has no base`.
 - The task has no base revision. The error is `the task of <issue key> has no base revision`.
@@ -62,7 +62,7 @@ If the write to the tracker fails, the exit code stays 0 and the task still goes
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task, of the task lock and of the clone lock belong to this group:
 
-- The task is in another state, `finished` included. The error is `the task of <issue key> is in <state>; tasker finish needs landed or cleanup_failed`.
+- The task is in another state, `finished` included. The error is the [wrong-state error](../SKILL.md#shared-errors).
 
 The task goes to `cleanup_failed` when a step fails after the move to `finishing`. The error is `finishing failed: <reason>`. The command prints the same error on stderr and stops with exit code 1. For example, git refuses to remove a worktree with uncommitted changes.
 

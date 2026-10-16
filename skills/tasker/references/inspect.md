@@ -8,7 +8,7 @@ Lists the tasks by issue key and state. With no option, it lists the active task
 
 If you give more than one option, a task must match all of them. With `--state finished` or `--state cancelled`, the command lists those tasks too.
 
-The command prints one table with the columns `ISSUE`, `REPO`, `STATE` and `UPDATED`. `UPDATED` is the time of the last change of the task. The task with the newest change comes first.
+The command prints one table with the columns `ISSUE`, `REPO`, `STATE`, `UPDATED` and `NEXT`. `UPDATED` is the time of the last change of the task. The task with the newest change comes first. `NEXT` holds the commands of the state. For a state with a primary command, the cell is `<primary> (also: <other>, ...)`, for example `plan (also: abort)`. For a state with no primary command, the cell lists the commands, for example `refine, approve, abort`. For `finished` and `cancelled`, the cell is empty. [The commands of each state](../../../docs/statemachine.md#the-commands-of-each-state) gives the table.
 
 If no task matches, the command prints `no tasks` and exits with code 0.
 
@@ -38,6 +38,8 @@ The command prints one line for each field, as `<field>: <value>`, in this order
 A field with no value prints `-`. The `last event` line holds the time, the type and the data of the last event of the task, as one line of JSON text: `last event: <time> <type> <data>`. An event with no data prints `null`.
 
 If the task is in the state `failed`, the command prints two more lines. `failed in` gives the state that the task left when it failed. `error` gives the error of the failure.
+
+Then the command prints the commands of the state, after the fields and before the todo block. For a state with a primary command, it prints `next: tasker <primary> <issue key>` and `also: tasker <other> <issue key>, ...`. For a state with no primary command, it prints one line, `commands: tasker <a> <issue key>, ...`. For `finished` and `cancelled`, it prints no line. [The commands of each state](../../../docs/statemachine.md#the-commands-of-each-state) gives the table.
 
 If the pinned plan revision has at least one todo with a recorded state, the command prints a todo block after the fields. The pinned revision is the approved revision with the highest version. The block starts with the line `todos (approved v<N>):`. Then it prints one line for each todo of the revision, in the order of the plan: `<state>  <id>  <title>`. The state is `done`, `in progress` or `not started`. The command pads the state and the id to the longest value of the revision, and two spaces separate the columns.
 

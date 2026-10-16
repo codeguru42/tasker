@@ -23,7 +23,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 These errors leave the task in its state. The command writes nothing. The shared errors of the task lock and of the prompt archive belong to this group:
 
 - The issue has no task. The error names the issue and the repo. Run `tasker start` first.
-- The task is not in `workspace_ready`. The error names the state. `tasker plan` runs only on a task that `tasker start` brought to `workspace_ready`. For a task in `provisioning`, run `tasker start` again. For a task in `failed` or `quota_blocked`, see below. For a task that is past `planning`, the plan already exists.
+- The task is not in `workspace_ready`. The error is the [wrong-state error](../SKILL.md#shared-errors). `tasker plan` runs only on a task that `tasker start` brought to `workspace_ready`. For a task in `provisioning`, run `tasker start` again. For a task in `failed` or `quota_blocked`, see below. For a task that is past `planning`, the plan already exists.
 - The issue cannot be read. Fix the cause (for example the gh login), then run the command again.
 
 These errors move the task to the state `failed`. The shared quota stop is the exception:
@@ -73,7 +73,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 These errors leave the task in its state. The command writes nothing. The shared errors of no task, of the task lock and of the prompt archive belong to this group:
 
-- The task is not in `awaiting_plan_review` or `reviewed`. The error names the state.
+- The task is not in `awaiting_plan_review` or `reviewed`. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task is in `awaiting_plan_review` and you give no feedback. The error is `the feedback is missing; tasker refine needs it unless the task is in reviewed`.
 - The feedback is empty or has only spaces. The error is `the feedback is empty`.
 - The task is in `reviewed`, and its latest review has no open finding or does not exist. The error is `the latest review of <issue> has no open finding; run tasker dismiss-review or tasker review`.
@@ -108,7 +108,7 @@ An older approved revision stays approved. The new approval pins the newest revi
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task and of the task lock belong to this group:
 
 - The task is already approved. The error is `<issue key> is already approved at revision v<N>`.
-- The task is in another state. The error names the state.
+- The task is in another state. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task has no plan revision. The error is `the task of <issue key> has no plan revision`.
 
 ## `tasker unapprove`
@@ -121,7 +121,7 @@ An older approved revision stays approved. The command clears only the pinned re
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and nothing is written. The shared errors of no task and of the task lock belong to this group:
 
-- The task is in another state. The error is `the task of <issue key> is in <state>; tasker unapprove needs approved`.
+- The task is in another state. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task is approved, but no revision is pinned. The error is `the task of <issue key> is approved, but no revision is pinned`.
 
 ## `tasker show-plan`

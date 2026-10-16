@@ -33,7 +33,7 @@ The output of the next command follows: the output of `tasker start`, `tasker pl
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task and of the task lock belong to this group:
 
-- The task is not in `failed`. The error is `the task of <issue key> is in <state>; tasker retry needs failed`.
+- The task is not in `failed`. The error is the [wrong-state error](../SKILL.md#shared-errors).
 - The task failed in a state that retry has no step for. The error is `the task of <issue key> failed in <state>; tasker retry has no step for it`.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is `--resume-execute applies only to a task that failed in verifying`.
 
