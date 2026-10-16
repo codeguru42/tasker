@@ -9,15 +9,27 @@ export function taskById(store: TaskStore, taskId: number): Task {
   return task;
 }
 
-// Throws when the task is in another state than state. The command is the name of the tasker command.
-export function assertTaskState(task: Task, state: TaskState, command: string): void {
-  if (task.state !== state) {
-    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker ${command} needs ${state}`);
+// One state, or a list of at least one state.
+type StateOrList = TaskState | readonly [TaskState, ...TaskState[]];
+
+// The states as text: "a", "a or b" or "a, b or c".
+function statesText(state: StateOrList): string {
+  if (typeof state === "string") return state;
+  const last = state[state.length - 1];
+  return state.length === 1 ? last : `${state.slice(0, -1).join(", ")} or ${last}`;
+}
+
+// Throws when the task is in none of the states. The state is one state or a list of states.
+// The command is the name of the tasker command.
+export function assertTaskState(task: Task, state: StateOrList, command: string): void {
+  const allowed: readonly TaskState[] = typeof state === "string" ? [state] : state;
+  if (!allowed.includes(task.state as TaskState)) {
+    throw new Error(`the task of ${task.issueKey} is in ${task.state}; tasker ${command} needs ${statesText(state)}`);
   }
 }
 
-// The task with the id, in the state. Throws for an unknown id and for another state.
-export function taskInState(store: TaskStore, taskId: number, state: TaskState, command: string): Task {
+// The task with the id, in one of the states. Throws for an unknown id and for another state.
+export function taskInState(store: TaskStore, taskId: number, state: StateOrList, command: string): Task {
   const task = taskById(store, taskId);
   assertTaskState(task, state, command);
   return task;
