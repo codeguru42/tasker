@@ -2,15 +2,11 @@
 
 tasker takes an issue from an issue tracker and drives an AI coding assistant through plan, build, verify, review, and merge.
 
-This repo is a rebuild of tasker. Work is tracked on the [project board](https://github.com/users/codeguru42/projects/3).
-
 ## Requirements
 
 - Node.js 26 or later
 - npm
-- git (the tests run git)
-
-The `.nvmrc` file sets the Node version for local work and for CI.
+- git
 
 ## Install from source
 
@@ -29,15 +25,6 @@ tasker reads one configuration file. It reads `$TASKER_CONFIG`. If that is not s
 
 See the [configuration reference](docs/config.md) for the keys. Run `tasker show-config` to see the configuration with the defaults filled in.
 
-## Run the checks
+## Contributing
 
-Run `npm run check` to make sure that the code is correct. The command runs four steps in this order:
-
-1. `npm run typecheck` runs the TypeScript type check.
-2. `npm run lint` runs ESLint, with the type-aware rules of typescript-eslint.
-3. `npm run format:check` runs the Prettier format check.
-4. `npm test` runs the Vitest tests.
-
-Run `npm run format` to write the format of Prettier. Run `npm run lint:fix` to fix the lint problems that ESLint can fix.
-
-The command stops at the first step that fails. It then exits with a non-zero code. GitHub Actions runs the same command on each push and pull request.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to start work as a contributor.
