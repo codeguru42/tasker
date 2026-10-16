@@ -589,6 +589,34 @@ The command prints an error and exits with code 1 in these cases:
 - The run has no log for command `N`. The error is `verify run <N> of <issue key> has no log for command <k>; it ran <m> commands`.
 - The configuration is missing or invalid.
 
+### `tasker show-review`
+
+Prints one review of the task of an issue: its findings with their status: `tasker show-review <issue>`. The command uses the same task as `tasker show`: the active task, else the newest task. The command only reads, and it works in each state.
+
+- `<issue>`: the issue key of the task.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+- `--review <N>`: prints review `N`. `N` must be a whole number of 1 or more, with no sign and no leading zero. With no `--review`, the command prints the newest review.
+
+A bad `--review` value is an error, and the command stops before it reads the configuration.
+
+The command prints this output:
+
+```
+<issue key> review <n> of <total>: <count> (at <revision>, <ended at>)
+<findings>
+```
+
+The count is `no findings`, `1 finding` or `<n> findings`. It counts all findings, open and dismissed. The revision is the tip of the task branch that the review read. The time is the time when the review ended. The findings use the text form of `tasker review`, with the status `open` or `dismissed: <reason>`. If the review has no findings, the line `no findings` follows the header line. Each line ends with a line end.
+
+The command prints an error and exits with code 1 in these cases:
+
+- The issue key does not resolve.
+- The issue has no task. The error names the issue and the repo.
+- The `--review` value is bad. The error is `--review must be a whole number of 1 or more: <value>`.
+- The task has no review. The error is `the task of <issue key> has no review; run tasker review first`. This error also comes with `--review`.
+- The task has no review `N`. The error is `the task of <issue key> has no review <N>; it has <total>`.
+- The configuration is missing or invalid.
+
 ### `tasker status`
 
 Lists the tasks by issue key and state. With no option, it lists the active tasks of all repos. A task is active when its state is not `finished` and not `cancelled`.
