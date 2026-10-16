@@ -104,7 +104,7 @@ The delete uses `-D`, because a task branch is usually not merged in the clone. 
 
 This part reads what a task changed against its base, and what is not committed yet. tasker reads the commits itself, because some assistants have no shell in planning.
 
-The order in each function is: the input checks, then the worktree guard, then the ref reads, then git.
+The order in each function is: the input checks, then the worktree guard, then the ref reads, then git. A function that takes a worktree path throws the errors of the guard. [The guard text](#the-worktree-guard) gives the reasons. Apart from the fetch, these reads write no ref, no file and no configuration.
 
 ### Reasons for the flags
 
@@ -125,11 +125,6 @@ The order in each function is: the input checks, then the worktree guard, then t
 - `rev-list --count <head> --not` with no others counts every commit that the head reaches.
 - Only exit code 1 of `merge-base --is-ancestor` means "no". Exit code 128, for example for a revision that the clone does not have, is an error.
 - A staged rename gives a delete and an add.
-- A function that takes a worktree path throws the errors of the guard. [The guard text](#the-worktree-guard) gives the reasons.
-
-### Side effects
-
-Apart from the fetch, these reads write no ref, no file and no configuration.
 
 ## Reconcile
 
@@ -141,7 +136,7 @@ The clean check runs before any step, because the restore runs `checkout --force
 
 ### The arguments
 
-`runGit()` removes `GIT_CONFIG_PARAMETERS` and the `GIT_CONFIG_COUNT` variables. As a result, `-c key=value` is not possible, so each rule of the user configuration has a command option.
+[`runGit()`](version-control.md#rungit) removes the repo-local git variables. As a result, `-c key=value` is not possible, so each rule of the user configuration has a command option.
 
 `--onto` applies only the commits of `<upstream>..HEAD`. The rebase options are:
 
@@ -198,7 +193,6 @@ After a failed git step, the code runs the abort only when some path is unmerged
 - `git symbolic-ref -q HEAD` exits with 1 for a detached HEAD. Every other failure passes through.
 - Git has no plumbing command with an exit code that tells if a rebase or a merge is in progress, and the text of `git status` is not stable. So the code tests the paths from `git rev-parse --git-path <name>`.
 - A git error of a restore command does not stop the restore. The code keeps the stderr and runs the next command.
-- The caller must find the worktree clean first, because the restore deletes uncommitted work and untracked files.
 
 ### The restore error
 
