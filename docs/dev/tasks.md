@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -162,6 +162,25 @@ The reasons:
 - A failed run is recorded too. `tasker show-verify` prints the run, and the fix turn gets its log.
 - The row of a run and the move of the task share one transaction. The bullet in [data-root.md](data-root.md#verify_runs-table) gives the reason.
 
+## Review
+
+`tasker review` reviews the committed work of a task in `awaiting_work_review`. It runs in this order:
+
+1. Check the task: its state, its worktree, its branch and its base revision.
+2. Read the tip of the task branch and the commits of the branch.
+3. Build the text of the earlier reviews, and archive the prompt.
+4. Prepare a new session, and record it with the next review number.
+5. Move the task to `reviewing`, which writes the run marker. Run the assistant, and write its events to the transcript.
+6. Check the answer. Record the review, its findings and the `review` event, and move the task.
+
+These reasons explain its rules:
+
+- Each review runs in a new session. The review is then an independent pass that the plan conversation does not bias.
+- The review runs in plan mode with the limits of the plan role. [assistants.md](assistants.md#the-plan-and-review-roles) and [assistants.md](assistants.md#the-review-prompt-and-the-findings-answer) give the rules.
+- The findings rest in `reviewed`, because the operator reads them first. A review with no findings moves the task back to `awaiting_work_review`.
+- The review records the tip of the task branch, so the findings describe one tree. [data-root.md](data-root.md#reviews-table) gives the reason. The review reads the commits of the task branch, so the tip of that branch names the tree that the review read. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
+- tasker records the review session although no command continues it yet. [assistants.md](assistants.md#the-session-id) gives the rule of the session id.
+
 ## Retry
 
 `tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. These reasons explain its rules:
@@ -196,5 +215,6 @@ These reasons explain its rules:
 - A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
 - The plan reads the title and the body of the issue. It does not read the comments.
 - `tasker retry` resumes a task in `failed` for the origins of its table. No command resumes a task in `quota_blocked` before M9. A second `tasker plan` works only on a task in `workspace_ready`, and a second `tasker execute` works only on a task in `approved`.
+- No command resumes a review that failed or stopped yet (`tasker retry` M8, `tasker resume` M9). No command acts on the findings of a review yet.
 - Layer 3 of the push guard cannot see a push that moves the tip and then moves it back within one turn. It compares only the tips before and after.
 - The base can move after the check of `tasker accept`, so the land (M10) refuses a push that is not a fast-forward.
