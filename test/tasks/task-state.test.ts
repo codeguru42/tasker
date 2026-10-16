@@ -53,6 +53,60 @@ describe("assertTaskState", () => {
   });
 });
 
+describe("assertTaskState with a list of states", () => {
+  const LANDABLE = ["accepted", "pushed", "in_peer_review"] as const;
+
+  it("passes in a state of the list", () => {
+    const { dataRoot, id } = seeded("pushed");
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => assertTaskState(taskById(store, id), LANDABLE, "mark-landed")).not.toThrow(),
+    );
+  });
+
+  it("names all states in another state", () => {
+    const { dataRoot, id } = seeded("failed");
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => assertTaskState(taskById(store, id), LANDABLE, "mark-landed")).toThrow(
+        "the task of codeguru42/tasker#5 is in failed; tasker mark-landed needs accepted, pushed or in_peer_review",
+      ),
+    );
+  });
+
+  it("joins two states with or", () => {
+    const { dataRoot, id } = seeded("failed");
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => assertTaskState(taskById(store, id), ["accepted", "pushed"], "mark-landed")).toThrow(
+        "the task of codeguru42/tasker#5 is in failed; tasker mark-landed needs accepted or pushed",
+      ),
+    );
+  });
+
+  it("gives the text of one state for a list of one state", () => {
+    const { dataRoot, id } = seeded("failed");
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => assertTaskState(taskById(store, id), ["approved"], "execute")).toThrow(
+        "the task of codeguru42/tasker#5 is in failed; tasker execute needs approved",
+      ),
+    );
+  });
+});
+
+describe("taskInState with a list of states", () => {
+  it("gives the task in a state of the list and throws for a state outside it", () => {
+    const landable = ["accepted", "pushed"] as const;
+    const pushed = seeded("pushed");
+    withDataRootStore(pushed.dataRoot, (store) =>
+      expect(taskInState(store, pushed.id, landable, "mark-landed").id).toBe(pushed.id),
+    );
+    const failed = seeded("failed");
+    withDataRootStore(failed.dataRoot, (store) =>
+      expect(() => taskInState(store, failed.id, landable, "mark-landed")).toThrow(
+        "the task of codeguru42/tasker#5 is in failed; tasker mark-landed needs accepted or pushed",
+      ),
+    );
+  });
+});
+
 describe("taskInState", () => {
   it("gives the task in the state", () => {
     const { dataRoot, id } = seeded("approved");
