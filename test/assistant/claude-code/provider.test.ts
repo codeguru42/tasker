@@ -81,7 +81,7 @@ describe("createClaudeCodeProvider run", () => {
       usage: { inputTokens: 2, outputTokens: 4, cacheCreationInputTokens: 14964, cacheReadInputTokens: 10978 },
       reportedModel: "claude-haiku-5-5",
     });
-    expect(events.map((event) => event["type"])).toEqual(["system", "assistant", "rate_limit_event", "result"]);
+    expect(events.map((event) => event.type)).toEqual(["system", "assistant", "rate_limit_event", "result"]);
     expect(pids).toHaveLength(1);
     expect(pids[0]).toBeGreaterThan(0);
   });
@@ -125,7 +125,7 @@ describe("createClaudeCodeProvider run", () => {
   });
 
   it("fails when a schema was given and the result has no structured output", async () => {
-    const stream = lines(claudeSampleWithResult("json-schema", (result) => delete result["structured_output"]));
+    const stream = lines(claudeSampleWithResult("json-schema", (result) => delete result.structured_output));
 
     const { outcome } = await run({ stream }, { jsonSchema: { type: "object" } });
 
@@ -169,8 +169,8 @@ describe("createClaudeCodeProvider run", () => {
   it("fails with the text of a result that has is_error true, before the exit code", async () => {
     const stream = lines(
       claudeSampleWithResult("plain", (result) => {
-        result["is_error"] = true;
-        result["result"] = "Credit balance is too low";
+        result.is_error = true;
+        result.result = "Credit balance is too low";
       }),
     );
 
@@ -186,9 +186,9 @@ describe("createClaudeCodeProvider run", () => {
   it("falls back to the subtype when an error result has no text", async () => {
     const stream = lines(
       claudeSampleWithResult("plain", (result) => {
-        result["is_error"] = true;
-        result["subtype"] = "error_during_execution";
-        delete result["result"];
+        result.is_error = true;
+        result.subtype = "error_during_execution";
+        delete result.result;
       }),
     );
 
@@ -200,9 +200,9 @@ describe("createClaudeCodeProvider run", () => {
   it("falls back to a general text when an error result has no text and no subtype", async () => {
     const stream = lines(
       claudeSampleWithResult("plain", (result) => {
-        result["is_error"] = true;
-        delete result["result"];
-        delete result["subtype"];
+        result.is_error = true;
+        delete result.result;
+        delete result.subtype;
       }),
     );
 
@@ -214,7 +214,7 @@ describe("createClaudeCodeProvider run", () => {
   it("gives the denials of a result that has is_error true", async () => {
     const stream = lines(
       claudeSampleWithResult("denied-tool", (result) => {
-        result["is_error"] = true;
+        result.is_error = true;
       }),
     );
 
@@ -360,8 +360,8 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
 
   it("stops when the status is rejected and overageStatus is allowed", { timeout: 15_000 }, async () => {
     const event = claudeRateLimitEvent((info) => {
-      info["status"] = "rejected";
-      info["overageStatus"] = "allowed";
+      info.status = "rejected";
+      info.overageStatus = "allowed";
     });
 
     const { outcome } = await run(stopped(event), { overageStop: {}, timeoutMs: 10_000 });
@@ -398,7 +398,7 @@ describe("createClaudeCodeProvider run with an overage stop", () => {
 
   it("gives success when status and overageStatus are rejected", async () => {
     const event = claudeRateLimitEvent((info) => {
-      info["status"] = "rejected";
+      info.status = "rejected";
     });
 
     const { outcome } = await run({ stream: fullWith(event) }, { overageStop: {} });

@@ -39,97 +39,97 @@ describe("detectQuotaApprovalWarning", () => {
     [
       "the flat utilization is 0.5 and the unified seven_day is 0.8",
       (info) => {
-        info["utilization"] = 0.5;
+        info.utilization = 0.5;
       },
       capture,
     ],
     [
       "utilization, surpassedThreshold and overageEnabled are deleted",
       (info) => {
-        delete info["utilization"];
-        delete info["surpassedThreshold"];
-        delete info["overageEnabled"];
+        delete info.utilization;
+        delete info.surpassedThreshold;
+        delete info.overageEnabled;
       },
       capture,
     ],
     [
       "unifiedWindows is deleted",
       (info) => {
-        delete info["unifiedWindows"];
+        delete info.unifiedWindows;
       },
       capture,
     ],
     [
       "unifiedWindows is null",
       (info) => {
-        info["unifiedWindows"] = null;
+        info.unifiedWindows = null;
       },
       capture,
     ],
     [
       "unifiedWindows is a list",
       (info) => {
-        info["unifiedWindows"] = [];
+        info.unifiedWindows = [];
       },
       capture,
     ],
     [
       "unifiedWindows is empty",
       (info) => {
-        info["unifiedWindows"] = {};
+        info.unifiedWindows = {};
       },
       capture,
     ],
     [
       "unifiedWindows.seven_day is a number",
       (info) => {
-        (info["unifiedWindows"] as Info)["seven_day"] = 5;
+        (info.unifiedWindows as Info).seven_day = 5;
       },
       capture,
     ],
     [
       "unifiedWindows.seven_day is a string",
       (info) => {
-        (info["unifiedWindows"] as Info)["seven_day"] = "x";
+        (info.unifiedWindows as Info).seven_day = "x";
       },
       capture,
     ],
     [
       "rateLimitType is deleted",
       (info) => {
-        delete info["rateLimitType"];
+        delete info.rateLimitType;
       },
       capture,
     ],
     [
       "utilization is a string and unifiedWindows is deleted",
       (info) => {
-        info["utilization"] = "0.8";
-        delete info["unifiedWindows"];
+        info.utilization = "0.8";
+        delete info.unifiedWindows;
       },
       undefined,
     ],
     [
       "the resetsAt of the unified entry is a string",
       (info) => {
-        ((info["unifiedWindows"] as Info)["seven_day"] as Info)["resetsAt"] = "soon";
+        ((info.unifiedWindows as Info).seven_day as Info).resetsAt = "soon";
       },
       { utilization: 0.8 },
     ],
     [
       "rateLimitType is overage, utilization is 0.99 and isUsingOverage is false",
       (info) => {
-        info["rateLimitType"] = "overage";
-        info["utilization"] = 0.99;
+        info.rateLimitType = "overage";
+        info.utilization = 0.99;
       },
       undefined,
     ],
     [
       "rateLimitType is overage, utilization is 0.95 and isUsingOverage is true",
       (info) => {
-        info["rateLimitType"] = "overage";
-        info["utilization"] = 0.95;
-        info["isUsingOverage"] = true;
+        info.rateLimitType = "overage";
+        info.utilization = 0.95;
+        info.isUsingOverage = true;
       },
       { utilization: 0.95, resetsAt: 1792206000 },
     ],
@@ -145,14 +145,14 @@ describe("detectQuotaApprovalWarning", () => {
   it("keeps the last window, not the highest", () => {
     const events = [
       claudeRateLimitEvent((info) => {
-        info["utilization"] = 0.95;
-        ((info["unifiedWindows"] as Info)["seven_day"] as Info)["utilization"] = 0.95;
-        info["resetsAt"] = 1;
-        ((info["unifiedWindows"] as Info)["seven_day"] as Info)["resetsAt"] = 1;
+        info.utilization = 0.95;
+        ((info.unifiedWindows as Info).seven_day as Info).utilization = 0.95;
+        info.resetsAt = 1;
+        ((info.unifiedWindows as Info).seven_day as Info).resetsAt = 1;
       }),
       claudeRateLimitEvent((info) => {
-        ((info["unifiedWindows"] as Info)["seven_day"] as Info)["utilization"] = 0.5;
-        ((info["unifiedWindows"] as Info)["seven_day"] as Info)["resetsAt"] = 2;
+        ((info.unifiedWindows as Info).seven_day as Info).utilization = 0.5;
+        ((info.unifiedWindows as Info).seven_day as Info).resetsAt = 2;
       }),
     ];
 
@@ -161,9 +161,9 @@ describe("detectQuotaApprovalWarning", () => {
 
   it("skips an event whose status is allowed", () => {
     const allowed = claudeRateLimitEvent((info) => {
-      info["status"] = "allowed";
-      info["utilization"] = 0.99;
-      ((info["unifiedWindows"] as Info)["seven_day"] as Info)["utilization"] = 0.99;
+      info.status = "allowed";
+      info.utilization = 0.99;
+      ((info.unifiedWindows as Info).seven_day as Info).utilization = 0.99;
     });
 
     expect(warningOf([claudeRateLimitEvent(), allowed], 0.75)).toEqual(capture);
@@ -213,8 +213,8 @@ describe("shouldSuppressQuotaApprovalPause", () => {
 describe("quotaStopOf", () => {
   const rejected = (resetsAt: unknown) =>
     claudeRateLimitEvent((info) => {
-      info["status"] = "rejected";
-      info["resetsAt"] = resetsAt;
+      info.status = "rejected";
+      info.resetsAt = resetsAt;
     });
 
   it("gives the reset time of the rejected event for exit code 1", () => {
@@ -234,14 +234,14 @@ describe("quotaStopOf", () => {
   });
 
   it.each<[string, (result: AssistantEvent) => void]>([
-    ["api_error_status is 500", (r) => void (r["api_error_status"] = 500)],
-    ["terminal_reason is completed", (r) => void (r["terminal_reason"] = "completed")],
+    ["api_error_status is 500", (r) => void (r.api_error_status = 500)],
+    ["terminal_reason is completed", (r) => void (r.terminal_reason = "completed")],
   ])("gives nothing when %s", (_name, edit) => {
     expect(quotaStopOf(claudeSampleWithResult("quota-stop", edit), 1)).toBeUndefined();
   });
 
   it("still gives a stop when is_error is false, and the sample keeps its decoys", () => {
-    const events = claudeSampleWithResult("quota-stop", (r) => void (r["is_error"] = false));
+    const events = claudeSampleWithResult("quota-stop", (r) => void (r.is_error = false));
 
     expect(events.at(-1)).toMatchObject({ subtype: "success", stop_reason: "stop_sequence" });
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 1791906000 });
@@ -249,8 +249,8 @@ describe("quotaStopOf", () => {
 
   it("gives the flat resetsAt when the unified entry differs", () => {
     const events = claudeSampleEvents("quota-stop");
-    const info = events[2]!["rate_limit_info"] as Record<string, unknown>;
-    info["resetsAt"] = 42;
+    const info = events[2]!.rate_limit_info as Record<string, unknown>;
+    info.resetsAt = 42;
 
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 42 });
   });
@@ -267,7 +267,7 @@ describe("quotaStopOf", () => {
     events.splice(
       3,
       0,
-      claudeRateLimitEvent((info) => void (info["status"] = "allowed")),
+      claudeRateLimitEvent((info) => void (info.status = "allowed")),
     );
 
     expect(quotaStopOf(events, 1)).toEqual({ resetsAt: 1791906000 });
@@ -298,22 +298,22 @@ describe("quotaStopOf", () => {
 });
 
 describe("overageStopOf", () => {
-  const windows = (info: Info) => info["unifiedWindows"] as Info;
+  const windows = (info: Info) => info.unifiedWindows as Info;
 
   it.each<[string, AssistantEvent]>([
     ["isUsingOverage is true", claudeOverageEvent()],
     [
       "status is rejected and overageStatus is allowed",
       claudeRateLimitEvent((info) => {
-        info["status"] = "rejected";
-        info["overageStatus"] = "allowed";
+        info.status = "rejected";
+        info.overageStatus = "allowed";
       }),
     ],
     [
       "status is rejected and overageStatus is allowed_warning",
       claudeRateLimitEvent((info) => {
-        info["status"] = "rejected";
-        info["overageStatus"] = "allowed_warning";
+        info.status = "rejected";
+        info.overageStatus = "allowed_warning";
       }),
     ],
   ])("gives a stop when %s", (_name, event) => {
@@ -325,20 +325,20 @@ describe("overageStopOf", () => {
     [
       "only utilization is 1",
       (info) => {
-        info["utilization"] = 1;
+        info.utilization = 1;
       },
     ],
     [
       "status is rejected and overageStatus is rejected",
       (info) => {
-        info["status"] = "rejected";
+        info.status = "rejected";
       },
     ],
     [
       "status is allowed and overageStatus is allowed",
       (info) => {
-        info["status"] = "allowed";
-        info["overageStatus"] = "allowed";
+        info.status = "allowed";
+        info.overageStatus = "allowed";
       },
     ],
   ])("gives nothing when %s", (_name, edit) => {
@@ -347,7 +347,7 @@ describe("overageStopOf", () => {
 
   it("takes the unified resetsAt over a different flat one", () => {
     const event = claudeOverageEvent((info) => {
-      info["resetsAt"] = 7;
+      info.resetsAt = 7;
     });
 
     expect(overageStopOf(event, {})).toEqual({ resetsAt: 1792206000 });
@@ -357,18 +357,18 @@ describe("overageStopOf", () => {
     [
       "unifiedWindows.seven_day.resetsAt is deleted",
       (info) => {
-        delete (windows(info)["seven_day"] as Info)["resetsAt"];
+        delete (windows(info).seven_day as Info).resetsAt;
       },
     ],
     [
       "unifiedWindows.seven_day is a number",
       (info) => {
-        windows(info)["seven_day"] = 3;
+        windows(info).seven_day = 3;
       },
     ],
   ])("takes the flat resetsAt when %s", (_name, edit) => {
     const event = claudeOverageEvent((info) => {
-      info["resetsAt"] = 7;
+      info.resetsAt = 7;
       edit(info);
     });
 
@@ -377,9 +377,9 @@ describe("overageStopOf", () => {
 
   it("takes the window with the highest use when rateLimitType is overage", () => {
     const event = claudeOverageEvent((info) => {
-      info["rateLimitType"] = "overage";
-      info["resetsAt"] = 7;
-      (windows(info)["five_hour"] as Info)["utilization"] = 0.95;
+      info.rateLimitType = "overage";
+      info.resetsAt = 7;
+      (windows(info).five_hour as Info).utilization = 0.95;
     });
 
     expect(overageStopOf(event, {})).toEqual({ resetsAt: 1791906000 });
@@ -387,8 +387,8 @@ describe("overageStopOf", () => {
 
   it("skips a window whose use is a string", () => {
     const event = claudeOverageEvent((info) => {
-      info["rateLimitType"] = "overage";
-      (windows(info)["five_hour"] as Info)["utilization"] = "0.95";
+      info.rateLimitType = "overage";
+      (windows(info).five_hour as Info).utilization = "0.95";
     });
 
     expect(overageStopOf(event, {})).toEqual({ resetsAt: 1792206000 });
@@ -396,8 +396,8 @@ describe("overageStopOf", () => {
 
   it("gives no resetsAt key when rateLimitType is overage and unifiedWindows is deleted", () => {
     const event = claudeOverageEvent((info) => {
-      info["rateLimitType"] = "overage";
-      delete info["unifiedWindows"];
+      info.rateLimitType = "overage";
+      delete info.unifiedWindows;
     });
 
     const stop = overageStopOf(event, {});
@@ -408,8 +408,8 @@ describe("overageStopOf", () => {
 
   it("takes the window with the highest use when rateLimitType is deleted", () => {
     const event = claudeOverageEvent((info) => {
-      delete info["rateLimitType"];
-      (windows(info)["five_hour"] as Info)["utilization"] = 0.95;
+      delete info.rateLimitType;
+      (windows(info).five_hour as Info).utilization = 0.95;
     });
 
     expect(overageStopOf(event, {})).toEqual({ resetsAt: 1791906000 });
@@ -425,8 +425,8 @@ describe("overageStopOf", () => {
 
   it("gives a stop when the event has no reset time and a window is approved", () => {
     const event = claudeOverageEvent((info) => {
-      info["rateLimitType"] = "overage";
-      delete info["unifiedWindows"];
+      info.rateLimitType = "overage";
+      delete info.unifiedWindows;
     });
 
     expect(overageStopOf(event, { approvedResetsAt: 1792206000 })).toEqual({});

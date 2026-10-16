@@ -269,7 +269,7 @@ describe("prepareTaskPlanModeRun", () => {
 
 describe("prepareTaskPlanModeRun with an overage event", () => {
   const overage = claudeOverageEvent();
-  const resetsAt = (overage["rate_limit_info"] as { resetsAt: number }).resetsAt;
+  const resetsAt = (overage.rate_limit_info as { resetsAt: number }).resetsAt;
   const withOverage = () => [JSON.stringify(overage), ...claudeSample("plain")];
 
   it("stops the run at paid usage under the decline policy", async () => {

@@ -33,8 +33,8 @@ function failureWithNoExit(input: RunInput, reason: string, events: AssistantEve
 }
 
 function errorResultReason(result: Record<string, unknown>): string {
-  if (typeof result["result"] === "string" && result["result"] !== "") return result["result"];
-  if (typeof result["subtype"] === "string") return `the assistant ended with the error ${result["subtype"]}`;
+  if (typeof result.result === "string" && result.result !== "") return result.result;
+  if (typeof result.subtype === "string") return `the assistant ended with the error ${result.subtype}`;
   return "the assistant ended with an error";
 }
 
@@ -73,14 +73,14 @@ function outcomeOf(
   if (quotaStop !== undefined) return { kind: "quota", cause: "rate_limit", ...base, ...quotaStop };
   if (run.signal !== null) return fail(`claude was killed by ${run.signal}`);
   const { result } = facts;
-  if (result?.["is_error"] === true) return fail(errorResultReason(result));
+  if (result?.is_error === true) return fail(errorResultReason(result));
   if (run.code !== 0) {
     return fail(`claude exited ${run.code}${detailSuffix(run.stderrTail.trim())}`);
   }
   if (result === undefined) return fail("the assistant ended with no result");
   if (input.jsonSchema === undefined) return { kind: "success", ...base };
-  if (result["structured_output"] === undefined) return fail("the assistant gave no structured answer");
-  return { kind: "success", ...base, structuredOutput: result["structured_output"] };
+  if (result.structured_output === undefined) return fail("the assistant gave no structured answer");
+  return { kind: "success", ...base, structuredOutput: result.structured_output };
 }
 
 // platform and tmpRoot are for tests. The defaults are the platform of the host and "/tmp".
@@ -103,7 +103,7 @@ export function createClaudeCodeProvider(
           const folder = sandboxSocketFolder({
             uid: process.getuid?.(),
             tmpRoot: options.tmpRoot ?? "/tmp",
-            sharedTemps: ["/tmp", "/private/tmp", "/var/tmp", tmpdir(), ...(env["TMPDIR"] ? [env["TMPDIR"]] : [])],
+            sharedTemps: ["/tmp", "/private/tmp", "/var/tmp", tmpdir(), ...(env.TMPDIR ? [env.TMPDIR] : [])],
           });
           settings = sandboxSettings(sandbox, folder);
         } catch (error) {

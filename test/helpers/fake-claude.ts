@@ -87,7 +87,7 @@ export function claudeSampleWithResult(name: string, edit: (result: AssistantEve
 // with its rate_limit_info changed by edit. A test names the changed field in its test name.
 export function claudeRateLimitEvent(edit: (info: Record<string, unknown>) => void = () => {}): AssistantEvent {
   const event = claudeSampleEvents("rate-limit-warning")[0]!;
-  edit(event["rate_limit_info"] as Record<string, unknown>);
+  edit(event.rate_limit_info as Record<string, unknown>);
   return event;
 }
 
@@ -95,7 +95,7 @@ export function claudeRateLimitEvent(edit: (info: Record<string, unknown>) => vo
 // Then edit changes its rate_limit_info. A test names each field that edit changes in its test name.
 export function claudeOverageEvent(edit: (info: Record<string, unknown>) => void = () => {}): AssistantEvent {
   return claudeRateLimitEvent((info) => {
-    info["isUsingOverage"] = true;
+    info.isUsingOverage = true;
     edit(info);
   });
 }

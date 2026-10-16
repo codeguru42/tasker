@@ -26,12 +26,10 @@ export function numberOf(value: unknown): number | undefined {
 }
 
 function denialsOf(result: Record<string, unknown> | undefined): PermissionDenial[] {
-  const items = result?.["permission_denials"];
+  const items = result?.permission_denials;
   if (!Array.isArray(items)) return [];
   return items.flatMap((item) =>
-    isObject(item) && typeof item["tool_name"] === "string"
-      ? [{ tool: item["tool_name"], input: item["tool_input"] }]
-      : [],
+    isObject(item) && typeof item.tool_name === "string" ? [{ tool: item.tool_name, input: item.tool_input }] : [],
   );
 }
 
@@ -39,8 +37,8 @@ function denialsOf(result: Record<string, unknown> | undefined): PermissionDenia
 function reportedModelOf(events: readonly AssistantEvent[]): string | undefined {
   let messageModel: string | undefined;
   for (const event of events) {
-    if (event["type"] !== "assistant" || event["parent_tool_use_id"] !== null) continue;
-    const model = isObject(event["message"]) ? event["message"]["model"] : undefined;
+    if (event.type !== "assistant" || event.parent_tool_use_id !== null) continue;
+    const model = isObject(event.message) ? event.message.model : undefined;
     if (typeof model === "string" && model !== "<synthetic>") {
       messageModel = model;
       break;
@@ -48,9 +46,9 @@ function reportedModelOf(events: readonly AssistantEvent[]): string | undefined 
   }
   if (messageModel === undefined) return undefined;
   const init = events.find(
-    (event) => event["type"] === "system" && event["subtype"] === "init" && typeof event["model"] === "string",
+    (event) => event.type === "system" && event.subtype === "init" && typeof event.model === "string",
   );
-  const initModel = init?.["model"] as string | undefined;
+  const initModel = init?.model as string | undefined;
   if (initModel?.startsWith(messageModel) && /^\[[^[\]]+\]$/.test(initModel.slice(messageModel.length))) {
     return initModel;
   }
@@ -59,19 +57,19 @@ function reportedModelOf(events: readonly AssistantEvent[]): string | undefined 
 
 // Only the result event gives exact totals, because claude splits one API message into several assistant events.
 function usageOf(result: Record<string, unknown> | undefined): Usage {
-  const usage = result?.["usage"];
+  const usage = result?.usage;
   if (!isObject(usage)) return "unavailable";
   return {
-    inputTokens: numberOf(usage["input_tokens"]) ?? 0,
-    outputTokens: numberOf(usage["output_tokens"]) ?? 0,
-    cacheCreationInputTokens: numberOf(usage["cache_creation_input_tokens"]) ?? 0,
-    cacheReadInputTokens: numberOf(usage["cache_read_input_tokens"]) ?? 0,
+    inputTokens: numberOf(usage.input_tokens) ?? 0,
+    outputTokens: numberOf(usage.output_tokens) ?? 0,
+    cacheCreationInputTokens: numberOf(usage.cache_creation_input_tokens) ?? 0,
+    cacheReadInputTokens: numberOf(usage.cache_read_input_tokens) ?? 0,
   };
 }
 
 export function readStream(events: readonly AssistantEvent[]): StreamFacts {
   const last = events.at(-1);
-  const result = last?.["type"] === "result" ? last : undefined;
+  const result = last?.type === "result" ? last : undefined;
   const facts: StreamFacts = {
     permissionDenials: denialsOf(result),
     usage: usageOf(result),

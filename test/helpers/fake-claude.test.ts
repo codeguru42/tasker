@@ -74,7 +74,7 @@ describe("runInput", () => {
   it("gives a new object for each call", () => {
     const first = runInput();
     first.prompt = "changed";
-    (first.env as Record<string, string>)["X"] = "1";
+    (first.env as Record<string, string>).X = "1";
 
     expect(runInput().prompt).toBe("say hello");
     expect(runInput().env).toEqual({});
@@ -90,16 +90,16 @@ describe("claudeSampleEvents", () => {
   });
 
   it("gives new objects for each call", () => {
-    claudeSampleEvents("plain")[0]!["type"] = "changed";
+    claudeSampleEvents("plain")[0]!.type = "changed";
 
-    expect(claudeSampleEvents("plain")[0]!["type"]).toBe("system");
+    expect(claudeSampleEvents("plain")[0]!.type).toBe("system");
   });
 });
 
 describe("claudeSampleWithResult", () => {
   it("gives the events with the last one edited", () => {
     const events = claudeSampleWithResult("plain", (result) => {
-      result["is_error"] = true;
+      result.is_error = true;
     });
 
     expect(events).toHaveLength(4);
@@ -112,8 +112,8 @@ describe("claudeSampleWithResult", () => {
     const events = claudeSampleEvents("plain");
 
     claudeSampleWithResult("plain", (result) => {
-      result["is_error"] = true;
-      delete result["usage"];
+      result.is_error = true;
+      delete result.usage;
     });
 
     expect(claudeSample("plain")).toEqual(lines);
@@ -128,25 +128,25 @@ describe("claudeRateLimitEvent", () => {
 
   it("applies the edit to rate_limit_info", () => {
     const event = claudeRateLimitEvent((info) => {
-      info["utilization"] = 0.5;
+      info.utilization = 0.5;
     });
 
-    expect(event["rate_limit_info"]).toMatchObject({ utilization: 0.5, rateLimitType: "seven_day" });
+    expect(event.rate_limit_info).toMatchObject({ utilization: 0.5, rateLimitType: "seven_day" });
   });
 
   it("gives a new object for each call, so an edit does not leak", () => {
     claudeRateLimitEvent((info) => {
-      info["utilization"] = 0.5;
+      info.utilization = 0.5;
     });
 
-    expect(claudeRateLimitEvent()["rate_limit_info"]).toMatchObject({ utilization: 0.8 });
+    expect(claudeRateLimitEvent().rate_limit_info).toMatchObject({ utilization: 0.8 });
   });
 });
 
 describe("claudeOverageEvent", () => {
   it("gives the capture with isUsingOverage true and no other change", () => {
     const expected = claudeRateLimitEvent((info) => {
-      info["isUsingOverage"] = true;
+      info.isUsingOverage = true;
     });
 
     expect(claudeOverageEvent()).toEqual(expected);
@@ -154,18 +154,18 @@ describe("claudeOverageEvent", () => {
 
   it("runs the edit after the change", () => {
     const event = claudeOverageEvent((info) => {
-      info["rateLimitType"] = "overage";
+      info.rateLimitType = "overage";
     });
 
-    expect(event["rate_limit_info"]).toMatchObject({ isUsingOverage: true, rateLimitType: "overage" });
+    expect(event.rate_limit_info).toMatchObject({ isUsingOverage: true, rateLimitType: "overage" });
   });
 
   it("gives a new object for each call, so an edit does not leak", () => {
     claudeOverageEvent((info) => {
-      info["utilization"] = 0.5;
+      info.utilization = 0.5;
     });
 
-    expect(claudeOverageEvent()["rate_limit_info"]).toMatchObject({ utilization: 0.8 });
+    expect(claudeOverageEvent().rate_limit_info).toMatchObject({ utilization: 0.8 });
   });
 });
 

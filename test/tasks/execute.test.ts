@@ -285,7 +285,7 @@ describe("executeTask turns", () => {
 
   it("fails the task with the label when a turn gives no result", async () => {
     const stream = claudeSampleWithResult("json-schema", (event) => {
-      event["structured_output"] = { result: "maybe" };
+      event.structured_output = { result: "maybe" };
     }).map((event) => JSON.stringify(event));
     const fixture = await useExecuteFixture({ stream }, { answer: { todos: TODOS } });
 
@@ -478,7 +478,7 @@ describe("executeTask denials and sandbox cleanup", () => {
   const denial = (command: string) => ({ tool_name: "Bash", tool_input: { command } });
   const denialStream = (command: string, result: "done" | "blocked" = "done") =>
     turnResultStream(result, undefined, (event) => {
-      event["permission_denials"] = [denial(command)];
+      event.permission_denials = [denial(command)];
     });
   const seen = (command: string) => ({ tool: "Bash", input: { command } });
 

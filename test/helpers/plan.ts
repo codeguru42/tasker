@@ -65,8 +65,8 @@ export function planTodo(
 // With edit, it changes the result event after the structured output is set.
 function structuredOutputStream(output: unknown, edit?: (result: AssistantEvent) => void): string[] {
   return claudeSampleWithResult("json-schema", (result) => {
-    result["structured_output"] = output;
-    result["result"] = JSON.stringify(output);
+    result.structured_output = output;
+    result.result = JSON.stringify(output);
     edit?.(result);
   }).map((event) => JSON.stringify(event));
 }

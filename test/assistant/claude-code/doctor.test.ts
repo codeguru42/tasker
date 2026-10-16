@@ -121,7 +121,7 @@ describe("claudeModelCheck", () => {
 });
 
 describe("the claude-code provider checks", () => {
-  const repos = [{ key: "tasker", assistant: validConfig()["repos"]["tasker"]["assistant"] }];
+  const repos = [{ key: "tasker", assistant: validConfig().repos.tasker.assistant }];
 
   it("gives no check for no repo", () => {
     expect(createClaudeCodeProvider().doctorChecks([])).toEqual([]);

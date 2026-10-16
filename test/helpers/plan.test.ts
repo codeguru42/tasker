@@ -414,7 +414,7 @@ describe("turnResultStream", () => {
     const denials = [{ tool_name: "Bash", tool_use_id: "t1", tool_input: { command: "git push" } }];
 
     const lines = turnResultStream("done", undefined, (event) => {
-      event["permission_denials"] = denials;
+      event.permission_denials = denials;
     });
 
     const last = JSON.parse(lines.at(-1)!);

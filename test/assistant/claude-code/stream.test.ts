@@ -8,7 +8,7 @@ function copyOf(event: AssistantEvent | undefined): AssistantEvent {
 }
 
 function messageOf(event: AssistantEvent): Record<string, unknown> {
-  return event["message"] as Record<string, unknown>;
+  return event.message as Record<string, unknown>;
 }
 
 describe("numberOf", () => {
@@ -67,7 +67,7 @@ describe("readStream result and denials", () => {
 
   it("gives no denials when the field is not a list", () => {
     const events = claudeSampleWithResult("denied-tool", (result) => {
-      result["permission_denials"] = "none";
+      result.permission_denials = "none";
     });
 
     expect(readStream(events).permissionDenials).toEqual([]);
@@ -79,10 +79,10 @@ describe("readStream result and denials", () => {
 
   it("skips an item that is not an object or has no string tool_name", () => {
     const events = claudeSampleWithResult("denied-tool", (result) => {
-      const good = (result["permission_denials"] as Record<string, unknown>[])[0]!;
+      const good = (result.permission_denials as Record<string, unknown>[])[0]!;
       const noName = { ...good };
-      delete noName["tool_name"];
-      result["permission_denials"] = ["text", null, noName, { ...good, tool_name: 5 }, good];
+      delete noName.tool_name;
+      result.permission_denials = ["text", null, noName, { ...good, tool_name: 5 }, good];
     });
 
     expect(readStream(events).permissionDenials).toEqual([
@@ -103,8 +103,8 @@ describe("readStream reportedModel", () => {
   it("skips a subagent message", () => {
     const events = claudeSampleEvents("plain");
     const subagent = copyOf(events[1]);
-    subagent["parent_tool_use_id"] = "toolu_01TjGQvm7AaDRBgi1f4Jq2WY";
-    messageOf(subagent)["model"] = "claude-sonnet-5-5";
+    subagent.parent_tool_use_id = "toolu_01TjGQvm7AaDRBgi1f4Jq2WY";
+    messageOf(subagent).model = "claude-sonnet-5-5";
 
     expect(readStream([events[0]!, subagent, ...events.slice(1)]).reportedModel).toBe("claude-haiku-5-5");
   });
@@ -112,7 +112,7 @@ describe("readStream reportedModel", () => {
   it("skips a synthetic message", () => {
     const events = claudeSampleEvents("plain");
     const synthetic = copyOf(events[1]);
-    messageOf(synthetic)["model"] = "<synthetic>";
+    messageOf(synthetic).model = "<synthetic>";
 
     expect(readStream([events[0]!, synthetic, ...events.slice(1)]).reportedModel).toBe("claude-haiku-5-5");
   });
@@ -120,7 +120,7 @@ describe("readStream reportedModel", () => {
   it("gives the message model when init has two suffixes", () => {
     const events = claudeSampleEvents("sonnet-1m");
     const init = copyOf(events[0]);
-    init["model"] = "claude-sonnet-5-5[1m][extra]";
+    init.model = "claude-sonnet-5-5[1m][extra]";
 
     expect(readStream([init, ...events.slice(1)]).reportedModel).toBe("claude-sonnet-5-5");
   });
@@ -128,7 +128,7 @@ describe("readStream reportedModel", () => {
   it("gives the message model when init names another model", () => {
     const events = claudeSampleEvents("plain");
     const init = copyOf(events[0]);
-    init["model"] = "claude-sonnet-5-5[1m]";
+    init.model = "claude-sonnet-5-5[1m]";
 
     expect(readStream([init, ...events.slice(1)]).reportedModel).toBe("claude-haiku-5-5");
   });
@@ -141,7 +141,7 @@ describe("readStream reportedModel", () => {
 
   it("does not read modelUsage", () => {
     const events = claudeSampleWithResult("plain", (result) => {
-      result["modelUsage"] = { "claude-other-1": {} };
+      result.modelUsage = { "claude-other-1": {} };
     });
 
     expect(readStream(events).reportedModel).toBe("claude-haiku-5-5");
@@ -167,8 +167,8 @@ describe("readStream usage", () => {
   it("does not sum the assistant events", () => {
     const events = claudeSampleEvents("json-schema");
     const summed = events
-      .filter((event) => event["type"] === "assistant")
-      .reduce((sum, event) => sum + (messageOf(event)["usage"] as { output_tokens: number }).output_tokens, 0);
+      .filter((event) => event.type === "assistant")
+      .reduce((sum, event) => sum + (messageOf(event).usage as { output_tokens: number }).output_tokens, 0);
 
     expect(summed).toBe(32);
     expect(readStream(events).usage).toMatchObject({ outputTokens: 106 });
@@ -176,9 +176,9 @@ describe("readStream usage", () => {
 
   it("counts a field that is missing or not a number as 0", () => {
     const events = claudeSampleWithResult("plain", (result) => {
-      const usage = result["usage"] as Record<string, unknown>;
-      delete usage["input_tokens"];
-      usage["output_tokens"] = "4";
+      const usage = result.usage as Record<string, unknown>;
+      delete usage.input_tokens;
+      usage.output_tokens = "4";
     });
 
     expect(readStream(events).usage).toEqual({
@@ -195,7 +195,7 @@ describe("readStream usage", () => {
 
   it("is unavailable when the result has no usage object", () => {
     const events = claudeSampleWithResult("plain", (result) => {
-      delete result["usage"];
+      delete result.usage;
     });
 
     expect(readStream(events).usage).toBe("unavailable");
