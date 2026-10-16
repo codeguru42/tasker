@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { checkReviewAnswer } from "../../src/review/answer.js";
-import { findingEntries, findingText, reviewFinding, reviewFindingWithout, validReviewAnswer } from "./review.js";
+import {
+  findingEntries,
+  findingText,
+  promotionContextExpected,
+  reviewFinding,
+  reviewFindingWithout,
+  validReviewAnswer,
+} from "./review.js";
 
 function finding(change?: Parameters<typeof reviewFinding>[0]) {
   return reviewFinding(change);
@@ -88,5 +95,32 @@ describe("findingEntries", () => {
 
   it("gives no entry for no finding", () => {
     expect(findingEntries([])).toEqual([]);
+  });
+});
+
+describe("promotionContextExpected", () => {
+  it("gives the text of verify run 1 and both default findings", () => {
+    expect(promotionContextExpected()).toBe(
+      "Review 1 read the committed work at 4b825dc642cb and found these open findings. " +
+        "Verify run 1 passed on that work. " +
+        "Revise the plan so that the next execute run fixes each open finding. The work that is done stays.\n" +
+        "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
+        "  failure scenario: A list of two items gives only the first one.\n" +
+        "  status: open\n" +
+        "- [2] src/b.ts:9 (correctness): The count is off by one.\n" +
+        "  failure scenario: A list of three items gives the count 2.\n" +
+        "  status: open\n",
+    );
+  });
+
+  it("gives the no-verify line and only the open findings that the caller names", () => {
+    expect(promotionContextExpected({ verifyRun: null, open: ["second"] })).toBe(
+      "Review 1 read the committed work at 4b825dc642cb and found these open findings. " +
+        "No verify run is recorded. " +
+        "Revise the plan so that the next execute run fixes each open finding. The work that is done stays.\n" +
+        "- [2] src/b.ts:9 (correctness): The count is off by one.\n" +
+        "  failure scenario: A list of three items gives the count 2.\n" +
+        "  status: open\n",
+    );
   });
 });

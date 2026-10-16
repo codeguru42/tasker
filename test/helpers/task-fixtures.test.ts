@@ -44,6 +44,7 @@ import {
   useExecuteFixture,
   useLandedTask,
   useRefineFixture,
+  useReviewedRefineFixture,
   usePlanFixture,
   useStartedTask,
   useReviewFixture,
@@ -303,6 +304,50 @@ describe("useRefineFixture", () => {
 
   it("gives options.limits to the configuration", async () => {
     const fixture = await useRefineFixture({}, { limits: { planTimeoutMin: 0.05 } });
+
+    expect(fixture.started.config.limits.planTimeoutMin).toBe(0.05);
+  });
+});
+
+describe("useReviewedRefineFixture", () => {
+  it("leaves the task in reviewed with the plan session, verify run 1 and review 1 with two open findings", async () => {
+    const fixture = await useReviewedRefineFixture({});
+    const { dataRoot, key } = fixture.started;
+
+    expect(latestTaskOf(dataRoot, key).state).toBe("reviewed");
+    expect(fixture.task.state).toBe("reviewed");
+    expect(fixture.session).toMatchObject({ sessionId: TEST_SESSION_ID, provider: "claude-code", model: "opus" });
+    expect(fixture.verifyRun?.number).toBe(1);
+    expect(fixture.review?.number).toBe(1);
+    expect(fixture.review?.findings.map((entry) => entry.dismissed)).toEqual([null, null]);
+  });
+
+  it("seeds no verify run for verifyRun: false", async () => {
+    const fixture = await useReviewedRefineFixture({}, { verifyRun: false });
+
+    expect(fixture.verifyRun).toBeUndefined();
+    expect(
+      withDataRootStore(fixture.started.dataRoot, (store) => store.latestVerifyRun(fixture.task.id)),
+    ).toBeUndefined();
+    expect(fixture.task.state).toBe("reviewed");
+  });
+
+  it("leaves the task in reviewed with no review for review: null", async () => {
+    const fixture = await useReviewedRefineFixture({}, { review: null });
+
+    expect(fixture.review).toBeUndefined();
+    expect(fixture.task.state).toBe("reviewed");
+    expect(withDataRootStore(fixture.started.dataRoot, (store) => store.latestReview(fixture.task.id))).toBeUndefined();
+  });
+
+  it("gives the findings of options.review to the review", async () => {
+    const fixture = await useReviewedRefineFixture({}, { review: { findings: [] } });
+
+    expect(fixture.review?.findings).toEqual([]);
+  });
+
+  it("gives options.limits to the configuration", async () => {
+    const fixture = await useReviewedRefineFixture({}, { limits: { planTimeoutMin: 0.05 } });
 
     expect(fixture.started.config.limits.planTimeoutMin).toBe(0.05);
   });

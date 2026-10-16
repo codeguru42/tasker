@@ -37,14 +37,28 @@ import {
   readRunMarker,
   withDataRootStore,
 } from "../helpers/store.js";
-import { expectNoAssistantRun, type PlanFixture, useRefineFixture, usePlanFixture } from "../helpers/task-fixtures.js";
+import { promotionContextExpected } from "../helpers/review.js";
+import {
+  expectNoAssistantRun,
+  type PlanFixture,
+  useRefineFixture,
+  useReviewedRefineFixture,
+  usePlanFixture,
+} from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 const FEEDBACK = "Use main as the base branch.";
 
-const runRefine = (feedback = FEEDBACK, key = KEY, ...extra: string[]) =>
-  runCommand(refine, "refine", key, feedback, ...extra);
+// A null feedback leaves the argument out.
+const runRefine = (feedback: string | null = FEEDBACK, key = KEY, ...extra: string[]) =>
+  runCommand(refine, "refine", key, ...(feedback === null ? [] : [feedback]), ...extra);
+
+// The two starts of a refine: from awaiting_plan_review with feedback, and from reviewed with none.
+const STARTS = [
+  { name: "a plain refine", start: useRefineFixture, feedback: FEEDBACK, from: "awaiting_plan_review" },
+  { name: "a promotion", start: useReviewedRefineFixture, feedback: null, from: "reviewed" },
+];
 
 // The questions of v1: base-branch is answered by the feedback, test-runner stays open.
 const V1_ANSWER = validPlanAnswer({
@@ -119,18 +133,6 @@ describe("refine", () => {
     expect(transcriptLines(planTranscriptPath(dataRoot, task, 2))).toHaveLength(stream.length);
   });
 
-  it("continues the recorded session with its recorded model, not the configured one", async () => {
-    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { repo: splitRoleModelsRepo() });
-
-    const result = await runRefine();
-
-    expect(result.code).toBe(0);
-    const argv = fixture.claude.calls()[0].argv;
-    expect(argv[argv.indexOf("--resume") + 1]).toBe(TEST_SESSION_ID);
-    expect(argv).not.toContain("--session-id");
-    expect(argv[argv.indexOf("--model") + 1]).toBe("opus");
-  });
-
   it("gives the plan, the context, the feedback, the open questions and the branch commits on the stdin", async () => {
     const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { answer: V1_ANSWER });
 
@@ -168,12 +170,26 @@ describe("refine", () => {
       expect(store.planQuestions(fixture.task.id, 2)).toEqual([{ question: V1_ANSWER.questions[1], state: "open" }]);
     });
   });
+});
+
+describe.each(STARTS)("$name", ({ start, feedback, from }) => {
+  it("continues the recorded session with its recorded model, not the configured one", async () => {
+    const fixture = await start({ stream: answerStream(V2_ANSWER) }, { repo: splitRoleModelsRepo() });
+
+    const result = await runRefine(feedback);
+
+    expect(result.code).toBe(0);
+    const argv = fixture.claude.calls()[0].argv;
+    expect(argv[argv.indexOf("--resume") + 1]).toBe(TEST_SESSION_ID);
+    expect(argv).not.toContain("--session-id");
+    expect(argv[argv.indexOf("--model") + 1]).toBe("opus");
+  });
 
   it("fails the task when the assistant fails", async () => {
-    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER), exitCode: 1, stderr: "boom" });
+    const fixture = await start({ stream: answerStream(V2_ANSWER), exitCode: 1, stderr: "boom" });
     const { dataRoot } = fixture.started;
 
-    const result = await runRefine();
+    const result = await runRefine(feedback);
 
     expect(result.code).toBe(1);
     expect(result.err).toMatch(/^refining failed: .+\n$/);
@@ -186,12 +202,12 @@ describe("refine", () => {
   });
 
   it("fails the task when the assistant runs longer than the plan limit", { timeout: 15_000 }, async () => {
-    const fixture = await useRefineFixture(
+    const fixture = await start(
       { stream: claudeSample("plain").slice(0, 2), untilStopped: true },
       { limits: { planTimeoutMin: 0.05 } },
     );
 
-    const result = await runRefine();
+    const result = await runRefine(feedback);
 
     expect(result.code).toBe(1);
     expect(result.err).toBe("refining timed out after 0.05 min\n");
@@ -199,9 +215,9 @@ describe("refine", () => {
   });
 
   it("blocks the task on a quota stop", async () => {
-    const fixture = await useRefineFixture({ stream: claudeSample("quota-stop"), exitCode: 1 });
+    const fixture = await start({ stream: claudeSample("quota-stop"), exitCode: 1 });
 
-    const result = await runRefine();
+    const result = await runRefine(feedback);
 
     expect(result.code).toBe(1);
     expect(result.out).toMatch(/^refining stopped by a quota limit; /);
@@ -210,9 +226,9 @@ describe("refine", () => {
   });
 
   it("fails the task for an answer that tasker refuses, and writes no v2", async () => {
-    const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer({ todos: [] })) });
+    const fixture = await start({ stream: answerStream(validPlanAnswer({ todos: [] })) });
 
-    const result = await runRefine();
+    const result = await runRefine(feedback);
 
     expect(result.code).toBe(1);
     expect(result.err).toMatch(/^the assistant returned a plan that tasker refuses:/);
@@ -221,7 +237,7 @@ describe("refine", () => {
   });
 
   it("warns of a shared file with the last line of tasker plan", async () => {
-    const fixture = await useRefineFixture({
+    const fixture = await start({
       stream: answerStream(validPlanAnswer({ files_changed: ["src/a.ts"] })),
     });
     seedTaskWithPlanFiles(
@@ -230,7 +246,7 @@ describe("refine", () => {
       ["src/a.ts"],
     );
 
-    const result = await runRefine();
+    const result = await runRefine(feedback);
 
     expect(result.code).toBe(0);
     expect(result.out).toMatch(/^refined /);
@@ -244,62 +260,139 @@ describe("refine", () => {
 
   describe("a failure before the run", () => {
     it("fails at once when another process holds the task lock", async () => {
-      const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
+      const fixture = await start({ stream: answerStream(V2_ANSWER) });
       const { dataRoot } = fixture.started;
       const before = eventsOf(dataRoot, KEY);
       const name = taskLockName(REPO, KEY);
       const holder = startLockHolder(databasePathOf(dataRoot), name);
       await holder.attempt;
 
-      const result = await runRefine();
+      const result = await runRefine(feedback);
 
       expect(result.code).toBe(1);
       expect(result.out).toBe("");
       expect(result.err).toMatch(new RegExp(`^the lock ${name} is busy`));
       expect(lockNames(dataRoot)).toEqual([name]);
       expect(fixture.claude.calls()).toEqual([]);
-      expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
+      expect(latestTaskOf(dataRoot, KEY).state).toBe(from);
       expect(eventsOf(dataRoot, KEY)).toEqual(before);
       expect(existsSync(refinePromptPath(dataRoot))).toBe(false);
     });
 
     it("fails when the plan file of the newest revision is missing", async () => {
-      const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
+      const fixture = await start({ stream: answerStream(V2_ANSWER) });
       const { dataRoot } = fixture.started;
       const before = eventsOf(dataRoot, KEY);
       const path = planRevisionPath(dataRoot, fixture.task, 1);
       rmSync(path);
 
-      const result = await runRefine();
+      const result = await runRefine(feedback);
 
       expect(result.code).toBe(1);
       expect(result.out).toBe("");
       expect(result.err.startsWith(`cannot read the plan file ${path} of revision v1: `)).toBe(true);
       expect(result.err.endsWith("\n")).toBe(true);
-      expectNoWrite(fixture, fixture.task, before, "awaiting_plan_review");
+      expectNoWrite(fixture, fixture.task, before, from);
     });
 
     it("fails when the prompt cannot be archived", async () => {
-      const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
+      const fixture = await start({ stream: answerStream(V2_ANSWER) });
       const { dataRoot } = fixture.started;
       const before = eventsOf(dataRoot, KEY);
       const prompts = join(dataRoot, "prompts");
       chmodSync(prompts, 0o555);
       onTestFinished(() => chmodSync(prompts, 0o755));
 
-      const result = await runRefine();
+      const result = await runRefine(feedback);
 
       expect(result.code).toBe(1);
       expect(result.err).not.toBe("");
-      expectNoWrite(fixture, fixture.task, before, "awaiting_plan_review");
+      expectNoWrite(fixture, fixture.task, before, from);
     });
+  });
+});
+
+describe("a promotion from reviewed", () => {
+  const stream = answerStream(V2_ANSWER);
+  const firstLine = (out: string) => out.split("\n")[0];
+
+  it("records revision v2 with the source review and no feedback, and leaves the findings open", async () => {
+    const fixture = await useReviewedRefineFixture({ stream });
+    const { dataRoot } = fixture.started;
+    const before = eventsOf(dataRoot, KEY);
+
+    const result = await runRefine(null);
+
+    const task = latestTaskOf(dataRoot, KEY);
+    const revision = planRevisionOf(dataRoot, task.id, 2);
+    expect(result.code).toBe(0);
+    expect(firstLine(result.out)).toBe(`refined ${KEY} as revision v2`);
+    const stdin = fixture.claude.calls()[0].stdin;
+    expect(stdin).toContain(`<context>${promotionContextExpected()}</context>`);
+    expect(stdin).toContain("<feedback>None.</feedback>");
+    expect(task.state).toBe("awaiting_plan_review");
+    expect(revision).toMatchObject({ version: 2, source: "review", feedback: null });
+    expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
+      { type: "transition", data: { from: "reviewed", to: "refining" } },
+      { type: "usage", data: expect.anything() },
+      { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
+      { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },
+    ]);
+    withDataRootStore(dataRoot, (store) => {
+      expect(store.latestReview(task.id)?.findings.map((entry) => entry.dismissed)).toEqual([null, null]);
+    });
+  });
+
+  it("gives the feedback of the operator on the stdin and stores it", async () => {
+    const fixture = await useReviewedRefineFixture({ stream });
+
+    const result = await runRefine(FEEDBACK);
+
+    expect(result.code).toBe(0);
+    expect(fixture.claude.calls()[0].stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
+    expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toMatchObject({
+      source: "review",
+      feedback: FEEDBACK,
+    });
+  });
+
+  it("gives only the open findings, with their original positions", async () => {
+    const fixture = await useReviewedRefineFixture({ stream });
+    withDataRootStore(fixture.started.dataRoot, (store) => {
+      store.dismissReviewFindings(fixture.task.id, 1, [1], "Not a bug.", "awaiting_work_review");
+    });
+
+    const result = await runRefine(null);
+
+    expect(result.code).toBe(0);
+    expect(fixture.claude.calls()[0].stdin).toContain(
+      `<context>${promotionContextExpected({ open: ["second"] })}</context>`,
+    );
+  });
+
+  it("says that no verify run is recorded when the task has none", async () => {
+    const fixture = await useReviewedRefineFixture({ stream }, { verifyRun: false });
+
+    const result = await runRefine(null);
+
+    expect(result.code).toBe(0);
+    expect(fixture.claude.calls()[0].stdin).toContain(
+      `<context>${promotionContextExpected({ verifyRun: null })}</context>`,
+    );
   });
 });
 
 describe("a check before any write", () => {
   const stream = answerStream(V2_ANSWER);
+  const NO_OPEN_FINDING = `the latest review of ${KEY} has no open finding; run tasker dismiss-review or tasker review`;
 
-  const expectRefused = async (fixture: PlanFixture, task: Task, state: string, error: string, feedback = FEEDBACK) => {
+  const expectRefused = async (
+    fixture: PlanFixture,
+    task: Task,
+    state: string,
+    error: string,
+    feedback: string | null = FEEDBACK,
+  ) => {
     const before = eventsOf(fixture.started.dataRoot, KEY);
 
     const result = await runRefine(feedback);
@@ -308,7 +401,7 @@ describe("a check before any write", () => {
     expectNoWrite(fixture, task, before, state);
   };
 
-  it("refuses a task that is not in awaiting_plan_review", async () => {
+  it("refuses a task that is not in awaiting_plan_review or reviewed", async () => {
     const fixture = await useRefineFixture({ stream });
     withDataRootStore(fixture.started.dataRoot, (store) => transitionTask(store, fixture.task.id, "approved"));
 
@@ -316,7 +409,19 @@ describe("a check before any write", () => {
       fixture,
       fixture.task,
       "approved",
-      `the task of ${KEY} is in approved; tasker refine needs awaiting_plan_review`,
+      `the task of ${KEY} is in approved; tasker refine needs awaiting_plan_review or reviewed`,
+    );
+  });
+
+  it("refuses a plain refine without feedback", async () => {
+    const fixture = await useRefineFixture({ stream });
+
+    await expectRefused(
+      fixture,
+      fixture.task,
+      "awaiting_plan_review",
+      "the feedback is missing; tasker refine needs it unless the task is in reviewed",
+      null,
     );
   });
 
@@ -324,6 +429,24 @@ describe("a check before any write", () => {
     const fixture = await useRefineFixture({ stream });
 
     await expectRefused(fixture, fixture.task, "awaiting_plan_review", "the feedback is empty", "   ");
+  });
+
+  it("refuses feedback of only spaces in reviewed", async () => {
+    const fixture = await useReviewedRefineFixture({ stream });
+
+    await expectRefused(fixture, fixture.task, "reviewed", "the feedback is empty", "   ");
+  });
+
+  it("refuses a review with no open finding", async () => {
+    const fixture = await useReviewedRefineFixture({ stream }, { review: { findings: [] } });
+
+    await expectRefused(fixture, fixture.task, "reviewed", NO_OPEN_FINDING, null);
+  });
+
+  it("refuses a task in reviewed with no review", async () => {
+    const fixture = await useReviewedRefineFixture({ stream }, { review: null });
+
+    await expectRefused(fixture, fixture.task, "reviewed", NO_OPEN_FINDING, null);
   });
 
   it("refuses a task with no plan revision", async () => {
@@ -338,21 +461,24 @@ describe("a check before any write", () => {
     await expectRefused(fixture, task, "awaiting_plan_review", `the task of ${KEY} has no plan revision`);
   });
 
-  it("refuses a task with no plan session", async () => {
-    const fixture = await useRefineFixture({ stream });
-    withDataRootStore(fixture.started.dataRoot, (store) => store.clearPlanSession(fixture.task.id));
+  describe.each(STARTS)("$name", ({ start, feedback, from }) => {
+    it("refuses a task with no plan session", async () => {
+      const fixture = await start({ stream });
+      withDataRootStore(fixture.started.dataRoot, (store) => store.clearPlanSession(fixture.task.id));
 
-    await expectRefused(fixture, fixture.task, "awaiting_plan_review", `the task of ${KEY} has no plan session`);
-  });
+      await expectRefused(fixture, fixture.task, from, `the task of ${KEY} has no plan session`, feedback);
+    });
 
-  it("refuses a recorded model that the provider refuses", async () => {
-    const fixture = await useRefineFixture({ stream }, { session: { model: "gpt-5" } });
+    it("refuses a recorded model that the provider refuses", async () => {
+      const fixture = await start({ stream }, { session: { model: "gpt-5" } });
 
-    await expectRefused(
-      fixture,
-      fixture.task,
-      "awaiting_plan_review",
-      "the plan session of codeguru42/tasker#5 runs on gpt-5, and claude-code refuses it: is not a claude-code model: gpt-5",
-    );
+      await expectRefused(
+        fixture,
+        fixture.task,
+        from,
+        "the plan session of codeguru42/tasker#5 runs on gpt-5, and claude-code refuses it: is not a claude-code model: gpt-5",
+        feedback,
+      );
+    });
   });
 });

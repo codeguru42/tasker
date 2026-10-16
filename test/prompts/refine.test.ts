@@ -4,8 +4,11 @@ import {
   REFINE_PROMPT,
   REFINE_PROMPT_NAME,
   openQuestionsText,
+  promotionContextText,
 } from "../../src/prompts/refine.js";
 import { rulesOf } from "../helpers/prompts.js";
+import { findingEntries, promotionContextExpected } from "../helpers/review.js";
+import { newReview } from "../helpers/store.js";
 import { SHARED_RULES } from "../../src/prompts/shared.js";
 import { fillTemplate } from "../../src/prompts/template.js";
 
@@ -19,6 +22,9 @@ const VALUES = {
   FEEDBACK: "Use a map.",
   OPEN_QUESTIONS: openQuestionsText([QUESTION]),
 };
+
+const promotionText = (open = findingEntries(newReview(1).findings), verifyRun: number | undefined = 1) =>
+  promotionContextText({ number: 1, revision: "4b825dc642cb" }, open, verifyRun);
 
 function fillRefine(): string {
   return fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, VALUES);
@@ -74,6 +80,22 @@ describe("openQuestionsText", () => {
   it("joins the lines of two questions in input order", () => {
     expect(openQuestionsText([QUESTION, { id: "q-two", question: "Which name?", context: "None is set." }])).toBe(
       `${QUESTION_LINE}\n- \`q-two\`: Which name? (None is set.)`,
+    );
+  });
+});
+
+describe("promotionContextText", () => {
+  it("gives the review, the verify run and each open finding", () => {
+    expect(promotionText()).toBe(promotionContextExpected());
+  });
+
+  it("says that no verify run is recorded for no verify run", () => {
+    expect(promotionText(undefined, undefined)).toBe(promotionContextExpected({ verifyRun: null }));
+  });
+
+  it("keeps the original positions of the open findings", () => {
+    expect(promotionText(findingEntries(newReview(1).findings).slice(1))).toBe(
+      promotionContextExpected({ open: ["second"] }),
     );
   });
 });

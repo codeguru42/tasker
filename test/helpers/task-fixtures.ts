@@ -11,7 +11,17 @@ import type { Config } from "../../src/config/schema.js";
 import { canonicalPath } from "../../src/real-path.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import { transitionTask, type TaskState } from "../../src/state/machine.js";
-import type { NewSession, PlanRevision, StoredSession, Task, TaskEvent, TaskStore } from "../../src/store/store.js";
+import type {
+  NewReview,
+  NewSession,
+  PlanRevision,
+  Review,
+  StoredSession,
+  Task,
+  TaskEvent,
+  TaskStore,
+  VerifyRun,
+} from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
@@ -30,7 +40,17 @@ import {
   taskNames,
 } from "./git.js";
 import { recordTestPlanRevision, seedPlanSession, validPlanAnswer } from "./plan.js";
-import { type SeedTask, dayAt, eventsOf, latestTaskOf, lockNames, seedTasks, withDataRootStore } from "./store.js";
+import {
+  type SeedTask,
+  dayAt,
+  eventsOf,
+  latestTaskOf,
+  lockNames,
+  seedReview,
+  seedTasks,
+  seedVerifyRun,
+  withDataRootStore,
+} from "./store.js";
 import { useProcessEnv, useTempHome } from "./temp.js";
 
 export interface SeededTaskFixture {
@@ -321,6 +341,32 @@ export async function useRefineFixture(
     const revision = store.getPlanRevision(task.id, 1)!;
     const session = seedPlanSession(store, task.id, options.session);
     return { ...fixture, task, revision, session };
+  });
+}
+
+export interface ReviewedRefineFixture extends RefineFixture {
+  review: Review | undefined;
+  verifyRun: VerifyRun | undefined;
+}
+
+// useRefineFixture, then v1 is approved, a passed verify run is seeded (unless options.verifyRun is false) and a review
+// is seeded (options.review on top of the defaults of seedReview), so the task is in reviewed. With review: null, no
+// review is seeded and the task goes to reviewed with no review. Call it inside a test.
+export async function useReviewedRefineFixture(
+  control: FakeClaudeControl,
+  options: Parameters<typeof useRefineFixture>[1] & {
+    verifyRun?: boolean;
+    review?: Partial<Omit<NewReview, "number">> | null;
+  } = {},
+): Promise<ReviewedRefineFixture> {
+  const { verifyRun, review, ...refineOptions } = options;
+  const fixture = await useRefineFixture(control, refineOptions);
+  return withDataRootStore(fixture.started.dataRoot, (store) => {
+    store.approvePlanRevision(fixture.task.id, 1, "approved");
+    const run = verifyRun === false ? undefined : seedVerifyRun(store, fixture.started.dataRoot, fixture.task);
+    const seeded = review === null ? undefined : seedReview(store, fixture.task.id, review ?? {});
+    if (review === null) store.endRun(fixture.task.id, "reviewed");
+    return { ...fixture, task: store.getTask(fixture.task.id)!, review: seeded, verifyRun: run };
   });
 }
 
