@@ -20,7 +20,14 @@ import { validConfig, writeDataRootConfig } from "./config.js";
 import { useFakeSandboxBin } from "./fake-commands.js";
 import { type FakeClaude, type FakeClaudeControl, useFakeClaude, useFakeClaudeOnPath } from "./fake-claude.js";
 import { type FakeGh, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
-import { type GitOrigin, commitInWorktree, localBranches, makeProviderFixture, taskNames } from "./git.js";
+import {
+  type GitOrigin,
+  commitInWorktree,
+  landBranchOnOriginMain,
+  localBranches,
+  makeProviderFixture,
+  taskNames,
+} from "./git.js";
 import { recordTestPlanRevision, seedPlanSession, validPlanAnswer } from "./plan.js";
 import { type SeedTask, dayAt, eventsOf, latestTaskOf, lockNames, seedTasks, withDataRootStore } from "./store.js";
 import { useProcessEnv, useTempHome } from "./temp.js";
@@ -429,6 +436,18 @@ export async function useAcceptedTask(options?: Parameters<typeof useWorkReviewT
   const revision = (event?.data as { revision?: unknown } | undefined)?.revision;
   if (typeof revision !== "string") throw new Error("tasker accept wrote no accepted event");
   return { ...work, task: latestTaskOf(work.dataRoot, work.key), revision };
+}
+
+// Makes the head of the task branch the head of main on origin, as a push by someone else would.
+export async function landAcceptedTask(
+  fixture: Pick<AcceptedTask, "origin" | "clone" | "task" | "env">,
+): Promise<void> {
+  await landBranchOnOriginMain({
+    origin: fixture.origin.path,
+    clone: fixture.clone,
+    branch: String(fixture.task.branch),
+    env: fixture.env,
+  });
 }
 
 export interface ReviewFixture extends WorkReviewTask {

@@ -5,7 +5,6 @@ import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
-import { landBranchOnOriginMain } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   dayAt,
@@ -19,10 +18,10 @@ import {
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
+  landAcceptedTask,
   useAcceptedTask,
   useStartFixture,
   useWorkReviewTask,
-  type AcceptedTask,
   type StartFixture,
 } from "../helpers/task-fixtures.js";
 
@@ -44,15 +43,6 @@ const expectRefused = async (fixture: Pick<StartFixture, "dataRoot" | "origin">,
 // Seeds the task of issue 5 in accepted, with the given branch and base.
 const seedAccepted = (fixture: StartFixture, extra: { branch?: string; base?: string } = {}) =>
   seedTasks(fixture.dataRoot, [{ issueKey: KEY, repoKey: REPO, state: "accepted", at: dayAt(1), ...extra }]);
-
-// Makes the head of the task branch the head of main on origin, as a push by someone else would.
-const landByOthers = (accepted: AcceptedTask) =>
-  landBranchOnOriginMain({
-    origin: accepted.origin.path,
-    clone: accepted.clone,
-    branch: String(accepted.task.branch),
-    env: accepted.env,
-  });
 
 describe("tasker merge", () => {
   it("lands the work on the base of origin and moves the task to landed", async () => {
@@ -82,7 +72,7 @@ describe("tasker merge", () => {
 
   it("pushes nothing when the work is already on the base", async () => {
     const accepted = await useAcceptedTask();
-    await landByOthers(accepted);
+    await landAcceptedTask(accepted);
 
     const result = await runMerge();
 

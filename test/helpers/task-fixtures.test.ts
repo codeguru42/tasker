@@ -30,6 +30,7 @@ import {
   expectCommandRefused,
   expectNoAssistantRun,
   expectRefusedWithoutChange,
+  landAcceptedTask,
   moveTaskThrough,
   startIssueTask,
   startTaskWithCommits,
@@ -512,6 +513,16 @@ describe("useAcceptedTask", () => {
       }),
     ).toEqual(["work.txt"]);
     expect(await accepted.origin.branchHead("main")).not.toBe(accepted.revision);
+  });
+});
+
+describe("landAcceptedTask", () => {
+  it("makes the head of the task branch the head of main on origin", async () => {
+    const accepted = await useAcceptedTask();
+
+    await landAcceptedTask(accepted);
+
+    expect(await accepted.origin.branchHead("main")).toBe(accepted.revision);
   });
 });
 

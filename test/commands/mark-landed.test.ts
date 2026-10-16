@@ -4,7 +4,6 @@ import { markLanded } from "../../src/commands/mark-landed.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
-import { landBranchOnOriginMain } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   dayAt,
@@ -18,11 +17,11 @@ import {
 import {
   appendBaseEvent,
   expectCommandRefused,
+  landAcceptedTask,
   moveTaskThrough,
   useAcceptedTask,
   useStartFixture,
   useWorkReviewTask,
-  type AcceptedTask,
   type StartFixture,
 } from "../helpers/task-fixtures.js";
 
@@ -31,15 +30,6 @@ const REPO = "codeguru42/tasker";
 const NEEDS = "accepted, pushed or in_peer_review";
 
 const runMarkLanded = () => runCommand(markLanded, "mark-landed", KEY, "--repo", REPO);
-
-// Makes the head of the task branch the head of main on origin, as a push by someone else would.
-const landTask = (accepted: AcceptedTask) =>
-  landBranchOnOriginMain({
-    origin: accepted.origin.path,
-    clone: accepted.clone,
-    branch: String(accepted.task.branch),
-    env: accepted.env,
-  });
 
 // Seeds the task of issue 5 in accepted, with the given branch and base.
 const seedAccepted = (fixture: StartFixture, extra: { branch?: string; base?: string } = {}) =>
@@ -52,7 +42,7 @@ const expectRefused = (fixture: Pick<StartFixture, "dataRoot">, error: string | 
 // Lands the work, moves the task through states, and expects mark-landed to record the landing from the last state.
 const expectMarkedFrom = async (states: Parameters<typeof moveTaskThrough>[2], from: string) => {
   const accepted = await useAcceptedTask();
-  await landTask(accepted);
+  await landAcceptedTask(accepted);
   withDataRootStore(accepted.dataRoot, (store) => moveTaskThrough(store, accepted.task.id, states));
   const before = eventsOf(accepted.dataRoot, KEY);
 
@@ -73,7 +63,7 @@ const expectMarkedFrom = async (states: Parameters<typeof moveTaskThrough>[2], f
 describe("tasker mark-landed", () => {
   it("records a landing on the base and moves the task to landed", async () => {
     const accepted = await useAcceptedTask();
-    await landTask(accepted);
+    await landAcceptedTask(accepted);
     const before = eventsOf(accepted.dataRoot, KEY);
 
     const result = await runMarkLanded();

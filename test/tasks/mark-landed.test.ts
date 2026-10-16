@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import { repoLockName } from "../../src/store/locks.js";
 import { markLandedTask } from "../../src/tasks/mark-landed.js";
 import type { TaskStore } from "../../src/store/store.js";
-import { landBranchOnOriginMain } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, latestTaskOf, lockNames, withDataRootStore } from "../helpers/store.js";
-import { expectRefusedWithoutChange, taskRefOf, useAcceptedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
+import {
+  expectRefusedWithoutChange,
+  landAcceptedTask,
+  taskRefOf,
+  useAcceptedTask,
+  type AcceptedTask,
+} from "../helpers/task-fixtures.js";
 
 // Calls markLandedTask for the task of the fixture with a store.
 const callMarkLanded = (fixture: AcceptedTask, store: TaskStore, waitMs = 300) =>
@@ -20,12 +25,7 @@ const callMarkLanded = (fixture: AcceptedTask, store: TaskStore, waitMs = 300) =
 describe("markLandedTask", () => {
   it("leaves everything and releases the task lock when the repo lock is busy", async () => {
     const accepted = await useAcceptedTask();
-    await landBranchOnOriginMain({
-      origin: accepted.origin.path,
-      clone: accepted.clone,
-      branch: String(accepted.task.branch),
-      env: accepted.env,
-    });
+    await landAcceptedTask(accepted);
     const holder = startLockHolder(databasePathOf(accepted.dataRoot), repoLockName(accepted.repoKey));
     await holder.attempt;
 
