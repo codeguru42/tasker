@@ -16,7 +16,13 @@ import { createGitProvider } from "../../../src/vcs/git/provider.js";
 import { remoteTip } from "../../../src/vcs/git/remote-tip.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
-import { listWorktrees, taskBranchExists, taskBranchName, taskWorktreePath } from "../../../src/vcs/git/worktree.js";
+import {
+  listWorktrees,
+  taskBranchExists,
+  taskBranchName,
+  taskBranchRevision,
+  taskWorktreePath,
+} from "../../../src/vcs/git/worktree.js";
 import { commitInWorktree, localBranches, makeProviderFixture, type ProviderFixture } from "../../helpers/git.js";
 
 describe("createGitProvider", () => {
@@ -163,6 +169,14 @@ describe("createGitProvider", () => {
       });
       expect(direct).toEqual(["a.txt"]);
       expect(await git.changedPaths(fixture.context, { taskRef, baseRevision: base })).toEqual(direct);
+    });
+
+    it("gives the tip of a task ref like taskBranchRevision", async () => {
+      const { git, path, taskRef } = await workspace();
+      const head = await commitInWorktree(path, fixture.context.env, { file: "a.txt" });
+      const direct = await taskBranchRevision({ clone: paths().clone, env: fixture.context.env, branch: taskRef });
+      expect(direct).toBe(head);
+      expect(await git.taskRefRevision(fixture.context, { taskRef })).toBe(direct);
     });
 
     it("lists the uncommitted changes like uncommittedChanges", async () => {
