@@ -287,6 +287,37 @@ flowchart LR
 | `failed`, from a failed `push`, `merge`, `open-pr` or `review`             | `executed`             | The same reason. Without the demotion, a retry can push, merge, open a PR or review the moved tree with no verify. |
 | any other                                                                  | its origin             | Nothing to demote.                                                                                                 |
 
+## The commands of each state
+
+`tasker show`, `tasker status` and the wrong-state error name the commands that are valid from the state of a task. They read one table. The table lives in `src/state/commands.ts`.
+
+| State                                                                                                                                                                                                                               | Primary command | Commands, in order                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------- |
+| `provisioning`                                                                                                                                                                                                                      | `start`         | `start`, `abort`                    |
+| `workspace_ready`                                                                                                                                                                                                                   | `plan`          | `plan`, `abort`                     |
+| `awaiting_plan_review`                                                                                                                                                                                                              | none            | `refine`, `approve`, `abort`        |
+| `approved`                                                                                                                                                                                                                          | `execute`       | `execute`, `unapprove`, `abort`     |
+| `executed`                                                                                                                                                                                                                          | `verify`        | `verify`, `abort`                   |
+| `awaiting_work_review`                                                                                                                                                                                                              | none            | `review`, `accept`, `abort`         |
+| `reviewed`                                                                                                                                                                                                                          | none            | `refine`, `dismiss-review`, `abort` |
+| `accepted`                                                                                                                                                                                                                          | `merge`         | `merge`, `mark-landed`, `abort`     |
+| `pushed`                                                                                                                                                                                                                            | none            | `mark-landed`, `abort`              |
+| `in_peer_review`                                                                                                                                                                                                                    | none            | `mark-landed`, `abort`              |
+| `landed`                                                                                                                                                                                                                            | `finish`        | `finish`, `abort`                   |
+| `cleanup_failed`                                                                                                                                                                                                                    | `finish`        | `finish`, `abort`                   |
+| `failed`                                                                                                                                                                                                                            | `retry`         | `retry`, `abort`                    |
+| each other state that is not terminal: `planning`, `refining`, `executing`, `verifying`, `reviewing`, `pushing`, `opening_pr`, `merging`, `finishing`, `updating_branch`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` | none            | `abort`                             |
+| `finished`, `cancelled`                                                                                                                                                                                                             | no row          | no row                              |
+
+The rules of the table:
+
+- The primary command is the clear next step. A state with two or more choices for the user has no primary command.
+- `abort` is the last command of each row.
+- A terminal state has no row. `tasker show` prints no command line for it, `tasker status` prints an empty cell, and the wrong-state error has no extra sentence.
+- The table is the one home of the states that each command accepts. A command accepts a state when the row of that state names the command. The wrong-state error lists these states in the order of the states in `src/state/machine.ts`.
+- A command can have a rule that the table cannot hold. That rule stays next to the table check of the command. For example, `start` also continues a task in `failed` that failed in `provisioning`. The rule lives in `src/tasks/start.ts`.
+- A later ticket that adds a command or an edge adds its row.
+
 ## Code
 
 [data-root.md](dev/data-root.md#writes-from-more-than-one-process) gives the transaction rule of a move and of an illegal edge.

@@ -97,6 +97,10 @@ A quota stop is not a failure. The run can continue after the reset, and the tas
 
 The usage event and the move are two writes, not one. A crash between them leaves the usage event and a task that is still in its spawning state. The run marker of the task stays, so tasker can find that the run died.
 
+## The commands of each state
+
+`tasker show`, `tasker status` and the wrong-state error use one table and one wording, so they name the same commands for a state. The state check of each command reads the same table. The table and its rules are in [the commands of each state](../statemachine.md#the-commands-of-each-state).
+
 ## Plan
 
 `tasker plan` runs the assistant in plan mode in the worktree of a task in `workspace_ready`, and records the first plan revision. The task goes to `planning`, then to `awaiting_plan_review`.

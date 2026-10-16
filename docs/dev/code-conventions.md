@@ -36,11 +36,12 @@ This page describes how the code of tasker is laid out and how to test it. [rule
 3. Add the function to the `commands` array in `src/commands/index.ts`.
 4. Give the command a description. Give each option a description. Then `tasker --help` shows them.
 5. Add one entry to the Commands section of `skills/tasker/SKILL.md`. The entry has the heading `` ### `tasker <name>` `` and one sentence: what the command does and the state that it needs. The sentence links to the heading of the command in the reference file of its phase, for example `references/plan.md#tasker-refine`. Then add the heading `` ## `tasker <name>` `` to that reference file, with the output, the errors and the behavior. If the command has an alias, use the main name in both headings, not the alias. Do not list the options.
-6. Write the tests first (see "Tests").
+6. Name the command in the row of each state that it works from. Do this in `src/state/commands.ts` and in the table of [the commands of each state](../statemachine.md#the-commands-of-each-state). The state check of the command reads that table: call `taskInState` or `assertTaskState` with the name of the command, not with a list of states.
+7. Write the tests first (see "Tests").
 
 The program enables the positional options of Commander. As a result, a root option counts only before the command name. A command can have an option with the name of a root option, for example `--version`.
 
-Each new command must be in the skill and in the `--help` output. The test `test/skill.test.ts` fails when `tasker --help` lists a command that the index does not list. It also fails when the entry does not link to an existing reference file with the heading of the command. The options live in `--help` only.
+Each new command must be in the skill and in the `--help` output. The test `test/skill.test.ts` fails when `tasker --help` lists a command that the index does not list. It also fails when the entry does not link to an existing reference file with the heading of the command. The options live in `--help` only. The test `test/state/commands.test.ts` fails when a row names a command that `tasker --help` does not list.
 
 ## Add a version control provider
 
