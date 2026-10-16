@@ -3,7 +3,12 @@ import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { refine } from "../../src/commands/refine.js";
 import { archivePrompt, promptVersion } from "../../src/prompts/archive.js";
-import { openQuestionsText, REFINE_PROMPT, REFINE_PROMPT_NAME } from "../../src/prompts/refine.js";
+import {
+  openQuestionsText,
+  PLAIN_REFINE_CONTEXT,
+  REFINE_PROMPT,
+  REFINE_PROMPT_NAME,
+} from "../../src/prompts/refine.js";
 import { transitionTask } from "../../src/state/machine.js";
 import type { Task } from "../../src/store/store.js";
 import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js";
@@ -126,13 +131,14 @@ describe("refine", () => {
     expect(argv[argv.indexOf("--model") + 1]).toBe("opus");
   });
 
-  it("gives the plan, the feedback, the open questions and the branch commits on the stdin", async () => {
+  it("gives the plan, the context, the feedback, the open questions and the branch commits on the stdin", async () => {
     const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { answer: V1_ANSWER });
 
     await runRefine();
 
     const stdin = fixture.claude.calls()[0].stdin;
     expect(stdin).toContain(`<current-plan>${V1_ANSWER.plan_markdown}</current-plan>`);
+    expect(stdin).toContain(`<context>${PLAIN_REFINE_CONTEXT}</context>`);
     expect(stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
     expect(stdin).toContain(`<open-questions>${openQuestionsText(V1_ANSWER.questions)}</open-questions>`);
     expect(stdin).toContain(`<branch-commits>${NO_OWN_COMMITS}</branch-commits>`);
