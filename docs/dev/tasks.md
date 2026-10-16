@@ -10,7 +10,7 @@ The commands abort, plan, refine, approve, unapprove, execute, accept, merge, ma
 
 `tasker start` makes a task for an issue and takes it to `workspace_ready`.
 
-The start does not assign the issue and does not mark it in progress. It has no option to take over a lock of a live process, and no stacked base.
+It has no option to take over a lock of a live process, and no stacked base.
 
 ### The order of the steps
 
@@ -48,7 +48,18 @@ Each learned value has its own event: the base, the workspace and the bootstrap 
 
 ### Why stderr holds the question and the notes
 
-An agent reads stdout. It holds only the fields of the task, so the agent can parse it. The question for the base branch and the notes of the base step go to stderr.
+An agent reads stdout. It holds the fields of the task, then the lines of the tracker writes, so the agent can parse it. The warnings of a failed tracker write go to stderr, and so do the question for the base branch and the notes of the base step.
+
+### The tracker writes
+
+If `issueTracker.updateOnStart` is `true`, the start assigns the issue and marks it in progress. Each write appends one `tracker_update` event. The data is `{ action, result }` when the write works, and `{ action, result: "failed", error }` when it fails. The value of `action` is `assign`, `in_progress` or `done`.
+
+The start follows the check-before-write rule in the [intro](#the-task-commands) and the rules in [The locks](#the-locks). These are the reasons of the tracker writes:
+
+- A failed write is a warning. The reason: the task and the clone are correct, and a person can mark the issue on the tracker.
+- The marker check runs before the task exists. The reason: a refused start leaves no task, as [The order of the steps](#the-order-of-the-steps) says. The check protects against two machines that work on the same issue.
+- The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked, and tasker cannot undo a tracker write.
+- The write of finish comes before the move to `finished`. The reason: a second run after a crash runs it again, and the writes are safe to repeat. [Writes](issue-trackers.md#writes) gives the facts.
 
 ## Abort
 
@@ -297,6 +308,8 @@ These reasons explain its rules:
 `tasker finish` cleans up a task in `landed` or `cleanup_failed`: it removes the worktree and the local task branch, and the task goes through `finishing` to `finished`.
 
 The last write appends one `transition` event with the data `{ worktree, branch, from, to }`. The value of `worktree` is `removed` or `already gone`. The value of `branch` is `deleted` or `already gone`. If a step fails after the move to `finishing`, the task goes to `cleanup_failed`. Its `transition` event then has the data `{ error, from, to }`.
+
+If `issueTracker.updateOnFinish` is `true`, finish also marks the issue done. The `tracker_update` event comes before the last `transition` event. [The tracker writes](#the-tracker-writes) gives the reason.
 
 These links give the rules that finish follows:
 
