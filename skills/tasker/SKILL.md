@@ -44,7 +44,7 @@ For each of these errors, the command prints the error on stderr and exits with 
 - The issue key does not resolve.
 - The issue has no task. The error names the issue and the repo.
 - The configuration is missing or invalid.
-- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends. The task keeps its state, and the command writes nothing.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
 - Another command holds the clone for more than 5 minutes. The error says that the lock is busy. Run the command again.
 - The prompt cannot be archived. Fix the cause, then run the command again. The task keeps its state.
 - A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
@@ -52,7 +52,7 @@ For each of these errors, the command prints the error on stderr and exits with 
 
 ### The number rule
 
-The value of `--version`, `--run`, `--command` and `--review` must be a whole number of 1 or more, with no sign and no leading zero. Without the option, the command uses the newest item. A bad value gives the error `--<option> must be a whole number of 1 or more: <value>`.
+The value of `--version`, `--run`, `--command` and `--review` must be a whole number of 1 or more, with no sign and no leading zero. Without `--version`, `--run` or `--review`, the command uses the newest item. A bad value gives the error `--<option> must be a whole number of 1 or more: <value>`.
 
 ### The task of a show command
 
