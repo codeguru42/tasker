@@ -124,6 +124,8 @@ Open questions do not stop an approval. The operator decides, and the count in t
 
 The approval lives on the revision, not on the task. A task has one approved revision for each cycle, and an older approval stays when a newer revision is approved.
 
+## Unapprove
+
 `tasker unapprove` takes back the approval of a task in `approved`. The task goes back to `awaiting_plan_review`. Its checks cover the task, the state and the pinned revision.
 
 The write is one transaction. It clears the approval time of the pinned revision, appends one `unapproved` event with the data `{ version, from, to }`, and moves the task to `awaiting_plan_review`. The `unapproved` event takes the place of the `transition` event for this move. An older approved revision stays approved, because the command clears only the pinned one.
