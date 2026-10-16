@@ -53,7 +53,12 @@ const PLAN_OVERLAP_LAST_LINES: readonly string[] = ["tasker does not refuse. Dec
 export async function reportPlanRun(
   io: Io,
   config: Config,
-  o: { command: "plan" | "refine"; taskId: number; result: PlanResult; firstLine: (version: number) => string },
+  o: {
+    command: "plan" | "refine" | "review";
+    taskId: number;
+    result: PlanResult;
+    firstLine: (version: number) => string;
+  },
 ): Promise<void> {
   const { result } = o;
   if ("exitCode" in result) {

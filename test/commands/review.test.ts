@@ -252,6 +252,7 @@ const startFeedback = (
 const V2_ANSWER = validPlanAnswer({
   plan_markdown: "## Summary\n\nAdd the empty list test.\n",
   todos: [{ id: "only-todo", title: "Do the work", description: "Do all of it.", depends_on: [] }],
+  questions: [],
 });
 
 describe("review with feedback", () => {
