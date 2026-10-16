@@ -130,8 +130,8 @@ async function restoreAt(target: string, env: NodeJS.ProcessEnv, start: StartSta
   const where = found.branch === undefined ? "detached" : `on the branch ${found.branch}`;
   throw new Error(
     `cannot restore the worktree: ${target}: HEAD is at ${found.head}, ${where}` +
-      `${found.rebase ? ", a rebase is in progress" : ""}` +
-      `${found.merge ? ", a merge is in progress" : ""}` +
+      (found.rebase ? ", a rebase is in progress" : "") +
+      (found.merge ? ", a merge is in progress" : "") +
       `${n > 0 ? `, ${n} uncommitted changes` : ""}. ` +
       `Run these git commands in the worktree, in this order: ` +
       `${restoreCommands(start, found).join(", then ")}${detailSuffix(stderrs[0] ?? "")}`,

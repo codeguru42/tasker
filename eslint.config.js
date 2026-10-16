@@ -64,7 +64,6 @@ export default tseslint.config(
   // removes that rule from this block.
   {
     rules: {
-      "@typescript-eslint/no-unnecessary-template-expression": "off",
       "@typescript-eslint/consistent-type-definitions": "off",
       "@typescript-eslint/restrict-template-expressions": "off",
       "@typescript-eslint/no-invalid-void-type": "off",
