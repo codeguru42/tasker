@@ -1,6 +1,6 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
 ## The purpose of start
 
@@ -238,6 +238,18 @@ These reasons explain its rules:
 - The repo lock covers the fetch and the push, because both change the refs of the clone. [The locks table](data-root.md#locks-table) requires it.
 - The command takes the repo lock before the move to `merging`, so a busy lock changes no state.
 - The move to `landed` writes one `landed` event with `revision`, `base`, `pushed`, `from` and `to` in place of the `transition` event, in the same transaction. The `executed` and `accepted` events work in the same way.
+
+## Mark landed
+
+`tasker mark-landed` records that the work of a task in `accepted`, `pushed` or `in_peer_review` already landed on the base branch outside tasker. The task goes to `landed`.
+
+The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the branch, the stored base and the base revision. A refused command leaves the task and the events as they were. Then it takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with `vcs.taskRefOnBase`. If the base does not contain the work, the command stops with an error. The last write is one transaction that appends one `marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`.
+
+These reasons explain its rules:
+
+- The check is read-only toward `origin`. The work landed outside tasker, so tasker only records it.
+- The check reads the tip of the task ref in the clone and not the worktree, for the same reason as the on-base check of [Merge](#merge).
+- The fetch holds the repo lock, because the fetch changes the refs of the clone. [The locks table](data-root.md#locks-table) requires it.
 
 ## Limits
 
