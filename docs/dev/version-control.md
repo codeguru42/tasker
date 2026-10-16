@@ -215,12 +215,18 @@ A push is skipped when origin already has the local revision.
 
 ### Land
 
-The land push has no lease, no `--force` and no `+`. As a result, git refuses a push that is not a fast-forward, and origin does not move.
+The land push uses a lease on the tip of the base that tasker read. It uses no `--force` and no `+`.
 
-- A push of a revision that origin already has succeeds and changes nothing.
-- The clone must have the revision, or git refuses the push.
+Because of the lease, git refuses the push when the base on origin moved or is gone after the read. Origin does not move.
+
+A lease skips the fast-forward check of git. For this reason, tasker makes sure that the revision has the read tip as an ancestor before the push.
+
 - A base that origin does not have is refused, for example `HEAD`. A plain push of `HEAD` makes it as a new branch on origin.
-- Limit: if someone deletes the base between the tip read and the push, the push makes the base again at the revision.
+- When the revision builds on the read tip, the push runs with the lease.
+- When the revision does not build on the read tip, the land fails before the push.
+- When the clone does not have the read tip, the land fails before the push. This occurs when the base moved on origin after the last fetch of the clone, for example after `tasker accept`.
+- A push of a revision that origin already has succeeds and changes nothing.
+- When the clone does not have the revision, the land fails before the push.
 - A local base (`refs/heads/`) cannot land.
 
 ### Delete
