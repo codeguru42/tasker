@@ -72,32 +72,39 @@ function render(command: TaskCommand, issueKey: string): string {
   return `tasker ${command} ${issueKey}`;
 }
 
+// The primary command of a row and its other commands. Without a primary, the others are all commands.
+function splitRow(row: StateCommands): { primary?: TaskCommand; others: readonly TaskCommand[] } {
+  if (row.primary === undefined) return { others: row.commands };
+  return { primary: row.primary, others: row.commands.filter((c) => c !== row.primary) };
+}
+
+function renderAll(commands: readonly TaskCommand[], issueKey: string): string {
+  return commands.map((c) => render(c, issueKey)).join(", ");
+}
+
 // The lines that tasker show prints after the fields. No row gives no line.
 export function showLines(state: string, issueKey: string): string[] {
   const row = stateCommands(state);
   if (row === undefined) return [];
-  if (row.primary === undefined) {
-    return [`commands: ${row.commands.map((c) => render(c, issueKey)).join(", ")}`];
-  }
-  const also = row.commands.filter((c) => c !== row.primary).map((c) => render(c, issueKey));
-  return [`next: ${render(row.primary, issueKey)}`, `also: ${also.join(", ")}`];
+  const { primary, others } = splitRow(row);
+  if (primary === undefined) return [`commands: ${renderAll(others, issueKey)}`];
+  return [`next: ${render(primary, issueKey)}`, `also: ${renderAll(others, issueKey)}`];
 }
 
 // The NEXT cell of tasker status. No row gives an empty string.
 export function nextCell(state: string): string {
   const row = stateCommands(state);
   if (row === undefined) return "";
-  if (row.primary === undefined) return row.commands.join(", ");
-  return `${row.primary} (also: ${row.commands.filter((c) => c !== row.primary).join(", ")})`;
+  const { primary, others } = splitRow(row);
+  if (primary === undefined) return others.join(", ");
+  return `${primary} (also: ${others.join(", ")})`;
 }
 
 // The sentence that the wrong-state error ends with. No row gives undefined.
 export function errorSentence(state: string, issueKey: string): string | undefined {
   const row = stateCommands(state);
   if (row === undefined) return undefined;
-  const others = (row.primary === undefined ? row.commands : row.commands.filter((c) => c !== row.primary)).map((c) =>
-    render(c, issueKey),
-  );
-  if (row.primary === undefined) return `commands: ${others.join(", ")}`;
-  return `next: ${render(row.primary, issueKey)} (also: ${others.join(", ")})`;
+  const { primary, others } = splitRow(row);
+  if (primary === undefined) return `commands: ${renderAll(others, issueKey)}`;
+  return `next: ${render(primary, issueKey)} (also: ${renderAll(others, issueKey)})`;
 }

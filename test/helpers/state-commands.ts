@@ -45,15 +45,21 @@ function tasker(name: string, issueKey: string): string {
   return `tasker ${name} ${issueKey}`;
 }
 
+// The primary command, rendered, and the rendered list of the other commands (all commands without a primary).
+function splitExpected(row: Expected, issueKey: string): { primary?: string; others: string } {
+  const others = (row.primary === undefined ? row.commands : row.commands.filter((c) => c !== row.primary))
+    .map((c) => tasker(c, issueKey))
+    .join(", ");
+  return row.primary === undefined ? { others } : { primary: tasker(row.primary, issueKey), others };
+}
+
 // The lines that tasker show prints after the fields, each with a line end. An empty string when the state has no row.
 export function expectedShowLines(state: string, issueKey: string): string {
   const row = expectedStateCommands(state);
   if (row === undefined) return "";
-  if (row.primary === undefined) {
-    return `commands: ${row.commands.map((c) => tasker(c, issueKey)).join(", ")}\n`;
-  }
-  const also = row.commands.filter((c) => c !== row.primary).map((c) => tasker(c, issueKey));
-  return `next: ${tasker(row.primary, issueKey)}\nalso: ${also.join(", ")}\n`;
+  const { primary, others } = splitExpected(row, issueKey);
+  if (primary === undefined) return `commands: ${others}\n`;
+  return `next: ${primary}\nalso: ${others}\n`;
 }
 
 // The full wrong-state error, without a line end. needs is the text of the accepted states, for example
@@ -62,9 +68,7 @@ export function wrongStateError(state: string, issueKey: string, command: string
   const base = `the task of ${issueKey} is in ${state}; tasker ${command} needs ${needs}`;
   const row = expectedStateCommands(state);
   if (row === undefined) return base;
-  if (row.primary === undefined) {
-    return `${base}. commands: ${row.commands.map((c) => tasker(c, issueKey)).join(", ")}`;
-  }
-  const also = row.commands.filter((c) => c !== row.primary).map((c) => tasker(c, issueKey));
-  return `${base}. next: ${tasker(row.primary, issueKey)} (also: ${also.join(", ")})`;
+  const { primary, others } = splitExpected(row, issueKey);
+  if (primary === undefined) return `${base}. commands: ${others}`;
+  return `${base}. next: ${primary} (also: ${others})`;
 }
