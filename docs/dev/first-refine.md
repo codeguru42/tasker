@@ -47,7 +47,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 
 - Give the design context of [version-control.md](version-control.md#how-tasker-uses-git) up front. Otherwise the review raises cases that cannot occur.
 - Test on the local machine each mechanism that the refine names, and the user configuration keys of each git command ([the fact test](orchestration.md#run-one-ticket)). On one ticket, `-c core.bare=true` had no effect, and three configuration keys gave a wrong result with no error.
-- Name the rules of [version-control.md](version-control.md) and [workspaces.md](workspaces.md) that the code must follow, for example [the environment of git](version-control.md#rungit) and [the exact ref reads](workspaces.md#revision-input).
+- Name the rules of [version-control.md](version-control.md) and [workspaces.md](workspaces.md) that the code must follow, for example [the environment of git](version-control.md#rungit) and [the exact ref reads](workspaces.md#revisions).
 - Name the disk state of each path: fresh, partial and complete. For a configuration key with more than one value, name the `--replace-all` and `--unset-all` rules of [The clone configuration](version-control.md#the-clone-configuration).
 - A test that compares the output of tasker with "what git writes" reads the value of git with a separate plain git call, before tasker can change it.
 - Git code that does not read the error text of git keeps two calls for "exists" and "read". Name the two-call pattern and its reason. Otherwise the review asks to merge the two calls.

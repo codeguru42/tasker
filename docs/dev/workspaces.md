@@ -4,6 +4,16 @@ This page describes the base branch and the workspace of a task. It also gives t
 
 Each fetch moves and prunes `refs/remotes/origin/*` in the clone, also when a later step fails.
 
+## Revisions
+
+Every revision input that reaches git is a full revision, or an exact ref that tasker read with `git show-ref --verify`. So git never gets a short name, a range or a suffix (`a..b`, `x^{tree}`) as input that changes what `diff`, `rev-list` or `merge-base` do. The code never reads the error text of git.
+
+The short name `origin/<x>` can name another ref first, because git reads `refs/tags/` and `refs/heads/` before `refs/remotes/`. Examples are a tag `origin/<x>` that the fetch brings from the remote, and a local branch `refs/heads/origin/<x>` that a person makes in the clone. So tasker uses the full ref `refs/remotes/origin/<x>`.
+
+tasker reads the exact ref `refs/heads/<branch>` with `git show-ref`, not `git rev-parse`, because `rev-parse` can read another ref, for example `refs/heads/refs/heads/<branch>`.
+
+The existence check: a base exists when `git show-ref --verify --quiet -- <revision>` exits with 0. This matches only the exact ref. Exit code 1 means that the ref is missing. Every other error passes through unchanged.
+
 ## Base branch
 
 The resolve has no step for the blocker of a stacked task.
@@ -15,15 +25,7 @@ The stored form of a base is one of these:
 - `<x>` is a branch on `origin`.
 - `refs/heads/<x>` is a local branch of the bare clone.
 
-Names such as `-x` and `a..b` pass the parse of the text that a user types. The existence check then rejects them, and its error names them.
-
-### Revision
-
-The short name `origin/<x>` can name another ref first, because git reads `refs/tags/` and `refs/heads/` before `refs/remotes/`. Examples are a tag `origin/<x>` that the fetch brings from the remote, and a local branch `refs/heads/origin/<x>` that a person makes in the clone. So tasker uses the full ref `refs/remotes/origin/<x>`.
-
-### Existence check
-
-A base exists when `git show-ref --verify --quiet -- <revision>` exits with 0. This matches only the exact ref. Exit code 1 means that the ref is missing. Every other error passes through unchanged.
+Names such as `-x` and `a..b` pass the parse of the text that a user types. [The existence check](#revisions) then rejects them, and its error names them.
 
 ### The resolve
 
@@ -96,10 +98,6 @@ The delete uses `-D`, because a task branch is usually not merged in the clone. 
 
 `git reset --hard` runs first, so a deleted `.gitignore` comes back before `git clean` reads it. `git clean -ffd` (two `f`) also deletes a nested git repo. There is no `-x`, so ignored files stay and do not block a later remove.
 
-### Revision
-
-tasker reads the exact ref `refs/heads/<branch>` with `git show-ref`, not `git rev-parse`, because `rev-parse` can read another ref, for example `refs/heads/refs/heads/<branch>`.
-
 ### Side effects
 
 - A stopped `git worktree add` can leave an admin folder in the clone with only a `locked` file. Git does not list it, and the next create uses a new admin name.
@@ -110,10 +108,6 @@ tasker reads the exact ref `refs/heads/<branch>` with `git show-ref`, not `git r
 ## Diff and changes
 
 This part reads what a task changed against its base, and what is not committed yet. tasker reads the commits itself, because some assistants have no shell in planning.
-
-### Revision input
-
-Every revision that reaches git is a full revision, or an exact ref that tasker read with `git show-ref --verify`. So git never gets a range or a suffix (`a..b`, `x^{tree}`) that changes what `diff`, `rev-list` or `merge-base` do. The code never reads the error text of git.
 
 The order in each function is: the input checks, then the worktree guard, then the ref reads, then git.
 
