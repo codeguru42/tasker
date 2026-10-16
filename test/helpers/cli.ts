@@ -42,3 +42,10 @@ export async function runCommand(
   const code = await run(argv, { commands: [command], io });
   return { code, out: io.out.join(""), err: io.err.join("") };
 }
+
+// Runs <name> --help with only this command and gives the exit code and the help text. Commander wraps the long
+// lines of the help, so the help joins each run of white space to one space.
+export async function runHelp(command: RegisterCommand, name: string): Promise<{ code: number; help: string }> {
+  const { code, out } = await runCommand(command, name, "--help");
+  return { code, help: out.replace(/\s+/g, " ") };
+}
