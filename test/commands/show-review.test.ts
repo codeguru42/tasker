@@ -5,19 +5,13 @@ import { showReview } from "../../src/commands/show-review.js";
 import type { NewReview } from "../../src/store/store.js";
 import { runCommand } from "../helpers/cli.js";
 import { useThreeRepoDataRoot } from "../helpers/config.js";
-import { reviewFinding } from "../helpers/review.js";
+import { findingText, reviewFinding } from "../helpers/review.js";
 import { dayAt, seedReview, seedTasks, withDataRootStore } from "../helpers/store.js";
 
 const TASKER = "codeguru42/tasker";
 const KEY = `${TASKER}#5`;
 
-const DEFAULT_FINDINGS =
-  "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
-  "  failure scenario: A list of two items gives only the first one.\n" +
-  "  status: open\n" +
-  "- [2] src/b.ts:9 (correctness): The count is off by one.\n" +
-  "  failure scenario: A list of three items gives the count 2.\n" +
-  "  status: open\n";
+const DEFAULT_FINDINGS = findingText("first", 1) + findingText("second", 2);
 
 // Runs tasker show-review for key, with the repo of key as --repo, then the extra arguments.
 function showReviewOf(key: string, ...extra: string[]) {
@@ -59,11 +53,7 @@ describe("show-review", () => {
     expect(result).toEqual({
       code: 0,
       err: "",
-      out:
-        `${KEY} review 1 of 2: 1 finding (at 1111111aaaaa, ${dayAt(2)})\n` +
-        "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
-        "  failure scenario: A list of two items gives only the first one.\n" +
-        "  status: open\n",
+      out: `${KEY} review 1 of 2: 1 finding (at 1111111aaaaa, ${dayAt(2)})\n` + findingText("first", 1),
     });
   });
 
@@ -92,12 +82,8 @@ describe("show-review", () => {
       err: "",
       out:
         `${KEY} review 1 of 1: 2 findings (at 4b825dc642cb, ${dayAt(1)})\n` +
-        "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
-        "  failure scenario: A list of two items gives only the first one.\n" +
-        "  status: open\n" +
-        "- [2] src/b.ts:9 (correctness): The count is off by one.\n" +
-        "  failure scenario: A list of three items gives the count 2.\n" +
-        "  status: dismissed: Not a bug.\n",
+        findingText("first", 1) +
+        findingText("second", 2, "dismissed: Not a bug."),
     });
   });
 

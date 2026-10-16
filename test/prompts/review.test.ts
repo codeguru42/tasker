@@ -5,7 +5,7 @@ import { fillTemplate } from "../../src/prompts/template.js";
 import type { PlanRevision, Review } from "../../src/store/store.js";
 import { validPlanAnswer } from "../helpers/plan.js";
 import { rulesOf } from "../helpers/prompts.js";
-import { reviewFinding } from "../helpers/review.js";
+import { findingText, reviewFinding } from "../helpers/review.js";
 import { dayAt, newReview } from "../helpers/store.js";
 
 const VALUES = {
@@ -117,12 +117,7 @@ describe("earlierReviewsText", () => {
     createdAt: dayAt(day),
   });
 
-  const FINDING = [
-    "- [1] src/a.ts:3 (correctness): The loop skips the last item.",
-    "  failure scenario: A list of two items gives only the first one.",
-    "  status: open",
-    "",
-  ].join("\n");
+  const FINDING = findingText("first", 1);
 
   it("says that no review came before", () => {
     expect(earlierText([], [])).toBe("No earlier review.");
@@ -186,7 +181,7 @@ describe("earlierReviewsText", () => {
   it("shows the reason of a dismissed finding", () => {
     expect(earlierText([reviewOf(1, 2, 2, true)], [])).toBe(
       "Review 1, at 4b825dc642cb:\n" +
-        FINDING.replace("status: open", "status: dismissed: Not a bug.") +
+        findingText("first", 1, "dismissed: Not a bug.") +
         "No plan revision followed this review.\n",
     );
   });

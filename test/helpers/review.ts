@@ -20,3 +20,22 @@ export function reviewFindingWithout<K extends keyof Finding>(...keys: K[]): Omi
 export function validReviewAnswer(change: Partial<ReviewAnswer> = {}): ReviewAnswer {
   return { findings: [reviewFinding()], ...change };
 }
+
+const FINDING_TEXTS = {
+  first: {
+    head: "src/a.ts:3 (correctness): The loop skips the last item.",
+    scenario: "A list of two items gives only the first one.",
+  },
+  second: {
+    head: "src/b.ts:9 (correctness): The count is off by one.",
+    scenario: "A list of three items gives the count 2.",
+  },
+};
+
+// The expected text form of a default finding at position, as literal text, so that a test does not call the code
+// under test. "first" is reviewFinding(), "second" is the second finding of newReview. status is "open" or
+// "dismissed: <reason>".
+export function findingText(which: "first" | "second", position: number, status = "open"): string {
+  const { head, scenario } = FINDING_TEXTS[which];
+  return `- [${position}] ${head}\n  failure scenario: ${scenario}\n  status: ${status}\n`;
+}

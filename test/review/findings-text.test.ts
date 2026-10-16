@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type FindingEntry, findingCountText, formatFindings } from "../../src/review/findings-text.js";
-import { reviewFinding, reviewFindingWithout } from "../helpers/review.js";
+import { findingText, reviewFinding, reviewFindingWithout } from "../helpers/review.js";
 
 function format(entries: readonly FindingEntry[]): string {
   return formatFindings(entries);
@@ -16,11 +16,7 @@ function entry(change: Partial<FindingEntry> = {}): FindingEntry {
 
 describe("formatFindings", () => {
   it("prints each key of an open finding", () => {
-    expect(format([entry()])).toBe(
-      "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
-        "  failure scenario: A list of two items gives only the first one.\n" +
-        "  status: open\n",
-    );
+    expect(format([entry()])).toBe(findingText("first", 1));
   });
 
   it("leaves out the line when the finding has none", () => {

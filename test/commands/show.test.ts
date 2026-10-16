@@ -13,7 +13,7 @@ import {
   seedPlanRevision,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { reviewFinding } from "../helpers/review.js";
+import { findingText, reviewFinding } from "../helpers/review.js";
 import { dayAt, seedReview, seedTasks, withDataRootStore } from "../helpers/store.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import type { ExecuteTodoState } from "../../src/store/store.js";
@@ -359,12 +359,7 @@ describe("show", () => {
     const lines = out.split("\n");
     const rest = lines.slice(lines.findIndex((line) => line.startsWith("last event:")) + 1).join("\n");
     expect({ code, err }).toEqual({ code: 0, err: "" });
-    expect(rest).toBe(
-      "review findings (review 2, at abc123def456):\n" +
-        "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
-        "  failure scenario: A list of two items gives only the first one.\n" +
-        "  status: open\n",
-    );
+    expect(rest).toBe("review findings (review 2, at abc123def456):\n" + findingText("first", 1));
   });
 
   it("prints no findings of a review for a task that is not reviewed", async () => {
@@ -392,12 +387,8 @@ describe("show", () => {
       out.endsWith(
         PADDED_BLOCK +
           "review findings (review 1, at 4b825dc642cb):\n" +
-          "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
-          "  failure scenario: A list of two items gives only the first one.\n" +
-          "  status: open\n" +
-          "- [2] src/b.ts:9 (correctness): The count is off by one.\n" +
-          "  failure scenario: A list of three items gives the count 2.\n" +
-          "  status: open\n",
+          findingText("first", 1) +
+          findingText("second", 2),
       ),
     ).toBe(true);
   });

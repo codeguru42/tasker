@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkReviewAnswer } from "../../src/review/answer.js";
-import { reviewFinding, reviewFindingWithout, validReviewAnswer } from "./review.js";
+import { findingText, reviewFinding, reviewFindingWithout, validReviewAnswer } from "./review.js";
 
 function finding(change?: Parameters<typeof reviewFinding>[0]) {
   return reviewFinding(change);
@@ -8,6 +8,10 @@ function finding(change?: Parameters<typeof reviewFinding>[0]) {
 
 function findingWithout(...keys: Parameters<typeof reviewFindingWithout>) {
   return reviewFindingWithout(...keys);
+}
+
+function text(...args: Parameters<typeof findingText>) {
+  return findingText(...args);
 }
 
 function answer(change?: Parameters<typeof validReviewAnswer>[0]) {
@@ -46,5 +50,29 @@ describe("validReviewAnswer", () => {
 
   it("holds one finding", () => {
     expect(answer().findings).toEqual([finding()]);
+  });
+});
+
+describe("findingText", () => {
+  it("gives the text of the first default finding", () => {
+    expect(text("first", 1)).toBe(
+      "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
+        "  failure scenario: A list of two items gives only the first one.\n" +
+        "  status: open\n",
+    );
+  });
+
+  it("gives the text of the second default finding", () => {
+    expect(text("second", 2)).toBe(
+      "- [2] src/b.ts:9 (correctness): The count is off by one.\n" +
+        "  failure scenario: A list of three items gives the count 2.\n" +
+        "  status: open\n",
+    );
+  });
+
+  it("puts the position and the status in the text", () => {
+    const result = text("first", 3, "dismissed: Not a bug.");
+    expect(result.startsWith("- [3] ")).toBe(true);
+    expect(result.endsWith("  status: dismissed: Not a bug.\n")).toBe(true);
   });
 });
