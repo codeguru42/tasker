@@ -46,6 +46,12 @@ export function findingEntries(findings: readonly Finding[]): FindingEntry[] {
   return findings.map((finding, i) => ({ position: i + 1, finding, dismissed: null }));
 }
 
+// The expected verify sentence of a refine context, as literal text. verifyRun is the number of the passed verify
+// run, or null for none.
+export function verifySentenceExpected(verifyRun: number | null): string {
+  return verifyRun === null ? "No verify run is recorded." : `Verify run ${verifyRun} passed on that work.`;
+}
+
 // The expected text of promotionContextText for review 1 at 4b825dc642cb, as literal text, so that a test does not
 // call the code under test. verifyRun is the number of the passed verify run, or null for none. open names the open
 // default findings, with the positions of newReview.
@@ -53,7 +59,7 @@ export function promotionContextExpected(
   options: { verifyRun?: number | null; open?: readonly ("first" | "second")[] } = {},
 ): string {
   const { verifyRun = 1, open = ["first", "second"] } = options;
-  const verifyLine = verifyRun === null ? "No verify run is recorded." : `Verify run ${verifyRun} passed on that work.`;
+  const verifyLine = verifySentenceExpected(verifyRun);
   return (
     `Review 1 read the committed work at 4b825dc642cb and found these open findings. ${verifyLine} ` +
     "Revise the plan so that the next execute run fixes each open finding. The work that is done stays.\n" +

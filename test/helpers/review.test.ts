@@ -7,6 +7,7 @@ import {
   reviewFinding,
   reviewFindingWithout,
   validReviewAnswer,
+  verifySentenceExpected,
 } from "./review.js";
 
 function finding(change?: Parameters<typeof reviewFinding>[0]) {
@@ -122,5 +123,15 @@ describe("promotionContextExpected", () => {
         "  failure scenario: A list of three items gives the count 2.\n" +
         "  status: open\n",
     );
+  });
+});
+
+describe("verifySentenceExpected", () => {
+  it("names the verify run that passed", () => {
+    expect(verifySentenceExpected(1)).toBe("Verify run 1 passed on that work.");
+  });
+
+  it("says that no verify run is recorded for null", () => {
+    expect(verifySentenceExpected(null)).toBe("No verify run is recorded.");
   });
 });

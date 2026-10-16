@@ -31,6 +31,11 @@ export function openQuestionsText(questions: PlanAnswer["questions"]): string {
   return questions.map((q) => `- \`${q.id}\`: ${q.question} (${q.context})`).join("\n");
 }
 
+// The verify sentence of a refine context. verifyRun is the number of the passed verify run, if any.
+function verifySentence(verifyRun: number | undefined): string {
+  return verifyRun === undefined ? "No verify run is recorded." : `Verify run ${verifyRun} passed on that work.`;
+}
+
 // The context of a refine that promotes the open findings of a review to a plan. verifyRun is the number of the
 // passed verify run of the reviewed work, if any.
 export function promotionContextText(
@@ -38,7 +43,5 @@ export function promotionContextText(
   open: readonly FindingEntry[],
   verifyRun: number | undefined,
 ): string {
-  const verifyLine =
-    verifyRun === undefined ? "No verify run is recorded." : `Verify run ${verifyRun} passed on that work.`;
-  return `Review ${review.number} read the committed work at ${review.revision} and found these open findings. ${verifyLine} Revise the plan so that the next execute run fixes each open finding. The work that is done stays.\n${formatFindings(open)}`;
+  return `Review ${review.number} read the committed work at ${review.revision} and found these open findings. ${verifySentence(verifyRun)} Revise the plan so that the next execute run fixes each open finding. The work that is done stays.\n${formatFindings(open)}`;
 }
