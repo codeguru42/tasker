@@ -42,6 +42,7 @@ import {
   useAcceptedTask,
   useAssistantRunFixture,
   useExecuteFixture,
+  useLandedTask,
   useRefineFixture,
   usePlanFixture,
   useStartedTask,
@@ -514,6 +515,17 @@ describe("useAcceptedTask", () => {
       }),
     ).toEqual(["work.txt"]);
     expect(await accepted.origin.branchHead("main")).not.toBe(accepted.revision);
+  });
+});
+
+describe("useLandedTask", () => {
+  it("gives a task in landed with its worktree and its branch", async () => {
+    const landed = await useLandedTask();
+
+    expect(landed.task.state).toBe("landed");
+    expect(latestTaskOf(landed.dataRoot, landed.key).state).toBe("landed");
+    expect(await taskWorkspaceState(landed)).toEqual({ state: "landed", worktree: true, listed: true, branch: true });
+    expect(await landed.origin.branchHead("main")).toBe(landed.revision);
   });
 });
 

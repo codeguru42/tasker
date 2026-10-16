@@ -2,6 +2,7 @@ import { existsSync, rmSync } from "node:fs";
 import { delimiter } from "node:path";
 import { expect, onTestFinished } from "vitest";
 import { accept } from "../../src/commands/accept.js";
+import { merge } from "../../src/commands/merge.js";
 import { start } from "../../src/commands/start.js";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import type { IssueRef } from "../../src/issue-key/ref.js";
@@ -446,6 +447,23 @@ export async function useAcceptedTask(options?: Parameters<typeof useWorkReviewT
   const revision = (event?.data as { revision?: unknown } | undefined)?.revision;
   if (typeof revision !== "string") throw new Error("tasker accept wrote no accepted event");
   return { ...work, task: latestTaskOf(work.dataRoot, work.key), revision };
+}
+
+export interface LandedTask extends AcceptedTask {
+  // The stored worktree path and branch of the task.
+  worktree: string;
+  branch: string;
+}
+
+// Runs useAcceptedTask(options), then tasker merge for the task, and gives the task in landed. It throws when the
+// merge fails. Call it inside a test.
+export async function useLandedTask(options?: Parameters<typeof useWorkReviewTask>[0]): Promise<LandedTask> {
+  const accepted = await useAcceptedTask(options);
+  const result = await runCommand(merge, "merge", accepted.key, "--repo", accepted.repoKey);
+  if (result.code !== 0) throw new Error(`tasker merge failed: ${result.err}`);
+  const task = latestTaskOf(accepted.dataRoot, accepted.key);
+  if (task.worktreePath === null || task.branch === null) throw new Error("the landed task has no worktree or branch");
+  return { ...accepted, task, worktree: task.worktreePath, branch: task.branch };
 }
 
 // Makes the head of the task branch the head of main on origin, as a push by someone else would.
