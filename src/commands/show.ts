@@ -1,4 +1,5 @@
 import type { RegisterCommand } from "../cli.js";
+import { showLines } from "../state/commands.js";
 import { formatFindings } from "../review/findings-text.js";
 import { failedFromEvents, lastTransitionError } from "../state/machine.js";
 import type { ExecuteTodoProgress, Task, TaskStore } from "../store/store.js";
@@ -59,7 +60,10 @@ function formatTask(store: TaskStore, task: Task): string {
   if (task.state === "failed") {
     fields.push(["failed in", failedFromEvents(events)], ["error", lastTransitionError(events)]);
   }
-  return formatFields(fields) + todoProgress(store, task.id) + reviewFindings(store, task);
+  const commandLines = showLines(task.state, task.issueKey)
+    .map((line) => `${line}\n`)
+    .join("");
+  return formatFields(fields) + commandLines + todoProgress(store, task.id) + reviewFindings(store, task);
 }
 
 export const show: RegisterCommand = (program, io) => {

@@ -400,7 +400,7 @@ describe("show", () => {
     const rest = lines.slice(lines.findIndex((line) => line.startsWith("last event:")) + 1).join("\n");
     expect({ code, err }).toEqual({ code: 0, err: "" });
     expect(rest).toBe(
-      expectedShowLines("awaiting_work_review", `${TASKER}#5`) +
+      expectedShowLines("reviewed", `${TASKER}#5`) +
         "review findings (review 2, at abc123def456):\n" +
         findingText("first", 1),
     );

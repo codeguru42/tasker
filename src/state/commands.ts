@@ -66,3 +66,19 @@ export function stateCommands(state: string): StateCommands | undefined {
 export function acceptedStates(command: TaskCommand): TaskState[] {
   return STATES.filter((state) => STATE_COMMANDS[state]?.commands.includes(command) ?? false);
 }
+
+// The command as the user types it for the task of the issue key.
+function render(command: TaskCommand, issueKey: string): string {
+  return `tasker ${command} ${issueKey}`;
+}
+
+// The lines that tasker show prints after the fields. No row gives no line.
+export function showLines(state: string, issueKey: string): string[] {
+  const row = stateCommands(state);
+  if (row === undefined) return [];
+  if (row.primary === undefined) {
+    return [`commands: ${row.commands.map((c) => render(c, issueKey)).join(", ")}`];
+  }
+  const also = row.commands.filter((c) => c !== row.primary).map((c) => render(c, issueKey));
+  return [`next: ${render(row.primary, issueKey)}`, `also: ${also.join(", ")}`];
+}
