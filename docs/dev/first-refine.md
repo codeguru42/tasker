@@ -54,6 +54,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - A test that compares the output of tasker with "what git writes" reads the value of git with a separate plain git call, before tasker can change it.
 - Git code that does not read the error text of git keeps two calls for "exists" and "read". Name the two-call pattern and its reason. Otherwise the review asks to merge the two calls.
 - A promise in a doc about the environment names exactly what tasker removes and what still passes. A broad sentence such as "the caller cannot pass X" causes a finding.
+- A test that must move a ref of origin between a tip read and a push cannot use a pre-receive hook. With git 2.47.3, a ref update inside the hook fails with `ref updates forbidden inside quarantine environment`. Use a git wrapper first on PATH that runs a command before each push. `test/helpers/git.ts` holds such a wrapper since #43. Each command inside the wrapper calls the real git by its path. A plain `git` inside the wrapper runs the wrapper again.
 
 ## A ticket that adds a check of `tasker doctor`
 
