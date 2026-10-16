@@ -153,6 +153,7 @@ describe("task store", () => {
   const latestReview = (taskId: number) => store.latestReview(taskId);
   const reviewCount = (taskId: number) => store.reviewCount(taskId);
   const listReviews = (taskId: number) => store.listReviews(taskId);
+  const listRevisions = (taskId: number) => store.listPlanRevisions(taskId);
   const dismissFindings = (
     taskId: number,
     number: number,
@@ -2447,6 +2448,38 @@ describe("task store", () => {
       it("refuses a task that does not exist", () => {
         const error = thrownBy(() => store.addPlanRevision(9999, revision(1), "awaiting_plan_review"));
         expect((error as Error).message).toBe("task not found: 9999");
+      });
+    });
+
+    describe("listPlanRevisions", () => {
+      it("gives an empty list for a task with no revision", () => {
+        const task = runningTask("planning");
+        expect(listRevisions(task.id)).toEqual([]);
+      });
+
+      it("gives the revisions oldest first with the source, the feedback and the time", () => {
+        const task = runningTask("planning");
+        store.addPlanRevision(
+          task.id,
+          { version: 1, source: "plan", answer: validPlanAnswer(), prompt: "plan@000000000000" },
+          "awaiting_plan_review",
+        );
+        clock = new Date("2026-01-02T00:00:00.000Z");
+        store.addPlanRevision(
+          task.id,
+          {
+            version: 2,
+            source: "refine",
+            feedback: "Keep the loop.",
+            answer: validPlanAnswer(),
+            prompt: "plan@000000000000",
+          },
+          "awaiting_plan_review",
+        );
+        expect(listRevisions(task.id)).toMatchObject([
+          { version: 1, source: "plan", feedback: null, createdAt: "2026-01-01T00:00:00.000Z" },
+          { version: 2, source: "refine", feedback: "Keep the loop.", createdAt: "2026-01-02T00:00:00.000Z" },
+        ]);
       });
     });
 
