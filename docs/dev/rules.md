@@ -1,6 +1,6 @@
 # Rules of the repo
 
-This page gives the rules for each change to this repo. [Code conventions](code-conventions.md) gives the details of the layout, the steps to add a command, the imports, the zod facts and the tests.
+This page gives the rules for each change to this repo and for all text that an assistant session writes. [Code conventions](code-conventions.md) gives the details of the layout, the steps to add a command, the imports, the zod facts and the tests.
 
 ## Check
 
@@ -62,7 +62,7 @@ A case is one kind of input that a function serves. Examples are a role of an as
 - The docs give only what the code cannot show. They give the purpose of a part, the reasons for a design and the rules that apply across files. They also give the limits and the facts about outside tools. An example of a fact about an outside tool is a git behavior that a flag guards against. A user does not read the code. As a result, the user docs (`README.md`, `docs/config.md`, `skills/tasker/SKILL.md` and `skills/tasker/references/`) describe the behavior that a user sees, for example the commands, the flags and the configuration.
 - Update the docs in the same change as the code.
 - Put a new command in the index `skills/tasker/SKILL.md`, in the reference file of its phase under `skills/tasker/references/`, and in the `--help` output.
-- Write the docs with the simple-english skill. The skill holds the rules of the text, for example the banned words and the sentence limits.
+- Each session writes all its text with the simple-english skill. A session is an assistant session, for example the orchestrator, an agent or the planning session. The skill holds the rules of the text, for example the banned words and the sentence limits. The text includes the docs and the text on GitHub: the titles, bodies, comments, milestone descriptions and the text of project fields. Examples of the text on GitHub are the comment of step 11 of [Run one ticket](orchestration.md#run-one-ticket) and the body of an issue. The text also includes the replies to the user, the reports and messages between sessions, and the feedback texts of `tasker refine` and of `tasker review <issue> "<feedback>"`. Examples of the reports and messages are the final report of an agent to the orchestrator and the messages of the orchestrator to an agent. This rule does not apply to the sessions that tasker starts for plan, execute and review, except for the docs that they write.
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path such as `/home/<user>/...`.
 
 ## AGENTS.md
