@@ -13,7 +13,8 @@ import {
   seedPlanRevision,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { dayAt, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { reviewFinding } from "../helpers/review.js";
+import { dayAt, seedReview, seedTasks, withDataRootStore } from "../helpers/store.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import type { ExecuteTodoState } from "../../src/store/store.js";
 
@@ -50,6 +51,7 @@ function seedPinnedTask(
     answer?: PlanAnswer;
     todoStates?: Record<string, ExecuteTodoState>;
     fixTurn?: "queued" | "done";
+    reviewed?: boolean;
   },
 ): void {
   const [task] = seedTasks(dataRoot, [
@@ -67,6 +69,7 @@ function seedPinnedTask(
       seedPinnedPlanRevision(store, task.id, o.answer === undefined ? {} : { answer: o.answer }, task.state);
       seedExecuteTodoStates(store, task.id, 1, o.todoStates ?? {});
       if (o.fixTurn !== undefined) seedExecuteFixTurn(store, task.id, 1, o.fixTurn);
+      if (o.reviewed) seedReview(store, task.id);
     },
     { now: () => new Date(dayAt(4)) },
   );
@@ -339,6 +342,64 @@ describe("show", () => {
       err: "",
       out: EXECUTED_FIELDS + PADDED_BLOCK + `fix turn: ${fixTurn}\n`,
     });
+  });
+
+  it("prints the findings of the latest review after the fields of a reviewed task", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "awaiting_work_review", at: dayAt(2) },
+    ]);
+    withDataRootStore(dataRoot, (store) => {
+      seedReview(store, task.id);
+      seedReview(store, task.id, { revision: "abc123def456", findings: [reviewFinding()] });
+    });
+
+    const { code, err, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    const lines = out.split("\n");
+    const rest = lines.slice(lines.findIndex((line) => line.startsWith("last event:")) + 1).join("\n");
+    expect({ code, err }).toEqual({ code: 0, err: "" });
+    expect(rest).toBe(
+      "review findings (review 2, at abc123def456):\n" +
+        "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
+        "  failure scenario: A list of two items gives only the first one.\n" +
+        "  status: open\n",
+    );
+  });
+
+  it("prints no findings of a review for a task that is not reviewed", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "awaiting_work_review", at: dayAt(2) },
+    ]);
+    withDataRootStore(dataRoot, (store) => seedReview(store, task.id, {}, "awaiting_work_review"));
+
+    const { code, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(code).toBe(0);
+    expect(out).not.toContain("review findings");
+    expect(out.trimEnd().split("\n").at(-1)).toMatch(/^last event:/);
+  });
+
+  it("prints the findings of a reviewed task after the todo block", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedPinnedTask(dataRoot, { todoStates: { "write-test": "done" }, reviewed: true });
+
+    const { code, err, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect({ code, err }).toEqual({ code: 0, err: "" });
+    expect(
+      out.endsWith(
+        PADDED_BLOCK +
+          "review findings (review 1, at 4b825dc642cb):\n" +
+          "- [1] src/a.ts:3 (correctness): The loop skips the last item.\n" +
+          "  failure scenario: A list of two items gives only the first one.\n" +
+          "  status: open\n" +
+          "- [2] src/b.ts:9 (correctness): The count is off by one.\n" +
+          "  failure scenario: A list of three items gives the count 2.\n" +
+          "  status: open\n",
+      ),
+    ).toBe(true);
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
