@@ -239,7 +239,7 @@ The command uses the run step of `tasker refine`, so [the steps of refine](#refi
 
 1. Take the task lock, and check the state with the row of `review` in the table of [the commands of each state](#the-commands-of-each-state).
 2. Check that the feedback is not empty. The error is `the feedback is empty`.
-3. Check the branch, and read the tip of the task branch.
+3. Check the worktree and the branch, and read the tip of the task branch.
 4. Build the context from the tip and the latest verify run, and run the shared refine step with the source `review-feedback` and the feedback.
 
 The context names no review, and the command reads no review.
