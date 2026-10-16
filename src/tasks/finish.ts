@@ -2,11 +2,13 @@ import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
+import { issueProviderFor } from "../issues/provider.js";
 import { transitionTask } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { failRunTo } from "./run-outcome.js";
+import { runTrackerWrite, trackerTargets } from "./tracker-write.js";
 import { taskInState } from "./task-state.js";
 import { cleanUpTaskWorkspace, findTaskWorkspace } from "./workspace-cleanup.js";
 
@@ -44,6 +46,22 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
     try {
       const entry = await findTaskWorkspace(vcs, ctx, task.worktreePath);
       const result = await cleanUpTaskWorkspace(vcs, ctx, entry, task.branch, (line) => io.stdout(`${line}\n`));
+      const { issueTracker } = config.repos[task.repoKey];
+      if (issueTracker.updateOnFinish) {
+        // The write comes before the move to finished, so a second run after a crash does it again.
+        await runTrackerWrite(
+          store,
+          task.id,
+          {
+            action: "done",
+            text: `mark ${request.ref.key} done`,
+            success: `marked ${request.ref.key} done on the tracker`,
+            run: () =>
+              issueProviderFor(config, task.repoKey).markDone(request.ref, trackerTargets(issueTracker).done, env),
+          },
+          io,
+        );
+      }
       transitionTask(store, task.id, "finished", { ...result });
     } catch (error) {
       return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${errorMessage(error)}`);
