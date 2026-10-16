@@ -278,6 +278,26 @@ export function transitionWithPlanUnapproval(store: TaskStore, id: number, versi
   );
 }
 
+// Dismisses positions of review number with reason and appends the review_dismissed event. When no finding of the
+// review is open after that, it moves the task to awaiting_work_review with one transition event { from, to }, in the
+// same transaction. It gives back the open positions. An illegal edge writes nothing.
+export function transitionWithReviewDismissal(
+  store: TaskStore,
+  id: number,
+  number: number,
+  positions: number[],
+  reason: string,
+): number[] {
+  return store.dismissReviewFindings(
+    id,
+    number,
+    positions,
+    reason,
+    "awaiting_work_review",
+    transitionCheck("transition", "awaiting_work_review"),
+  );
+}
+
 // Appends the executed event { version, prompts, from, to } and moves the task to executed, in one transaction.
 // prompts holds the versions of the prompts that the run sent. An illegal edge writes nothing.
 export function transitionWithExecution(
