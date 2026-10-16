@@ -2,11 +2,13 @@
 
 This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, retry and accept, and of the result of an assistant run. The user doc [SKILL.md](../../skills/tasker/SKILL.md) shows the output.
 
-## The purpose of start
+## Start
+
+### The purpose of start
 
 `tasker start` makes a task for an issue and takes it to `workspace_ready`.
 
-## The order of the steps
+### The order of the steps
 
 The order follows what each step needs and what a failure can leave.
 
@@ -14,7 +16,7 @@ The order follows what each step needs and what a failure can leave.
 - The base comes before the workspace, because the workspace starts from the base.
 - Bootstrap runs after the repo lock is free. A bootstrap can run for a long time, and it does not use the clone. If bootstrap holds the repo lock, one slow bootstrap stops the start of every other task in the repo.
 
-## The locks
+### The locks
 
 Each start and each abort takes the task lock first and the repo lock second. No code takes a task lock while it holds a repo lock. As a result, two commands cannot wait for each other in a circle, so they cannot deadlock.
 
@@ -22,7 +24,7 @@ The task lock does not wait. A second command for the same issue stops at once, 
 
 The rule that each command that changes a task takes the task lock has one home: [the locks table](data-root.md#locks-table).
 
-## A second run
+### A second run
 
 A second run continues a task that did not reach `workspace_ready`. It does not make a second task.
 
@@ -31,6 +33,14 @@ A second run continues a task that did not reach `workspace_ready`. It does not 
 - A failure in a clone step or in bootstrap moves the task to `failed` with the error. The next run moves it back and continues.
 - A task that is past this step is not changed. The command only prints it.
 - The stored base stays on a second run. A `--base` option or a `base:` label wins and is stored as the new base.
+
+### Why the events are separate
+
+Each learned value has its own event: the base, the workspace and the bootstrap result. A value is not part of the next transition. As a result, a failure in a later step still keeps the earlier values on record.
+
+### Why stderr holds the question and the notes
+
+An agent reads stdout. It holds only the fields of the task, so the agent can parse it. The question for the base branch and the notes of the base step go to stderr.
 
 ## Abort
 
@@ -45,14 +55,6 @@ The compare of the stored worktree path uses the real path. The data root can go
 The abort removes its own worktree entry. It never prunes, because a prune drops the entries of other tasks too.
 
 The worktree goes before the branch. Git refuses to delete a branch that a worktree entry holds, also when the folder of the entry is gone.
-
-## Why the events are separate
-
-Each learned value has its own event: the base, the workspace and the bootstrap result. A value is not part of the next transition. As a result, a failure in a later step still keeps the earlier values on record.
-
-## Why stderr holds the question and the notes
-
-An agent reads stdout. It holds only the fields of the task, so the agent can parse it. The question for the base branch and the notes of the base step go to stderr.
 
 ## The result of an assistant run
 
