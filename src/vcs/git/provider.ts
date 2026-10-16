@@ -25,6 +25,7 @@ import {
   removeTaskWorktree,
   taskBranchExists,
   taskBranchName,
+  taskBranchRevision,
   taskWorktreePath,
 } from "./worktree.js";
 
@@ -102,6 +103,10 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
     async ownCommits(ctx, { taskRef, baseRevision }) {
       const { clone } = pathsOf(ctx);
       return ownCommitsText({ clone, env: ctx.env, branch: taskRef, baseRevision });
+    },
+    async taskRefRevision(ctx, { taskRef }) {
+      const { clone } = pathsOf(ctx);
+      return taskBranchRevision({ clone, env: ctx.env, branch: taskRef });
     },
     async changedPaths(ctx, { taskRef, baseRevision }) {
       const { clone } = pathsOf(ctx);

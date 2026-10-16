@@ -126,6 +126,8 @@ export interface VcsProvider {
   diffAgainstBase(ctx: VcsContext, o: { path: string; baseRevision: string }): Promise<string>;
   // The commits of taskRef that baseRevision does not hold, as text.
   ownCommits(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<string>;
+  // The revision of the tip of the local taskRef.
+  taskRefRevision(ctx: VcsContext, o: { taskRef: string }): Promise<string>;
   // The paths that taskRef changes against baseRevision, raw, in the order of the version control.
   // A rename gives the old and the new path. It needs no workspace.
   changedPaths(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<string[]>;
