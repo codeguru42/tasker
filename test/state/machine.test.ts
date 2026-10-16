@@ -7,12 +7,12 @@ import {
   canTransition,
   failTask,
   failedFrom,
-  failedFromEvents,
   failedOriginText,
-  lastFailIndex,
+  lastTransitionIndex,
   isSpawningState,
   isTerminalState,
   isTaskState,
+  transitionFromEvents,
   transitionTask,
   transitionWithAcceptance,
   transitionWithExecution,
@@ -852,11 +852,11 @@ describe("task transitions", () => {
     });
   });
 
-  describe("lastFailIndex", () => {
+  describe("lastTransitionIndex", () => {
     it("gives -1 for events with no move into failed", () => {
       const task = store.createTask(newTask("planning"));
       store.appendEvent(task.id, "transition", { from: "planning", to: "refining" });
-      expect(lastFailIndex(store.listEvents(task.id))).toBe(-1);
+      expect(lastTransitionIndex(store.listEvents(task.id), "failed")).toBe(-1);
     });
 
     it("gives the index of the last of two moves into failed", () => {
@@ -869,29 +869,53 @@ describe("task transitions", () => {
         (event.data as { to?: string } | undefined)?.to === "failed" ? [i] : [],
       );
       expect(fails).toHaveLength(2);
-      expect(lastFailIndex(events)).toBe(fails[1]);
+      expect(lastTransitionIndex(events, "failed")).toBe(fails[1]);
+    });
+
+    it("gives the index of the last of two moves into refining", () => {
+      const task = store.createTask(newTask("awaiting_plan_review"));
+      store.appendEvent(task.id, "transition", { from: "awaiting_plan_review", to: "refining" });
+      store.appendEvent(task.id, "transition", { from: "refining", to: "awaiting_plan_review" });
+      store.appendEvent(task.id, "transition", { from: "reviewed", to: "refining" });
+      const events = store.listEvents(task.id);
+      expect(events).toHaveLength(3);
+      expect(lastTransitionIndex(events, "refining")).toBe(2);
     });
   });
 
-  describe("failedFromEvents", () => {
+  describe("transitionFromEvents", () => {
     it("gives the from of the last move into failed", () => {
       const task = store.createTask(newTask("planning"));
       failTask(store, task.id, "boom");
       transitionTask(store, task.id, "refining");
       failTask(store, task.id, "boom again");
-      expect(failedFromEvents(store.listEvents(task.id))).toBe("refining");
+      expect(transitionFromEvents(store.listEvents(task.id), "failed")).toBe("refining");
     });
 
     it("gives undefined for events with no move into failed", () => {
       const task = store.createTask(newTask("planning"));
-      expect(failedFromEvents(store.listEvents(task.id))).toBeUndefined();
+      expect(transitionFromEvents(store.listEvents(task.id), "failed")).toBeUndefined();
     });
 
     it("gives undefined when the last move has an invalid from, also when an older move has a valid one", () => {
       const task = store.createTask(newTask("planning"));
       failTask(store, task.id, "boom");
       store.appendEvent(task.id, "transition", { from: "bogus", to: "failed" });
-      expect(failedFromEvents(store.listEvents(task.id))).toBeUndefined();
+      expect(transitionFromEvents(store.listEvents(task.id), "failed")).toBeUndefined();
+    });
+
+    it("gives the from of the last move into refining", () => {
+      const task = store.createTask(newTask("awaiting_plan_review"));
+      store.appendEvent(task.id, "transition", { from: "awaiting_plan_review", to: "refining" });
+      store.appendEvent(task.id, "transition", { from: "refining", to: "awaiting_plan_review" });
+      store.appendEvent(task.id, "transition", { from: "reviewed", to: "refining" });
+      expect(transitionFromEvents(store.listEvents(task.id), "refining")).toBe("reviewed");
+    });
+
+    it("gives undefined for events with no move into refining", () => {
+      const task = store.createTask(newTask("planning"));
+      failTask(store, task.id, "boom");
+      expect(transitionFromEvents(store.listEvents(task.id), "refining")).toBeUndefined();
     });
   });
 
