@@ -415,7 +415,7 @@ export async function useExecuteFixture(
 }
 
 // Expects that no run of the assistant started: no call of the fake claude and no lock row.
-export function expectNoAssistantRun(fixture: PlanFixture): void {
+export function expectNoAssistantRun(fixture: { claude: FakeClaude; started: Pick<StartedTask, "dataRoot"> }): void {
   expect(fixture.claude.calls()).toEqual([]);
   expect(lockNames(fixture.started.dataRoot)).toEqual([]);
 }

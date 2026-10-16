@@ -255,6 +255,18 @@ const V2_ANSWER = validPlanAnswer({
 });
 
 describe("review with feedback", () => {
+  it("refuses a task with no worktree and changes nothing", async () => {
+    const fixture = await useSeededTask({ stream: answerStream(V2_ANSWER) }, { state: "awaiting_work_review" });
+
+    await expectCommandRefused(
+      { dataRoot: fixture.dataRoot, key: KEY },
+      () => runReviewFeedback(FEEDBACK),
+      `the task of ${KEY} has no worktree\n`,
+    );
+
+    expectNoAssistantRun({ claude: fixture.claude, started: { dataRoot: fixture.dataRoot } });
+  });
+
   it("records revision v2 with the source review-feedback and the feedback", async () => {
     const stream = answerStream(V2_ANSWER);
     const fixture = await startFeedback({ stream });
