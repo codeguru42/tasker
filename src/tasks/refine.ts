@@ -2,7 +2,7 @@ import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { archivePrompt } from "../prompts/archive.js";
-import { openQuestionsText, REFINE_PROMPT, REFINE_PROMPT_NAME } from "../prompts/refine.js";
+import { openQuestionsText, PLAIN_REFINE_CONTEXT, REFINE_PROMPT, REFINE_PROMPT_NAME } from "../prompts/refine.js";
 import { fillTemplate } from "../prompts/template.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
@@ -47,6 +47,7 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
   const prompt = fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, {
     CURRENT_PLAN: currentPlan,
     BRANCH_COMMITS: branchCommits,
+    CONTEXT: PLAIN_REFINE_CONTEXT,
     FEEDBACK: feedback,
     OPEN_QUESTIONS: openQuestionsText(revision.answer.questions),
   });
