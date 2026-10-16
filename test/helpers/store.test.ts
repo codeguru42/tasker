@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { failedFrom, lastTransitionError } from "../../src/state/machine.js";
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
-import type { TaskStore } from "../../src/store/store.js";
+import type { NewSession, TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
 import { reviewFinding } from "./review.js";
 import { useTempDir } from "./temp.js";
@@ -21,6 +21,7 @@ import {
   lockNames,
   newReview,
   readRunMarker,
+  reviewSessionRows,
   seedReview,
   seedTask,
   seedTasks,
@@ -677,5 +678,44 @@ describe("seedReview", () => {
       expect(review.findings).toHaveLength(1);
       expect(review.findings[0]?.finding.file).toBe("src/c.ts");
     });
+  });
+});
+
+describe("reviewSessionRows", () => {
+  const session = (sessionId: string): NewSession => ({
+    sessionId,
+    provider: "claude-code",
+    model: "opus",
+    effort: "high",
+  });
+
+  it("gives the review sessions of the task in the order of review_number", () => {
+    const dataRoot = join(useTempDir("tasker-review-rows-"), "data");
+    const [first, second] = withDataRootStore(dataRoot, (store) => {
+      const one = store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
+      const two = store.createTask({ issueKey: "a/b#2", repoKey: "a/b", state: "planning" });
+      store.recordReviewSession(one.id, 2, session("review-two"));
+      store.recordReviewSession(one.id, 1, session("review-one"));
+      store.recordPlanSession(one.id, session("plan-one"));
+      store.recordReviewSession(two.id, 1, session("other-task"));
+      return [one, two];
+    });
+
+    expect(reviewSessionRows(dataRoot, first.id).map((row) => [row.review_number, row.session_id])).toEqual([
+      [1, "review-one"],
+      [2, "review-two"],
+    ]);
+    expect(reviewSessionRows(dataRoot, second.id).map((row) => row.session_id)).toEqual(["other-task"]);
+  });
+
+  it("gives no rows for a task with no review session", () => {
+    const dataRoot = join(useTempDir("tasker-review-rows-"), "data");
+    const task = withDataRootStore(dataRoot, (store) => {
+      const created = store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
+      store.recordPlanSession(created.id, session("plan-one"));
+      return created;
+    });
+
+    expect(reviewSessionRows(dataRoot, task.id)).toEqual([]);
   });
 });

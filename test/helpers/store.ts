@@ -75,6 +75,30 @@ export function lockNames(dataRoot: string): string[] {
   );
 }
 
+// A raw row of the sessions table for a review session.
+export interface ReviewSessionRow {
+  task_id: number;
+  role: string;
+  session_id: string;
+  provider: string;
+  model: string;
+  effort: string;
+  created_at: string;
+  plan_version: number | null;
+  review_number: number;
+}
+
+// The raw rows of the review sessions of a task in the database of dataRoot, in the order of review_number.
+export function reviewSessionRows(dataRoot: string, taskId: number): ReviewSessionRow[] {
+  return withRawDatabase(
+    databasePathOf(dataRoot),
+    (db) =>
+      db
+        .prepare("SELECT * FROM sessions WHERE task_id = ? AND role = 'review' ORDER BY review_number")
+        .all(taskId) as unknown as ReviewSessionRow[],
+  );
+}
+
 // The raw run marker row of a task in the database file at path, or undefined.
 export function readRunMarker(dbPath: string, taskId: number) {
   return withRawDatabase(

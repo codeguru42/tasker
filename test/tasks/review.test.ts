@@ -16,7 +16,7 @@ import {
   lockNames,
   seedTasks,
   withDataRootStore,
-  withRawDatabase,
+  reviewSessionRows,
 } from "../helpers/store.js";
 import { expectRefusedWithoutChange, taskRefOf, useReviewFixture, useStartFixture } from "../helpers/task-fixtures.js";
 import type { FakeClaude } from "../helpers/fake-claude.js";
@@ -44,12 +44,6 @@ function callReview(target: ReviewTarget, key = KEY) {
     });
   });
 }
-
-// The rows of the review sessions of a task.
-const reviewSessionRows = (dataRoot: string, taskId: number) =>
-  withRawDatabase(databasePathOf(dataRoot), (db) =>
-    db.prepare("SELECT * FROM sessions WHERE task_id = ? AND role = 'review'").all(taskId),
-  );
 
 // Expects that reviewTask refuses with message, and that it wrote nothing: the state and the events as before (see
 // expectRefusedWithoutChange), no review session row, no transcript and no claude call.

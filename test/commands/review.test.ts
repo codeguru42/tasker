@@ -19,7 +19,7 @@ import {
   seedReview,
   seedTasks,
   withDataRootStore,
-  withRawDatabase,
+  reviewSessionRows,
 } from "../helpers/store.js";
 import { useReviewFixture, useStartFixture, type ReviewFixture } from "../helpers/task-fixtures.js";
 
@@ -46,18 +46,6 @@ const branchTipOf = (work: ReviewFixture) =>
     gitDir: work.clone,
     env: work.env,
   }).then((out) => out.trim());
-
-// The review sessions of the task as raw rows.
-const reviewSessionRows = (dataRoot: string, taskId: number) =>
-  withRawDatabase(
-    databasePathOf(dataRoot),
-    (db) =>
-      db.prepare("SELECT * FROM sessions WHERE task_id = ? AND role = 'review' ORDER BY review_number").all(taskId) as {
-        session_id: string;
-        review_number: number;
-        model: string;
-      }[],
-  );
 
 const reviewsOf = (dataRoot: string, taskId: number) =>
   withDataRootStore(dataRoot, (store) => store.listReviews(taskId));
