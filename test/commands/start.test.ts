@@ -443,7 +443,7 @@ describe("start", () => {
     }, 120_000);
   });
 
-  it("prints the description of the command and of both options for --help", async () => {
+  it("prints the description of the command and of all options for --help", async () => {
     const { code, help } = await runHelp(start, "start");
 
     expect(code).toBe(0);
@@ -454,6 +454,7 @@ describe("start", () => {
     expect(help).toContain(
       "The base branch of this task only: a branch on origin, or refs/heads/<branch> for a local branch of the clone",
     );
+    expect(help).toContain("Start the task also when the issue already has the in-progress marker on the tracker");
   });
 
   describe("the tracker writes", () => {
@@ -554,6 +555,61 @@ describe("start", () => {
       expect(result.err).toContain(`warning: cannot mark ${KEY} in progress on the tracker: ${events[1].error}\n`);
       expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("workspace_ready");
       expect(trackerWriteCalls(fixture.gh)).toEqual([ASSIGN, LABEL]);
+    });
+    describe("the in-progress marker", () => {
+      const marked = { project: PROJECT, number: 5, labels: ["In Progress"] };
+      const markerRepo = (updateOnStart: boolean) => trackerRepo({ updateOnStart, inProgressLabel: "in progress" });
+
+      it("refuses an issue that has the marker and makes no task and no write", async () => {
+        const fixture = await useStartFixture({ issues: [marked], repo: markerRepo(true) });
+
+        const result = await runCommand(start, "start", KEY);
+
+        expect(result).toEqual({
+          code: 1,
+          out: "",
+          err: `the issue ${KEY} already has the in-progress marker in progress. Pass --reclaim to start it anyway, or remove the marker on the tracker.\n`,
+        });
+        expect(hasTask(fixture.dataRoot)).toBe(false);
+        expect(trackerWriteCalls(fixture.gh)).toEqual([]);
+      });
+
+      it("starts the issue with --reclaim and runs both writes", async () => {
+        const fixture = await useStartFixture({
+          issues: [marked],
+          repo: markerRepo(true),
+          ghAnswers: [assignAnswer(), labelAnswer()],
+        });
+
+        const result = await runCommand(start, "start", KEY, "--reclaim");
+
+        expect(result.code).toBe(0);
+        expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("workspace_ready");
+        expect(trackerWriteCalls(fixture.gh)).toEqual([ASSIGN, LABEL]);
+      });
+
+      it("makes no check and no write for a task that is already started", async () => {
+        const fixture = await useStartFixture({ issues: [marked], repo: markerRepo(true) });
+        seedTasks(fixture.dataRoot, [
+          { issueKey: KEY, repoKey: fixture.repoKey, state: "workspace_ready", at: dayAt(1), title: "Issue 5" },
+        ]);
+
+        const result = await runCommand(start, "start", KEY);
+
+        expect(result.code).toBe(0);
+        expect(result.out).toContain("task already started\n");
+        expect(trackerWriteCalls(fixture.gh)).toEqual([]);
+      });
+
+      it("starts the issue when updateOnStart is false", async () => {
+        const fixture = await useStartFixture({ issues: [marked], repo: markerRepo(false) });
+
+        const result = await runCommand(start, "start", KEY);
+
+        expect(result.code).toBe(0);
+        expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("workspace_ready");
+        expect(trackerWriteCalls(fixture.gh)).toEqual([]);
+      });
     });
   });
 });
