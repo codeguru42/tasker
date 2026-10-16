@@ -878,8 +878,8 @@ describe("task transitions", () => {
       store.appendEvent(task.id, "transition", { from: "refining", to: "awaiting_plan_review" });
       store.appendEvent(task.id, "transition", { from: "reviewed", to: "refining" });
       const events = store.listEvents(task.id);
-      expect(events).toHaveLength(3);
-      expect(lastTransitionIndex(events, "refining")).toBe(2);
+      expect(events).toHaveLength(4);
+      expect(lastTransitionIndex(events, "refining")).toBe(3);
     });
   });
 

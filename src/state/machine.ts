@@ -335,19 +335,19 @@ export function failTask(store: TaskStore, id: number, message: string): Task {
   return transitionTask(store, id, "failed", { error: message });
 }
 
-// The index of the last transition event into failed, or -1 when events has none.
-export function lastFailIndex(events: readonly TaskEvent[]): number {
+// The index of the last transition event into the state to, or -1 when events has none.
+export function lastTransitionIndex(events: readonly TaskEvent[], to: TaskState): number {
   for (let i = events.length - 1; i >= 0; i--) {
     const data = events[i].data as { to?: unknown } | null;
-    if (events[i].type === "transition" && data?.to === "failed") return i;
+    if (events[i].type === "transition" && data?.to === to) return i;
   }
   return -1;
 }
 
-// The from of the last transition event into failed, or undefined. It reads no older event, so an invalid from
-// in the last such event gives undefined.
-export function failedFromEvents(events: readonly TaskEvent[]): TaskState | undefined {
-  const index = lastFailIndex(events);
+// The from of the last transition event into the state to, or undefined. It reads no older event, so an invalid
+// from in the last such event gives undefined.
+export function transitionFromEvents(events: readonly TaskEvent[], to: TaskState): TaskState | undefined {
+  const index = lastTransitionIndex(events, to);
   if (index < 0) return undefined;
   const from = (events[index].data as { from?: unknown }).from;
   return typeof from === "string" && isTaskState(from) ? from : undefined;
@@ -355,13 +355,13 @@ export function failedFromEvents(events: readonly TaskEvent[]): TaskState | unde
 
 // The origin of the last move into failed as text for an error, or "unknown".
 export function failedOriginText(events: readonly TaskEvent[]): string {
-  return failedFromEvents(events) ?? "unknown";
+  return transitionFromEvents(events, "failed") ?? "unknown";
 }
 
 // The from of the last transition into failed, or undefined when the task is not in failed.
 export function failedFrom(store: TaskStore, id: number): TaskState | undefined {
   if (store.getTask(id)?.state !== "failed") return undefined;
-  return failedFromEvents(store.listEvents(id));
+  return transitionFromEvents(store.listEvents(id), "failed");
 }
 
 // The error of the last transition event, when it is a string.

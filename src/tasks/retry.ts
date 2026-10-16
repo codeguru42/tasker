@@ -2,10 +2,10 @@ import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { readLogTail } from "../phases/command-step.js";
 import {
-  failedFromEvents,
   failedOriginText,
-  lastFailIndex,
+  lastTransitionIndex,
   lastTransitionError,
+  transitionFromEvents,
   transitionWithRetry,
   type TaskState,
 } from "../state/machine.js";
@@ -66,7 +66,7 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
   const { config, taskId, resumeExecute } = request;
   const task = taskInState(store, taskId, "retry");
   const events = store.listEvents(taskId);
-  const origin = failedFromEvents(events);
+  const origin = transitionFromEvents(events, "failed");
   const row = origin === undefined ? undefined : RETRY_TABLE[origin];
   if (origin === undefined || row === undefined) {
     throw new Error(
@@ -114,7 +114,7 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
 // transaction. So the run of this failure is the latest run only when the event right before the last
 // transition to failed is a verify_run event with the number of the latest run. An equal time alone is not enough.
 function runOfFailure(store: TaskStore, events: readonly TaskEvent[]): VerifyRun | undefined {
-  const index = lastFailIndex(events);
+  const index = lastTransitionIndex(events, "failed");
   if (index <= 0) return undefined;
   const latest = store.latestVerifyRun(events[index].taskId);
   if (latest === undefined) return undefined;
