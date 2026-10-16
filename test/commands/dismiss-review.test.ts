@@ -16,6 +16,7 @@ import {
   withDataRootStore,
 } from "../helpers/store.js";
 import { expectCommandRefused } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -247,7 +248,7 @@ describe("a refused dismiss-review", () => {
     await expectRefusedWithoutWrite(
       { dataRoot, taskId: task.id },
       [REASON],
-      `the task of ${KEY} is in awaiting_work_review; tasker dismiss-review needs reviewed\n`,
+      `${wrongStateError("awaiting_work_review", KEY, "dismiss-review", "reviewed")}\n`,
     );
   });
 

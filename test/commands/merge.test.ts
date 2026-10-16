@@ -23,6 +23,7 @@ import {
   useWorkReviewTask,
   type StartFixture,
 } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -125,7 +126,7 @@ describe("tasker merge", () => {
     it("refuses a task that is not in accepted", async () => {
       const work = await useWorkReviewTask();
 
-      await expectRefused(work, `the task of ${KEY} is in awaiting_work_review; tasker merge needs accepted\n`);
+      await expectRefused(work, `${wrongStateError("awaiting_work_review", KEY, "merge", "accepted")}\n`);
     });
 
     it("refuses a task with no branch", async () => {

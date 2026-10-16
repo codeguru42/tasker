@@ -15,6 +15,7 @@ import {
   useWorkReviewTask,
   type WorkReviewTask,
 } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -77,7 +78,7 @@ describe("a refused accept", () => {
 
     await expectRefused(
       fixture.dataRoot,
-      `the task of ${KEY} is in workspace_ready; tasker accept needs awaiting_work_review\n`,
+      `${wrongStateError("workspace_ready", KEY, "accept", "awaiting_work_review")}\n`,
     );
   });
 
@@ -85,7 +86,7 @@ describe("a refused accept", () => {
     const work = await useWorkReviewTask();
     expect((await runAccept()).code).toBe(0);
 
-    await expectRefused(work.dataRoot, `the task of ${KEY} is in accepted; tasker accept needs awaiting_work_review\n`);
+    await expectRefused(work.dataRoot, `${wrongStateError("accepted", KEY, "accept", "awaiting_work_review")}\n`);
   });
 
   it("refuses a task with no worktree", async () => {

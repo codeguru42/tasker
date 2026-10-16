@@ -13,6 +13,7 @@ import {
 } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, eventsOf, latestTaskOf, lockNames, withDataRootStore } from "../helpers/store.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -100,7 +101,7 @@ describe("a refused unapprove", () => {
     expect(result.code).toBe(1);
     expect(result.out).toBe("");
     expect(result.err).toBe(
-      "the task of codeguru42/tasker#5 is in awaiting_plan_review; tasker unapprove needs approved\n",
+      `${wrongStateError("awaiting_plan_review", "codeguru42/tasker#5", "unapprove", "approved")}\n`,
     );
     expect(planStateSnapshot(dataRoot, KEY, task.id, [1])).toEqual(before);
   });
@@ -115,7 +116,7 @@ describe("a refused unapprove", () => {
     expect(result.code).toBe(1);
     expect(result.out).toBe("");
     expect(result.err).toBe(
-      "the task of codeguru42/tasker#5 is in awaiting_plan_review; tasker unapprove needs approved\n",
+      `${wrongStateError("awaiting_plan_review", "codeguru42/tasker#5", "unapprove", "approved")}\n`,
     );
     expect(planStateSnapshot(dataRoot, KEY, task.id, [1])).toEqual(before);
   });

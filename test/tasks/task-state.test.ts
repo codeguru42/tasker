@@ -10,6 +10,7 @@ import {
   taskInState,
 } from "../../src/tasks/task-state.js";
 import { dayAt, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 import { useTempDir } from "../helpers/temp.js";
 
 function seeded(
@@ -48,6 +49,34 @@ describe("assertTaskState", () => {
         "the task of codeguru42/tasker#5 is in failed; tasker execute needs approved",
       ),
     );
+  });
+});
+
+describe("assertTaskState error", () => {
+  const KEY = "codeguru42/tasker#5";
+
+  it("names the commands of the state after the needed states", () => {
+    const { dataRoot, id } = seeded("failed");
+    withDataRootStore(dataRoot, (store) => {
+      const task = taskById(store, id);
+      expect(() => assertTaskState(task, "execute")).toThrow(
+        new Error(wrongStateError("failed", KEY, "execute", "approved")),
+      );
+    });
+  });
+
+  it("keeps the old text for a state with no commands", () => {
+    const { dataRoot, id } = seeded("finished");
+    withDataRootStore(dataRoot, (store) => {
+      const task = taskById(store, id);
+      let message = "";
+      try {
+        assertTaskState(task, "execute");
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toBe(`the task of ${KEY} is in finished; tasker execute needs approved`);
+    });
   });
 });
 

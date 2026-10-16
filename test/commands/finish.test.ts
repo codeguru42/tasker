@@ -31,13 +31,14 @@ import {
   useLandedTask,
   useStartFixture,
 } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 
 const runFinish = () => runCommand(finish, "finish", KEY, "--repo", REPO);
 
-const refusal = (state: string) => `the task of ${KEY} is in ${state}; tasker finish needs landed or cleanup_failed\n`;
+const refusal = (state: string) => `${wrongStateError(state, KEY, "finish", "landed or cleanup_failed")}\n`;
 
 describe("finish", () => {
   it("refuses a task in accepted and keeps the worktree and the branch", async () => {

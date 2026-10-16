@@ -6,6 +6,7 @@ import { runCommand } from "../helpers/cli.js";
 import { planTodo, seedExecuteFixTurn, turnResultStream } from "../helpers/plan.js";
 import { eventsOf, latestTaskOf, withDataRootStore } from "../helpers/store.js";
 import { type ExecuteFixture, useExecuteFixture } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -67,7 +68,7 @@ describe("tasker execute", () => {
     expect(result).toEqual({
       code: 1,
       out: "",
-      err: `the task of ${KEY} is in awaiting_plan_review; tasker execute needs approved\n`,
+      err: `${wrongStateError("awaiting_plan_review", KEY, "execute", "approved")}\n`,
     });
     expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual(events);
     expect(fixture.claude.calls()).toEqual([]);

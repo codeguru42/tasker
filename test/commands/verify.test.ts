@@ -5,6 +5,7 @@ import { verifyRunDir } from "../../src/store/layout.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { latestTaskOf, withDataRootStore } from "../helpers/store.js";
 import { useVerifyFixture } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -38,7 +39,7 @@ describe("tasker verify", () => {
     expect(result).toEqual({
       code: 1,
       out: "",
-      err: `the task of ${KEY} is in updating_branch; tasker verify needs executed\n`,
+      err: `${wrongStateError("updating_branch", KEY, "verify", "executed")}\n`,
     });
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("updating_branch");
   });

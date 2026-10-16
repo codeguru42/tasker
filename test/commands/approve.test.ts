@@ -13,6 +13,7 @@ import {
 import { overlapWarningText } from "../helpers/overlap.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, withDataRootStore } from "../helpers/store.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -143,8 +144,7 @@ describe("a refused approve", () => {
     withDataRootStore(dataRoot, (store) => seedPlanRevision(store, task.id, {}, "workspace_ready"));
     return { dataRoot, task };
   };
-  const STATE_ERROR =
-    "the task of codeguru42/tasker#5 is in workspace_ready; tasker approve needs awaiting_plan_review\n";
+  const STATE_ERROR = `${wrongStateError("workspace_ready", "codeguru42/tasker#5", "approve", "awaiting_plan_review")}\n`;
 
   it("refuses a second approve", async () => {
     const { dataRoot, task } = seedPlanReviewTask();

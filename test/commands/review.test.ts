@@ -21,6 +21,7 @@ import {
   reviewSessionRows,
 } from "../helpers/store.js";
 import { expectCommandRefused, taskBranchTipOf, useReviewFixture, useSeededTask } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -215,7 +216,7 @@ describe("a refused review", () => {
     await expectCommandRefused(
       { dataRoot: fixture.dataRoot, key: KEY },
       () => runReview(),
-      `the task of ${KEY} is in workspace_ready; tasker review needs awaiting_work_review\n`,
+      `${wrongStateError("workspace_ready", KEY, "review", "awaiting_work_review")}\n`,
     );
   });
 });

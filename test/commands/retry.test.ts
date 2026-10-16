@@ -20,6 +20,7 @@ import {
   useStartedTask,
   useVerifyFixture,
 } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const TODOS = [planTodo("a"), planTodo("b", ["a"])];
@@ -193,7 +194,7 @@ describe("tasker retry", () => {
     await expectCommandRefused(
       { dataRoot, key: KEY },
       () => runRetry(),
-      `the task of ${KEY} is in executed; tasker retry needs failed\n`,
+      `${wrongStateError("executed", KEY, "retry", "failed")}\n`,
     );
   });
 

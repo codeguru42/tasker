@@ -45,6 +45,7 @@ import {
   useReviewedRefineFixture,
   usePlanFixture,
 } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -409,7 +410,7 @@ describe("a check before any write", () => {
       fixture,
       fixture.task,
       "approved",
-      `the task of ${KEY} is in approved; tasker refine needs awaiting_plan_review or reviewed`,
+      wrongStateError("approved", KEY, "refine", "awaiting_plan_review or reviewed"),
     );
   });
 

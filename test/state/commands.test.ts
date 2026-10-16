@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { STATES, TERMINAL_STATES } from "../../src/state/machine.js";
-import { acceptedStates, nextCell, showLines, stateCommands, type TaskCommand } from "../../src/state/commands.js";
+import {
+  acceptedStates,
+  errorSentence,
+  nextCell,
+  showLines,
+  stateCommands,
+  type TaskCommand,
+} from "../../src/state/commands.js";
 import { helpText } from "../helpers/cli.js";
 import { expectedStateCommands } from "../helpers/state-commands.js";
 import { commandsInHelp } from "../skill-coverage.js";
@@ -107,5 +114,25 @@ describe("nextCell", () => {
 
   it.each(["finished", "cancelled", "nonsense"])("gives an empty string for %s", (state) => {
     expect(nextCell(state)).toBe("");
+  });
+});
+
+describe("errorSentence", () => {
+  const key = "codeguru42/tasker#5";
+
+  it("gives the next command and the others for a state with a primary command", () => {
+    expect(errorSentence("failed", key)).toBe(
+      "next: tasker retry codeguru42/tasker#5 (also: tasker abort codeguru42/tasker#5)",
+    );
+  });
+
+  it("gives the commands for a state with no primary command", () => {
+    expect(errorSentence("awaiting_plan_review", key)).toBe(
+      "commands: tasker refine codeguru42/tasker#5, tasker approve codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+    );
+  });
+
+  it.each(["finished", "cancelled", "nonsense"])("gives nothing for %s", (state) => {
+    expect(errorSentence(state, key)).toBeUndefined();
   });
 });

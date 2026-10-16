@@ -32,6 +32,7 @@ import {
   withRawDatabase,
 } from "../helpers/store.js";
 import { expectNoAssistantRun, startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
+import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -337,7 +338,7 @@ describe("plan", () => {
       expect(result).toEqual({
         code: 1,
         out: "",
-        err: `the task of ${KEY} is in failed; tasker plan needs workspace_ready\n`,
+        err: `${wrongStateError("failed", KEY, "plan", "workspace_ready")}\n`,
       });
       expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
       expect(fixture.started.gh.calls()).toHaveLength(ghCalls);
