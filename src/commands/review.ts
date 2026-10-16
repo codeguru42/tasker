@@ -1,6 +1,6 @@
 import { CommanderError } from "commander";
 import type { RegisterCommand } from "../cli.js";
-import { formatFindings } from "../review/findings-text.js";
+import { findingCountText, formatFindings } from "../review/findings-text.js";
 import { reviewTask } from "../tasks/review.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
@@ -9,12 +9,6 @@ import {
   REPO_OPTION_DESCRIPTION,
   withIssueTaskAsync,
 } from "./shared.js";
-
-// The count of the first output line.
-function countText(count: number): string {
-  if (count === 0) return "no findings";
-  return count === 1 ? "1 finding" : `${count} findings`;
-}
 
 export const review: RegisterCommand = (program, io) => {
   program
@@ -36,7 +30,7 @@ export const review: RegisterCommand = (program, io) => {
       }
       io.stdout(
         [
-          `reviewed ${result.issueKey}: review ${result.number}, ${countText(result.findings.length)}`,
+          `reviewed ${result.issueKey}: review ${result.number}, ${findingCountText(result.findings.length)}`,
           `${formatFindings(result.findings)}prompt: ${result.promptPath}`,
           `transcript: ${result.transcriptPath}`,
           "",

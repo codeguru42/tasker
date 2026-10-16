@@ -7,6 +7,12 @@ export interface FindingEntry {
   dismissed: { at: string; reason: string } | null;
 }
 
+// The count of a list of findings: "no findings", "1 finding" or "<n> findings".
+export function findingCountText(count: number): string {
+  if (count === 0) return "no findings";
+  return count === 1 ? "1 finding" : `${count} findings`;
+}
+
 // The text form of a list of findings. Each command that prints findings uses it.
 export function formatFindings(entries: readonly FindingEntry[]): string {
   if (entries.length === 0) return "no findings\n";
