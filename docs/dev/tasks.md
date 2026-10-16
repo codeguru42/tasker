@@ -207,7 +207,11 @@ The command has these limits:
 
 ## Retry
 
-`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. These reasons explain its rules:
+`tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`.
+
+The move, the delete of the sessions, the todo marks, the fix turn and one `retry` event share one transaction. The `retry` event has the data `{ origin, target, resumeExecute, from, to }` and takes the place of the `transition` event for this move. A retry of a task that failed in `provisioning` does not move the task, so it writes the `retry` event alone, with `{ origin, target, resumeExecute }`.
+
+These reasons explain its rules:
 
 - A plan or execute run can fail before its first turn. Its recorded session id then names no conversation, so a new run must not continue it. Retry deletes the session of the failed step, and the next run starts a new session.
 - A verify failure usually belongs to no todo. So `--resume-execute` marks every todo done and queues one fix turn that gets the failure. The todos do not run again.
@@ -247,7 +251,7 @@ These reasons explain its rules:
 
 `tasker mark-landed` records that the work of a task in `accepted`, `pushed` or `in_peer_review` already landed on the base branch outside tasker. The task goes to `landed`.
 
-The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the branch, the stored base and the base revision. A refused command leaves the task and the events as they were. Then it takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base does not contain the work, the command stops with an error. The last write is one transaction that appends one `marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`.
+The command runs under the task lock and does not wait for the lock. It makes all checks before any write: the task, the state, the branch, the stored base and the base revision. A refused command leaves the task and the events as they were. Then it takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base does not contain the work, the command stops with an error. The last write is one transaction that appends one `marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`. The `marked_landed` event takes the place of the `transition` event for this move.
 
 These reasons explain its rules:
 
