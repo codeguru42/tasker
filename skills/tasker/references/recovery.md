@@ -17,8 +17,8 @@ The command reads the origin. The origin is the state that the task left when it
 - `refining`, when the origin of the refine is `awaiting_work_review`: the task goes to `awaiting_work_review`. Nothing runs. The command prints a hint, because the feedback can change what you want.
 - `executing`: the task goes to `approved`. The command deletes the execute session of the pinned revision, so that the next run starts a new session. Then it runs `tasker execute`. A todo that is `done` gets no new turn.
 - `verifying`: the task goes to `executed`, and the command runs `tasker verify`.
-- `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review number, so that the next run starts a new session. Then it runs `tasker review`.
 - `verifying` with `--resume-execute`: the task goes to `approved`. The command marks every todo of the pinned revision `done` and queues one fix turn. Then it runs `tasker execute`, which continues the execute session and runs only the fix turn.
+- `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review number, so that the next run starts a new session. Then it runs `tasker review`.
 
 The origin of a refine is the state that the task left when the last refine started.
 
