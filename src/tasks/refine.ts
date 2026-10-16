@@ -12,7 +12,7 @@ import {
 import { fillTemplate } from "../prompts/template.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
-import type { Task, TaskStore } from "../store/store.js";
+import type { PlanRevisionSource, Task, TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
@@ -59,6 +59,25 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
   }
   if (feedback?.trim() === "") throw new Error("the feedback is empty");
   const context = promotion ? promotionContext(store, task) : PLAIN_REFINE_CONTEXT;
+  return runRefine(store, { config, env, io, task, source: promotion ? "review" : "refine", context, feedback });
+}
+
+export interface RefineRun {
+  config: Config;
+  env: NodeJS.ProcessEnv;
+  io: Io;
+  task: Task;
+  source: PlanRevisionSource;
+  // The text of the context block.
+  context: string;
+  // The feedback of the operator to store, or none. None gives "None." in the prompt.
+  feedback?: string;
+}
+
+// Continues the plan session of the task with the context and the feedback, and records the next plan revision.
+// The caller holds the task lock and has checked the state and the feedback.
+export async function runRefine(store: TaskStore, run: RefineRun): Promise<PlanResult> {
+  const { config, env, io, task, source, context, feedback } = run;
   const revision = store.latestPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
   const session = store.planSession(task.id);
@@ -97,7 +116,7 @@ async function refineLocked(store: TaskStore, request: RefineRequest): Promise<P
     archived,
     version,
     prepared,
-    source: promotion ? "review" : "refine",
+    source,
     feedback,
   });
 }
