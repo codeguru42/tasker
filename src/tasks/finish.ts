@@ -7,7 +7,7 @@ import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { taskInState } from "./task-state.js";
-import { cleanUpTaskWorkspace } from "./workspace-cleanup.js";
+import { cleanUpTaskWorkspace, findTaskWorkspace } from "./workspace-cleanup.js";
 
 export interface FinishRequest {
   config: Config;
@@ -41,7 +41,8 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     transitionTask(store, task.id, "finishing");
     try {
-      const result = await cleanUpTaskWorkspace(vcs, ctx, task, (line) => io.stdout(`${line}\n`));
+      const entry = await findTaskWorkspace(vcs, ctx, task.worktreePath);
+      const result = await cleanUpTaskWorkspace(vcs, ctx, entry, task.branch, (line) => io.stdout(`${line}\n`));
       transitionTask(store, task.id, "finished", { ...result });
     } catch (error) {
       const message = `finishing failed: ${errorMessage(error)}`;

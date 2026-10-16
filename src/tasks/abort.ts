@@ -1,11 +1,10 @@
 import { existsSync } from "node:fs";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
-import { canonicalPath } from "../real-path.js";
 import { isTerminalState, transitionTask } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
-import { cleanUpTaskWorkspace } from "./workspace-cleanup.js";
+import { cleanUpTaskWorkspace, findTaskWorkspace } from "./workspace-cleanup.js";
 import { uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
 
 export interface AbortRequest {
@@ -35,10 +34,7 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
     throw new Error(`the task of ${task.issueKey} is ${task.state}: tasker abort works only on an active task`);
   }
   const { vcs, ctx } = vcsForRepo(config, ref.repoKey, request.env);
-  const entry =
-    task.worktreePath === null
-      ? undefined
-      : (await vcs.listWorkspaces(ctx)).find((e) => e.path === canonicalPath(task.worktreePath!));
+  const entry = await findTaskWorkspace(vcs, ctx, task.worktreePath);
   const changes =
     entry !== undefined && existsSync(entry.path) ? await vcs.uncommittedChanges(ctx, { path: entry.path }) : [];
   if (changes.length > 0 && !request.force) {
@@ -54,9 +50,7 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
       await vcs.discardWorkspaceChanges(ctx, { path: entry.path });
       report(`discarded the uncommitted changes of ${entry.path}`);
     }
-    // The shared function lists the workspaces again under the repo lock. That list is the check that the target
-    // still exists.
-    await cleanUpTaskWorkspace(vcs, ctx, task, report);
+    await cleanUpTaskWorkspace(vcs, ctx, entry, task.branch, report);
     return transitionTask(store, task.id, "cancelled");
   });
 }
