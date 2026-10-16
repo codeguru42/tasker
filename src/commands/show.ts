@@ -1,4 +1,5 @@
 import type { RegisterCommand } from "../cli.js";
+import { formatFindings } from "../review/findings-text.js";
 import { failedFromEvents, lastTransitionError } from "../state/machine.js";
 import type { ExecuteTodoProgress, Task, TaskStore } from "../store/store.js";
 import {
@@ -31,6 +32,14 @@ function todoProgress(store: TaskStore, taskId: number): string {
   return `todos (approved v${pinned.version}):\n${lines.join("")}${fixTurnLine}`;
 }
 
+// The findings of the latest review, for a task in reviewed. The text is empty in each other state.
+function reviewFindings(store: TaskStore, task: Task): string {
+  if (task.state !== "reviewed") return "";
+  const review = store.latestReview(task.id);
+  if (review === undefined) return "";
+  return `review findings (review ${review.number}, at ${review.revision}):\n${formatFindings(review.findings)}`;
+}
+
 function formatTask(store: TaskStore, task: Task): string {
   const events = store.listEvents(task.id);
   const last = events.at(-1);
@@ -50,7 +59,7 @@ function formatTask(store: TaskStore, task: Task): string {
   if (task.state === "failed") {
     fields.push(["failed in", failedFromEvents(events)], ["error", lastTransitionError(events)]);
   }
-  return formatFields(fields) + todoProgress(store, task.id);
+  return formatFields(fields) + todoProgress(store, task.id) + reviewFindings(store, task);
 }
 
 export const show: RegisterCommand = (program, io) => {
