@@ -36,6 +36,8 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - The red `test:` commit ([rules.md](rules.md#commits)) of a new store method changes only test files and fails the type check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
 - If a case cannot happen in a real run, ask the plan to test it through the function that builds the result or the message, not through a real run. On #132, a command that the deadline keeps from its start cannot occur in a real verify run. The reason: a command that runs at the deadline gets SIGTERM and is itself the failing command.
 - In the diff read, also search for doc sentences that a new shared helper made false. On #133, a new shared read helper changed an error text, and the diff read found two doc sentences that it made false. On #132, the helper-name search of [the diff read](orchestration.md#run-one-ticket) found a copied test helper after a review with no findings.
+- If a new search hit adds a file that the issue does not list under Docs, compare that file at once with the plans of the tasks in flight. On #168, a new hit added `docs/dev/phases.md`, and a task of another milestone also changed that file.
+- If a plan rewrites a sentence, ask the plan to keep the scope of each example and to add no reference that the old sentence does not name. On #168, one rewrite used "that rule" with no rule named before it. Another rewrite widened the example `HEAD` to "such a base".
 
 ## A ticket that only adds a layer, for example a schema
 
