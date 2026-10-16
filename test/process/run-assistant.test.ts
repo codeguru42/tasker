@@ -387,14 +387,12 @@ describe("runAssistant with the signals of tasker", () => {
     },
   );
 
-  it("drops a signal that comes while a child that cannot start starts", { timeout: 20_000 }, async () => {
+  it("ends tasker with a signal that comes while a child that cannot start starts", { timeout: 20_000 }, async () => {
     const dir = useTempDir("tasker-run-assistant-");
     const fixture = startFixture("run-assistant-signal.ts", [dir, "60000", "exit 0", "SIGTERM", join(dir, "missing")]);
 
-    const { result, before, after } = JSON.parse(await fixture.firstLine);
-    expect(result).toMatchObject({ started: false, notFound: true });
-    expect(after).toEqual(before);
-    await fixture.exited;
+    expect(await fixture.exited).toEqual({ code: null, signal: "SIGTERM" });
+    expect(fixture.stdout()).toBe("");
   });
 
   it.each(["SIGINT", "SIGTERM"] as const)(

@@ -342,14 +342,12 @@ describe("runInGroup with the signals of tasker", () => {
     },
   );
 
-  it("drops a signal that comes while a child that cannot start starts", { timeout: 20_000 }, async () => {
+  it("ends tasker with a signal that comes while a child that cannot start starts", { timeout: 20_000 }, async () => {
     const file = join(useTempDir("tasker-run-group-"), "missing");
     const fixture = startGroupFixture("exit 0", MINUTE_MS, 0, { spawnSignal: "SIGTERM", file });
 
-    expect(await fixture.exit).toEqual({ code: 0, signal: null });
-    const { error, before, after } = await fixture.line();
-    expect(error?.code).toBe("ENOENT");
-    expect(after).toEqual(before);
+    expect(await fixture.exit).toEqual({ code: null, signal: "SIGTERM" });
+    expect(fixture.stdout()).toBe("");
   });
 
   it("forwards a second SIGINT to the same command", { timeout: 20_000 }, async () => {
