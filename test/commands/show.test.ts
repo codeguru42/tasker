@@ -13,6 +13,7 @@ import {
   seedPlanRevision,
   validPlanAnswer,
 } from "../helpers/plan.js";
+import { expectedShowLines } from "../helpers/state-commands.js";
 import { findingText, reviewFinding } from "../helpers/review.js";
 import { dayAt, seedReview, seedTaskWithReviews, seedTasks, withDataRootStore } from "../helpers/store.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
@@ -36,6 +37,8 @@ const EXECUTED_FIELDS =
   "created: 2026-01-04T00:00:00.000Z\n" +
   "updated: 2026-01-04T00:00:00.000Z\n" +
   'last event: 2026-01-04T00:00:00.000Z plan_revision {"version":1,"prompt":"plan@000000000000"}\n';
+
+const EXECUTED_COMMANDS = expectedShowLines("executed", "codeguru42/tasker#5");
 
 const PADDED_BLOCK =
   "todos (approved v1):\n" +
@@ -108,7 +111,8 @@ describe("show", () => {
         `worktree: ${names.worktree}\n` +
         "created: 2026-01-02T00:00:00.000Z\n" +
         "updated: 2026-01-02T00:00:00.000Z\n" +
-        'last event: 2026-01-02T00:00:00.000Z created {"state":"workspace_ready"}\n',
+        'last event: 2026-01-02T00:00:00.000Z created {"state":"workspace_ready"}\n' +
+        expectedShowLines("workspace_ready", `${TASKER}#5`),
     });
   });
 
@@ -135,8 +139,33 @@ describe("show", () => {
         "worktree: -\n" +
         "created: 2026-01-03T00:00:00.000Z\n" +
         "updated: 2026-01-03T00:00:00.000Z\n" +
-        'last event: 2026-01-03T00:00:00.000Z created {"state":"executing"}\n',
+        'last event: 2026-01-03T00:00:00.000Z created {"state":"executing"}\n' +
+        expectedShowLines("executing", `${OTHER}#7`),
     });
+  });
+
+  it("prints the commands of a task in awaiting_work_review", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "awaiting_work_review", at: dayAt(2) }]);
+
+    const { code, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(code).toBe(0);
+    expect(out.endsWith(expectedShowLines("awaiting_work_review", `${TASKER}#5`))).toBe(true);
+    expect(out).toContain(
+      "commands: tasker review codeguru42/tasker#5, tasker accept codeguru42/tasker#5, tasker abort codeguru42/tasker#5\n",
+    );
+  });
+
+  it("prints no command line for a cancelled task", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "cancelled", at: dayAt(2) }]);
+
+    const { code, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(code).toBe(0);
+    expect(out).not.toMatch(/^(next|also|commands):/m);
+    expect(out.trimEnd().split("\n").at(-1)).toMatch(/^last event:/);
   });
 
   it("prints an error for an issue with no task", async () => {
@@ -184,7 +213,8 @@ describe("show", () => {
         "worktree: -\n" +
         "created: 2026-01-03T00:00:00.000Z\n" +
         "updated: 2026-01-03T00:00:00.000Z\n" +
-        'last event: 2026-01-03T00:00:00.000Z created {"state":"planning"}\n',
+        'last event: 2026-01-03T00:00:00.000Z created {"state":"planning"}\n' +
+        expectedShowLines("planning", `${TASKER}#5`),
     });
   });
 
@@ -218,7 +248,8 @@ describe("show", () => {
         "updated: 2026-01-04T00:00:00.000Z\n" +
         'last event: 2026-01-04T00:00:00.000Z transition {"error":"git push failed","from":"executing","to":"failed"}\n' +
         "failed in: executing\n" +
-        "error: git push failed\n",
+        "error: git push failed\n" +
+        expectedShowLines("failed", `${TASKER}#5`),
     });
   });
 
@@ -252,7 +283,8 @@ describe("show", () => {
         "updated: 2026-01-04T00:00:00.000Z\n" +
         'last event: 2026-01-04T00:00:00.000Z transition {"error":"git push failed\\r\\nexit 128\\rdone\\nend","from":"executing","to":"failed"}\n' +
         "failed in: executing\n" +
-        "error: git push failed\\nexit 128\\ndone\\nend\n",
+        "error: git push failed\\nexit 128\\ndone\\nend\n" +
+        expectedShowLines("failed", `${TASKER}#5`),
     });
   });
 
@@ -268,14 +300,22 @@ describe("show", () => {
       { now: () => new Date(dayAt(4)) },
     );
 
-    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS });
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
+      code: 0,
+      err: "",
+      out: EXECUTED_FIELDS + EXECUTED_COMMANDS,
+    });
   });
 
   it("prints no todo block when no todo of the pinned revision has a recorded state", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedPinnedTask(dataRoot, {});
 
-    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({ code: 0, err: "", out: EXECUTED_FIELDS });
+    expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
+      code: 0,
+      err: "",
+      out: EXECUTED_FIELDS + EXECUTED_COMMANDS,
+    });
   });
 
   it("pads the state and the id of each todo to the longest value", async () => {
@@ -285,7 +325,7 @@ describe("show", () => {
     expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
-      out: EXECUTED_FIELDS + PADDED_BLOCK,
+      out: EXECUTED_FIELDS + EXECUTED_COMMANDS + PADDED_BLOCK,
     });
   });
 
@@ -298,6 +338,7 @@ describe("show", () => {
       err: "",
       out:
         EXECUTED_FIELDS +
+        EXECUTED_COMMANDS +
         "todos (approved v1):\n" +
         "  not started  write-test    Add the a module\n" +
         "  in progress  make-it-pass  Add the a module\n",
@@ -314,7 +355,7 @@ describe("show", () => {
     expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
-      out: EXECUTED_FIELDS + "todos (approved v1):\n  done  a  First line\\nsecond line\n",
+      out: EXECUTED_FIELDS + EXECUTED_COMMANDS + "todos (approved v1):\n  done  a  First line\\nsecond line\n",
     });
   });
 
@@ -329,6 +370,7 @@ describe("show", () => {
         EXECUTED_FIELDS.replace("state: executed", "state: failed") +
         "failed in: executing\n" +
         "error: git push failed\n" +
+        expectedShowLines("failed", `${TASKER}#5`) +
         PADDED_BLOCK,
     });
   });
@@ -340,7 +382,7 @@ describe("show", () => {
     expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
-      out: EXECUTED_FIELDS + PADDED_BLOCK + `fix turn: ${fixTurn}\n`,
+      out: EXECUTED_FIELDS + EXECUTED_COMMANDS + PADDED_BLOCK + `fix turn: ${fixTurn}\n`,
     });
   });
 
@@ -357,7 +399,11 @@ describe("show", () => {
     const lines = out.split("\n");
     const rest = lines.slice(lines.findIndex((line) => line.startsWith("last event:")) + 1).join("\n");
     expect({ code, err }).toEqual({ code: 0, err: "" });
-    expect(rest).toBe("review findings (review 2, at abc123def456):\n" + findingText("first", 1));
+    expect(rest).toBe(
+      expectedShowLines("awaiting_work_review", `${TASKER}#5`) +
+        "review findings (review 2, at abc123def456):\n" +
+        findingText("first", 1),
+    );
   });
 
   it("prints no findings of a review for a task that is not reviewed", async () => {
@@ -373,7 +419,7 @@ describe("show", () => {
 
     expect(code).toBe(0);
     expect(out).not.toContain("review findings");
-    expect(out.trimEnd().split("\n").at(-1)).toMatch(/^last event:/);
+    expect(out.endsWith(expectedShowLines("awaiting_work_review", `${TASKER}#5`))).toBe(true);
   });
 
   it("prints the findings of a reviewed task after the todo block", async () => {

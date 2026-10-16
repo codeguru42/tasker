@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { STATES, TERMINAL_STATES } from "../../src/state/machine.js";
-import { acceptedStates, stateCommands, type TaskCommand } from "../../src/state/commands.js";
+import { acceptedStates, showLines, stateCommands, type TaskCommand } from "../../src/state/commands.js";
 import { helpText } from "../helpers/cli.js";
 import { expectedStateCommands } from "../helpers/state-commands.js";
 import { commandsInHelp } from "../skill-coverage.js";
@@ -63,5 +63,30 @@ describe("stateCommands", () => {
 describe("acceptedStates", () => {
   it.each(Object.entries(ACCEPTED))("gives the states that %s accepts, in the order of STATES", (command, states) => {
     expect(acceptedStates(command as TaskCommand)).toEqual(states);
+  });
+});
+
+describe("showLines", () => {
+  const key = "codeguru42/tasker#5";
+
+  it("gives the next and also lines for a state with a primary command", () => {
+    expect(showLines("approved", key)).toEqual([
+      "next: tasker execute codeguru42/tasker#5",
+      "also: tasker unapprove codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+    ]);
+  });
+
+  it("gives one commands line for a state with no primary command", () => {
+    expect(showLines("reviewed", key)).toEqual([
+      "commands: tasker refine codeguru42/tasker#5, tasker dismiss-review codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+    ]);
+  });
+
+  it("gives the abort line for a state that only aborts", () => {
+    expect(showLines("executing", key)).toEqual(["commands: tasker abort codeguru42/tasker#5"]);
+  });
+
+  it.each(["finished", "cancelled", "nonsense"])("gives no line for %s", (state) => {
+    expect(showLines(state, key)).toEqual([]);
   });
 });
