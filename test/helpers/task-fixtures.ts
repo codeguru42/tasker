@@ -12,6 +12,7 @@ import type { PlanAnswer } from "../../src/plan/answer.js";
 import { transitionTask, type TaskState } from "../../src/state/machine.js";
 import type { NewSession, PlanRevision, StoredSession, Task, TaskStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
+import { runGit } from "../../src/vcs/git/run.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "./cli.js";
 import { failureOf } from "./errors.js";
@@ -204,6 +205,17 @@ export async function taskWorkspaceState(
     listed: listedPaths.includes(canonicalPath(started.worktree)),
     branch: (await localBranches(clone, env)).includes(`refs/heads/${started.branch}`),
   };
+}
+
+// The tip of the task branch in the clone: the exact ref refs/heads/<branch>, read with git show-ref and not from HEAD.
+export async function taskBranchTipOf(fixture: Pick<WorkReviewTask, "clone" | "env" | "task">): Promise<string> {
+  const { branch } = fixture.task;
+  if (branch === null) throw new Error("the task has no branch");
+  const out = await runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {
+    gitDir: fixture.clone,
+    env: fixture.env,
+  });
+  return out.trim();
 }
 
 export interface AssistantRunFixture {

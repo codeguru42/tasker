@@ -5,7 +5,6 @@ import { archivePrompt } from "../../src/prompts/archive.js";
 import { REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
 import { formatFindings } from "../../src/review/findings-text.js";
 import { reviewTranscriptPath } from "../../src/store/layout.js";
-import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
 import { argAfter, claudeSample } from "../helpers/fake-claude.js";
@@ -21,18 +20,11 @@ import {
   withDataRootStore,
   reviewSessionRows,
 } from "../helpers/store.js";
-import { expectCommandRefused, useReviewFixture, useSeededTask, type ReviewFixture } from "../helpers/task-fixtures.js";
+import { expectCommandRefused, taskBranchTipOf, useReviewFixture, useSeededTask } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 
 const runReview = (key = KEY, ...extra: string[]) => runCommand(review, "review", key, ...extra);
-
-// The tip of the task branch in the clone, read with git show-ref and not from HEAD of the worktree.
-const branchTipOf = (work: ReviewFixture) =>
-  runGit(["show-ref", "--verify", "--hash", `refs/heads/${String(work.task.branch)}`], {
-    gitDir: work.clone,
-    env: work.env,
-  }).then((out) => out.trim());
 
 const reviewsOf = (dataRoot: string, taskId: number) =>
   withDataRootStore(dataRoot, (store) => store.listReviews(taskId));
@@ -55,7 +47,7 @@ describe("review", () => {
     );
     const work = await useReviewFixture({ stream }, { repo: splitRoleModelsRepo() });
     const { dataRoot } = work;
-    const revision = await branchTipOf(work);
+    const revision = await taskBranchTipOf(work);
     const before = eventsOf(dataRoot, KEY);
 
     const result = await runReview();

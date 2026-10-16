@@ -8,9 +8,10 @@ import { issueProviderFor } from "../../src/issues/provider.js";
 import { baseRevisionOf } from "../../src/tasks/base-revision.js";
 import { dataRootLayout, planRevisionPath } from "../../src/store/layout.js";
 import { changedPaths } from "../../src/vcs/git/changes.js";
-import { taskBranchRevision } from "../../src/vcs/git/worktree.js";
+import { runGit } from "../../src/vcs/git/run.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { localBranches } from "./git.js";
+import { failureOf } from "./errors.js";
+import { commitInWorktree, localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { planTodo, validPlanAnswer } from "./plan.js";
 import {
@@ -30,6 +31,7 @@ import {
   moveTaskThrough,
   startIssueTask,
   startTaskWithCommits,
+  taskBranchTipOf,
   taskRefOf,
   taskWorkspaceState,
   TO_WORK_REVIEW,
@@ -443,6 +445,34 @@ describe("expectCommandRefused", () => {
   });
 });
 
+describe("taskBranchTipOf", () => {
+  it("gives the tip of the task branch", async () => {
+    const work = await useWorkReviewTask();
+    const head = await commitInWorktree(work.task.worktreePath!, work.env, { file: "more.txt" });
+
+    expect(await taskBranchTipOf(work)).toBe(head);
+  });
+
+  it("reads the branch, not a detached HEAD of the worktree", async () => {
+    const work = await useWorkReviewTask();
+    const worktree = work.task.worktreePath!;
+    const tip = await commitInWorktree(worktree, work.env, { file: "more.txt" });
+    await runGit(["switch", "--detach"], { cwd: worktree, env: work.env });
+    const detached = await commitInWorktree(worktree, work.env, { file: "detached.txt" });
+
+    expect(detached).not.toBe(tip);
+    expect(await taskBranchTipOf(work)).toBe(tip);
+  });
+
+  it("throws for a task with no branch", async () => {
+    const work = await useWorkReviewTask();
+
+    const error = await failureOf(taskBranchTipOf({ ...work, task: { ...work.task, branch: null } }), Error);
+
+    expect(error.message).toBe("the task has no branch");
+  });
+});
+
 describe("useAcceptedTask", () => {
   it("gives a task in accepted with the revision that accept recorded", async () => {
     const accepted = await useAcceptedTask();
@@ -450,7 +480,7 @@ describe("useAcceptedTask", () => {
 
     expect(accepted.task.state).toBe("accepted");
     expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("accepted");
-    expect(accepted.revision).toBe(await taskBranchRevision({ clone: accepted.clone, env: accepted.env, branch }));
+    expect(accepted.revision).toBe(await taskBranchTipOf(accepted));
     expect(
       await changedPaths({
         clone: accepted.clone,

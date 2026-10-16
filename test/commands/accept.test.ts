@@ -9,6 +9,7 @@ import { startLockHolder } from "../helpers/processes.js";
 import { dayAt, databasePathOf, eventsOf, latestTaskOf, seedTasks, withDataRootStore } from "../helpers/store.js";
 import {
   expectCommandRefused,
+  taskBranchTipOf,
   useStartFixture,
   useWorkReviewTask,
   type WorkReviewTask,
@@ -24,9 +25,6 @@ const runAccept = (key = KEY) => runCommand(accept, "accept", key, "--repo", REP
 const revisionOf = (work: Pick<WorkReviewTask, "clone" | "env">, ref: string) =>
   runGit(["rev-parse", ref], { gitDir: work.clone, env: work.env }).then((out) => out.trim());
 
-// The tip of the task branch in the clone.
-const branchTipOf = (work: WorkReviewTask) => revisionOf(work, `refs/heads/${String(work.task.branch)}`);
-
 // Appends a base event to the task.
 const appendBase = (work: WorkReviewTask, base: string, revision: string) =>
   withDataRootStore(work.dataRoot, (store) =>
@@ -40,7 +38,7 @@ const expectRefused = (dataRoot: string, error: string | RegExp) =>
 describe("accept", () => {
   it("accepts a task whose branch contains the tip of the base", async () => {
     const work = await useWorkReviewTask();
-    const head = await branchTipOf(work);
+    const head = await taskBranchTipOf(work);
     const before = eventsOf(work.dataRoot, KEY);
 
     const result = await runAccept();
@@ -129,7 +127,7 @@ describe("a refused accept", () => {
 
   it("refuses a branch that does not contain the tip of a base that moved on origin", async () => {
     const work = await useWorkReviewTask();
-    const head = await branchTipOf(work);
+    const head = await taskBranchTipOf(work);
     const tip = await work.origin.addCommit("main");
 
     await expectRefused(
@@ -141,7 +139,7 @@ describe("a refused accept", () => {
 
   it("refuses a branch that does not contain a moved base, also when HEAD of the worktree does", async () => {
     const work = await useWorkReviewTask();
-    const revision = await branchTipOf(work);
+    const revision = await taskBranchTipOf(work);
     const tip = await work.origin.addCommit("main");
     await runGit(["fetch", "origin"], { gitDir: work.clone, env: work.env });
     await runGit(["switch", "--detach", BASE], { cwd: work.task.worktreePath!, env: work.env });
@@ -155,7 +153,7 @@ describe("a refused accept", () => {
 
   it("refuses a branch that does not contain the tip of a local base", async () => {
     const work = await useWorkReviewTask();
-    const head = await branchTipOf(work);
+    const head = await taskBranchTipOf(work);
     await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: work.clone, env: work.env });
     appendBase(work, "refs/heads/x", "refs/heads/x");
     const tip = await addCloneCommit(work.clone, work.env, "x");
