@@ -24,12 +24,17 @@ export function fail(io: Io, message: string): never {
   throw new CommanderError(1, "tasker.fail", message);
 }
 
+// True when the text is a whole number of 1 or more, with no sign and no leading zero.
+export function isWholeNumberText(text: string): boolean {
+  return /^[1-9][0-9]*$/.test(text);
+}
+
 // Stops the command with exit code 1 when an option has a value that is not a whole number of 1 or more, with no sign
 // and no leading zero. It reports each bad option, one line each, in the order of options. An absent option is good.
 // The caller keeps the raw strings, so that a very large number prints as the user typed it.
 export function wholeNumberOptionsOrFail(io: Io, options: Record<string, string | undefined>): void {
   const problems = Object.entries(options)
-    .filter((entry): entry is [string, string] => entry[1] !== undefined && !/^[1-9][0-9]*$/.test(entry[1]))
+    .filter((entry): entry is [string, string] => entry[1] !== undefined && !isWholeNumberText(entry[1]))
     .map(([name, raw]) => `${name} must be a whole number of 1 or more: ${raw}`);
   if (problems.length > 0) fail(io, problems.join("\n"));
 }
