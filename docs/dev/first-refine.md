@@ -135,6 +135,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Each kept rule keeps its conditions and its definitions. When a rule moves from one doc to another, keep every fact of each moved sentence. On #118, the moved UTF-8 rule lost its "reads" half. The one home of a merged rule covers each case of the old copies.
 - A code comment can name a doc heading. Search `src/` and `test/` for a heading before a rename.
 - Write a gap that no code covers yet as a rule for the caller with "must", not as a claim that the code does it.
+- If the issue calls a sentence a copy of a home ([the one-home rule](rules.md#code)), ask the plan to compare the words and the scope of the two. A sentence under a section with another scope is not a copy. A copy can also hold one more fact. Before the agent dismisses a finding because it contradicts the issue ([Review findings](orchestration.md#review-findings)), the agent makes sure that the claim of the issue is true. On #199 and #202, a "copy" held another fact. On #202, the agent dismissed a real finding.
+- If a rule moves from a narrow heading to a section for the whole page, ask the plan to keep the words that gave the scope of the old heading. On #199, a rule of "Revision input" read as false for the whole page.
+- If a ticket turns the lead-in of a rule into a heading, ask the plan to read the first sentence of each rule again. After the change, a pronoun in that sentence can name nothing (#203).
 
 ## A ticket that adds a doc of rules or hints
 
