@@ -10,6 +10,7 @@ import { show } from "./show.js";
 import { plan } from "./plan.js";
 import { refine } from "./refine.js";
 import { retry } from "./retry.js";
+import { dismissReview } from "./dismiss-review.js";
 import { review } from "./review.js";
 import { showBootstrap } from "./show-bootstrap.js";
 import { showPlan } from "./show-plan.js";
@@ -38,6 +39,7 @@ export const commands: RegisterCommand[] = [
   execute,
   verify,
   review,
+  dismissReview,
   retry,
   accept,
   merge,

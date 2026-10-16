@@ -338,6 +338,31 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 The command writes one `transition` event into `reviewing`, one `usage` event, one `review` event with the data `{ number, revision, findings }`, and one `transition` event out of `reviewing`. A failed run writes the `usage` event and no `review` event. No command resumes a failed or stopped review yet.
 
+### `tasker dismiss-review`
+
+Dismisses open findings of the latest review of a task in the state `reviewed`, with one reason: `tasker dismiss-review <issue> <reason> [--finding <ids>]`. The task goes back to `awaiting_work_review` only when no finding of the review is open after the command.
+
+- `<issue>`: the issue key of the task.
+- `<reason>`: why you dismiss the findings. Quote it as one argument. It must not be empty or only spaces. tasker stores it as you typed it.
+- `--finding <ids>`: dismisses only the findings at these positions. Write whole numbers of 1 or more, separated by commas, for example `1,3`. Use no sign and no leading zero. Spaces around an item are permitted. Without the option, the command dismisses every open finding.
+- `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
+
+On success, the command prints two lines on stdout. The first line is `dismissed findings <positions> of review <number> of <issue key>`. The positions are in ascending order, separated by `, `. The second line is `open findings: <positions>`. When no finding is open, the second line is `no open findings; the task is in awaiting_work_review`.
+
+The command writes one event of the type `review_dismissed` with the data `{ number, positions, reason }`. It writes one `transition` event only when the task moves. The event and the move share one transaction.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, nothing is written. The errors of `--finding` come before tasker reads the configuration.
+
+- `--finding` has an item that is not a whole number of 1 or more. The error is `--finding must be a list of whole numbers of 1 or more, separated by commas: <value>`.
+- `--finding` names a position twice. The error is `--finding names <n> more than once`, one line for each such position.
+- The issue has no task. The error names the issue and the repo.
+- The task is in another state. The error is `the task of <issue key> is in <state>; tasker dismiss-review needs reviewed`.
+- The reason is empty. The error is `the reason is empty`.
+- The task has no review. The error is `the task of <issue key> is in reviewed and has no review`.
+- A position is not in the latest review, or is already dismissed. The error has one line for each such position: `the latest review of <issue key> has no finding <n>; it has <total>` or `finding <n> of <issue key> is already dismissed: <reason>`.
+- No finding is open and `--finding` is absent. The error is `the latest review of <issue key> has no open finding`.
+- Another command holds the task lock of the issue. The error says that the lock is busy. Wait until it ends.
+
 ### `tasker retry`
 
 Moves a task in the state `failed` back to the state before the step that failed, and runs that step again: `tasker retry <issue>`.
