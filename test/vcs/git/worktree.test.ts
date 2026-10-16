@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { jiraShortRef } from "../../../src/issue-key/short-ref.js";
 import { sandboxWritePaths } from "../../../src/vcs/git/assistant-surface.js";
-import { fetchTips, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
+import { uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { shellQuote } from "../../../src/vcs/git/ssh.js";
 import {
@@ -649,7 +649,6 @@ describe("git fixture", () => {
       ["discardWorktreeChanges", () => discardWorktreeChanges({ clone, env, path: path() })],
       ["worktreeDiff", () => worktreeDiff({ clone, env, path: path(), baseRevision: base })],
       ["uncommittedChanges", () => uncommittedChanges({ clone, env, path: path() })],
-      ["fetchTips", () => fetchTips({ clone, env, sshKey: undefined, path: path(), baseRevision: base })],
       ["sandboxWritePaths", () => sandboxWritePaths({ clone, env, path: path() })],
     ])("%s refuses a tampered worktree before git starts there", async (_name, call) => {
       await create();

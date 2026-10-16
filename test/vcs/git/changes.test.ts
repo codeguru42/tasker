@@ -5,7 +5,6 @@ import {
   changedPaths,
   fetchBaseContainment,
   fetchOrigin,
-  fetchTips,
   hasCommitsNotIn,
   isAncestor,
   NO_OWN_COMMITS,
@@ -64,8 +63,6 @@ describe("git changes", () => {
     ownCommitsText({ clone, env, branch, baseRevision: BASE, ...extra });
   const changes = (extra: Partial<Parameters<typeof uncommittedChanges>[0]> = {}) =>
     uncommittedChanges({ clone, env, path, ...extra });
-  const tips = (extra: Partial<Parameters<typeof fetchTips>[0]> = {}) =>
-    fetchTips({ clone, env, sshKey: undefined, path, baseRevision: BASE, ...extra });
   const containment = (extra: Partial<Parameters<typeof fetchBaseContainment>[0]> = {}) =>
     fetchBaseContainment({ clone, env, sshKey: undefined, branch, baseRevision: BASE, ...extra });
   // The tip of the base in the clone.
@@ -376,75 +373,6 @@ describe("git changes", () => {
       const key = join(origin.dir, "id key");
 
       await fetchOrigin({ clone: sshClone, env: ssh.env, sshKey: key });
-
-      const calls = readArgLog(ssh.logPath);
-      expect(calls.length).toBeGreaterThan(0);
-      for (const call of calls) {
-        expect(call.slice(0, 6)).toEqual(sshKeyArgs(key));
-      }
-    });
-  });
-
-  describe("fetchTips", () => {
-    it("fetches origin and gives the head of the worktree and the base tip", async () => {
-      const tip = await origin.addCommit("main");
-      const result = await tips();
-      expect(result.base).toBe(tip);
-      expect(result.head).toBe(await git("rev-parse", "HEAD"));
-    });
-
-    it("rejects with the error of git when the fetch fails", async () => {
-      renameSync(origin.path, `${origin.path}-moved`);
-      const error = await failureOf(tips(), GitError);
-      expect(error.subcommand).toBe("fetch");
-    });
-
-    it("refuses a bad base text before it fetches", async () => {
-      const before = await baseTip();
-      await origin.addCommit("main");
-      const error = await failureOf(tips({ baseRevision: "main" }), Error);
-      expect(error.message).toBe('not a full revision or ref: "main"');
-      expect(await baseTip()).toBe(before);
-    });
-
-    it("refuses a folder that is not a worktree before it fetches", async () => {
-      const plain = join(origin.dir, "plain");
-      mkdirSync(plain);
-      const before = await baseTip();
-      await origin.addCommit("main");
-      const error = await failureOf(tips({ path: plain }), Error);
-      expect(error.message).toBe(`not a worktree of the clone: ${plain}`);
-      expect(await baseTip()).toBe(before);
-    });
-
-    it("fetches with the ssh key of the repo", async () => {
-      const ssh = fakeSsh(origin.dir, env, "serve");
-      const { clone: sshClone, publishTokens } = repoPaths(join(origin.dir, "ssh-clone"), "tasker");
-      await provisionClone({
-        remote: ssh.remote(origin.path),
-        clone: sshClone,
-        config: {},
-        env: ssh.env,
-        publishTokens,
-      });
-      const sshNames = taskNames(join(origin.dir, "ssh-worktrees"), 15);
-      await createTaskWorktree({
-        clone: sshClone,
-        env: ssh.env,
-        path: sshNames.worktree,
-        branch: sshNames.branch,
-        baseRevision: BASE,
-      });
-      rmSync(ssh.logPath, { force: true });
-      const key = join(origin.dir, "id key");
-
-      await fetchTips({
-        clone: sshClone,
-        env: ssh.env,
-        sshKey: key,
-        path: sshNames.worktree,
-        baseRevision: BASE,
-      });
 
       const calls = readArgLog(ssh.logPath);
       expect(calls.length).toBeGreaterThan(0);

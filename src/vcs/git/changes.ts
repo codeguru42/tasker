@@ -184,27 +184,6 @@ export async function fetchOrigin(o: {
   await runRemoteGit(["fetch", "--prune", "origin"], { gitDir: clone, env }, sshKey);
 }
 
-// Fetches origin, then reads the head of the task worktree and the tip of the base.
-// This is the one function of this file that talks to the remote. It uses runRemoteGit(), so
-// the fetch uses the ssh key. The fetch moves and prunes refs/remotes/origin/* in the clone, also
-// when a later read fails. A bad base text or a bad worktree causes no fetch.
-// The base is read after the fetch, because the fetch can make or move its ref.
-export async function fetchTips(o: {
-  clone: string;
-  env: NodeJS.ProcessEnv;
-  sshKey: string | undefined;
-  path: string;
-  baseRevision: string;
-}): Promise<{ head: string; base: string }> {
-  const { clone, env, sshKey, path, baseRevision } = o;
-  assertRevisionInput(baseRevision);
-  const target = await assertTaskWorktree({ clone, env, path });
-  await fetchOrigin({ clone, env, sshKey });
-  const head = await worktreeHead(target, env);
-  const base = await resolveRevision({ clone, env, value: baseRevision });
-  return { head, base };
-}
-
 // Fetches origin, then reads the tip of the task branch and the tip of the base, and says whether the branch contains
 // the tip of the base. It reads the exact ref refs/heads/<branch> in the clone, not HEAD of a worktree, so it needs no
 // worktree. A bad base text or a bad branch name causes no fetch. The fetch moves and prunes refs/remotes/origin/* in
