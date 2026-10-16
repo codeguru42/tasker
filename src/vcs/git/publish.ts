@@ -1,6 +1,7 @@
 import { detailSuffix } from "../../detail-suffix.js";
 import { LOCAL_PREFIX } from "../local-branch.js";
 import type { RemoteTaskRefDeletion, RemoteTip } from "../provider.js";
+import { isAncestor } from "./changes.js";
 import { pushWithToken } from "./push-guard.js";
 import { assertRevision } from "./refs.js";
 import { GitError } from "./run.js";
@@ -102,6 +103,13 @@ export async function landOnBase(options: RemoteOptions & { base: string; revisi
   const tip = await orFailed(summary, () => remoteTip({ remote, branch: base, sshKey, env }));
   if (tip.state === "absent") {
     throw landError(revision, base, "the base branch does not exist on origin");
+  }
+  // This check is a local call in the bare clone. It needs no ssh key and no token.
+  const builds = await orFailed(summary, () =>
+    isAncestor({ clone, env, ancestor: tip.revision, descendant: revision }),
+  );
+  if (!builds) {
+    throw landError(revision, base, `the revision does not build on the tip of the base on origin: ${tip.revision}`);
   }
   await orFailed(summary, () =>
     pushWithToken(["origin", `${revision}:${LOCAL_PREFIX}${base}`], {
