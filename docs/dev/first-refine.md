@@ -133,3 +133,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 - Name the docs that already hold some of the rules or hints, because they draw duplication findings (#116).
 - Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its lead-in names. A link must support the exact sentence that holds it. If a hint links to a rule to prevent a repeat, put the link on the sentence that the rule supports, not on the new fact. On #149, review 1 found two links that only pointed near the topic.
+- Before the agent asks a plan to extend a bullet, the agent runs `git blame` on that bullet. The issue can put the bullets of earlier tickets out of scope (#169).
+- If a hint of the issue starts with a rule that a doc already gives, ask the plan to state only the new fact. Then the old rule is only the source of an example, with a link. On #186, a link plus a restatement still counted as a copy, and it cost one loop.
+- A hint that gives a read of a remote-tracking ref also gives the fetch before the read and the `--verify` of [the shared-clone rule](orchestration.md#limits). A hint about a value that changes later names the moment that it covers. On #169, review 1 found both.
+- If the issue asks for a link to a bullet, make sure that the target has an anchor. A bullet has no anchor, so the link goes to the section of the bullet. On #167, the plan was unable to link to the duplication hint.
