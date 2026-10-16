@@ -60,13 +60,6 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-argument": "off",
     },
   },
-  // Temporary: each rule in this block still reports problems. A later commit fixes the code for one rule and
-  // removes that rule from this block.
-  {
-    rules: {
-      "@typescript-eslint/prefer-nullish-coalescing": "off",
-    },
-  },
   // The JavaScript files are outside tsconfig.json, so they get no type information. This block must come after the
   // blocks that set rules with options.
   {

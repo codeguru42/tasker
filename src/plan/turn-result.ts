@@ -17,5 +17,7 @@ export function readTurnResult(output: unknown): TurnRead {
   if (!parsed.success) return { kind: "none", detail: formatIssues(parsed.error.issues, "(root)").join("; ") };
   if (parsed.data.result === "done") return { kind: "done" };
   const reason = parsed.data.reason?.trim();
+  // An empty reason must also get the fallback text, and ?? would keep the empty text.
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   return { kind: "blocked", reason: reason ? reason : "(no reason given)" };
 }
