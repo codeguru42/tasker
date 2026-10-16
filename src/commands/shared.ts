@@ -34,6 +34,27 @@ export function wholeNumberOptionsOrFail(io: Io, options: Record<string, string 
   if (problems.length > 0) fail(io, problems.join("\n"));
 }
 
+// The row that a show command prints: the newest row, or the row with the number. number is the raw value of the
+// option, already checked by wholeNumberOptionsOrFail, or undefined for the newest row. total is the count of rows.
+export function numberedRowOrFail<T>(
+  io: Io,
+  issueKey: string,
+  o: {
+    name: string; // for example "verify run"
+    command: string; // the command that makes a row, for example "verify"
+    total: number;
+    number: string | undefined;
+    newest: () => T | undefined;
+    get: (number: number) => T | undefined;
+  },
+): T {
+  if (o.total === 0) fail(io, `the task of ${issueKey} has no ${o.name}; run tasker ${o.command} first`);
+  if (o.number !== undefined && Number(o.number) > o.total) {
+    fail(io, `the task of ${issueKey} has no ${o.name} ${o.number}; it has ${o.total}`);
+  }
+  return (o.number === undefined ? o.newest() : o.get(Number(o.number)))!;
+}
+
 // The text with a final line end: text that already ends with a line end stays as it is.
 export function withFinalLineEnd(text: string): string {
   return /[\r\n]$/.test(text) ? text : `${text}\n`;

@@ -6,6 +6,7 @@ import {
   fail,
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
+  numberedRowOrFail,
   REPO_OPTION_DESCRIPTION,
   wholeNumberOptionsOrFail,
   withFinalLineEnd,
@@ -25,14 +26,14 @@ export const showVerify: RegisterCommand = (program, io) => {
       const config = loadConfigOrFail(io);
       const { text, unreadable } = withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
         const total = store.verifyRunCount(task.id);
-        if (total === 0) fail(io, `the task of ${task.issueKey} has no verify run; run tasker verify first`);
-        if (options.run !== undefined && Number(options.run) > total) {
-          fail(io, `the task of ${task.issueKey} has no verify run ${options.run}; it has ${total}`);
-        }
-        const run =
-          options.run === undefined
-            ? store.latestVerifyRun(task.id)!
-            : store.getVerifyRun(task.id, Number(options.run))!;
+        const run = numberedRowOrFail(io, task.issueKey, {
+          name: "verify run",
+          command: "verify",
+          total,
+          number: options.run,
+          newest: () => store.latestVerifyRun(task.id),
+          get: (n) => store.getVerifyRun(task.id, n),
+        });
         const count = run.commands.length;
         if (options.command !== undefined && Number(options.command) > count) {
           fail(
