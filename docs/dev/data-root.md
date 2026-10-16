@@ -23,6 +23,7 @@ tasker makes each folder that is missing. It does not remove or change anything 
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/`                                   | The transcripts of one attempt.                                                                                                                                                                                                                              |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/plan-v<N>.jsonl`                    | The transcript of the planning run of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker plan` and `tasker refine` write it.                                                                                        |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/execute-v<N>.jsonl`                 | The transcript of the execute runs of plan version N. It has one JSON event on each line, and tasker opens it for append. `tasker execute` writes it, and the runs of one revision share it.                                                                 |
+| `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/review-<N>.jsonl`                   | The transcript of review N. It has one JSON event on each line, and tasker opens it for append. `tasker review` writes it.                                                                                                                                   |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/`                      | The logs of verify run `<number>` of one attempt.                                                                                                                                                                                                            |
 | `<dataRoot>/artifacts/<issue slug>/attempt-<N>/logs/verify-run-<number>/verify-<position>.log` | The log of the verify command at position `<position>` of the configured list, from 1. `tasker verify` writes it, and `tasker show-verify` reads it.                                                                                                         |
 | `<dataRoot>/prompts/`                                                                          | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks.                                                                                                                                                                 |
@@ -138,7 +139,7 @@ These rules hold:
 
 - The reviews of a task are numbered from 1. The number of a new review is the highest number of the task plus one. Another number is an error.
 - The insert of a review shares one transaction with its `review` event and the state move, so a refused move leaves no row behind.
-- The row stores the revision of the worktree, because the findings describe one tree.
+- The row stores the tip of the task branch, because the findings describe one tree.
 - The caller gives both times. The store does not take them from its clock.
 
 ## `review_findings` table
