@@ -1,22 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { retry } from "../../src/commands/retry.js";
+import type { TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
-import { argAfter, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
+import { argAfter, TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   answerStream,
   planTodo,
   seedExecuteSession,
   seedExecuteTodoStates,
   seedPlanSession,
+  seedReviewSession,
   turnResultStream,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { eventDataOf, failTaskFrom, failVerifyRun, latestTaskOf, withDataRootStore } from "../helpers/store.js";
+import { validReviewAnswer } from "../helpers/review.js";
+import {
+  eventDataOf,
+  failRefineFrom,
+  failTaskFrom,
+  failVerifyRun,
+  latestTaskOf,
+  reviewSessionRows,
+  withDataRootStore,
+} from "../helpers/store.js";
 import {
   expectCommandRefused,
   useExecuteFixture,
   usePlanFixture,
   useRefineFixture,
+  useReviewFixture,
   useStartedTask,
   useVerifyFixture,
 } from "../helpers/task-fixtures.js";
@@ -73,30 +85,77 @@ describe("tasker retry", () => {
     ]);
   });
 
-  it("prints a hint and runs nothing for a task that failed in refining", async () => {
-    const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
-    const { dataRoot } = fixture.started;
-    withDataRootStore(dataRoot, (store) => failTaskFrom(store, fixture.task.id, "refining"));
-
-    const result = await runRetry();
-
-    expect(result).toEqual({
-      code: 0,
-      out: `${firstLine("refining", "awaiting_plan_review")}run tasker refine ${KEY} "<feedback>" again\n`,
-      err: "",
+  it("runs tasker review in a new session for a task that failed in reviewing", async () => {
+    const work = await useReviewFixture({ stream: answerStream(validReviewAnswer()) });
+    const { dataRoot } = work;
+    withDataRootStore(dataRoot, (store) => {
+      seedReviewSession(store, work.task.id, 1);
+      failTaskFrom(store, work.task.id, "reviewing");
     });
-    expect(fixture.claude.calls()).toEqual([]);
-    expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
+
+    const result = await runRetry(work.key);
+
+    expect(result.code).toBe(0);
+    expect(result.out.startsWith(firstLine("reviewing", "awaiting_work_review"))).toBe(true);
+    expect(result.out).toContain(`reviewed ${KEY}: review 1`);
+    const calls = work.claude.calls();
+    expect(calls).toHaveLength(1);
+    const sessionId = argAfter(calls[0].argv, "--session-id");
+    expect(sessionId).not.toBe(TEST_REVIEW_SESSION_ID);
+    expect(calls[0].argv).not.toContain("--resume");
+    expect(reviewSessionRows(dataRoot, work.task.id)).toMatchObject([{ review_number: 1, session_id: sessionId }]);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("reviewed");
     expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
       {
-        origin: "refining",
-        target: "awaiting_plan_review",
+        origin: "reviewing",
+        target: "awaiting_work_review",
         resumeExecute: false,
         from: "failed",
-        to: "awaiting_plan_review",
+        to: "awaiting_work_review",
       },
     ]);
   });
+
+  const hints: { refineOrigin: TaskState; target: TaskState; hint: string }[] = [
+    {
+      refineOrigin: "awaiting_plan_review",
+      target: "awaiting_plan_review",
+      hint: `run tasker refine ${KEY} "<feedback>" again\n`,
+    },
+    {
+      refineOrigin: "failed",
+      target: "awaiting_plan_review",
+      hint: `run tasker refine ${KEY} "<feedback>" again\n`,
+    },
+    {
+      refineOrigin: "reviewed",
+      target: "reviewed",
+      hint: `run tasker refine ${KEY} again to act on the findings, or tasker dismiss-review ${KEY} "<reason>"\n`,
+    },
+    {
+      refineOrigin: "awaiting_work_review",
+      target: "awaiting_work_review",
+      hint: `run tasker review ${KEY} "<feedback>" again\n`,
+    },
+  ];
+
+  it.each(hints)(
+    "prints a hint and runs nothing for a task that failed in refining after a refine from $refineOrigin",
+    async ({ refineOrigin, target, hint }) => {
+      const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
+      const { dataRoot } = fixture.started;
+      withDataRootStore(dataRoot, (store) => failRefineFrom(store, fixture.task.id, refineOrigin));
+
+      const result = await runRetry();
+
+      expect(result).toEqual({ code: 0, out: `${firstLine("refining", target)}${hint}`, err: "" });
+      expect(fixture.claude.calls()).toEqual([]);
+      expect(latestTaskOf(dataRoot, KEY).state).toBe(target);
+      expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
+        { origin: "refining", target, resumeExecute: false, from: "failed", to: target },
+      ]);
+    },
+  );
 
   it("runs tasker execute in a new session for the todos that are not done", async () => {
     const fixture = await useExecuteFixture({ stream: turnResultStream("done") }, { answer: { todos: TODOS } });
