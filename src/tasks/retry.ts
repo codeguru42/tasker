@@ -14,8 +14,10 @@ import { withTaskLock } from "../store/locks.js";
 import type { RetryWrites, TaskEvent, TaskStore, VerifyRun } from "../store/store.js";
 import { taskInState } from "./task-state.js";
 
-// The command that runs after the move of a retry. refine is not run: the operator gives the feedback.
-export type RetryNext = "start" | "plan" | "refine" | "execute" | "verify";
+// The command that runs after the move of a retry. The three refine values run nothing: the operator gives the
+// feedback again, or acts on the findings again.
+export type RetryNext =
+  "start" | "plan" | "refine" | "refine-findings" | "review-feedback" | "execute" | "verify" | "review";
 
 export interface RetryRequest {
   config: Config;
@@ -36,16 +38,29 @@ interface RetryRow {
   target: TaskState;
   next: RetryNext;
   // What the retry writes beside the move.
-  clears: { plan?: boolean; execute?: boolean };
+  clears: { plan?: boolean; execute?: boolean; review?: boolean };
 }
+
+// The row of a refine that started from awaiting_plan_review or failed, and of a refine with no row of its own.
+const PLAIN_REFINE_ROW: RetryRow = { target: "awaiting_plan_review", next: "refine", clears: {} };
 
 // The table of retry: the origin (the state that the task left when it failed) gives the row.
 const RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   provisioning: { target: "provisioning", next: "start", clears: {} },
   planning: { target: "workspace_ready", next: "plan", clears: { plan: true } },
-  refining: { target: "awaiting_plan_review", next: "refine", clears: {} },
+  refining: PLAIN_REFINE_ROW,
   executing: { target: "approved", next: "execute", clears: { execute: true } },
   verifying: { target: "executed", next: "verify", clears: {} },
+  reviewing: { target: "awaiting_work_review", next: "review", clears: { review: true } },
+};
+
+// The rows of a task that failed in refining: the origin of the refine (the state that the task left when the last
+// refine started) gives the row.
+const REFINE_RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
+  awaiting_plan_review: PLAIN_REFINE_ROW,
+  failed: PLAIN_REFINE_ROW,
+  reviewed: { target: "reviewed", next: "refine-findings", clears: {} },
+  awaiting_work_review: { target: "awaiting_work_review", next: "review-feedback", clears: {} },
 };
 
 // The row of verifying with --resume-execute.
@@ -62,12 +77,19 @@ export async function retryTask(store: TaskStore, request: RetryRequest): Promis
   return withTaskLock(store, repoKey, key, () => retryLocked(store, request));
 }
 
+function rowOf(events: readonly TaskEvent[], origin: TaskState): RetryRow | undefined {
+  if (origin !== "refining") return RETRY_TABLE[origin];
+  // A refine origin with no row keeps the row of a plain refine.
+  const refineOrigin = transitionFromEvents(events, "refining");
+  return (refineOrigin === undefined ? undefined : REFINE_RETRY_TABLE[refineOrigin]) ?? PLAIN_REFINE_ROW;
+}
+
 function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
   const { config, taskId, resumeExecute } = request;
   const task = taskInState(store, taskId, "retry");
   const events = store.listEvents(taskId);
   const origin = transitionFromEvents(events, "failed");
-  const row = origin === undefined ? undefined : RETRY_TABLE[origin];
+  const row = origin === undefined ? undefined : rowOf(events, origin);
   if (origin === undefined || row === undefined) {
     throw new Error(
       `the task of ${task.issueKey} failed in ${failedOriginText(events)}; tasker retry has no step for it`,
@@ -85,6 +107,7 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
   }
   const writes: RetryWrites = {};
   if (chosen.clears.plan === true) writes.clearPlanSession = true;
+  if (chosen.clears.review === true) writes.clearReviewSession = store.nextReview(taskId);
   const pinned = store.pinnedPlanRevision(taskId);
   if (chosen.clears.execute === true && pinned !== undefined) writes.clearExecuteSession = pinned.version;
   if (resumeExecute) {
