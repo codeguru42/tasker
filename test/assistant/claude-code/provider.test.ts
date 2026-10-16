@@ -48,6 +48,15 @@ function failureOf(outcome: RunOutcome): Extract<RunOutcome, { kind: "failure" }
   return outcome as Extract<RunOutcome, { kind: "failure" }>;
 }
 
+describe("createClaudeCodeProvider isQuotaEvent", () => {
+  it("names the rate limit event as a quota event and the result event as none", () => {
+    const provider = createClaudeCodeProvider();
+
+    expect(provider.isQuotaEvent(claudeRateLimitEvent())).toBe(true);
+    expect(provider.isQuotaEvent({ type: "result" })).toBe(false);
+  });
+});
+
 describe("createClaudeCodeProvider run", () => {
   it("runs claude with the argv and the prompt on stdin, and gives the events and the facts", async () => {
     const events: AssistantEvent[] = [];

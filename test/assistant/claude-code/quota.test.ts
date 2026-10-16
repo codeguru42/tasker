@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunOutcome } from "../../../src/assistant/provider.js";
-import { overageStopOf, quotaStopOf } from "../../../src/assistant/claude-code/quota.js";
+import { isQuotaEvent, overageStopOf, quotaStopOf } from "../../../src/assistant/claude-code/quota.js";
 import {
   TEST_SESSION_ID,
   claudeOverageEvent,
@@ -440,5 +440,16 @@ describe("overageStopOf", () => {
     ["no rate_limit_info", { type: "rate_limit_event" }],
   ])("gives nothing and does not throw for %s", (_name, event) => {
     expect(overageStopOf(event, {})).toBeUndefined();
+  });
+});
+
+describe("isQuotaEvent", () => {
+  it.each<[string, AssistantEvent, boolean]>([
+    ["the captured rate limit event", claudeRateLimitEvent(), true],
+    ["a rate limit event with no rate_limit_info", { type: "rate_limit_event" }, true],
+    ["an assistant event", { type: "assistant" }, false],
+    ["a result event", { type: "result" }, false],
+  ])("gives the answer for %s", (_name, event, expected) => {
+    expect(isQuotaEvent(event)).toBe(expected);
   });
 });
