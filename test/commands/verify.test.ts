@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { verify } from "../../src/commands/verify.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { verifyRunDir } from "../../src/store/layout.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { latestTaskOf, withDataRootStore } from "../helpers/store.js";
 import { useVerifyFixture } from "../helpers/task-fixtures.js";
 
@@ -44,11 +44,9 @@ describe("tasker verify", () => {
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
-    const { code, out } = await runCommand(verify, "verify", "--help");
+    const { code, help } = await runHelp(verify, "verify");
 
     expect(code).toBe(0);
-    // Commander wraps the long lines of the help, so compare with single spaces.
-    const help = out.replace(/\s+/g, " ");
     expect(help).toContain(
       "Run the verify commands of the repo in the worktree of a task in executed and record the run: the task goes through verifying to awaiting_work_review, or to failed",
     );

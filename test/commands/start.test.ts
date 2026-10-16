@@ -7,7 +7,7 @@ import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { captureIo, runCommand } from "../helpers/cli.js";
+import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
 import { ghTokenAnswer, writeFakeGh } from "../helpers/fake-gh.js";
 import { taskNames } from "../helpers/git.js";
 import { spawnTasker, startLockHolder, waitUntil, waitUntilGone } from "../helpers/processes.js";
@@ -444,11 +444,9 @@ describe("start", () => {
   });
 
   it("prints the description of the command and of both options for --help", async () => {
-    const { code, out } = await runCommand(start, "start", "--help");
+    const { code, help } = await runHelp(start, "start");
 
     expect(code).toBe(0);
-    // Commander wraps the long lines of the help, so compare with single spaces.
-    const help = out.replace(/\s+/g, " ");
     expect(help).toContain(
       "Make a task for an issue and take it to workspace_ready: read the issue, make the clone, resolve the base, make the worktree and run bootstrap",
     );

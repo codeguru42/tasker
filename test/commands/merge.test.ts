@@ -4,7 +4,7 @@ import { merge } from "../../src/commands/merge.js";
 import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -170,11 +170,9 @@ describe("tasker merge", () => {
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
-    const { code, out } = await runCommand(merge, "merge", "--help");
+    const { code, help } = await runHelp(merge, "merge");
 
     expect(code).toBe(0);
-    // Commander wraps the long lines of the help, so compare with single spaces.
-    const help = out.replace(/\s+/g, " ");
     expect(help).toContain(
       "Land the work of a task in accepted on the base branch of origin with one fast-forward push: the task goes through merging to landed, or to failed. tasker does not wait for CI",
     );

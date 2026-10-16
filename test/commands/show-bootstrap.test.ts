@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { showBootstrap } from "../../src/commands/show-bootstrap.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { taskLogsDir } from "../../src/store/layout.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { useThreeRepoDataRoot } from "../helpers/config.js";
 import { dayAt, seedTasks, writeBootstrapLog } from "../helpers/store.js";
 
@@ -110,11 +110,9 @@ describe("show-bootstrap", () => {
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
-    const { code, out } = await runCommand(showBootstrap, "show-bootstrap", "--help");
+    const { code, help } = await runHelp(showBootstrap, "show-bootstrap");
 
     expect(code).toBe(0);
-    // Commander wraps the long lines of the help, so compare with single spaces.
-    const help = out.replace(/\s+/g, " ");
     expect(help).toContain("Print the bootstrap log of the task of an issue: the active task, else the newest one");
     expect(help).toContain("Use the repo with this key when two repos share the project of the issue");
   });

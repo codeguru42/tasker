@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { show } from "../../src/commands/show.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { issueKeyErrorMessage, useThreeRepoDataRoot } from "../helpers/config.js";
 import { taskNames } from "../helpers/git.js";
 import {
@@ -394,11 +394,9 @@ describe("show", () => {
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
-    const { code, out } = await runShow("--help");
+    const { code, help } = await runHelp(show, "show");
 
     expect(code).toBe(0);
-    // Commander wraps the long lines of the help, so compare with single spaces.
-    const help = out.replace(/\s+/g, " ");
     expect(help).toContain("Print the details of the task of an issue: the active task, else the newest one");
     expect(help).toContain("Use the repo with this key when two repos share the project of the issue");
   });

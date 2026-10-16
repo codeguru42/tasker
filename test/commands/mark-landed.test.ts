@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { markLanded } from "../../src/commands/mark-landed.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, eventsOf, latestTaskOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
 import {
@@ -133,11 +133,9 @@ describe("tasker mark-landed", () => {
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
-    const { code, out } = await runCommand(markLanded, "mark-landed", "--help");
+    const { code, help } = await runHelp(markLanded, "mark-landed");
 
     expect(code).toBe(0);
-    // Commander wraps the long lines of the help, so compare with single spaces.
-    const help = out.replace(/\s+/g, " ");
     expect(help).toContain(
       "Record that the work of a task in accepted, pushed or in_peer_review already landed on the base branch outside tasker: tasker fetches origin, the base must contain the task branch, and the task goes to landed. tasker never pushes",
     );

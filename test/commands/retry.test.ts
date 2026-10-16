@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { retry } from "../../src/commands/retry.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   answerStream,
@@ -204,11 +204,9 @@ describe("tasker retry", () => {
   });
 
   it("prints the description of the command and of its options for --help", async () => {
-    const { code, out } = await runCommand(retry, "retry", "--help");
+    const { code, help } = await runHelp(retry, "retry");
 
     expect(code).toBe(0);
-    // Commander wraps the long lines of the help, so compare with single spaces.
-    const help = out.replace(/\s+/g, " ");
     expect(help).toContain(
       "Move a task in failed back to the state before the step that failed, and run that step again",
     );
