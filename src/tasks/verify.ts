@@ -96,7 +96,9 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
           startedAt,
         },
         to: "failed",
-        message: verifyFailureMessage(result, log, config.limits.verifyTimeoutMin),
+        message:
+          `${verifyFailureMessage(result, log, config.limits.verifyTimeoutMin)}\n` +
+          `Run tasker refine ${task.issueKey} "<feedback>" to plan the fix, or tasker retry ${task.issueKey} to run the commands again.`,
       };
     }
     const allCommands = [...commands];
