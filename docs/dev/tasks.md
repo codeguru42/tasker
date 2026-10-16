@@ -227,7 +227,7 @@ The command has these limits:
 
 `tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The state that the task left when it failed is the origin. A fixed table gives the target and the next command for each origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed` to `provisioning`. An origin that the table does not hold gets no retry, and the command refuses it.
 
-The move, the delete of the sessions, the todo marks, the fix turn and one `retry` event share one transaction. The `retry` event has the data `{ origin, target, resumeExecute, from, to }` and takes the place of the `transition` event for this move. A retry of a task that failed in `provisioning` does not move the task, so it writes the `retry` event alone, with `{ origin, target, resumeExecute }`.
+The move, the delete of the sessions, the todo marks, the fix turn and one `retry` event share one transaction. The `retry` event has the data `{ origin, target, resumeExecute, from, to }` and takes the place of the `transition` event for this move. For the origin `provisioning`, retry writes the `retry` event alone, with `{ origin, target, resumeExecute }`, because no move takes place.
 
 These reasons explain its rules:
 
