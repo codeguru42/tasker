@@ -150,7 +150,7 @@ In `reviewed`, the open findings of the latest review go to the plan session, so
 - `[<feedback>]`: your feedback on the newest plan revision. Quote it as one argument. It is required in `awaiting_plan_review`. In `reviewed`, it is optional and is your guidance on the open findings.
 - `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
 
-Each revision is a complete plan. When the new revision leaves out a question of the revision before it, that question counts as answered by the feedback. `tasker show-questions` shows the answer.
+Each revision is a complete plan. When the new revision leaves out a question of the revision before it, that question counts as answered by the feedback. `tasker show-questions` shows the answer. A promotion from `reviewed` with no feedback gives that question no answer text. `tasker show-questions` then prints `answered in v<N>`.
 
 The session keeps the provider, model and effort that it started with, also after the configuration changed. tasker reads the plan file of the newest revision from disk and the commits of the task branch, and gives both to the assistant in the prompt.
 

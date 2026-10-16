@@ -126,7 +126,7 @@ The steps run in this order.
 3. The command fills the prompt, with the open findings in the context block for a promotion, archives the template and continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for the recorded model. The session is already recorded, so refine records no session.
 4. The command moves the task to `refining` and runs the assistant. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
 
-[The refine prompt](assistants.md#the-refine-prompt) says what the prompt asks for. The new revision is a complete plan. A question that it leaves out counts as answered by the feedback, and the store computes this. The next revision goes to the next free version, and its transcript goes to the file of that version.
+[The refine prompt](assistants.md#the-refine-prompt) says what the prompt asks for. The new revision is a complete plan. A question that it leaves out counts as answered by the feedback, and the store computes this. A promotion with no feedback gives such a question no answer text ([the `plan_revisions` table](data-root.md#plan_revisions-table)). The next revision goes to the next free version, and its transcript goes to the file of that version.
 
 A promotion keeps the findings out of the feedback and leaves them open:
 
