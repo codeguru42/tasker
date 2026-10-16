@@ -86,6 +86,16 @@ export function planTranscriptPath(
   return join(taskTranscriptsDir(dataRoot, task), `plan-v${version}.jsonl`);
 }
 
+// The transcript of the run of one review: one JSON event on each line, opened for append. Each writer takes the
+// path from here. It makes no file.
+export function reviewTranscriptPath(
+  dataRoot: string,
+  task: Pick<Task, "issueKey" | "attempt">,
+  number: number,
+): string {
+  return join(taskTranscriptsDir(dataRoot, task), `review-${number}.jsonl`);
+}
+
 // The transcript of the execute runs of one plan version: one JSON event on each line, opened for append, so the
 // runs of one revision share one history. Each writer takes the path from here. It makes no file.
 export function executeTranscriptPath(
