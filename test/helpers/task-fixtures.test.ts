@@ -8,6 +8,7 @@ import { issueProviderFor } from "../../src/issues/provider.js";
 import { baseRevisionOf } from "../../src/tasks/base-revision.js";
 import { dataRootLayout, planRevisionPath } from "../../src/store/layout.js";
 import { changedPaths } from "../../src/vcs/git/changes.js";
+import { taskBranchRevision } from "../../src/vcs/git/worktree.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
@@ -32,6 +33,7 @@ import {
   taskRefOf,
   taskWorkspaceState,
   TO_WORK_REVIEW,
+  useAcceptedTask,
   useAssistantRunFixture,
   useExecuteFixture,
   useRefineFixture,
@@ -438,6 +440,26 @@ describe("expectCommandRefused", () => {
     };
 
     await expect(expectCommandRefused(started, run, "x")).rejects.toThrow();
+  });
+});
+
+describe("useAcceptedTask", () => {
+  it("gives a task in accepted with the revision that accept recorded", async () => {
+    const accepted = await useAcceptedTask();
+    const branch = String(accepted.task.branch);
+
+    expect(accepted.task.state).toBe("accepted");
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("accepted");
+    expect(accepted.revision).toBe(await taskBranchRevision({ clone: accepted.clone, env: accepted.env, branch }));
+    expect(
+      await changedPaths({
+        clone: accepted.clone,
+        env: accepted.env,
+        branch,
+        baseRevision: "refs/remotes/origin/main",
+      }),
+    ).toEqual(["work.txt"]);
+    expect(await accepted.origin.branchHead("main")).not.toBe(accepted.revision);
   });
 });
 

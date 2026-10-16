@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TaskStore } from "../../src/store/store.js";
 import {
   assertTaskState,
+  requireBase,
   requireBaseRevision,
   requireBranch,
   requireWorktree,
@@ -13,7 +14,7 @@ import { useTempDir } from "../helpers/temp.js";
 
 function seeded(
   state: string,
-  extra: { branch?: string; worktreePath?: string } = {},
+  extra: { base?: string; branch?: string; worktreePath?: string } = {},
 ): { dataRoot: string; id: number } {
   const dataRoot = useTempDir("tasker-task-state-");
   const [task] = seedTasks(dataRoot, [
@@ -70,6 +71,7 @@ describe("taskInState", () => {
 });
 
 const worktreeOf = (store: TaskStore, id: number) => requireWorktree(taskById(store, id));
+const baseOf = (store: TaskStore, id: number) => requireBase(taskById(store, id));
 const branchOf = (store: TaskStore, id: number) => requireBranch(taskById(store, id));
 const requiredBaseRevisionOf = (store: TaskStore, id: number) => requireBaseRevision(store, taskById(store, id));
 
@@ -97,6 +99,20 @@ describe("requireBranch", () => {
     const { dataRoot, id } = seeded("awaiting_work_review");
     withDataRootStore(dataRoot, (store) =>
       expect(() => branchOf(store, id)).toThrow("the task of codeguru42/tasker#5 has no branch"),
+    );
+  });
+});
+
+describe("requireBase", () => {
+  it("gives the base", () => {
+    const { dataRoot, id } = seeded("accepted", { base: "main" });
+    withDataRootStore(dataRoot, (store) => expect(baseOf(store, id)).toBe("main"));
+  });
+
+  it("throws for a task without a base", () => {
+    const { dataRoot, id } = seeded("accepted");
+    withDataRootStore(dataRoot, (store) =>
+      expect(() => baseOf(store, id)).toThrow("the task of codeguru42/tasker#5 has no base"),
     );
   });
 });

@@ -1,6 +1,7 @@
 import { existsSync, rmSync } from "node:fs";
 import { delimiter } from "node:path";
 import { expect, onTestFinished } from "vitest";
+import { accept } from "../../src/commands/accept.js";
 import { start } from "../../src/commands/start.js";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import type { IssueRef } from "../../src/issue-key/ref.js";
@@ -386,6 +387,25 @@ export async function useWorkReviewTask(
   await startTaskWithCommits(fixture, 5, files);
   const task = walkTask(fixture.dataRoot, fixture.repoKey, key, TO_WORK_REVIEW);
   return { ...fixture, key, task, clone: repoPaths(fixture.dataRoot, fixture.repoKey).clone, env: fixture.origin.env };
+}
+
+export interface AcceptedTask extends WorkReviewTask {
+  // The tip of the task branch that tasker accept recorded.
+  revision: string;
+}
+
+// Runs useWorkReviewTask(options), then tasker accept for the task, and gives the task in accepted. It throws when the
+// accept fails. Call it inside a test.
+export async function useAcceptedTask(options?: Parameters<typeof useWorkReviewTask>[0]): Promise<AcceptedTask> {
+  const work = await useWorkReviewTask(options);
+  const result = await runCommand(accept, "accept", work.key, "--repo", work.repoKey);
+  if (result.code !== 0) throw new Error(`tasker accept failed: ${result.err}`);
+  const event = eventsOf(work.dataRoot, work.key)
+    .filter((e) => e.type === "accepted")
+    .at(-1);
+  const revision = (event?.data as { revision?: unknown } | undefined)?.revision;
+  if (typeof revision !== "string") throw new Error("tasker accept wrote no accepted event");
+  return { ...work, task: latestTaskOf(work.dataRoot, work.key), revision };
 }
 
 export interface ReviewFixture extends WorkReviewTask {
