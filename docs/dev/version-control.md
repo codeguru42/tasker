@@ -54,7 +54,7 @@ Limit: a program that git starts and that opens `/dev/tty` by itself, for exampl
 
 The marker is the file `bare-repo.incomplete` next to the clone folder `bare-repo` (see [data-root.md](data-root.md#folders)). Provision writes it before `git init` and removes it after the first fetch of a fresh clone. While the marker exists, the next provision takes the recovery path: it deletes the clone folder, with every file that a person put there, and clones again. The marker and the parent folder stay.
 
-A live sandboxed run can block a provision of another task in the same repo (see the limits in [assistants.md](assistants.md#sandbox)).
+A live sandboxed run can block a provision of another task in the same repo (see [The clone configuration](#the-clone-configuration)).
 
 A complete clone has no marker and is not cloned again. This is the path of a complete clone. Provision applies the configuration and fetches. A change to `vcs.config` or to `remote` takes effect at the next provision.
 
@@ -77,7 +77,7 @@ Provision finds a held lock from the `config.lock` file and never from the text 
 
 ### The clone configuration
 
-Provision first reads the local lines of each key with `git config --local --null --get-all`. A read takes no lock. When the key has one local line with the wanted value, or has no line and the key is removed, provision writes nothing for this key. Else it writes the value with `git config --replace-all`, or removes the key with `--unset-all`. Values compare as exact text, so a value that differs only in case is written. The reason: a live sandboxed run holds a `config.lock` placeholder in the clone, and a write fails while that file exists. `--replace-all` leaves exactly one local line, even when a person added more with `--add`. Only the local configuration of the clone changes.
+Provision first reads the local lines of each key with `git config --local --null --get-all`. A read takes no lock. When the key has one local line with the wanted value, or has no line and the key is removed, provision writes nothing for this key. Else it writes the value with `git config --replace-all`, or removes the key with `--unset-all`. Values compare as exact text, so a value that differs only in case is written. The reason: a live sandboxed run holds a `config.lock` placeholder in the clone, and a write fails while that file exists (see the limits in [assistants.md](assistants.md#sandbox)). `--replace-all` leaves exactly one local line, even when a person added more with `--add`. Only the local configuration of the clone changes.
 
 - `remote.origin.url` for a relative local path has the form that `git clone` writes.
 - The fetch refspec makes `origin/<branch>` refs.
