@@ -21,6 +21,7 @@ import {
   latestTaskOf,
   lockNames,
   newReview,
+  newVerifyRun,
   readRunMarker,
   reviewSessionRows,
   seedReview,
@@ -279,6 +280,65 @@ describe("seedVerifyRun", () => {
     });
 
     expect(states).toEqual(["awaiting_work_review", "failed"]);
+  });
+});
+
+describe("newVerifyRun", () => {
+  const setup = () => {
+    const dataRoot = join(useTempDir("tasker-seed-"), "data");
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "verifying", at: dayAt(1) }]);
+    return { dataRoot, task };
+  };
+
+  it("gives the next number and the defaults", () => {
+    const { dataRoot, task } = setup();
+
+    const run = withDataRootStore(dataRoot, (store) => newVerifyRun(store, task.id));
+
+    expect(run).toEqual({
+      number: 1,
+      result: "passed",
+      commands: ["npm run check"],
+      failingCommand: null,
+      startedAt: dayAt(1),
+      endedAt: dayAt(1),
+    });
+  });
+
+  it("gives the number after the stored runs", () => {
+    const { dataRoot, task } = setup();
+
+    const run = withDataRootStore(dataRoot, (store) => {
+      seedVerifyRun(store, dataRoot, task);
+      return newVerifyRun(store, task.id);
+    });
+
+    expect(run.number).toBe(2);
+  });
+
+  it("gives the number of the change", () => {
+    const { dataRoot, task } = setup();
+
+    const run = withDataRootStore(dataRoot, (store) => newVerifyRun(store, task.id, { number: 5 }));
+
+    expect(run.number).toBe(5);
+  });
+
+  it("replaces only the keys of the change", () => {
+    const { dataRoot, task } = setup();
+
+    const run = withDataRootStore(dataRoot, (store) =>
+      newVerifyRun(store, task.id, { result: "failed", failingCommand: 1 }),
+    );
+
+    expect(run).toEqual({
+      number: 1,
+      result: "failed",
+      commands: ["npm run check"],
+      failingCommand: 1,
+      startedAt: dayAt(1),
+      endedAt: dayAt(1),
+    });
   });
 });
 
