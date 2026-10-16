@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { fetchOrigin } from "../../../src/vcs/git/changes.js";
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "../../../src/vcs/git/publish.js";
@@ -413,13 +414,30 @@ describe("publish, land and delete", () => {
     });
 
     describe("errors", () => {
-      it("names the base and the revision when the revision is not a fast-forward", async () => {
+      it("refuses a revision that does not build on the tip of the base, with no push", async () => {
+        const old = await origin.branchHead("main");
+        const tip = await origin.addCommit("main");
+        await fetchOrigin({ clone, env, sshKey: undefined });
+        const revision = await addCloneCommit(clone, env, BRANCH, old);
+
+        const error = await failureOf(land({ revision }), Error);
+
+        expect(error.message).toBe(
+          `cannot land ${revision} on the base branch: main: the revision does not build on the tip of the base on origin: ${tip}`,
+        );
+        expect(pushes()).toEqual([]);
+        expect(await origin.branchHead("main")).toBe(tip);
+        expectNoTokenFile();
+      });
+
+      it("fails before the push when the clone does not have the tip of the base", async () => {
         const revision = await addCloneCommit(clone, env, BRANCH);
         const moved = await origin.addCommit("main");
 
         const error = await failureOf(land({ revision }), Error);
 
         expect(error.message.startsWith(`cannot land ${revision} on the base branch: main`)).toBe(true);
+        expect(pushes()).toEqual([]);
         expect(await origin.branchHead("main")).toBe(moved);
         expectNoTokenFile();
       });
