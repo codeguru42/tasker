@@ -58,6 +58,7 @@ export class LockBusyError extends Error {
 const RETRY_MS = 250;
 
 // Tries the lock every RETRY_MS for at most waitMs. waitMs 0 means one try.
+// After the wait for the rest of waitMs, the next try is the last try.
 // An error of fn wins over an error of unlock.
 export async function withLock<T>(
   store: LockStore,
@@ -70,11 +71,13 @@ export async function withLock<T>(
     throw new RangeError(`the wait for the lock ${name} must be a finite number of 0 or more ms, not ${waitMs}`);
   }
   const deadline = Date.now() + waitMs;
+  let last = false;
   for (;;) {
     const attempt = store.tryLock(name);
     if (attempt.held) break;
     const left = deadline - Date.now();
-    if (left <= 0) throw new LockBusyError(name, attempt.pid, attempt.acquiredAt);
+    if (last || left <= 0) throw new LockBusyError(name, attempt.pid, attempt.acquiredAt);
+    last = left <= RETRY_MS;
     await new Promise((done) => setTimeout(done, Math.min(RETRY_MS, left)));
   }
   let result: T;
