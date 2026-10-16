@@ -118,7 +118,7 @@ The steps run in this order.
 
 Its checks cover the task, the state, the pinned revision and the newest plan revision. The overlap warning comes after the checks and before the write.
 
-The write is one transaction. It sets the approval time of the revision, appends one `approved` event with the data `{ version, openQuestions, from, to }`, and moves the task to `approved`. The `approved` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
+The write is one transaction. It sets the approval time of the revision, appends one `approved` event with the data `{ version, openQuestions, from, to }`, and moves the task to `approved`. The `approved` event takes the place of the `transition` event for this move.
 
 Open questions do not stop an approval. The operator decides, and the count in the event and in the output makes the choice visible.
 
@@ -126,7 +126,7 @@ The approval lives on the revision, not on the task. A task has one approved rev
 
 `tasker unapprove` takes back the approval of a task in `approved`. The task goes back to `awaiting_plan_review`. Its checks cover the task, the state and the pinned revision.
 
-The write is one transaction. It clears the approval time of the pinned revision, appends one `unapproved` event with the data `{ version, from, to }`, and moves the task to `awaiting_plan_review`. The `unapproved` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing. An older approved revision stays approved, because the command clears only the pinned one.
+The write is one transaction. It clears the approval time of the pinned revision, appends one `unapproved` event with the data `{ version, from, to }`, and moves the task to `awaiting_plan_review`. The `unapproved` event takes the place of the `transition` event for this move. An older approved revision stays approved, because the command clears only the pinned one.
 
 The command works only in `approved`. The state alone sets the limit "before execute starts", because `tasker execute` moves the task out of `approved` before it spends anything.
 
@@ -143,7 +143,7 @@ The steps run in this order.
 5. The command acts on each outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says, with the phase name `executing`. An error after the start of the run also moves the task to `failed`, with the prefix `executing failed:`.
 6. After the last turn, the command writes the `permission_denials` event when a turn had a denial. Then it moves the task to `executed`.
 
-The move to `executed` appends one `executed` event with the data `{ version, prompts, from, to }`. The `executed` event takes the place of the `transition` event for this move. `prompts` holds the versions of the prompts that the run sent. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
+The move to `executed` appends one `executed` event with the data `{ version, prompts, from, to }`. The `executed` event takes the place of the `transition` event for this move. `prompts` holds the versions of the prompts that the run sent.
 
 The reasons:
 
@@ -222,7 +222,7 @@ The command has these limits:
 
 It holds the repo lock for the fetch, as [the locks table](data-root.md#locks-table) requires. Its checks cover the task, the state, the worktree, the branch, the stored base revision and the fetch of `origin` with the read of the base tip. The fetch can still move the refs of `origin` in the clone, also for a refused accept.
 
-The write is one transaction. It appends one `accepted` event with the data `{ revision, baseTip, from, to }` and moves the task to `accepted`. The `accepted` event takes the place of the `transition` event for this move. The state machine checks the edge in the same transaction, so an illegal edge writes nothing.
+The write is one transaction. It appends one `accepted` event with the data `{ revision, baseTip, from, to }` and moves the task to `accepted`. The `accepted` event takes the place of the `transition` event for this move.
 
 These reasons explain its rules:
 

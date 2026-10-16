@@ -289,6 +289,6 @@ flowchart LR
 
 ## Code
 
-If the edge is illegal, nothing is written: no state change and no event. [data-root.md](dev/data-root.md#writes-from-more-than-one-process) gives the transaction rule.
+[data-root.md](dev/data-root.md#writes-from-more-than-one-process) gives the transaction rule of a move and of an illegal edge.
 
 The event of a failure records the state that the task failed in. `tasker retry` reads that state to pick its target.
