@@ -45,3 +45,9 @@ export function promotionContextText(
 ): string {
   return `Review ${review.number} read the committed work at ${review.revision} and found these open findings. ${verifySentence(verifyRun)} Revise the plan so that the next execute run fixes each open finding. The work that is done stays.\n${formatFindings(open)}`;
 }
+
+// The context of a refine from the feedback of the operator on the committed work at revision. verifyRun is the
+// number of the latest verify run, if any.
+export function reviewFeedbackContextText(revision: string, verifyRun: number | undefined): string {
+  return `The operator read the committed work at ${revision} and asks for a revision of the plan. ${verifySentence(verifyRun)} The work that is done stays. Plan only the work that is still needed on top of it.`;
+}
