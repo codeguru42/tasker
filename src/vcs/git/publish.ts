@@ -99,7 +99,9 @@ export async function landOnBase(options: RemoteOptions & { base: string; revisi
     throw landError(revision, base, "the base is a local branch");
   }
   const summary = `cannot land ${revision} on the base branch: ${base}`;
-  // The read refuses a base that origin does not have now. A base that someone deletes before the push is made again at revision.
+  // The push uses a lease on the tip that this read gives. The push fails when the base moved or
+  // is gone after the read. A lease skips the fast-forward check of git, so the ancestry check
+  // below runs before the push.
   const tip = await orFailed(summary, () => remoteTip({ remote, branch: base, sshKey, env }));
   if (tip.state === "absent") {
     throw landError(revision, base, "the base branch does not exist on origin");
@@ -112,12 +114,10 @@ export async function landOnBase(options: RemoteOptions & { base: string; revisi
     throw landError(revision, base, `the revision does not build on the tip of the base on origin: ${tip.revision}`);
   }
   await orFailed(summary, () =>
-    pushWithToken(["origin", `${revision}:${LOCAL_PREFIX}${base}`], {
-      location: { gitDir: clone },
-      publishTokens,
-      sshKey,
-      env,
-    }),
+    pushWithToken(
+      [`--force-with-lease=${LOCAL_PREFIX}${base}:${tip.revision}`, "origin", `${revision}:${LOCAL_PREFIX}${base}`],
+      { location: { gitDir: clone }, publishTokens, sshKey, env },
+    ),
   );
 }
 
