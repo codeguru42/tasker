@@ -348,9 +348,9 @@ Accepts the work of a task in the state `awaiting_work_review`: `tasker accept <
 - `<issue>`: the issue key of the task.
 - `--repo <key>`: uses the repo with this key. Use it when two repos share the project of the issue.
 
-The command fetches `origin`. Then it makes sure that the branch of the task contains the tip of the base on `origin`. For a local base, the tip is the tip of the local branch in the clone. The command reads the head of the worktree, so an uncommitted change does not count. No command brings the branch current yet.
+The command fetches `origin`. Then it makes sure that the branch of the task contains the tip of the base on `origin`. For a local base, the tip is the tip of the local branch in the clone. The command reads the tip of the task branch in the clone, so an uncommitted change or a commit that is not on the task branch does not count. No command brings the branch current yet.
 
-On success, the command prints the line `accepted <issue key> at <revision>` on stdout. The revision is the head of the worktree.
+On success, the command prints the line `accepted <issue key> at <revision>` on stdout. The revision is the tip of the task branch.
 
 The command writes one event of the type `accepted` with the data `{ revision, baseTip, from, to }`. It writes no `transition` event.
 
