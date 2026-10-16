@@ -13,8 +13,9 @@ export interface FixtureChild {
   // The first line of stdout, without the newline. It rejects, with the stderr of the child, when
   // the child ends first.
   firstLine: Promise<string>;
-  // Resolves on the exit event. Node reaps the child before it emits exit, so the pid is gone.
-  exited: Promise<void>;
+  // Resolves with the exit code and the signal after the child exits and its stdout and stderr close.
+  // Node reaps the child before, so the pid is gone.
+  exited: Promise<{ code: number | null; signal: NodeJS.Signals | null }>;
   // The full text so far.
   stdout: () => string;
   stderr: () => string;
@@ -29,7 +30,9 @@ export function startFixture(fixture: string, args: readonly string[]): FixtureC
   savePid(pid);
   let stdout = "";
   let stderr = "";
-  const exited = new Promise<void>((resolve) => child.on("exit", () => resolve()));
+  const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) =>
+    child.on("close", (code, signal) => resolve({ code, signal })),
+  );
   const firstLine = new Promise<string>((resolve, reject) => {
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
@@ -45,7 +48,7 @@ export function startFixture(fixture: string, args: readonly string[]): FixtureC
   });
   // The rejection after a resolve does nothing. This stops an unhandled rejection of a killed child.
   firstLine.catch(() => {});
-  return { pid, firstLine, exited, stdout: () => "", stderr: () => "" };
+  return { pid, firstLine, exited, stdout: () => stdout, stderr: () => stderr };
 }
 
 export interface LockHolder {
@@ -61,7 +64,7 @@ export function startLockHolder(dbPath: string, name: string, goPath?: string): 
   const child = startFixture("lock-holder.ts", [dbPath, name, ...(goPath ? [goPath] : [])]);
   const attempt = child.firstLine.then((line) => JSON.parse(line) as LockAttempt);
   attempt.catch(() => {});
-  return { pid: child.pid, attempt, exited: child.exited };
+  return { pid: child.pid, attempt, exited: child.exited.then(() => undefined) };
 }
 
 // Starts test/fixtures/write-lock-holder.ts. It resolves when the child holds the write lock of dbPath.
