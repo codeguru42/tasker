@@ -3,7 +3,13 @@ import { existsSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { useTempDir } from "./temp.js";
-import { usePathWithout, useFakeSandboxBin, writeFakeCommand, writeFakeSandboxPrograms } from "./fake-commands.js";
+import {
+  pathWithFirst,
+  usePathWithout,
+  useFakeSandboxBin,
+  writeFakeCommand,
+  writeFakeSandboxPrograms,
+} from "./fake-commands.js";
 
 const runs = (program: string, folder: string) => spawnSync(program, [], { env: { PATH: folder } });
 
@@ -80,5 +86,19 @@ describe("usePathWithout", () => {
     const path = [other, "/no/such/folder"].join(delimiter);
 
     expect(usePathWithout("claude", path)).toBe(path);
+  });
+});
+
+describe("pathWithFirst", () => {
+  it("puts the folder first on the PATH of the base env", () => {
+    expect(pathWithFirst("/first", { PATH: `/a${delimiter}/b` })).toBe(`/first${delimiter}/a${delimiter}/b`);
+  });
+
+  it("gives the folder alone when the base env has no PATH", () => {
+    expect(pathWithFirst("/first", {})).toBe("/first");
+  });
+
+  it("gives the folder alone when the PATH of the base env is empty", () => {
+    expect(pathWithFirst("/first", { PATH: "" })).toBe("/first");
   });
 });
