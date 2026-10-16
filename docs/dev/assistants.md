@@ -207,7 +207,7 @@ The open questions of a refine run also stand in an untrusted tag. The plan sess
 
 The execute prompts use the same rule for these untrusted tags: `approved-plan`, `todos`, `resolved-questions`, `current-todo`, `verify-failure` and `verify-log`. The plan session wrote the plan, the todos and the questions from the issue text of a third party. The verify failure and its log can quote code that the task wrote, and the output of that code. The commit rules are not in a tag, because tasker writes them.
 
-The findings in `earlier-reviews` of the review prompt and in `context` of the refine prompt are untrusted, because earlier runs wrote them from the text of the branch. The block `branch-commits` of the refine prompt and the review prompt is untrusted, because an execute run wrote it from the issue text of a third party.
+The findings in `earlier-reviews` of the review prompt and in `context` of the refine prompt are untrusted, because earlier runs wrote them from the text of the branch. An error in `context` is untrusted too, because it can quote the output of the commands of the branch. The block `branch-commits` of the refine prompt and the review prompt is untrusted, because an execute run wrote it from the issue text of a third party.
 
 ### What the plan prompt asks for
 
@@ -239,7 +239,7 @@ The todos run in the order of their dependencies. The plan check refuses a depen
 
 Tasker reads the plan back from its plan file. As a result, the revision does not depend on how much of a long session the assistant still remembers.
 
-The context block says why the operator asks for a revision and what tasker knows about the work. One template serves each state, because each refine fills both blocks. The context holds one plain line, the open findings of a review, or the line of the feedback of the operator on the committed work. The feedback holds the words of the operator or `None.`.
+The context block says why the operator asks for a revision and what tasker knows about the work. One template serves each state, because each refine fills both blocks. The context holds one plain line, the open findings of a review, the line of the feedback of the operator on the committed work, or the origin and the error of a failure. The feedback holds the words of the operator or `None.`.
 
 The branch commits go in the prompt. An execute run is a separate session, so the refine session has not seen them. Their work is done, and the revision plans only the work that is still needed.
 

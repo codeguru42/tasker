@@ -134,9 +134,11 @@ The read takes no repo lock. It changes nothing in the clone, and a wait for the
 
 `tasker refine` also runs on a task in `reviewed`. This is a promotion: the open findings of the latest review go to the plan session, and the next revision has the source `review`. The feedback is optional in `reviewed`, and it is required in `awaiting_plan_review`.
 
+`tasker refine` also runs on a task in `failed` that has a plan revision. A failure that needs a change of the plan goes through the same loop as a review finding. The context block gives the origin of the failure ([Retry](#retry) defines the origin) and the error of the failure. The feedback is required, because it is the instruction for the fix. The revision has the source `refine`.
+
 The steps run in this order.
 
-1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it reads a file. In `reviewed`, it also checks that the latest review has an open finding. A refused refine changes nothing, as the intro says, so the operator can fix the cause and run the same command again.
+1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it reads a file. In `reviewed`, it also checks that the latest review has an open finding. In `failed`, the error for a missing plan revision names the origin and `tasker retry`. A refused refine changes nothing, as the intro says, so the operator can fix the cause and run the same command again.
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base revision and the commits of the task branch.
 3. The command fills the prompt, with the open findings in the context block for a promotion, archives the template and continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for the recorded model. The session is already recorded, so refine records no session.
 4. The command moves the task to `refining` and runs the assistant. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
