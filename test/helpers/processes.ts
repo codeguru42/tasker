@@ -15,6 +15,9 @@ export interface FixtureChild {
   firstLine: Promise<string>;
   // Resolves on the exit event. Node reaps the child before it emits exit, so the pid is gone.
   exited: Promise<void>;
+  // The full text so far.
+  stdout: () => string;
+  stderr: () => string;
 }
 
 // Starts test/fixtures/<fixture> through tsx and saves its pid with savePid.
@@ -42,7 +45,7 @@ export function startFixture(fixture: string, args: readonly string[]): FixtureC
   });
   // The rejection after a resolve does nothing. This stops an unhandled rejection of a killed child.
   firstLine.catch(() => {});
-  return { pid, firstLine, exited };
+  return { pid, firstLine, exited, stdout: () => "", stderr: () => "" };
 }
 
 export interface LockHolder {

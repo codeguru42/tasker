@@ -182,6 +182,32 @@ describe("startFixture", () => {
       "unable to open database file",
     );
   });
+
+  it("gives the exit code and the signal", async () => {
+    const dbPath = join(useTempDir("tasker-fixture-"), "tasker.db");
+    const child = startFixture("lock-holder.ts", [dbPath, "test-lock"]);
+    await child.firstLine;
+
+    process.kill(child.pid, "SIGTERM");
+
+    await expect(child.exited).resolves.toEqual({ code: null, signal: "SIGTERM" });
+  });
+
+  it("gives the full stdout", async () => {
+    const dbPath = join(useTempDir("tasker-fixture-"), "tasker.db");
+    const child = startFixture("lock-holder.ts", [dbPath, "test-lock"]);
+    await child.firstLine;
+
+    expect(child.stdout()).toBe(JSON.stringify({ held: true }) + "\n");
+  });
+
+  it("gives the stderr after the exit", async () => {
+    const dbPath = join(useTempDir("tasker-fixture-"), "missing", "tasker.db");
+    const child = startFixture("lock-holder.ts", [dbPath, "test-lock"]);
+
+    await expect(child.exited).resolves.toEqual({ code: 1, signal: null });
+    expect(child.stderr()).toContain("unable to open database file");
+  });
 });
 
 describe("startWriteLockHolder", () => {
