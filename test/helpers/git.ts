@@ -303,6 +303,31 @@ export function gitRecorderEnv(dir: string, base: NodeJS.ProcessEnv): { env: Nod
   return { env: { ...base, PATH: path }, log };
 }
 
+// Writes a git wrapper into <dir>/gitbin-before-push. When an argument of a call is push, the
+// wrapper first runs command. If command fails, the wrapper exits with 1 and the push does not
+// start. Then it runs the real git. The commands in command must call the real git by its path
+// (realCommandPath("git")). A plain git runs this wrapper again, because the wrapper is first on
+// PATH. The wrapper runs the real git, not the recorder, so a push does not show in a git log.
+// It returns base with that folder first on PATH. In a bare clone, push is not the first
+// argument, so the wrapper looks at each argument.
+export function gitBeforePushEnv(dir: string, base: NodeJS.ProcessEnv, command: readonly string[]): NodeJS.ProcessEnv {
+  const bin = join(dir, "gitbin-before-push");
+  writeFakeGit(
+    bin,
+    [
+      'for arg in "$@"; do',
+      '  if [ "$arg" = push ]; then',
+      `    ${command.map(shellQuote).join(" ")} || exit 1`,
+      "    break",
+      "  fi",
+      "done",
+      `exec ${shellQuote(realCommandPath("git"))} "$@"`,
+    ].join("\n"),
+  );
+  const path = base.PATH === undefined || base.PATH === "" ? bin : `${bin}${delimiter}${base.PATH}`;
+  return { ...base, PATH: path };
+}
+
 // Writes a git wrapper into binDir. It runs the real git with the same arguments. Then it exits
 // with 1 when the first argument is subcommand, and else with the exit code of the real git.
 // The real step finishes first, so a test sees a step that fails after it changed the worktree.

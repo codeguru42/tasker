@@ -10,12 +10,13 @@ import {
   taskWorktreePath,
 } from "../../src/vcs/git/worktree.js";
 import { failureOf } from "./errors.js";
-import { readArgLog } from "./fake-commands.js";
+import { readArgLog, realCommandPath } from "./fake-commands.js";
 import {
   addCloneCommit,
   commitInWorktree,
   GIT_TEST_IDENTITY,
   gitCloneTokens,
+  gitBeforePushEnv,
   gitRecorderEnv,
   gitTestEnv,
   type GitOrigin,
@@ -296,5 +297,25 @@ describe("gitRecorderEnv", () => {
     const dir = useTempDir("tasker-recorder-");
     const { env } = gitRecorderEnv(dir, { HOME: dir });
     expect(env.PATH).toBe(join(dir, "gitbin"));
+  });
+});
+
+describe("gitBeforePushEnv", () => {
+  it("puts the wrapper first on the PATH of the base env and keeps the other values", () => {
+    const dir = useTempDir("tasker-before-push-");
+    const base = { ...gitTestEnv(dir), PATH: `/other${delimiter}${String(process.env.PATH)}`, MARK: "kept" };
+    const env = gitBeforePushEnv(dir, base, [realCommandPath("true")]);
+    expect(env.PATH).toBe(`${join(dir, "gitbin-before-push")}${delimiter}${base.PATH}`);
+    expect(env.MARK).toBe("kept");
+  });
+
+  it("runs the command before a push and not before another call", async () => {
+    const dir = useTempDir("tasker-before-push-");
+    const marker = join(dir, "marker");
+    const env = gitBeforePushEnv(dir, gitTestEnv(dir), [realCommandPath("touch"), marker]);
+    await runGit(["version"], { cwd: dir, env });
+    expect(existsSync(marker)).toBe(false);
+    await failureOf(runGit(["push"], { cwd: dir, env }), GitError);
+    expect(existsSync(marker)).toBe(true);
   });
 });
