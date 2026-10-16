@@ -53,7 +53,7 @@ A case is one kind of input that a function serves. Examples are a role of an as
 - These rules are the goal for each commit on the branch when the work lands. They also apply after a rebase onto a newer base branch. A rebase can break a commit under the tip of the branch, also when the tip passes.
 - For example, an earlier ticket landed a new configuration rule. A later ticket rebased onto it with `tasker update-branch`. The test configurations of the later ticket did not obey the new rule, and `tasker verify` failed. The agent fixed the tests in a new commit on top of the branch. As a result, the implementation commits under that fix failed `npm run check` on the base branch.
 - A `docs:` commit has no rule for `npm run check`.
-- tasker does not check these rules. An agent checks each commit only after a failed `tasker verify`. When `tasker verify` passes, nobody checks the commits under the tip. [docs/dev/orchestration.md](orchestration.md) gives the steps of the agent, in "The broken-commit steps".
+- tasker does not check these rules. An agent checks each commit only after a failed `tasker verify`. When `tasker verify` passes, nobody checks the commits under the tip. docs/dev/orchestration.md gives the steps of the agent, in [The broken-commit steps](orchestration.md#the-broken-commit-steps).
 
 ## Docs
 

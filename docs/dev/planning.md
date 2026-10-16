@@ -20,7 +20,7 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 ## The body of an issue
 
 - An issue is complete by itself. It gives the rules, the shapes, the signatures, the payloads, the lists, the edge cases, the states and the diagrams that the work needs.
-- The agent of a ticket uses no other source, as [the Limits of orchestration.md](orchestration.md#limits) say. [The design-gap rule](orchestration.md#run-one-ticket) says who answers a gap.
+- The agent of a ticket uses no other source, as [the Limits of orchestration.md](orchestration.md#limits) say. [The design-gap rule](orchestration.md#the-design-gap-rule) says who answers a gap.
 - An issue puts each table, list or diagram in its body. It does not say "as described elsewhere". The plan session that tasker starts for a ticket sees only the issue and the repo. A phrase such as "the diagrams of the design" with no diagram is a gap.
 - An issue names no source outside the repo and GitHub.
 - An issue that lists files to install names the source of each file. On #119, the plan asked where four skills come from, because the issue named only the target folder.
@@ -30,7 +30,7 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 - Each issue has a "Docs" section. The section names each doc to update with the code. A Docs item asks only for what [rules.md](rules.md#docs) permits, and a new command goes where [rules.md](rules.md#docs) says.
 - Each issue gives the scope hints that past tickets needed. [first-refine.md](first-refine.md) lists the hints by the kind of ticket. Examples:
   - The report of every configuration error in one run, as [rules.md](rules.md#code) says.
-  - [The fact test](orchestration.md#run-one-ticket) for each fact about an outside tool.
+  - [The fact test](orchestration.md#the-fact-test) for each fact about an outside tool.
 - An issue body has no dependency text, for example no "Depends on" section. The blocked-by links hold the order.
 - A planned issue gets no priority label. The blocked-by links hold the order of the work in a milestone. Only an issue outside the plan gets a priority label. An example is an issue of a failed CI run, as [A failed CI run](orchestration.md#a-failed-ci-run) of orchestration.md says.
 - An issue needs no line for commit style, because the prompts of the installed tasker already name it. [rules.md](rules.md#commits) is the home of the commit rules.
