@@ -1,7 +1,7 @@
 import { renameSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { merge } from "../../src/commands/merge.js";
-import { failedFrom, lastTransitionError } from "../../src/state/machine.js";
+import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
@@ -10,6 +10,7 @@ import {
   dayAt,
   databasePathOf,
   eventsOf,
+  lastErrorOf,
   latestTaskOf,
   readRunMarker,
   seedTasks,
@@ -28,10 +29,6 @@ const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 
 const runMerge = (key = KEY) => runCommand(merge, "merge", key, "--repo", REPO);
-
-// The error of the last transition event of the task.
-const errorOf = (task: Pick<AcceptedTask, "dataRoot" | "task">) =>
-  withDataRootStore(task.dataRoot, (store) => lastTransitionError(store.listEvents(task.task.id)));
 
 // Runs merge, expects a refusal that changes nothing, and expects no run marker and the same head of main on origin.
 const expectRefused = async (fixture: Pick<StartFixture, "dataRoot" | "origin">, error: string | RegExp) => {
@@ -108,7 +105,7 @@ describe("tasker merge", () => {
 
     const error = `merging failed: cannot land ${accepted.revision} on the base branch: main: the revision does not build on the tip of the base on origin: ${tip}`;
     expect(result).toEqual({ code: 1, out: "", err: `${error}\n` });
-    expect(errorOf(accepted)).toBe(error);
+    expect(lastErrorOf(accepted.dataRoot, accepted.task.id)).toBe(error);
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
     withDataRootStore(accepted.dataRoot, (store) => expect(failedFrom(store, accepted.task.id)).toBe("merging"));
     expect(await accepted.origin.branchHead("main")).toBe(tip);
@@ -125,7 +122,7 @@ describe("tasker merge", () => {
     expect(result.code).toBe(1);
     expect(result.out).toBe("");
     expect(result.err.startsWith("merging failed: ")).toBe(true);
-    expect(errorOf(accepted)).toBe(result.err.trimEnd());
+    expect(lastErrorOf(accepted.dataRoot, accepted.task.id)).toBe(result.err.trimEnd());
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
     withDataRootStore(accepted.dataRoot, (store) => expect(failedFrom(store, accepted.task.id)).toBe("merging"));
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();

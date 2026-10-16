@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
-import { failTask, isSpawningState, transitionWithVerifyRun } from "../../src/state/machine.js";
+import { failTask, isSpawningState, lastTransitionError, transitionWithVerifyRun } from "../../src/state/machine.js";
 import type { TaskState } from "../../src/state/machine.js";
 import { createDataRoot, taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import {
@@ -122,6 +122,11 @@ export function latestTaskOf(dataRoot: string, issueKey: string): Task {
 export function eventsOf(dataRoot: string, issueKey: string): { type: string; data: unknown }[] {
   const task = latestTaskOf(dataRoot, issueKey);
   return withDataRootStore(dataRoot, (store) => store.listEvents(task.id).map(({ type, data }) => ({ type, data })));
+}
+
+// The error of the last transition event of the task, or undefined when that event has no error.
+export function lastErrorOf(dataRoot: string, taskId: number): string | undefined {
+  return withDataRootStore(dataRoot, (store) => lastTransitionError(store.listEvents(taskId)));
 }
 
 export interface SeedTask {

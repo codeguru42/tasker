@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
-import { failedFrom, lastTransitionError } from "../../src/state/machine.js";
+import { failedFrom, lastTransitionError, transitionTask } from "../../src/state/machine.js";
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import type { NewSession, TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
@@ -17,6 +17,7 @@ import {
   eventsOf,
   failTaskFrom,
   failVerifyRun,
+  lastErrorOf,
   latestTaskOf,
   lockNames,
   newReview,
@@ -84,6 +85,33 @@ describe("eventsOf", () => {
     expect((thrownBy(() => eventsOf(dataRoot, "codeguru42/tasker#9")) as Error).message).toBe(
       "no task of codeguru42/tasker#9",
     );
+  });
+});
+
+describe("lastErrorOf", () => {
+  it("gives the error of the last transition event", () => {
+    const dataRoot = join(useTempDir("tasker-last-error-"), "data");
+    const [task] = seedTasks(dataRoot, [
+      {
+        issueKey: "codeguru42/tasker#9",
+        repoKey: "codeguru42/tasker",
+        state: "provisioning",
+        at: dayAt(1),
+        failWith: "boom",
+      },
+    ]);
+
+    expect(lastErrorOf(dataRoot, task.id)).toBe("boom");
+  });
+
+  it("gives undefined when the last transition event has no error", () => {
+    const dataRoot = join(useTempDir("tasker-last-error-"), "data");
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: "codeguru42/tasker#9", repoKey: "codeguru42/tasker", state: "provisioning", at: dayAt(1) },
+    ]);
+    withDataRootStore(dataRoot, (store) => transitionTask(store, task.id, "workspace_ready"));
+
+    expect(lastErrorOf(dataRoot, task.id)).toBeUndefined();
   });
 });
 

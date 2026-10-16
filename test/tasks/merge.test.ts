@@ -9,17 +9,13 @@ import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
   eventsOf,
+  lastErrorOf,
   latestTaskOf,
   lockNames,
   readRunMarker,
   withDataRootStore,
 } from "../helpers/store.js";
 import { taskRefOf, useAcceptedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
-import { lastTransitionError } from "../../src/state/machine.js";
-
-// The error of the last transition event of the task.
-const errorOf = (task: Pick<AcceptedTask, "dataRoot" | "task">) =>
-  withDataRootStore(task.dataRoot, (store) => lastTransitionError(store.listEvents(task.task.id)));
 
 // Calls mergeTask for the task of the fixture with a store, and gives the result and the io.
 const callMerge = async (fixture: AcceptedTask, store: TaskStore, waitMs = 300) => {
@@ -73,7 +69,7 @@ describe("mergeTask", () => {
     expect(result).toEqual({ exitCode: 1 });
     expect(io.err.join("")).toBe(`${error}\n`);
     const events = eventsOf(accepted.dataRoot, accepted.key);
-    expect(errorOf(accepted)).toBe(error);
+    expect(lastErrorOf(accepted.dataRoot, accepted.task.id)).toBe(error);
     expect(events.some((event) => event.type === "landed")).toBe(false);
     expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("failed");
     withDataRootStore(accepted.dataRoot, (store) => expect(failedFrom(store, accepted.task.id)).toBe("merging"));
