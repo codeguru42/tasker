@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { captureIo, greet, runCommand } from "./cli.js";
+import type { RegisterCommand } from "../../src/cli.js";
+import { captureIo, greet, runCommand, runHelp } from "./cli.js";
 
 describe("runCommand", () => {
   it("gives the help text and code 0 for --help", async () => {
@@ -17,6 +18,29 @@ describe("runCommand", () => {
     expect(result.code).toBe(1);
     expect(result.out).toBe("");
     expect(result.err).toContain("--bogus");
+  });
+});
+
+describe("runHelp", () => {
+  it("gives code 0 and the help text of the command", async () => {
+    const { code, help } = await runHelp(greet, "greet");
+
+    expect(code).toBe(0);
+    expect(help).toContain("Say hello");
+    expect(help).toContain("--name <name> Who to greet");
+  });
+
+  it("joins a wrapped description to one line", async () => {
+    const description =
+      "Say hello to the person whose name you give with the name option, and then say goodbye to that same person";
+    const longGreet: RegisterCommand = (program) => {
+      program.command("greet").description(description);
+    };
+
+    const { help } = await runHelp(longGreet, "greet");
+
+    expect(help).toContain(description);
+    expect(help).not.toMatch(/\s{2,}|\n/);
   });
 });
 
