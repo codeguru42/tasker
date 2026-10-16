@@ -3,6 +3,7 @@
 Each assistant session reads this index first and follows the link for each topic.
 
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo (the check, test first, the commits, the docs, the test helpers, the code rules, the simple-english skill and `AGENTS.md`).
+- [CONTRIBUTING.md](CONTRIBUTING.md): how to start work as a contributor to tasker.
 - [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the layout, the steps to add a command, the imports, the zod facts and the tests.
 - [docs/config.md](docs/config.md): the configuration.
 - [docs/statemachine.md](docs/statemachine.md): the task states, the rules of the edges, the main lifecycle, the plan, build, work review and landing sections, the pauses, the failure and retry targets, update branch and the demotion rules.
