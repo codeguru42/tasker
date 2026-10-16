@@ -4,7 +4,7 @@ import type { RunOutcome, Usage } from "../../src/assistant/provider.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
-import { applyRunOutcome } from "../../src/tasks/run-outcome.js";
+import { applyRunOutcome, failRunTo } from "../../src/tasks/run-outcome.js";
 import { captureIo } from "../helpers/cli.js";
 import { TEST_SESSION_ID } from "../helpers/fake-claude.js";
 import { seedPlanSession } from "../helpers/plan.js";
@@ -148,5 +148,31 @@ describe("applyRunOutcome with a quota stop", () => {
 
     const session = withDataRootStore(dataRoot, (store) => store.planSession(task.id));
     expect(session?.sessionId).toBe(TEST_SESSION_ID);
+  });
+});
+
+describe("failRunTo", () => {
+  it("moves the task to the target state with the error, prints the message and gives exit code 1", () => {
+    const dataRoot = join(useTempDir("tasker-outcome-"), "data");
+    const [seeded] = seedTasks(dataRoot, [
+      { issueKey: KEY, repoKey: "codeguru42/tasker", state: "landed", at: dayAt(1) },
+    ]);
+    const task = withDataRootStore(dataRoot, (store) => transitionTask(store, seeded.id, "finishing"));
+    const io = captureIo();
+
+    const result = withDataRootStore(dataRoot, (store) =>
+      failRunTo(store, task, io, "cleanup_failed", "finishing failed: boom"),
+    );
+
+    const state = withDataRootStore(dataRoot, (store) => store.getTask(task.id)!.state);
+    expect(result).toEqual({ exitCode: 1 });
+    expect(state).toBe("cleanup_failed");
+    expect(eventsOf(dataRoot, KEY).at(-1)).toEqual({
+      type: "transition",
+      data: { from: "finishing", to: "cleanup_failed", error: "finishing failed: boom" },
+    });
+    expect(io.err).toEqual(["finishing failed: boom\n"]);
+    expect(io.out).toEqual([]);
+    expect(readRunMarker(createDataRoot(dataRoot).database, task.id)).toBeUndefined();
   });
 });
