@@ -1,3 +1,4 @@
+import { expect } from "vitest";
 import { type Io, type RegisterCommand, run } from "../../src/cli.js";
 
 export interface CapturedIo extends Io {
@@ -48,4 +49,12 @@ export async function runCommand(
 export async function runHelp(command: RegisterCommand, name: string): Promise<{ code: number; help: string }> {
   const { code, out } = await runCommand(command, name, "--help");
   return { code, help: out.replace(/\s+/g, " ") };
+}
+
+// Runs --help with these commands (all commands when none are given) and gives the stdout.
+export async function helpText(commands?: readonly RegisterCommand[]): Promise<string> {
+  const io = captureIo();
+  const code = await run(["--help"], { commands, io });
+  expect(code).toBe(0);
+  return io.out.join("");
 }

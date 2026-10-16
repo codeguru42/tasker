@@ -1,18 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { run, type RegisterCommand } from "../src/cli.js";
-import { captureIo, greet } from "./helpers/cli.js";
+import type { RegisterCommand } from "../src/cli.js";
+import { greet, helpText } from "./helpers/cli.js";
 import { commandsInHelp, commandsMissingFromSkill, commandsWithoutReference } from "./skill-coverage.js";
 
 function readSkill(): string {
   return readFileSync(new URL("../skills/tasker/SKILL.md", import.meta.url), "utf8");
-}
-
-async function helpText(commands?: readonly RegisterCommand[]): Promise<string> {
-  const io = captureIo();
-  const code = await run(["--help"], { commands, io });
-  expect(code).toBe(0);
-  return io.out.join("");
 }
 
 function readReferenceFile(file: string): string | undefined {
