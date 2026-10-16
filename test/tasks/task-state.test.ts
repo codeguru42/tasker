@@ -69,13 +69,9 @@ describe("assertTaskState error", () => {
     const { dataRoot, id } = seeded("finished");
     withDataRootStore(dataRoot, (store) => {
       const task = taskById(store, id);
-      let message = "";
-      try {
-        assertTaskState(task, "execute");
-      } catch (error) {
-        message = (error as Error).message;
-      }
-      expect(message).toBe(`the task of ${KEY} is in finished; tasker execute needs approved`);
+      expect(() => assertTaskState(task, "execute")).toThrow(
+        new Error(`the task of ${KEY} is in finished; tasker execute needs approved`),
+      );
     });
   });
 });
