@@ -42,12 +42,12 @@ The file has no `landing` key. If it has one, tasker reports this error: `landin
 
 ## `limits`
 
-| Key                   | Type            | Default  | Notes                                     |
-| --------------------- | --------------- | -------- | ----------------------------------------- |
-| `bootstrapTimeoutMin` | positive number | required | Minutes that the bootstrap phase can run. |
-| `verifyTimeoutMin`    | positive number | required | Minutes that the verify phase can run.    |
-| `planTimeoutMin`      | positive number | `30`     | Minutes that the plan phase can run.      |
-| `executeTimeoutMin`   | positive number | `90`     | Minutes that the execute phase can run.   |
+| Key                   | Type            | Default  | Notes                                                |
+| --------------------- | --------------- | -------- | ---------------------------------------------------- |
+| `bootstrapTimeoutMin` | positive number | required | Minutes that the bootstrap phase can run.            |
+| `verifyTimeoutMin`    | positive number | required | Minutes that the verify phase can run.               |
+| `planTimeoutMin`      | positive number | `30`     | Minutes that the plan phase or a review run can run. |
+| `executeTimeoutMin`   | positive number | `90`     | Minutes that the execute phase can run.              |
 
 ## `repos.<key>`
 
