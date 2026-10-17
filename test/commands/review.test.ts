@@ -13,6 +13,7 @@ import {
   claudeApprovalWarningEvent,
   claudeOverageEvent,
   claudeSample,
+  withEventBeforeResult,
   withEventFirst,
 } from "../helpers/fake-claude.js";
 import { overlapWarningText } from "../helpers/overlap.js";
@@ -484,7 +485,7 @@ describe("review with a quota warning", () => {
 
   it("pauses the task under ask and records no review", async () => {
     const work = await useReviewFixture(
-      { stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(validReviewAnswer())) },
+      { stream: withEventBeforeResult(claudeApprovalWarningEvent(), answerStream(validReviewAnswer())) },
       ask,
     );
 
@@ -503,7 +504,7 @@ describe("review with a quota warning", () => {
 
   it("does not pause under decline", async () => {
     const work = await useReviewFixture({
-      stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(validReviewAnswer())),
+      stream: withEventBeforeResult(claudeApprovalWarningEvent(), answerStream(validReviewAnswer())),
     });
 
     const result = await runReview();
@@ -532,7 +533,7 @@ describe("review with feedback and a quota warning", () => {
 
   it("pauses the task as refining under ask and writes no v2", async () => {
     const fixture = await startFeedback(
-      { stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)) },
+      { stream: withEventBeforeResult(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)) },
       { repo: { overagePolicy: "ask" } },
     );
     const { dataRoot } = fixture.started;

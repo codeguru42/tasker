@@ -9,7 +9,7 @@ import { planRevisionPath, planTranscriptPath } from "../store/layout.js";
 import { PlanFileWriteError, recordPlanRevision } from "../store/plan-file.js";
 import type { PlanRevisionSource, Task, TaskStore } from "../store/store.js";
 import type { PreparedPlanModeRun } from "./assistant-run.js";
-import { applyRunOutcome, failRun } from "./run-outcome.js";
+import { applyRunOutcome, failRun, pauseForQuotaApproval } from "./run-outcome.js";
 
 export interface PlannedRevision {
   version: number;
@@ -86,6 +86,7 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
       quota: { repo: config.repos[task.repoKey], prepared },
     });
     if ("exitCode" in result) return result;
+    if (result.warning !== undefined) return pauseForQuotaApproval(store, task, io, phase, result.warning);
     const checked = check(result.outcome.structuredOutput);
     if (!checked.ok) {
       return failRun(

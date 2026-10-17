@@ -17,6 +17,7 @@ import {
   TEST_SESSION_ID,
   useFakeClaude,
   useFakeClaudeOnPath,
+  withEventBeforeResult,
   withEventFirst,
   writePlaceholder,
 } from "./fake-claude.js";
@@ -220,6 +221,22 @@ describe("withEventFirst", () => {
     const stream = ["a", "b"];
 
     withEventFirst(claudeRateLimitEvent(), stream);
+
+    expect(stream).toEqual(["a", "b"]);
+  });
+});
+
+describe("withEventBeforeResult", () => {
+  it("puts the event line before the last line and keeps the other lines", () => {
+    const event = claudeApprovalWarningEvent();
+
+    expect(withEventBeforeResult(event, ["a", "b", "c"])).toEqual(["a", "b", JSON.stringify(event), "c"]);
+  });
+
+  it("does not change the stream that it gets", () => {
+    const stream = ["a", "b"];
+
+    withEventBeforeResult(claudeRateLimitEvent(), stream);
 
     expect(stream).toEqual(["a", "b"]);
   });

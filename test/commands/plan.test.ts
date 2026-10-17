@@ -14,6 +14,7 @@ import {
   claudeOverageEvent,
   claudeRateLimitEvent,
   claudeSample,
+  withEventBeforeResult,
   withEventFirst,
 } from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
@@ -543,7 +544,10 @@ describe("plan with a quota warning", () => {
     withDataRootStore(dataRoot, (store) => seedCreditsApproval(store, latestTaskOf(dataRoot, KEY).id, RESETS_AT));
 
   it("pauses the task under ask and writes no revision", async () => {
-    const fixture = await usePlanFixture({ stream: withEventFirst(claudeApprovalWarningEvent(), answer()) }, ask);
+    const fixture = await usePlanFixture(
+      { stream: withEventBeforeResult(claudeApprovalWarningEvent(), answer()) },
+      ask,
+    );
     const { dataRoot } = fixture.started;
 
     const result = await runPlan();
@@ -560,7 +564,7 @@ describe("plan with a quota warning", () => {
   });
 
   it("does not pause for a use below the threshold", async () => {
-    const fixture = await usePlanFixture({ stream: withEventFirst(claudeRateLimitEvent(), answer()) }, ask);
+    const fixture = await usePlanFixture({ stream: withEventBeforeResult(claudeRateLimitEvent(), answer()) }, ask);
 
     const result = await runPlan();
 
@@ -569,7 +573,10 @@ describe("plan with a quota warning", () => {
   });
 
   it("does not pause when the operator approved the window of the warning", async () => {
-    const fixture = await usePlanFixture({ stream: withEventFirst(claudeApprovalWarningEvent(), answer()) }, ask);
+    const fixture = await usePlanFixture(
+      { stream: withEventBeforeResult(claudeApprovalWarningEvent(), answer()) },
+      ask,
+    );
     approve(fixture.started.dataRoot);
 
     const result = await runPlan();
@@ -580,7 +587,7 @@ describe("plan with a quota warning", () => {
 
   it("pauses for a warning with no reset time also when a window is approved", async () => {
     const fixture = await usePlanFixture(
-      { stream: withEventFirst(claudeApprovalWarningEvent(noReset), answer()) },
+      { stream: withEventBeforeResult(claudeApprovalWarningEvent(noReset), answer()) },
       ask,
     );
     approve(fixture.started.dataRoot);
@@ -592,7 +599,7 @@ describe("plan with a quota warning", () => {
   });
 
   it("does not pause under decline", async () => {
-    const fixture = await usePlanFixture({ stream: withEventFirst(claudeApprovalWarningEvent(), answer()) });
+    const fixture = await usePlanFixture({ stream: withEventBeforeResult(claudeApprovalWarningEvent(), answer()) });
 
     const result = await runPlan();
 

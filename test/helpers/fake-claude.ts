@@ -116,6 +116,12 @@ export function withEventFirst(event: AssistantEvent, stream: readonly string[])
   return [JSON.stringify(event), ...stream];
 }
 
+// The stream with event as its second-to-last line, just before the final result line. The provider reads the last
+// rate-limit event of a run, and a sample can hold its own, so a test that needs its event to be the last one uses this.
+export function withEventBeforeResult(event: AssistantEvent, stream: readonly string[]): string[] {
+  return [...stream.slice(0, -1), JSON.stringify(event), ...stream.slice(-1)];
+}
+
 export const TEST_SESSION_ID = "e5f6ebac-a40e-48af-befc-f9a7d1af4c5b";
 
 // The id of an execute session. It differs from TEST_SESSION_ID, because a session id is unique in the whole table.

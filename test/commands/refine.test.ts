@@ -21,6 +21,7 @@ import {
   claudeApprovalWarningEvent,
   claudeOverageEvent,
   claudeSample,
+  withEventBeforeResult,
   withEventFirst,
 } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
@@ -568,7 +569,10 @@ describe.each(STARTS)("$name with a quota warning", ({ start, feedback }) => {
   const ask = { repo: { overagePolicy: "ask" } };
 
   it("pauses the task under ask and writes no v2", async () => {
-    const fixture = await start({ stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)) }, ask);
+    const fixture = await start(
+      { stream: withEventBeforeResult(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)) },
+      ask,
+    );
     const { dataRoot } = fixture.started;
 
     const result = await runRefine(feedback);
@@ -584,7 +588,9 @@ describe.each(STARTS)("$name with a quota warning", ({ start, feedback }) => {
   });
 
   it("does not pause under decline", async () => {
-    const fixture = await start({ stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)) });
+    const fixture = await start({
+      stream: withEventBeforeResult(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)),
+    });
 
     const result = await runRefine(feedback);
 

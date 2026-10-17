@@ -11,7 +11,7 @@ import {
   REFINE_PROMPT_NAME,
 } from "../prompts/refine.js";
 import { fillTemplate } from "../prompts/template.js";
-import { failedOriginText, lastTransitionError } from "../state/machine.js";
+import { approvedResetsAt, failedOriginText, lastTransitionError } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
 import type { PlanRevisionSource, Task, TaskStore } from "../store/store.js";
@@ -126,6 +126,7 @@ export async function runRefine(store: TaskStore, run: RefineRun): Promise<PlanR
     role: "plan",
     env,
     session: { resume: true, sessionId: session.sessionId, recorded: session },
+    approvedResetsAt: approvedResetsAt(store.listEvents(task.id)),
   });
   return runPlanRevision({
     store,
