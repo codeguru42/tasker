@@ -359,6 +359,7 @@ These rules apply to each `tasker` command that the agent runs, also to a read-o
 - `tasker plan` can fail with "planning returned no structured output; the assistant produced no plan object". The task goes to `failed`. This failure does not come from the code. One `tasker retry <issue>` plans again.
 - `tasker start` can wait about 10 minutes on `git ls-remote` over ssh and then fail with a git transport error. If `tasker doctor` then passes, the agent runs `tasker start` again.
 - `tasker update-branch` prints `origin/<branch> does not exist; nothing to sync from` for a task branch that was never pushed. This output is normal.
+- `tasker dismiss-review` prints `dismissed review findings for <issue key>`. This output is normal. It differs from the output that [skills/tasker/references/work-review.md](../../skills/tasker/references/work-review.md#tasker-dismiss-review) gives for the `tasker dismiss-review` of this repo.
 - `tasker merge` prints `landed: <commit> on origin/main`. `tasker finish` prints that it marked the issue done on the tracker, and it closes the issue.
 - `tasker start` can print a GraphQL warning that the assign of the issue on the tracker failed. The warning does no harm.
 - `tasker start` refuses a ticket whose parent is not [ready to stack](#the-stacking-rule). It exits with 1 and prints `<parent issue key>: blocking issue is still open`. No task exists after the refusal.
