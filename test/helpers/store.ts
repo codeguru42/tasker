@@ -337,7 +337,7 @@ export function failVerifyRun(
 }
 
 // Moves the task to state with no edge check. A spawning state starts a run, so the run marker exists as in a real run.
-function placeTask(store: TaskStore, taskId: number, state: TaskState): Task {
+export function placeTask(store: TaskStore, taskId: number, state: TaskState): Task {
   return isSpawningState(state) ? store.startRun(taskId, state) : store.endRun(taskId, state);
 }
 

@@ -31,6 +31,7 @@ import {
   pauseRefineFrom,
   pauseTaskFrom,
   pauseTaskVia,
+  placeTask,
   lastErrorOf,
   latestTaskOf,
   lockNames,
@@ -137,6 +138,31 @@ describe("writeRunMarker", () => {
       child_pid: 78,
       started_at: "t",
     });
+  });
+});
+
+describe("placeTask", () => {
+  it("moves the task with no edge check and no event", () => {
+    const dataRoot = join(useTempDir("tasker-place-task-"), "data");
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "approved", at: dayAt(1) }]);
+
+    withDataRootStore(dataRoot, (store) => {
+      expect(placeTask(store, task.id, "reviewed").state).toBe("reviewed");
+      expect(store.getTask(task.id)?.state).toBe("reviewed");
+    });
+
+    expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
+  });
+
+  it("starts a run for a spawning state", () => {
+    const dataRoot = join(useTempDir("tasker-place-spawning-"), "data");
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "approved", at: dayAt(1) }]);
+
+    withDataRootStore(dataRoot, (store) => {
+      expect(placeTask(store, task.id, "updating_branch").state).toBe("updating_branch");
+    });
+
+    expect(readRunMarker(databasePathOf(dataRoot), task.id)).toMatchObject({ state: "updating_branch" });
   });
 });
 

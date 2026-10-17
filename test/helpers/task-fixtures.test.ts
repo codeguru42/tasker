@@ -55,6 +55,7 @@ import {
   trackerRepo,
   useStartFixture,
   useVerifyFixture,
+  useMovedBaseTask,
   useWorkReviewTask,
 } from "./task-fixtures.js";
 
@@ -835,5 +836,33 @@ describe("trackerRepo", () => {
       updateOnStart: true,
       inProgressLabel: "wip",
     });
+  });
+});
+
+describe("useMovedBaseTask", () => {
+  it("moves main on origin past the task branch and gives the new tip", async () => {
+    const work = await useMovedBaseTask();
+
+    expect(await work.origin.branchHead("main")).toBe(work.baseTip);
+    const contains = await runGit(["merge-base", "--is-ancestor", work.baseTip, String(work.task.branch)], {
+      gitDir: work.clone,
+      env: work.env,
+    }).then(
+      () => true,
+      () => false,
+    );
+    expect(contains).toBe(false);
+    expect(work.task.state).toBe("awaiting_work_review");
+  });
+
+  it("passes the options to useWorkReviewTask and the change to the commit on main", async () => {
+    const work = await useMovedBaseTask({ files: [], baseChange: { file: "moved.txt", content: "moved\n" } });
+
+    expect(await work.origin.branchHead("main")).toBe(work.baseTip);
+    const files = await runGit(["show", "--name-only", "--format=", work.baseTip], {
+      gitDir: work.origin.path,
+      env: work.env,
+    });
+    expect(files.trim()).toBe("moved.txt");
   });
 });

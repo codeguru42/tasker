@@ -514,6 +514,24 @@ export async function useWorkReviewTask(
   return { ...fixture, key, task, clone: repoPaths(fixture.dataRoot, fixture.repoKey).clone, env: fixture.origin.env };
 }
 
+export interface MovedBaseTask extends WorkReviewTask {
+  // The tip of main on origin after the move. The task branch does not contain it.
+  baseTip: string;
+}
+
+// Runs useWorkReviewTask(options), then adds one commit to main on origin (baseChange is the change of that commit),
+// so that the base moved past the task branch. Call it inside a test.
+export async function useMovedBaseTask(
+  options: Parameters<typeof useWorkReviewTask>[0] & {
+    baseChange?: { file?: string; content?: string; message?: string };
+  } = {},
+): Promise<MovedBaseTask> {
+  const { baseChange, ...workOptions } = options;
+  const work = await useWorkReviewTask(workOptions);
+  const baseTip = await work.origin.addCommit("main", baseChange);
+  return { ...work, baseTip };
+}
+
 // Seeds the task of issue 5 in accepted, with the given branch and base.
 export function seedAcceptedTask(
   fixture: Pick<StartFixture, "dataRoot">,

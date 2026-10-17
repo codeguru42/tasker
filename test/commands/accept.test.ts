@@ -11,6 +11,7 @@ import {
   appendBaseEvent,
   expectCommandRefused,
   taskBranchTipOf,
+  useMovedBaseTask,
   useStartFixture,
   useWorkReviewTask,
   type WorkReviewTask,
@@ -122,9 +123,9 @@ describe("a refused accept", () => {
   });
 
   it("refuses a branch that does not contain the tip of a base that moved on origin", async () => {
-    const work = await useWorkReviewTask();
+    const work = await useMovedBaseTask();
     const head = await taskBranchTipOf(work);
-    const tip = await work.origin.addCommit("main");
+    const tip = work.baseTip;
 
     await expectRefused(
       work.dataRoot,
@@ -134,9 +135,9 @@ describe("a refused accept", () => {
   });
 
   it("refuses a branch that does not contain a moved base, also when HEAD of the worktree does", async () => {
-    const work = await useWorkReviewTask();
+    const work = await useMovedBaseTask();
     const revision = await taskBranchTipOf(work);
-    const tip = await work.origin.addCommit("main");
+    const tip = work.baseTip;
     await runGit(["fetch", "origin"], { gitDir: work.clone, env: work.env });
     await runGit(["switch", "--detach", BASE], { cwd: work.task.worktreePath!, env: work.env });
     await commitInWorktree(work.task.worktreePath!, work.env, { file: "detached.txt" });
