@@ -34,7 +34,7 @@ These errors leave the task in its state. The command writes no event, no sessio
 - The provider refuses the model of the recorded execute session. The error is `the execute session of <issue key> runs on <model>, and <provider> refuses it: <reason>`.
 - The prompt cannot be archived. A prompt that tasker archived before the failure stays in the prompt archive.
 
-These errors move the task to the state `failed`. The shared quota stop and the shared quota pause are the exceptions. The shared unexpected error belongs to this group:
+These errors move the task to the state `failed`. The shared quota stop, the shared signal stop and the shared quota pause are the exceptions. The shared unexpected error belongs to this group:
 
 - A turn reports `blocked` or gives no result. The error is `<turn> reported blocked: <reason>` or `<turn> reported no result: <detail>`. The turn is ``todo `<id>` (<title>)`` or `the fix turn for the verify failure`.
 - The assistant fails or a turn runs out of time. The error is `executing failed: <reason>` or `executing timed out after <n> min`. When no time is left before a turn, the error is `executing <turn> timed out after <n> min`.
@@ -43,6 +43,8 @@ These errors move the task to the state `failed`. The shared quota stop and the 
 For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked` or `interrupted`, run `tasker resume <issue>`. For a task in `awaiting_quota_approval`, run `tasker approve-credits <issue>` (see [`tasker approve-credits`](recovery.md#tasker-approve-credits)), or run `tasker abort <issue>` to leave the state.
 
 A quota pause comes after the turn, so the todo of a paused turn stays `done`. The next execute run starts at the next todo.
+
+If you press Ctrl-C, the assistant stops and the task goes to the state `interrupted`. See the shared signal stop in [Shared errors](../SKILL.md#shared-errors). The todo of an interrupted turn stays `in_progress`, and the next run continues the session at that todo.
 
 ## `tasker verify`
 

@@ -30,10 +30,12 @@ These errors leave the task in its state. The command writes no event, no sessio
 - The commits of the branch cannot be read. The error is the error of git.
 - The prompt cannot be archived. A prompt that tasker archived before the failure stays in the prompt archive.
 
-These errors move the task to the state `failed`. The shared quota stop and the shared quota pause are the exceptions. The shared unexpected error belongs to this group:
+These errors move the task to the state `failed`. The shared quota stop, the shared signal stop and the shared quota pause are the exceptions. The shared unexpected error belongs to this group:
 
 - The assistant fails or runs out of time. The error is `reviewing failed: <reason>` or `reviewing timed out after <n> min`.
 - The answer is not valid. The error is `the assistant returned findings that tasker refuses:`, then one line for each problem.
+
+If you press Ctrl-C, the assistant stops and the task goes to the state `interrupted`. See the shared signal stop in [Shared errors](../SKILL.md#shared-errors).
 
 [`tasker retry`](recovery.md#tasker-retry) runs a failed review again in a new session. [`tasker resume`](recovery.md#tasker-resume) runs a review again in a new session after a stop in `quota_blocked` or `interrupted`. [`tasker approve-credits`](recovery.md#tasker-approve-credits) runs a review again in a new session after a stop in `awaiting_quota_approval`. `tasker abort` is the other way to leave that state.
 
