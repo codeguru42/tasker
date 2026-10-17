@@ -11,7 +11,13 @@ import {
   trackedPaths,
 } from "../../../src/vcs/git/assistant-surface.js";
 import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
-import { changedPaths, ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
+import {
+  changedPaths,
+  ownCommitsText,
+  remoteTaskBranchState,
+  uncommittedChanges,
+  worktreeDiff,
+} from "../../../src/vcs/git/changes.js";
 import { worktreeState } from "../../../src/vcs/git/reconcile.js";
 import { ReconcileConflictError } from "../../../src/vcs/errors.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
@@ -25,7 +31,13 @@ import {
   taskBranchRevision,
   taskWorktreePath,
 } from "../../../src/vcs/git/worktree.js";
-import { commitInWorktree, localBranches, makeProviderFixture, type ProviderFixture } from "../../helpers/git.js";
+import {
+  commitInWorktree,
+  copyCloneBranchToOrigin,
+  localBranches,
+  makeProviderFixture,
+  type ProviderFixture,
+} from "../../helpers/git.js";
 
 describe("createGitProvider", () => {
   let fixture: ProviderFixture;
@@ -313,6 +325,36 @@ describe("createGitProvider", () => {
       ).rejects.toBeInstanceOf(ReconcileConflictError);
       expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(start);
       expect(await git.uncommittedChanges(fixture.context, { path })).toEqual([]);
+    });
+  });
+
+  describe("remote task ref and move", () => {
+    it("reads the copy of the task ref on the remote like remoteTaskBranchState", async () => {
+      const { git, taskRef } = await workspace();
+      const { clone } = paths();
+      const env = fixture.context.env;
+      await containment(git, taskRef);
+      const absent = await git.fetchedRemoteTaskRef(fixture.context, { taskRef });
+      expect(absent).toEqual({ state: "absent" });
+      expect(absent).toEqual(await remoteTaskBranchState({ clone, env, branch: taskRef }));
+      await copyCloneBranchToOrigin({ origin: fixture.origin.path, clone, branch: taskRef, env });
+      const tip = await fixture.origin.addCommit(taskRef);
+      await containment(git, taskRef);
+      const present = await git.fetchedRemoteTaskRef(fixture.context, { taskRef });
+      expect(present).toEqual({ state: "present", revision: tip, relation: "local-ancestor" });
+      expect(present).toEqual(await remoteTaskBranchState({ clone, env, branch: taskRef }));
+    });
+
+    it("moves the task ref and the head of the workspace to a revision and gives the head", async () => {
+      const { git, path, taskRef } = await workspace();
+      const env = fixture.context.env;
+      const start = (await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim();
+      const tip = await commitInWorktree(path, env, { file: "a.txt" });
+      expect(await git.moveWorkspace(fixture.context, { path, revision: start })).toBe(start);
+      expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(start);
+      expect(await taskBranchRevision({ clone: paths().clone, env, branch: taskRef })).toBe(start);
+      expect(await git.moveWorkspace(fixture.context, { path, revision: tip })).toBe(tip);
+      expect(await taskBranchRevision({ clone: paths().clone, env, branch: taskRef })).toBe(tip);
     });
   });
 
