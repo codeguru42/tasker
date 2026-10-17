@@ -52,8 +52,15 @@ describe("resumeTask origins", () => {
       pauses: BOTH,
       sessions: { ...kept, review: [] },
     },
-    { origin: "finishing", target: "landed", next: "finish", pauses: BOTH, sessions: kept },
-    { origin: "merging", before: "accepted", target: "accepted", next: "merge", pauses: BOTH, sessions: kept },
+    { origin: "finishing", target: "landed", next: "finish", pauses: ["interrupted"], sessions: kept },
+    {
+      origin: "merging",
+      before: "accepted",
+      target: "accepted",
+      next: "merge",
+      pauses: ["interrupted"],
+      sessions: kept,
+    },
     {
       origin: "refining",
       refineOrigin: "awaiting_plan_review",
@@ -107,7 +114,7 @@ describe("resumeTask origins", () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => {
       if (refineOrigin !== undefined) return pauseRefineFrom(store, task.id, refineOrigin, pause, FEEDBACK);
-      if (before !== undefined) return pauseTaskVia(store, task.id, before, origin, pause);
+      if (before !== undefined) return pauseTaskVia(store, task.id, before, origin);
       return pauseTaskFrom(store, task.id, origin, pause);
     });
 
@@ -123,19 +130,16 @@ describe("resumeTask origins", () => {
     expect(sessionsOf(dataRoot, task)).toEqual(sessions);
   });
 
-  it.each(BOTH)(
-    "moves a task paused in %s from finishing after a move from cleanup_failed to landed",
-    async (pause) => {
-      const { dataRoot, task } = seedApprovedTaskWithSessions();
-      withDataRootStore(dataRoot, (store) => pauseTaskVia(store, task.id, "cleanup_failed", "finishing", pause));
+  it("moves a task paused in interrupted from finishing after a move from cleanup_failed to landed", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    withDataRootStore(dataRoot, (store) => pauseTaskVia(store, task.id, "cleanup_failed", "finishing"));
 
-      const result = await resume(dataRoot, task);
+    const result = await resume(dataRoot, task);
 
-      expect(result).toEqual({ origin: "finishing", target: "landed", next: "finish" });
-      expect(latestTaskOf(dataRoot, KEY).state).toBe("landed");
-      expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "finishing", target: "landed" }]);
-    },
-  );
+    expect(result).toEqual({ origin: "finishing", target: "landed", next: "finish" });
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("landed");
+    expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "finishing", target: "landed" }]);
+  });
 
   it("gives the feedback of a refine from reviewed when one is recorded", async () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
@@ -193,7 +197,7 @@ describe("resumeTask checks", () => {
 
   it("refuses merging after a move from in_peer_review", async () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
-    withDataRootStore(dataRoot, (store) => pauseTaskVia(store, task.id, "in_peer_review", "merging", "interrupted"));
+    withDataRootStore(dataRoot, (store) => pauseTaskVia(store, task.id, "in_peer_review", "merging"));
 
     await expectResumeRefused(dataRoot, task, noStep("merging"));
   });

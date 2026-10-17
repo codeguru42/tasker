@@ -36,7 +36,7 @@ function mergeRowFor(before: TaskState): string | undefined {
   const dataRoot = join(useTempDir("tasker-origin-row-"), "data");
   return withDataRootStore(dataRoot, (store) => {
     const task = seedTask(store);
-    pauseTaskVia(store, task.id, before, "merging", "interrupted");
+    pauseTaskVia(store, task.id, before, "merging");
     return originRow(store.listEvents(task.id), "merging", TABLES);
   });
 }

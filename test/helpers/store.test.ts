@@ -791,14 +791,14 @@ describe("failTaskVia", () => {
 });
 
 describe("pauseTaskVia", () => {
-  it.each(["quota_blocked", "interrupted"] as const)("pauses the task in %s after a recorded move", (pause) => {
+  it("pauses the task in interrupted after a recorded move", () => {
     const { dataRoot, task } = seedTaskIn("workspace_ready");
 
     withDataRootStore(dataRoot, (store) => {
-      pauseTaskVia(store, task.id, "accepted", "merging", pause);
+      pauseTaskVia(store, task.id, "accepted", "merging");
 
-      expect(store.getTask(task.id)?.state).toBe(pause);
-      expect(transitionFromEvents(store.listEvents(task.id), pause)).toBe("merging");
+      expect(store.getTask(task.id)?.state).toBe("interrupted");
+      expect(transitionFromEvents(store.listEvents(task.id), "interrupted")).toBe("merging");
       expect(transitionFromEvents(store.listEvents(task.id), "merging")).toBe("accepted");
     });
   });

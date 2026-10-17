@@ -413,17 +413,11 @@ export function pauseTaskFrom(
   return transitionTask(store, taskId, pause, data ?? PAUSE_DATA[pause]);
 }
 
-// Moves the task to before with no edge check, then into origin with a real move, then pauses it. After it,
-// transitionFromEvents(events, origin) gives before, and transitionFromEvents(events, pause) gives origin.
-export function pauseTaskVia(
-  store: TaskStore,
-  taskId: number,
-  before: TaskState,
-  origin: TaskState,
-  pause: "quota_blocked" | "interrupted",
-): Task {
+// Moves the task to before with no edge check, then into origin with a real move, then into interrupted. After it,
+// transitionFromEvents(events, origin) gives before, and transitionFromEvents(events, "interrupted") gives origin.
+export function pauseTaskVia(store: TaskStore, taskId: number, before: TaskState, origin: TaskState): Task {
   enterVia(store, taskId, before, origin);
-  return transitionTask(store, taskId, pause, PAUSE_DATA[pause]);
+  return transitionTask(store, taskId, "interrupted", PAUSE_DATA.interrupted);
 }
 
 // Moves the task to refineOrigin with no edge check, then into refining, then pauses it. feedback is the feedback that

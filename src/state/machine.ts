@@ -86,20 +86,20 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
   // Build.
   executing: ["executed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   executed: ["verifying", "updating_branch"],
-  verifying: ["awaiting_work_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  verifying: ["awaiting_work_review", "interrupted"],
   // Work review.
   awaiting_work_review: ["reviewing", "refining", "accepted", "updating_branch"],
   reviewing: ["awaiting_work_review", "reviewed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   reviewed: ["refining", "awaiting_work_review", "updating_branch"],
   // Landing.
   accepted: ["landed", "merging", "pushing", "refining", "updating_branch"],
-  pushing: ["pushed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  pushing: ["pushed", "interrupted"],
   pushed: ["landed", "opening_pr", "refining", "updating_branch"],
-  opening_pr: ["in_peer_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  opening_pr: ["in_peer_review", "interrupted"],
   in_peer_review: ["landed", "merging", "updating_branch"],
-  merging: ["landed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  merging: ["landed", "interrupted"],
   landed: ["finishing"],
-  finishing: ["finished", "cleanup_failed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  finishing: ["finished", "cleanup_failed", "interrupted"],
   cleanup_failed: ["finishing", "updating_branch"],
   finished: [],
   // Update branch.
@@ -115,8 +115,6 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
     "in_peer_review",
     "failed",
     "cleanup_failed",
-    "quota_blocked",
-    "awaiting_quota_approval",
     "interrupted",
   ],
   // Pauses.
@@ -127,7 +125,6 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
     "awaiting_work_review",
     "accepted",
     "reviewed",
-    "landed",
   ],
   awaiting_quota_approval: [
     "workspace_ready",
