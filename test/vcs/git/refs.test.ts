@@ -3,6 +3,7 @@ import {
   assertRevision,
   assertRevisionInput,
   isFullRevision,
+  originRef,
   refExists,
   refRevision,
   resolveRevision,
@@ -31,6 +32,12 @@ describe("refs", () => {
 
     it.each(["a".repeat(39), "A".repeat(40), "main", "-x"])("refuses %j", (value) => {
       expect(isFullRevision(value)).toBe(false);
+    });
+  });
+
+  describe("originRef", () => {
+    it("gives the remote-tracking ref of origin for a branch name", () => {
+      expect(originRef("issue-5-x")).toBe("refs/remotes/origin/issue-5-x");
     });
   });
 

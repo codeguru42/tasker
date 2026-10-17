@@ -10,6 +10,7 @@ import {
   isAncestor,
   NO_OWN_COMMITS,
   ownCommitsText,
+  remoteTaskBranchState,
   uncommittedChanges,
   uncommittedRefusal,
   worktreeDiff,
@@ -24,6 +25,8 @@ import { fakeSsh } from "../../helpers/fake-ssh.js";
 import {
   addCloneCommit,
   commitInWorktree,
+  copyCloneBranchToOrigin,
+  gitRecorderEnv,
   landBranchOnOriginMain,
   makeGitClone,
   makeGitOrigin,
@@ -319,6 +322,79 @@ describe("git changes", () => {
       mkdirSync(plain);
       const error = await failureOf(changes({ path: plain }), Error);
       expect(error.message).toBe(`not a worktree of the clone: ${plain}`);
+    });
+  });
+
+  describe("remoteTaskBranchState", () => {
+    const state = (extra: Partial<Parameters<typeof remoteTaskBranchState>[0]> = {}) =>
+      remoteTaskBranchState({ clone, env, branch, ...extra });
+    const copyBranch = () => copyCloneBranchToOrigin({ origin: origin.path, clone, branch, env });
+    const fetchAll = (...args: string[]) => runGit(["fetch", ...args, "origin"], { gitDir: clone, env });
+
+    it("is absent when origin has no such branch", async () => {
+      await fetchAll();
+      expect(await state()).toEqual({ state: "absent" });
+    });
+
+    it("is equal when the two tips are the same commit", async () => {
+      await copyBranch();
+      await fetchAll();
+      expect(await state()).toEqual({ state: "present", revision: await branchTip(), relation: "equal" });
+    });
+
+    it("says that the local tip is an ancestor of the remote tip", async () => {
+      await copyBranch();
+      const remote = await origin.addCommit(branch);
+      await fetchAll();
+      expect(await state()).toEqual({ state: "present", revision: remote, relation: "local-ancestor" });
+    });
+
+    it("says that the remote tip is an ancestor of the local tip", async () => {
+      await copyBranch();
+      const remote = await origin.branchHead(branch);
+      await fetchAll();
+      await commitInWorktree(path, env, { file: "work.txt" });
+      expect(await state()).toEqual({ state: "present", revision: remote, relation: "remote-ancestor" });
+    });
+
+    it("says that the tips have diverged", async () => {
+      await copyBranch();
+      const remote = await origin.addCommit(branch);
+      await fetchAll();
+      await commitInWorktree(path, env, { file: "work.txt" });
+      expect(await state()).toEqual({ state: "present", revision: remote, relation: "diverged" });
+    });
+
+    it("is absent after origin deleted the branch and the fetch pruned the ref", async () => {
+      await copyBranch();
+      await fetchAll();
+      await runGit(["branch", "-D", branch], { gitDir: origin.path, env });
+      await fetchAll("--prune");
+      expect(await state()).toEqual({ state: "absent" });
+    });
+
+    it("reads only the ref of origin, not a tag or a local branch with a similar name", async () => {
+      await copyBranch();
+      await fetchAll();
+      const base = await baseTip();
+      await runGit(["tag", `origin/${branch}`, base], { gitDir: clone, env });
+      await runGit(["branch", `origin/${branch}`, base], { gitDir: clone, env });
+      expect(await state()).toEqual({ state: "present", revision: await branchTip(), relation: "equal" });
+    });
+
+    it("stays absent when only a tag or a local branch has the similar name", async () => {
+      await fetchAll();
+      const base = await baseTip();
+      await runGit(["tag", `origin/${branch}`, base], { gitDir: clone, env });
+      await runGit(["branch", `origin/${branch}`, base], { gitDir: clone, env });
+      expect(await state()).toEqual({ state: "absent" });
+    });
+
+    it("rejects a bad branch name before any git call", async () => {
+      const recorded = gitRecorderEnv(origin.dir, env);
+      const error = await failureOf(state({ branch: "-x", env: recorded.env }), Error);
+      expect(error.message).toBe('not a task branch name: "-x"');
+      expect(readArgLog(recorded.log)).toEqual([]);
     });
   });
 
