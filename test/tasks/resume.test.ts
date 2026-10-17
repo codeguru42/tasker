@@ -12,6 +12,7 @@ import {
   latestTaskOf,
   pauseRefineFrom,
   pauseTaskFrom,
+  pauseTaskVia,
   withDataRootStore,
 } from "../helpers/store.js";
 
@@ -35,6 +36,7 @@ describe("resumeTask origins", () => {
   const rows: {
     origin: TaskState;
     refineOrigin?: TaskState;
+    before?: TaskState;
     target: TaskState;
     next: string;
     pauses: readonly Pause[];
@@ -50,6 +52,7 @@ describe("resumeTask origins", () => {
       pauses: BOTH,
       sessions: { ...kept, review: [] },
     },
+    { origin: "merging", before: "accepted", target: "accepted", next: "merge", pauses: BOTH, sessions: kept },
     {
       origin: "refining",
       refineOrigin: "awaiting_plan_review",
@@ -88,18 +91,18 @@ describe("resumeTask origins", () => {
     row.pauses.map((pause) => ({
       ...row,
       pause,
-      label: `${row.refineOrigin === undefined ? row.origin : `${row.origin} after a refine from ${row.refineOrigin}`} in ${pause}`,
+      label: `${row.refineOrigin === undefined ? (row.before === undefined ? row.origin : `${row.origin} after a move from ${row.before}`) : `${row.origin} after a refine from ${row.refineOrigin}`} in ${pause}`,
     })),
   );
 
   it.each(cases)("moves a task paused from $label", async (row) => {
-    const { origin, refineOrigin, target, next, pause, sessions } = row;
+    const { origin, refineOrigin, before, target, next, pause, sessions } = row;
     const { dataRoot, task } = seedApprovedTaskWithSessions();
-    withDataRootStore(dataRoot, (store) =>
-      refineOrigin === undefined
-        ? pauseTaskFrom(store, task.id, origin, pause)
-        : pauseRefineFrom(store, task.id, refineOrigin, pause, FEEDBACK),
-    );
+    withDataRootStore(dataRoot, (store) => {
+      if (refineOrigin !== undefined) return pauseRefineFrom(store, task.id, refineOrigin, pause, FEEDBACK);
+      if (before !== undefined) return pauseTaskVia(store, task.id, before, origin, pause);
+      return pauseTaskFrom(store, task.id, origin, pause);
+    });
 
     const result = await resume(dataRoot, task);
 
@@ -165,6 +168,13 @@ describe("resumeTask checks", () => {
     withDataRootStore(dataRoot, (store) => pauseTaskFrom(store, task.id, "pushing", "interrupted"));
 
     await expectResumeRefused(dataRoot, task, noStep("pushing"));
+  });
+
+  it("refuses merging after a move from in_peer_review", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    withDataRootStore(dataRoot, (store) => pauseTaskVia(store, task.id, "in_peer_review", "merging", "interrupted"));
+
+    await expectResumeRefused(dataRoot, task, noStep("merging"));
   });
 
   it("refuses a refine from accepted", async () => {

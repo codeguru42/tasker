@@ -20,12 +20,14 @@ import {
   latestTaskOf,
   pauseRefineFrom,
   pauseTaskFrom,
+  pauseTaskVia,
   reviewSessionRows,
   seedDeadRun,
   withDataRootStore,
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
+  useAcceptedTask,
   useExecuteFixture,
   usePlanFixture,
   useRefineFixture,
@@ -196,6 +198,22 @@ describe("tasker resume", () => {
     expect(calls[0].argv).not.toContain("--resume");
     expect(reviewSessionRows(dataRoot, work.task.id)).toMatchObject([{ review_number: 1, session_id: sessionId }]);
     expect(latestTaskOf(dataRoot, KEY).state).toBe("reviewed");
+  });
+
+  it.each(PAUSES)("runs tasker merge for a task paused in %s from merging", async (pause) => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) =>
+      pauseTaskVia(store, accepted.task.id, "accepted", "merging", pause),
+    );
+
+    const result = await runResume();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toBe(
+      firstLine("merging", "accepted") + `merged ${KEY}\nlanded: ${accepted.revision} on origin/main\n`,
+    );
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
+    expect(eventDataOf(accepted.dataRoot, KEY, "resume")).toEqual([{ origin: "merging", target: "accepted" }]);
   });
 
   it("moves a task with a dead run to interrupted, then resumes it", async () => {
