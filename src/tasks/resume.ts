@@ -72,8 +72,11 @@ const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   },
 };
 
-// Resume has no fallback, so it refuses a refine origin with no row.
-const RESUME_TABLES: OriginTables<ResumeRow> = { rows: RESUME_TABLE, refineRows: REFINE_RESUME_TABLE };
+// The refining entry has no fallback, so resume refuses a refine origin with no row.
+const RESUME_TABLES: OriginTables<ResumeRow> = {
+  rows: RESUME_TABLE,
+  byOriginOf: { refining: { rows: REFINE_RESUME_TABLE } },
+};
 
 // Moves a task in quota_blocked or interrupted back to the state before the run that stopped, under the task lock,
 // and says which command runs next. The caller runs that command after the lock is free.

@@ -64,11 +64,10 @@ const REFINE_RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   awaiting_work_review: { target: "awaiting_work_review", next: "review-feedback", clears: {} },
 };
 
-// A refine origin with no row keeps the row of a plain refine.
+// The refining entry has a fallback: a refine origin with no row keeps the row of a plain refine.
 const RETRY_TABLES: OriginTables<RetryRow> = {
   rows: RETRY_TABLE,
-  refineRows: REFINE_RETRY_TABLE,
-  refineFallback: PLAIN_REFINE_ROW,
+  byOriginOf: { refining: { rows: REFINE_RETRY_TABLE, fallback: PLAIN_REFINE_ROW } },
 };
 
 // The row of verifying with --resume-execute.

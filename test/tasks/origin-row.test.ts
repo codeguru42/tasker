@@ -7,9 +7,12 @@ import { useTempDir } from "../helpers/temp.js";
 
 const TABLES: OriginTables<string> = {
   rows: { planning: "planning row" },
-  refineRows: { reviewed: "reviewed refine row" },
+  byOriginOf: { refining: { rows: { reviewed: "reviewed refine row" } } },
 };
-const WITH_FALLBACK: OriginTables<string> = { ...TABLES, refineFallback: "fallback row" };
+const WITH_FALLBACK: OriginTables<string> = {
+  ...TABLES,
+  byOriginOf: { refining: { rows: { reviewed: "reviewed refine row" }, fallback: "fallback row" } },
+};
 
 // Calls originRow on the events of a task that is in refining, or that has no move into refining. refineOrigin is the
 // state that the last refine left.
