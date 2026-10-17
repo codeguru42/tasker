@@ -181,7 +181,7 @@ Lists the tasks by issue key and state, and needs no task. See [the reference](r
 
 ### `tasker show`
 
-Prints the details of the task of an issue, in any state. See [the reference](references/inspect.md#tasker-show).
+Prints the details of the task of an issue, in any state, with the facts of a pause for a paused task. See [the reference](references/inspect.md#tasker-show).
 
 ### `tasker show-bootstrap`
 

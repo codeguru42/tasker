@@ -60,7 +60,17 @@ A field with no value prints `-`. The `last event` line holds the time, the type
 
 If the task is in the state `failed`, the command prints two more lines. `failed in` gives the state that the task left when it failed. `error` gives the error of the failure.
 
-Then the command prints the commands of the state, after the fields and before the todo block. For a state with a primary command, it prints `next: tasker <primary> <issue key>` and `also: tasker <other> <issue key>, ...`. For a state with no primary command, it prints one line, `commands: tasker <a> <issue key>, ...`. For `finished` and `cancelled`, it prints no line. [The commands of each state](../../../docs/statemachine.md#the-commands-of-each-state) gives the table.
+If the task is in one of the states of this table, the command prints the lines of its row after the `last event` line. The facts come from the data of the last move into that state.
+
+| State                     | Lines                                     |
+| ------------------------- | ----------------------------------------- |
+| `quota_blocked`           | `paused from`, `cause`, `resets at`       |
+| `awaiting_quota_approval` | `paused from`, `utilization`, `resets at` |
+| `interrupted`             | `paused from`, `cause`                    |
+
+`paused from` gives the state that the task left. `resets at` gives the reset time of the quota window as ISO 8601 text in UTC, as the output of a quota stop does. It prints `-` when the pause has no reset time. `utilization` prints the value as the event holds it, for example `0.95`. The cause `signal` prints as `cause: signal <name>`, for example `cause: signal SIGTERM`. In each other state, the command prints none of these lines.
+
+Then the command prints the commands of the state, after the fields, the `failed` lines and the pause lines, and before the todo block. For a state with a primary command, it prints `next: tasker <primary> <issue key>` and `also: tasker <other> <issue key>, ...`. For a state with no primary command, it prints one line, `commands: tasker <a> <issue key>, ...`. For `finished` and `cancelled`, it prints no line. [The commands of each state](../../../docs/statemachine.md#the-commands-of-each-state) gives the table.
 
 If the pinned plan revision has at least one todo with a recorded state, the command prints a todo block after the fields. The pinned revision is the approved revision with the highest version. The block starts with the line `todos (approved v<N>):`. Then it prints one line for each todo of the revision, in the order of the plan: `<state>  <id>  <title>`. The state is `done`, `in progress` or `not started`. The command pads the state and the id to the longest value of the revision, and two spaces separate the columns.
 
