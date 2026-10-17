@@ -240,6 +240,14 @@ export interface TaskStore extends LockStore {
   endRun(id: number, state: string, check?: (current: Task) => NewEvent | undefined): Task;
   // Tells if the run of a task in a spawning state is alive. The process of tasker decides, never the child.
   runStatus(id: number): RunStatus;
+  // Reads the run status and, only for a dead run, moves the task to state (not spawning), deletes its marker and
+  // appends the event of check, in one transaction. It gives undefined and writes nothing for none or running.
+  // from is the state of the task before the move.
+  endDeadRun(
+    id: number,
+    state: string,
+    check: (current: Task, childPid: number | null) => NewEvent | undefined,
+  ): { task: Task; from: string; childPid: number | null } | undefined;
   // Adds the pid of the child to the run marker of this process.
   setRunChildPid(id: number, childPid: number): void;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
@@ -960,6 +968,20 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     statements.deleteRunMarker.run(id);
   }
 
+  // The run status of a task and its state. It opens no transaction. The caller must have one open.
+  function runStatusStep(id: number): { state: string; status: RunStatus } {
+    const row = statements.selectRunStatus.get(id) as
+      { state: string; pid: number | null; child_pid: number | null } | undefined;
+    if (row === undefined) {
+      throw taskNotFound(id);
+    }
+    const { state } = row;
+    if (!isSpawningState(state)) return { state, status: { status: "none" } };
+    if (row.pid === null) return { state, status: { status: "dead", childPid: null } };
+    if (pidIsLive(row.pid)) return { state, status: { status: "running", pid: row.pid } };
+    return { state, status: { status: "dead", childPid: row.child_pid } };
+  }
+
   // The steps of the todo marks, the fix turn and the session clears. They open no transaction, so the caller must
   // have one open. The public methods and retryTask share them.
   function markExecuteTodosDoneStep(taskId: number, version: number, at: string): void {
@@ -1147,16 +1169,21 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     runStatus(id) {
       // The read and the pid check share the write lock, so an endRun of another process cannot
       // commit in between and make an ended run look dead.
-      return immediateTransaction(db, (): RunStatus => {
-        const row = statements.selectRunStatus.get(id) as
-          { state: string; pid: number | null; child_pid: number | null } | undefined;
-        if (row === undefined) {
-          throw taskNotFound(id);
-        }
-        if (!isSpawningState(row.state)) return { status: "none" };
-        if (row.pid === null) return { status: "dead", childPid: null };
-        if (pidIsLive(row.pid)) return { status: "running", pid: row.pid };
-        return { status: "dead", childPid: row.child_pid };
+      return immediateTransaction(db, () => runStatusStep(id).status);
+    },
+
+    endDeadRun(id, state, check) {
+      return immediateTransaction(db, () => {
+        const { state: from, status } = runStatusStep(id);
+        if (status.status !== "dead") return undefined;
+        const { childPid } = status;
+        const task = writeTaskStep(
+          id,
+          { state },
+          (current) => check(current, childPid),
+          () => endRunStep(id, state),
+        );
+        return { task, from, childPid };
       });
     },
 
