@@ -1,8 +1,10 @@
+import { spawn } from "node:child_process";
 import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
-import { type GroupResult, forwardSignals, runInGroup, signalGroup } from "../../src/process/run-group.js";
+import { type GroupResult, forwardSignals, runInGroup, signalGroup, stopGroup } from "../../src/process/run-group.js";
 import {
+  deadPid,
   isAlive,
   readPidFile,
   signalListenerCounts,
@@ -16,6 +18,8 @@ import { useTempDir } from "../helpers/temp.js";
 
 const MINUTE_MS = 60_000;
 const IGNORE_TERM = 'trap "" TERM; sleep 30';
+// A leader that ignores SIGTERM. It writes its pid to leader.pid after the trap, so a signal after the read finds the trap.
+const LEADER_IGNORES_TERM = 'trap "" TERM; echo $$ > leader.pid; sleep 30';
 
 interface Run {
   result: GroupResult;
@@ -179,7 +183,7 @@ describe("runInGroup", () => {
   it("kills a leader that ignores SIGTERM 5 s after the deadline", { timeout: 20_000 }, async () => {
     const cwd = useTempDir("tasker-run-group-cwd-");
     const started = Date.now();
-    const running = runLogged('trap "" TERM; echo $$ > leader.pid; sleep 30', {
+    const running = runLogged(LEADER_IGNORES_TERM, {
       cwd,
       deadline: started + 300,
     });
@@ -442,5 +446,37 @@ describe("forwardSignals", () => {
     expect(signalListenerCounts()).toEqual([before[0] + 1, before[1] + 1]);
     forward.stop();
     expect(signalListenerCounts()).toEqual(before);
+  });
+});
+
+describe("stopGroup", () => {
+  it("stops a group that ends at SIGTERM", async () => {
+    const pid = startSleeper();
+
+    await stopGroup(pid);
+
+    expect(isAlive(pid)).toBe(false);
+  });
+
+  it("kills a group that ignores SIGTERM after the grace time", async () => {
+    const cwd = useTempDir("tasker-run-group-cwd-");
+    spawn("sh", ["-c", LEADER_IGNORES_TERM], { cwd, detached: true, stdio: "ignore" });
+    const pid = await readPidFile(join(cwd, "leader.pid"), 5000);
+    const start = Date.now();
+
+    await stopGroup(pid);
+
+    expect(isAlive(pid)).toBe(false);
+    expect(Date.now() - start).toBeGreaterThanOrEqual(4500);
+  }, 20_000);
+
+  it("resolves for a group that is already gone", async () => {
+    await expect(stopGroup(deadPid())).resolves.toBeUndefined();
+  });
+
+  it.each([0, 1, -5, 1.5])("rejects the pid %s and sends no signal", async (pid) => {
+    await expect(stopGroup(pid)).rejects.toThrow(
+      new RangeError(`cannot stop the process group of pid ${pid}: the pid must be a whole number of 2 or more`),
+    );
   });
 });
