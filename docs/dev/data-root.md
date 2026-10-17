@@ -193,6 +193,8 @@ The tasker process decides if a run is alive, not the child. Tasker owns the run
 
 The move into a spawning state and the write of the marker happen in one transaction. With two separate writes, a crash between them leaves a spawning state with no marker, or a marker of a state that the task left. The move out of a spawning state and the delete of the marker share a transaction for the same reason. The read of the run status holds the write lock too. So the end of a run in another process cannot come between the read and the check of the process, and a run that ended in the correct way never looks dead.
 
+A command finds a dead run. The shared task lookup of the task commands does it before it gives the task to a command, so `tasker show` and `tasker abort` find a dead run too. `tasker status` does it for each task in a spawning state before it lists the tasks. The step moves the task to `interrupted` and deletes the marker. If the child of the run still runs, the step sends SIGTERM to the process group of the child. If the group still runs five seconds later, the step sends SIGKILL. Then the step waits until the group is gone. [A dead run](tasks.md#a-dead-run) gives the reasons and the limits.
+
 These rules hold:
 
 - A move into a spawning state is an error when the task has a marker. This holds also when the process of the marker is dead.

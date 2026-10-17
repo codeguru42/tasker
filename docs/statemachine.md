@@ -205,6 +205,7 @@ flowchart LR
   class Q,QA,X pause;
 ```
 
+- `run died: detected` means that a command found a dead run and moved the task to `interrupted`. [The `run_markers` table](dev/data-root.md#run_markers-table) says which commands find a dead run.
 - `verifying`, `pushing`, `opening_pr`, `merging`, `finishing` and `updating_branch` spawn no assistant. As a result, only `interrupted` can come from them in practice. No run can reach the two quota pauses from these states.
 - `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there. Under `ask`, the threshold pause into `awaiting_quota_approval` applies.
 - A resume moves the task to the state before the spawn, then runs the same command again. So the task goes straight back into a spawning state.

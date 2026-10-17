@@ -67,6 +67,8 @@ A dirty worktree needs `--force`, because the abort cannot bring the work back. 
 
 A task that is `finished` or `cancelled` is an error, because it has nothing to abort.
 
+A task with a run in progress is an error too. The abort reads the run status after the state check and before its first write, so a refused abort changes nothing. The error names the state and the pid of the tasker process. A dead run is not a run in progress. See [A dead run](#a-dead-run).
+
 An abort can stop between two steps, for example after a crash. A second run must finish it. As a result, each step first checks that its target still exists, and a step with no target does nothing.
 
 The compare of the stored worktree path uses the real path. The data root can go through a symlink, and git lists real paths.
@@ -80,6 +82,27 @@ The remove and the delete have one home in `src/tasks/`. Abort and [Finish](#fin
 The abort does not delete the task branch on `origin`. `tasker merge` pushes only the base branch, and no command publishes a task branch.
 
 A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task stores.
+
+## A dead run
+
+A run is dead when a task is in a spawning state and the tasker process of its run marker is gone. [The `run_markers` table](data-root.md#run_markers-table) says how a command finds it. A shared step moves the task to `interrupted` and stops the child of the run if it still runs.
+
+The step exists for these reasons:
+
+- The first command that sees a dead run records it. As a result, `tasker status` shows the truth, and an orchestrator can read it.
+- A resume would start a second assistant in the same worktree. So the step stops the child first.
+- The read of the run status and the move share one transaction. As a result, two commands at the same time cannot both write the move.
+
+The move comes before the checks of the command. It is an exception to the rule of the [intro](#the-task-commands) that a command makes all its checks before its first write. A command that finds a dead run records it first, even when the command then refuses the task. See [The locks](#the-locks) for the task lock.
+
+The step takes no task lock. The one transaction of the read and the move is the guard. See [Writes from more than one process](data-root.md#writes-from-more-than-one-process).
+
+A failed stop of the child is a note on stderr. The task stays in `interrupted`.
+
+The step has these limits:
+
+- A pid can be reused. A reused pid looks live, so the step can miss a dead run or signal the wrong process group.
+- The step finds only a run on this machine. A run on another machine is not found.
 
 ## The result of an assistant run
 
@@ -114,7 +137,7 @@ The steps run in this order.
 5. The command writes the plan file before it adds the row. [Plan files](data-root.md#plan-files) gives the reason.
 6. The row, its event and the move to `awaiting_plan_review` share one transaction. [The plan_revisions table](data-root.md#plan_revisions-table) gives the rule.
 
-An error after the start of the run also moves the task to `failed`, with the prefix `planning failed:`. A failed write of the plan file moves it to `failed` too, with its own message. A crash of tasker leaves the task in `planning`, with its run marker. Until M9, `tasker abort` is the way out.
+An error after the start of the run also moves the task to `failed`, with the prefix `planning failed:`. A failed write of the plan file moves it to `failed` too, with its own message. After a crash of tasker, the next command that reads the task moves it to `interrupted`. See [A dead run](#a-dead-run).
 
 The plan reads the title and the body of the issue. It does not read the comments. A second `tasker plan` works only on a task in `workspace_ready`.
 
