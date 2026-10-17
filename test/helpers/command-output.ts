@@ -21,3 +21,9 @@ export function verifiedLine(key: string, run: number): string {
 export function reviewedLinePrefix(key: string, number: number): string {
   return `reviewed ${key}: review ${number}`;
 }
+
+// The first line of tasker resume and tasker approve-credits after the move. Unlike the lines above, it ends with a
+// newline, because the next command goes on in the line after it.
+export function resumedLine(key: string, origin: string, target: string): string {
+  return `resumed ${key}: paused in ${origin}, back in ${target}\n`;
+}

@@ -391,9 +391,11 @@ export function failRefineFrom(
 }
 
 // The detail of the move into each pause, as src writes it: run-outcome.ts writes a rate limit stop with no reset time
-// known, and interruptDeadRun writes the dead run with no child process.
-const PAUSE_DATA: Record<"quota_blocked" | "interrupted", TransitionDetail> = {
+// known, a quota warning writes the use of the window with no reset time known, and interruptDeadRun writes the dead
+// run with no child process.
+const PAUSE_DATA: Record<"quota_blocked" | "awaiting_quota_approval" | "interrupted", TransitionDetail> = {
   quota_blocked: { cause: "rate_limit" },
+  awaiting_quota_approval: { utilization: 0.95 },
   interrupted: { cause: "dead_run", childPid: null },
 };
 
@@ -404,7 +406,7 @@ export function pauseTaskFrom(
   store: TaskStore,
   taskId: number,
   origin: TaskState,
-  pause: "quota_blocked" | "interrupted",
+  pause: "quota_blocked" | "awaiting_quota_approval" | "interrupted",
   data?: TransitionDetail,
 ): Task {
   placeTask(store, taskId, origin);

@@ -3,7 +3,14 @@ import { resume } from "../../src/commands/resume.js";
 import { canonicalPath } from "../../src/real-path.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
-import { executedLine, plannedLine, refinedLine, reviewedLinePrefix, verifiedLine } from "../helpers/command-output.js";
+import {
+  executedLine,
+  plannedLine,
+  refinedLine,
+  resumedLine,
+  reviewedLinePrefix,
+  verifiedLine,
+} from "../helpers/command-output.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID, TEST_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   answerStream,
@@ -47,7 +54,6 @@ const PAUSES = ["quota_blocked", "interrupted"] as const;
 const runResume = (key = KEY, ...extra: string[]) => runCommand(resume, "resume", key, ...extra);
 
 // The first line of the output of tasker resume.
-const firstLine = (origin: string, target: string) => `resumed ${KEY}: paused in ${origin}, back in ${target}\n`;
 
 const V2_ANSWER = validPlanAnswer({
   plan_markdown: "## Summary\n\nAdd the b module and its test, test first.\n",
@@ -68,7 +74,7 @@ describe("tasker resume", () => {
     const result = await runResume();
 
     expect(result.code).toBe(0);
-    expect(result.out.startsWith(firstLine("planning", "workspace_ready"))).toBe(true);
+    expect(result.out.startsWith(resumedLine(KEY, "planning", "workspace_ready"))).toBe(true);
     expect(result.out).toContain(plannedLine(KEY, 1));
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
@@ -92,7 +98,7 @@ describe("tasker resume", () => {
         const result = await runResume();
 
         expect(result.code).toBe(0);
-        expect(result.out.startsWith(firstLine("refining", "awaiting_plan_review"))).toBe(true);
+        expect(result.out.startsWith(resumedLine(KEY, "refining", "awaiting_plan_review"))).toBe(true);
         expect(result.out).toContain(refinedLine(KEY, 2));
         const calls = fixture.claude.calls();
         expect(calls).toHaveLength(1);
@@ -111,7 +117,7 @@ describe("tasker resume", () => {
       const result = await runResume();
 
       expect(result.code).toBe(0);
-      expect(result.out.startsWith(firstLine("refining", "reviewed"))).toBe(true);
+      expect(result.out.startsWith(resumedLine(KEY, "refining", "reviewed"))).toBe(true);
       expect(result.out).toContain(refinedLine(KEY, 2));
       expect(fixture.claude.calls()[0].stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
     });
@@ -141,7 +147,7 @@ describe("tasker resume", () => {
       const result = await runResume();
 
       expect(result.code).toBe(0);
-      expect(result.out.startsWith(firstLine("refining", "awaiting_work_review"))).toBe(true);
+      expect(result.out.startsWith(resumedLine(KEY, "refining", "awaiting_work_review"))).toBe(true);
       expect(result.out).toContain(refinedLine(KEY, 2));
       expect(fixture.claude.calls()[0].stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
     });
@@ -159,7 +165,7 @@ describe("tasker resume", () => {
     const result = await runResume();
 
     expect(result.code).toBe(0);
-    expect(result.out.startsWith(firstLine("executing", "approved"))).toBe(true);
+    expect(result.out.startsWith(resumedLine(KEY, "executing", "approved"))).toBe(true);
     expect(result.out).toContain(executedLine(KEY, 1));
     expect(result.out).toContain("todos: 2 of 2 done");
     const calls = fixture.claude.calls();
@@ -176,7 +182,7 @@ describe("tasker resume", () => {
     const result = await runResume();
 
     expect(result.code).toBe(0);
-    expect(result.out.startsWith(firstLine("verifying", "executed"))).toBe(true);
+    expect(result.out.startsWith(resumedLine(KEY, "verifying", "executed"))).toBe(true);
     expect(result.out).toContain(verifiedLine(KEY, 1));
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_work_review");
   });
@@ -192,7 +198,7 @@ describe("tasker resume", () => {
     const result = await runResume(work.key);
 
     expect(result.code).toBe(0);
-    expect(result.out.startsWith(firstLine("reviewing", "awaiting_work_review"))).toBe(true);
+    expect(result.out.startsWith(resumedLine(KEY, "reviewing", "awaiting_work_review"))).toBe(true);
     expect(result.out).toContain(reviewedLinePrefix(KEY, 1));
     const calls = work.claude.calls();
     expect(calls).toHaveLength(1);
@@ -213,7 +219,7 @@ describe("tasker resume", () => {
 
     expect(result.code).toBe(0);
     expect(result.out).toBe(
-      firstLine("merging", "accepted") + `merged ${KEY}\nlanded: ${accepted.revision} on origin/main\n`,
+      resumedLine(KEY, "merging", "accepted") + `merged ${KEY}\nlanded: ${accepted.revision} on origin/main\n`,
     );
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
     expect(eventDataOf(accepted.dataRoot, KEY, "resume")).toEqual([{ origin: "merging", target: "accepted" }]);
@@ -228,7 +234,7 @@ describe("tasker resume", () => {
 
     expect(result.code).toBe(0);
     expect(result.out).toBe(
-      firstLine("finishing", "landed") +
+      resumedLine(KEY, "finishing", "landed") +
         `removed the worktree ${canonicalPath(worktree)}\ndeleted the branch ${branch}\nfinished ${KEY}\n`,
     );
     expect(latestTaskOf(dataRoot, KEY).state).toBe("finished");
@@ -246,7 +252,9 @@ describe("tasker resume", () => {
       const result = await runResume();
 
       expect(result.code).toBe(0);
-      expect(result.out).toBe(firstLine("finishing", "landed") + `deleted the branch ${branch}\nfinished ${KEY}\n`);
+      expect(result.out).toBe(
+        resumedLine(KEY, "finishing", "landed") + `deleted the branch ${branch}\nfinished ${KEY}\n`,
+      );
     },
   );
 
@@ -259,7 +267,7 @@ describe("tasker resume", () => {
 
     expect(result.code).toBe(0);
     expect(result.err).toContain(deadRunNote(KEY, "verifying"));
-    expect(result.out.startsWith(firstLine("verifying", "executed"))).toBe(true);
+    expect(result.out.startsWith(resumedLine(KEY, "verifying", "executed"))).toBe(true);
     withDataRootStore(dataRoot, (store) => expect(store.latestVerifyRun(fixture.task.id)?.number).toBe(1));
   });
 
@@ -271,7 +279,7 @@ describe("tasker resume", () => {
     const result = await runResume();
 
     expect(result.code).toBe(1);
-    expect(result.out).toBe(firstLine("verifying", "executed"));
+    expect(result.out).toBe(resumedLine(KEY, "verifying", "executed"));
     expect(result.err).toContain("verify command 1 failed: false: exit code 1.");
     expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
     withDataRootStore(dataRoot, (store) => expect(store.latestVerifyRun(fixture.task.id)?.number).toBe(1));

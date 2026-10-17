@@ -830,16 +830,19 @@ describe("failRefineFrom", () => {
 });
 
 describe("pauseTaskFrom", () => {
-  it.each(["quota_blocked", "interrupted"] as const)("pauses the task in %s from the origin", (pause) => {
-    const { dataRoot, task } = seedTaskIn("workspace_ready");
+  it.each(["quota_blocked", "awaiting_quota_approval", "interrupted"] as const)(
+    "pauses the task in %s from the origin",
+    (pause) => {
+      const { dataRoot, task } = seedTaskIn("workspace_ready");
 
-    withDataRootStore(dataRoot, (store) => {
-      pauseTaskFrom(store, task.id, "executing", pause);
+      withDataRootStore(dataRoot, (store) => {
+        pauseTaskFrom(store, task.id, "executing", pause);
 
-      expect(store.getTask(task.id)?.state).toBe(pause);
-      expect(transitionFromEvents(store.listEvents(task.id), pause)).toBe("executing");
-    });
-  });
+        expect(store.getTask(task.id)?.state).toBe(pause);
+        expect(transitionFromEvents(store.listEvents(task.id), pause)).toBe("executing");
+      });
+    },
+  );
 
   it("writes the detail of src by default", () => {
     const { dataRoot, task } = seedTaskIn("workspace_ready");
@@ -853,6 +856,20 @@ describe("pauseTaskFrom", () => {
         { cause: "rate_limit", from: "planning", to: "quota_blocked" },
         { cause: "dead_run", childPid: null, from: "executing", to: "interrupted" },
       ]);
+    });
+  });
+
+  it("writes the detail of a quota warning by default in awaiting_quota_approval", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseTaskFrom(store, task.id, "planning", "awaiting_quota_approval");
+
+      expect(store.listEvents(task.id).at(-1)?.data).toEqual({
+        utilization: 0.95,
+        from: "planning",
+        to: "awaiting_quota_approval",
+      });
     });
   });
 

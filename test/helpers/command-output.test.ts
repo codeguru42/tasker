@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { executedLine, plannedLine, refinedLine, reviewedLinePrefix, verifiedLine } from "./command-output.js";
+import {
+  executedLine,
+  plannedLine,
+  refinedLine,
+  resumedLine,
+  reviewedLinePrefix,
+  verifiedLine,
+} from "./command-output.js";
 
 describe("command output lines", () => {
   it("builds the planned line", () => {
@@ -20,5 +27,11 @@ describe("command output lines", () => {
 
   it("builds the prefix of the reviewed line", () => {
     expect(reviewedLinePrefix("a/b#1", 5)).toBe("reviewed a/b#1: review 5");
+  });
+
+  it("builds the resumed line with a newline", () => {
+    expect(resumedLine("a/b#1", "planning", "workspace_ready")).toBe(
+      "resumed a/b#1: paused in planning, back in workspace_ready\n",
+    );
   });
 });
