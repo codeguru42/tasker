@@ -17,7 +17,7 @@ The work on this repo must continue on any machine, as [What goes in a ticket](p
 
 ## Core features first
 
-- The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge case. Decide it as "later", and keep the ticket in its scope.
+- The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge case. Decide it as "later", and keep the ticket in its scope. The goal of the numbered milestones is parity with [the installed tasker](orchestration.md): each command of the installed tasker, with its core features. A feature that the installed tasker does not have also waits until later, as an edge case does.
 - Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at once. [Review findings](orchestration.md#review-findings) of orchestration.md defines both terms and gives the steps for a finding of a review.
 - Each piece of work that waits becomes an issue in its later milestone, as [The milestone of an issue](planning.md#the-milestone-of-an-issue) of planning.md says. [issues.md](issues.md) gives the steps to file the issue.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is a process that has the same pid at each start, so that the lock row of a crashed run looks like the lock row of the process itself.
