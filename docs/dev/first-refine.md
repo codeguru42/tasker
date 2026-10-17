@@ -84,6 +84,8 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - Before the plan adds a test helper, ask it to search `test/commands/`, `test/tasks/` and `test/helpers/` for a helper that does the same job. On #178, one shared check of a refused command replaced three local copies.
 - The rule of [Tests](rules.md#tests) on shared test helpers also covers a one-line wrapper around a shared helper. The second copy of such a wrapper is a duplication. On #179, three such wrappers cost one review loop.
 - If a command has a failure path that ends in a state other than `failed`, ask the plan to give the shared failure step of `src/tasks/` the target state as an argument. On #180, the catch block of `finish` copied the steps, and the review found the copy.
+- In a ticket that adds a command to the table of `src/state/commands.ts`, the rows of the command land in the same implementation commit as the registration of the command. Otherwise the test that each row names only a command that `tasker --help` lists fails in each implementation commit between the two. On #273, the execute session split the rows and the registration, and `tasker verify` failed.
+- A `test:` commit that changes a shared test helper of `test/helpers/` also changes the test file of that helper, `test/helpers/<name>.test.ts`. In the first refine, name the test file of each helper that the plan changes. On #273, the session changed the expected rows in `test/helpers/state-commands.ts` and left the literal expectations in its test file. As a result, six tests failed at each implementation commit.
 
 ## A ticket that only adds a layer, for example a schema
 
