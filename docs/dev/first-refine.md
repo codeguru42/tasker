@@ -141,7 +141,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Make sure that each numbered list still renders. An edit can join two items on one line.
 - Scope a new rule narrowly. A ban on X everywhere clashes with docs that must name X to describe a behavior. Compare each sentence that scopes a case out ("the rules do not cover X") word for word with the issue. On #165, the plan turned such a sentence into a ban ("X does no handoff").
 - If a step contains a nested step with its own result, say what each result means for the outer step. The failure rule of the outer step must name each result of the nested step. The agent of #125 learned this in its review loops.
-- Ask the plan to copy the exact condition of a nested check into each place that links to it, for example an exit code of `git cherry` (#163).
+- Ask the plan to copy the exact condition of a nested check into each place that links to it, for example an exit code of `git cherry` (#163). The outer step owns the stops and the "continue" sentences. Each check owns its own cases, and a link keeps only the condition. On #206, a full copy next to each link drew duplication findings in loop 1.
 - If one rule has two actors of the same kind, for example an earlier and a later task, name the actor in each sentence (#125).
 - If one rule has two kinds of actor, for example the orchestrator and an agent, ask the plan to list each sentence with its actor. Otherwise the review finds each failure path that names only one actor (#135).
 - If a rule waits for a report from another orchestrator, it also gives that orchestrator the duty to send the report. Otherwise the wait has no end. On #147, review 1 found this gap.
