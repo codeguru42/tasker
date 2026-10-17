@@ -25,10 +25,12 @@ import {
   eventDataOf,
   eventsOf,
   failRefineFrom,
+  failTaskVia,
   failTaskFrom,
   failVerifyRun,
   pauseRefineFrom,
   pauseTaskFrom,
+  pauseTaskVia,
   lastErrorOf,
   latestTaskOf,
   lockNames,
@@ -759,6 +761,45 @@ describe("failTaskFrom", () => {
 
       expect(failedFrom(store, task.id)).toBe("executing");
       expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
+    });
+  });
+});
+
+describe("failTaskVia", () => {
+  it("fails the task in origin after a recorded move from before", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      failTaskVia(store, task.id, "accepted", "merging");
+
+      expect(store.getTask(task.id)?.state).toBe("failed");
+      expect(failedFrom(store, task.id)).toBe("merging");
+      expect(transitionFromEvents(store.listEvents(task.id), "merging")).toBe("accepted");
+      expect(lastTransitionError(store.listEvents(task.id))).toBe("merging failed: test");
+    });
+  });
+
+  it("uses the given message", () => {
+    const { dataRoot, task } = seedTaskIn("accepted");
+
+    withDataRootStore(dataRoot, (store) => {
+      failTaskVia(store, task.id, "accepted", "merging", "boom");
+
+      expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
+    });
+  });
+});
+
+describe("pauseTaskVia", () => {
+  it.each(["quota_blocked", "interrupted"] as const)("pauses the task in %s after a recorded move", (pause) => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseTaskVia(store, task.id, "accepted", "merging", pause);
+
+      expect(store.getTask(task.id)?.state).toBe(pause);
+      expect(transitionFromEvents(store.listEvents(task.id), pause)).toBe("merging");
+      expect(transitionFromEvents(store.listEvents(task.id), "merging")).toBe("accepted");
     });
   });
 });

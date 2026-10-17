@@ -353,11 +353,30 @@ export function failTaskFrom(
   return failTask(store, taskId, message);
 }
 
-// Moves the task to refineOrigin with no edge check, then into refining. It records a real move into refining, so
-// transitionFromEvents(events, "refining") gives refineOrigin. The move records feedback only when one is given.
-function enterRefineFrom(store: TaskStore, taskId: number, refineOrigin: TaskState, feedback?: string): Task {
-  placeTask(store, taskId, refineOrigin);
-  return transitionTask(store, taskId, "refining", feedback === undefined ? undefined : { feedback });
+// Moves the task to before with no edge check, then into origin with a real move. It records the move, so
+// transitionFromEvents(events, origin) gives before. detail is the detail of the move.
+function enterVia(
+  store: TaskStore,
+  taskId: number,
+  before: TaskState,
+  origin: TaskState,
+  detail?: TransitionDetail,
+): Task {
+  placeTask(store, taskId, before);
+  return transitionTask(store, taskId, origin, detail);
+}
+
+// Moves the task to before with no edge check, then into origin with a real move, then fails it with message. After it,
+// transitionFromEvents(events, origin) gives before, and failedFrom gives origin.
+export function failTaskVia(
+  store: TaskStore,
+  taskId: number,
+  before: TaskState,
+  origin: TaskState,
+  message = `${origin} failed: test`,
+): Task {
+  enterVia(store, taskId, before, origin);
+  return failTask(store, taskId, message);
 }
 
 // Moves the task to refineOrigin with no edge check, then into refining, then fails it with message. It records a real
@@ -368,8 +387,7 @@ export function failRefineFrom(
   refineOrigin: TaskState,
   message = "refining failed: test",
 ): Task {
-  enterRefineFrom(store, taskId, refineOrigin);
-  return failTask(store, taskId, message);
+  return failTaskVia(store, taskId, refineOrigin, "refining", message);
 }
 
 // The detail of the move into each pause, as src writes it: run-outcome.ts writes a rate limit stop with no reset time
@@ -393,8 +411,21 @@ export function pauseTaskFrom(
   return transitionTask(store, taskId, pause, data ?? PAUSE_DATA[pause]);
 }
 
+// Moves the task to before with no edge check, then into origin with a real move, then pauses it. After it,
+// transitionFromEvents(events, origin) gives before, and transitionFromEvents(events, pause) gives origin.
+export function pauseTaskVia(
+  store: TaskStore,
+  taskId: number,
+  before: TaskState,
+  origin: TaskState,
+  pause: "quota_blocked" | "interrupted",
+): Task {
+  enterVia(store, taskId, before, origin);
+  return transitionTask(store, taskId, pause, PAUSE_DATA[pause]);
+}
+
 // Moves the task to refineOrigin with no edge check, then into refining, then pauses it. feedback is the feedback that
-// the move into refining records. transitionFromEvents(events, "refining") gives refineOrigin.
+// the move into refining records, when one is given. transitionFromEvents(events, "refining") gives refineOrigin.
 export function pauseRefineFrom(
   store: TaskStore,
   taskId: number,
@@ -402,7 +433,7 @@ export function pauseRefineFrom(
   pause: "quota_blocked" | "interrupted",
   feedback?: string,
 ): Task {
-  enterRefineFrom(store, taskId, refineOrigin, feedback);
+  enterVia(store, taskId, refineOrigin, "refining", feedback === undefined ? undefined : { feedback });
   return transitionTask(store, taskId, pause, PAUSE_DATA[pause]);
 }
 
