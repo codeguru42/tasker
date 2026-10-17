@@ -791,6 +791,31 @@ describe("task transitions", () => {
       expect(reviewSessionRows(dir, task.id)).toHaveLength(1);
       expect(store.listEvents(task.id)).toEqual(before);
     });
+
+    it("writes each extra event after the resume event, in order", () => {
+      const task = store.createTask(newTask("awaiting_quota_approval"));
+
+      transitionWithResume(store, task.id, "approved", "executing", {}, [
+        { type: "credits_approved", data: { resetsAt: 1792206000 } },
+      ]);
+
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "transition", "resume", "credits_approved"]);
+      expect(events[3].data).toEqual({ resetsAt: 1792206000 });
+    });
+
+    it("writes no extra event for an illegal edge", () => {
+      const task = store.createTask(newTask("quota_blocked"));
+      const before = store.listEvents(task.id);
+
+      expect(() =>
+        transitionWithResume(store, task.id, "executed", "verifying", {}, [
+          { type: "credits_approved", data: { resetsAt: 1792206000 } },
+        ]),
+      ).toThrow("illegal state transition: quota_blocked -> executed");
+
+      expect(store.listEvents(task.id)).toEqual(before);
+    });
   });
 
   describe("transitionWithVerifyRun", () => {
