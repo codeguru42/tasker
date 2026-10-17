@@ -40,7 +40,7 @@ These errors move the task to the state `failed`. The shared quota stop and the 
 - The assistant fails or a turn runs out of time. The error is `executing failed: <reason>` or `executing timed out after <n> min`. When no time is left before a turn, the error is `executing <turn> timed out after <n> min`.
 - The tip of the branch moved, or the remote cannot be read after a turn. The error is the push error above or `cannot read the remote after the run: <error>`.
 
-For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked` or `interrupted`, run `tasker resume <issue>`. For a task in `awaiting_quota_approval`, run `tasker abort <issue>` to leave the state.
+For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked` or `interrupted`, run `tasker resume <issue>`. For a task in `awaiting_quota_approval`, run `tasker approve-credits <issue>` (see [`tasker approve-credits`](recovery.md#tasker-approve-credits)), or run `tasker abort <issue>` to leave the state.
 
 A quota pause comes after the turn, so the todo of a paused turn stays `done`. The next execute run starts at the next todo.
 

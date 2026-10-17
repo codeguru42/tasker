@@ -35,7 +35,7 @@ These errors move the task to the state `failed`. The shared quota stop and the 
 - The assistant fails or runs out of time. The error is `reviewing failed: <reason>` or `reviewing timed out after <n> min`.
 - The answer is not valid. The error is `the assistant returned findings that tasker refuses:`, then one line for each problem.
 
-[`tasker retry`](recovery.md#tasker-retry) runs a failed review again in a new session. [`tasker resume`](recovery.md#tasker-resume) runs a review again in a new session after a stop in `quota_blocked` or `interrupted`. For a task in `awaiting_quota_approval`, only `tasker abort` leaves the state.
+[`tasker retry`](recovery.md#tasker-retry) runs a failed review again in a new session. [`tasker resume`](recovery.md#tasker-resume) runs a review again in a new session after a stop in `quota_blocked` or `interrupted`. [`tasker approve-credits`](recovery.md#tasker-approve-credits) runs a review again in a new session after a stop in `awaiting_quota_approval`. `tasker abort` is the other way to leave that state.
 
 ### The feedback form
 
