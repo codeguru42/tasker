@@ -32,6 +32,7 @@ const ACCEPTED: Record<TaskCommand, readonly string[]> = {
   finish: ["landed", "cleanup_failed"],
   retry: ["failed"],
   resume: ["quota_blocked", "interrupted"],
+  "approve-credits": ["quota_blocked", "awaiting_quota_approval"],
   abort: ACTIVE_STATES,
 };
 
