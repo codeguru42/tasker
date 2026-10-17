@@ -752,9 +752,9 @@ The agent sends each message to the orchestrator with `SendMessage` and `to: "ma
 
 When the agent must wait for an answer or a next step from the orchestrator, the agent sends its report or its question with `SendMessage`, as [the address rule](#the-address-rule) says. Then the agent gives its final answer, which ends its turn. This final answer is an interim report (see [the final report](#the-final-report)). The agent does not wait in a loop. The message of the orchestrator with the answer or the next step starts the agent again. The reason: a message to an agent that has ended starts the agent again, and the agent keeps its context (see "Terms" in "Quota"). On #153, the agent waited about 25 minutes in a loop for an answer, then ended its turn with a stop report. The message with the answer started the agent again, and the agent went on with its work. The rule also covers each stop after which the agent runs no other `tasker` command until the orchestrator tells it the next step. While the agent waits, the task keeps its state. For a resume message during the wait, see the resume rule in "When the job fires". The rule does not cover a wait that reads a state, for example the "To wait" bullet of "Land the work" or the wait bullet of [the command rules](#the-command-rules).
 
-A wait point is a place on this page where the agent waits for an answer or a next step from the orchestrator. At each wait point, the orchestrator expects an interim report from the agent. The harness is the tool that runs the agent. The harness can deliver the final answer of the agent to the orchestrator in the same way as the final report. At a wait point, the agent starts its interim report with a line that says that the report is not the final report. That line also names what the agent waits for.
+A wait point is a place where the agent waits for an answer or a next step from the orchestrator. At each wait point, the orchestrator expects an interim report from the agent. The harness is the tool that runs the agent. The harness can deliver the final answer of the agent to the orchestrator in the same way as the final report. At a wait point, the agent starts its interim report with a line that says that the report is not the final report. That line also names what the agent waits for.
 
-The agent waits for the orchestrator at these wait points:
+On this page, the agent waits for the orchestrator at these wait points:
 
 - [The parent-hold rule](#the-parent-hold-rule): before a command that moves the task out of a ready state, and when the hold message comes during a wait
 - Step 2 of [Run one ticket](#run-one-ticket): each stop at `tasker start` and after a failed make of the task worktree
@@ -771,6 +771,7 @@ The agent waits for the orchestrator at these wait points:
 - The security report of [Review findings](#review-findings)
 - The no-loop-left rule and the bullet "After the 5th loop" of [Review findings](#review-findings)
 - [Land the work](#land-the-work): after the later agent stops waiting
+- [docs/dev/rebase-conflicts.md](rebase-conflicts.md): each stop of its procedure, when a step of this page sends the agent there
 - [The hold rule](#the-hold-rule): before `tasker accept`
 - [What the agent does](#what-the-agent-does) in "Quota": the end of the turn after a stop in `quota_blocked` or `interrupted`, and the report for `awaiting_quota_approval`
 - A question of the agent, in the sources bullet of [Limits](#limits)
