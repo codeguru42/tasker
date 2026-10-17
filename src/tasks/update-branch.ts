@@ -4,6 +4,7 @@ import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import {
   type BranchSnapshot,
+  type BranchSync,
   type TaskState,
   transitionFromEvents,
   transitionTask,
@@ -40,7 +41,14 @@ export interface BranchUpdated {
   base: string;
   // The tip of the base that the command read.
   baseTip: string;
+  // The task branch.
+  branch: string;
+  // What the sync step did with the copy of the task branch on origin.
+  sync: BranchSync;
+  // The tip of the copy on origin that the sync step fast-forwarded to. It is undefined when the sync step moved nothing.
+  remoteTip: string | undefined;
   how: ResyncResult["how"];
+  // The head at the start of the base step. After a fast-forward of the sync step, this is the remote tip.
   headBefore: string;
   headAfter: string;
   // The state of the task before the command.
@@ -93,9 +101,11 @@ async function backAtStart(
   }
 }
 
-// Brings the worktree of a task up to date with its base. The task lock covers all the steps and does not wait. The
-// repo lock covers the fetch and the move of the branch. When the head moved, the task goes to the target of the
-// demotion table. Otherwise it goes back to its origin state.
+// Brings the worktree of a task up to date with its copy on origin and with its base. The task lock covers all the steps
+// and does not wait. The repo lock covers the fetch and the move of the branch. The sync step comes first. It moves the
+// task branch to the copy on origin only by a fast-forward, and it refuses tips that have diverged. Then the base step
+// runs on the new local tip. A failed base step also undoes the sync move. When the head moved in either step, the task
+// goes to the target of the demotion table. Otherwise it goes back to its origin state.
 export async function updateBranchTask(store: TaskStore, request: UpdateBranchRequest): Promise<UpdateBranchResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => updateBranchLocked(store, request));
 }
@@ -124,12 +134,31 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   const failedIn = origin === "failed" ? transitionFromEvents(store.listEvents(task.id), "failed") : undefined;
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     transitionTask(store, task.id, "updating_branch");
+    // What the sync step did, and the head after it. The catch reads both to undo a sync move.
+    let sync: BranchSync = "none";
+    let syncedHead = before.head;
+    let remoteTip: string | undefined;
     try {
       const { baseTip, contains } = await vcs.baseContainment(ctx, { taskRef: branch, baseRevision });
-      const resynced: Pick<ResyncResult, "how" | "head"> = contains
-        ? { how: "none", head: before.head }
-        : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
-      const moved = resynced.how !== "none";
+      const remote = await vcs.fetchedRemoteTaskRef(ctx, { taskRef: branch });
+      if (remote.state === "absent") {
+        sync = "absent";
+        io.stderr(`note: origin/${branch} does not exist; nothing to sync from\n`);
+      } else if (remote.relation === "local-ancestor") {
+        syncedHead = await vcs.moveWorkspace(ctx, { path, revision: remote.revision });
+        sync = "fast-forward";
+        remoteTip = remote.revision;
+      } else if (remote.relation === "diverged") {
+        throw new Error(
+          `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${task.issueKey} again`,
+        );
+      }
+      // contains describes the tip before the sync step, so it is not valid after a sync move.
+      const resynced: Pick<ResyncResult, "how" | "head"> =
+        contains && sync !== "fast-forward"
+          ? { how: "none", head: syncedHead }
+          : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
+      const moved = sync === "fast-forward" || resynced.how !== "none";
       const state = moved ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
       if (moved) {
@@ -137,26 +166,33 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         if (origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       }
       const after: BranchSnapshot = { ...before, head: resynced.head };
-      transitionWithBranchUpdate(store, task.id, state, { before, after, how: resynced.how, sync: "none" }, writes);
+      transitionWithBranchUpdate(store, task.id, state, { before, after, how: resynced.how, sync }, writes);
       return {
         issueKey: task.issueKey,
         base,
         baseTip,
+        branch,
+        sync,
+        remoteTip,
         how: resynced.how,
-        headBefore: before.head,
+        headBefore: syncedHead,
         headAfter: resynced.head,
         origin,
         state,
       };
     } catch (error) {
       const message = errorMessage(error);
+      if (syncedHead !== before.head) {
+        // Undo the sync move. A failed move back shows in backAtStart, so its error is dropped.
+        await vcs.moveWorkspace(ctx, { path, revision: before.head }).catch(() => undefined);
+      }
       if (await backAtStart(vcs, ctx, { path, branch, head: before.head })) {
         // This step does not call failRunTo: the branch_updated event takes the place of the transition event.
         transitionWithBranchUpdate(
           store,
           task.id,
           origin,
-          { before, after: before, how: "none", sync: "none", error: message },
+          { before, after: before, how: "none", sync, error: message },
           {},
         );
         io.stderr(`${message}\n`);

@@ -491,7 +491,8 @@ describe("tasker update-branch", () => {
       const result = await runUpdateBranch();
 
       expect(result.code).toBe(1);
-      expect(result.err).toMatch(/^updating branch failed: cannot restore the worktree/);
+      expect(result.err.startsWith(absentNote(work))).toBe(true);
+      expect(result.err.slice(absentNote(work).length)).toMatch(/^updating branch failed: cannot restore the worktree/);
       expect(latestTaskOf(work.dataRoot, KEY).state).toBe("failed");
       expect(lastErrorOf(work.dataRoot, work.task.id)).toMatch(/^updating branch failed: cannot restore the worktree/);
       expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();

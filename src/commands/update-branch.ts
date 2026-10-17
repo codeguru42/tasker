@@ -15,7 +15,7 @@ export const updateBranch: RegisterCommand = (program, io) => {
   program
     .command("update-branch")
     .description(
-      "Bring the worktree of a task up to date with its base branch. The task goes through updating_branch. When the head moved, the task goes back to executed, or to awaiting_plan_review for an approved plan, because the old approval or verify result no longer describes the tree",
+      "Bring the worktree of a task up to date with its copy on origin and with its base branch. The command first brings the task branch current with its copy on origin, only by a fast-forward. Tips that have diverged are an error. Then it brings the worktree up to date with its base branch. The task goes through updating_branch. When the head moved, the task goes back to executed, or to awaiting_plan_review for an approved plan, because the old approval or verify result no longer describes the tree",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
@@ -50,6 +50,9 @@ async function updateBranchIssue(
   );
   if ("exitCode" in result) {
     throw new CommanderError(result.exitCode, "tasker.update-branch", "the update did not succeed");
+  }
+  if (result.sync === "fast-forward") {
+    io.stdout(`synced ${result.branch} from origin/${result.branch} at ${String(result.remoteTip)} by fast-forward\n`);
   }
   if (result.how === "none") {
     io.stdout(`${result.issueKey} is current with ${result.base} at ${result.baseTip}; nothing moved\n`);
