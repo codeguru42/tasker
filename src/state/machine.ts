@@ -212,6 +212,18 @@ export function transitionTask(store: TaskStore, id: number, to: TaskState, deta
   return isSpawningState(to) ? store.startRun(id, to, check) : store.endRun(id, to, check);
 }
 
+// Moves the task to interrupted when its run is dead, in one transaction with the read of the run status. It writes
+// one transition event { cause: "dead_run", childPid, from, to }. It gives undefined and writes nothing when the run
+// is not dead. from is the state before the move.
+export function interruptDeadRun(
+  store: TaskStore,
+  id: number,
+): { task: Task; from: string; childPid: number | null } | undefined {
+  return store.endDeadRun(id, "interrupted", (current, childPid) =>
+    transitionCheck("transition", "interrupted", { cause: "dead_run", childPid })(current),
+  );
+}
+
 // Inserts the revision, appends its plan_revision event and moves the task to `to`, in one transaction.
 export function transitionWithPlanRevision(
   store: TaskStore,
