@@ -398,6 +398,20 @@ If the session stops, the execute run fails. The agent then follows the verify-f
 
 After the refine, the agent continues as the verify-failure rule says. When the `tasker verify` after the fix passes, the agent does the commit check before `tasker review`, unless the agent ran `tasker update-branch` after the failed `tasker verify`. This check runs only because a `tasker verify` failed before the fix. When `tasker verify` passes and no failed `tasker verify` came before it, the agent runs no commit check. After `tasker update-branch`, the agent runs no commit check until `tasker verify` fails. `tasker verify` runs after `tasker update-branch` as step 9 and "Land the work" say. If the commit check fails, the agent stops and reports the list of broken commits to the orchestrator. The agent does not run another refine, because the verify-failure rule permits one refine. The task stays in `awaiting_work_review`. The agent waits as [the answer-wait rule](#the-answer-wait-rule) says.
 
+The pushed-branch rule covers a task whose task branch was pushed to `origin` at step 9 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md). After that push, a fixup commit and an autosquash rebase change the task branch of tasker, and `origin` keeps the pushed commits. The fix of a broken commit under the tip still goes into its cause commit. On #201, the next `tasker update-branch` worked again only after the old task branch on `origin` was deleted with a lease. The agent does the rule after step 11 of that page. It does the rule before each later `tasker update-branch` of the task, until step 21 of that page ends. The `tasker update-branch <issue> --take-remote` of step 11 is not a command of the rule. The rule applies to each change of the pushed commits, whatever its cause.
+
+The agent of the ticket does each step in the local clone of the orchestrator, on `main`. No step runs in the tasker clone or in a worktree of tasker. The git commands change no task, for example a task in `awaiting_work_review`, `reviewed`, `awaiting_plan_review` or `failed`. At each stop, the agent runs no `tasker update-branch`. The agent reports to the orchestrator and waits as [the answer-wait rule](#the-answer-wait-rule) says. The task keeps its state. The agent does these steps:
+
+1. Run `git fetch --multiple tasker origin`. If the fetch fails, stop. Nothing changes.
+2. Run `git ls-remote --exit-code --heads origin refs/heads/<task branch>`. [Step 10 of "Run one ticket"](#run-one-ticket) gives its exit codes. If the exit code is 2, `origin` has no task branch. Go to step 7. If the exit code is 0, go on with step 3. If the exit code is another code, stop. Nothing changes.
+3. Read `<commit>` with `git rev-parse --verify origin/<task branch>`. Read `<current>` with `git rev-parse --verify tasker/<task branch>`. The next steps use these hashes, as [the shared-clone rule](#the-shared-clone-rule) says. If a read fails, stop. Nothing changes.
+4. Run `git merge-base --is-ancestor <commit> <current>`. If the exit code is 0, the task branch of tasker contains the pushed commits. Go to step 7. If the exit code is 1, tasker changed the pushed commits. Go on with step 5. If the exit code is another code, stop. Nothing changes.
+5. Make sure that `<commit>` is the same hash as the `<taken>` of the last step 11 of rebase-conflicts.md. If that step recorded no `<taken>`, stop. If the two hashes differ, stop. Nothing changes.
+6. Delete the task branch on `origin` with a lease: `git push --force-with-lease=refs/heads/<task branch>:<commit> origin --delete <task branch>`. If the push fails, for any reason, stop. The push changes nothing on `origin`. [Step 10 of "Run one ticket"](#run-one-ticket) gives two examples: a stale lease, and a branch that is already gone. If the push succeeds, keep `<commit>` as `<deleted>` until step 21 of rebase-conflicts.md ends.
+7. Run the `tasker update-branch` that the step that started the rule asked for, as [the plain-form rule](#the-plain-form-rule) says. That step gives the state of the task after the command.
+
+After step 6, `origin` has no task branch, and the local clone has no `origin/<task branch>`. In step 17 of rebase-conflicts.md, [the take check](rebase-conflicts.md#the-take-check) then uses `<deleted>`. Step 21 of that page then finds exit code 2 in [step 10 of "Run one ticket"](#run-one-ticket), so that step is complete. If the rule ended at step 2 or at step 4, steps 15 to 21 of that page run as they are written.
+
 ### The session check
 
 The session check runs the rebase of the commit check directly on the task branch. The check commands only run the tests and change no commit. The last paragraph of [the commit check](#the-commit-check) gives the facts of this rebase during and after its run. At the end, HEAD is on the task branch. If the rebase stops for another reason, `git rebase --abort` puts the task branch back at its tip, with HEAD on the task branch.
@@ -770,7 +784,7 @@ On this page, the agent waits for the orchestrator at these wait points:
 - [The quote check](#the-quote-check): before `tasker approve` or `tasker accept`
 - [The verify-failure rule](#the-verify-failure-rule): each stop of the agent
 - [The plain-form rule](#the-plain-form-rule) and [the tool-block rule](#the-tool-block-rule): a denied tool call
-- [The broken-commit steps](#the-broken-commit-steps): the stop at the new base commit and the stop after a failed commit check
+- [The broken-commit steps](#the-broken-commit-steps): the stop at the new base commit, the stop after a failed commit check and each stop of the pushed-branch rule
 - [The manual fix](#the-manual-fix): each stop of the agent
 - [The commit check](#the-commit-check): each stop
 - The security report of [Review findings](#review-findings)
