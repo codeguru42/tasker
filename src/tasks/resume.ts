@@ -36,30 +36,23 @@ interface ResumeRow {
   next: ResumeNext;
   // Whether the resume deletes the review session of the next review number.
   clearReview: boolean;
-  // The pause states that the row accepts.
-  pauses: readonly TaskState[];
 }
 
-// The pause states that a row accepts. tasker resume never reaches awaiting_quota_approval, because its state check
-// refuses that state first. tasker approve-credits never reaches interrupted, for the same reason.
-const PAUSES: readonly TaskState[] = ["quota_blocked", "awaiting_quota_approval", "interrupted"];
-
 // The table of resume: the origin (the state that the task left when the run stopped) gives the row. The rows of
-// refining are in REFINE_RESUME_TABLE. A verify run spawns no assistant, so verifying accepts only interrupted.
+// refining are in REFINE_RESUME_TABLE. The state machine allows only interrupted from verifying.
 const RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
-  planning: { target: "workspace_ready", next: "plan", clearReview: false, pauses: PAUSES },
-  executing: { target: "approved", next: "execute", clearReview: false, pauses: PAUSES },
-  verifying: { target: "executed", next: "verify", clearReview: false, pauses: ["interrupted"] },
-  reviewing: { target: "awaiting_work_review", next: "review", clearReview: true, pauses: PAUSES },
+  planning: { target: "workspace_ready", next: "plan", clearReview: false },
+  executing: { target: "approved", next: "execute", clearReview: false },
+  verifying: { target: "executed", next: "verify", clearReview: false },
+  reviewing: { target: "awaiting_work_review", next: "review", clearReview: true },
   // The target is landed also when the task came to finishing from cleanup_failed: finish runs from landed too.
-  finishing: { target: "landed", next: "finish", clearReview: false, pauses: PAUSES },
+  finishing: { target: "landed", next: "finish", clearReview: false },
 };
 
 const PLAIN_REFINE_ROW: ResumeRow = {
   target: "awaiting_plan_review",
   next: "refine",
   clearReview: false,
-  pauses: PAUSES,
 };
 
 // The rows of a task that stopped in refining: the origin of the refine (the state that the task left when the last
@@ -67,25 +60,23 @@ const PLAIN_REFINE_ROW: ResumeRow = {
 const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   awaiting_plan_review: PLAIN_REFINE_ROW,
   failed: PLAIN_REFINE_ROW,
-  reviewed: { target: "reviewed", next: "refine", clearReview: false, pauses: PAUSES },
+  reviewed: { target: "reviewed", next: "refine", clearReview: false },
   awaiting_work_review: {
     target: "awaiting_work_review",
     next: "review-feedback",
     clearReview: false,
-    pauses: PAUSES,
   },
 };
 
 // The refining entry has no fallback, so resume refuses a refine origin with no row. The merging entry has none too:
-// the merge origin (the state that the task left when the last merge started) gives the row. Merge and finish spawn no
-// assistant, so only interrupted reaches the merging row and the finishing row in practice. They accept the quota
-// pauses too, because the state machine has the edges into them from merging and from finishing.
+// the merge origin (the state that the task left when the last merge started) gives the row. The state machine allows
+// only interrupted from merging and from finishing.
 const RESUME_TABLES: OriginTables<ResumeRow> = {
   rows: RESUME_TABLE,
   byOriginOf: {
     refining: { rows: REFINE_RESUME_TABLE },
     merging: {
-      rows: { accepted: { target: "accepted", next: "merge", clearReview: false, pauses: PAUSES } },
+      rows: { accepted: { target: "accepted", next: "merge", clearReview: false } },
     },
   },
 };
@@ -105,7 +96,7 @@ function resumeLocked(store: TaskStore, request: ResumeRequest): ResumeResult {
 
 // Moves a task in a pause back to the state before the run that stopped, with the events of extra after the resume
 // event, in one transaction. The caller holds the task lock and made sure that the task is in a pause that command
-// accepts. It refuses an origin with no row that accepts the pause.
+// accepts. It refuses an origin with no row.
 export function moveFromPause(
   store: TaskStore,
   task: Task,
@@ -117,7 +108,7 @@ export function moveFromPause(
   const pause = task.state as TaskState;
   const origin = transitionFromEvents(events, pause);
   const row = origin === undefined ? undefined : originRow(events, origin, RESUME_TABLES);
-  if (origin === undefined || !row?.pauses.includes(pause)) {
+  if (origin === undefined || row === undefined) {
     throw new Error(
       `the task of ${task.issueKey} was paused from ${originText(events, pause)}; tasker ${command} has no step for it`,
     );
