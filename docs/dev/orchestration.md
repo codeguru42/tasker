@@ -102,7 +102,7 @@ While the hold runs, the agent of the parent waits in place of the command at ea
 - `tasker update-branch` of [the comeback rule](#the-comeback-rule)
 - `tasker merge` of step 9
 
-The orchestrator reads `tasker show <stacked issue>` of each stacked ticket after each report of the agent of that stacked ticket. The read does not follow a stop report of step 2 of "Run one ticket", because such a report ends the hold at once. An example is the run-end report of `tasker plan` (see "When there is no reset time yet" in "Quota"). Before `tasker start`, the stacked ticket has no task, so the orchestrator waits for such a report. If `tasker show <stacked issue>` fails, the orchestrator tells the user the command and the error. The hold stays, and no task changes.
+The orchestrator reads `tasker show <stacked issue>` of each stacked ticket after each report of the agent of that stacked ticket, for example the run-end report of `tasker plan` (see "When there is no reset time yet" in "Quota"). Before `tasker start`, the stacked ticket has no task, so the orchestrator waits for such a report before the read. The read does not follow a stop report of step 2 of "Run one ticket", because such a report ends the hold at once. If `tasker show <stacked issue>` fails, the orchestrator tells the user the command and the error. The hold stays, and no task changes.
 
 The orchestrator ends the hold in these cases:
 
