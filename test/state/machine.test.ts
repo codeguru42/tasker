@@ -303,8 +303,8 @@ describe("quota pauses", () => {
     expect(canTransition(state, "interrupted")).toBe(true);
   });
 
-  it.each([["quota_blocked", "landed"]] as [TaskState, TaskState][])("refuses %s -> %s", (from, to) => {
-    expect(canTransition(from, to)).toBe(false);
+  it("refuses quota_blocked -> landed", () => {
+    expect(canTransition("quota_blocked", "landed")).toBe(false);
   });
 
   it.each(ASSISTANT)("allows %s -> quota_blocked", (state) => {
