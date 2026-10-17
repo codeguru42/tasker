@@ -18,7 +18,7 @@ export const plan: RegisterCommand = (program, io) => {
     });
 };
 
-// The steps and the output of tasker plan. tasker retry runs them too.
+// The steps and the output of tasker plan. tasker retry and tasker resume run them too.
 export async function planIssue(io: Io, config: Config, issue: string, options: { repo?: string }): Promise<void> {
   await runPlanCommand(io, config, issue, options, {
     command: "plan",

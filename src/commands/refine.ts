@@ -1,4 +1,5 @@
-import type { RegisterCommand } from "../cli.js";
+import type { Io, RegisterCommand } from "../cli.js";
+import type { Config } from "../config/schema.js";
 import { refineTask } from "../tasks/refine.js";
 import { runPlanCommand } from "./plan-revision.js";
 import { ISSUE_ARGUMENT_DESCRIPTION, loadConfigOrFail, REPO_OPTION_DESCRIPTION } from "./shared.js";
@@ -17,10 +18,21 @@ export const refine: RegisterCommand = (program, io) => {
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .action(async (issue: string, feedback: string | undefined, options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
-      await runPlanCommand(io, config, issue, options, {
-        command: "refine",
-        verb: "refined",
-        run: (store, ref, taskId) => refineTask(store, { config, ref, taskId, feedback, env: process.env, io }),
-      });
+      await refineIssue(io, config, issue, options, feedback);
     });
 };
+
+// The steps and the output of tasker refine. tasker resume runs them too.
+export async function refineIssue(
+  io: Io,
+  config: Config,
+  issue: string,
+  options: { repo?: string },
+  feedback: string | undefined,
+): Promise<void> {
+  await runPlanCommand(io, config, issue, options, {
+    command: "refine",
+    verb: "refined",
+    run: (store, ref, taskId) => refineTask(store, { config, ref, taskId, feedback, env: process.env, io }),
+  });
+}

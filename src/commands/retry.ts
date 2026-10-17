@@ -1,8 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
 import { retryTask } from "../tasks/retry.js";
-import { executeIssue } from "./execute.js";
-import { planIssue } from "./plan.js";
-import { reviewIssue } from "./review.js";
+import { runNextCommand } from "./next-command.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
@@ -10,8 +8,6 @@ import {
   REPO_OPTION_DESCRIPTION,
   withIssueTaskAsync,
 } from "./shared.js";
-import { startIssue } from "./start.js";
-import { verifyIssue } from "./verify.js";
 
 export const retry: RegisterCommand = (program, io) => {
   program
@@ -51,20 +47,8 @@ export const retry: RegisterCommand = (program, io) => {
         case "review-feedback":
           io.stdout(`run tasker review ${key} "<feedback>" again\n`);
           break;
-        case "start":
-          await startIssue(io, config, issue, repo);
-          break;
-        case "plan":
-          await planIssue(io, config, issue, repo);
-          break;
-        case "execute":
-          await executeIssue(io, config, issue, repo);
-          break;
-        case "verify":
-          await verifyIssue(io, config, issue, repo);
-          break;
-        case "review":
-          await reviewIssue(io, config, issue, repo);
+        default:
+          await runNextCommand(io, config, issue, repo, { command: next });
           break;
       }
     });

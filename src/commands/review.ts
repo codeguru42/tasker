@@ -28,19 +28,29 @@ export const review: RegisterCommand = (program, io) => {
     .action(async (issue: string, feedback: string | undefined, options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
       if (feedback !== undefined) {
-        await runPlanCommand(io, config, issue, options, {
-          command: "review",
-          verb: "refined",
-          run: (store, ref, taskId) =>
-            reviewFeedbackTask(store, { config, ref, taskId, feedback, env: process.env, io }),
-        });
+        await reviewFeedbackIssue(io, config, issue, options, feedback);
         return;
       }
       await reviewIssue(io, config, issue, { repo: options.repo });
     });
 };
 
-// The steps and the output of the automated review of tasker review. tasker retry runs them too.
+// The steps and the output of tasker review with feedback. tasker resume runs them too.
+export async function reviewFeedbackIssue(
+  io: Io,
+  config: Config,
+  issue: string,
+  options: { repo?: string },
+  feedback: string,
+): Promise<void> {
+  await runPlanCommand(io, config, issue, options, {
+    command: "review",
+    verb: "refined",
+    run: (store, ref, taskId) => reviewFeedbackTask(store, { config, ref, taskId, feedback, env: process.env, io }),
+  });
+}
+
+// The steps and the output of the automated review of tasker review. tasker retry and tasker resume run them too.
 export async function reviewIssue(io: Io, config: Config, issue: string, options: { repo?: string }): Promise<void> {
   const result = await orFailAsync(io, () =>
     withIssueTaskAsync(io, config, issue, { repo: options.repo }, (store, found, ref) =>
