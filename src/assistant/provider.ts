@@ -88,7 +88,8 @@ export type RunOutcome =
   | (OutcomeBase & { kind: "success"; structuredOutput?: unknown })
   | (OutcomeBase & { kind: "failure"; exitCode: number | null; signal: NodeJS.Signals | null; reason: string })
   | (OutcomeBase & { kind: "timeout" })
-  | (OutcomeBase & { kind: "quota"; resetsAt?: number; cause: "rate_limit" | "overage" });
+  | (OutcomeBase & { kind: "quota"; resetsAt?: number; cause: "rate_limit" | "overage" })
+  | (OutcomeBase & { kind: "interrupted"; signal: NodeJS.Signals });
 
 // A run that passed quotaApprovalThreshold. resetsAt is the end of the quota window, in Unix seconds.
 export interface QuotaApprovalWarning {

@@ -50,6 +50,11 @@ export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
       io.stdout(`${phase} stopped by a quota limit; ${resetText(resetsAt)}\n`);
       return { exitCode: 1 };
     }
+    case "interrupted": {
+      transitionTask(store, task.id, "interrupted", { cause: "signal", signal: outcome.signal });
+      io.stdout(`${phase} interrupted by ${outcome.signal}; run tasker resume ${task.issueKey} to continue\n`);
+      return { exitCode: 1 };
+    }
   }
 }
 
