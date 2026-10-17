@@ -61,7 +61,7 @@ function failureContext(store: TaskStore, task: Task): string {
       `the task of ${task.issueKey} failed in ${originText(events, "failed")} and has no plan revision; run tasker retry ${task.issueKey}`,
     );
   }
-  return failureContextText(originText(events, "failed"), lastTransitionError(events) ?? "");
+  return failureContextText(originText(events, "failed"), lastTransitionError(events, "failed") ?? "");
 }
 
 // The context and the source of the plan revision of a refine, by the state of the task.

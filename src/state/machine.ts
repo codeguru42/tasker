@@ -432,10 +432,10 @@ export function approvedResetsAtOf(store: TaskStore, id: number): number | undef
   return typeof resetsAt === "number" ? resetsAt : undefined;
 }
 
-// The error of the last transition event, when it is a string.
-export function lastTransitionError(events: TaskEvent[]): string | undefined {
-  const transition = events.filter((event) => event.type === "transition").at(-1);
-  const data = transition?.data;
-  if (typeof data !== "object" || data === null || !("error" in data)) return undefined;
-  return typeof data.error === "string" ? data.error : undefined;
+// The error of the last transition event into the state, when it is a string.
+export function lastTransitionError(events: readonly TaskEvent[], state: TaskState): string | undefined {
+  const index = lastTransitionIndex(events, state);
+  if (index < 0) return undefined;
+  const error = (events[index].data as { error?: unknown }).error;
+  return typeof error === "string" ? error : undefined;
 }

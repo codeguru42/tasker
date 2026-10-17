@@ -6,6 +6,7 @@ import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import {
   failTask,
   isSpawningState,
+  isTaskState,
   lastTransitionError,
   transitionTask,
   transitionWithVerifyRun,
@@ -161,9 +162,12 @@ export function eventDataOf(dataRoot: string, issueKey: string, type: string): u
     .map((event) => event.data);
 }
 
-// The error of the last transition event of the task, or undefined when that event has no error.
+// The error of the last transition event into the current state of the task, or undefined when that event has no error.
 export function lastErrorOf(dataRoot: string, taskId: number): string | undefined {
-  return withDataRootStore(dataRoot, (store) => lastTransitionError(store.listEvents(taskId)));
+  return withDataRootStore(dataRoot, (store) => {
+    const state = store.getTask(taskId)?.state;
+    return state !== undefined && isTaskState(state) ? lastTransitionError(store.listEvents(taskId), state) : undefined;
+  });
 }
 
 export interface SeedTask {

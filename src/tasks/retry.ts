@@ -127,7 +127,7 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
     writes.resumeExecute = {
       version: pinned.version,
       fixTurn: {
-        verifyFailure: lastTransitionError(events) ?? "",
+        verifyFailure: lastTransitionError(events, "failed") ?? "",
         verifyLogTail: logPath === undefined ? null : readLogTail(logPath, TAIL_LINES, TAIL_BYTES),
       },
     };

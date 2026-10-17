@@ -226,7 +226,7 @@ describe("eventDataOf", () => {
 });
 
 describe("lastErrorOf", () => {
-  it("gives the error of the last transition event", () => {
+  it("gives the error of the last transition event into the state of the task", () => {
     const dataRoot = join(useTempDir("tasker-last-error-"), "data");
     const [task] = seedTasks(dataRoot, [
       {
@@ -241,7 +241,7 @@ describe("lastErrorOf", () => {
     expect(lastErrorOf(dataRoot, task.id)).toBe("boom");
   });
 
-  it("gives undefined when the last transition event has no error", () => {
+  it("gives undefined when the last transition event into the state of the task has no error", () => {
     const dataRoot = join(useTempDir("tasker-last-error-"), "data");
     const [task] = seedTasks(dataRoot, [
       { issueKey: "codeguru42/tasker#9", repoKey: "codeguru42/tasker", state: "provisioning", at: dayAt(1) },
@@ -774,7 +774,7 @@ describe("failTaskFrom", () => {
 
         expect(store.getTask(task.id)?.state).toBe("failed");
         expect(failedFrom(store, task.id)).toBe(origin);
-        expect(lastTransitionError(store.listEvents(task.id))).toBe(`${origin} failed: test`);
+        expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe(`${origin} failed: test`);
       });
     },
   );
@@ -786,7 +786,7 @@ describe("failTaskFrom", () => {
       failTaskFrom(store, task.id, "executing", "boom");
 
       expect(failedFrom(store, task.id)).toBe("executing");
-      expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
+      expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("boom");
     });
   });
 });
@@ -801,7 +801,7 @@ describe("failTaskVia", () => {
       expect(store.getTask(task.id)?.state).toBe("failed");
       expect(failedFrom(store, task.id)).toBe("merging");
       expect(transitionFromEvents(store.listEvents(task.id), "merging")).toBe("accepted");
-      expect(lastTransitionError(store.listEvents(task.id))).toBe("merging failed: test");
+      expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("merging failed: test");
     });
   });
 
@@ -811,7 +811,7 @@ describe("failTaskVia", () => {
     withDataRootStore(dataRoot, (store) => {
       failTaskVia(store, task.id, "accepted", "merging", "boom");
 
-      expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
+      expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("boom");
     });
   });
 });
@@ -840,7 +840,7 @@ describe("failRefineFrom", () => {
       expect(store.getTask(task.id)?.state).toBe("failed");
       expect(failedFrom(store, task.id)).toBe("refining");
       expect(transitionFromEvents(store.listEvents(task.id), "refining")).toBe(refineOrigin);
-      expect(lastTransitionError(store.listEvents(task.id))).toBe("refining failed: test");
+      expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("refining failed: test");
     });
   });
 
@@ -850,7 +850,7 @@ describe("failRefineFrom", () => {
     withDataRootStore(dataRoot, (store) => {
       failRefineFrom(store, task.id, "reviewed", "boom");
 
-      expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
+      expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("boom");
     });
   });
 });
@@ -994,7 +994,7 @@ describe("failVerifyRun", () => {
       expect(events.slice(-2).map((event) => event.type)).toEqual(["verify_run", "transition"]);
       expect(events.at(-2)?.data).toMatchObject({ number: 1 });
       expect(events.at(-1)?.data).toMatchObject({ from: "verifying", to: "failed", error: "command 2 failed" });
-      expect(lastTransitionError(events)).toBe("command 2 failed");
+      expect(lastTransitionError(events, "failed")).toBe("command 2 failed");
     });
     expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 1), "utf8")).toBe("log one\n");
     expect(readFileSync(verifyCommandLogPath(dataRoot, task, 1, 2), "utf8")).toBe("log two\n");
