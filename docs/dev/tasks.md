@@ -1,8 +1,8 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, finish, retry, resume and accept, and of the result of an assistant run. The reference files of the user doc [SKILL.md](../../skills/tasker/SKILL.md), one for each phase in `skills/tasker/references/`, show the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, finish, retry, resume, approve-credits and accept, and of the result of an assistant run. The reference files of the user doc [SKILL.md](../../skills/tasker/SKILL.md), one for each phase in `skills/tasker/references/`, show the output.
 
-The commands abort, plan, refine, approve, unapprove, execute, accept, resume, merge, mark-landed and finish share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
+The commands abort, plan, refine, approve, unapprove, execute, accept, resume, approve-credits, merge, mark-landed and finish share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
 
 ## Start
 
@@ -121,7 +121,7 @@ A failed run also spends tokens, so the usage is recorded for a failure too. The
 
 The answer of a plan, refine or review run is text, and tasker records nothing before the pause. As a result, the pause drops the answer, and the next run asks again. The commits of an execute turn are already on the branch. As a result, the todo of that turn counts as done, and the next run starts at the next todo.
 
-A quota stop is not a failure. The run can continue after the reset, and the task keeps its session for that. `tasker resume` takes the task out of `quota_blocked` (see [Resume](#resume)).
+A quota stop is not a failure. The run can continue after the reset, and the task keeps its session for that. `tasker resume` takes the task out of `quota_blocked` (see [Resume](#resume)). `tasker approve-credits` takes the task out of `awaiting_quota_approval`, or out of `quota_blocked` after a stop at the overage boundary with a known window (see [Approve-credits](#approve-credits)). `tasker abort` leaves either state.
 
 The usage event and the move are two writes, not one. A crash between them leaves the usage event and a task that is still in its spawning state. The run marker of the task stays, so tasker can find that the run died.
 
@@ -331,6 +331,22 @@ The command has these limits:
 
 - It does not hold the task until the reset time of a quota limit. An orchestrator decides when to resume.
 - If the assistant never created the session that the next command continues, the resumed run fails. `tasker retry` then starts a new session.
+
+## Approve-credits
+
+`tasker approve-credits` moves a task in `awaiting_quota_approval`, or in `quota_blocked` after a stop at the overage boundary with a known window, back to the state before the run that stopped. It records the approved quota window and runs the same command again. The move is the move of [Resume](#resume), and this page does not copy it. The command follows [the intro](#the-task-commands) for its checks and [The locks](#the-locks) for the task lock.
+
+The command writes the `resetsAt` of the pause record as a `credits_approved` event. This event shares the transaction of the move. The run that follows reads it as the approved window.
+
+These reasons explain its rules:
+
+- An approval belongs to one task and one window. The event is on one task and holds the reset time of one window. A later window needs a new approval, and the last approval of the task wins.
+- A subscription limit cannot be approved. Paid usage does not continue a task that stopped at the subscription limit. So the command refuses the stop and points to `tasker resume`.
+- A stop with no window cannot hold an approval. The approval matches a window by its reset time, and a stop with no reset time has none to match. So the command refuses it and points to `tasker resume`.
+
+The command has this limit:
+
+- A change of `overagePolicy` between a pause and its approval is not handled. The approval stores the window of the pause, and the new policy reads that window as it would read any approval.
 
 ## Accept
 

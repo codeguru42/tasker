@@ -180,9 +180,13 @@ The approved window of the task is the reset time of the last approval of the ta
 
 An event shows the start of paid usage when `isUsingOverage` is `true`, or when `status` is `rejected` and `overageStatus` is `allowed` or `allowed_warning`. In the second case, the subscription is spent and paid usage is on. A high `utilization` alone does not show it. The presence of `overageStatus` does not show it, and neither does `overageStatus: "rejected"`, because an `allowed` event can carry `overageStatus` too. With paid usage off, the stop comes through the quota stop.
 
+An approval stores the `resetsAt` of the pause record. The approved window is then the window of the pause.
+
 The events have these facts:
 
 - Under `rateLimitType: "overage"`, the flat use and reset time describe the cap of paid usage, not the spend of the subscription. A capture showed `utilization: 0.99` there while `isUsingOverage` was `false`.
+- Under `rateLimitType: "overage"`, the relevant window and the spent window can differ.
+- Each policy compares its own window with the approved window. Under `decline`, it is the spent window. Under `ask`, it is the window of the warning.
 - `unifiedWindows` is missing in older captures. A real `allowed` event has no flat use, so the entry of the window must win.
 - The last warning window counts, not the highest. A run can pass into a new window, and the high use of the old window must not hide the new one.
 - A warning with no reset time never matches an approval, so the pause comes again.
