@@ -197,6 +197,7 @@ const SPECIFIC: Record<string, string[]> = {
     "awaiting_work_review",
     "accepted",
     "reviewed",
+    "landed",
   ],
   awaiting_quota_approval: [
     "workspace_ready",
@@ -265,8 +266,8 @@ const ILLEGAL_EDGES: [TaskState, TaskState][] = [
 ];
 
 describe("table edges", () => {
-  it("has 120 specific edges", () => {
-    expect(TABLE_EDGES).toHaveLength(120);
+  it("has 121 specific edges", () => {
+    expect(TABLE_EDGES).toHaveLength(121);
   });
 
   it.each(TABLE_EDGES)("allows %s -> %s", (from, to) => {
