@@ -1,8 +1,8 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, finish, retry, resume, approve-credits and accept, and of the result of an assistant run. The reference files of the user doc [SKILL.md](../../skills/tasker/SKILL.md), one for each phase in `skills/tasker/references/`, show the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, update-branch, finish, retry, resume, approve-credits and accept, and of the result of an assistant run. The reference files of the user doc [SKILL.md](../../skills/tasker/SKILL.md), one for each phase in `skills/tasker/references/`, show the output.
 
-The commands abort, plan, refine, approve, unapprove, execute, accept, resume, approve-credits, merge, mark-landed and finish share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
+The commands abort, plan, refine, approve, unapprove, execute, accept, resume, approve-credits, merge, mark-landed, update-branch and finish share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
 
 ## Start
 
@@ -187,6 +187,8 @@ Its checks cover the task, the state, the pinned revision and the newest plan re
 The write is one transaction. It sets the approval time of the revision, appends one `approved` event with the data `{ version, openQuestions, from, to }`, and moves the task to `approved`. The `approved` event takes the place of the `transition` event for this move.
 
 Open questions do not stop an approval. The operator decides, and the count in the event and in the output makes the choice visible.
+
+A plan that is older than the last move of the worktree cannot be approved. `tasker approve` finds the newest `branch_updated` event with a `how` other than `none` and the newest `plan_revision` event. If the move is newer, the command stops. The plan was written against the old tree.
 
 The approval lives on the revision, not on the task. A task has one approved revision for each cycle, and an older approval stays when a newer revision is approved.
 
@@ -387,6 +389,20 @@ These reasons explain its rules:
 - The check is read-only toward `origin`. The work landed outside tasker, so tasker only records it.
 - The check reads the tip of the task ref in the clone and not the worktree, for the same reason as the on-base check of [Merge](#merge).
 - The fetch holds the repo lock, because the fetch changes the refs of the clone. [The locks table](data-root.md#locks-table) requires it.
+
+## Update branch
+
+`tasker update-branch` brings the worktree of a task up to date with its base branch. The task goes through `updating_branch` and then to its origin state or to the target of the demotion table in [the state machine](../statemachine.md#update-branch).
+
+These reasons explain its rules:
+
+- The order of the steps: the command makes all its checks before any write, so a refused command changes nothing. The command takes the repo lock before the move to `updating_branch`, so a busy lock changes no state.
+- The locks: the task lock does not wait, as [The locks](#the-locks) says. The repo lock waits, because the fetch and the move of the branch change the clone. [The locks table](data-root.md#locks-table) requires it.
+- The `base` event is `{ base, revision, source: "update" }`. The command writes it only when the head moved. The `revision` is the stored base revision.
+- The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base` event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
+- The demotion: when the head moved, the old approval or the old verify result no longer describes the tree.
+- The restore rule: the task goes back to its origin state when three facts hold. The head is the head of the start, the worktree is on the task branch, and the worktree is clean. Otherwise the task goes to `failed`.
+- The missing retry row: `tasker retry` has no row for a task that failed in `updating_branch`. The error of a failed restore names the git commands that put the worktree back. After that, `tasker update-branch` runs from `failed`, or `tasker abort` ends the task.
 
 ## Finish
 

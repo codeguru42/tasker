@@ -110,6 +110,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 - The task is already approved. The error is `<issue key> is already approved at revision v<N>`.
 - The task has no plan revision. The error is `the task of <issue key> has no plan revision`.
+- The plan is older than the last move of the worktree. A `tasker update-branch` run that moved the head came after the newest plan revision. The error is `the plan v<N> of <issue key> is older than the last move of the worktree; run tasker refine <issue key> "<feedback>" first`. See [`tasker update-branch`](keeping-current.md#tasker-update-branch).
 
 ## `tasker unapprove`
 

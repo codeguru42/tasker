@@ -292,6 +292,9 @@ flowchart LR
 | `failed`, from a failed `push`, `merge`, `open-pr` or `review`             | `executed`             | The same reason. Without the demotion, a retry can push, merge, open a PR or review the moved tree with no verify. |
 | any other                                                                  | its origin             | Nothing to demote.                                                                                                 |
 
+- A failure after the move to `updating_branch` restores the worktree. If the head is the head of the start, the worktree is on the task branch and the worktree is clean, the task goes back to its origin state. Otherwise the task goes to `failed`.
+- `tasker approve` refuses a plan that is older than the last move of the worktree. The plan was written against the old tree, so the operator runs `tasker refine` first.
+
 ## The commands of each state
 
 `tasker show`, `tasker status` and the wrong-state error name the commands that are valid from the state of a task. They read one table. The table lives in `src/state/commands.ts`.
