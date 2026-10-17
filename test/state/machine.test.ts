@@ -9,6 +9,7 @@ import {
   failTask,
   failedFrom,
   originText,
+  pauseRecordOf,
   refineFeedbackOf,
   lastTransitionError,
   lastTransitionIndex,
@@ -41,7 +42,14 @@ import {
   seedReviewSession,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { newVerifyRun, reviewSessionRows, seedCreditsApproval, seedReview, writeRunMarker } from "../helpers/store.js";
+import {
+  newVerifyRun,
+  pauseTaskFrom,
+  reviewSessionRows,
+  seedCreditsApproval,
+  seedReview,
+  writeRunMarker,
+} from "../helpers/store.js";
 import { moveTaskThrough, TO_WORK_REVIEW } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -1164,6 +1172,39 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("planning"));
       failTask(store, task.id, "boom");
       expect(transitionFromEvents(store.listEvents(task.id), "refining")).toBeUndefined();
+    });
+  });
+
+  describe("pauseRecordOf", () => {
+    it("gives an empty record for events with no move into the pause", () => {
+      const task = store.createTask(newTask("planning"));
+      expect(pauseRecordOf(store.listEvents(task.id), "quota_blocked")).toEqual({});
+    });
+
+    it("keeps the cause and the reset time of the last move into the pause", () => {
+      const task = store.createTask(newTask("planning"));
+      pauseTaskFrom(store, task.id, "executing", "quota_blocked", { cause: "overage", resetsAt: 1792206000 });
+      expect(pauseRecordOf(store.listEvents(task.id), "quota_blocked")).toMatchObject({
+        cause: "overage",
+        resetsAt: 1792206000,
+      });
+    });
+
+    it("drops a reset time that is not a number", () => {
+      const task = store.createTask(newTask("planning"));
+      pauseTaskFrom(store, task.id, "executing", "quota_blocked", { cause: "overage", resetsAt: "soon" });
+      const record = pauseRecordOf(store.listEvents(task.id), "quota_blocked");
+      expect(record.cause).toBe("overage");
+      expect(record.resetsAt).toBeUndefined();
+    });
+
+    it("gives the data of the last of two moves into the pause", () => {
+      const task = store.createTask(newTask("planning"));
+      pauseTaskFrom(store, task.id, "executing", "quota_blocked", { cause: "overage", resetsAt: 1792206000 });
+      pauseTaskFrom(store, task.id, "planning", "quota_blocked", { cause: "rate_limit" });
+      const record = pauseRecordOf(store.listEvents(task.id), "quota_blocked");
+      expect(record.cause).toBe("rate_limit");
+      expect(record.resetsAt).toBeUndefined();
     });
   });
 

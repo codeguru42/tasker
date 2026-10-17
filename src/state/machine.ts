@@ -402,6 +402,22 @@ export function transitionFromEvents(events: readonly TaskEvent[], to: TaskState
   return typeof from === "string" && isTaskState(from) ? from : undefined;
 }
 
+// The facts that the last move into a pause recorded. resetsAt is there only when it is a number.
+export interface PauseRecord {
+  cause?: unknown;
+  utilization?: unknown;
+  signal?: unknown;
+  resetsAt?: number;
+}
+
+// The data of the last transition event into pause, with the typeof check of resetsAt. It gives {} when events has no
+// move into pause.
+export function pauseRecordOf(events: readonly TaskEvent[], pause: TaskState): PauseRecord {
+  const data = (events[lastTransitionIndex(events, pause)]?.data ?? {}) as PauseRecord;
+  const { resetsAt, ...rest } = data;
+  return typeof resetsAt === "number" ? { ...rest, resetsAt } : rest;
+}
+
 // The operator feedback that the last move into refining recorded, or undefined when it recorded none.
 export function refineFeedbackOf(events: readonly TaskEvent[]): string | undefined {
   const index = lastTransitionIndex(events, "refining");
