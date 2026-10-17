@@ -1,6 +1,6 @@
 # Recovery commands
 
-These commands retry a failed step and cancel a task. [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share. [The Failure and retry section of docs/statemachine.md](../../../docs/statemachine.md#failure-and-retry) gives the states.
+These commands retry a failed step, resume a paused task and cancel a task. [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share. [The Failure and retry section of docs/statemachine.md](../../../docs/statemachine.md#failure-and-retry) gives the states. [The Pauses section](../../../docs/statemachine.md#pauses) gives the pauses.
 
 ## `tasker retry`
 
@@ -44,6 +44,33 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 - The task failed in a state that retry has no step for. The error is `the task of <issue key> failed in <state>; tasker retry has no step for it`.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is `--resume-execute applies only to a task that failed in verifying`.
+
+## `tasker resume`
+
+Moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again: `tasker resume <issue>`.
+
+The command reads the origin. The origin is the state that the task left when the run stopped. The command looks up the origin in this table:
+
+- `planning`: the task goes to `workspace_ready`, and the command runs `tasker plan`. The plan session continues.
+- `refining`, when the origin of the refine is `awaiting_plan_review` or `failed`: the task goes to `awaiting_plan_review`, and the command runs `tasker refine` with the feedback that the move into `refining` recorded.
+- `refining`, when the origin of the refine is `reviewed`: the task goes to `reviewed`, and the command runs `tasker refine` with the recorded feedback, or with none if you gave none.
+- `refining`, when the origin of the refine is `awaiting_work_review`: the task goes to `awaiting_work_review`, and the command runs `tasker review` with the recorded feedback.
+- `executing`: the task goes to `approved`, and the command runs `tasker execute`. The execute session continues, and a todo that is `done` gets no new turn.
+- `verifying`: only a task in `interrupted` has this origin. The task goes to `executed`, and the command runs `tasker verify`. The verify run starts again from the first command, because a verify run has no session.
+- `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review number, and then runs `tasker review`, which starts a new session.
+
+The command prints this line on stdout, then releases the task lock and runs the next command:
+
+- `resumed <issue key>: paused in <origin>, back in <target>`
+
+The next command keeps its own output, its own errors and its own exit code. If it fails, the task goes to `failed`, and you can run `tasker retry`. If the assistant never created the session that the next command continues, the next command fails. Then `tasker retry` starts a new session.
+
+The command does not wait for the reset time of a quota limit. You decide when to run it. If the run of the task is dead, the note of the dead run comes on stderr first. See [A dead run](../SKILL.md#a-dead-run).
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
+
+- The task is in a state other than `quota_blocked` or `interrupted`. The error is `the task of <issue key> is in <state>; tasker resume needs quota_blocked or interrupted`, then the commands that the state accepts. A task in `awaiting_quota_approval` gets this error.
+- The task paused from a state that resume has no step for. The error is `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task in `quota_blocked` that paused from `verifying` gets this error too.
 
 ## `tasker abort`
 
