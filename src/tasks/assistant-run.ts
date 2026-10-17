@@ -131,7 +131,14 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
             ? { approvedResetsAt: req.approvedResetsAt }
             : undefined,
         onSpawn: (pid) => store.setRunChildPid(task.id, pid),
-        onEvent: input.onEvent,
+        // The record is written while the run is live, so a reader sees a fresh reset time during a long run.
+        // The transcript comes first, because the provider drops a listener error and a throw skips the rest.
+        onEvent: (event) => {
+          input.onEvent?.(event);
+          if (selected.provider.isQuotaEvent(event)) {
+            store.recordQuotaEvent(task.repoKey, selected.provider.id, event);
+          }
+        },
       });
     },
   };
