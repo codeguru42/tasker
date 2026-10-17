@@ -1,8 +1,15 @@
 import type { RegisterCommand } from "../cli.js";
 import { showLines } from "../state/commands.js";
 import { formatFindings } from "../review/findings-text.js";
-import { transitionFromEvents, lastTransitionError } from "../state/machine.js";
-import type { ExecuteTodoProgress, Task, TaskStore } from "../store/store.js";
+import {
+  transitionFromEvents,
+  lastTransitionError,
+  pauseRecordOf,
+  type PauseRecord,
+  type TaskState,
+} from "../state/machine.js";
+import type { ExecuteTodoProgress, Task, TaskEvent, TaskStore } from "../store/store.js";
+import { resetIsoTime } from "../tasks/run-outcome.js";
 import {
   formatColumns,
   formatFields,
@@ -41,6 +48,43 @@ function reviewFindings(store: TaskStore, task: Task): string {
   return `review findings (review ${review.number}, at ${review.revision}):\n${formatFindings(review.findings)}`;
 }
 
+type Field = [string, string | number | undefined];
+
+const resetsAtField = (record: PauseRecord): Field => [
+  "resets at",
+  record.resetsAt === undefined ? undefined : resetIsoTime(record.resetsAt),
+];
+
+const causeField = (record: PauseRecord): Field => [
+  "cause",
+  typeof record.cause === "string" ? record.cause : undefined,
+];
+
+// The fields of each pause state, from the state before the pause and the facts of the pause.
+const PAUSE_FIELDS: Partial<Record<string, (origin: TaskState | undefined, record: PauseRecord) => Field[]>> = {
+  quota_blocked: (origin, record) => [["paused from", origin], causeField(record), resetsAtField(record)],
+  awaiting_quota_approval: (origin, record) => [
+    ["paused from", origin],
+    ["utilization", typeof record.utilization === "number" ? record.utilization : undefined],
+    resetsAtField(record),
+  ],
+  interrupted: (origin, record) => [
+    ["paused from", origin],
+    record.cause === "signal" && typeof record.signal === "string"
+      ? ["cause", `signal ${record.signal}`]
+      : causeField(record),
+  ],
+};
+
+// The facts of the pause of a task in quota_blocked, awaiting_quota_approval or interrupted, from the last move into
+// the pause. Each other state has no such facts.
+function pauseFields(events: readonly TaskEvent[], state: string): Field[] {
+  const fieldsOf = PAUSE_FIELDS[state];
+  if (fieldsOf === undefined) return [];
+  const pause = state as TaskState;
+  return fieldsOf(transitionFromEvents(events, pause), pauseRecordOf(events, pause));
+}
+
 function formatTask(store: TaskStore, task: Task): string {
   const events = store.listEvents(task.id);
   const last = events.at(-1);
@@ -63,6 +107,7 @@ function formatTask(store: TaskStore, task: Task): string {
       ["error", lastTransitionError(events, "failed")],
     );
   }
+  fields.push(...pauseFields(events, task.state));
   const commandLines = showLines(task.state, task.issueKey)
     .map((line) => `${line}\n`)
     .join("");
