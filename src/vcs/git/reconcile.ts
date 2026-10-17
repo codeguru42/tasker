@@ -327,3 +327,39 @@ export async function resyncWorktree(o: {
   await runStep({ target, env, start, args: strategyArgs(strategy, base), kind: strategy, base });
   return resyncResult(target, env, strategy);
 }
+
+// Moves the task branch, HEAD, the index and the tracked files of the task worktree to a revision
+// and gives the new head. The revision can be an ancestor, a descendant or on another line. It
+// does not fetch. The revision is a full revision or a full ref. The worktree must be clean and
+// must have a task branch checked out. A detached HEAD is refused, because git then moves only
+// HEAD and the move must change the task branch.
+//
+// These facts of git 2.47.3 give the flags and the choice of the command:
+// - "git reset --keep" refuses a change in a tracked file that the move changes (exit 128, HEAD
+//   and the change stay). It also refuses an untracked file in the path of a tracked file of the
+//   target (exit 128, HEAD stays). So a change that appears after the clean check is not lost.
+//   "git reset --hard" deletes such a change.
+// - "git reset --keep" does not run the post-checkout hook, and "git checkout -B" does.
+// - "--no-recurse-submodules" stops the setting submodule.recurse of the user configuration from
+//   changing the command. No submodule was tested.
+// After a GitError the worktree goes back to the start, and an error of that restore wins.
+export async function moveWorktreeTo(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+  revision: string;
+}): Promise<string> {
+  const { clone, env, path, revision } = o;
+  assertRevisionInput(revision);
+  const { target, start } = await prepare({ clone, env, path });
+  if (start.branch === undefined) throw new Error(`the worktree has a detached HEAD: ${target}`);
+  const sha = await resolveRevision({ clone, env, value: revision });
+  try {
+    await runGit(["reset", "--keep", "--no-recurse-submodules", sha], { cwd: target, env });
+  } catch (error) {
+    if (!(error instanceof GitError)) throw error;
+    await restoreAt(target, env, start);
+    throw error;
+  }
+  return worktreeHead(target, env);
+}

@@ -12,6 +12,7 @@ import {
   type StartState,
   worktreeState,
 } from "../../../src/vcs/git/reconcile.js";
+import { uncommittedRefusal } from "../../../src/vcs/git/changes.js";
 import { ReconcileConflictError } from "../../../src/vcs/errors.js";
 import type { ReconcileStrategy } from "../../../src/vcs/provider.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
@@ -347,7 +348,7 @@ describe("git reconcile", () => {
       await git("reset", "--hard", base);
       writeFileSync(join(target, "a.txt"), "mine");
       const error = await failureOf(move(tip), Error);
-      expect(error.message).toBe(`the worktree has uncommitted changes: ${target}: ["a.txt"]`);
+      expect(error.message).toBe(uncommittedRefusal(target, [{ status: "??", path: "a.txt" }]));
       expect(await state()).toEqual({ head: base, branch, changes: [{ status: "??", path: "a.txt" }] });
       expect(await git("rev-parse", `refs/heads/${branch}`)).toBe(base);
     });
