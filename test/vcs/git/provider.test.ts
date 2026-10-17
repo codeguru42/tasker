@@ -12,6 +12,8 @@ import {
 } from "../../../src/vcs/git/assistant-surface.js";
 import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
 import { changedPaths, ownCommitsText, uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
+import { worktreeState } from "../../../src/vcs/git/reconcile.js";
+import { ReconcileConflictError } from "../../../src/vcs/errors.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
 import { remoteTip } from "../../../src/vcs/git/remote-tip.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
@@ -254,6 +256,63 @@ describe("createGitProvider", () => {
         strategy: "rebase",
       });
       expect(head).toBe((await runGit(["rev-parse", "HEAD"], { cwd: path, env: fixture.context.env })).trim());
+    });
+
+    it("gives the head, the task ref and the changes of a workspace like worktreeState", async () => {
+      const { git, path, taskRef } = await workspace();
+      const env = fixture.context.env;
+      await commitInWorktree(path, env, { file: "a.txt" });
+      writeFileSync(join(path, "new.txt"), "new\n");
+      const direct = await worktreeState({ clone: paths().clone, env, path });
+      expect(direct.changes.length).toBeGreaterThan(0);
+      expect(await git.workspaceState(fixture.context, { path })).toEqual({
+        head: direct.head,
+        taskRef: direct.branch,
+        changes: direct.changes,
+      });
+      expect(direct.branch).toBe(taskRef);
+    });
+
+    it("gives an undefined task ref for a workspace with a detached head", async () => {
+      const { git, path } = await workspace();
+      const env = fixture.context.env;
+      await runGit(["checkout", "--detach"], { cwd: path, env });
+      const direct = await worktreeState({ clone: paths().clone, env, path });
+      expect(direct.branch).toBeUndefined();
+      expect((await git.workspaceState(fixture.context, { path })).taskRef).toBeUndefined();
+    });
+
+    it("moves the head to the tip of the base by a fast-forward", async () => {
+      const { git, path, taskRef } = await workspace();
+      const env = fixture.context.env;
+      await fixture.origin.addCommit("main", { file: "other.txt" });
+      const { baseTip } = await containment(git, taskRef);
+      const result = await git.resync(fixture.context, { path, baseRevision: baseTip, strategy: "rebase" });
+      expect(result).toEqual({ moved: true, how: "fast-forward", head: baseTip });
+      expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(baseTip);
+    });
+
+    it("leaves the head alone when the workspace contains the base", async () => {
+      const { git, path, taskRef } = await workspace();
+      const env = fixture.context.env;
+      const head = await commitInWorktree(path, env, { file: "a.txt" });
+      const { baseTip } = await containment(git, taskRef);
+      const result = await git.resync(fixture.context, { path, baseRevision: baseTip, strategy: "merge" });
+      expect(result).toEqual({ moved: false, how: "none", head });
+      expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(head);
+    });
+
+    it("rejects with ReconcileConflictError and keeps the head at the start on a conflict", async () => {
+      const { git, path, taskRef } = await workspace();
+      const env = fixture.context.env;
+      const start = await commitInWorktree(path, env, { file: "a.txt", content: "task\n" });
+      await fixture.origin.addCommit("main", { file: "a.txt", content: "base\n" });
+      const { baseTip } = await containment(git, taskRef);
+      await expect(
+        git.resync(fixture.context, { path, baseRevision: baseTip, strategy: "rebase" }),
+      ).rejects.toBeInstanceOf(ReconcileConflictError);
+      expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(start);
+      expect(await git.uncommittedChanges(fixture.context, { path })).toEqual([]);
     });
   });
 
