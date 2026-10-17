@@ -127,6 +127,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
     "awaiting_work_review",
     "accepted",
     "reviewed",
+    "landed",
   ],
   awaiting_quota_approval: [
     "workspace_ready",

@@ -282,7 +282,7 @@ describe("table edges", () => {
       }
     }
     expect(found).toEqual(LEGAL_EDGES);
-    expect(found.size).toBe(170);
+    expect(found.size).toBe(171);
   });
 
   it.each(ILLEGAL_EDGES)("refuses %s -> %s", (from, to) => {
