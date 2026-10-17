@@ -11,6 +11,7 @@ import {
   databasePathOf,
   eventsOf,
   failTaskFrom,
+  lastErrorOf,
   latestTaskOf,
   placeTask,
   readRunMarker,
@@ -252,6 +253,51 @@ describe("tasker update-branch", () => {
       expect(result.code).toBe(0);
       expect(result.out).toContain("nothing moved");
       expect(latestTaskOf(work.dataRoot, KEY).state).toBe("accepted");
+    });
+  });
+
+  describe("a failure after the move", () => {
+    it("restores the worktree and the origin state after a conflict", async () => {
+      const work = await useMovedBaseTask({ baseChange: { file: "work.txt", content: "from the base\n" } });
+      const head = await taskBranchTipOf(work);
+      const count = eventsOf(work.dataRoot, KEY).length;
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(1);
+      expect(result.out).toBe("");
+      expect(result.err).toContain("work.txt");
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
+      expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();
+      const snapshot = { head, base: "main", baseRevision: BASE_REVISION };
+      const events = eventsAfter(work, count);
+      expect(events.map((e) => e.type)).toEqual(["transition", "branch_updated"]);
+      expect(events.at(-1)).toMatchObject({
+        type: "branch_updated",
+        data: {
+          before: snapshot,
+          after: snapshot,
+          how: "none",
+          error: result.err.trimEnd(),
+          from: "updating_branch",
+          to: "awaiting_work_review",
+        },
+      });
+    });
+
+    it("moves the task to failed when the worktree is not back at the start", async () => {
+      const work = await useMovedBaseTask();
+      writeFileSync(join(work.clone, "refs", "heads", `${String(work.task.branch)}.lock`), "");
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(1);
+      expect(result.err).toMatch(/^updating branch failed: cannot restore the worktree/);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("failed");
+      expect(lastErrorOf(work.dataRoot, work.task.id)).toMatch(/^updating branch failed: cannot restore the worktree/);
+      expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();
     });
   });
 
