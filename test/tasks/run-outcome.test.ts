@@ -1,12 +1,13 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { RunOutcome, Usage } from "../../src/assistant/provider.js";
+import { createClaudeCodeProvider } from "../../src/assistant/claude-code/provider.js";
+import type { AssistantEvent, RunOutcome, Usage } from "../../src/assistant/provider.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
 import { applyRunOutcome, failRunTo } from "../../src/tasks/run-outcome.js";
 import { captureIo } from "../helpers/cli.js";
-import { TEST_SESSION_ID } from "../helpers/fake-claude.js";
+import { TEST_SESSION_ID, claudeApprovalWarningEvent, claudeRateLimitEvent } from "../helpers/fake-claude.js";
 import { seedPlanSession } from "../helpers/plan.js";
 import { dayAt, eventsOf, readRunMarker, seedTasks, withDataRootStore } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
@@ -30,14 +31,28 @@ function planningTask(): { dataRoot: string; task: Task } {
   return { dataRoot, task };
 }
 
+// The quota check of a run: the policy of the repo, the threshold 0.9 and a prepared-like object with the
+// claude-code provider and the approved window, if any.
+function quotaOf(overagePolicy: "decline" | "ask", approvedResetsAt?: number) {
+  return {
+    repo: { overagePolicy, quotaApprovalThreshold: 0.9 },
+    prepared: { provider: createClaudeCodeProvider(), approvedResetsAt },
+  };
+}
+
 // The one call helper: applies outcome to a new planning task with a 30-minute deadline.
 // events holds only the events after the setup (created and the move to planning).
-function applyTo(outcome: RunOutcome, before?: (store: TaskStore, task: Task) => void) {
+// quota is the quota check of the run. Its default is the decline policy with no approved window.
+function applyTo(
+  outcome: RunOutcome,
+  before?: (store: TaskStore, task: Task) => void,
+  quota: ReturnType<typeof quotaOf> = quotaOf("decline"),
+) {
   const { dataRoot, task } = planningTask();
   const io = captureIo();
   const result = withDataRootStore(dataRoot, (store) => {
     before?.(store, task);
-    return applyRunOutcome({ store, task, phase: "planning", timeoutMinutes: 30, io, outcome });
+    return applyRunOutcome({ store, task, phase: "planning", timeoutMinutes: 30, io, outcome, quota });
   });
   const state = withDataRootStore(dataRoot, (store) => store.getTask(task.id)!.state);
   const marker = readRunMarker(createDataRoot(dataRoot).database, task.id);
@@ -63,6 +78,59 @@ describe("applyRunOutcome with a success", () => {
     const { events } = applyTo({ kind: "success", ...base("unavailable") });
 
     expect(events).toEqual([{ type: "usage", data: { usage: "unavailable" } }]);
+  });
+});
+
+describe("applyRunOutcome with a quota warning", () => {
+  const withEvent = (event: AssistantEvent): RunOutcome => ({ kind: "success", ...base(), events: [event] });
+  const noReset = (info: Record<string, unknown>) => {
+    delete info.resetsAt;
+    delete (info.unifiedWindows as { seven_day: Record<string, unknown> }).seven_day.resetsAt;
+  };
+
+  it("gives the warning of a use above the threshold under ask and leaves the task in planning", () => {
+    const outcome = withEvent(claudeApprovalWarningEvent());
+
+    const { result, state, marker, events, io } = applyTo(outcome, undefined, quotaOf("ask"));
+
+    expect(result).toEqual({ outcome, warning: { utilization: 0.95, resetsAt: 1792206000 } });
+    expect(state).toBe("planning");
+    expect(marker).toBeDefined();
+    expect(events).toEqual([{ type: "usage", data: { usage: USAGE } }]);
+    expect(io.out).toEqual([]);
+    expect(io.err).toEqual([]);
+  });
+
+  it("gives no warning for a use below the threshold under ask", () => {
+    const outcome = withEvent(claudeRateLimitEvent());
+
+    const { result } = applyTo(outcome, undefined, quotaOf("ask"));
+
+    expect(result).toEqual({ outcome });
+  });
+
+  it("gives no warning when the approved window is the window of the warning", () => {
+    const outcome = withEvent(claudeApprovalWarningEvent());
+
+    const { result } = applyTo(outcome, undefined, quotaOf("ask", 1792206000));
+
+    expect(result).toEqual({ outcome });
+  });
+
+  it("keeps a warning with no resetsAt when a window is approved", () => {
+    const outcome = withEvent(claudeApprovalWarningEvent(noReset));
+
+    const { result } = applyTo(outcome, undefined, quotaOf("ask", 1792206000));
+
+    expect(result).toEqual({ outcome, warning: { utilization: 0.95 } });
+  });
+
+  it("gives no warning under decline", () => {
+    const outcome = withEvent(claudeApprovalWarningEvent());
+
+    const { result } = applyTo(outcome, undefined, quotaOf("decline"));
+
+    expect(result).toEqual({ outcome });
   });
 });
 

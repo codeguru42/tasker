@@ -3,8 +3,11 @@ import { existsSync, lstatSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
+import { createClaudeCodeProvider } from "../../src/assistant/claude-code/provider.js";
+import type { AssistantEvent } from "../../src/assistant/provider.js";
 import {
   argAfter,
+  claudeApprovalWarningEvent,
   claudeOverageEvent,
   claudeRateLimitEvent,
   claudeSample,
@@ -168,6 +171,40 @@ describe("claudeOverageEvent", () => {
     });
 
     expect(claudeOverageEvent().rate_limit_info).toMatchObject({ utilization: 0.8 });
+  });
+});
+
+describe("claudeApprovalWarningEvent", () => {
+  const detect = (event: AssistantEvent, threshold: number) =>
+    createClaudeCodeProvider().detectQuotaApprovalWarning(
+      {
+        kind: "success",
+        sessionId: TEST_SESSION_ID,
+        events: [event],
+        permissionDenials: [],
+        usage: "unavailable",
+      },
+      threshold,
+    );
+
+  it("gives a warning of the claude-code provider at the default threshold 0.9", () => {
+    expect(detect(claudeApprovalWarningEvent(), 0.9)).toEqual({ utilization: 0.95, resetsAt: 1792206000 });
+  });
+
+  it("applies the edit after the change", () => {
+    const event = claudeApprovalWarningEvent((info) => {
+      info.rateLimitType = "five_hour";
+    });
+
+    expect(event.rate_limit_info).toMatchObject({ utilization: 0.95, rateLimitType: "five_hour" });
+  });
+
+  it("gives a new object for each call, so an edit does not leak", () => {
+    claudeApprovalWarningEvent((info) => {
+      info.utilization = 0.5;
+    });
+
+    expect(claudeApprovalWarningEvent().rate_limit_info).toMatchObject({ utilization: 0.95 });
   });
 });
 

@@ -100,6 +100,17 @@ export function claudeOverageEvent(edit: (info: Record<string, unknown>) => void
   });
 }
 
+// The capture of claudeRateLimitEvent() with the utilization 0.95 in the flat info and in the seven_day window, so it
+// passes the default quotaApprovalThreshold 0.9 and keeps the resetsAt 1792206000. Then edit changes its
+// rate_limit_info. A test names each field that edit changes in its test name.
+export function claudeApprovalWarningEvent(edit: (info: Record<string, unknown>) => void = () => {}): AssistantEvent {
+  return claudeRateLimitEvent((info) => {
+    info.utilization = 0.95;
+    (info.unifiedWindows as { seven_day: Record<string, unknown> }).seven_day.utilization = 0.95;
+    edit(info);
+  });
+}
+
 // The stream with event as its first line, before the lines of stream, for a test where the event comes first.
 export function withEventFirst(event: AssistantEvent, stream: readonly string[]): string[] {
   return [JSON.stringify(event), ...stream];
