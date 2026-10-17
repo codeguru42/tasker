@@ -152,7 +152,7 @@ Records that the work of a task in `accepted`, `pushed` or `in_peer_review` land
 
 ### `tasker update-branch`
 
-Brings the worktree of a task up to date with its base branch. See [the reference](references/keeping-current.md#tasker-update-branch).
+Brings the worktree of a task up to date with its base branch, for a task in a state that the reference lists. See [the reference](references/keeping-current.md#tasker-update-branch).
 
 ### `tasker finish`
 
