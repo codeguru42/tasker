@@ -33,6 +33,19 @@ const ACCEPTED: Record<TaskCommand, readonly string[]> = {
   retry: ["failed"],
   resume: ["quota_blocked", "interrupted"],
   "approve-credits": ["quota_blocked", "awaiting_quota_approval"],
+  "update-branch": [
+    "workspace_ready",
+    "awaiting_plan_review",
+    "approved",
+    "executed",
+    "awaiting_work_review",
+    "reviewed",
+    "accepted",
+    "pushed",
+    "in_peer_review",
+    "cleanup_failed",
+    "failed",
+  ],
   abort: ACTIVE_STATES,
 };
 
@@ -104,13 +117,13 @@ describe("showLines", () => {
   it("gives the next and also lines for a state with a primary command", () => {
     expect(showLines("approved", key)).toEqual([
       "next: tasker execute codeguru42/tasker#5",
-      "also: tasker unapprove codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+      "also: tasker unapprove codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
     ]);
   });
 
   it("gives one commands line for a state with no primary command", () => {
     expect(showLines("reviewed", key)).toEqual([
-      "commands: tasker refine codeguru42/tasker#5, tasker dismiss-review codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+      "commands: tasker refine codeguru42/tasker#5, tasker dismiss-review codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
     ]);
   });
 
@@ -125,12 +138,12 @@ describe("showLines", () => {
 
 describe("nextCell", () => {
   it("gives the primary command and the other commands for a state with a primary command", () => {
-    expect(nextCell("workspace_ready")).toBe("plan (also: abort)");
-    expect(nextCell("approved")).toBe("execute (also: unapprove, abort)");
+    expect(nextCell("workspace_ready")).toBe("plan (also: update-branch, abort)");
+    expect(nextCell("approved")).toBe("execute (also: unapprove, update-branch, abort)");
   });
 
   it("gives the commands for a state with no primary command", () => {
-    expect(nextCell("awaiting_plan_review")).toBe("refine, approve, abort");
+    expect(nextCell("awaiting_plan_review")).toBe("refine, approve, update-branch, abort");
   });
 
   it("gives abort for a state that only aborts", () => {
@@ -147,13 +160,13 @@ describe("errorSentence", () => {
 
   it("gives the next command and the others for a state with a primary command", () => {
     expect(errorSentence("failed", key)).toBe(
-      "next: tasker retry codeguru42/tasker#5 (also: tasker refine codeguru42/tasker#5, tasker abort codeguru42/tasker#5)",
+      "next: tasker retry codeguru42/tasker#5 (also: tasker refine codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5)",
     );
   });
 
   it("gives the commands for a state with no primary command", () => {
     expect(errorSentence("awaiting_plan_review", key)).toBe(
-      "commands: tasker refine codeguru42/tasker#5, tasker approve codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+      "commands: tasker refine codeguru42/tasker#5, tasker approve codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
     );
   });
 

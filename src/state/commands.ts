@@ -17,6 +17,7 @@ export type TaskCommand =
   | "retry"
   | "resume"
   | "approve-credits"
+  | "update-branch"
   | "abort";
 
 export interface StateCommands {
@@ -32,31 +33,31 @@ const ABORT_ONLY: StateCommands = { commands: ["abort"] };
 // docs/statemachine.md, "The commands of each state", shows the same table.
 export const STATE_COMMANDS: Readonly<Partial<Record<TaskState, StateCommands>>> = {
   provisioning: { primary: "start", commands: ["start", "abort"] },
-  workspace_ready: { primary: "plan", commands: ["plan", "abort"] },
+  workspace_ready: { primary: "plan", commands: ["plan", "update-branch", "abort"] },
   planning: ABORT_ONLY,
-  awaiting_plan_review: { commands: ["refine", "approve", "abort"] },
+  awaiting_plan_review: { commands: ["refine", "approve", "update-branch", "abort"] },
   refining: ABORT_ONLY,
-  approved: { primary: "execute", commands: ["execute", "unapprove", "abort"] },
+  approved: { primary: "execute", commands: ["execute", "unapprove", "update-branch", "abort"] },
   executing: ABORT_ONLY,
-  executed: { primary: "verify", commands: ["verify", "abort"] },
+  executed: { primary: "verify", commands: ["verify", "update-branch", "abort"] },
   verifying: ABORT_ONLY,
-  awaiting_work_review: { commands: ["review", "accept", "abort"] },
+  awaiting_work_review: { commands: ["review", "accept", "update-branch", "abort"] },
   reviewing: ABORT_ONLY,
-  reviewed: { commands: ["refine", "dismiss-review", "abort"] },
-  accepted: { primary: "merge", commands: ["merge", "mark-landed", "abort"] },
+  reviewed: { commands: ["refine", "dismiss-review", "update-branch", "abort"] },
+  accepted: { primary: "merge", commands: ["merge", "mark-landed", "update-branch", "abort"] },
   pushing: ABORT_ONLY,
-  pushed: { commands: ["mark-landed", "abort"] },
+  pushed: { commands: ["mark-landed", "update-branch", "abort"] },
   opening_pr: ABORT_ONLY,
-  in_peer_review: { commands: ["mark-landed", "abort"] },
+  in_peer_review: { commands: ["mark-landed", "update-branch", "abort"] },
   merging: ABORT_ONLY,
   landed: { primary: "finish", commands: ["finish", "abort"] },
   finishing: ABORT_ONLY,
-  cleanup_failed: { primary: "finish", commands: ["finish", "abort"] },
+  cleanup_failed: { primary: "finish", commands: ["finish", "update-branch", "abort"] },
   updating_branch: ABORT_ONLY,
   quota_blocked: { primary: "resume", commands: ["resume", "approve-credits", "abort"] },
   awaiting_quota_approval: { primary: "approve-credits", commands: ["approve-credits", "abort"] },
   interrupted: { primary: "resume", commands: ["resume", "abort"] },
-  failed: { primary: "retry", commands: ["retry", "refine", "abort"] },
+  failed: { primary: "retry", commands: ["retry", "refine", "update-branch", "abort"] },
 };
 
 // The row of a state, or undefined for a terminal or unknown state.

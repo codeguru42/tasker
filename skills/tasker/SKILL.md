@@ -150,6 +150,10 @@ Lands the work of a task in `accepted` on the base branch of `origin`. See [the 
 
 Records that the work of a task in `accepted`, `pushed` or `in_peer_review` landed outside tasker. See [the reference](references/landing.md#tasker-mark-landed).
 
+### `tasker update-branch`
+
+Brings the worktree of a task up to date with its base branch. See [the reference](references/keeping-current.md#tasker-update-branch).
+
 ### `tasker finish`
 
 Cleans up a task in `landed` or `cleanup_failed`. See [the reference](references/landing.md#tasker-finish).

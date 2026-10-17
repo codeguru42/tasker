@@ -127,8 +127,8 @@ describe("status", () => {
       err: "",
       out:
         "ISSUE                REPO               STATE                 UPDATED                   NEXT\n" +
-        "codeguru42/other#7   codeguru42/other   awaiting_plan_review  2026-01-03T00:00:00.000Z  refine, approve, abort\n" +
-        "codeguru42/tasker#5  codeguru42/tasker  workspace_ready       2026-01-02T00:00:00.000Z  plan (also: abort)\n",
+        "codeguru42/other#7   codeguru42/other   awaiting_plan_review  2026-01-03T00:00:00.000Z  refine, approve, update-branch, abort\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  workspace_ready       2026-01-02T00:00:00.000Z  plan (also: update-branch, abort)\n",
     });
   });
 

@@ -165,7 +165,7 @@ describe("show", () => {
     expect(code).toBe(0);
     expect(out.endsWith(expectedShowLines("awaiting_work_review", `${TASKER}#5`))).toBe(true);
     expect(out).toContain(
-      "commands: tasker review codeguru42/tasker#5, tasker accept codeguru42/tasker#5, tasker abort codeguru42/tasker#5\n",
+      "commands: tasker review codeguru42/tasker#5, tasker accept codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5\n",
     );
   });
 

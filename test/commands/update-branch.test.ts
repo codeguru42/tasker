@@ -78,7 +78,7 @@ describe("tasker update-branch", () => {
 
     expect(result).toEqual({
       code: 0,
-      out: `moved ${KEY} onto main at ${work.baseTip} by fast-forward: ${head} to ${work.baseTip}\nstate: awaiting_work_review\n`,
+      out: `moved ${KEY} onto main at ${work.baseTip} by fast-forward: ${head} to ${work.baseTip}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`,
       err: "",
     });
     expect(await taskBranchTipOf(work)).toBe(work.baseTip);
@@ -100,7 +100,7 @@ describe("tasker update-branch", () => {
     expect(await revisionOf(work, "HEAD^")).toBe(work.baseTip);
     expect(result).toEqual({
       code: 0,
-      out: `moved ${KEY} onto main at ${work.baseTip} by rebase: ${head} to ${newHead}\nstate: awaiting_work_review\n`,
+      out: `moved ${KEY} onto main at ${work.baseTip} by rebase: ${head} to ${newHead}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`,
       err: "",
     });
     const before = { head, base: "main", baseRevision: BASE_REVISION };
