@@ -46,6 +46,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - In step 7 of [the rebase-conflict procedure](rebase-conflicts.md#procedure), resolve only the conflict hunk. `git checkout --theirs <file>` takes the whole file. On #201, it dropped a word that another ticket had added. A script for the conflict chains its steps with `&&`, so that a failed step stops the script (#201).
 - If the issue puts a command out of scope, ask the plan not to edit the docs of that command. On #159, the plan narrowed a reason sentence in the "Retry" section of [tasks.md](tasks.md#retry). Review 1 read the new sentence as a promise of a case that the ticket did not build.
 - A link must support the exact sentence that holds it. Ask the plan to compare each link sentence with its target, for example "X says that Y". The target must say Y. On #159, a link sentence claimed more than its target doc says. [The diff read](orchestration.md#the-diff-read) found it after execute. On #212, the compare found a real gap before execute, because [docs/config.md](../config.md#assistant) names the provider `claude-code`, not the `claude` command.
+- If a change makes an argument optional, ask the plan to list each doc sentence that depends on that argument, and to say for each one if it changes. On #159, the feedback of [`tasker refine`](tasks.md#refine) became optional. Review 2 found the sentence "a left-out question counts as answered by the feedback".
 
 ## A ticket that only adds a layer, for example a schema
 
