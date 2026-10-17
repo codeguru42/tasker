@@ -12,7 +12,19 @@ import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree
 import { runCommand } from "../helpers/cli.js";
 import { localBranches } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { lockNames, quotaEventsOf, seedQuotaEvent, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { deadRunNote } from "../helpers/state-commands.js";
+import {
+  databasePathOf,
+  eventsOf,
+  latestTaskOf,
+  lockNames,
+  quotaEventsOf,
+  readRunMarker,
+  seedDeadRun,
+  seedQuotaEvent,
+  seedTasks,
+  withDataRootStore,
+} from "../helpers/store.js";
 import { taskWorkspaceState, useStartFixture, useStartedTask } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -59,24 +71,44 @@ describe("abort", () => {
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
-  it("deletes the run marker of a task in a spawning state", async () => {
+  it("refuses a task with a run in progress and changes nothing", async () => {
     const fixture = await useStartFixture();
     const [task] = seedTasks(fixture.dataRoot, [
       { issueKey: KEY, repoKey: REPO, state: "workspace_ready", at: "2026-01-01T00:00:00.000Z" },
     ]);
-    withDataRootStore(fixture.dataRoot, (store) => {
-      transitionTask(store, task.id, "planning");
-      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
-    });
+    withDataRootStore(fixture.dataRoot, (store) => transitionTask(store, task.id, "planning"));
+    const dbPath = databasePathOf(fixture.dataRoot);
+    const marker = readRunMarker(dbPath, task.id);
+    const events = eventsOf(fixture.dataRoot, KEY);
 
     const result = await runCommand(abort, "abort", KEY);
 
-    expect(result).toEqual({ code: 0, out: `cancelled ${KEY}\n`, err: "" });
-    withDataRootStore(fixture.dataRoot, (store) => {
-      expect(store.getTask(task.id)?.state).toBe("cancelled");
-      // startRun refuses a task that still has a marker, so a pass shows that the abort deleted it.
-      expect(store.startRun(task.id, "planning").state).toBe("planning");
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err: `the task of ${KEY} has a run in progress in planning (tasker process ${process.pid}); wait for it, or stop that process\n`,
     });
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("planning");
+    expect(readRunMarker(dbPath, task.id)).toEqual(marker);
+    expect(eventsOf(fixture.dataRoot, KEY)).toEqual(events);
+  });
+
+  it("prints the note of a dead run, then cancels the task and deletes the run marker", async () => {
+    const fixture = await useStartFixture();
+    const [task] = seedTasks(fixture.dataRoot, [
+      { issueKey: KEY, repoKey: REPO, state: "workspace_ready", at: "2026-01-01T00:00:00.000Z" },
+    ]);
+    seedDeadRun(fixture.dataRoot, task.id, "planning");
+
+    const result = await runCommand(abort, "abort", KEY);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `cancelled ${KEY}\n`,
+      err: `${deadRunNote(KEY, "planning")}\n`,
+    });
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("cancelled");
+    expect(readRunMarker(databasePathOf(fixture.dataRoot), task.id)).toBeUndefined();
   });
 
   it("cleans up and cancels a task in failed", async () => {
