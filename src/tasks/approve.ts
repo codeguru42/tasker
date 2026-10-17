@@ -2,7 +2,7 @@ import type { IssueRef } from "../issue-key/ref.js";
 import type { PlanAnswer } from "../plan/answer.js";
 import { transitionWithPlanApproval } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
-import type { TaskStore } from "../store/store.js";
+import type { TaskEvent, TaskStore } from "../store/store.js";
 import { assertTaskState, taskById } from "./task-state.js";
 
 export interface ApproveRequest {
@@ -25,6 +25,16 @@ export async function approveTask(store: TaskStore, request: ApproveRequest): Pr
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => approveLocked(store, request));
 }
 
+// True when the newest branch_updated event with a head that moved comes after the newest plan_revision event.
+function planIsOlderThanLastMove(events: readonly TaskEvent[]): boolean {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const { type, data } = events[i];
+    if (type === "plan_revision") return false;
+    if (type === "branch_updated" && (data as { how?: unknown }).how !== "none") return true;
+  }
+  return false;
+}
+
 async function approveLocked(store: TaskStore, request: ApproveRequest): Promise<Approved> {
   const task = taskById(store, request.taskId);
   if (task.state === "approved") {
@@ -34,6 +44,11 @@ async function approveLocked(store: TaskStore, request: ApproveRequest): Promise
   assertTaskState(task, "approve");
   const revision = store.latestPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
+  if (planIsOlderThanLastMove(store.listEvents(task.id))) {
+    throw new Error(
+      `the plan v${revision.version} of ${task.issueKey} is older than the last move of the worktree; run tasker refine ${task.issueKey} "<feedback>" first`,
+    );
+  }
   const openQuestions = revision.answer.questions;
   await request.warnOverlaps(revision.answer.files_changed);
   transitionWithPlanApproval(store, task.id, revision.version, openQuestions.length);
