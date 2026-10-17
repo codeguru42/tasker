@@ -1198,6 +1198,50 @@ describe("task transitions", () => {
       expect(record.resetsAt).toBeUndefined();
     });
 
+    it("drops a cause that is not a string", () => {
+      const task = store.createTask(newTask("planning"));
+      pauseTaskFrom(store, task.id, "executing", "quota_blocked", { cause: 42, resetsAt: 1792206000 });
+      const record = pauseRecordOf(store.listEvents(task.id), "quota_blocked");
+      expect(record.cause).toBeUndefined();
+      expect(record.resetsAt).toBe(1792206000);
+    });
+
+    it("drops a utilization that is not a number", () => {
+      const task = store.createTask(newTask("planning"));
+      pauseTaskFrom(store, task.id, "executing", "awaiting_quota_approval", {
+        utilization: "0.95",
+        resetsAt: 1792206000,
+      });
+      const record = pauseRecordOf(store.listEvents(task.id), "awaiting_quota_approval");
+      expect(record.utilization).toBeUndefined();
+    });
+
+    it("drops a signal that is not a string", () => {
+      const task = store.createTask(newTask("planning"));
+      pauseTaskFrom(store, task.id, "executing", "interrupted", { cause: "signal", signal: 15 });
+      const record = pauseRecordOf(store.listEvents(task.id), "interrupted");
+      expect(record.cause).toBe("signal");
+      expect(record.signal).toBeUndefined();
+    });
+
+    it("keeps no other field of the event data", () => {
+      const task = store.createTask(newTask("planning"));
+      pauseTaskFrom(store, task.id, "executing", "quota_blocked", { cause: "overage", resetsAt: 1792206000 });
+      expect(pauseRecordOf(store.listEvents(task.id), "quota_blocked")).toEqual({
+        cause: "overage",
+        resetsAt: 1792206000,
+      });
+    });
+
+    it.each([
+      ["awaiting_quota_approval", { utilization: 0.95 }],
+      ["interrupted", { cause: "signal", signal: "SIGTERM" }],
+    ] as const)("keeps the utilization and the signal of a move into %s", (pause, data) => {
+      const task = store.createTask(newTask("planning"));
+      pauseTaskFrom(store, task.id, "executing", pause, data);
+      expect(pauseRecordOf(store.listEvents(task.id), pause)).toEqual(data);
+    });
+
     it("gives the data of the last of two moves into the pause", () => {
       const task = store.createTask(newTask("planning"));
       pauseTaskFrom(store, task.id, "executing", "quota_blocked", { cause: "overage", resetsAt: 1792206000 });

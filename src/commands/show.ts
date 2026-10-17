@@ -55,22 +55,19 @@ const resetsAtField = (record: PauseRecord): Field => [
   record.resetsAt === undefined ? undefined : resetIsoTime(record.resetsAt),
 ];
 
-const causeField = (record: PauseRecord): Field => [
-  "cause",
-  typeof record.cause === "string" ? record.cause : undefined,
-];
+const causeField = (record: PauseRecord): Field => ["cause", record.cause];
 
 // The fields of each pause state, from the state before the pause and the facts of the pause.
 const PAUSE_FIELDS: Partial<Record<string, (origin: TaskState | undefined, record: PauseRecord) => Field[]>> = {
   quota_blocked: (origin, record) => [["paused from", origin], causeField(record), resetsAtField(record)],
   awaiting_quota_approval: (origin, record) => [
     ["paused from", origin],
-    ["utilization", typeof record.utilization === "number" ? record.utilization : undefined],
+    ["utilization", record.utilization],
     resetsAtField(record),
   ],
   interrupted: (origin, record) => [
     ["paused from", origin],
-    record.cause === "signal" && typeof record.signal === "string"
+    record.cause === "signal" && record.signal !== undefined
       ? ["cause", `signal ${record.signal}`]
       : causeField(record),
   ],

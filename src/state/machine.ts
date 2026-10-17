@@ -402,20 +402,25 @@ export function transitionFromEvents(events: readonly TaskEvent[], to: TaskState
   return typeof from === "string" && isTaskState(from) ? from : undefined;
 }
 
-// The facts that the last move into a pause recorded. resetsAt is there only when it is a number.
+// The facts that the last move into a pause recorded. Each fact is there only when its value has the type of the field.
 export interface PauseRecord {
-  cause?: unknown;
-  utilization?: unknown;
-  signal?: unknown;
+  cause?: string;
+  utilization?: number;
+  signal?: string;
   resetsAt?: number;
 }
 
-// The data of the last transition event into pause, with the typeof check of resetsAt. It gives {} when events has no
-// move into pause.
+// The facts of the last transition event into pause. It gives {} when events has no move into pause. It keeps no other
+// field of the event data.
 export function pauseRecordOf(events: readonly TaskEvent[], pause: TaskState): PauseRecord {
-  const data = (events[lastTransitionIndex(events, pause)]?.data ?? {}) as PauseRecord;
-  const { resetsAt, ...rest } = data;
-  return typeof resetsAt === "number" ? { ...rest, resetsAt } : rest;
+  const data = (events[lastTransitionIndex(events, pause)]?.data ?? {}) as Record<string, unknown>;
+  const { cause, utilization, signal, resetsAt } = data;
+  return {
+    ...(typeof cause === "string" && { cause }),
+    ...(typeof utilization === "number" && { utilization }),
+    ...(typeof signal === "string" && { signal }),
+    ...(typeof resetsAt === "number" && { resetsAt }),
+  };
 }
 
 // The operator feedback that the last move into refining recorded, or undefined when it recorded none.
