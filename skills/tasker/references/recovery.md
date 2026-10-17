@@ -20,6 +20,7 @@ The command reads the origin. The origin is the state that the task left when it
 - `verifying` with `--resume-execute`: the task goes to `approved`. The command marks every todo of the pinned revision `done` and queues one fix turn. Then it runs `tasker execute`, which continues the execute session and runs only the fix turn.
 - `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review number, so that the next run starts a new session. Then it runs `tasker review`.
 - `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to `landed`.
+- `quota_blocked`, `awaiting_quota_approval` or `interrupted`: the command uses the row of the state that the task left when it moved into the pause, but only when that state is `planning`, `executing`, `verifying` or `reviewing`. For example, a task that failed in `interrupted` after a move from `executing` goes to `approved`, and the command runs `tasker execute`. The first line is then `retried <issue key>: failed in interrupted, back in approved`.
 
 The origin of a refine is the state that the task left when the last refine started. The state before the merge is the state that the task left when the last merge started.
 
@@ -43,7 +44,7 @@ The output of the next command follows: the output of `tasker start`, `tasker pl
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
-- The task failed in a state that retry has no step for. The error is `the task of <issue key> failed in <state>; tasker retry has no step for it`. A task that failed in `merging` after a move from a state other than `accepted` gets this error too.
+- The task failed in a state that retry has no step for. The error is `the task of <issue key> failed in <state>; tasker retry has no step for it`. A task that failed in `merging` after a move from a state other than `accepted` gets this error too. So does a task that failed in a pause after a move from each other state, for example `refining`, `merging` or `pushing`. The error then names the pause as the state.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is `--resume-execute applies only to a task that failed in verifying`.
 
 ## `tasker resume`
