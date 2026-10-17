@@ -34,7 +34,7 @@ Right before tasker starts a command, it starts to pass SIGINT and SIGTERM to th
 
 The limits of this rule:
 
-- While a command runs, a Ctrl-C does not stop tasker. The command gets the signal, and the run of the command ends. Tasker reports the stop as a failure of that command.
+- While a command runs, a Ctrl-C does not stop tasker. The command gets the signal, and the run of the command ends. A phase command (verify or bootstrap) ends as a failure of that command. The assistant runner ends the run as an interruption (see [The result of an assistant run](tasks.md#the-result-of-an-assistant-run)).
 - Each signal that comes while the same command runs goes to the command. A second Ctrl-C reaches the command again.
 - Between two commands, no handler exists. A Ctrl-C then stops tasker at once.
 - After the run, the default comes back. A SIGTERM ends tasker.

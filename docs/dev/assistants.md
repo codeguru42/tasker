@@ -10,6 +10,10 @@ A provider that cannot enforce a limit that tasker asks for must refuse the run 
 
 The caller must make the session id and must record it before the run. As a result, a crash, a timeout or a quota stop still leaves an id to continue. No provider has to report an id.
 
+## The outcome of an interrupted run
+
+When tasker passes SIGINT or SIGTERM to a run, the provider gives the outcome `interrupted` with that signal. A quota outcome wins over it, because a quota outcome rests on a parsed event. The interrupted outcome wins over a failure and over a timeout.
+
 ## The prompt
 
 A provider must send the prompt on stdin, never in argv. A prompt can be longer than the argv limit of the system.
@@ -168,6 +172,8 @@ The limits of the sandbox:
 When a rate limit stops a run, the last event is a `result` with `terminal_reason: "api_error"` and `api_error_status: 429`. `claude` exits with a code other than 0. The `subtype` and `stop_reason` of that result say `"success"` and `"stop_sequence"`. These values are decoys, so the provider does not read them. The text of the last turn gives the reset in local time with no date, so the provider does not read it either. The reset time comes from the rejected rate-limit event.
 
 A quota outcome wins over a failure, because the next step is a resume, not a fix.
+
+A quota outcome also wins over the interrupted outcome, because a quota outcome rests on a parsed event. The interrupted outcome wins over the timeout and over the failures.
 
 The provider says which events are quota events, because only the provider can read its own stream. During each run, tasker records the last quota event of the repo. The record comes after the transcript write, so a failed record write cannot drop a transcript line. [The `quota_events` table](data-root.md#quota_events-table) holds the record.
 
