@@ -90,6 +90,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
   - The names and the count of the tests, from `npm run test:list -- --json`. Put `--json` last, or use the form `--json=<path>`, because Vitest reads the word after `--json` as an output path. On #220, `npm run test:list -- --json <file>` wrote the JSON list over a test file in the worktree.
   - A sorted diff of the bodies, without the import lines.
   - The import graph.
+- If a refactor moves tests onto shared defaults, ask the plan to list each value that the old local builder had and that the shared builder does not have. Ask the plan to say for each value if a test depends on it. On #220, review 1 found a round-trip test that lost its check of two different times.
 
 ## A ticket that moves a task into or out of a group of states
 
