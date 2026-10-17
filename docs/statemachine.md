@@ -210,21 +210,21 @@ flowchart LR
 - `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there. Under `ask`, a run whose use of the quota window reaches `quotaApprovalThreshold` pauses into `awaiting_quota_approval` when the run ends, unless the operator approved that window.
 - A resume moves the task to the state before the spawn, then runs the same command again. So the task goes straight back into a spawning state.
 
-| Paused from                                | Resumes to                                                 | Then runs                                                            |
-| ------------------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------- |
-| `planning`                                 | `workspace_ready`                                          | `plan`                                                               |
-| `refining` (plain refine)                  | `awaiting_plan_review`                                     | `refine`                                                             |
-| `refining` (from `tasker reopen`)          | `accepted`                                                 | `reopen`                                                             |
-| `refining` (promoted from `reviewed`)      | `reviewed`                                                 | `refine`, with the recorded findings again                           |
-| `refining` (from `tasker review FEEDBACK`) | `awaiting_work_review`                                     | `review FEEDBACK`                                                    |
-| `executing`                                | `approved`                                                 | `execute` (continues the session)                                    |
-| `verifying` (interrupted only)             | `approved`                                                 | `execute` (continues the session)                                    |
-| `reviewing`                                | `awaiting_work_review`                                     | `review`                                                             |
-| `pushing` (interrupted only)               | `accepted`                                                 | `push`. No second push if `origin` already has the sha.              |
-| `opening_pr` (interrupted only)            | `pushed`                                                   | `open-pr`. It adopts an open PR and does not open a second one.      |
-| `merging` (interrupted only)               | the recorded merge origin (`accepted` or `in_peer_review`) | `merge`. No second push or merge if the work is already on the base. |
-| `finishing` (interrupted only)             | `landed`                                                   | `finish`. Each cleanup step skips what is already done.              |
-| `updating_branch` (interrupted only)       | its origin state                                           | nothing. Run `update-branch` again.                                  |
+| Paused from                                 | Resumes to                                                 | Then runs                                                            |
+| ------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| `planning`                                  | `workspace_ready`                                          | `plan` (continues the session)                                       |
+| `refining` (plain refine, or from `failed`) | `awaiting_plan_review`                                     | `refine`, with the recorded feedback                                 |
+| `refining` (from `tasker reopen`)           | `accepted`                                                 | `reopen`                                                             |
+| `refining` (promoted from `reviewed`)       | `reviewed`                                                 | `refine`, with the recorded feedback or none                         |
+| `refining` (from `tasker review FEEDBACK`)  | `awaiting_work_review`                                     | `review`, with the recorded feedback                                 |
+| `executing`                                 | `approved`                                                 | `execute` (continues the session)                                    |
+| `verifying` (interrupted only)              | `executed`                                                 | `verify`                                                             |
+| `reviewing`                                 | `awaiting_work_review`                                     | `review` (in a new session)                                          |
+| `pushing` (interrupted only)                | `accepted`                                                 | `push`. No second push if `origin` already has the sha.              |
+| `opening_pr` (interrupted only)             | `pushed`                                                   | `open-pr`. It adopts an open PR and does not open a second one.      |
+| `merging` (interrupted only)                | the recorded merge origin (`accepted` or `in_peer_review`) | `merge`. No second push or merge if the work is already on the base. |
+| `finishing` (interrupted only)              | `landed`                                                   | `finish`. Each cleanup step skips what is already done.              |
+| `updating_branch` (interrupted only)        | its origin state                                           | nothing. Run `update-branch` again.                                  |
 
 ## Failure and retry
 
@@ -292,23 +292,24 @@ flowchart LR
 
 `tasker show`, `tasker status` and the wrong-state error name the commands that are valid from the state of a task. They read one table. The table lives in `src/state/commands.ts`.
 
-| State                                                                                                                                                                                                                               | Primary command | Commands, in order                  |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------- |
-| `provisioning`                                                                                                                                                                                                                      | `start`         | `start`, `abort`                    |
-| `workspace_ready`                                                                                                                                                                                                                   | `plan`          | `plan`, `abort`                     |
-| `awaiting_plan_review`                                                                                                                                                                                                              | none            | `refine`, `approve`, `abort`        |
-| `approved`                                                                                                                                                                                                                          | `execute`       | `execute`, `unapprove`, `abort`     |
-| `executed`                                                                                                                                                                                                                          | `verify`        | `verify`, `abort`                   |
-| `awaiting_work_review`                                                                                                                                                                                                              | none            | `review`, `accept`, `abort`         |
-| `reviewed`                                                                                                                                                                                                                          | none            | `refine`, `dismiss-review`, `abort` |
-| `accepted`                                                                                                                                                                                                                          | `merge`         | `merge`, `mark-landed`, `abort`     |
-| `pushed`                                                                                                                                                                                                                            | none            | `mark-landed`, `abort`              |
-| `in_peer_review`                                                                                                                                                                                                                    | none            | `mark-landed`, `abort`              |
-| `landed`                                                                                                                                                                                                                            | `finish`        | `finish`, `abort`                   |
-| `cleanup_failed`                                                                                                                                                                                                                    | `finish`        | `finish`, `abort`                   |
-| `failed`                                                                                                                                                                                                                            | `retry`         | `retry`, `refine`, `abort`          |
-| each other state that is not terminal: `planning`, `refining`, `executing`, `verifying`, `reviewing`, `pushing`, `opening_pr`, `merging`, `finishing`, `updating_branch`, `quota_blocked`, `awaiting_quota_approval`, `interrupted` | none            | `abort`                             |
-| `finished`, `cancelled`                                                                                                                                                                                                             | no row          | no row                              |
+| State                                                                                                                                                                                               | Primary command | Commands, in order                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------- |
+| `provisioning`                                                                                                                                                                                      | `start`         | `start`, `abort`                    |
+| `workspace_ready`                                                                                                                                                                                   | `plan`          | `plan`, `abort`                     |
+| `awaiting_plan_review`                                                                                                                                                                              | none            | `refine`, `approve`, `abort`        |
+| `approved`                                                                                                                                                                                          | `execute`       | `execute`, `unapprove`, `abort`     |
+| `executed`                                                                                                                                                                                          | `verify`        | `verify`, `abort`                   |
+| `awaiting_work_review`                                                                                                                                                                              | none            | `review`, `accept`, `abort`         |
+| `reviewed`                                                                                                                                                                                          | none            | `refine`, `dismiss-review`, `abort` |
+| `accepted`                                                                                                                                                                                          | `merge`         | `merge`, `mark-landed`, `abort`     |
+| `pushed`                                                                                                                                                                                            | none            | `mark-landed`, `abort`              |
+| `in_peer_review`                                                                                                                                                                                    | none            | `mark-landed`, `abort`              |
+| `landed`                                                                                                                                                                                            | `finish`        | `finish`, `abort`                   |
+| `cleanup_failed`                                                                                                                                                                                    | `finish`        | `finish`, `abort`                   |
+| `failed`                                                                                                                                                                                            | `retry`         | `retry`, `refine`, `abort`          |
+| `quota_blocked`, `interrupted`                                                                                                                                                                      | `resume`        | `resume`, `abort`                   |
+| each other state that is not terminal: `planning`, `refining`, `executing`, `verifying`, `reviewing`, `pushing`, `opening_pr`, `merging`, `finishing`, `updating_branch`, `awaiting_quota_approval` | none            | `abort`                             |
+| `finished`, `cancelled`                                                                                                                                                                             | no row          | no row                              |
 
 The rules of the table:
 
