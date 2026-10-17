@@ -95,7 +95,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The task is in a state other than `quota_blocked` or `awaiting_quota_approval`. The error is `the task of <issue key> is in <state>; tasker approve-credits needs quota_blocked or awaiting_quota_approval`, then the commands that the state accepts.
 - The task is in `quota_blocked` because of a subscription limit. Paid usage cannot continue it. The error is `the task of <issue key> stopped at a subscription limit, and paid usage cannot continue it; run tasker resume <issue key> after the reset`.
 - The task is in `quota_blocked` because of the overage boundary, but the stop named no window. An approval cannot hold. The error is `the task of <issue key> stopped at the overage boundary, but the stop named no window, so an approval cannot hold; run tasker resume <issue key> after the reset`.
-- The task paused from a state that this command has no step for. The error is `the task of <issue key> was paused from <state>; tasker approve-credits has no step for it`. A task that paused from `verifying`, `pushing` or another state that starts no assistant gets this error.
+- The task paused from a state that this command has no step for. The error is `the task of <issue key> was paused from <state>; tasker approve-credits has no step for it`. A task that paused from `verifying` or `pushing` gets this error.
 
 ## `tasker abort`
 
