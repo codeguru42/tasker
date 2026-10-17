@@ -7,7 +7,7 @@ import { taskInState } from "./task-state.js";
 export type ApproveCreditsRequest = ResumeRequest;
 
 export interface ApproveCreditsResult extends ResumeResult {
-  // The reset time of the approved quota window. The pause record gives it, and a pause may have none.
+  // The reset time of the approved quota window. The pause record gives it, and a pause can have none.
   approvedResetsAt?: number;
 }
 
