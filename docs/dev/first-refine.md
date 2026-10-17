@@ -21,6 +21,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - An explicit option from the caller is better than a detection inside a general helper. A detection causes findings about dropped errors and about cost.
 - If a review finding depends on the timing of the event loop, ask for a failing test first. If execute cannot make a test fail, dismiss the finding with the evidence from the local machine.
 - If tests wait in a loop, ask for one shared wait helper.
+- If the tests compare the literal text of a default fixture, ask the plan for one shared expected-text helper in `test/helpers/`. On #157, [the diff read](orchestration.md#the-diff-read) found the text of the default review findings copied in 4 test files, after a review with no findings.
 - If a new sentence makes an exception to an earlier clause, the exact text says which one wins. For example, the dead-code rule of [rules.md](rules.md#code) keeps a function for a later ticket "also as an unused export" (#124).
 - Ask the plan to add no reason that the issue does not give. On #121, a reason clause that the plan added on its own drew a contradiction finding.
 - If the plan copies issue text, ask the plan to rewrite each word that the simple-english skill bans ([rules.md](rules.md#docs)). Examples are "should" and "could". On #120, the plan copied "could" from the issue, and four reviews missed it.
