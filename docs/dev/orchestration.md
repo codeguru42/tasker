@@ -102,12 +102,15 @@ While the hold runs, the agent of the parent waits in place of the command at ea
 - `tasker update-branch` of [the comeback rule](#the-comeback-rule)
 - `tasker merge` of step 9
 
-The orchestrator reads `tasker show <stacked issue>` of each stacked ticket after each report of the agent of that stacked ticket. Examples are the run-end report of `tasker plan` (see "When there is no reset time yet" in "Quota") and a stop report of step 2 of "Run one ticket". Before `tasker start`, the stacked ticket has no task, so the orchestrator waits for such a report. If `tasker show <stacked issue>` fails, the orchestrator tells the user the command and the error. The hold stays, and no task changes.
+The orchestrator reads `tasker show <stacked issue>` of each stacked ticket after each report of the agent of that stacked ticket. The read does not follow a stop report of step 2 of "Run one ticket", because such a report ends the hold at once. An example is the run-end report of `tasker plan` (see "When there is no reset time yet" in "Quota"). Before `tasker start`, the stacked ticket has no task, so the orchestrator waits for such a report. If `tasker show <stacked issue>` fails, the orchestrator tells the user the command and the error. The hold stays, and no task changes.
 
 The orchestrator ends the hold in these cases:
 
 - `tasker show <stacked issue>` of each stacked ticket prints the branch of the parent on its `base branch:` line, in the form `refs/heads/<parent branch>` of [the base rule](#the-base-rule).
-- The start of a stacked ticket fails. A stop report of step 2 from the agent of a stacked ticket counts as a failed start. Examples are the refusal `blocking issue is still open`, after which no task exists, and a missing `based on <key>'s branch` note, after which the stacked task stays in `workspace_ready`.
+- The start of a stacked ticket fails. A stop report of step 2 from the agent of a stacked ticket counts as a failed start. The orchestrator then ends the hold at once, with no read of `tasker show <stacked issue>`. Examples are the refusal `blocking issue is still open`, after which no task exists, and a missing `based on <key>'s branch` note, after which the stacked task stays in `workspace_ready`.
+- The issue of the parent closes.
+
+The orchestrator reads the state of the issue of the parent with `gh issue view <parent issue> --json state -q .state`. It does this read after each report of the agent of the parent or of the agent of a stacked ticket. It also does this read each time it reads the board after a landing ([Pick the tickets](#pick-the-tickets)). The command prints `CLOSED` for a closed issue. If the command fails, the orchestrator tells the user the command and the error. The hold stays, and no task changes.
 
 When the hold ends, the orchestrator reads the state of the parent task with `tasker show <parent issue>`, as the bullet of Land the work that starts "Before the orchestrator sends added work or an answer" says. If `tasker show <parent issue>` fails, the orchestrator tells the user the command and the error. The hold stays, and no task changes. Otherwise, the orchestrator tells the agent of the parent that the hold ended. If the hold ended because the start of a stacked ticket failed, the orchestrator also reports the failure to the user. After the message that the hold ended, the agent of the parent continues "Run one ticket" from the command where it stopped.
 
