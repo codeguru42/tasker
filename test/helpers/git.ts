@@ -184,6 +184,21 @@ export async function addCloneCommit(
   return sha;
 }
 
+// Copies refs/heads/<branch> of the clone to refs/heads/<to> of the origin (the same name when to is
+// not given). Git refuses a copy that is not a fast-forward of an existing branch of the origin.
+export async function copyCloneBranchToOrigin(o: {
+  origin: string;
+  clone: string;
+  branch: string;
+  to?: string;
+  env: NodeJS.ProcessEnv;
+}): Promise<void> {
+  const to = o.to ?? o.branch;
+  assertBranchName(o.branch);
+  assertBranchName(to);
+  await runGit(["fetch", o.clone, `refs/heads/${o.branch}:refs/heads/${to}`], { gitDir: o.origin, env: o.env });
+}
+
 // Moves main of the origin to the tip of refs/heads/<branch> in the clone, as a landing outside
 // tasker does. Git refuses a move that is not a fast-forward, so the branch must build on main.
 export async function landBranchOnOriginMain(o: {
@@ -192,8 +207,7 @@ export async function landBranchOnOriginMain(o: {
   branch: string;
   env: NodeJS.ProcessEnv;
 }): Promise<void> {
-  assertBranchName(o.branch);
-  await runGit(["fetch", o.clone, `refs/heads/${o.branch}:refs/heads/main`], { gitDir: o.origin, env: o.env });
+  await copyCloneBranchToOrigin({ ...o, to: "main" });
 }
 
 // A local git origin, and the provider context of the repo "tasker" with a data root in origin.dir.
