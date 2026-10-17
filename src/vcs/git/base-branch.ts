@@ -1,7 +1,7 @@
 import { LOCAL_PREFIX } from "../local-branch.js";
 import type { BaseBranchMemory, ResolvedBase } from "../provider.js";
 import { fetchOrigin } from "./changes.js";
-import { refExists } from "./refs.js";
+import { originRef, refExists } from "./refs.js";
 
 const REMOTE_PREFIXES = ["refs/remotes/origin/", "origin/"];
 
@@ -22,7 +22,7 @@ export function parseBaseInput(input: string): string {
 // Gives the full ref of a stored base. The short name origin/<x> can name a tag
 // or a local branch first, so a remote base uses refs/remotes/origin/<x>.
 export function baseRevision(base: string): string {
-  return base.startsWith(LOCAL_PREFIX) ? base : `refs/remotes/origin/${base}`;
+  return base.startsWith(LOCAL_PREFIX) ? base : originRef(base);
 }
 
 interface ResolveBaseOptions {

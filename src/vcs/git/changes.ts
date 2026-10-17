@@ -1,5 +1,5 @@
-import type { BaseContainment, TaskRefOnBase, UncommittedChange } from "../provider.js";
-import { assertRevisionInput, resolveRevision } from "./refs.js";
+import type { BaseContainment, FetchedRemoteTaskRef, TaskRefOnBase, UncommittedChange } from "../provider.js";
+import { assertRevisionInput, originRef, refRevision, resolveRevision } from "./refs.js";
 import { isGitExit, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
 import { assertTaskBranch, assertTaskWorktree, taskBranchRevision } from "./worktree.js";
@@ -171,6 +171,30 @@ export async function isAncestor(o: {
     if (isGitExit(error, 1)) return false;
     throw error;
   }
+}
+
+// Compares the local task branch with its copy on origin. It reads the exact refs
+// refs/heads/<branch> and refs/remotes/origin/<branch> of the clone, never the short name
+// origin/<branch>. It does not fetch, so run fetchOrigin() first. The fetch prunes the ref of a
+// branch that origin deleted, so a missing ref means that origin has no such branch.
+export async function remoteTaskBranchState(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  branch: string;
+}): Promise<FetchedRemoteTaskRef> {
+  const { clone, env, branch } = o;
+  assertTaskBranch(branch);
+  const local = await taskBranchRevision({ clone, env, branch });
+  const remote = await refRevision({ clone, env, ref: originRef(branch) });
+  if (remote === undefined) return { state: "absent" };
+  if (remote === local) return { state: "present", revision: remote, relation: "equal" };
+  if (await isAncestor({ clone, env, ancestor: local, descendant: remote })) {
+    return { state: "present", revision: remote, relation: "local-ancestor" };
+  }
+  if (await isAncestor({ clone, env, ancestor: remote, descendant: local })) {
+    return { state: "present", revision: remote, relation: "remote-ancestor" };
+  }
+  return { state: "present", revision: remote, relation: "diverged" };
 }
 
 // Fetches origin into the clone with the ssh key of the repo. It uses runRemoteGit(). The fetch

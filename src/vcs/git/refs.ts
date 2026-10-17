@@ -18,6 +18,12 @@ export function assertRevision(name: string, value: string): void {
   }
 }
 
+// The remote-tracking ref of a branch of origin. The short name origin/<x> can name a tag or a
+// local branch first, so code that reads the copy of a branch on origin uses this full ref.
+export function originRef(name: string): string {
+  return `refs/remotes/origin/${name}`;
+}
+
 // True when the exact ref exists in the clone. Exit 1 of show-ref means that the ref is missing.
 export async function refExists({ clone, env, ref }: RefOptions): Promise<boolean> {
   try {

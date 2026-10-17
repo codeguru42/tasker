@@ -91,6 +91,13 @@ export interface WorkspaceState {
   changes: UncommittedChange[];
 }
 
+// How the local tip of a task ref relates to its copy on the remote after the fetch.
+export type RemoteTaskRefRelation = "equal" | "local-ancestor" | "remote-ancestor" | "diverged";
+
+// The copy of a task ref on the remote, as the last fetch left it.
+export type FetchedRemoteTaskRef =
+  { state: "absent" } | { state: "present"; revision: string; relation: RemoteTaskRefRelation };
+
 export type RemoteTip = { state: "present"; revision: string } | { state: "absent" };
 
 export interface PublishResult {
