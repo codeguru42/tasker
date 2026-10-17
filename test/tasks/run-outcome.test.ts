@@ -5,10 +5,11 @@ import type { AssistantEvent, RunOutcome, Usage } from "../../src/assistant/prov
 import { transitionTask } from "../../src/state/machine.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
-import { applyRunOutcome, failRunTo } from "../../src/tasks/run-outcome.js";
+import { applyRunOutcome, failRunTo, pauseForQuotaApproval } from "../../src/tasks/run-outcome.js";
 import { captureIo } from "../helpers/cli.js";
 import { TEST_SESSION_ID, claudeApprovalWarningEvent, claudeRateLimitEvent } from "../helpers/fake-claude.js";
 import { seedPlanSession } from "../helpers/plan.js";
+import { quotaPauseLineExpected } from "../helpers/quota.js";
 import { dayAt, eventsOf, readRunMarker, seedTasks, withDataRootStore } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -216,6 +217,46 @@ describe("applyRunOutcome with a quota stop", () => {
 
     const session = withDataRootStore(dataRoot, (store) => store.planSession(task.id));
     expect(session?.sessionId).toBe(TEST_SESSION_ID);
+  });
+});
+
+describe("pauseForQuotaApproval", () => {
+  const resetsAt = 1792206000;
+
+  function pause(warning: { utilization: number; resetsAt?: number }) {
+    const { dataRoot, task } = planningTask();
+    const io = captureIo();
+    const result = withDataRootStore(dataRoot, (store) => pauseForQuotaApproval(store, task, io, "planning", warning));
+    const state = withDataRootStore(dataRoot, (store) => store.getTask(task.id)!.state);
+    const marker = readRunMarker(createDataRoot(dataRoot).database, task.id);
+    return { result, state, marker, io, last: eventsOf(dataRoot, KEY).at(-1) };
+  }
+
+  it("moves the task to awaiting_quota_approval and prints the pause line", () => {
+    const { result, state, marker, io, last } = pause({ utilization: 0.956, resetsAt });
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(state).toBe("awaiting_quota_approval");
+    expect(marker).toBeUndefined();
+    expect(last).toEqual({
+      type: "transition",
+      data: { from: "planning", to: "awaiting_quota_approval", utilization: 0.956, resetsAt },
+    });
+    expect(io.out).toEqual([quotaPauseLineExpected("planning", 96, resetsAt)]);
+    expect(io.err).toEqual([]);
+  });
+
+  it("records no resetsAt and says that the reset time is unknown when the warning has none", () => {
+    const { result, state, io, last } = pause({ utilization: 0.956 });
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(state).toBe("awaiting_quota_approval");
+    expect(last).toEqual({
+      type: "transition",
+      data: { from: "planning", to: "awaiting_quota_approval", utilization: 0.956 },
+    });
+    expect(last?.data).not.toHaveProperty("resetsAt");
+    expect(io.out).toEqual([quotaPauseLineExpected("planning", 96)]);
   });
 });
 
