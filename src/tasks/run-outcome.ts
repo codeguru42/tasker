@@ -24,6 +24,13 @@ export interface RunOutcomeRequest {
   io: Io;
   outcome: RunOutcome;
   quota: QuotaApprovalCheck;
+  // With true, an interrupted run prints no resume line. The caller prints it with interruptedLine.
+  omitInterruptedLine?: boolean;
+}
+
+// The line that tells the operator how to continue after a signal stopped the run.
+export function interruptedLine(phase: TaskState, signal: NodeJS.Signals, issueKey: string): string {
+  return `${phase} interrupted by ${signal}; run tasker resume ${issueKey} to continue\n`;
 }
 
 // success: the caller makes its checks and its move. A success has a warning when the run reached the quota approval
@@ -52,7 +59,7 @@ export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
     }
     case "interrupted": {
       transitionTask(store, task.id, "interrupted", { cause: "signal", signal: outcome.signal });
-      io.stdout(`${phase} interrupted by ${outcome.signal}; run tasker resume ${task.issueKey} to continue\n`);
+      if (request.omitInterruptedLine !== true) io.stdout(interruptedLine(phase, outcome.signal, task.issueKey));
       return { exitCode: 1 };
     }
   }

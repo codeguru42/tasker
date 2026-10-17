@@ -30,7 +30,7 @@ import { type ExecuteFixTurn, type TaskStore } from "../store/store.js";
 import { type RemoteTip, vcsForRepo } from "../vcs/provider.js";
 import { tipMoved } from "../vcs/remote-tip.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
-import { applyRunOutcome, failRun, pauseForQuotaApproval } from "./run-outcome.js";
+import { applyRunOutcome, failRun, interruptedLine, pauseForQuotaApproval } from "./run-outcome.js";
 import { assertSessionModel } from "./session-model.js";
 import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
@@ -201,6 +201,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
           io,
           outcome,
           quota: { repo: config.repos[task.repoKey], prepared },
+          omitInterruptedLine: true,
         });
         const read = "outcome" in result ? readTurnResult(result.outcome.structuredOutput) : undefined;
         if (read?.kind === "done") {
@@ -226,6 +227,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
           pushed = `cannot read the remote after the run: ${errorMessage(error)}`;
         }
         if (pushed !== undefined) return fail(pushed);
+        if (outcome.kind === "interrupted") io.stdout(interruptedLine("executing", outcome.signal, task.issueKey));
         if ("exitCode" in result) return result;
         if (read?.kind === "blocked") return fail(`${label} reported blocked: ${read.reason}`);
         if (read?.kind === "none") return fail(`${label} reported no result: ${read.detail}`);
