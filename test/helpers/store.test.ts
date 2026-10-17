@@ -29,6 +29,7 @@ import {
   quotaEventsOf,
   readRunMarker,
   reviewSessionRows,
+  seedCreditsApproval,
   seedQuotaEvent,
   seedDeadRun,
   seedOneTask,
@@ -967,6 +968,20 @@ describe("reviewSessionRows", () => {
     });
 
     expect(reviewSessionRows(dataRoot, task.id)).toEqual([]);
+  });
+});
+
+describe("seedCreditsApproval", () => {
+  it("records a credits_approved event with the reset time and gives the event", () => {
+    const dataRoot = join(useTempDir("tasker-seed-approval-"), "data");
+
+    const { event, events } = withDataRootStore(dataRoot, (store) => {
+      const task = seedTask(store);
+      return { event: seedCreditsApproval(store, task.id, 1792206000), events: store.listEvents(task.id) };
+    });
+
+    expect(event).toMatchObject({ type: "credits_approved", data: { resetsAt: 1792206000 } });
+    expect(events).toEqual([event]);
   });
 });
 

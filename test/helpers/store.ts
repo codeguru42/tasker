@@ -20,6 +20,7 @@ import {
   type Review,
   type StoreOptions,
   type Task,
+  type TaskEvent,
   type TaskStore,
   type VerifyRun,
 } from "../../src/store/store.js";
@@ -368,6 +369,12 @@ export function failRefineFrom(
 // Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.
 export function seedTask(store: TaskStore): Task {
   return store.createTask({ issueKey: "a/b#1", repoKey: "a/b", state: "planning" });
+}
+
+// Records the approval of the quota window that resets at resetsAt, as tasker approve-credits does. It gives back the
+// event as the store holds it.
+export function seedCreditsApproval(store: TaskStore, taskId: number, resetsAt: number): TaskEvent {
+  return store.appendEvent(taskId, "credits_approved", { resetsAt });
 }
 
 // Records event as the last quota event of repoKey, with the provider claude-code, in the store of dataRoot. It gives

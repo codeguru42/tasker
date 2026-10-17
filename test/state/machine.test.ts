@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  approvedResetsAt,
   SPAWNING_STATES,
   STATES,
   TERMINAL_STATES,
@@ -35,7 +36,7 @@ import {
   seedPlanSession,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { newVerifyRun, seedReview } from "../helpers/store.js";
+import { newVerifyRun, seedCreditsApproval, seedReview } from "../helpers/store.js";
 import { moveTaskThrough, TO_WORK_REVIEW } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -929,6 +930,38 @@ describe("task transitions", () => {
     it("gives unknown for events with no move into failed", () => {
       const task = store.createTask(newTask("planning"));
       expect(failedOriginText(store.listEvents(task.id))).toBe("unknown");
+    });
+  });
+
+  describe("approvedResetsAt", () => {
+    it("gives undefined for events with no approval", () => {
+      const task = store.createTask(newTask("planning"));
+      expect(approvedResetsAt(store.listEvents(task.id))).toBeUndefined();
+    });
+
+    it("gives the reset time of the approval", () => {
+      const task = store.createTask(newTask("planning"));
+      seedCreditsApproval(store, task.id, 1792206000);
+      expect(approvedResetsAt(store.listEvents(task.id))).toBe(1792206000);
+    });
+
+    it("gives the reset time of the last approval", () => {
+      const task = store.createTask(newTask("planning"));
+      seedCreditsApproval(store, task.id, 1792206000);
+      seedCreditsApproval(store, task.id, 1792810800);
+      expect(approvedResetsAt(store.listEvents(task.id))).toBe(1792810800);
+    });
+
+    it("gives undefined when the reset time is not a number", () => {
+      const task = store.createTask(newTask("planning"));
+      store.appendEvent(task.id, "credits_approved", { resetsAt: "soon" });
+      expect(approvedResetsAt(store.listEvents(task.id))).toBeUndefined();
+    });
+
+    it("does not count other event types", () => {
+      const task = store.createTask(newTask("planning"));
+      store.appendEvent(task.id, "note", { resetsAt: 1792206000 });
+      expect(approvedResetsAt(store.listEvents(task.id))).toBeUndefined();
     });
   });
 });
