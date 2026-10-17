@@ -34,6 +34,12 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
   if (!acceptsState("abort", task.state)) {
     throw new Error(`the task of ${task.issueKey} is ${task.state}: tasker abort works only on an active task`);
   }
+  const run = store.runStatus(task.id);
+  if (run.status === "running") {
+    throw new Error(
+      `the task of ${task.issueKey} has a run in progress in ${task.state} (tasker process ${run.pid}); wait for it, or stop that process`,
+    );
+  }
   const { vcs, ctx } = vcsForRepo(config, ref.repoKey, request.env);
   const entry = await findTaskWorkspace(vcs, ctx, task.worktreePath);
   const changes =
