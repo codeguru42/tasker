@@ -12,6 +12,7 @@ import {
 import { verifyCommandLogPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import type { RetryWrites, TaskEvent, TaskStore, VerifyRun } from "../store/store.js";
+import { originRow, type OriginTables } from "./origin-row.js";
 import { taskInState } from "./task-state.js";
 
 // The command that runs after the move of a retry. The three refine values run nothing: the operator gives the
@@ -63,6 +64,13 @@ const REFINE_RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   awaiting_work_review: { target: "awaiting_work_review", next: "review-feedback", clears: {} },
 };
 
+// A refine origin with no row keeps the row of a plain refine.
+const RETRY_TABLES: OriginTables<RetryRow> = {
+  rows: RETRY_TABLE,
+  refineRows: REFINE_RETRY_TABLE,
+  refineFallback: PLAIN_REFINE_ROW,
+};
+
 // The row of verifying with --resume-execute.
 const RESUME_EXECUTE_ROW: RetryRow = { target: "approved", next: "execute", clears: {} };
 
@@ -77,19 +85,12 @@ export async function retryTask(store: TaskStore, request: RetryRequest): Promis
   return withTaskLock(store, repoKey, key, () => retryLocked(store, request));
 }
 
-function rowOf(events: readonly TaskEvent[], origin: TaskState): RetryRow | undefined {
-  if (origin !== "refining") return RETRY_TABLE[origin];
-  // A refine origin with no row keeps the row of a plain refine.
-  const refineOrigin = transitionFromEvents(events, "refining");
-  return (refineOrigin === undefined ? undefined : REFINE_RETRY_TABLE[refineOrigin]) ?? PLAIN_REFINE_ROW;
-}
-
 function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
   const { config, taskId, resumeExecute } = request;
   const task = taskInState(store, taskId, "retry");
   const events = store.listEvents(taskId);
   const origin = transitionFromEvents(events, "failed");
-  const row = origin === undefined ? undefined : rowOf(events, origin);
+  const row = origin === undefined ? undefined : originRow(events, origin, RETRY_TABLES);
   if (origin === undefined || row === undefined) {
     throw new Error(
       `the task of ${task.issueKey} failed in ${originText(events, "failed")}; tasker retry has no step for it`,

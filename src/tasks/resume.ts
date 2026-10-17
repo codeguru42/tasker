@@ -7,8 +7,9 @@ import {
   type TaskState,
 } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
-import type { ResumeWrites, TaskEvent, TaskStore } from "../store/store.js";
+import type { ResumeWrites, TaskStore } from "../store/store.js";
 import type { RetryNext } from "./retry.js";
+import { originRow, type OriginTables } from "./origin-row.js";
 import { taskInState } from "./task-state.js";
 
 // The command that runs after the move of a resume. A resume has no start and no refine of findings: retry prints a
@@ -71,17 +72,14 @@ const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   },
 };
 
+// Resume has no fallback, so it refuses a refine origin with no row.
+const RESUME_TABLES: OriginTables<ResumeRow> = { rows: RESUME_TABLE, refineRows: REFINE_RESUME_TABLE };
+
 // Moves a task in quota_blocked or interrupted back to the state before the run that stopped, under the task lock,
 // and says which command runs next. The caller runs that command after the lock is free.
 export async function resumeTask(store: TaskStore, request: ResumeRequest): Promise<ResumeResult> {
   const { repoKey, key } = request.ref;
   return withTaskLock(store, repoKey, key, () => resumeLocked(store, request));
-}
-
-function rowOf(events: readonly TaskEvent[], origin: TaskState): ResumeRow | undefined {
-  if (origin !== "refining") return RESUME_TABLE[origin];
-  const refineOrigin = transitionFromEvents(events, "refining");
-  return refineOrigin === undefined ? undefined : REFINE_RESUME_TABLE[refineOrigin];
 }
 
 function resumeLocked(store: TaskStore, request: ResumeRequest): ResumeResult {
@@ -91,7 +89,7 @@ function resumeLocked(store: TaskStore, request: ResumeRequest): ResumeResult {
   // taskInState made sure that the task is in a pause, so its state is a task state.
   const pause = task.state as TaskState;
   const origin = transitionFromEvents(events, pause);
-  const row = origin === undefined ? undefined : rowOf(events, origin);
+  const row = origin === undefined ? undefined : originRow(events, origin, RESUME_TABLES);
   if (origin === undefined || !row?.pauses.includes(pause)) {
     throw new Error(
       `the task of ${task.issueKey} was paused from ${originText(events, pause)}; tasker resume has no step for it`,
