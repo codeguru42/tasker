@@ -301,7 +301,7 @@ The base can move after the check of `tasker accept`. Then `tasker merge` fails,
 
 `tasker merge` lands the work of a task in `accepted` on the base branch of `origin`. The task goes through `merging` to `landed`.
 
-Its checks cover the task, the state, the branch, the stored base, the base revision and the repo lock. After the check, the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task branch and the tip of the base. If the base does not contain the work, the command pushes it with `vcs.land`. The last write is one transaction that appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. The `landed` event takes the place of the `transition` event for this move. If a step fails after the move to `merging`, the task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not wait for CI.
+Its checks cover the task, the state, the branch, the stored base, the base revision and the repo lock. After the check, the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task branch and the tip of the base. If the base does not contain the work, the command pushes it with [the land operation of the version control provider](version-control.md#land). The last write is one transaction that appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. The `landed` event takes the place of the `transition` event for this move. If a step fails after the move to `merging`, the task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not wait for CI.
 
 These reasons explain its rules:
 
