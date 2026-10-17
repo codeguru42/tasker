@@ -192,7 +192,15 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
         });
         denials.push(...outcome.permissionDenials);
         if (outcome.kind !== "success") flushDenials();
-        const result = applyRunOutcome({ store, task, phase: "executing", timeoutMinutes: limitMin, io, outcome });
+        const result = applyRunOutcome({
+          store,
+          task,
+          phase: "executing",
+          timeoutMinutes: limitMin,
+          io,
+          outcome,
+          quota: { repo: config.repos[task.repoKey], prepared },
+        });
         const read = "outcome" in result ? readTurnResult(result.outcome.structuredOutput) : undefined;
         if (read?.kind === "done") {
           if (subject.kind === "todo") {

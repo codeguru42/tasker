@@ -83,6 +83,7 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
       timeoutMinutes: config.limits.planTimeoutMin,
       io,
       outcome,
+      quota: { repo: config.repos[task.repoKey], prepared },
     });
     if ("exitCode" in result) return result;
     const checked = check(result.outcome.structuredOutput);
