@@ -120,6 +120,7 @@ describe("tasker update-branch", () => {
           before,
           after: { ...before, head: newHead },
           how: "rebase",
+          sync: "none",
           from: "updating_branch",
           to: "executed",
         },

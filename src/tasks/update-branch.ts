@@ -137,7 +137,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         if (origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       }
       const after: BranchSnapshot = { ...before, head: resynced.head };
-      transitionWithBranchUpdate(store, task.id, state, { before, after, how: resynced.how }, writes);
+      transitionWithBranchUpdate(store, task.id, state, { before, after, how: resynced.how, sync: "none" }, writes);
       return {
         issueKey: task.issueKey,
         base,
@@ -152,7 +152,13 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const message = errorMessage(error);
       if (await backAtStart(vcs, ctx, { path, branch, head: before.head })) {
         // This step does not call failRunTo: the branch_updated event takes the place of the transition event.
-        transitionWithBranchUpdate(store, task.id, origin, { before, after: before, how: "none", error: message }, {});
+        transitionWithBranchUpdate(
+          store,
+          task.id,
+          origin,
+          { before, after: before, how: "none", sync: "none", error: message },
+          {},
+        );
         io.stderr(`${message}\n`);
         return { exitCode: 1 };
       }

@@ -304,13 +304,25 @@ export interface BranchSnapshot {
   baseRevision: string;
 }
 
-// Moves the task out of updating_branch with one branch_updated event { before, after, how, [error], from, to } in
+// How the sync step of tasker update-branch found the copy of the task branch on origin: "absent" when origin has no
+// such branch, "fast-forward" when the step moved the task branch to it, and "none" when nothing moved.
+export type BranchSync = "absent" | "none" | "fast-forward";
+
+// True when a branch_updated event records a move of the head. An event with an error moved nothing. Else a move of the
+// base step (how is not "none") or of the sync step (sync is "fast-forward") counts. An old event has no sync.
+export function branchUpdateMoved(data: unknown): boolean {
+  const { how, sync, error } = data as { how?: unknown; sync?: unknown; error?: unknown };
+  if (error !== undefined) return false;
+  return how !== "none" || sync === "fast-forward";
+}
+
+// Moves the task out of updating_branch with one branch_updated event { before, after, how, sync, [error], from, to } in
 // place of a transition event, and makes the writes, in one transaction. An illegal edge writes nothing.
 export function transitionWithBranchUpdate(
   store: TaskStore,
   id: number,
   to: TaskState,
-  detail: { before: BranchSnapshot; after: BranchSnapshot; how: ResyncResult["how"]; error?: string },
+  detail: { before: BranchSnapshot; after: BranchSnapshot; how: ResyncResult["how"]; sync: BranchSync; error?: string },
   writes: BranchUpdateWrites,
 ): Task {
   return store.updateBranchTask(id, to, writes, transitionCheck("branch_updated", to, detail));

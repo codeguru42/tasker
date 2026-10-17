@@ -1,6 +1,6 @@
 import type { IssueRef } from "../issue-key/ref.js";
 import type { PlanAnswer } from "../plan/answer.js";
-import { transitionWithPlanApproval } from "../state/machine.js";
+import { branchUpdateMoved, transitionWithPlanApproval } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
 import type { TaskEvent, TaskStore } from "../store/store.js";
 import { assertTaskState, taskById } from "./task-state.js";
@@ -30,7 +30,7 @@ function planIsOlderThanLastMove(events: readonly TaskEvent[]): boolean {
   for (let i = events.length - 1; i >= 0; i--) {
     const { type, data } = events[i];
     if (type === "plan_revision") return false;
-    if (type === "branch_updated" && (data as { how?: unknown }).how !== "none") return true;
+    if (type === "branch_updated" && branchUpdateMoved(data)) return true;
   }
   return false;
 }

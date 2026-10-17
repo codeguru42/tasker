@@ -587,7 +587,7 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("executing"));
       failTask(store, task.id, "npm test failed: boom");
       transitionTask(store, task.id, "updating_branch");
-      transitionWithBranchUpdate(store, task.id, "failed", { before, after: before, how: "none" }, {});
+      transitionWithBranchUpdate(store, task.id, "failed", { before, after: before, how: "none", sync: "none" }, {});
       expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("npm test failed: boom");
     });
 

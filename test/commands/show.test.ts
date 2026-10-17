@@ -306,7 +306,13 @@ describe("show", () => {
     const head = { head: "a".repeat(40), base: "main", baseRevision: "refs/remotes/origin/main" };
     withDataRootStore(dataRoot, (store) => {
       transitionTask(store, task.id, "updating_branch");
-      transitionWithBranchUpdate(store, task.id, "failed", { before: head, after: head, how: "none" }, {});
+      transitionWithBranchUpdate(
+        store,
+        task.id,
+        "failed",
+        { before: head, after: head, how: "none", sync: "none" },
+        {},
+      );
     });
 
     const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
