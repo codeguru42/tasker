@@ -3,6 +3,7 @@ import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
   type AssistantEvent,
+  type AssistantProvider,
   type AssistantRole,
   createAssistantProvider,
   createSessionProvider,
@@ -30,7 +31,8 @@ export interface TaskRunRequest {
   session: AssistantSessionRequest;
   // The env of tasker, passed on unchanged.
   env: NodeJS.ProcessEnv;
-  // The end of the approved quota window, in Unix seconds. The run uses it only under overagePolicy "decline".
+  // The end of the approved quota window, in Unix seconds. Under overagePolicy "decline", the overage stop uses it.
+  // Under "ask", the result step uses it through the prepared run.
   approvedResetsAt?: number;
 }
 
@@ -52,6 +54,10 @@ export interface ExecuteStartInput extends StartInput {
 export interface PreparedExecuteRun {
   sessionId: string;
   session: RecordedSession;
+  // The provider of the run. The result step asks it about a quota warning.
+  provider: AssistantProvider;
+  // The approved quota window of the request, for the result step.
+  approvedResetsAt?: number;
   // The commit text for the prompt of the run. It holds the {{BASE_REF}} placeholder.
   executeCommitText: string;
   start(input: ExecuteStartInput): Promise<RunOutcome>;
@@ -60,6 +66,10 @@ export interface PreparedExecuteRun {
 export interface PreparedPlanModeRun {
   sessionId: string;
   session: RecordedSession;
+  // The provider of the run. The result step asks it about a quota warning.
+  provider: AssistantProvider;
+  // The approved quota window of the request, for the result step.
+  approvedResetsAt?: number;
   start(input: StartInput): Promise<RunOutcome>;
 }
 
@@ -79,6 +89,8 @@ interface CommonRun {
   session: RecordedSession;
   // Whether the first run of this prepared run continues a session (--resume) or starts one (--session-id).
   resume: boolean;
+  provider: AssistantProvider;
+  approvedResetsAt?: number;
   run(limits: RoleLimits, input: StartInput, resume: boolean): Promise<RunOutcome>;
 }
 
@@ -110,6 +122,8 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
       effort: selected.effort,
     },
     resume,
+    provider: selected.provider,
+    approvedResetsAt: req.approvedResetsAt,
     run(limits, input, resume) {
       const sessionDir = taskSessionsDir(config.dataRoot, task);
       mkdirSync(sessionDir, { recursive: true });
@@ -159,6 +173,8 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
   return {
     sessionId: common.sessionId,
     session: common.session,
+    provider: common.provider,
+    approvedResetsAt: common.approvedResetsAt,
     start: (input) => common.run(limits, input, common.resume),
   };
 }
@@ -231,6 +247,8 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
   return {
     sessionId: common.sessionId,
     session: common.session,
+    provider: common.provider,
+    approvedResetsAt: common.approvedResetsAt,
     executeCommitText: surface.executeCommitText,
     start: (input) => {
       const outcome = common.run({ ...limits, timeoutMs: input.timeoutMs ?? limits.timeoutMs }, input, resume);
