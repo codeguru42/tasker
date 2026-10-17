@@ -14,7 +14,14 @@ import {
   prepareTaskPlanModeRun,
   type RepoReadDenyPaths,
 } from "../../src/tasks/assistant-run.js";
-import { TEST_EXECUTE_SESSION_ID, TEST_SESSION_ID, claudeOverageEvent, claudeSample } from "../helpers/fake-claude.js";
+import {
+  TEST_EXECUTE_SESSION_ID,
+  TEST_SESSION_ID,
+  claudeOverageEvent,
+  claudeRateLimitEvent,
+  claudeSample,
+  claudeSampleEvents,
+} from "../helpers/fake-claude.js";
 import { turnResultStream } from "../helpers/plan.js";
 import { readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { type AssistantRunFixture, useAssistantRunFixture } from "../helpers/task-fixtures.js";
@@ -499,5 +506,56 @@ describe("prepareTaskExecuteRun", () => {
         expect(rules).not.toContain(expectedRule("Read", whole));
       }
     });
+  });
+});
+
+describe("the quota event record of a run", () => {
+  const listRecords = (dataRoot: string) => withDataRootStore(dataRoot, (store) => store.listQuotaEvents());
+
+  // The sample plain without its rate_limit_event line.
+  const plainWithoutQuota = () => claudeSample("plain").filter((line) => !line.includes('"rate_limit_event"'));
+
+  it("keeps the last quota event of the plan role run for the repo, and still gives every event to the listener", async () => {
+    const added = claudeRateLimitEvent((info) => {
+      info.utilization = 0.5;
+    });
+    const lines = claudeSample("plain");
+    const stream = [...lines.slice(0, -1), JSON.stringify(added), lines.at(-1)!];
+    const fixture = await useAssistantRunFixture({ claude: { stream } });
+    const before = Date.now();
+
+    const { events } = await runPlanMode(fixture);
+
+    const after = Date.now();
+    const records = listRecords(fixture.started.dataRoot);
+    expect(records).toEqual([
+      { repoKey: fixture.started.repoKey, provider: "claude-code", receivedAt: expect.any(String), event: added },
+    ]);
+    const receivedAt = new Date(records[0].receivedAt);
+    expect(receivedAt.toISOString()).toBe(records[0].receivedAt);
+    expect(receivedAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(receivedAt.getTime()).toBeLessThanOrEqual(after);
+    expect(events).toEqual(stream.map((line) => JSON.parse(line) as AssistantEvent));
+  });
+
+  it("keeps the quota event of the execute role run for the repo", async () => {
+    const { started } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
+
+    expect(listRecords(started.dataRoot)).toEqual([
+      {
+        repoKey: started.repoKey,
+        provider: "claude-code",
+        receivedAt: expect.any(String),
+        event: claudeSampleEvents("plain").find((event) => event.type === "rate_limit_event"),
+      },
+    ]);
+  });
+
+  it("keeps no record when the stream has no quota event", async () => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: plainWithoutQuota() } });
+
+    await runPlanMode(fixture);
+
+    expect(listRecords(fixture.started.dataRoot)).toEqual([]);
   });
 });
