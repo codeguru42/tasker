@@ -320,6 +320,9 @@ These rules apply to each `tasker` command that the agent runs, also to a read-o
 - `tasker update-branch` prints `origin/<branch> does not exist; nothing to sync from` for a task branch that was never pushed. This output is normal.
 - `tasker merge` prints `landed: <commit> on origin/main`. `tasker finish` prints that it marked the issue done on the tracker, and it closes the issue.
 - `tasker start` can print a GraphQL warning that the assign of the issue on the tracker failed. The warning does no harm.
+- `tasker start` refuses a ticket whose parent is not [ready to stack](#the-stacking-rule). It exits with 1 and prints `<parent issue key>: blocking issue is still open`. No task exists after the refusal.
+- `tasker verify` refuses a stacked task whose parent has landed. It prints `task <id>'s parent <parent issue key> has landed on origin/main; run tasker update-branch <issue key> to move this task onto it first`. The task stays in `executed`. `tasker update-branch` rebases only the commits of the task onto the base of the parent.
+- A stacked task in `awaiting_plan_review` loses its base when `tasker finish` of the parent deletes the branch of the parent. `tasker refine` then fails with exit code 1 and an `unknown revision` error of `git diff`, and it changes nothing. `tasker update-branch` moves the task onto the base of the parent, and the task stays in `awaiting_plan_review`. tasker marks the plan as stale, so a refine comes before `tasker approve`, also when the new base changes no fact of the plan.
 
 ### The run times
 
