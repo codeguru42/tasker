@@ -42,6 +42,11 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The value of `--strategy` is not `rebase` or `merge`. The error is `--strategy must be rebase or merge: <value>`.
 - The worktree has uncommitted changes. The error has the line `the worktree has uncommitted changes: <path>`, then one line for each change, and the last line `tasker update-branch needs a clean worktree`.
 
-When a step fails after the move to `updating_branch`, the command prints the error on stderr and stops with exit code 1. The step can be the fetch, the move of the branch, a conflict or a failed restore. The task goes to `failed` with the error `updating branch failed: <message>`. A conflict message names each path in conflict. A failed restore names the git commands that put the worktree back.
+When a step fails after the move to `updating_branch`, the command prints the error on stderr and stops with exit code 1. The step can be the fetch, the move of the branch, a conflict, a failed restore or a failed write. A conflict message names each path in conflict. A failed restore names the git commands that put the worktree back. The state after the failure depends on the worktree:
+
+- The worktree is back at the start when three facts hold: the head is the head of the start, the worktree is on the task branch, and the worktree is clean. Then the task goes back to its origin state. The command writes a `branch_updated` event with `error`, `how: "none"` and `after` equal to `before`, in place of a `transition` event. The error on stderr and in the event is the bare message.
+- In each other case, the task goes to `failed` with the error `updating branch failed: <message>`. The command prints the same error on stderr.
+
+A failed read of the state of the worktree counts as not back at the start. `tasker retry` has no row for a task that failed in `updating_branch`. After a failed restore, run the git commands that the error names. Then run `tasker update-branch` again from `failed`, or run `tasker abort` to end the task.
 
 A crash during the command leaves the task in `updating_branch` with its run marker. The next command that reads the task moves it to `interrupted`.

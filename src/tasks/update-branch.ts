@@ -11,7 +11,14 @@ import {
 } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { BranchUpdateWrites, TaskStore } from "../store/store.js";
-import { type ReconcileStrategy, type ResyncResult, uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
+import {
+  type ReconcileStrategy,
+  type ResyncResult,
+  type VcsProvider,
+  type VcsContext,
+  uncommittedChangeText,
+  vcsForRepo,
+} from "../vcs/provider.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBaseRevision, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
@@ -71,6 +78,21 @@ function strategyOf(raw: string | undefined, fallback: ReconcileStrategy): Recon
   throw new Error(`--strategy must be rebase or merge: ${raw}`);
 }
 
+// True when the worktree is at the head of the start, on the task branch and clean. A failed read of the state counts
+// as not back at the start.
+async function backAtStart(
+  vcs: VcsProvider,
+  ctx: VcsContext,
+  start: { path: string; branch: string; head: string },
+): Promise<boolean> {
+  try {
+    const state = await vcs.workspaceState(ctx, { path: start.path });
+    return state.head === start.head && state.taskRef === start.branch && state.changes.length === 0;
+  } catch {
+    return false;
+  }
+}
+
 // Brings the worktree of a task up to date with its base. The task lock covers all the steps and does not wait. The
 // repo lock covers the fetch and the move of the branch. When the head moved, the task goes to the target of the
 // demotion table. Otherwise it goes back to its origin state.
@@ -127,7 +149,14 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         state,
       };
     } catch (error) {
-      return failRun(store, task, io, `updating branch failed: ${errorMessage(error)}`);
+      const message = errorMessage(error);
+      if (await backAtStart(vcs, ctx, { path, branch, head: before.head })) {
+        // This step does not call failRunTo: the branch_updated event takes the place of the transition event.
+        transitionWithBranchUpdate(store, task.id, origin, { before, after: before, how: "none", error: message }, {});
+        io.stderr(`${message}\n`);
+        return { exitCode: 1 };
+      }
+      return failRun(store, task, io, `updating branch failed: ${message}`);
     }
   });
 }
