@@ -179,12 +179,15 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  subgraph Spawning["Spawning states"]
+  subgraph Assistant["States that run an assistant"]
     PL[planning]
     RF[refining]
     E[executing]
-    V[verifying]
     RV[reviewing]
+  end
+
+  subgraph NoAssistant["Other spawning states"]
+    V[verifying]
     PG[pushing]
     OP[opening_pr]
     MG[merging]
@@ -192,9 +195,10 @@ flowchart LR
     UB[updating_branch]
   end
 
-  Spawning -->|subscription limit hit| Q[quota_blocked]
-  Spawning -->|under ask: run ends with utilization ≥ quotaApprovalThreshold| QA[awaiting_quota_approval]
-  Spawning -->|run died: detected, or tasker interrupted| X[interrupted]
+  Assistant -->|subscription limit hit| Q[quota_blocked]
+  Assistant -->|under ask: run ends with utilization ≥ quotaApprovalThreshold| QA[awaiting_quota_approval]
+  Assistant -->|run died: detected, or tasker interrupted| X[interrupted]
+  NoAssistant -->|run died: detected, or tasker interrupted| X
 
   Q -->|tasker resume| T{{resume target}}
   Q -->|tasker approve-credits: only a stop with the cause overage and a known window| T
@@ -206,7 +210,7 @@ flowchart LR
 ```
 
 - `run died: detected` means that a command found a dead run and moved the task to `interrupted`. [The `run_markers` table](dev/data-root.md#run_markers-table) says which commands find a dead run.
-- `verifying`, `pushing`, `opening_pr`, `merging`, `finishing` and `updating_branch` spawn no assistant. As a result, only `interrupted` can come from them in practice. No run can reach the two quota pauses from these states.
+- `verifying`, `pushing`, `opening_pr`, `merging`, `finishing` and `updating_branch` spawn no assistant. The state machine allows only `interrupted` from these states.
 - `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there when the stop named a window. Under `ask`, a run whose use of the quota window reaches `quotaApprovalThreshold` pauses into `awaiting_quota_approval` when the run ends, unless the operator approved that window with `approve-credits`.
 - A resume moves the task to the state before the spawn, then runs the same command again. So the task goes straight back into a spawning state.
 
@@ -222,8 +226,8 @@ flowchart LR
 | `reviewing`                                 | `awaiting_work_review`                 | `review` (in a new session)                                          |
 | `pushing` (interrupted only)                | `accepted`                             | `push`. No second push if `origin` already has the sha.              |
 | `opening_pr` (interrupted only)             | `pushed`                               | `open-pr`. It adopts an open PR and does not open a second one.      |
-| `merging`                                   | the recorded merge origin (`accepted`) | `merge`. No second push or merge if the work is already on the base. |
-| `finishing`                                 | `landed`                               | `finish`. Each cleanup step skips what is already done.              |
+| `merging` (interrupted only)                | the recorded merge origin (`accepted`) | `merge`. No second push or merge if the work is already on the base. |
+| `finishing` (interrupted only)              | `landed`                               | `finish`. Each cleanup step skips what is already done.              |
 | `updating_branch` (interrupted only)        | its origin state                       | nothing. Run `update-branch` again.                                  |
 
 ## Failure and retry
