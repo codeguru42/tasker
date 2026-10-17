@@ -52,6 +52,7 @@ describe("resumeTask origins", () => {
       pauses: BOTH,
       sessions: { ...kept, review: [] },
     },
+    { origin: "finishing", target: "landed", next: "finish", pauses: BOTH, sessions: kept },
     { origin: "merging", before: "accepted", target: "accepted", next: "merge", pauses: BOTH, sessions: kept },
     {
       origin: "refining",
@@ -115,6 +116,20 @@ describe("resumeTask origins", () => {
     expect(transition?.data).toEqual({ from: pause, to: target });
     expect(sessionsOf(dataRoot, task)).toEqual(sessions);
   });
+
+  it.each(BOTH)(
+    "moves a task paused in %s from finishing after a move from cleanup_failed to landed",
+    async (pause) => {
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
+      withDataRootStore(dataRoot, (store) => pauseTaskVia(store, task.id, "cleanup_failed", "finishing", pause));
+
+      const result = await resume(dataRoot, task);
+
+      expect(result).toEqual({ origin: "finishing", target: "landed", next: "finish" });
+      expect(latestTaskOf(dataRoot, KEY).state).toBe("landed");
+      expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "finishing", target: "landed" }]);
+    },
+  );
 
   it("gives the feedback of a refine from reviewed when one is recorded", async () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();

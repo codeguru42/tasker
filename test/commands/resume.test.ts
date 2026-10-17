@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resume } from "../../src/commands/resume.js";
+import { canonicalPath } from "../../src/real-path.js";
+import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { executedLine, plannedLine, refinedLine, reviewedLinePrefix, verifiedLine } from "../helpers/command-output.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID, TEST_SESSION_ID } from "../helpers/fake-claude.js";
@@ -29,6 +31,7 @@ import {
   expectCommandRefused,
   useAcceptedTask,
   useExecuteFixture,
+  useLandedTask,
   usePlanFixture,
   useRefineFixture,
   useReviewedRefineFixture,
@@ -215,6 +218,37 @@ describe("tasker resume", () => {
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
     expect(eventDataOf(accepted.dataRoot, KEY, "resume")).toEqual([{ origin: "merging", target: "accepted" }]);
   });
+
+  it.each(PAUSES)("runs tasker finish for a task paused in %s from finishing", async (pause) => {
+    const landed = await useLandedTask();
+    const { dataRoot, task, worktree, branch } = landed;
+    withDataRootStore(dataRoot, (store) => pauseTaskFrom(store, task.id, "finishing", pause));
+
+    const result = await runResume();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toBe(
+      firstLine("finishing", "landed") +
+        `removed the worktree ${canonicalPath(worktree)}\ndeleted the branch ${branch}\nfinished ${KEY}\n`,
+    );
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("finished");
+    expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "finishing", target: "landed" }]);
+  });
+
+  it.each(PAUSES)(
+    "runs only the branch step for a task paused in %s from finishing after the worktree was removed",
+    async (pause) => {
+      const landed = await useLandedTask();
+      const { dataRoot, task, worktree, branch } = landed;
+      await removeTaskWorktree({ clone: landed.clone, env: landed.env, path: worktree });
+      withDataRootStore(dataRoot, (store) => pauseTaskFrom(store, task.id, "finishing", pause));
+
+      const result = await runResume();
+
+      expect(result.code).toBe(0);
+      expect(result.out).toBe(firstLine("finishing", "landed") + `deleted the branch ${branch}\nfinished ${KEY}\n`);
+    },
+  );
 
   it("moves a task with a dead run to interrupted, then resumes it", async () => {
     const fixture = await useVerifyFixture({ commands: ["true"] });
