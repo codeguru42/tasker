@@ -122,7 +122,7 @@ A failed run also spends tokens, so the usage is recorded for a failure too. The
 
 The answer of a plan, refine or review run is text, and tasker records nothing before the pause. As a result, the pause drops the answer, and the next run asks again. The commits of an execute turn are already on the branch. As a result, the todo of that turn counts as done, and the next run starts at the next todo.
 
-A stop by a signal keeps the same things as a pause. The answer of a plan, refine or review run is dropped. The todo of an execute turn stays `in_progress`, because the turn did not end. As a result, `tasker resume` and the next run continue the session at that todo.
+The answer of a plan, refine or review run is dropped. The todo of an execute turn stays `in_progress`, because the turn did not end. As a result, `tasker resume` and the next run continue the session at that todo.
 
 A quota stop is not a failure. The run can continue after the reset, and the task keeps its session for that. `tasker resume` takes the task out of `quota_blocked` (see [Resume](#resume)). `tasker approve-credits` takes the task out of `awaiting_quota_approval`, or out of `quota_blocked` after a stop at the overage boundary with a known window (see [Approve-credits](#approve-credits)). `tasker abort` leaves either state.
 
