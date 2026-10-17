@@ -221,6 +221,22 @@ describe("applyRunOutcome with a quota stop", () => {
   });
 });
 
+describe("applyRunOutcome with an interrupted run", () => {
+  it.each(["SIGINT", "SIGTERM"] as const)("moves the task to interrupted on %s", (signal) => {
+    const { result, state, marker, events, io } = applyTo({ kind: "interrupted", ...base(), signal });
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(state).toBe("interrupted");
+    expect(marker).toBeUndefined();
+    expect(events).toEqual([
+      { type: "usage", data: { usage: USAGE } },
+      { type: "transition", data: { from: "planning", to: "interrupted", cause: "signal", signal } },
+    ]);
+    expect(io.out).toEqual([`planning interrupted by ${signal}; run tasker resume ${KEY} to continue\n`]);
+    expect(io.err).toEqual([]);
+  });
+});
+
 describe("pauseForQuotaApproval", () => {
   const resetsAt = 1792206000;
 
