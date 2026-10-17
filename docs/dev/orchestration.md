@@ -624,7 +624,7 @@ If a case says that the orchestrator schedules the next job, the orchestrator fi
 
 ### What the agent does
 
-- If a tasker command of the agent stops in `quota_blocked` or `interrupted`, the agent ends its turn. The agent does not wait, sleep or schedule anything. The task stays in that state.
+- If a tasker command of the agent stops in `quota_blocked` or `interrupted`, the agent ends its turn. The agent does not wait, sleep or schedule anything. The task stays in that state. This end of the turn is a wait point of [the answer-wait rule](#the-answer-wait-rule).
 - If the orchestrator tells the agent to resume, the agent runs `tasker status --issue <issue>`.
 - If the task is in `quota_blocked` or `interrupted`, the agent runs `tasker resume <issue>`. The task goes back to the state before the run that stopped, and tasker runs the same command again. After that command, the task reaches the state that "Run one ticket" gives for its step. Then the agent continues with the next step of "Run one ticket".
 - If the task is in `awaiting_quota_approval`, the agent does not run `tasker resume` or `tasker approve-credits`. The agent reports to the orchestrator. Then the agent waits as [the answer-wait rule](#the-answer-wait-rule) says.
@@ -772,7 +772,7 @@ The agent waits for the orchestrator at these wait points:
 - The no-loop-left rule and the bullet "After the 5th loop" of [Review findings](#review-findings)
 - [Land the work](#land-the-work): after the later agent stops waiting
 - [The hold rule](#the-hold-rule): before `tasker accept`
-- [What the agent does](#what-the-agent-does) in "Quota": the report for `awaiting_quota_approval`
+- [What the agent does](#what-the-agent-does) in "Quota": the end of the turn after a stop in `quota_blocked` or `interrupted`, and the report for `awaiting_quota_approval`
 - A question of the agent, in the sources bullet of [Limits](#limits)
 - The read bullet of [Limits](#limits): a failed command
 - [The own-worktree rule](#the-own-worktree-rule): each stop of the make, the branch-exists case and the remove
