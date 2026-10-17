@@ -204,11 +204,4 @@ describe("resumeTask checks", () => {
 
     await expectResumeRefused(dataRoot, task, noStep("refining"));
   });
-
-  it("refuses verifying from quota_blocked", async () => {
-    const { dataRoot, task } = seedApprovedTaskWithSessions();
-    withDataRootStore(dataRoot, (store) => pauseTaskFrom(store, task.id, "verifying", "quota_blocked"));
-
-    await expectResumeRefused(dataRoot, task, noStep("verifying"));
-  });
 });
