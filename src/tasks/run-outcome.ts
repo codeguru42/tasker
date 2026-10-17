@@ -53,11 +53,14 @@ export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
   }
 }
 
+// The ISO text of a reset time in Unix seconds.
+export function resetIsoTime(resetsAt: number): string {
+  return new Date(resetsAt * 1000).toISOString();
+}
+
 // The part of a quota message that names the reset time of the window.
 function resetText(resetsAt: number | undefined): string {
-  return resetsAt === undefined
-    ? "the reset time is unknown"
-    : `it resets at ${new Date(resetsAt * 1000).toISOString()}`;
+  return resetsAt === undefined ? "the reset time is unknown" : `it resets at ${resetIsoTime(resetsAt)}`;
 }
 
 // Moves the task to awaiting_quota_approval with the warning, prints the pause line on stdout and gives exit code 1.

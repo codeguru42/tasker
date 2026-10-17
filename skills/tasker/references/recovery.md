@@ -75,6 +75,28 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The task is in a state other than `quota_blocked` or `interrupted`. The error is `the task of <issue key> is in <state>; tasker resume needs quota_blocked or interrupted`, then the commands that the state accepts. A task in `awaiting_quota_approval` gets this error.
 - The task paused from a state that resume has no step for. The error is `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task in `quota_blocked` that paused from `verifying` gets this error too. So does a task that paused in `merging` after a move from a state other than `accepted`.
 
+## `tasker approve-credits`
+
+Continues a task in `awaiting_quota_approval`, or in `quota_blocked` at the overage boundary, approves paid usage in the quota window of the pause, and runs the same command again: `tasker approve-credits <issue>`.
+
+The command moves the task like [`tasker resume`](#tasker-resume). It reads the origin, moves the task to the state before the run that stopped, and runs the next command. The table of `tasker resume` gives the target and the next command. The origin `verifying` has no step for this command.
+
+The approval belongs to one task and one quota window. The command records the reset time of that window from the pause record. The record and the move happen in one transaction. A later approval replaces an earlier one. The next command then does not pause again for a warning of that window, and does not stop at the overage boundary of that window. A new window needs a new approval.
+
+The command prints one of these lines on stdout. Then it prints the resumed line of `tasker resume` and runs the next command:
+
+- `approved credits for <issue key>: the quota window that resets at <ISO time>`, when the pause record names a window
+- `approved credits for <issue key>: the pause named no window, so the next warning pauses again`, when a warning pause named no reset time. The command records no approval in this case.
+
+The next command keeps its own output, its own errors and its own exit code. If the run of the task is dead, the note of the dead run comes on stderr first. See [A dead run](../SKILL.md#a-dead-run).
+
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
+
+- The task is in a state other than `quota_blocked` or `awaiting_quota_approval`. The error is `the task of <issue key> is in <state>; tasker approve-credits needs quota_blocked or awaiting_quota_approval`, then the commands that the state accepts.
+- The task is in `quota_blocked` because of a subscription limit. Paid usage cannot continue it. The error is `the task of <issue key> stopped at a subscription limit, and paid usage cannot continue it; run tasker resume <issue key> after the reset`.
+- The task is in `quota_blocked` because of the overage boundary, but the stop named no window. An approval cannot hold. The error is `the task of <issue key> stopped at the overage boundary, but the stop named no window, so an approval cannot hold; run tasker resume <issue key> after the reset`.
+- The task paused from a state that this command has no step for. The error is `the task of <issue key> was paused from <state>; tasker approve-credits has no step for it`. A task that paused from `verifying`, `pushing` or another state that starts no assistant gets this error.
+
 ## `tasker abort`
 
 Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`: `tasker abort <issue>`.

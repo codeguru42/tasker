@@ -162,6 +162,10 @@ Moves a task in `failed` back to the state before the step that failed, and runs
 
 Moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again. See [the reference](references/recovery.md#tasker-resume).
 
+### `tasker approve-credits`
+
+Continues a task in `awaiting_quota_approval`, or in `quota_blocked` at the overage boundary, approves paid usage in its quota window, and runs the same command again. See [the reference](references/recovery.md#tasker-approve-credits).
+
 ### `tasker abort`
 
 Cancels an active task and removes its worktree and local branch. It needs any state except `finished` and `cancelled`. See [the reference](references/recovery.md#tasker-abort).
