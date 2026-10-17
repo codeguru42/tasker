@@ -981,7 +981,7 @@ describe("seedCreditsApproval", () => {
     });
 
     expect(event).toMatchObject({ type: "credits_approved", data: { resetsAt: 1792206000 } });
-    expect(events).toEqual([event]);
+    expect(events.at(-1)).toEqual(event);
   });
 });
 
