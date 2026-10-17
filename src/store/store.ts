@@ -223,6 +223,13 @@ export interface StoreOptions {
   now?: () => Date;
 }
 
+// The writes of tasker update-branch besides the move. base is the data of a base event with the source update.
+// clearPlanApproval is the pinned version whose approval is cleared.
+export interface BranchUpdateWrites {
+  base?: { base: string; revision: string };
+  clearPlanApproval?: number;
+}
+
 export interface TaskStore extends LockStore {
   createTask(task: NewTask): Task;
   getTask(id: number): Task | undefined;
@@ -333,6 +340,15 @@ export interface TaskStore extends LockStore {
     taskId: number,
     version: number,
     state: string,
+    check?: (current: Task) => NewEvent | undefined,
+  ): Task;
+  // Moves the task out of updating_branch to a state that is not spawning, deletes its run marker and makes the
+  // writes, in one transaction. The base event comes before the event that check returns. A version that is not
+  // pinned throws and writes nothing.
+  updateBranchTask(
+    taskId: number,
+    state: string,
+    writes: BranchUpdateWrites,
     check?: (current: Task) => NewEvent | undefined,
   ): Task;
   // The questions of a revision with their state. The newest revision has only open questions.
@@ -980,6 +996,18 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     });
   }
 
+  // Clears the approval of the pinned revision. Another version, or no pinned revision, throws.
+  function clearPinnedApprovalStep(taskId: number, version: number): void {
+    const pinned = readPinnedPlanRevision(taskId);
+    if (pinned === undefined) {
+      throw new Error(`task ${taskId} has no approved plan revision`);
+    }
+    if (version !== pinned.version) {
+      throw new Error(`task ${taskId}: plan revision ${version} is not the pinned revision (${pinned.version})`);
+    }
+    statements.setPlanApproval.run(null, taskId, version);
+  }
+
   // The marker step of a move to a state that is not spawning: it deletes the run marker.
   function endRunStep(id: number, state: string): void {
     if (isSpawningState(state)) {
@@ -1481,14 +1509,15 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     clearPlanApproval(taskId, version, state, check) {
       return writeTask(taskId, { state }, check, () => {
         endRunStep(taskId, state);
-        const pinned = readPinnedPlanRevision(taskId);
-        if (pinned === undefined) {
-          throw new Error(`task ${taskId} has no approved plan revision`);
-        }
-        if (version !== pinned.version) {
-          throw new Error(`task ${taskId}: plan revision ${version} is not the pinned revision (${pinned.version})`);
-        }
-        statements.setPlanApproval.run(null, taskId, version);
+        clearPinnedApprovalStep(taskId, version);
+      });
+    },
+
+    updateBranchTask(taskId, state, writes, check) {
+      return writeTask(taskId, { state }, check, (at) => {
+        endRunStep(taskId, state);
+        if (writes.clearPlanApproval !== undefined) clearPinnedApprovalStep(taskId, writes.clearPlanApproval);
+        if (writes.base !== undefined) writeEvent(taskId, at, "base", { ...writes.base, source: "update" });
       });
     },
 

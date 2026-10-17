@@ -1,4 +1,6 @@
+import type { ResyncResult } from "../vcs/provider.js";
 import type {
+  BranchUpdateWrites,
   NewEvent,
   NewReview,
   RetryWrites,
@@ -293,6 +295,25 @@ export function transitionWithPlanApproval(store: TaskStore, id: number, version
     "approved",
     transitionCheck("approved", "approved", { version, openQuestions }),
   );
+}
+
+// The head of the worktree and the base of the task, as tasker update-branch reads them.
+export interface BranchSnapshot {
+  head: string;
+  base: string;
+  baseRevision: string;
+}
+
+// Moves the task out of updating_branch with one branch_updated event { before, after, how, [error], from, to } in
+// place of a transition event, and makes the writes, in one transaction. An illegal edge writes nothing.
+export function transitionWithBranchUpdate(
+  store: TaskStore,
+  id: number,
+  to: TaskState,
+  detail: { before: BranchSnapshot; after: BranchSnapshot; how: ResyncResult["how"]; error?: string },
+  writes: BranchUpdateWrites,
+): Task {
+  return store.updateBranchTask(id, to, writes, transitionCheck("branch_updated", to, detail));
 }
 
 // Clears the approval of the pinned revision version, appends the unapproved event { version, from, to } and moves
