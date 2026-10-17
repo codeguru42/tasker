@@ -67,7 +67,7 @@ The next command keeps its own output, its own errors and its own exit code. The
 
 The command does not wait for the reset time of a quota limit. You decide when to run it. If the run of the task is dead, the note of the dead run comes on stderr first. See [A dead run](../SKILL.md#a-dead-run).
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. One exception exists: if the run of the task is dead, the task moves to `interrupted` before the checks (see [A dead run](../SKILL.md#a-dead-run)). The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. If the run of the task is dead, the task moves to `interrupted` before the checks (see [A dead run](../SKILL.md#a-dead-run)). The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
 - The task is in a state other than `quota_blocked` or `interrupted`. The error is `the task of <issue key> is in <state>; tasker resume needs quota_blocked or interrupted`, then the commands that the state accepts. A task in `awaiting_quota_approval` gets this error.
 - The task paused from a state that resume has no step for. The error is `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task in `quota_blocked` that paused from `verifying` gets this error too.

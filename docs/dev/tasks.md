@@ -312,7 +312,7 @@ These reasons explain its rules:
 
 ## Resume
 
-`tasker resume` moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again. The state that the task left when the run stopped is the origin. [The Pauses table](../statemachine.md#pauses) gives the target and the next command for each origin, and this page does not copy it. For the origin `refining`, the origin of the refine picks the row, as in [Retry](#retry). An origin that the table does not hold gets no resume, and the command refuses it. The verifying row accepts only `interrupted`.
+`tasker resume` moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again. The state that the task left when the run stopped is the origin. Resume has a step for these origins: `planning`, `executing`, `verifying` and `reviewing`. It also has a step for `refining`, when the origin of the refine is `awaiting_plan_review`, `failed`, `reviewed` or `awaiting_work_review`. The origin `verifying` works only from `interrupted`. [The Pauses table](../statemachine.md#pauses) gives the target and the next command of these origins, and this page does not copy it. For the origin `refining`, the origin of the refine picks the row, as in [Retry](#retry). Resume refuses each other origin.
 
 The command makes all its checks before its first write, as [the intro](#the-task-commands) says. The move, the delete of the review session and the events share one transaction. The move writes a `transition` event `{ from, to }` with the pause as `from`. Then it writes a `resume` event `{ origin, target }`.
 
