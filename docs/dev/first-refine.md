@@ -8,7 +8,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 
 ## All tickets
 
-- Name the shared test helpers of `test/helpers/` that the tests must use, and ask the plan to make each test call them. A local helper in a test file can call a shared helper, for example to fix the arguments of one `describe` block. It must not repeat the steps of the shared helper, for example a call of the same store function with its own default values. The review counts such a local helper as a copy (#127). A key of a change object that names the case of the test is not a repeated default, for example `failingCommand: null` for a failed run. On #220, a first refine read the ban on a repeat of the steps of the shared helper too widely, and the fix cost an extra refine. Before a ticket adds a second test file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
+- Name the shared test helpers of `test/helpers/` that the tests must use, and ask the plan to make each test call them. A local helper in a test file can call a shared helper, for example to fix the arguments of one `describe` block. It must not repeat the steps of the shared helper, for example a call of the same store function with its own default values. The review counts such a local helper as a copy (#127). A key of a change object that names the case of the test is not a repeated default, for example `failingCommand: null` for a failed run. On #220, a first refine read the ban on a repeat of the steps of the shared helper too widely. The fix cost an extra refine. Before a ticket adds a second test file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
 - Ask the plan for the side effects of each fix before `tasker approve`. A fix can cause a new finding about its own side effect.
 - If a ticket adds a small exported helper, ask the plan for each place that does the same job ([rules.md](rules.md#tests)).
 - If a review or the diff read finds a duplication, ask the plan to search all of `src/` and `test/` for the same pattern, not only the files of the diff, and to fix every copy in the same refine. A copy can already be on the base branch, in a file that the ticket does not touch (#94). [Review findings](orchestration.md#review-findings) gives the duplication rule.
@@ -90,7 +90,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
   - The names and the count of the tests, from `npm run test:list -- --json`. Put `--json` last, or use the form `--json=<path>`, because Vitest reads the word after `--json` as an output path. On #220, `npm run test:list -- --json <file>` wrote the JSON list over a test file in the worktree.
   - A sorted diff of the bodies, without the import lines.
   - The import graph.
-- If a refactor moves tests onto shared defaults, ask the plan to list each value that the old local builder had and that the shared builder does not have. Ask the plan to say for each value if a test depends on it. On #220, review 1 found a round-trip test that lost its check of two different times.
+- If a refactor moves tests onto shared defaults, ask the plan to compare the old local builder with the shared builder. Ask the plan to list each value that only the old builder has. Ask the plan to say for each value if a test depends on it. On #220, review 1 found a round-trip test that lost its check of two different times.
 
 ## A ticket that moves a task into or out of a group of states
 
