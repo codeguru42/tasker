@@ -244,6 +244,19 @@ describe("tasker update-branch", () => {
       expect(latestTaskOf(work.dataRoot, KEY).state).toBe(target);
     });
 
+    it("keeps the error of a task that failed in verifying and stays in failed", async () => {
+      const work = await useMovedBaseTask();
+      withDataRootStore(work.dataRoot, (store) =>
+        failTaskFrom(store, work.task.id, "verifying", "npm test failed: boom"),
+      );
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("failed");
+      expect(lastErrorOf(work.dataRoot, work.task.id)).toBe("npm test failed: boom");
+    });
+
     it("keeps a task in awaiting_work_review when the head did not move", async () => {
       const work = await useWorkReviewTask();
       place(work, "accepted");

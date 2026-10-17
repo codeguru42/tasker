@@ -17,6 +17,7 @@ import { deadRunNote, expectedShowLines } from "../helpers/state-commands.js";
 import { findingText, reviewFinding } from "../helpers/review.js";
 import { dayAt, seedDeadRun, seedReview, seedTaskWithReviews, seedTasks, withDataRootStore } from "../helpers/store.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
+import { transitionTask, transitionWithBranchUpdate } from "../../src/state/machine.js";
 import type { ExecuteTodoState } from "../../src/store/store.js";
 
 const TASKER = "codeguru42/tasker";
@@ -263,6 +264,24 @@ describe("show", () => {
         "error: git push failed\n" +
         expectedShowLines("failed", `${TASKER}#5`),
     });
+  });
+
+  it("prints the error of a failed task that went through updating_branch and back to failed", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "executing", at: dayAt(4), failWith: "git push failed" },
+    ]);
+    const head = { head: "a".repeat(40), base: "main", baseRevision: "refs/remotes/origin/main" };
+    withDataRootStore(dataRoot, (store) => {
+      transitionTask(store, task.id, "updating_branch");
+      transitionWithBranchUpdate(store, task.id, "failed", { before: head, after: head, how: "none" }, {});
+    });
+
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(result.out).toContain("state: failed\n");
+    expect(result.out).toContain("failed in: executing\n");
+    expect(result.out).toContain("error: git push failed\n");
   });
 
   it("prints each line end in a value as the two characters \\n", async () => {

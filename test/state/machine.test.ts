@@ -10,6 +10,7 @@ import {
   failedFrom,
   originText,
   refineFeedbackOf,
+  lastTransitionError,
   lastTransitionIndex,
   isSpawningState,
   isTerminalState,
@@ -568,6 +569,24 @@ describe("task transitions", () => {
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBe(approvedAt);
       expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("lastTransitionError", () => {
+    const before = { head: "a".repeat(40), base: "main", baseRevision: "refs/remotes/origin/main" };
+
+    it("keeps the error of a failed task after a branch_updated move back to failed", () => {
+      const task = store.createTask(newTask("executing"));
+      failTask(store, task.id, "npm test failed: boom");
+      transitionTask(store, task.id, "updating_branch");
+      transitionWithBranchUpdate(store, task.id, "failed", { before, after: before, how: "none" }, {});
+      expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("npm test failed: boom");
+    });
+
+    it("gives undefined when the last transition event into the state has no error", () => {
+      const task = store.createTask(newTask("awaiting_work_review"));
+      transitionTask(store, task.id, "updating_branch");
+      expect(lastTransitionError(store.listEvents(task.id), "updating_branch")).toBeUndefined();
     });
   });
 
