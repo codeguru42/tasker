@@ -66,7 +66,7 @@ describe("abort", () => {
     ]);
     withDataRootStore(fixture.dataRoot, (store) => {
       transitionTask(store, task.id, "planning");
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
     });
 
     const result = await runCommand(abort, "abort", KEY);

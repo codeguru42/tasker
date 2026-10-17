@@ -2761,7 +2761,7 @@ describe("task store", () => {
       it("gives running when the process of the marker is alive", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
         store.startRun(task.id, "executing");
-        expect(store.runStatus(task.id)).toEqual({ status: "running" });
+        expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
       });
 
       it("gives dead with no child pid when a spawning task has no marker", () => {
@@ -2778,7 +2778,7 @@ describe("task store", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
         const child = startFixture("run-starter.ts", [dbPath, String(task.id), "executing"]);
         expect(await child.firstLine).toBe("started");
-        expect(store.runStatus(task.id)).toEqual({ status: "running" });
+        expect(store.runStatus(task.id)).toEqual({ status: "running", pid: child.pid });
         process.kill(child.pid, "SIGKILL");
         await child.exited;
         expect(store.runStatus(task.id)).toEqual({ status: "dead", childPid: null });

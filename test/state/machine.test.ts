@@ -390,7 +390,7 @@ describe("task transitions", () => {
     it("writes the run marker on a move into a spawning state", () => {
       const task = store.createTask(newTask("approved"));
       expect(transitionTask(store, task.id, "executing").state).toBe("executing");
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
       expect(store.listEvents(task.id).at(-1)).toMatchObject({
         type: "transition",
         data: { from: "approved", to: "executing" },
@@ -400,7 +400,7 @@ describe("task transitions", () => {
     it("deletes the run marker on a move out of a spawning state", () => {
       const task = store.createTask(newTask("approved"));
       transitionTask(store, task.id, "executing");
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
       expect(transitionTask(store, task.id, "executed").state).toBe("executed");
       expect(store.listEvents(task.id).at(-1)).toMatchObject({
         type: "transition",
@@ -408,7 +408,7 @@ describe("task transitions", () => {
       });
       // A marker that stays makes the next move into a spawning state fail.
       expect(transitionTask(store, task.id, "verifying").state).toBe("verifying");
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
     });
 
     it("refuses an illegal edge into a spawning state and writes no marker", () => {
@@ -421,7 +421,7 @@ describe("task transitions", () => {
       expect(store.runStatus(task.id)).toEqual({ status: "none" });
       expect(store.listEvents(task.id)).toEqual(before);
       transitionTask(store, task.id, "planning");
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
     });
 
     it("refuses an illegal edge out of a spawning state and keeps the marker", () => {
@@ -432,7 +432,7 @@ describe("task transitions", () => {
         "illegal state transition: executing -> approved",
       );
       expect(store.getTask(task.id)!.state).toBe("executing");
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
       expect(store.listEvents(task.id)).toEqual(before);
     });
   });
@@ -627,7 +627,7 @@ describe("task transitions", () => {
     it("writes one landed event in place of the transition event and deletes the run marker", () => {
       const task = store.createTask(newTask("workspace_ready"));
       moveTaskThrough(store, task.id, [...TO_WORK_REVIEW, "accepted", "merging"]);
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
       const before = store.listEvents(task.id);
 
       const moved = land(task.id);
@@ -792,10 +792,10 @@ describe("task transitions", () => {
     it("deletes the run marker of a task in a spawning state, so a retry can run", () => {
       const task = store.createTask(newTask("approved"));
       transitionTask(store, task.id, "executing");
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
       expect(failTask(store, task.id, "boom").state).toBe("failed");
       expect(transitionTask(store, task.id, "refining").state).toBe("refining");
-      expect(store.runStatus(task.id)).toEqual({ status: "running" });
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
     });
 
     it("refuses a task that is already failed", () => {
