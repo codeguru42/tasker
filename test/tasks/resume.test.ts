@@ -88,11 +88,17 @@ describe("resumeTask origins", () => {
     },
   ];
 
+  function rowLabel(row: { origin: TaskState; refineOrigin?: TaskState; before?: TaskState }): string {
+    if (row.refineOrigin !== undefined) return `${row.origin} after a refine from ${row.refineOrigin}`;
+    if (row.before !== undefined) return `${row.origin} after a move from ${row.before}`;
+    return row.origin;
+  }
+
   const cases = rows.flatMap((row) =>
     row.pauses.map((pause) => ({
       ...row,
       pause,
-      label: `${row.refineOrigin === undefined ? (row.before === undefined ? row.origin : `${row.origin} after a move from ${row.before}`) : `${row.origin} after a refine from ${row.refineOrigin}`} in ${pause}`,
+      label: `${rowLabel(row)} in ${pause}`,
     })),
   );
 
