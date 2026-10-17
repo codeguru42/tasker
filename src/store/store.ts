@@ -27,7 +27,7 @@ export class ActiveTaskError extends Error {
 
 export type RunStatus =
   | { status: "none" }
-  | { status: "running" }
+  | { status: "running"; pid: number }
   // childPid is null when the marker is missing or has no child pid.
   | { status: "dead"; childPid: number | null };
 
@@ -1155,7 +1155,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         }
         if (!isSpawningState(row.state)) return { status: "none" };
         if (row.pid === null) return { status: "dead", childPid: null };
-        if (pidIsLive(row.pid)) return { status: "running" };
+        if (pidIsLive(row.pid)) return { status: "running", pid: row.pid };
         return { status: "dead", childPid: row.child_pid };
       });
     },
