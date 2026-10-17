@@ -23,7 +23,16 @@ import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
-import { argAfter, claudeSample, claudeSampleWithResult, TEST_EXECUTE_SESSION_ID } from "../helpers/fake-claude.js";
+import {
+  argAfter,
+  claudeApprovalWarningEvent,
+  claudeOverageEvent,
+  claudeSample,
+  claudeSampleWithResult,
+  TEST_EXECUTE_SESSION_ID,
+  withEventBeforeResult,
+  withEventFirst,
+} from "../helpers/fake-claude.js";
 import {
   planTodo,
   seedExecuteFixTurn,
@@ -32,7 +41,15 @@ import {
   transcriptLines,
   turnResultStream,
 } from "../helpers/plan.js";
-import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
+import { quotaPauseLineExpected } from "../helpers/quota.js";
+import {
+  databasePathOf,
+  eventsOf,
+  latestTaskOf,
+  seedCreditsApproval,
+  withDataRootStore,
+  withRawDatabase,
+} from "../helpers/store.js";
 import {
   type ExecuteFixture,
   expectRefusedWithoutChange,
@@ -639,6 +656,25 @@ describe("executeTask push guard", () => {
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
   });
 
+  it("fails the task with the push error and does not pause when the tip moved after a turn with a warning", async () => {
+    const fixture = await useExecuteFixture(
+      { turns: [{ stream: withEventBeforeResult(claudeApprovalWarningEvent(), doneStream), exec: pushBranch }] },
+      { answer: { todos: TODOS }, repo: { overagePolicy: "ask" } },
+    );
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe(`${await pushMessage(fixture)}\n`);
+    expect(io.out).toEqual([]);
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+    expect(
+      eventsOf(fixture.started.dataRoot, fixture.started.key).filter(
+        (event) => (event.data as { to?: string } | undefined)?.to === "awaiting_quota_approval",
+      ),
+    ).toEqual([]);
+  });
+
   it("fails the task when the remote cannot be read after a turn", async () => {
     const fixture = await useExecuteFixture(
       { stream: doneStream, turns: [{ stream: doneStream, exec: moveOrigin }] },
@@ -650,5 +686,122 @@ describe("executeTask push guard", () => {
     expect(result).toEqual({ exitCode: 1 });
     expect(io.err.join("").startsWith("cannot read the remote after the run: ")).toBe(true);
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+  });
+});
+
+describe("executeTask quota warning", () => {
+  const RESETS_AT = 1792206000;
+  const ask = { repo: { overagePolicy: "ask" } };
+  const warnedDone = () => withEventBeforeResult(claudeApprovalWarningEvent(), doneStream);
+  const pauseData = { from: "executing", to: "awaiting_quota_approval", utilization: 0.95, resetsAt: RESETS_AT };
+  const lastEvent = (fixture: ExecuteFixture) => eventsOf(fixture.started.dataRoot, fixture.started.key).at(-1);
+  const stateOf = (fixture: ExecuteFixture) => latestTaskOf(fixture.started.dataRoot, fixture.started.key).state;
+
+  it("pauses the task after the turn with the warning and keeps its todo done", async () => {
+    const fixture = await useExecuteFixture({ stream: warnedDone() }, { answer: { todos: TODOS }, ...ask });
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.out.join("")).toBe(quotaPauseLineExpected("executing", 95, RESETS_AT));
+    expect(io.err).toEqual([]);
+    expect(stateOf(fixture)).toBe("awaiting_quota_approval");
+    expect(lastEvent(fixture)).toEqual({ type: "transition", data: pauseData });
+    expect(todoStates(fixture)).toEqual([
+      ["b", "not_started"],
+      ["a", "done"],
+    ]);
+    expect(fixture.claude.calls()).toHaveLength(1);
+    expect(withDataRootStore(fixture.started.dataRoot, (store) => store.runStatus(fixture.task.id))).toEqual({
+      status: "none",
+    });
+  });
+
+  it("starts the next run at the next todo and ends in executed", async () => {
+    const fixture = await useExecuteFixture(
+      { turns: [{ stream: warnedDone() }, { stream: doneStream }] },
+      { answer: { todos: TODOS }, ...ask },
+    );
+    const { dataRoot } = fixture.started;
+    await runExecute(fixture);
+    withDataRootStore(dataRoot, (store) => {
+      seedCreditsApproval(store, fixture.task.id, RESETS_AT);
+      transitionTask(store, fixture.task.id, "approved");
+    });
+
+    const { result } = await runExecute(fixture);
+
+    const calls = fixture.claude.calls();
+    expect(result).toMatchObject({ todosDone: 2, todosTotal: 2 });
+    expect(calls).toHaveLength(2);
+    expect(argAfter(calls[1].argv, "--resume")).toBe(argAfter(calls[0].argv, "--session-id"));
+    expect(calls[1].stdin).toContain(currentTodoText(TODOS.find((todo) => todo.id === "b")!));
+    expect(calls[1].stdin).not.toContain(currentTodoText(TODOS.find((todo) => todo.id === "a")!));
+    expect(stateOf(fixture)).toBe("executed");
+  });
+
+  it("pauses after the last turn too, and the next run ends in executed with no new turn", async () => {
+    const fixture = await useExecuteFixture({ stream: warnedDone() }, { answer: { todos: [planTodo("a")] }, ...ask });
+    const { dataRoot } = fixture.started;
+
+    const first = await runExecute(fixture);
+    withDataRootStore(dataRoot, (store) => transitionTask(store, fixture.task.id, "approved"));
+    const second = await runExecute(fixture);
+
+    expect(first.result).toEqual({ exitCode: 1 });
+    expect(second.result).toMatchObject({ todosDone: 1, todosTotal: 1 });
+    expect(fixture.claude.calls()).toHaveLength(1);
+    expect(stateOf(fixture)).toBe("executed");
+  });
+
+  it("pauses after the fix turn and records it as done", async () => {
+    const fixture = await useExecuteFixture({ stream: warnedDone() }, { answer: { todos: [planTodo("a")] }, ...ask });
+    withDataRootStore(fixture.started.dataRoot, (store) => {
+      store.markExecuteTodosDone(fixture.task.id, 1);
+      seedExecuteFixTurn(store, fixture.task.id, 1, "queued");
+    });
+
+    const { result } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(stateOf(fixture)).toBe("awaiting_quota_approval");
+    expect(eventTypes(fixture, ["fix_turn_done"]).map((event) => event.type)).toEqual(["fix_turn_done"]);
+    expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
+      "done",
+    );
+  });
+
+  it("fails the task, not pauses it, when the turn with the warning reports blocked", async () => {
+    const stream = withEventBeforeResult(claudeApprovalWarningEvent(), turnResultStream("blocked", "No disk."));
+    const fixture = await useExecuteFixture({ stream }, { answer: { todos: TODOS }, ...ask });
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe("todo `a` (Do a) reported blocked: No disk.\n");
+    expect(io.out).toEqual([]);
+    expect(stateOf(fixture)).toBe("failed");
+  });
+
+  it("does not pause under decline", async () => {
+    const fixture = await useExecuteFixture({ stream: warnedDone() }, { answer: { todos: TODOS } });
+
+    const { result } = await runExecute(fixture);
+
+    expect(result).toMatchObject({ todosDone: 2, todosTotal: 2 });
+    expect(stateOf(fixture)).toBe("executed");
+  });
+
+  it("gives the approved window to the overage stop under decline", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: withEventFirst(claudeOverageEvent(), doneStream) },
+      { answer: { todos: TODOS } },
+    );
+    withDataRootStore(fixture.started.dataRoot, (store) => seedCreditsApproval(store, fixture.task.id, RESETS_AT));
+
+    const { result } = await runExecute(fixture);
+
+    expect(result).toMatchObject({ todosDone: 2, todosTotal: 2 });
+    expect(stateOf(fixture)).toBe("executed");
   });
 });
