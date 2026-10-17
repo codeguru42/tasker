@@ -15,7 +15,7 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 - The operator decides when a milestone starts. The planning session plans one milestone at a time. If the operator asks, the planning session writes the issues of the next milestone before the current milestone ends.
 - The planning session first drafts all issues of the milestone and shows them to the operator. It posts nothing before the operator approves.
 - If the request does not say which kinds of GitHub objects to make (milestones, issues, project items), the planning session asks the operator before a post. In one case, "post everything" meant milestones only, and the session made more than 100 unwanted issues.
-- If a ticket that landed needs a change, the planning session writes a new follow-up issue. It does not edit the body of a closed issue.
+- If a ticket that landed needs a change, the planning session writes a new follow-up issue. It does not edit the body of a closed issue. If a closed issue has wrong text but right landed work, each session, not only the planning session, adds a comment to the issue. The comment names the wrong text and gives the right fact. The session does not edit the body. For this comment, the session also follows the first bullet of [Before a post](issues.md#before-a-post) of issues.md, so it shows the draft to the operator first. On #160, the Summary still named the latest review after the user removed the review from the requirements, and a comment recorded the fix.
 
 ## The body of an issue
 
