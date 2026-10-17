@@ -25,14 +25,14 @@ These errors leave the task in its state. The command writes nothing. The shared
 - The issue has no task. The error names the issue and the repo. Run `tasker start` first.
 - The issue cannot be read. Fix the cause (for example the gh login), then run the command again.
 
-These errors move the task to the state `failed`. The shared quota stop is the exception:
+These errors move the task to the state `failed`. The shared quota stop and the shared quota pause are the exceptions:
 
 - The assistant fails or runs longer than the time limit. The error is `planning failed: <reason>` or `planning timed out after <n> min`.
 - An unexpected error occurs after the run has started, for example the transcript file cannot be opened. The error is `planning failed: <error>`.
 - The assistant returns a plan that tasker refuses. The error lists each problem.
 - The plan file cannot be written. The error is `cannot write the plan file of revision v1: <error>`.
 
-For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked`, no command continues it yet. Run `tasker abort <issue>` to leave the state. After a crash of tasker, the next command that reads the task moves it to `interrupted`. See [A dead run](../SKILL.md#a-dead-run). Run `tasker abort <issue>` for it.
+For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked` or `awaiting_quota_approval`, no command continues it yet. Run `tasker abort <issue>` to leave the state. After a crash of tasker, the next command that reads the task moves it to `interrupted`. See [A dead run](../SKILL.md#a-dead-run). Run `tasker abort <issue>` for it.
 
 If you press Ctrl-C, the assistant stops. The run ends as a failure, and the task goes to the state `failed`.
 
@@ -85,7 +85,7 @@ These errors leave the task in its state. The command writes nothing. The shared
 
 A refused check leaves the task, the files and the events as they were. Fix the cause, then run the same command again.
 
-These errors move the task to the state `failed`. The shared quota stop is the exception. The shared unexpected error belongs to this group:
+These errors move the task to the state `failed`. The shared quota stop and the shared quota pause are the exceptions. The shared unexpected error belongs to this group:
 
 - The assistant fails or runs longer than the time limit. The error is `refining failed: <reason>` or `refining timed out after <n> min`.
 - The assistant returns a plan that tasker refuses. The error lists each problem.

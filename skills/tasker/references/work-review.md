@@ -30,12 +30,12 @@ These errors leave the task in its state. The command writes no event, no sessio
 - The commits of the branch cannot be read. The error is the error of git.
 - The prompt cannot be archived. A prompt that tasker archived before the failure stays in the prompt archive.
 
-These errors move the task to the state `failed`. The shared quota stop is the exception. The shared unexpected error belongs to this group:
+These errors move the task to the state `failed`. The shared quota stop and the shared quota pause are the exceptions. The shared unexpected error belongs to this group:
 
 - The assistant fails or runs out of time. The error is `reviewing failed: <reason>` or `reviewing timed out after <n> min`.
 - The answer is not valid. The error is `the assistant returned findings that tasker refuses:`, then one line for each problem.
 
-[`tasker retry`](recovery.md#tasker-retry) runs a failed review again in a new session. No command resumes a stopped review yet.
+[`tasker retry`](recovery.md#tasker-retry) runs a failed review again in a new session. No command resumes a stopped or paused review yet.
 
 ### The feedback form
 

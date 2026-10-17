@@ -39,7 +39,7 @@ A key that does not match the form of its provider is an error. The error names 
 
 ## Shared errors
 
-For each of these errors, the command prints the error on stderr and exits with code 1. A reference file names a shared error only when the command handles it in a different way.
+For each of these errors, the command exits with code 1 and prints the error on stderr, unless the item says stdout. A reference file names a shared error only when the command handles it in a different way.
 
 - The issue key does not resolve.
 - The task is in a state that the command does not accept. The error is `the task of <issue key> is in <state>; tasker <command> needs <states>`. For a state with a primary command, a sentence follows: `next: tasker <primary> <issue key> (also: tasker <other> <issue key>, ...)`. For a state with no primary command, this sentence follows: `commands: tasker <a> <issue key>, tasker <b> <issue key>, ...`. For `finished` and `cancelled`, no sentence follows. [The commands of each state](../../docs/statemachine.md#the-commands-of-each-state) gives the table.
@@ -49,6 +49,7 @@ For each of these errors, the command prints the error on stderr and exits with 
 - Another command holds the clone for more than 5 minutes. The error says that the lock is busy. Run the command again.
 - The prompt cannot be archived. Fix the cause, then run the command again. The task keeps its state.
 - A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
+- A quota warning pauses the run under `overagePolicy: "ask"`, when the use of the quota window reaches `quotaApprovalThreshold`. The task goes to the state `awaiting_quota_approval`. The command prints the pause line on stdout. Run `tasker abort <issue>` to leave the state.
 - An unexpected error occurs after the run has started. The task goes to the state `failed`. The error is `<step> failed: <error>`. The step is `planning`, `refining`, `executing`, `verifying` or `reviewing`.
 
 ### A dead run
