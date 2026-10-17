@@ -15,6 +15,12 @@ The work on this repo must continue on any machine, as [What goes in a ticket](p
 - Say what the code does. Do not write "by hand" or "manually" about code. This rule covers text about code. It does not cover an action of a person or a session, for example a change by hand to a clone. In one case, "the test opens the store by hand" read as if a session opened the files of tasker, which is not allowed. Write "the test writes the open and close steps itself instead of calling the helper".
 - When you list the decisions that the user must make, give each question its own number in the main list. This also applies when two questions are about the same issue. Do not put a second question inside a bullet of another question. In one case (2026-10-15), a question about the link commands of #117 sat in a sub-bullet of the scope question of #117, and the user answered only the scope question.
 
+## A question of the user
+
+- When the user asks a question, answer only that question. Take no action and make no offer that the user did not ask for.
+- This rule covers a question of the user. When the user must decide something, the session still gives a recommendation, as [A decision of the user](#a-decision-of-the-user) says.
+- In one case (2026-10-17), the user asked the Docs orchestrator questions about its handoff. The orchestrator answered and also offered next steps. After one message of the user, the orchestrator left the handoff and started a ticket without the word of the user. The user wrote: "When I ask questions, just answer. Do not anticipate what I want."
+
 ## Core features first
 
 - The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge case. Decide it as "later", and keep the ticket in its scope. The goal of the numbered milestones is parity with [the installed tasker](orchestration.md): each command of the installed tasker, with its core features. A feature that the installed tasker does not have also waits until later, as an edge case does.
