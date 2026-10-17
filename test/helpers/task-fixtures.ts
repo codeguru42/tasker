@@ -32,6 +32,7 @@ import { useFakeSandboxBin } from "./fake-commands.js";
 import { type FakeClaude, type FakeClaudeControl, useFakeClaude, useFakeClaudeOnPath } from "./fake-claude.js";
 import { type FakeGh, type FakeGhAnswer, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
 import {
+  GIT_TEST_IDENTITY,
   type GitOrigin,
   commitInWorktree,
   landBranchOnOriginMain,
@@ -502,12 +503,19 @@ export function appendBaseEvent(
 
 // Runs useStartFixture(options), starts the task of issue 5 with startTaskWithCommits and one commit for each file of
 // files (default ["work.txt"]), then moves the task through the states to awaiting_work_review. It throws when the
-// start fails. Call it inside a test.
+// start fails. It sets the git identity of the clone to GIT_TEST_IDENTITY through vcs.config, and a vcs key of
+// options.repo replaces this default. Call it inside a test.
 export async function useWorkReviewTask(
   options: Parameters<typeof useStartFixture>[0] & { files?: readonly string[] } = {},
 ): Promise<WorkReviewTask> {
   const { files = ["work.txt"], ...fixtureOptions } = options;
-  const fixture = await useStartFixture(fixtureOptions);
+  const fixture = await useStartFixture({
+    ...fixtureOptions,
+    repo: {
+      vcs: { provider: "git", config: { authorName: GIT_TEST_IDENTITY.name, authorEmail: GIT_TEST_IDENTITY.email } },
+      ...fixtureOptions.repo,
+    },
+  });
   const key = `${fixture.repoKey}#5`;
   await startTaskWithCommits(fixture, 5, files);
   const task = walkTask(fixture.dataRoot, fixture.repoKey, key, TO_WORK_REVIEW);
