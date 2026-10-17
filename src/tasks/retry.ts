@@ -18,7 +18,7 @@ import { taskInState } from "./task-state.js";
 // The command that runs after the move of a retry. The three refine values run nothing: the operator gives the
 // feedback again, or acts on the findings again.
 export type RetryNext =
-  "start" | "plan" | "refine" | "refine-findings" | "review-feedback" | "execute" | "verify" | "review";
+  "start" | "plan" | "refine" | "refine-findings" | "review-feedback" | "execute" | "verify" | "review" | "merge";
 
 export interface RetryRequest {
   config: Config;
@@ -64,10 +64,15 @@ const REFINE_RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   awaiting_work_review: { target: "awaiting_work_review", next: "review-feedback", clears: {} },
 };
 
-// The refining entry has a fallback: a refine origin with no row keeps the row of a plain refine.
+// The refining entry has a fallback: a refine origin with no row keeps the row of a plain refine. The merging entry has
+// none: the merge origin (the state that the task left when the last merge started) gives the row, and a merge origin
+// with no row gets a refusal.
 const RETRY_TABLES: OriginTables<RetryRow> = {
   rows: RETRY_TABLE,
-  byOriginOf: { refining: { rows: REFINE_RETRY_TABLE, fallback: PLAIN_REFINE_ROW } },
+  byOriginOf: {
+    refining: { rows: REFINE_RETRY_TABLE, fallback: PLAIN_REFINE_ROW },
+    merging: { rows: { accepted: { target: "accepted", next: "merge", clears: {} } } },
+  },
 };
 
 // The row of verifying with --resume-execute.
