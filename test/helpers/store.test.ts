@@ -890,16 +890,37 @@ describe("pauseTaskFrom", () => {
 });
 
 describe("pauseRefineFrom", () => {
-  it.each(["quota_blocked", "interrupted"] as const)("pauses the task in %s after a refine", (pause) => {
+  it.each(["quota_blocked", "awaiting_quota_approval", "interrupted"] as const)(
+    "pauses the task in %s after a refine",
+    (pause) => {
+      const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+      withDataRootStore(dataRoot, (store) => {
+        pauseRefineFrom(store, task.id, "reviewed", pause);
+
+        const events = store.listEvents(task.id);
+        expect(store.getTask(task.id)?.state).toBe(pause);
+        expect(transitionFromEvents(events, pause)).toBe("refining");
+        expect(transitionFromEvents(events, "refining")).toBe("reviewed");
+      });
+    },
+  );
+
+  it("writes the given detail in place of the default", () => {
     const { dataRoot, task } = seedTaskIn("workspace_ready");
 
     withDataRootStore(dataRoot, (store) => {
-      pauseRefineFrom(store, task.id, "reviewed", pause);
+      pauseRefineFrom(store, task.id, "reviewed", "quota_blocked", undefined, {
+        cause: "overage",
+        resetsAt: 1792206000,
+      });
 
-      const events = store.listEvents(task.id);
-      expect(store.getTask(task.id)?.state).toBe(pause);
-      expect(transitionFromEvents(events, pause)).toBe("refining");
-      expect(transitionFromEvents(events, "refining")).toBe("reviewed");
+      expect(store.listEvents(task.id).at(-1)?.data).toEqual({
+        cause: "overage",
+        resetsAt: 1792206000,
+        from: "refining",
+        to: "quota_blocked",
+      });
     });
   });
 

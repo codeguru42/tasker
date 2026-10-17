@@ -427,16 +427,18 @@ export function pauseTaskVia(
 }
 
 // Moves the task to refineOrigin with no edge check, then into refining, then pauses it. feedback is the feedback that
-// the move into refining records, when one is given. transitionFromEvents(events, "refining") gives refineOrigin.
+// the move into refining records, when one is given. transitionFromEvents(events, "refining") gives refineOrigin. data
+// replaces the default detail of the pause, as in pauseTaskFrom.
 export function pauseRefineFrom(
   store: TaskStore,
   taskId: number,
   refineOrigin: TaskState,
-  pause: "quota_blocked" | "interrupted",
+  pause: "quota_blocked" | "awaiting_quota_approval" | "interrupted",
   feedback?: string,
+  data?: TransitionDetail,
 ): Task {
   enterVia(store, taskId, refineOrigin, "refining", feedback === undefined ? undefined : { feedback });
-  return transitionTask(store, taskId, pause, PAUSE_DATA[pause]);
+  return transitionTask(store, taskId, pause, data ?? PAUSE_DATA[pause]);
 }
 
 // Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.
