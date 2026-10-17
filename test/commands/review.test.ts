@@ -7,8 +7,16 @@ import { REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
 import { formatFindings } from "../../src/review/findings-text.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
-import { TEST_SESSION_ID, argAfter, claudeSample } from "../helpers/fake-claude.js";
+import {
+  TEST_SESSION_ID,
+  argAfter,
+  claudeApprovalWarningEvent,
+  claudeOverageEvent,
+  claudeSample,
+  withEventFirst,
+} from "../helpers/fake-claude.js";
 import { overlapWarningText } from "../helpers/overlap.js";
+import { quotaPauseLineExpected } from "../helpers/quota.js";
 import {
   answerStream,
   planRevisionOf,
@@ -24,6 +32,7 @@ import {
   eventsOf,
   latestTaskOf,
   readRunMarker,
+  seedCreditsApproval,
   seedReview,
   withDataRootStore,
   reviewSessionRows,
@@ -466,5 +475,76 @@ describe("review with feedback", () => {
     expect(result.code).toBe(0);
     expect(result.help).toContain("<issue> [feedback]");
     expect(result.help).toContain("Your feedback on the committed work, quoted as one argument.");
+  });
+});
+
+describe("review with a quota warning", () => {
+  const RESETS_AT = 1792206000;
+  const ask = { repo: { overagePolicy: "ask" } };
+
+  it("pauses the task under ask and records no review", async () => {
+    const work = await useReviewFixture(
+      { stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(validReviewAnswer())) },
+      ask,
+    );
+
+    const result = await runReview();
+
+    expect(result).toEqual({ code: 1, out: quotaPauseLineExpected("reviewing", 95, RESETS_AT), err: "" });
+    const task = latestTaskOf(work.dataRoot, KEY);
+    expect(task.state).toBe("awaiting_quota_approval");
+    expect(eventsOf(work.dataRoot, KEY).at(-1)).toEqual({
+      type: "transition",
+      data: { from: "reviewing", to: "awaiting_quota_approval", utilization: 0.95, resetsAt: RESETS_AT },
+    });
+    expect(reviewsOf(work.dataRoot, task.id)).toEqual([]);
+    expect(readRunMarker(databasePathOf(work.dataRoot), task.id)).toBeUndefined();
+  });
+
+  it("does not pause under decline", async () => {
+    const work = await useReviewFixture({
+      stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(validReviewAnswer())),
+    });
+
+    const result = await runReview();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(work.dataRoot, KEY).state).toBe("reviewed");
+  });
+
+  it("gives the approved window to the overage stop under decline", async () => {
+    const work = await useReviewFixture({
+      stream: withEventFirst(claudeOverageEvent(), answerStream(validReviewAnswer())),
+    });
+    withDataRootStore(work.dataRoot, (store) =>
+      seedCreditsApproval(store, latestTaskOf(work.dataRoot, KEY).id, RESETS_AT),
+    );
+
+    const result = await runReview();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(work.dataRoot, KEY).state).toBe("reviewed");
+  });
+});
+
+describe("review with feedback and a quota warning", () => {
+  const RESETS_AT = 1792206000;
+
+  it("pauses the task as refining under ask and writes no v2", async () => {
+    const fixture = await startFeedback(
+      { stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)) },
+      { repo: { overagePolicy: "ask" } },
+    );
+    const { dataRoot } = fixture.started;
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    expect(result).toEqual({ code: 1, out: quotaPauseLineExpected("refining", 95, RESETS_AT), err: "" });
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_quota_approval");
+    expect(eventsOf(dataRoot, KEY).at(-1)).toEqual({
+      type: "transition",
+      data: { from: "refining", to: "awaiting_quota_approval", utilization: 0.95, resetsAt: RESETS_AT },
+    });
+    expect(planRevisionOf(dataRoot, fixture.task.id, 2)).toBeUndefined();
   });
 });

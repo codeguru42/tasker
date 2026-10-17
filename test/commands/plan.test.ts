@@ -8,7 +8,14 @@ import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
-import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
+import {
+  TEST_SESSION_ID,
+  claudeApprovalWarningEvent,
+  claudeOverageEvent,
+  claudeRateLimitEvent,
+  claudeSample,
+  withEventFirst,
+} from "../helpers/fake-claude.js";
 import { fakeGh, ghTokenAnswer } from "../helpers/fake-gh.js";
 import {
   answerStream,
@@ -20,6 +27,7 @@ import {
   validPlanAnswer,
 } from "../helpers/plan.js";
 import { overlapWarningText } from "../helpers/overlap.js";
+import { quotaPauseLineExpected } from "../helpers/quota.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -28,6 +36,7 @@ import {
   latestTaskOf,
   lockNames,
   readRunMarker,
+  seedCreditsApproval,
   withDataRootStore,
   withRawDatabase,
 } from "../helpers/store.js";
@@ -518,5 +527,86 @@ describe("the overlap warning", () => {
       expect(result.code).toBe(1);
       expect(result.err).not.toContain("WARNING");
     }
+  });
+});
+
+describe("plan with a quota warning", () => {
+  const RESETS_AT = 1792206000;
+  const ask = { repo: { overagePolicy: "ask" } };
+  const answer = () => answerStream(validPlanAnswer());
+  // A warning that names no reset time, in the flat info and in the window.
+  const noReset = (info: Record<string, unknown>) => {
+    delete info.resetsAt;
+    delete (info.unifiedWindows as { seven_day: Record<string, unknown> }).seven_day.resetsAt;
+  };
+  const approve = (dataRoot: string) =>
+    withDataRootStore(dataRoot, (store) => seedCreditsApproval(store, latestTaskOf(dataRoot, KEY).id, RESETS_AT));
+
+  it("pauses the task under ask and writes no revision", async () => {
+    const fixture = await usePlanFixture({ stream: withEventFirst(claudeApprovalWarningEvent(), answer()) }, ask);
+    const { dataRoot } = fixture.started;
+
+    const result = await runPlan();
+
+    const task = latestTaskOf(dataRoot, KEY);
+    expect(result).toEqual({ code: 1, out: quotaPauseLineExpected("planning", 95, RESETS_AT), err: "" });
+    expect(task.state).toBe("awaiting_quota_approval");
+    expect(eventsOf(dataRoot, KEY).at(-1)).toEqual({
+      type: "transition",
+      data: { from: "planning", to: "awaiting_quota_approval", utilization: 0.95, resetsAt: RESETS_AT },
+    });
+    expect(planRevisionOf(dataRoot, task.id, 1)).toBeUndefined();
+    expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
+  });
+
+  it("does not pause for a use below the threshold", async () => {
+    const fixture = await usePlanFixture({ stream: withEventFirst(claudeRateLimitEvent(), answer()) }, ask);
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
+  });
+
+  it("does not pause when the operator approved the window of the warning", async () => {
+    const fixture = await usePlanFixture({ stream: withEventFirst(claudeApprovalWarningEvent(), answer()) }, ask);
+    approve(fixture.started.dataRoot);
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
+  });
+
+  it("pauses for a warning with no reset time also when a window is approved", async () => {
+    const fixture = await usePlanFixture(
+      { stream: withEventFirst(claudeApprovalWarningEvent(noReset), answer()) },
+      ask,
+    );
+    approve(fixture.started.dataRoot);
+
+    const result = await runPlan();
+
+    expect(result).toEqual({ code: 1, out: quotaPauseLineExpected("planning", 95), err: "" });
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_quota_approval");
+  });
+
+  it("does not pause under decline", async () => {
+    const fixture = await usePlanFixture({ stream: withEventFirst(claudeApprovalWarningEvent(), answer()) });
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
+  });
+
+  it("gives the approved window to the overage stop under decline", async () => {
+    const fixture = await usePlanFixture({ stream: withEventFirst(claudeOverageEvent(), answer()) });
+    approve(fixture.started.dataRoot);
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
   });
 });

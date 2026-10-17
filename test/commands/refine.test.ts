@@ -16,7 +16,13 @@ import { taskLockName } from "../../src/store/locks.js";
 import { NO_OWN_COMMITS } from "../../src/vcs/git/changes.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
-import { TEST_SESSION_ID, claudeSample } from "../helpers/fake-claude.js";
+import {
+  TEST_SESSION_ID,
+  claudeApprovalWarningEvent,
+  claudeOverageEvent,
+  claudeSample,
+  withEventFirst,
+} from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
 import {
   answerStream,
@@ -27,6 +33,7 @@ import {
   validPlanAnswer,
 } from "../helpers/plan.js";
 import { overlapWarningText } from "../helpers/overlap.js";
+import { quotaPauseLineExpected } from "../helpers/quota.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -37,6 +44,7 @@ import {
   latestTaskOf,
   lockNames,
   readRunMarker,
+  seedCreditsApproval,
   withDataRootStore,
 } from "../helpers/store.js";
 import { failureContextExpected, promotionContextExpected } from "../helpers/review.js";
@@ -552,5 +560,46 @@ describe("a check before any write", () => {
         feedback,
       );
     });
+  });
+});
+
+describe.each(STARTS)("$name with a quota warning", ({ start, feedback }) => {
+  const RESETS_AT = 1792206000;
+  const ask = { repo: { overagePolicy: "ask" } };
+
+  it("pauses the task under ask and writes no v2", async () => {
+    const fixture = await start({ stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)) }, ask);
+    const { dataRoot } = fixture.started;
+
+    const result = await runRefine(feedback);
+
+    expect(result).toEqual({ code: 1, out: quotaPauseLineExpected("refining", 95, RESETS_AT), err: "" });
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_quota_approval");
+    expect(eventsOf(dataRoot, KEY).at(-1)).toEqual({
+      type: "transition",
+      data: { from: "refining", to: "awaiting_quota_approval", utilization: 0.95, resetsAt: RESETS_AT },
+    });
+    expect(planRevisionOf(dataRoot, fixture.task.id, 2)).toBeUndefined();
+    expect(readRunMarker(databasePathOf(dataRoot), fixture.task.id)).toBeUndefined();
+  });
+
+  it("does not pause under decline", async () => {
+    const fixture = await start({ stream: withEventFirst(claudeApprovalWarningEvent(), answerStream(V2_ANSWER)) });
+
+    const result = await runRefine(feedback);
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
+  });
+
+  it("gives the approved window to the overage stop under decline", async () => {
+    const fixture = await start({ stream: withEventFirst(claudeOverageEvent(), answerStream(V2_ANSWER)) });
+    const { dataRoot } = fixture.started;
+    withDataRootStore(dataRoot, (store) => seedCreditsApproval(store, fixture.task.id, RESETS_AT));
+
+    const result = await runRefine(feedback);
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
   });
 });
