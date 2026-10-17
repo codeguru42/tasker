@@ -1,8 +1,8 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, finish, retry and accept, and of the result of an assistant run. The reference files of the user doc [SKILL.md](../../skills/tasker/SKILL.md), one for each phase in `skills/tasker/references/`, show the output.
+This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, mark-landed, finish, retry, resume and accept, and of the result of an assistant run. The reference files of the user doc [SKILL.md](../../skills/tasker/SKILL.md), one for each phase in `skills/tasker/references/`, show the output.
 
-The commands abort, plan, refine, approve, unapprove, execute, accept, merge, mark-landed and finish share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
+The commands abort, plan, refine, approve, unapprove, execute, accept, resume, merge, mark-landed and finish share one rule. Each of these commands makes all its checks before its first write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
 
 ## Start
 
@@ -121,7 +121,7 @@ A failed run also spends tokens, so the usage is recorded for a failure too. The
 
 The answer of a plan, refine or review run is text, and tasker records nothing before the pause. As a result, the pause drops the answer, and the next run asks again. The commits of an execute turn are already on the branch. As a result, the todo of that turn counts as done, and the next run starts at the next todo.
 
-A quota stop is not a failure. The run can continue after the reset, and the task keeps its session for that. Until the resume command exists (M9), `tasker abort` is the only way out of `quota_blocked`.
+A quota stop is not a failure. The run can continue after the reset, and the task keeps its session for that. `tasker resume` takes the task out of `quota_blocked` (see [Resume](#resume)).
 
 The usage event and the move are two writes, not one. A crash between them leaves the usage event and a task that is still in its spawning state. The run marker of the task stays, so tasker can find that the run died.
 
@@ -169,7 +169,7 @@ The steps run in this order.
 1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it reads a file. In `reviewed`, it also checks that the latest review has an open finding. In `failed`, the error for a missing plan revision names the origin and `tasker retry`. A refused refine changes nothing, as the intro says, so the operator can fix the cause and run the same command again.
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base revision and the commits of the task branch.
 3. The command fills the prompt, with the open findings in the context block for a promotion, archives the template and continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for the recorded model. The session is already recorded, so refine records no session.
-4. The command moves the task to `refining` and runs the assistant. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
+4. The command moves the task to `refining` and runs the assistant. The move records the feedback in its `transition` event, as `{ feedback, from, to }`, so that `tasker resume` can run the same refine again (see [Resume](#resume)). A promotion with no feedback records no `feedback` key. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
 
 [The refine prompt](assistants.md#the-refine-prompt) says what the prompt asks for. The new revision is a complete plan. A question that it leaves out counts as answered by the feedback, and the store computes this. A promotion with no feedback gives such a question no answer text ([the `plan_revisions` table](data-root.md#plan_revisions-table)). The next revision goes to the next free version, and its transcript goes to the file of that version.
 
@@ -259,7 +259,7 @@ These reasons explain its rules:
 - The review records the tip of the task branch, because the findings describe one tree. [data-root.md](data-root.md#reviews-table) gives the reason. The review reads the commits of the task branch, so the tip of that branch names the tree that the review read. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
 - tasker records the review session although no command continues it yet. [assistants.md](assistants.md#the-session-id) gives the rule of the session id.
 
-`tasker retry` runs a failed review again in a new session (see [Retry](#retry)). No command resumes a stopped review yet (`tasker resume` M9).
+`tasker retry` runs a failed review again in a new session (see [Retry](#retry)). `tasker resume` runs a stopped review again in a new session (see [Resume](#resume)).
 
 ### The feedback form of review
 
@@ -309,6 +309,25 @@ These reasons explain its rules:
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait, so retry must release the lock first.
 - The fix turn gets the tail of the log from tasker, not from the sandbox. The log is in the data root, outside the worktree, and the sandbox gives the shell only the worktree. The bound of 200 lines and 64 KiB keeps a large log out of the prompt.
 - The tail comes only from the verify run of this failure. Some verify failures record no run, and then the latest run belongs to an earlier verify. Its log gives the fix turn false data, so the fix turn gets no tail.
+
+## Resume
+
+`tasker resume` moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again. The state that the task left when the run stopped is the origin. [The Pauses table](../statemachine.md#pauses) gives the target and the next command for each origin, and this page does not copy it. For the origin `refining`, the origin of the refine picks the row, as in [Retry](#retry). An origin that the table does not hold gets no resume, and the command refuses it. The verifying row accepts only `interrupted`.
+
+The command makes all its checks before its first write, as [the intro](#the-task-commands) says. The move, the delete of the review session and the events share one transaction. The move writes a `transition` event `{ from, to }` with the pause as `from`. Then it writes a `resume` event `{ origin, target }`. Resume does not use the `retry` event, because the task did not fail.
+
+These reasons explain its rules:
+
+- A quota stop and a crash leave a session that holds the work so far. So the resumed plan or execute run continues that session. A todo that is `done` gets no new turn.
+- A refine needs its feedback, and nobody is present at a resume. So the move into `refining` records the feedback, and resume runs the same refine with it.
+- A review always runs in a new session. The session row of the stopped review names a conversation that the next review must not continue, so resume deletes the session of the next review number.
+- A verify run has no session, so the verify runs again from the first command.
+- The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait (see [The locks](#the-locks)), so resume must release the lock first.
+
+The command has these limits:
+
+- It does not hold the task until the reset time of a quota limit. An orchestrator decides when to resume.
+- If the assistant never created the session that the next command continues, the resumed run fails. `tasker retry` then starts a new session.
 
 ## Accept
 
