@@ -132,6 +132,21 @@ describe("status", () => {
     });
   });
 
+  it("names update-branch in the next commands of a task in awaiting_work_review", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "awaiting_work_review", at: dayAt(2) }]);
+
+    const result = await runCommand(status, "status");
+
+    expect(result).toEqual({
+      code: 0,
+      err: "",
+      out:
+        "ISSUE                REPO               STATE                 UPDATED                   NEXT\n" +
+        "codeguru42/tasker#5  codeguru42/tasker  awaiting_work_review  2026-01-02T00:00:00.000Z  review, accept, update-branch, abort\n",
+    });
+  });
+
   it("lists only the tasks of the repo that --repo names", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     seedTasks(dataRoot, [
