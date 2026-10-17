@@ -11,7 +11,7 @@ import {
   REFINE_PROMPT_NAME,
 } from "../prompts/refine.js";
 import { fillTemplate } from "../prompts/template.js";
-import { approvedResetsAtOf, failedOriginText, lastTransitionError } from "../state/machine.js";
+import { approvedResetsAtOf, originText, lastTransitionError } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
 import type { PlanRevisionSource, Task, TaskStore } from "../store/store.js";
@@ -58,10 +58,10 @@ function failureContext(store: TaskStore, task: Task): string {
   const events = store.listEvents(task.id);
   if (store.latestPlanRevision(task.id) === undefined) {
     throw new Error(
-      `the task of ${task.issueKey} failed in ${failedOriginText(events)} and has no plan revision; run tasker retry ${task.issueKey}`,
+      `the task of ${task.issueKey} failed in ${originText(events, "failed")} and has no plan revision; run tasker retry ${task.issueKey}`,
     );
   }
-  return failureContextText(failedOriginText(events), lastTransitionError(events) ?? "");
+  return failureContextText(originText(events, "failed"), lastTransitionError(events) ?? "");
 }
 
 // The context and the source of the plan revision of a refine, by the state of the task.

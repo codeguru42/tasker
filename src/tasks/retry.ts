@@ -2,7 +2,7 @@ import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { readLogTail } from "../phases/command-step.js";
 import {
-  failedOriginText,
+  originText,
   lastTransitionIndex,
   lastTransitionError,
   transitionFromEvents,
@@ -92,7 +92,7 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
   const row = origin === undefined ? undefined : rowOf(events, origin);
   if (origin === undefined || row === undefined) {
     throw new Error(
-      `the task of ${task.issueKey} failed in ${failedOriginText(events)}; tasker retry has no step for it`,
+      `the task of ${task.issueKey} failed in ${originText(events, "failed")}; tasker retry has no step for it`,
     );
   }
   if (resumeExecute && origin !== "verifying") {

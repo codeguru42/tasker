@@ -365,9 +365,9 @@ export function transitionFromEvents(events: readonly TaskEvent[], to: TaskState
   return typeof from === "string" && isTaskState(from) ? from : undefined;
 }
 
-// The origin of the last move into failed as text for an error, or "unknown".
-export function failedOriginText(events: readonly TaskEvent[]): string {
-  return transitionFromEvents(events, "failed") ?? "unknown";
+// The origin of the last move into the state as text for an error, or "unknown".
+export function originText(events: readonly TaskEvent[], to: TaskState): string {
+  return transitionFromEvents(events, to) ?? "unknown";
 }
 
 // The from of the last transition into failed, or undefined when the task is not in failed.

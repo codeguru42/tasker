@@ -8,7 +8,7 @@ import {
   canTransition,
   failTask,
   failedFrom,
-  failedOriginText,
+  originText,
   lastTransitionIndex,
   isSpawningState,
   isTerminalState,
@@ -956,16 +956,22 @@ describe("task transitions", () => {
     });
   });
 
-  describe("failedOriginText", () => {
+  describe("originText", () => {
     it("gives the from of the last move into failed", () => {
       const task = store.createTask(newTask("planning"));
       failTask(store, task.id, "boom");
-      expect(failedOriginText(store.listEvents(task.id))).toBe("planning");
+      expect(originText(store.listEvents(task.id), "failed")).toBe("planning");
+    });
+
+    it("gives the from of the last move into a state other than failed", () => {
+      const task = store.createTask(newTask("awaiting_plan_review"));
+      store.appendEvent(task.id, "transition", { from: "awaiting_plan_review", to: "refining" });
+      expect(originText(store.listEvents(task.id), "refining")).toBe("awaiting_plan_review");
     });
 
     it("gives unknown for events with no move into failed", () => {
       const task = store.createTask(newTask("planning"));
-      expect(failedOriginText(store.listEvents(task.id))).toBe("unknown");
+      expect(originText(store.listEvents(task.id), "failed")).toBe("unknown");
     });
   });
 });
