@@ -30,9 +30,9 @@ const EXPECTED: Record<string, Expected> = {
   finishing: ABORT_ONLY,
   cleanup_failed: { primary: "finish", commands: ["finish", "abort"] },
   updating_branch: ABORT_ONLY,
-  quota_blocked: ABORT_ONLY,
+  quota_blocked: { primary: "resume", commands: ["resume", "abort"] },
   awaiting_quota_approval: ABORT_ONLY,
-  interrupted: ABORT_ONLY,
+  interrupted: { primary: "resume", commands: ["resume", "abort"] },
   failed: { primary: "retry", commands: ["retry", "refine", "abort"] },
 };
 

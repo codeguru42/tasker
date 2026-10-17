@@ -50,7 +50,7 @@ describe("status", () => {
     expect(result.err).toBe(`${deadRunNote(`${TASKER}#5`, "executing")}\n`);
     const rows = result.out.trimEnd().split("\n").slice(1);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatch(/^codeguru42\/tasker#5 +codeguru42\/tasker +interrupted +\S+ +abort$/);
+    expect(rows[0]).toMatch(/^codeguru42\/tasker#5 +codeguru42\/tasker +interrupted +\S+ +resume \(also: abort\)$/);
   });
 
   it("prints the five columns, the newest change first and the higher id first on a tie", async () => {
