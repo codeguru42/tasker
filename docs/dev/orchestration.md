@@ -490,7 +490,7 @@ The steps to land a ticket are in "Run one ticket". This section gives the rules
 - If the task is in `awaiting_plan_review` (a refine of step 4), `tasker update-branch` keeps the task in `awaiting_plan_review`. Then the agent runs the refine of step 4.
 - If `tasker update-branch` reports a rebase conflict, the agent follows [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent does not copy that procedure.
 - Before the orchestrator sends added work or an answer to an agent, the orchestrator reads the state of the task with `tasker show <issue>`. The orchestrator runs this command itself. It does not send a message to the agent only to learn the state, because a message to an agent that has ended starts the agent again (see "Terms" in "Quota"). The message with the work or the answer names the state that the orchestrator found. The state can change while a message waits, and the next command then depends on the new state.
-- When the orchestrator edits an issue body while the agent of that ticket runs, the orchestrator sends all the edits together, before the next refine of the agent. On #117, edits that arrived one by one cost extra refines.
+- When the orchestrator edits an issue body, or posts a comment that starts with `## Change of scope`, while the agent of that ticket runs, the orchestrator sends all the changes together, before the next refine of the agent. On #117, edits that arrived one by one cost extra refines.
 
 ### The overlap rule
 
