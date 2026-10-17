@@ -40,6 +40,7 @@ import {
   tableRowCount,
   withRawDatabase,
   withStoreFile,
+  writeRunMarker,
 } from "../helpers/store.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
@@ -129,22 +130,10 @@ describe("task store", () => {
     expect(readFindingRows(id)).toEqual(findings);
   };
 
-  // Writes a raw run marker row for a task.
-  const writeRunPid = (taskId: number, state: string, pid: number, childPid: number | null = null) => {
-    withRawDatabase(dbPath, (db) => {
-      db.prepare("INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, ?, 't')").run(
-        taskId,
-        state,
-        pid,
-        childPid,
-      );
-    });
-  };
-
   // Creates a task in state with a raw run marker of the same state.
   const runningTask = (state: string, pid = process.pid, childPid: number | null = null) => {
     const task = store.createTask({ ...newTask, state });
-    writeRunPid(task.id, state, pid, childPid);
+    writeRunMarker(dbPath, task.id, state, pid, childPid);
     return task;
   };
 
@@ -1899,7 +1888,7 @@ describe("task store", () => {
 
     it("moves the state, drops the run marker and writes the event of the check", () => {
       const task = failedTask();
-      writeRunPid(task.id, "failed", process.pid);
+      writeRunMarker(dbPath, task.id, "failed", process.pid);
 
       const moved = store.retryTask(task.id, "approved", {}, retryCheck);
 
@@ -1966,7 +1955,7 @@ describe("task store", () => {
       const task = failedTask();
       seedPlanSession(store, task.id);
       seedExecuteSession(store, task.id, 1);
-      writeRunPid(task.id, "failed", process.pid);
+      writeRunMarker(dbPath, task.id, "failed", process.pid);
 
       expectNothingChanged(
         task.id,
@@ -2415,7 +2404,7 @@ describe("task store", () => {
       it("throws RunMarkerExistsError when the task has a marker, also of a dead process", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
         const dead = deadPid();
-        writeRunPid(task.id, "executing", dead);
+        writeRunMarker(dbPath, task.id, "executing", dead);
         expectNothingChanged(
           task.id,
           () => store.startRun(task.id, "planning"),
@@ -2729,7 +2718,7 @@ describe("task store", () => {
 
       it("moves a task that is not in a spawning state and deletes a stale marker", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
-        writeRunPid(task.id, "executing", deadPid());
+        writeRunMarker(dbPath, task.id, "executing", deadPid());
         const moved = store.endRun(task.id, "executed", transition);
         expect(moved).toMatchObject({ id: task.id, state: "executed" });
         expect(readRunMarker(dbPath, task.id)).toBeUndefined();
@@ -2765,7 +2754,7 @@ describe("task store", () => {
       it("gives none for a task that is not in a spawning state, also with a marker", () => {
         const task = store.createTask({ ...newTask, state: "approved" });
         expect(store.runStatus(task.id)).toEqual({ status: "none" });
-        writeRunPid(task.id, "executing", deadPid());
+        writeRunMarker(dbPath, task.id, "executing", deadPid());
         expect(store.runStatus(task.id)).toEqual({ status: "none" });
       });
 

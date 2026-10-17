@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { expectedShowLines, expectedStateCommands, wrongStateError } from "./state-commands.js";
+import { deadRunNote, expectedShowLines, expectedStateCommands, wrongStateError } from "./state-commands.js";
+
+describe("deadRunNote", () => {
+  it("gives the note text without a line end", () => {
+    expect(deadRunNote("codeguru42/tasker#5", "executing")).toBe(
+      "note: the run of codeguru42/tasker#5 died in executing; the task is now interrupted",
+    );
+  });
+});
 
 describe("expectedStateCommands", () => {
   it("gives the primary command and all commands of a state with a primary", () => {

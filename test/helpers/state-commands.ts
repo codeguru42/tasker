@@ -62,6 +62,12 @@ export function expectedShowLines(state: string, issueKey: string): string {
   return `next: ${primary}\nalso: ${others}\n`;
 }
 
+// The note that a command prints on stderr when it finds a dead run, without a line end. state is the state that the
+// task was in when its run died, for example "executing". The text is built here, without the code under test.
+export function deadRunNote(issueKey: string, state: string): string {
+  return `note: the run of ${issueKey} died in ${state}; the task is now interrupted`;
+}
+
 // The full wrong-state error, without a line end. needs is the text of the accepted states, for example
 // "landed or cleanup_failed".
 export function wrongStateError(state: string, issueKey: string, command: string, needs: string): string {

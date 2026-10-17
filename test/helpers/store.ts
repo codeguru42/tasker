@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
@@ -24,7 +24,9 @@ import {
   type VerifyRun,
 } from "../../src/store/store.js";
 import { claudeRateLimitEvent } from "./fake-claude.js";
+import { deadPid } from "./processes.js";
 import { reviewFinding } from "./review.js";
+import { useTempDir } from "./temp.js";
 
 // Runs fn with resource, then closes resource. When fn gives a promise, resource closes after the
 // promise settles. When fn throws, resource closes and the error goes on.
@@ -118,6 +120,24 @@ export function readRunMarker(dbPath: string, taskId: number) {
   );
 }
 
+// Writes a raw run marker row for a task in the database file at path. The marker holds no check of the state.
+export function writeRunMarker(
+  dbPath: string,
+  taskId: number,
+  state: string,
+  pid: number,
+  childPid: number | null = null,
+): void {
+  withRawDatabase(dbPath, (db) => {
+    db.prepare("INSERT INTO run_markers (task_id, state, pid, child_pid, started_at) VALUES (?, ?, ?, ?, 't')").run(
+      taskId,
+      state,
+      pid,
+      childPid,
+    );
+  });
+}
+
 // The latest task of issueKey in the repo codeguru42/tasker. It throws when there is none.
 export function latestTaskOf(dataRoot: string, issueKey: string): Task {
   return withDataRootStore(dataRoot, (store) => {
@@ -158,7 +178,8 @@ export interface SeedTask {
   failWith?: string;
 }
 
-// Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at.
+// Creates each task in the store of dataRoot, in order. Its created_at and updated_at are its at. A task in a
+// spawning state gets a run marker of the test process with no child, so its run status is running.
 export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] {
   let at = new Date(0);
   return withDataRootStore(
@@ -175,6 +196,7 @@ export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] 
           branch: task.branch,
           worktreePath: task.worktreePath,
         });
+        if (isSpawningState(task.state)) writeRunMarker(databasePathOf(dataRoot), created.id, task.state, process.pid);
         return task.failWith === undefined ? created : failTask(store, created.id, task.failWith);
       }),
     { now: () => at },
@@ -184,6 +206,14 @@ export function seedTasks(dataRoot: string, tasks: readonly SeedTask[]): Task[] 
 // The time 00:00 UTC of a day in January 2026, for example dayAt(2) is 2026-01-02T00:00:00.000Z.
 export function dayAt(day: number): string {
   return `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
+}
+
+// Creates a new data root in a temp folder and one task in it in state, at dayAt(1), with seedTasks. It gives back
+// the data root and the task.
+export function seedOneTask(state: string, issueKey: string, repoKey: string): { dataRoot: string; task: Task } {
+  const dataRoot = join(useTempDir("tasker-seed-one-"), "data");
+  const [task] = seedTasks(dataRoot, [{ issueKey, repoKey, state, at: dayAt(1) }]);
+  return { dataRoot, task };
 }
 
 // Writes text as the bootstrap log of the attempt of task under dataRoot.
@@ -356,4 +386,12 @@ export function seedQuotaEvent(
 // The quota event records of the store of dataRoot, sorted by repo key.
 export function quotaEventsOf(dataRoot: string): QuotaEventRecord[] {
   return withDataRootStore(dataRoot, (store) => store.listQuotaEvents());
+}
+
+// Moves the task to the spawning state, then writes a run marker of a pid that is gone, so the run status is dead
+// with childPid. It gives back the task.
+export function seedDeadRun(dataRoot: string, taskId: number, state: string, childPid: number | null = null): Task {
+  const task = withDataRootStore(dataRoot, (store) => store.updateTask(taskId, { state }));
+  writeRunMarker(databasePathOf(dataRoot), taskId, state, deadPid(), childPid);
+  return task;
 }

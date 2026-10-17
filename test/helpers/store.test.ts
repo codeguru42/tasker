@@ -30,6 +30,8 @@ import {
   readRunMarker,
   reviewSessionRows,
   seedQuotaEvent,
+  seedDeadRun,
+  seedOneTask,
   seedReview,
   seedTask,
   seedTaskWithReviews,
@@ -40,6 +42,7 @@ import {
   withRawDatabase,
   withStoreFile,
   writeBootstrapLog,
+  writeRunMarker,
 } from "./store.js";
 
 describe("seedTasks", () => {
@@ -62,6 +65,65 @@ describe("seedTasks", () => {
     ]);
     withDataRootStore(dataRoot, (store) => {
       expect(store.listTasks({ states: ["planning", "finished"] }).map((t) => t.id)).toEqual(tasks.map((t) => t.id));
+    });
+  });
+});
+
+describe("seedOneTask", () => {
+  it("creates one task in a new data root", () => {
+    const { dataRoot, task } = seedOneTask("approved", "a/b#1", "a/b");
+
+    expect(task).toMatchObject({ state: "approved", issueKey: "a/b#1", repoKey: "a/b", createdAt: dayAt(1) });
+    expect(withDataRootStore(dataRoot, (store) => store.getTask(task.id))).toEqual(task);
+  });
+});
+
+describe("seedTasks run markers", () => {
+  it("gives a task in a spawning state a live run of the test process", () => {
+    const { dataRoot, task } = seedOneTask("executing", "a/b#1", "a/b");
+
+    expect(withDataRootStore(dataRoot, (store) => store.runStatus(task.id))).toMatchObject({ status: "running" });
+  });
+
+  it("gives a task in a state that is not spawning no run", () => {
+    const { dataRoot, task } = seedOneTask("approved", "a/b#1", "a/b");
+
+    expect(withDataRootStore(dataRoot, (store) => store.runStatus(task.id))).toEqual({ status: "none" });
+    expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
+  });
+});
+
+describe("seedDeadRun", () => {
+  it.each([null, 4242])("gives a dead run with the child pid %s", (childPid) => {
+    const dataRoot = join(useTempDir("tasker-seed-dead-"), "data");
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "approved", at: dayAt(1) }]);
+
+    const moved = seedDeadRun(dataRoot, task.id, "executing", childPid);
+
+    expect(moved.state).toBe("executing");
+    expect(withDataRootStore(dataRoot, (store) => store.runStatus(task.id))).toEqual({ status: "dead", childPid });
+    expect(readRunMarker(databasePathOf(dataRoot), task.id)).toMatchObject({
+      task_id: task.id,
+      state: "executing",
+      child_pid: childPid,
+    });
+  });
+});
+
+describe("writeRunMarker", () => {
+  it("writes the row of the run marker", () => {
+    const dataRoot = join(useTempDir("tasker-write-marker-"), "data");
+    const [task] = seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "approved", at: dayAt(1) }]);
+    const dbPath = databasePathOf(dataRoot);
+
+    writeRunMarker(dbPath, task.id, "planning", 77, 78);
+
+    expect(readRunMarker(dbPath, task.id)).toEqual({
+      task_id: task.id,
+      state: "planning",
+      pid: 77,
+      child_pid: 78,
+      started_at: "t",
     });
   });
 });
