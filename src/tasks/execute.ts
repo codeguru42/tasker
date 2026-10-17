@@ -144,7 +144,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     denialsWritten = true;
     store.appendEvent(task.id, "permission_denials", { denials });
   };
-  // Fails the task with message: from executing or quota_blocked, the move to failed with the message.
+  // Fails the task with message: from executing, quota_blocked or interrupted, the move to failed with the message.
   // From failed, only the message on stderr, because a move from failed to failed is illegal.
   const fail = (message: string): { exitCode: number } => {
     if (store.getTask(task.id)!.state === "failed") {

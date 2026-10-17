@@ -48,11 +48,14 @@ function errorResultReason(result: Record<string, unknown>): string {
 // - An overage stop (the provider recorded an event that shows the start of paid usage) gives quota with
 //   cause "overage". It wins over every other outcome, also the timeout, because it rests on the parsed
 //   event, not on whether the stop beat the exit of the child.
+// - A signal that tasker passed to the run (passedSignal) gives interrupted with that signal. It wins over the
+//   timeout, the failures and success. Only the overage stop and the quota stop below win over it, because a
+//   quota outcome rests on a parsed event.
 // - The deadline gives timeout.
 // - A quota stop (the last event is a result with terminal_reason "api_error" and api_error_status 429,
 //   and the exit code is not 0) gives quota with cause "rate_limit". It wins over each failure below,
 //   because the next step is a resume, not a fix.
-// - A signal gives failure.
+// - A signal that stopped the leader gives failure.
 // - A result with is_error true gives failure.
 // - An exit code other than 0 gives failure.
 // - A missing result gives failure.
@@ -74,8 +77,12 @@ function outcomeOf(
     reason,
   });
   if (overage !== undefined) return { kind: "quota", cause: "overage", ...base, ...overage };
-  if (run.timedOut) return { kind: "timeout", ...base };
   const quotaStop = quotaStopOf(events, run.code);
+  if (run.passedSignal !== null) {
+    if (quotaStop !== undefined) return { kind: "quota", cause: "rate_limit", ...base, ...quotaStop };
+    return { kind: "interrupted", ...base, signal: run.passedSignal };
+  }
+  if (run.timedOut) return { kind: "timeout", ...base };
   if (quotaStop !== undefined) return { kind: "quota", cause: "rate_limit", ...base, ...quotaStop };
   if (run.signal !== null) return fail(`claude was killed by ${run.signal}`);
   const { result } = facts;
