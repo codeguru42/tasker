@@ -14,6 +14,7 @@ import { overlapWarningText } from "../helpers/overlap.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, dayAt, eventsOf, latestTaskOf, lockNames, withDataRootStore } from "../helpers/store.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { expectCommandRefused } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -192,5 +193,44 @@ describe("a refused approve", () => {
 
     expect(result.err).toBe(STATE_ERROR);
     expectNoWrite(dataRoot, task.id, before);
+  });
+});
+
+describe("a plan older than the last move of the worktree", () => {
+  const appendMove = (dataRoot: string, taskId: number, how: string) =>
+    withDataRootStore(dataRoot, (store) => store.appendEvent(taskId, "branch_updated", { how }));
+  const STALE_ERROR = (version: number) =>
+    `the plan v${version} of ${KEY} is older than the last move of the worktree; run tasker refine ${KEY} "<feedback>" first\n`;
+
+  it("refuses the approval when the head moved after the plan", async () => {
+    const { dataRoot, task } = seedPlanReviewTask();
+    appendMove(dataRoot, task.id, "rebase");
+    const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
+
+    await expectCommandRefused({ dataRoot, key: KEY }, runApprove, STALE_ERROR(1));
+
+    expectNoWrite(dataRoot, task.id, before);
+  });
+
+  it("approves a plan that a later revision replaced", async () => {
+    const { dataRoot, task } = seedPlanReviewTask();
+    appendMove(dataRoot, task.id, "merge");
+    withDataRootStore(dataRoot, (store) => seedPlanRevision(store, task.id));
+
+    const result = await runApprove();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("approved codeguru42/tasker#5 at revision v2");
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("approved");
+  });
+
+  it("does not block when the head did not move", async () => {
+    const { dataRoot, task } = seedPlanReviewTask();
+    appendMove(dataRoot, task.id, "none");
+
+    const result = await runApprove();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("approved");
   });
 });
