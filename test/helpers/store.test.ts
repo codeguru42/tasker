@@ -30,6 +30,7 @@ import {
   readRunMarker,
   reviewSessionRows,
   seedCreditsApproval,
+  seedCreditsApprovalIn,
   seedQuotaEvent,
   seedDeadRun,
   seedOneTask,
@@ -982,6 +983,20 @@ describe("seedCreditsApproval", () => {
 
     expect(event).toMatchObject({ type: "credits_approved", data: { resetsAt: 1792206000 } });
     expect(events.at(-1)).toEqual(event);
+  });
+});
+
+describe("seedCreditsApprovalIn", () => {
+  it("records a credits_approved event in the store of the data root and gives the event", () => {
+    const dataRoot = join(useTempDir("tasker-seed-approval-in-"), "data");
+    const [task] = seedTasks(dataRoot, [
+      { issueKey: "codeguru42/tasker#1", repoKey: "codeguru42/tasker", state: "planning", at: dayAt(1) },
+    ]);
+
+    const event = seedCreditsApprovalIn(dataRoot, task.id, 1792206000);
+
+    expect(event).toMatchObject({ type: "credits_approved", data: { resetsAt: 1792206000 } });
+    expect(eventsOf(dataRoot, "codeguru42/tasker#1").at(-1)).toEqual({ type: event.type, data: event.data });
   });
 });
 

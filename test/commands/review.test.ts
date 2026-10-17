@@ -33,7 +33,7 @@ import {
   eventsOf,
   latestTaskOf,
   readRunMarker,
-  seedCreditsApproval,
+  seedCreditsApprovalIn,
   seedReview,
   withDataRootStore,
   reviewSessionRows,
@@ -517,9 +517,7 @@ describe("review with a quota warning", () => {
     const work = await useReviewFixture({
       stream: withEventFirst(claudeOverageEvent(), answerStream(validReviewAnswer())),
     });
-    withDataRootStore(work.dataRoot, (store) =>
-      seedCreditsApproval(store, latestTaskOf(work.dataRoot, KEY).id, RESETS_AT),
-    );
+    seedCreditsApprovalIn(work.dataRoot, latestTaskOf(work.dataRoot, KEY).id, RESETS_AT);
 
     const result = await runReview();
 

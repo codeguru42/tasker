@@ -47,6 +47,7 @@ import {
   eventsOf,
   latestTaskOf,
   seedCreditsApproval,
+  seedCreditsApprovalIn,
   withDataRootStore,
   withRawDatabase,
 } from "../helpers/store.js";
@@ -797,7 +798,7 @@ describe("executeTask quota warning", () => {
       { stream: withEventFirst(claudeOverageEvent(), doneStream) },
       { answer: { todos: TODOS } },
     );
-    withDataRootStore(fixture.started.dataRoot, (store) => seedCreditsApproval(store, fixture.task.id, RESETS_AT));
+    seedCreditsApprovalIn(fixture.started.dataRoot, fixture.task.id, RESETS_AT);
 
     const { result } = await runExecute(fixture);
 

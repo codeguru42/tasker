@@ -45,7 +45,7 @@ import {
   latestTaskOf,
   lockNames,
   readRunMarker,
-  seedCreditsApproval,
+  seedCreditsApprovalIn,
   withDataRootStore,
 } from "../helpers/store.js";
 import { failureContextExpected, promotionContextExpected } from "../helpers/review.js";
@@ -601,7 +601,7 @@ describe.each(STARTS)("$name with a quota warning", ({ start, feedback }) => {
   it("gives the approved window to the overage stop under decline", async () => {
     const fixture = await start({ stream: withEventFirst(claudeOverageEvent(), answerStream(V2_ANSWER)) });
     const { dataRoot } = fixture.started;
-    withDataRootStore(dataRoot, (store) => seedCreditsApproval(store, fixture.task.id, RESETS_AT));
+    seedCreditsApprovalIn(dataRoot, fixture.task.id, RESETS_AT);
 
     const result = await runRefine(feedback);
 

@@ -111,6 +111,13 @@ export function claudeApprovalWarningEvent(edit: (info: Record<string, unknown>)
   });
 }
 
+// An edit for claudeRateLimitEvent and the builders on top of it. It removes the reset time from the flat info and from
+// the seven_day window of the capture, so the event names no reset time.
+export function noResetsAt(info: Record<string, unknown>): void {
+  delete info.resetsAt;
+  delete (info.unifiedWindows as { seven_day: Record<string, unknown> }).seven_day.resetsAt;
+}
+
 // The stream with event as its first line, before the lines of stream, for a test where the event comes first.
 export function withEventFirst(event: AssistantEvent, stream: readonly string[]): string[] {
   return [JSON.stringify(event), ...stream];

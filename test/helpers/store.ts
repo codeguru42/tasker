@@ -377,6 +377,12 @@ export function seedCreditsApproval(store: TaskStore, taskId: number, resetsAt: 
   return store.appendEvent(taskId, "credits_approved", { resetsAt });
 }
 
+// Records the approval of the window that resets at resetsAt for the task, in the store of dataRoot. It gives back the
+// event.
+export function seedCreditsApprovalIn(dataRoot: string, taskId: number, resetsAt: number): TaskEvent {
+  return withDataRootStore(dataRoot, (store) => seedCreditsApproval(store, taskId, resetsAt));
+}
+
 // Records event as the last quota event of repoKey, with the provider claude-code, in the store of dataRoot. It gives
 // back the record as the store holds it.
 export function seedQuotaEvent(

@@ -13,6 +13,7 @@ import {
   claudeSample,
   claudeSampleEvents,
   claudeSampleWithResult,
+  noResetsAt,
   runInput,
   TEST_SESSION_ID,
   useFakeClaude,
@@ -175,19 +176,37 @@ describe("claudeOverageEvent", () => {
   });
 });
 
-describe("claudeApprovalWarningEvent", () => {
-  const detect = (event: AssistantEvent, threshold: number) =>
-    createClaudeCodeProvider().detectQuotaApprovalWarning(
-      {
-        kind: "success",
-        sessionId: TEST_SESSION_ID,
-        events: [event],
-        permissionDenials: [],
-        usage: "unavailable",
-      },
-      threshold,
-    );
+const detect = (event: AssistantEvent, threshold: number) =>
+  createClaudeCodeProvider().detectQuotaApprovalWarning(
+    {
+      kind: "success",
+      sessionId: TEST_SESSION_ID,
+      events: [event],
+      permissionDenials: [],
+      usage: "unavailable",
+    },
+    threshold,
+  );
 
+describe("noResetsAt", () => {
+  it("gives a warning with no reset time", () => {
+    const warning = detect(claudeApprovalWarningEvent(noResetsAt), 0.9);
+
+    expect(warning).toEqual({ utilization: 0.95 });
+    expect(warning).not.toHaveProperty("resetsAt");
+  });
+
+  it("removes the reset time from the info and from the seven_day window", () => {
+    const info = claudeApprovalWarningEvent(noResetsAt).rate_limit_info as {
+      unifiedWindows: { seven_day: Record<string, unknown> };
+    };
+
+    expect(info).not.toHaveProperty("resetsAt");
+    expect(info.unifiedWindows.seven_day).not.toHaveProperty("resetsAt");
+  });
+});
+
+describe("claudeApprovalWarningEvent", () => {
   it("gives a warning of the claude-code provider at the default threshold 0.9", () => {
     expect(detect(claudeApprovalWarningEvent(), 0.9)).toEqual({ utilization: 0.95, resetsAt: 1792206000 });
   });

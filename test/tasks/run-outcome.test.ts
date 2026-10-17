@@ -7,7 +7,12 @@ import { createDataRoot } from "../../src/store/layout.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
 import { applyRunOutcome, failRunTo, pauseForQuotaApproval } from "../../src/tasks/run-outcome.js";
 import { captureIo } from "../helpers/cli.js";
-import { TEST_SESSION_ID, claudeApprovalWarningEvent, claudeRateLimitEvent } from "../helpers/fake-claude.js";
+import {
+  TEST_SESSION_ID,
+  claudeApprovalWarningEvent,
+  claudeRateLimitEvent,
+  noResetsAt,
+} from "../helpers/fake-claude.js";
 import { seedPlanSession } from "../helpers/plan.js";
 import { quotaPauseLineExpected } from "../helpers/quota.js";
 import { dayAt, eventsOf, readRunMarker, seedTasks, withDataRootStore } from "../helpers/store.js";
@@ -84,10 +89,6 @@ describe("applyRunOutcome with a success", () => {
 
 describe("applyRunOutcome with a quota warning", () => {
   const withEvent = (event: AssistantEvent): RunOutcome => ({ kind: "success", ...base(), events: [event] });
-  const noReset = (info: Record<string, unknown>) => {
-    delete info.resetsAt;
-    delete (info.unifiedWindows as { seven_day: Record<string, unknown> }).seven_day.resetsAt;
-  };
 
   it("gives the warning of a use above the threshold under ask and leaves the task in planning", () => {
     const outcome = withEvent(claudeApprovalWarningEvent());
@@ -119,7 +120,7 @@ describe("applyRunOutcome with a quota warning", () => {
   });
 
   it("keeps a warning with no resetsAt when a window is approved", () => {
-    const outcome = withEvent(claudeApprovalWarningEvent(noReset));
+    const outcome = withEvent(claudeApprovalWarningEvent(noResetsAt));
 
     const { result } = applyTo(outcome, undefined, quotaOf("ask", 1792206000));
 

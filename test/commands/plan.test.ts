@@ -11,6 +11,7 @@ import { runCommand } from "../helpers/cli.js";
 import {
   TEST_SESSION_ID,
   claudeApprovalWarningEvent,
+  noResetsAt,
   claudeOverageEvent,
   claudeRateLimitEvent,
   claudeSample,
@@ -37,7 +38,7 @@ import {
   latestTaskOf,
   lockNames,
   readRunMarker,
-  seedCreditsApproval,
+  seedCreditsApprovalIn,
   withDataRootStore,
   withRawDatabase,
 } from "../helpers/store.js";
@@ -535,13 +536,6 @@ describe("plan with a quota warning", () => {
   const RESETS_AT = 1792206000;
   const ask = { repo: { overagePolicy: "ask" } };
   const answer = () => answerStream(validPlanAnswer());
-  // A warning that names no reset time, in the flat info and in the window.
-  const noReset = (info: Record<string, unknown>) => {
-    delete info.resetsAt;
-    delete (info.unifiedWindows as { seven_day: Record<string, unknown> }).seven_day.resetsAt;
-  };
-  const approve = (dataRoot: string) =>
-    withDataRootStore(dataRoot, (store) => seedCreditsApproval(store, latestTaskOf(dataRoot, KEY).id, RESETS_AT));
 
   it("pauses the task under ask and writes no revision", async () => {
     const fixture = await usePlanFixture(
@@ -577,7 +571,7 @@ describe("plan with a quota warning", () => {
       { stream: withEventBeforeResult(claudeApprovalWarningEvent(), answer()) },
       ask,
     );
-    approve(fixture.started.dataRoot);
+    seedCreditsApprovalIn(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY).id, RESETS_AT);
 
     const result = await runPlan();
 
@@ -587,10 +581,10 @@ describe("plan with a quota warning", () => {
 
   it("pauses for a warning with no reset time also when a window is approved", async () => {
     const fixture = await usePlanFixture(
-      { stream: withEventBeforeResult(claudeApprovalWarningEvent(noReset), answer()) },
+      { stream: withEventBeforeResult(claudeApprovalWarningEvent(noResetsAt), answer()) },
       ask,
     );
-    approve(fixture.started.dataRoot);
+    seedCreditsApprovalIn(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY).id, RESETS_AT);
 
     const result = await runPlan();
 
@@ -609,7 +603,7 @@ describe("plan with a quota warning", () => {
 
   it("gives the approved window to the overage stop under decline", async () => {
     const fixture = await usePlanFixture({ stream: withEventFirst(claudeOverageEvent(), answer()) });
-    approve(fixture.started.dataRoot);
+    seedCreditsApprovalIn(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY).id, RESETS_AT);
 
     const result = await runPlan();
 
