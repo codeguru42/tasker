@@ -163,6 +163,16 @@ A forget deletes the row only when it still holds the branch that tasker found m
 
 [workspaces.md](workspaces.md#learned-default) says when tasker writes or deletes the row.
 
+## `quota_events` table
+
+The table holds one row for each repo. The row holds the last quota event of the repo as it came, the provider and the time when tasker got the event.
+
+A new quota event of the repo replaces the row. No task owns the row. As a result, the end of a session, the stop of a task and the finish of a task do not delete it. No store function deletes a row.
+
+The migration that adds the table follows [Schema versions](#schema-versions). Each write follows [Writes from more than one process](#writes-from-more-than-one-process).
+
+[assistants.md](assistants.md#quota) says when tasker writes the row.
+
 ## `locks` table
 
 The table holds the named locks. A named lock stops two tasker processes from changing the same thing at the same time. For example, two `tasker start` runs in one repo both write the configuration of the bare clone, and git then fails with a held `config.lock`.
