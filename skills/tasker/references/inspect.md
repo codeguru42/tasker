@@ -1,6 +1,6 @@
 # Inspect commands
 
-These commands print the state of tasks. They change nothing. [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share. [The task of a show command](../SKILL.md#the-task-of-a-show-command) says which task `show` and `show-bootstrap` use.
+These commands print the state of tasks and the last quota event of each repo. They change nothing. [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share. [The task of a show command](../SKILL.md#the-task-of-a-show-command) says which task `show` and `show-bootstrap` use.
 
 ## `tasker status`
 
@@ -16,6 +16,25 @@ The command prints an error and exits with code 1 in these cases:
 
 - The repo key does not exist. The error names the key.
 - The state does not exist. The error lists the states.
+
+## `tasker show-quota`
+
+Prints the last quota event of each repo. It needs no task.
+
+The command prints a JSON list. The list has one entry for each repo that has a record. Each entry has these fields, in this order:
+
+- `repo`: the repo key.
+- `provider`: the id of the assistant, for example `claude-code`.
+- `receivedAt`: the time when tasker got the event, as an ISO time.
+- `event`: the quota event, as the assistant sent it.
+
+In the event, `utilization` is a fraction from 0 to 1. `resetsAt` is a time in Unix seconds.
+
+With `--repo <key>`, the list holds only the entry of that repo. The key is the repo key of the configuration.
+
+If no repo has a record, the command prints `[]` and exits with code 0.
+
+If the repo key does not exist, the command prints an error that names the key and exits with code 1.
 
 ## `tasker show`
 

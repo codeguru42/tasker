@@ -69,6 +69,10 @@ Each task is in one state. Each command entry names the state that the command n
 
 Prints the configuration as JSON, with the defaults filled in, and needs no task. See [the reference](references/setup.md#tasker-show-config).
 
+### `tasker show-quota`
+
+Prints the last quota event of each repo as JSON, and needs no task. See [the reference](references/inspect.md#tasker-show-quota).
+
 ### `tasker doctor`
 
 Makes sure that the configuration, the data root, git, `gh`, `claude` and the accounts work, and needs no task. See [the reference](references/setup.md#tasker-doctor).

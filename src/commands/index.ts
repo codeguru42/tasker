@@ -20,6 +20,7 @@ import { showQuestions } from "./show-questions.js";
 import { showReview } from "./show-review.js";
 import { showVerify } from "./show-verify.js";
 import { showConfig } from "./show-config.js";
+import { showQuota } from "./show-quota.js";
 import { start } from "./start.js";
 import { status } from "./status.js";
 import { unapprove } from "./unapprove.js";
@@ -27,6 +28,7 @@ import { verify } from "./verify.js";
 
 export const commands: RegisterCommand[] = [
   showConfig,
+  showQuota,
   show,
   showBootstrap,
   showPlan,
