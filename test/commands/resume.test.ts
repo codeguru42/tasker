@@ -17,7 +17,6 @@ import {
   planTodo,
   seedExecuteSession,
   seedExecuteTodoStates,
-  seedPlanSession,
   seedReviewSession,
   turnResultStream,
   validPlanAnswer,
@@ -36,6 +35,7 @@ import {
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
+  pausePlanFixtureTask,
   useAcceptedTask,
   useExecuteFixture,
   useLandedTask,
@@ -53,8 +53,6 @@ const PAUSES = ["quota_blocked", "interrupted"] as const;
 
 const runResume = (key = KEY, ...extra: string[]) => runCommand(resume, "resume", key, ...extra);
 
-// The first line of the output of tasker resume.
-
 const V2_ANSWER = validPlanAnswer({
   plan_markdown: "## Summary\n\nAdd the b module and its test, test first.\n",
   todos: [{ id: "only-todo", title: "Do the work", description: "Do all of it.", depends_on: [] }],
@@ -64,12 +62,8 @@ const V2_ANSWER = validPlanAnswer({
 describe("tasker resume", () => {
   it.each(PAUSES)("continues the plan session for a task paused in %s from planning", async (pause) => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
-    const { dataRoot, repoKey } = fixture.started;
-    withDataRootStore(dataRoot, (store) => {
-      const task = store.findLatestTask(repoKey, KEY)!;
-      seedPlanSession(store, task.id);
-      pauseTaskFrom(store, task.id, "planning", pause);
-    });
+    const { dataRoot } = fixture.started;
+    pausePlanFixtureTask(fixture, "planning", pause);
 
     const result = await runResume();
 

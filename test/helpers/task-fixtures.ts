@@ -46,6 +46,7 @@ import {
   eventsOf,
   latestTaskOf,
   lockNames,
+  pauseTaskFrom,
   seedReview,
   seedTasks,
   seedVerifyRun,
@@ -322,6 +323,22 @@ export async function usePlanFixture(
   const started = await useStartedTask(options);
   const claude = useFakeClaudeOnPath(control);
   return { started, claude };
+}
+
+// Gives the task of the fixture a plan session and pauses it from origin. data replaces the default detail of the pause
+// (see pauseTaskFrom). Returns the paused task.
+export function pausePlanFixtureTask(
+  fixture: PlanFixture,
+  origin: TaskState,
+  pause: "quota_blocked" | "awaiting_quota_approval" | "interrupted",
+  data?: Parameters<typeof pauseTaskFrom>[4],
+): Task {
+  const { dataRoot, repoKey, key } = fixture.started;
+  return withDataRootStore(dataRoot, (store) => {
+    const task = store.findLatestTask(repoKey, key)!;
+    seedPlanSession(store, task.id);
+    return pauseTaskFrom(store, task.id, origin, pause, data);
+  });
 }
 
 export interface RefineFixture extends PlanFixture {

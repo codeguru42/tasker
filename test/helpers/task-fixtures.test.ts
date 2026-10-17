@@ -2,7 +2,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { canTransition, failTask, type TaskState } from "../../src/state/machine.js";
+import { canTransition, failTask, transitionFromEvents, type TaskState } from "../../src/state/machine.js";
 import { loadConfig } from "../../src/config/load.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
 import { baseRevisionOf } from "../../src/tasks/base-revision.js";
@@ -14,7 +14,7 @@ import { failureOf } from "./errors.js";
 import { githubWriteAnswer, trackerWriteCalls } from "./fake-gh.js";
 import { commitInWorktree, localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
-import { planTodo, validPlanAnswer } from "./plan.js";
+import { answerStream, planTodo, validPlanAnswer } from "./plan.js";
 import {
   dayAt,
   databasePathOf,
@@ -33,6 +33,7 @@ import {
   expectRefusedWithoutChange,
   landAcceptedTask,
   moveTaskThrough,
+  pausePlanFixtureTask,
   seedAcceptedTask,
   startIssueTask,
   startTaskWithCommits,
@@ -244,6 +245,25 @@ describe("usePlanFixture", () => {
       (store) => store.findLatestTask(started.repoKey, started.key)?.state,
     );
     expect(state).toBe("workspace_ready");
+  });
+});
+
+describe("pausePlanFixtureTask", () => {
+  it("gives the task a plan session and pauses it from the origin with the data", async () => {
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
+    const { dataRoot, repoKey, key } = fixture.started;
+    const data = { utilization: 0.95, resetsAt: 1792206000 };
+
+    const task = pausePlanFixtureTask(fixture, "planning", "awaiting_quota_approval", data);
+
+    expect(task.state).toBe("awaiting_quota_approval");
+    withDataRootStore(dataRoot, (store) => {
+      const stored = store.findLatestTask(repoKey, key)!;
+      expect(stored.state).toBe("awaiting_quota_approval");
+      expect(transitionFromEvents(store.listEvents(stored.id), "awaiting_quota_approval")).toBe("planning");
+      expect(store.planSession(stored.id)).toMatchObject({ sessionId: TEST_SESSION_ID });
+    });
+    expect(eventsOf(dataRoot, key).at(-1)).toMatchObject({ data: data });
   });
 });
 

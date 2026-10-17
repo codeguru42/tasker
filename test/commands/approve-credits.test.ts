@@ -10,20 +10,15 @@ import {
   withEventBeforeResult,
   withEventFirst,
 } from "../helpers/fake-claude.js";
-import { answerStream, seedPlanSession, validPlanAnswer } from "../helpers/plan.js";
+import { answerStream, validPlanAnswer } from "../helpers/plan.js";
 import { approvedCreditsLineExpected } from "../helpers/quota.js";
 import { wrongStateError } from "../helpers/state-commands.js";
-import {
-  eventDataOf,
-  latestTaskOf,
-  pauseTaskFrom,
-  seedCreditsApprovalIn,
-  withDataRootStore,
-} from "../helpers/store.js";
+import { eventDataOf, latestTaskOf, seedCreditsApprovalIn, withDataRootStore } from "../helpers/store.js";
 import {
   expectCommandRefused,
   expectNoAssistantRun,
   moveTaskThrough,
+  pausePlanFixtureTask,
   usePlanFixture,
 } from "../helpers/task-fixtures.js";
 
@@ -33,21 +28,6 @@ const OLD = 1791778800;
 const ASK = { repo: { overagePolicy: "ask" } };
 
 const runApprove = (key = KEY, ...extra: string[]) => runCommand(approveCredits, "approve-credits", key, ...extra);
-
-type Fixture = Awaited<ReturnType<typeof usePlanFixture>>;
-
-// Gives the task a plan session and pauses it from origin, on the open store of the fixture.
-const pauseFixtureTask = (
-  fixture: Fixture,
-  origin: Parameters<typeof pauseTaskFrom>[2],
-  pause: Parameters<typeof pauseTaskFrom>[3],
-  data?: Parameters<typeof pauseTaskFrom>[4],
-) =>
-  withDataRootStore(fixture.started.dataRoot, (store) => {
-    const task = store.findLatestTask(fixture.started.repoKey, KEY)!;
-    seedPlanSession(store, task.id);
-    pauseTaskFrom(store, task.id, origin, pause, data);
-  });
 
 describe("tasker approve-credits", () => {
   describe("a refusal before any write", () => {
@@ -74,7 +54,7 @@ describe("tasker approve-credits", () => {
 
     it("refuses a stop at a subscription limit", async () => {
       const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
-      pauseFixtureTask(fixture, "planning", "quota_blocked", { cause: "rate_limit", resetsAt: RESETS_AT });
+      pausePlanFixtureTask(fixture, "planning", "quota_blocked", { cause: "rate_limit", resetsAt: RESETS_AT });
 
       await expectCommandRefused(
         fixture.started,
@@ -87,7 +67,7 @@ describe("tasker approve-credits", () => {
 
     it("refuses a stop at the overage boundary that named no window", async () => {
       const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
-      pauseFixtureTask(fixture, "planning", "quota_blocked", { cause: "overage" });
+      pausePlanFixtureTask(fixture, "planning", "quota_blocked", { cause: "overage" });
 
       await expectCommandRefused(
         fixture.started,
@@ -100,7 +80,7 @@ describe("tasker approve-credits", () => {
 
     it("refuses a warning pause from an origin with no step", async () => {
       const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
-      pauseFixtureTask(fixture, "pushing", "awaiting_quota_approval");
+      pausePlanFixtureTask(fixture, "pushing", "awaiting_quota_approval");
 
       await expectCommandRefused(
         fixture.started,
@@ -113,7 +93,7 @@ describe("tasker approve-credits", () => {
 
     it("refuses an overage stop from verifying", async () => {
       const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
-      pauseFixtureTask(fixture, "verifying", "quota_blocked", { cause: "overage", resetsAt: RESETS_AT });
+      pausePlanFixtureTask(fixture, "verifying", "quota_blocked", { cause: "overage", resetsAt: RESETS_AT });
 
       await expectCommandRefused(
         fixture.started,
@@ -131,7 +111,7 @@ describe("tasker approve-credits", () => {
       ASK,
     );
     const { dataRoot } = fixture.started;
-    pauseFixtureTask(fixture, "planning", "awaiting_quota_approval", { utilization: 0.95, resetsAt: RESETS_AT });
+    pausePlanFixtureTask(fixture, "planning", "awaiting_quota_approval", { utilization: 0.95, resetsAt: RESETS_AT });
 
     const result = await runApprove();
 
@@ -152,7 +132,7 @@ describe("tasker approve-credits", () => {
   it("records no event for a warning pause that named no window", async () => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const { dataRoot } = fixture.started;
-    pauseFixtureTask(fixture, "planning", "awaiting_quota_approval");
+    pausePlanFixtureTask(fixture, "planning", "awaiting_quota_approval");
 
     const result = await runApprove();
 
@@ -169,7 +149,7 @@ describe("tasker approve-credits", () => {
       stream: withEventFirst(claudeOverageEvent(), answerStream(validPlanAnswer())),
     });
     const { dataRoot } = fixture.started;
-    pauseFixtureTask(fixture, "planning", "quota_blocked", { cause: "overage", resetsAt: RESETS_AT });
+    pausePlanFixtureTask(fixture, "planning", "quota_blocked", { cause: "overage", resetsAt: RESETS_AT });
 
     const result = await runApprove();
 
@@ -184,7 +164,7 @@ describe("tasker approve-credits", () => {
       ASK,
     );
     const { dataRoot } = fixture.started;
-    pauseFixtureTask(fixture, "planning", "awaiting_quota_approval", { utilization: 0.95, resetsAt: RESETS_AT });
+    pausePlanFixtureTask(fixture, "planning", "awaiting_quota_approval", { utilization: 0.95, resetsAt: RESETS_AT });
     seedCreditsApprovalIn(dataRoot, latestTaskOf(dataRoot, KEY).id, OLD);
 
     const result = await runApprove();
@@ -197,7 +177,7 @@ describe("tasker approve-credits", () => {
   it("keeps the approval when the next command fails", async () => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()), exitCode: 1, stderr: "boom" }, ASK);
     const { dataRoot } = fixture.started;
-    pauseFixtureTask(fixture, "planning", "awaiting_quota_approval", { utilization: 0.95, resetsAt: RESETS_AT });
+    pausePlanFixtureTask(fixture, "planning", "awaiting_quota_approval", { utilization: 0.95, resetsAt: RESETS_AT });
 
     const result = await runApprove();
 
