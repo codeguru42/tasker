@@ -137,6 +137,8 @@ export interface AssistantProvider {
   modelChecks(model: string): Check[];
   // Whether the run passed quotaApprovalThreshold. Only the provider can read its own stream.
   detectQuotaApprovalWarning(outcome: RunOutcome, threshold: number): QuotaApprovalWarning | undefined;
+  // Whether the event is a quota event that tasker records for the repo. Only the provider can read its own stream.
+  isQuotaEvent(event: AssistantEvent): boolean;
   // Whether the warning is for a quota window that the operator already approved.
   shouldSuppressQuotaApprovalPause(warning: QuotaApprovalWarning, approvedResetsAt: number | undefined): boolean;
 }

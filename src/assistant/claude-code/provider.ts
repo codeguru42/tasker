@@ -7,7 +7,13 @@ import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "..
 import { claudeArgs } from "./args.js";
 import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
 import { removePlaceholders } from "./placeholders.js";
-import { detectQuotaApprovalWarning, overageStopOf, quotaStopOf, shouldSuppressQuotaApprovalPause } from "./quota.js";
+import {
+  detectQuotaApprovalWarning,
+  isQuotaEvent,
+  overageStopOf,
+  quotaStopOf,
+  shouldSuppressQuotaApprovalPause,
+} from "./quota.js";
 import {
   LINUX_SANDBOX_PROGRAMS,
   sandboxHostRefusal,
@@ -161,6 +167,7 @@ export function createClaudeCodeProvider(
           ],
     modelChecks: (model) => [claudeModelCheck(model)],
     detectQuotaApprovalWarning,
+    isQuotaEvent,
     shouldSuppressQuotaApprovalPause,
   };
 }

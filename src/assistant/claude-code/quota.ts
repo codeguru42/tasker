@@ -3,9 +3,14 @@ import { isObject } from "../../object.js";
 import type { AssistantEvent, OverageStop, QuotaApprovalWarning, RunOutcome } from "../provider.js";
 import { numberOf } from "./stream.js";
 
+// Whether the event is a rate_limit_event. It does not look at rate_limit_info, because tasker keeps each event as it came.
+export function isQuotaEvent(event: AssistantEvent): boolean {
+  return event.type === "rate_limit_event";
+}
+
 // The rate_limit_info of a rate_limit_event, or undefined for any other event or a bad info.
 function rateLimitInfoOf(event: AssistantEvent): Record<string, unknown> | undefined {
-  if (event.type !== "rate_limit_event") return undefined;
+  if (!isQuotaEvent(event)) return undefined;
   const info = event.rate_limit_info;
   return isObject(info) ? info : undefined;
 }
