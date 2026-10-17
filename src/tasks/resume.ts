@@ -39,7 +39,7 @@ interface ResumeRow {
 }
 
 // The table of resume: the origin (the state that the task left when the run stopped) gives the row. The rows of
-// refining are in REFINE_RESUME_TABLE. The state machine allows only interrupted from verifying.
+// refining are in REFINE_RESUME_TABLE. Of the pauses, the state machine allows only interrupted from verifying.
 const RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   planning: { target: "workspace_ready", next: "plan", clearReview: false },
   executing: { target: "approved", next: "execute", clearReview: false },
@@ -69,8 +69,8 @@ const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
 };
 
 // The refining entry has no fallback, so resume refuses a refine origin with no row. The merging entry has none too:
-// the merge origin (the state that the task left when the last merge started) gives the row. The state machine allows
-// only interrupted from merging and from finishing.
+// the merge origin (the state that the task left when the last merge started) gives the row. Of the pauses, the state
+// machine allows only interrupted from merging and from finishing.
 const RESUME_TABLES: OriginTables<ResumeRow> = {
   rows: RESUME_TABLE,
   byOriginOf: {
