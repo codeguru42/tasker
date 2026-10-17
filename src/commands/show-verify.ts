@@ -21,10 +21,10 @@ export const showVerify: RegisterCommand = (program, io) => {
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option("--run <N>", "Print this verify run: a whole number of 1 or more. The default is the newest run")
     .option("--command <N>", "Print only the log of the command at this position of the run, counted from 1")
-    .action((issue: string, options: { repo?: string; run?: string; command?: string }) => {
+    .action(async (issue: string, options: { repo?: string; run?: string; command?: string }) => {
       wholeNumberOptionsOrFail(io, { "--run": options.run, "--command": options.command });
       const config = loadConfigOrFail(io);
-      const { text, unreadable } = withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
+      const { text, unreadable } = await withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
         const total = store.verifyRunCount(task.id);
         const run = numberedRowOrFail(io, task.issueKey, {
           name: "verify run",

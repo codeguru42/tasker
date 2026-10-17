@@ -16,10 +16,10 @@ export const showReview: RegisterCommand = (program, io) => {
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option("--review <N>", "Print this review: a whole number of 1 or more. The default is the newest review")
-    .action((issue: string, options: { repo?: string; review?: string }) => {
+    .action(async (issue: string, options: { repo?: string; review?: string }) => {
       wholeNumberOptionsOrFail(io, { "--review": options.review });
       const config = loadConfigOrFail(io);
-      const text = withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
+      const text = await withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
         const total = store.reviewCount(task.id);
         const review = numberedRowOrFail(io, task.issueKey, {
           name: "review",

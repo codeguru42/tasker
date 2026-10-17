@@ -7,6 +7,7 @@ import { readTextFile } from "../read-text-file.js";
 import { IssueKeyError, type IssueRef } from "../issue-key/ref.js";
 import { resolveIssueKey, type ResolveOptions } from "../issue-key/resolve.js";
 import { createDataRoot } from "../store/layout.js";
+import { handleDeadRun } from "../tasks/dead-run.js";
 import { findOverlaps, overlapWarning } from "../tasks/overlap.js";
 import { taskById } from "../tasks/task-state.js";
 import { openStore, type Task, type TaskStore } from "../store/store.js";
@@ -200,11 +201,15 @@ export async function warnOverlaps(
 
 // The task of the issue: the active task, else the newest one.
 // An issue with no task stops the command with exit code 1.
-function issueTaskOrFail(io: Io, store: TaskStore, ref: IssueRef): Task {
-  const task = store.findLatestTask(ref.repoKey, ref.key);
-  if (task === undefined) {
+// If the run of the task is dead, the task moves to interrupted first, and each note of that step goes to stderr.
+// The task that comes back is the task after the step.
+async function issueTaskOrFail(io: Io, store: TaskStore, ref: IssueRef): Promise<Task> {
+  const found = store.findLatestTask(ref.repoKey, ref.key);
+  if (found === undefined) {
     fail(io, `no task for the issue ${ref.key} in the repo ${ref.repoKey}`);
   }
+  const { task, notes } = await handleDeadRun(store, found);
+  for (const note of notes) io.stderr(`${note}\n`);
   return task;
 }
 
@@ -217,9 +222,8 @@ export function withIssueTask<T>(
   rawKey: string,
   options: ResolveOptions,
   fn: (store: TaskStore, task: Task) => T,
-): T {
-  const ref = resolveIssueKeyOrFail(io, rawKey, config, options);
-  return withStore(config, (store) => fn(store, issueTaskOrFail(io, store, ref)));
+): Promise<T> {
+  return withIssueTaskAsync(io, config, rawKey, options, async (store, task) => fn(store, task));
 }
 
 // Like withIssueTask, for an async fn: the store closes after the promise settles.
@@ -232,5 +236,5 @@ export function withIssueTaskAsync<T>(
   fn: (store: TaskStore, task: Task, ref: IssueRef) => Promise<T>,
 ): Promise<T> {
   const ref = resolveIssueKeyOrFail(io, rawKey, config, options);
-  return withStoreAsync(config, (store) => fn(store, issueTaskOrFail(io, store, ref), ref));
+  return withStoreAsync(config, async (store) => fn(store, await issueTaskOrFail(io, store, ref), ref));
 }

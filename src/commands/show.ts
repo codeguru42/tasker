@@ -72,8 +72,8 @@ export const show: RegisterCommand = (program, io) => {
     .description("Print the details of the task of an issue: the active task, else the newest one")
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
-    .action((issue: string, options: { repo?: string }) => {
+    .action(async (issue: string, options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
-      io.stdout(withIssueTask(io, config, issue, { repo: options.repo }, formatTask));
+      io.stdout(await withIssueTask(io, config, issue, { repo: options.repo }, formatTask));
     });
 };

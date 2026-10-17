@@ -47,11 +47,11 @@ export const showPlan: RegisterCommand = (program, io) => {
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option("--version <N>", VERSION_OPTION_DESCRIPTION)
     .option("--path", "Print only the path of the plan file of the revision")
-    .action((issue: string, options: { repo?: string; version?: string; path?: boolean }) => {
+    .action(async (issue: string, options: { repo?: string; version?: string; path?: boolean }) => {
       wholeNumberOptionsOrFail(io, { "--version": options.version });
       const config = loadConfigOrFail(io);
       io.stdout(
-        withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
+        await withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
           const revision = planRevisionOrFail(io, store, task, options.version);
           const path = planRevisionPath(config.dataRoot, task, revision.version);
           if (options.path) return `${path}\n`;

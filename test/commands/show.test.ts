@@ -121,7 +121,7 @@ describe("show", () => {
     const [task] = seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "approved", at: dayAt(2) }]);
     seedDeadRun(dataRoot, task.id, "executing");
 
-    const result = await runShow(`${TASKER}#5`);
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
 
     expect(result.code).toBe(0);
     expect(result.out).toContain("state: interrupted\n");

@@ -15,11 +15,11 @@ export const showQuestions: RegisterCommand = (program, io) => {
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option("--version <N>", VERSION_OPTION_DESCRIPTION)
-    .action((issue: string, options: { repo?: string; version?: string }) => {
+    .action(async (issue: string, options: { repo?: string; version?: string }) => {
       wholeNumberOptionsOrFail(io, { "--version": options.version });
       const config = loadConfigOrFail(io);
       io.stdout(
-        withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
+        await withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
           const revision = planRevisionOrFail(io, store, task, options.version);
           const header = planHeader(task, revision);
           const states = store.planQuestions(task.id, revision.version);
