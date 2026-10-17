@@ -4,9 +4,9 @@ import { transitionTask } from "../../src/state/machine.js";
 import { executeTranscriptPath } from "../../src/store/layout.js";
 import { runCommand } from "../helpers/cli.js";
 import { planTodo, seedExecuteFixTurn, turnResultStream } from "../helpers/plan.js";
-import { eventsOf, latestTaskOf, withDataRootStore } from "../helpers/store.js";
-import { type ExecuteFixture, useExecuteFixture } from "../helpers/task-fixtures.js";
-import { wrongStateError } from "../helpers/state-commands.js";
+import { eventsOf, latestTaskOf, seedDeadRun, withDataRootStore } from "../helpers/store.js";
+import { type ExecuteFixture, expectNoAssistantRun, useExecuteFixture } from "../helpers/task-fixtures.js";
+import { deadRunNote, wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -72,6 +72,21 @@ describe("tasker execute", () => {
     });
     expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual(events);
     expect(fixture.claude.calls()).toEqual([]);
+  });
+
+  it("moves a dead run to interrupted, prints the note, then refuses and runs no assistant", async () => {
+    const fixture = await useExecuteFixture({ stream: turnResultStream("done") });
+    seedDeadRun(fixture.started.dataRoot, fixture.task.id, "executing");
+
+    const result = await runExecute();
+
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err: `${deadRunNote(KEY, "executing")}\n` + `${wrongStateError("interrupted", KEY, "execute", "approved")}\n`,
+    });
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("interrupted");
+    expectNoAssistantRun(fixture);
   });
 
   it("exits with 1 and prints no output line when a turn fails", async () => {

@@ -12,6 +12,7 @@ import {
   warnOverlaps,
   wholeNumberOptionsOrFail,
   withFinalLineEnd,
+  withIssueTask,
   withIssueTaskAsync,
   withStore,
   withStoreAsync,
@@ -22,7 +23,8 @@ import { taskNotFound, type TaskStore } from "../../src/store/store.js";
 import { captureIo } from "../helpers/cli.js";
 import { validConfig } from "../helpers/config.js";
 import { failureOf, thrownBy } from "../helpers/errors.js";
-import { seedTasks, withDataRootStore } from "../helpers/store.js";
+import { deadRunNote } from "../helpers/state-commands.js";
+import { seedDeadRun, seedTasks, withDataRootStore } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
 
 describe("orFail", () => {
@@ -328,6 +330,60 @@ describe("withIssueTaskAsync", () => {
     expect((error as CommanderError).exitCode).toBe(1);
     expect(io.err.join("")).toBe(`no task for the issue ${KEY} in the repo ${REPO}\n`);
     expect(called).toBe(false);
+  });
+});
+
+describe("the dead-run step of the task lookup", () => {
+  const REPO = "codeguru42/tasker";
+  const KEY = "codeguru42/tasker#1";
+  const NOTE = `${deadRunNote(KEY, "executing")}\n`;
+
+  // A config with a data root that holds the task KEY in executing, with a live run or a dead run.
+  function seedConfig(run: "live" | "dead") {
+    const dataRoot = useTempDir("tasker-store-");
+    const raw = validConfig();
+    raw.repos = { [REPO]: raw.repos.tasker };
+    const config = parseConfig({ ...raw, dataRoot }, {}, "/home/test");
+    const [task] = seedTasks(dataRoot, [
+      {
+        issueKey: KEY,
+        repoKey: REPO,
+        state: run === "live" ? "executing" : "approved",
+        at: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+    if (run === "dead") seedDeadRun(dataRoot, task.id, "executing");
+    return config;
+  }
+
+  it("gives withIssueTaskAsync the interrupted task and writes the note on stderr", async () => {
+    const config = seedConfig("dead");
+    const io = captureIo();
+
+    const state = await withIssueTaskAsync(io, config, KEY, {}, async (_store, task) => task.state);
+
+    expect(state).toBe("interrupted");
+    expect(io.err).toEqual([NOTE]);
+  });
+
+  it("gives withIssueTask the interrupted task and writes the note on stderr", async () => {
+    const config = seedConfig("dead");
+    const io = captureIo();
+
+    const state = await withIssueTask(io, config, KEY, {}, (_store, task) => task.state);
+
+    expect(state).toBe("interrupted");
+    expect(io.err).toEqual([NOTE]);
+  });
+
+  it("writes nothing on stderr for a live run", async () => {
+    const config = seedConfig("live");
+    const io = captureIo();
+
+    const state = await withIssueTaskAsync(io, config, KEY, {}, async (_store, task) => task.state);
+
+    expect(state).toBe("executing");
+    expect(io.err).toEqual([]);
   });
 });
 

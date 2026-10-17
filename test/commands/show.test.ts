@@ -13,9 +13,9 @@ import {
   seedPlanRevision,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { expectedShowLines } from "../helpers/state-commands.js";
+import { deadRunNote, expectedShowLines } from "../helpers/state-commands.js";
 import { findingText, reviewFinding } from "../helpers/review.js";
-import { dayAt, seedReview, seedTaskWithReviews, seedTasks, withDataRootStore } from "../helpers/store.js";
+import { dayAt, seedDeadRun, seedReview, seedTaskWithReviews, seedTasks, withDataRootStore } from "../helpers/store.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import type { ExecuteTodoState } from "../../src/store/store.js";
 
@@ -114,6 +114,18 @@ describe("show", () => {
         'last event: 2026-01-02T00:00:00.000Z created {"state":"workspace_ready"}\n' +
         expectedShowLines("workspace_ready", `${TASKER}#5`),
     });
+  });
+
+  it("moves a task with a dead run to interrupted, prints it and writes the note on stderr", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const [task] = seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "approved", at: dayAt(2) }]);
+    seedDeadRun(dataRoot, task.id, "executing");
+
+    const result = await runShow(`${TASKER}#5`);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("state: interrupted\n");
+    expect(result.err).toBe(`${deadRunNote(`${TASKER}#5`, "executing")}\n`);
   });
 
   it("prints the active task of an issue that also has a cancelled task", async () => {
