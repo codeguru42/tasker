@@ -66,11 +66,16 @@ const REFINE_RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
 
 // The refining entry has a fallback: a refine origin with no row keeps the row of a plain refine. The merging entry has
 // none: the merge origin (the state that the task left when the last merge started) gives the row, and a merge origin
+// with no row gets a refusal. The entries of quota_blocked, awaiting_quota_approval and interrupted have no fallback
+// either: the state that the task left when it moved into the pause picks the row of RETRY_TABLE, and a pause origin
 // with no row gets a refusal.
 const RETRY_TABLES: OriginTables<RetryRow> = {
   rows: RETRY_TABLE,
   byOriginOf: {
     refining: { rows: REFINE_RETRY_TABLE, fallback: PLAIN_REFINE_ROW },
+    quota_blocked: { rows: RETRY_TABLE },
+    awaiting_quota_approval: { rows: RETRY_TABLE },
+    interrupted: { rows: RETRY_TABLE },
     merging: { rows: { accepted: { target: "accepted", next: "merge", clears: {} } } },
   },
 };
