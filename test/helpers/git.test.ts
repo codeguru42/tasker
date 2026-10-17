@@ -14,6 +14,7 @@ import { readArgLog, realCommandPath } from "./fake-commands.js";
 import {
   addCloneCommit,
   commitInWorktree,
+  copyCloneBranchToOrigin,
   GIT_TEST_IDENTITY,
   landBranchOnOriginMain,
   gitCloneTokens,
@@ -266,6 +267,45 @@ describe("landBranchOnOriginMain", () => {
     const error = await failureOf(land("-x"), Error);
     expect(error.message).toBe("the branch name must not start with -: -x");
     expect(await origin.branchHead("main")).toBe(head);
+  });
+});
+
+describe("copyCloneBranchToOrigin", () => {
+  let origin: GitOrigin;
+  let clone: string;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    clone = await makeGitClone(origin);
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  const copy = (branch: string, to?: string) =>
+    copyCloneBranchToOrigin({ origin: origin.path, clone, branch, to, env: origin.env });
+
+  it("puts the branch of the clone on the origin under the same name", async () => {
+    const sha = await addCloneCommit(clone, origin.env, "tasker/x");
+    await copy("tasker/x");
+    expect(await origin.branchHead("tasker/x")).toBe(sha);
+  });
+
+  it("puts the branch of the clone on the origin under the name in to", async () => {
+    const sha = await addCloneCommit(clone, origin.env, "tasker/x");
+    await copy("tasker/x", "other");
+    expect(await origin.branchHead("other")).toBe(sha);
+    expect(await origin.branchHead("tasker/x")).toBeUndefined();
+  });
+
+  it("rejects a branch or a to that starts with - and runs no git", async () => {
+    await addCloneCommit(clone, origin.env, "tasker/x");
+    const branchError = await failureOf(copy("-x"), Error);
+    expect(branchError.message).toBe("the branch name must not start with -: -x");
+    const toError = await failureOf(copy("tasker/x", "-y"), Error);
+    expect(toError.message).toBe("the branch name must not start with -: -y");
+    expect(await origin.branchHead("tasker/x")).toBeUndefined();
   });
 });
 
