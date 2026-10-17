@@ -3,6 +3,7 @@ import { delimiter, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   type FoundState,
+  moveWorktreeTo,
   rebaseOnto,
   reconcileWorktree,
   restoreCommands,
@@ -16,8 +17,10 @@ import type { ReconcileStrategy } from "../../../src/vcs/provider.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { createTaskWorktree, taskBranchName } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
+import { readArgLog } from "../../helpers/fake-commands.js";
 import {
   commitInWorktree,
+  gitRecorderEnv,
   landBranchOnOriginMain,
   makeGitClone,
   makeGitOrigin,
@@ -308,6 +311,72 @@ describe("git reconcile", () => {
       expect(error.paths).toEqual(["shared.txt"]);
       expect(error.message).toBe(`the rebase onto ${tip} stopped on conflicts: ${target}: "shared.txt"`);
       await expectAsBefore(start);
+    });
+  });
+
+  describe("moveWorktreeTo", () => {
+    const move = (revision: string, extra: Partial<Parameters<typeof moveWorktreeTo>[0]> = {}) =>
+      moveWorktreeTo({ clone, env, path, revision, ...extra });
+
+    it("moves the branch, HEAD and the tracked files to a descendant revision", async () => {
+      const base = await git("rev-parse", "HEAD");
+      const tip = await commitInWorktree(path, env, { file: "a.txt", content: "moved" });
+      await git("reset", "--hard", base);
+      expect(existsSync(join(target, "a.txt"))).toBe(false);
+      expect(await move(tip)).toBe(tip);
+      expect(await git("rev-parse", "HEAD")).toBe(tip);
+      expect(await git("rev-parse", `refs/heads/${branch}`)).toBe(tip);
+      expect(await git("show", "HEAD:a.txt")).toBe("moved");
+      expect(existsSync(join(target, "a.txt"))).toBe(true);
+      expect(await git("symbolic-ref", "HEAD")).toBe(`refs/heads/${branch}`);
+      expect(await state()).toEqual({ head: tip, branch, changes: [] });
+    });
+
+    it("moves the branch, HEAD and the tracked files to an ancestor revision", async () => {
+      const base = await git("rev-parse", "HEAD");
+      await commitInWorktree(path, env, { file: "a.txt" });
+      expect(await move(base)).toBe(base);
+      expect(await git("rev-parse", `refs/heads/${branch}`)).toBe(base);
+      expect(existsSync(join(target, "a.txt"))).toBe(false);
+      expect(await state()).toEqual({ head: base, branch, changes: [] });
+    });
+
+    it("refuses an untracked file and changes nothing", async () => {
+      const base = await git("rev-parse", "HEAD");
+      const tip = await commitInWorktree(path, env, { file: "a.txt" });
+      await git("reset", "--hard", base);
+      writeFileSync(join(target, "a.txt"), "mine");
+      const error = await failureOf(move(tip), Error);
+      expect(error.message).toBe(`the worktree has uncommitted changes: ${target}: ["a.txt"]`);
+      expect(await state()).toEqual({ head: base, branch, changes: [{ status: "??", path: "a.txt" }] });
+      expect(await git("rev-parse", `refs/heads/${branch}`)).toBe(base);
+    });
+
+    it("refuses a detached HEAD and does not move it", async () => {
+      const base = await git("rev-parse", "HEAD");
+      const tip = await commitInWorktree(path, env, { file: "a.txt" });
+      await git("checkout", "--detach", base);
+      const error = await failureOf(move(tip), Error);
+      expect(error.message).toBe(`the worktree has a detached HEAD: ${target}`);
+      expect(await git("rev-parse", "HEAD")).toBe(base);
+      expect(await git("rev-parse", `refs/heads/${branch}`)).toBe(tip);
+    });
+
+    it("refuses a branch without the shape of a task branch and does not move it", async () => {
+      const base = await git("rev-parse", "HEAD");
+      const tip = await commitInWorktree(path, env, { file: "a.txt" });
+      const other = "feature-x";
+      await git("checkout", "-b", other);
+      await failureOf(move(base), Error);
+      expect(await git("rev-parse", `refs/heads/${other}`)).toBe(tip);
+      expect(await git("rev-parse", "HEAD")).toBe(tip);
+    });
+
+    it("refuses HEAD~1 before any git call", async () => {
+      const recorded = gitRecorderEnv(origin.dir, env);
+      const error = await failureOf(move("HEAD~1", { env: recorded.env }), Error);
+      expect(error.message).toBe('not a full revision or ref: "HEAD~1"');
+      expect(readArgLog(recorded.log)).toEqual([]);
     });
   });
 
