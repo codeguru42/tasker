@@ -350,6 +350,47 @@ describe("createClaudeCodeProvider run with a quota stop", () => {
   });
 });
 
+describe("createClaudeCodeProvider run with a signal of tasker", () => {
+  it.each(["SIGINT", "SIGTERM"] as const)("gives interrupted when tasker passes %s", async (signal) => {
+    const { outcome } = await run(
+      { stream: head(), untilStopped: true },
+      { onSpawn: () => process.kill(process.pid, signal) },
+    );
+
+    expect(outcome).toMatchObject({ kind: "interrupted", signal });
+  });
+
+  it("gives quota when the events show a quota stop too", async () => {
+    const { outcome } = await run(
+      { stream: claudeSample("quota-stop"), untilStopped: true },
+      {
+        onEvent: (event) => {
+          if (event.type === "result") process.kill(process.pid, "SIGTERM");
+        },
+      },
+    );
+
+    expect(outcome).toMatchObject({ kind: "quota", cause: "rate_limit", resetsAt: 1791906000 });
+  });
+
+  it("gives interrupted before the timeout", { timeout: 20_000 }, async () => {
+    let sent = false;
+    const { outcome } = await run(
+      { stream: head(), ignoreSigterm: true, untilStopped: true },
+      {
+        timeoutMs: 3000,
+        onEvent: () => {
+          if (sent) return;
+          sent = true;
+          process.kill(process.pid, "SIGTERM");
+        },
+      },
+    );
+
+    expect(outcome).toMatchObject({ kind: "interrupted", signal: "SIGTERM" });
+  });
+});
+
 describe("createClaudeCodeProvider run with an overage stop", () => {
   // The full plain stream with the overage event before the result.
   const fullWith = (event: AssistantEvent) => [
