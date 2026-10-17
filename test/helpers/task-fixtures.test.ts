@@ -12,7 +12,7 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { failureOf } from "./errors.js";
 import { githubWriteAnswer, trackerWriteCalls } from "./fake-gh.js";
-import { commitInWorktree, localBranches } from "./git.js";
+import { GIT_TEST_IDENTITY, commitInWorktree, localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { answerStream, planTodo, validPlanAnswer } from "./plan.js";
 import {
@@ -719,6 +719,16 @@ describe("useWorkReviewTask", () => {
     expect(work.task.worktreePath).not.toBeNull();
     expect(work.task.branch).not.toBeNull();
     expect(await changedFiles(work)).toEqual(["work.txt"]);
+  });
+
+  it("gives the clone the git identity of GIT_TEST_IDENTITY through vcs.config", async () => {
+    const work = await useWorkReviewTask({ repo: { updateBranchStrategy: "merge" } });
+
+    const read = async (key: string) =>
+      (await runGit(["config", "--local", "--get", key], { gitDir: work.clone, env: work.env })).trim();
+
+    expect(await read("user.name")).toBe(GIT_TEST_IDENTITY.name);
+    expect(await read("user.email")).toBe(GIT_TEST_IDENTITY.email);
   });
 
   it("commits each given file and leaves no run marker", async () => {
