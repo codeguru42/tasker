@@ -222,8 +222,8 @@ flowchart LR
 | `reviewing`                                 | `awaiting_work_review`                                     | `review` (in a new session)                                          |
 | `pushing` (interrupted only)                | `accepted`                                                 | `push`. No second push if `origin` already has the sha.              |
 | `opening_pr` (interrupted only)             | `pushed`                                                   | `open-pr`. It adopts an open PR and does not open a second one.      |
-| `merging` (interrupted only)                | the recorded merge origin (`accepted` or `in_peer_review`) | `merge`. No second push or merge if the work is already on the base. |
-| `finishing` (interrupted only)              | `landed`                                                   | `finish`. Each cleanup step skips what is already done.              |
+| `merging`                                   | the recorded merge origin (`accepted` or `in_peer_review`) | `merge`. No second push or merge if the work is already on the base. |
+| `finishing`                                 | `landed`                                                   | `finish`. Each cleanup step skips what is already done.              |
 | `updating_branch` (interrupted only)        | its origin state                                           | nothing. Run `update-branch` again.                                  |
 
 ## Failure and retry
@@ -324,4 +324,4 @@ The rules of the table:
 
 [data-root.md](dev/data-root.md#writes-from-more-than-one-process) gives the transaction rule of a move and of an illegal edge.
 
-The event of a failure records the state that the task failed in. `tasker retry` reads that state to pick its target. For the origin `refining`, it also reads the `from` of the last move into `refining`.
+The event of a failure records the state that the task failed in. `tasker retry` reads that state to pick its target. For the origin `refining`, it also reads the `from` of the last move into `refining`. For the origin `merging`, retry and resume also read the `from` of the last move into `merging`.
