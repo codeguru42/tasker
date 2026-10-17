@@ -72,10 +72,18 @@ const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   },
 };
 
-// The refining entry has no fallback, so resume refuses a refine origin with no row.
+// The refining entry has no fallback, so resume refuses a refine origin with no row. The merging entry has none too:
+// the merge origin (the state that the task left when the last merge started) gives the row. Merge and finish spawn no
+// assistant, so only interrupted reaches the merging row and the finishing row in practice. They accept quota_blocked
+// too, because the state machine has the edge into it from merging and from finishing.
 const RESUME_TABLES: OriginTables<ResumeRow> = {
   rows: RESUME_TABLE,
-  byOriginOf: { refining: { rows: REFINE_RESUME_TABLE } },
+  byOriginOf: {
+    refining: { rows: REFINE_RESUME_TABLE },
+    merging: {
+      rows: { accepted: { target: "accepted", next: "merge", clearReview: false, pauses: BOTH_PAUSES } },
+    },
+  },
 };
 
 // Moves a task in quota_blocked or interrupted back to the state before the run that stopped, under the task lock,
