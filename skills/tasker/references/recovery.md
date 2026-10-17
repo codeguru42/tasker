@@ -88,9 +88,9 @@ The command prints one of these lines on stdout. Then it prints the resumed line
 - `approved credits for <issue key>: the quota window that resets at <ISO time>`, when the pause record names a window
 - `approved credits for <issue key>: the pause named no window, so the next warning pauses again`, when a warning pause named no reset time. The command records no approval in this case.
 
-The next command keeps its own output, its own errors and its own exit code. If the run of the task is dead, the note of the dead run comes on stderr first. See [A dead run](../SKILL.md#a-dead-run).
+The next command keeps its own output, its own errors and its own exit code.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
+The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. If the run of the task is dead, the task moves to `interrupted` before the checks (see [A dead run](../SKILL.md#a-dead-run)). The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
 - The task is in a state other than `quota_blocked` or `awaiting_quota_approval`. The error is `the task of <issue key> is in <state>; tasker approve-credits needs quota_blocked or awaiting_quota_approval`, then the commands that the state accepts.
 - The task is in `quota_blocked` because of a subscription limit. Paid usage cannot continue it. The error is `the task of <issue key> stopped at a subscription limit, and paid usage cannot continue it; run tasker resume <issue key> after the reset`.
