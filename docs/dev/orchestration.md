@@ -669,10 +669,9 @@ A long-running orchestrator is the orchestrator of a milestone that stays open w
 
 The rules of this section cover only a long-running orchestrator. An orchestrator of a numbered milestone stops when the Todo column of its milestone is empty, as [Pick the tickets](#pick-the-tickets) says. The rules of this section do not cover it.
 
-A handoff starts in one of two ways:
+Only the user starts a handoff. The user can ask the old orchestrator for a handoff at any time. The reason: the old orchestrator has no tool that shows its context use. On 2026-10-16, the Docs orchestrator guessed that about 20% of its context was used and started a handoff. The session used 6%.
 
-- The old orchestrator sees that about 20% of its context is used. Then it starts the handoff itself and tells the user.
-- The user asks for a handoff. The user can ask at any time.
+The old orchestrator can suggest a handoff to the user. The suggestion does not start the handoff. The handoff starts only when the user agrees to the suggestion or asks for a handoff. In an answer to [a question of the user](working-with-the-user.md#a-question-of-the-user), the old orchestrator suggests a handoff only when the suggestion is relevant to that question.
 
 After the start, the old orchestrator does these steps:
 
@@ -680,6 +679,8 @@ After the start, the old orchestrator does these steps:
 2. Wait until each task in flight lands. For each landing, do the usual steps: delete the jobs (see [Delete the job](#delete-the-job)), do [the re-read rule](#the-re-read-rule) and do [the notice rule](#the-notice-rule). The reason: a job lives only in the session of the orchestrator (see [Terms](#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
 3. Write the handoff file `$HOME/Documents/tasker/handoff/<date>-<role>.md`, for example `2026-10-15-docs-orchestrator.md`. If a file with that name exists, add a number, for example `2026-10-15-docs-orchestrator-2.md`.
 4. Give the path of the file in the reply to the user.
+
+Only the user ends a handoff that started. The handoff ends when the user clears the old session and starts the new session with the prompt of the handoff file. Until then, the old orchestrator starts no new ticket, also after step 4. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new ticket without the word of the user.
 
 The old orchestrator puts these items in the handoff file:
 
