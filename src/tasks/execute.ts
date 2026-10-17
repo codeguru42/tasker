@@ -22,7 +22,7 @@ import {
   todosText,
 } from "../prompts/execute.js";
 import { fillTemplate } from "../prompts/template.js";
-import { approvedResetsAt, transitionTask, transitionWithExecution } from "../state/machine.js";
+import { approvedResetsAtOf, transitionTask, transitionWithExecution } from "../state/machine.js";
 import { executeTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
@@ -95,7 +95,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     task,
     env,
     session: stored ? { resume: true, sessionId: stored.sessionId, recorded: stored } : { resume: false },
-    approvedResetsAt: approvedResetsAt(store.listEvents(task.id)),
+    approvedResetsAt: approvedResetsAtOf(store, task.id),
   });
 
   const progress = store.executeTodoProgress(task.id, version);

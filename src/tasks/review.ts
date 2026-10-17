@@ -6,7 +6,7 @@ import { earlierReviewsText, REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../prompt
 import { fillTemplate } from "../prompts/template.js";
 import { checkReviewAnswer, reviewAnswerJsonSchema } from "../review/answer.js";
 import type { FindingEntry } from "../review/findings-text.js";
-import { approvedResetsAt, transitionWithReview } from "../state/machine.js";
+import { approvedResetsAtOf, transitionWithReview } from "../state/machine.js";
 import { reviewTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
@@ -63,7 +63,7 @@ async function reviewLocked(store: TaskStore, request: ReviewRequest): Promise<R
     role: "review",
     env,
     session: { resume: false },
-    approvedResetsAt: approvedResetsAt(store.listEvents(task.id)),
+    approvedResetsAt: approvedResetsAtOf(store, task.id),
   });
   const number = store.nextReview(task.id);
   store.recordReviewSession(task.id, number, {

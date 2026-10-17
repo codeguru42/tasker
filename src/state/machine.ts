@@ -370,17 +370,21 @@ export function failedOriginText(events: readonly TaskEvent[]): string {
   return transitionFromEvents(events, "failed") ?? "unknown";
 }
 
-// The reset time of the quota window that the last credits_approved event approved, or undefined when there is none.
-export function approvedResetsAt(events: readonly TaskEvent[]): number | undefined {
-  const approval = events.filter((event) => event.type === "credits_approved").at(-1);
-  const resetsAt = (approval?.data as { resetsAt?: unknown } | undefined)?.resetsAt;
-  return typeof resetsAt === "number" ? resetsAt : undefined;
-}
-
 // The from of the last transition into failed, or undefined when the task is not in failed.
 export function failedFrom(store: TaskStore, id: number): TaskState | undefined {
   if (store.getTask(id)?.state !== "failed") return undefined;
   return transitionFromEvents(store.listEvents(id), "failed");
+}
+
+// The reset time of the quota window that the last credits_approved event of the task approved, or undefined when
+// there is none.
+export function approvedResetsAtOf(store: TaskStore, id: number): number | undefined {
+  const approval = store
+    .listEvents(id)
+    .filter((event) => event.type === "credits_approved")
+    .at(-1);
+  const resetsAt = (approval?.data as { resetsAt?: unknown } | undefined)?.resetsAt;
+  return typeof resetsAt === "number" ? resetsAt : undefined;
 }
 
 // The error of the last transition event, when it is a string.

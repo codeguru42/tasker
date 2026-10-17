@@ -5,7 +5,7 @@ import { issueProviderFor } from "../issues/provider.js";
 import { archivePrompt } from "../prompts/archive.js";
 import { PLAN_PROMPT, PLAN_PROMPT_NAME, planIssueText } from "../prompts/plan.js";
 import { fillTemplate } from "../prompts/template.js";
-import { approvedResetsAt } from "../state/machine.js";
+import { approvedResetsAtOf } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
@@ -43,7 +43,7 @@ async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanR
     role: "plan",
     env,
     session: stored ? { resume: true, sessionId: stored.sessionId, recorded: stored } : { resume: false },
-    approvedResetsAt: approvedResetsAt(store.listEvents(task.id)),
+    approvedResetsAt: approvedResetsAtOf(store, task.id),
   });
   store.recordPlanSession(task.id, {
     sessionId: prepared.sessionId,
