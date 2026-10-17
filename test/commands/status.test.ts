@@ -7,7 +7,8 @@ import { status } from "../../src/commands/status.js";
 import { STATES } from "../../src/state/machine.js";
 import { captureIo, runCommand } from "../helpers/cli.js";
 import { issueKeyErrorMessage, useConfigFile, useThreeRepoDataRoot, validConfig } from "../helpers/config.js";
-import { dayAt, seedTasks } from "../helpers/store.js";
+import { dayAt, seedDeadRun, seedTasks } from "../helpers/store.js";
+import { deadRunNote } from "../helpers/state-commands.js";
 import { useProcessEnv } from "../helpers/temp.js";
 
 const TASKER = "codeguru42/tasker";
@@ -33,6 +34,23 @@ describe("status", () => {
         "codeguru42/other#7   codeguru42/other   executing  2026-01-03T00:00:00.000Z  abort\n" +
         "codeguru42/tasker#5  codeguru42/tasker  planning   2026-01-02T00:00:00.000Z  abort\n",
     });
+  });
+
+  it("moves a task with a dead run to interrupted, lists it and writes the note on stderr", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const [dead] = seedTasks(dataRoot, [
+      { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "approved", at: dayAt(2) },
+      { issueKey: `${OTHER}#7`, repoKey: OTHER, state: "executing", at: dayAt(3) },
+    ]);
+    seedDeadRun(dataRoot, dead.id, "executing");
+
+    const result = await runCommand(status, "status", "--state", "interrupted");
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe(`${deadRunNote(`${TASKER}#5`, "executing")}\n`);
+    const rows = result.out.trimEnd().split("\n").slice(1);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatch(/^codeguru42\/tasker#5 +codeguru42\/tasker +interrupted +\S+ +abort$/);
   });
 
   it("prints the five columns, the newest change first and the higher id first on a tie", async () => {
