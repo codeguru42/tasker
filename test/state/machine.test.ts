@@ -161,18 +161,18 @@ const SPECIFIC: Record<string, string[]> = {
   approved: ["awaiting_plan_review", "executing", "updating_branch"],
   executing: ["executed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   executed: ["verifying", "updating_branch"],
-  verifying: ["awaiting_work_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  verifying: ["awaiting_work_review", "interrupted"],
   awaiting_work_review: ["reviewing", "refining", "accepted", "updating_branch"],
   reviewing: ["awaiting_work_review", "reviewed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
   reviewed: ["refining", "awaiting_work_review", "updating_branch"],
   accepted: ["landed", "merging", "pushing", "refining", "updating_branch"],
-  pushing: ["pushed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  pushing: ["pushed", "interrupted"],
   pushed: ["landed", "opening_pr", "refining", "updating_branch"],
-  opening_pr: ["in_peer_review", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  opening_pr: ["in_peer_review", "interrupted"],
   in_peer_review: ["landed", "merging", "updating_branch"],
-  merging: ["landed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  merging: ["landed", "interrupted"],
   landed: ["finishing"],
-  finishing: ["finished", "cleanup_failed", "quota_blocked", "awaiting_quota_approval", "interrupted"],
+  finishing: ["finished", "cleanup_failed", "interrupted"],
   cleanup_failed: ["finishing", "updating_branch"],
   updating_branch: [
     "workspace_ready",
@@ -186,8 +186,6 @@ const SPECIFIC: Record<string, string[]> = {
     "in_peer_review",
     "failed",
     "cleanup_failed",
-    "quota_blocked",
-    "awaiting_quota_approval",
     "interrupted",
   ],
   quota_blocked: [
@@ -197,7 +195,6 @@ const SPECIFIC: Record<string, string[]> = {
     "awaiting_work_review",
     "accepted",
     "reviewed",
-    "landed",
   ],
   awaiting_quota_approval: [
     "workspace_ready",
@@ -265,9 +262,12 @@ const ILLEGAL_EDGES: [TaskState, TaskState][] = [
   ["cancelled", "failed"],
 ];
 
+const NO_ASSISTANT = ["verifying", "pushing", "opening_pr", "merging", "finishing", "updating_branch"] as TaskState[];
+const ASSISTANT = ["planning", "refining", "executing", "reviewing"] as TaskState[];
+
 describe("table edges", () => {
-  it("has 121 specific edges", () => {
-    expect(TABLE_EDGES).toHaveLength(121);
+  it("has 108 specific edges", () => {
+    expect(TABLE_EDGES).toHaveLength(108);
   });
 
   it.each(TABLE_EDGES)("allows %s -> %s", (from, to) => {
@@ -282,11 +282,37 @@ describe("table edges", () => {
       }
     }
     expect(found).toEqual(LEGAL_EDGES);
-    expect(found.size).toBe(171);
+    expect(found.size).toBe(158);
   });
 
   it.each(ILLEGAL_EDGES)("refuses %s -> %s", (from, to) => {
     expect(canTransition(from, to)).toBe(false);
+  });
+});
+
+describe("quota pauses", () => {
+  it.each(NO_ASSISTANT)("refuses %s -> quota_blocked", (state) => {
+    expect(canTransition(state, "quota_blocked")).toBe(false);
+  });
+
+  it.each(NO_ASSISTANT)("refuses %s -> awaiting_quota_approval", (state) => {
+    expect(canTransition(state, "awaiting_quota_approval")).toBe(false);
+  });
+
+  it.each(NO_ASSISTANT)("allows %s -> interrupted", (state) => {
+    expect(canTransition(state, "interrupted")).toBe(true);
+  });
+
+  it.each([["quota_blocked", "landed"]] as [TaskState, TaskState][])("refuses %s -> %s", (from, to) => {
+    expect(canTransition(from, to)).toBe(false);
+  });
+
+  it.each(ASSISTANT)("allows %s -> quota_blocked", (state) => {
+    expect(canTransition(state, "quota_blocked")).toBe(true);
+  });
+
+  it.each(ASSISTANT)("allows %s -> awaiting_quota_approval", (state) => {
+    expect(canTransition(state, "awaiting_quota_approval")).toBe(true);
   });
 });
 
@@ -380,6 +406,21 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("planning"));
       // @ts-expect-error detail cannot set from
       transitionTask(store, task.id, "failed", { from: "x" });
+    });
+
+    it.each(
+      NO_ASSISTANT.flatMap((from) => [
+        [from, "quota_blocked"],
+        [from, "awaiting_quota_approval"],
+      ]),
+    )("refuses a quota pause from a state that runs no assistant and writes nothing (%s -> %s)", (from, to) => {
+      const task = store.createTask(newTask(from));
+      const before = store.listEvents(task.id);
+      expect(() => transitionTask(store, task.id, to as TaskState)).toThrow(
+        `illegal state transition: ${from} -> ${to}`,
+      );
+      expect(store.getTask(task.id)!.state).toBe(from);
+      expect(store.listEvents(task.id)).toEqual(before);
     });
 
     it("writes no event for an illegal edge", () => {
