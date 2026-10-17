@@ -75,6 +75,38 @@ These rules apply to a stacked ticket and its parent. The user decided them on 2
 - At the start of a stacked ticket, the parent is in `awaiting_work_review` or a later state, so [the hold rule](#the-hold-rule) does not apply at once. If a refine of step 8 moves the parent back to `awaiting_plan_review`, the hold rule applies as written.
 - If the parent belongs to another orchestrator, the stacked orchestrator uses the messages of the hold rule. When the stacked ticket starts, the stacked orchestrator sends one message with `SendMessage` to the parent orchestrator, as the hold rule does when the hold starts. Then the parent orchestrator sends two reports to the stacked orchestrator with `SendMessage`. The first report comes when the parent task is in `awaiting_work_review` or a later state. The second report comes when the issue of the parent closes. A refused request or a missing answer is out of scope (#164).
 
+### The parent-hold rule
+
+This rule covers the parent of a stacked ticket before the stacked ticket starts. A ready state is a state of the list in [the stacking rule](#the-stacking-rule). The agent of the parent moves its task out of a ready state with the refine of step 8, `tasker review <issue> "<feedback>"` of [the add-work rule](#the-add-work-rule), `tasker update-branch` or `tasker merge`. `tasker merge` moves the task from `accepted` to `merging` and `landed`. On #215, a refine of step 8 moved the parent out of a ready state before the agents of two stacked tickets ran `tasker start`. `tasker start` refused both of them (see [the facts of the installed tasker](#the-facts-of-the-installed-tasker)).
+
+When the orchestrator plans to start a stacked ticket on a parent that is not ready yet, the orchestrator tells the agent of the parent to hold. The hold of a parent that belongs to another orchestrator is out of scope. The hold lasts until the orchestrator tells the agent of the parent that the hold ended. A message to an agent that has ended starts the agent again (see "Terms" in "Quota"). If the agent of the parent gets the message while a command runs, the agent lets the command end and keeps the hold. If the agent of the parent gets the message while it waits for an answer or a next step, it keeps the hold and ends its turn again.
+
+While the hold runs, the agent of the parent continues "Run one ticket". After `tasker verify` passes, the agent of the parent continues with `tasker review`, because `reviewing` and `reviewed` are ready states. The agent of the parent also runs `tasker dismiss-review` and `tasker accept`, because the task stays in a ready state.
+
+Before a command that moves the task out of a ready state, the agent of the parent sends a report with `SendMessage`, as [the address rule](#the-address-rule) says. The report gives the state of the task and says that the agent holds. Then the agent of the parent gives its final answer, as [the answer-wait rule](#the-answer-wait-rule) says. If `SendMessage` fails, the agent of the parent puts the report in its final answer. The task keeps its state, for example `reviewed`, `awaiting_work_review` or `accepted`.
+
+This report is a report of a ready state of the stacking rule. The orchestrator then does the steps of the paragraph of [the stacking rule](#the-stacking-rule) that starts "After a report of a ready state".
+
+While the hold runs, the agent of the parent waits in place of the command at each of these places:
+
+- The refine of step 8 of [Run one ticket](#run-one-ticket)
+- `tasker review <issue> "<feedback>"` of the add-work rule, also when [the diff read](#the-diff-read) finds work
+- `tasker update-branch` of step 9 and of the diff read
+- The early update of [Review findings](#review-findings)
+- `tasker update-branch` of the bullet of [Land the work](#land-the-work) that starts "If a refine, or the `tasker review <issue> "<feedback>"` of the add-work rule, must change a file"
+- `tasker update-branch` of the bullet "When the issue of the earlier ticket is closed" of Land the work
+- `tasker update-branch` of [the comeback rule](#the-comeback-rule)
+- `tasker merge` of step 9
+
+The orchestrator reads `tasker show <stacked issue>` of each stacked ticket after each report of the agent of that stacked ticket. Examples are the run-end report of `tasker plan` (see "When there is no reset time yet" in "Quota") and a stop report of step 2 of "Run one ticket". Before `tasker start`, the stacked ticket has no task, so the orchestrator waits for such a report. If `tasker show <stacked issue>` fails, the orchestrator tells the user the command and the error. The hold stays, and no task changes.
+
+The orchestrator ends the hold in these cases:
+
+- `tasker show <stacked issue>` of each stacked ticket prints the branch of the parent on its `base branch:` line, in the form `refs/heads/<parent branch>` of [the base rule](#the-base-rule).
+- The start of a stacked ticket fails. A stop report of step 2 from the agent of a stacked ticket counts as a failed start. Examples are the refusal `blocking issue is still open`, after which no task exists, and a missing `based on <key>'s branch` note, after which the stacked task stays in `workspace_ready`.
+
+When the hold ends, the orchestrator reads the state of the parent task with `tasker show <parent issue>`, as the bullet of Land the work that starts "Before the orchestrator sends added work or an answer" says. If `tasker show <parent issue>` fails, the orchestrator tells the user the command and the error. The hold stays, and no task changes. Otherwise, the orchestrator tells the agent of the parent that the hold ended. In the failure case, the orchestrator also reports to the user. After that message, the agent of the parent continues "Run one ticket" from the command where it stopped.
+
 ### The link offer
 
 This rule covers a ticket of the milestone of the orchestrator. The ticket can start, except for the shared-file bullet of [Pick the tickets](#pick-the-tickets). The ticket shares a file with a task in flight of the same milestone, and it has no blocked-by link to the issue of that task. A ticket that waits for another reason gets no offer until it can start except for the shared file. Examples are a blocker that is not ready to stack, and two or more open blockers. A link to a task of another milestone is out of scope. [The overlap rule](#the-overlap-rule) covers that case.
