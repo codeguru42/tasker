@@ -62,11 +62,11 @@ If the task is in the state `failed`, the command prints two more lines. `failed
 
 If the task is in one of the states of this table, the command prints the lines of its row after the `last event` line. The facts come from the data of the last move into that state.
 
-| State                     | Lines                                     |
-| ------------------------- | ----------------------------------------- |
-| `quota_blocked`           | `paused from`, `cause`, `resets at`       |
-| `awaiting_quota_approval` | `paused from`, `utilization`, `resets at` |
-| `interrupted`             | `paused from`, `cause`                    |
+| State                     | Lines                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `quota_blocked`           | `paused from: <origin>`, `cause: <rate_limit or overage>`, `resets at: <ISO time>` |
+| `awaiting_quota_approval` | `paused from: <origin>`, `utilization: <number>`, `resets at: <ISO time>`          |
+| `interrupted`             | `paused from: <origin>`, `cause: <dead_run or signal>`                             |
 
 `paused from` gives the state that the task left. `resets at` gives the reset time of the quota window as ISO 8601 text in UTC, as the output of a quota stop does. It prints `-` when the pause has no reset time. `utilization` prints the value as the event holds it, for example `0.95`. The cause `signal` prints as `cause: signal <name>`, for example `cause: signal SIGTERM`. In each other state, the command prints none of these lines.
 
