@@ -14,6 +14,7 @@ import {
   fetchBaseContainment,
   fetchOnBase,
   ownCommitsText,
+  remoteTaskBranchState,
   uncommittedChanges,
   worktreeDiff,
 } from "./changes.js";
@@ -22,7 +23,7 @@ import { gitDoctorChecks } from "./doctor.js";
 import { installPushHook } from "./push-guard.js";
 import { provisionClone } from "./provision.js";
 import { remoteTip } from "./remote-tip.js";
-import { reconcileWorktree, resyncWorktree, worktreeState } from "./reconcile.js";
+import { moveWorktreeTo, reconcileWorktree, resyncWorktree, worktreeState } from "./reconcile.js";
 import { repoPaths } from "./repo-paths.js";
 import {
   createTaskWorktree,
@@ -130,6 +131,14 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
     async taskRefOnBase(ctx, { taskRef, baseRevision }) {
       const { clone } = pathsOf(ctx);
       return fetchOnBase({ clone, env: ctx.env, sshKey: config.sshKey, branch: taskRef, baseRevision });
+    },
+    async fetchedRemoteTaskRef(ctx, { taskRef }) {
+      const { clone } = pathsOf(ctx);
+      return remoteTaskBranchState({ clone, env: ctx.env, branch: taskRef });
+    },
+    async moveWorkspace(ctx, { path, revision }) {
+      const { clone } = pathsOf(ctx);
+      return moveWorktreeTo({ clone, env: ctx.env, path, revision });
     },
     async reconcile(ctx, { path, baseRevision, strategy }) {
       const { clone } = pathsOf(ctx);
