@@ -44,6 +44,7 @@ import {
 } from "../helpers/store.js";
 import { expectNoAssistantRun, startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { plannedLine } from "../helpers/command-output.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -82,7 +83,7 @@ describe("plan", () => {
     expect(result).toEqual({
       code: 0,
       out: [
-        `planned ${KEY} as revision v1`,
+        plannedLine(KEY, 1),
         `plan: ${planPath}`,
         `prompt: ${promptPath}`,
         "todos:",

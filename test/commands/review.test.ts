@@ -48,6 +48,7 @@ import {
   useSeededTask,
 } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { refinedLine } from "../helpers/command-output.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -290,7 +291,7 @@ describe("review with feedback", () => {
     expect(result.code).toBe(0);
     expect(result.err).toBe("");
     expect(result.out.split("\n")).toEqual([
-      `refined ${KEY} as revision v2`,
+      refinedLine(KEY, 2),
       `plan: ${planRevisionPath(dataRoot, task, 2)}`,
       expect.stringMatching(/^prompt: /),
       "todos:",

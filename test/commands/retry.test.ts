@@ -33,6 +33,7 @@ import {
   useVerifyFixture,
 } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { executedLine, plannedLine, reviewedLinePrefix, verifiedLine } from "../helpers/command-output.js";
 
 const KEY = "codeguru42/tasker#5";
 const TODOS = [planTodo("a"), planTodo("b", ["a"])];
@@ -74,7 +75,7 @@ describe("tasker retry", () => {
 
     expect(result.code).toBe(0);
     expect(result.out.startsWith(firstLine("planning", "workspace_ready"))).toBe(true);
-    expect(result.out).toContain(`planned ${KEY} as revision v1`);
+    expect(result.out).toContain(plannedLine(KEY, 1));
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
     expect(argAfter(calls[0].argv, "--session-id")).toBeDefined();
@@ -97,7 +98,7 @@ describe("tasker retry", () => {
 
     expect(result.code).toBe(0);
     expect(result.out.startsWith(firstLine("reviewing", "awaiting_work_review"))).toBe(true);
-    expect(result.out).toContain(`reviewed ${KEY}: review 1`);
+    expect(result.out).toContain(reviewedLinePrefix(KEY, 1));
     const calls = work.claude.calls();
     expect(calls).toHaveLength(1);
     const sessionId = argAfter(calls[0].argv, "--session-id");
@@ -170,7 +171,7 @@ describe("tasker retry", () => {
 
     expect(result.code).toBe(0);
     expect(result.out.startsWith(firstLine("executing", "approved"))).toBe(true);
-    expect(result.out).toContain(`executed ${KEY} at revision v1`);
+    expect(result.out).toContain(executedLine(KEY, 1));
     expect(result.out).toContain("todos: 2 of 2 done");
     const calls = fixture.claude.calls();
     expect(calls).toHaveLength(1);
@@ -191,7 +192,7 @@ describe("tasker retry", () => {
 
     expect(result.code).toBe(0);
     expect(result.out.startsWith(firstLine("verifying", "executed"))).toBe(true);
-    expect(result.out).toContain(`verified ${KEY}: run 1`);
+    expect(result.out).toContain(verifiedLine(KEY, 1));
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_work_review");
     expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
       { origin: "verifying", target: "executed", resumeExecute: false, from: "failed", to: "executed" },

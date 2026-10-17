@@ -57,6 +57,7 @@ import {
   usePlanFixture,
 } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { refinedLine } from "../helpers/command-output.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -121,7 +122,7 @@ describe("refine", () => {
     expect(result).toEqual({
       code: 0,
       out: [
-        `refined ${KEY} as revision v2`,
+        refinedLine(KEY, 2),
         `plan: ${planRevisionPath(dataRoot, task, 2)}`,
         `prompt: ${promptPath}`,
         "todos:",
@@ -339,7 +340,7 @@ describe("a promotion from reviewed", () => {
     const task = latestTaskOf(dataRoot, KEY);
     const revision = planRevisionOf(dataRoot, task.id, 2);
     expect(result.code).toBe(0);
-    expect(firstLine(result.out)).toBe(`refined ${KEY} as revision v2`);
+    expect(firstLine(result.out)).toBe(refinedLine(KEY, 2));
     const stdin = fixture.claude.calls()[0].stdin;
     expect(stdin).toContain(`<context>${promotionContextExpected()}</context>`);
     expect(stdin).toContain("<feedback>None.</feedback>");
