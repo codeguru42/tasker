@@ -193,7 +193,7 @@ flowchart LR
   end
 
   Spawning -->|subscription limit hit| Q[quota_blocked]
-  Spawning -->|utilization ≥ quotaApprovalThreshold| QA[awaiting_quota_approval]
+  Spawning -->|under ask: run ends with utilization ≥ quotaApprovalThreshold| QA[awaiting_quota_approval]
   Spawning -->|run died: detected, or tasker interrupted| X[interrupted]
 
   Q -->|tasker resume| T{{resume target}}
@@ -207,7 +207,7 @@ flowchart LR
 
 - `run died: detected` means that a command found a dead run and moved the task to `interrupted`. [The `run_markers` table](dev/data-root.md#run_markers-table) says which commands find a dead run.
 - `verifying`, `pushing`, `opening_pr`, `merging`, `finishing` and `updating_branch` spawn no assistant. As a result, only `interrupted` can come from them in practice. No run can reach the two quota pauses from these states.
-- `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there. Under `ask`, the threshold pause into `awaiting_quota_approval` applies.
+- `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there. Under `ask`, a run whose use of the quota window reaches `quotaApprovalThreshold` pauses into `awaiting_quota_approval` when the run ends, unless the operator approved that window.
 - A resume moves the task to the state before the spawn, then runs the same command again. So the task goes straight back into a spawning state.
 
 | Paused from                                | Resumes to                                                 | Then runs                                                            |

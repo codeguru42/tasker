@@ -110,11 +110,14 @@ One shared step maps the outcome of an assistant run to the next state of the ta
 
 The step records the usage of the run first, for every outcome. Then it acts on the outcome:
 
-- A success causes no move. The command that ran the assistant makes its own checks and its own move.
+- A success with no quota warning causes no move. The command that ran the assistant makes its own checks and its own move.
+- A success with a quota warning moves the task to `awaiting_quota_approval`. This happens only under `overagePolicy: "ask"`, when the use of the quota window reaches `quotaApprovalThreshold` in a window that the operator did not approve. The event holds the use and the reset time when it is known. The command prints both on stdout, or says that the reset time is unknown, and the exit code is 1.
 - A failure and a timeout move the task to `failed`. The error goes to the event and to stderr, and the exit code is 1.
 - A quota stop moves the task to `quota_blocked`. The event holds the cause and the reset time when it is known. The command prints the reset time on stdout, or says that it is unknown, and the exit code is 1.
 
 A failed run also spends tokens, so the usage is recorded for a failure too. The record of usage must be complete.
+
+The answer of a plan, refine or review run is text, and tasker records nothing before the pause. As a result, the pause drops the answer, and the next run asks again. The commits of an execute turn are already on the branch. As a result, the todo of that turn counts as done, and the next run starts at the next todo.
 
 A quota stop is not a failure. The run can continue after the reset, and the task keeps its session for that. Until the resume command exists (M9), `tasker abort` is the only way out of `quota_blocked`.
 

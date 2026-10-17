@@ -173,6 +173,11 @@ The provider says which events are quota events, because only the provider can r
 
 Paid usage (overage) is usage past the subscription quota, and it costs money. The caller must pass the overage stop only under `overagePolicy: "decline"`. The caller must pass the reset time of the window that the operator approved. An event in that window does not stop the run. An overage stop ends the child at once. Its outcome wins over the timeout, because it rests on the parsed event, not on whether the stop beat the exit of the child.
 
+The caller passes the approved window of the task to each run. This is the reset time of the last approval of the task. Each policy has one kind of pause and one compare with the approved window:
+
+- Under `decline`, the pause is `quota_blocked` at the start of paid usage. The run compares the approved window with the window of the event, and it does not stop for an event in that window.
+- Under `ask`, the pause is `awaiting_quota_approval` after a run whose use of the quota window reaches `quotaApprovalThreshold`. The caller asks the provider for the warning, then asks whether the approved window suppresses it. The caller does not read the events itself.
+
 An event shows the start of paid usage when `isUsingOverage` is `true`, or when `status` is `rejected` and `overageStatus` is `allowed` or `allowed_warning`. In the second case, the subscription is spent and paid usage is on. A high `utilization` alone does not show it. The presence of `overageStatus` does not show it, and neither does `overageStatus: "rejected"`, because an `allowed` event can carry `overageStatus` too. With paid usage off, the stop comes through the quota stop.
 
 The events have these facts:
