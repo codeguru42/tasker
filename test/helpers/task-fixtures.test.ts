@@ -33,6 +33,7 @@ import {
   expectRefusedWithoutChange,
   landAcceptedTask,
   moveTaskThrough,
+  pausePlanFixtureRefine,
   pausePlanFixtureTask,
   seedAcceptedTask,
   startIssueTask,
@@ -264,6 +265,27 @@ describe("pausePlanFixtureTask", () => {
       expect(store.planSession(stored.id)).toMatchObject({ sessionId: TEST_SESSION_ID });
     });
     expect(eventsOf(dataRoot, key).at(-1)).toMatchObject({ data: data });
+  });
+});
+
+describe("pausePlanFixtureRefine", () => {
+  it("gives the task a plan session and pauses it after a refine from the origin with the data", async () => {
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
+    const { dataRoot, repoKey, key } = fixture.started;
+    const data = { cause: "overage", resetsAt: 1792206000 };
+
+    const task = pausePlanFixtureRefine(fixture, "accepted", "quota_blocked", data);
+
+    expect(task.state).toBe("quota_blocked");
+    withDataRootStore(dataRoot, (store) => {
+      const stored = store.findLatestTask(repoKey, key)!;
+      const events = store.listEvents(stored.id);
+      expect(stored.state).toBe("quota_blocked");
+      expect(transitionFromEvents(events, "quota_blocked")).toBe("refining");
+      expect(transitionFromEvents(events, "refining")).toBe("accepted");
+      expect(store.planSession(stored.id)).toMatchObject({ sessionId: TEST_SESSION_ID });
+    });
+    expect(eventsOf(dataRoot, key).at(-1)).toMatchObject({ data });
   });
 });
 

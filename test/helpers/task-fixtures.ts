@@ -10,7 +10,7 @@ import { loadConfig } from "../../src/config/load.js";
 import type { Config } from "../../src/config/schema.js";
 import { canonicalPath } from "../../src/real-path.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
-import { transitionTask, type TaskState } from "../../src/state/machine.js";
+import { transitionTask, type TaskState, type TransitionDetail } from "../../src/state/machine.js";
 import type {
   NewReview,
   NewSession,
@@ -46,6 +46,7 @@ import {
   eventsOf,
   latestTaskOf,
   lockNames,
+  pauseRefineFrom,
   pauseTaskFrom,
   seedReview,
   seedTasks,
@@ -325,6 +326,16 @@ export async function usePlanFixture(
   return { started, claude };
 }
 
+// Gives the task of the fixture a plan session, then pauses it with the given step. Returns the paused task.
+function pausePlanFixtureWith(fixture: PlanFixture, pause: (store: TaskStore, taskId: number) => Task): Task {
+  const { dataRoot, repoKey, key } = fixture.started;
+  return withDataRootStore(dataRoot, (store) => {
+    const task = store.findLatestTask(repoKey, key)!;
+    seedPlanSession(store, task.id);
+    return pause(store, task.id);
+  });
+}
+
 // Gives the task of the fixture a plan session and pauses it from origin. data replaces the default detail of the pause
 // (see pauseTaskFrom). Returns the paused task.
 export function pausePlanFixtureTask(
@@ -333,12 +344,20 @@ export function pausePlanFixtureTask(
   pause: "quota_blocked" | "awaiting_quota_approval" | "interrupted",
   data?: Parameters<typeof pauseTaskFrom>[4],
 ): Task {
-  const { dataRoot, repoKey, key } = fixture.started;
-  return withDataRootStore(dataRoot, (store) => {
-    const task = store.findLatestTask(repoKey, key)!;
-    seedPlanSession(store, task.id);
-    return pauseTaskFrom(store, task.id, origin, pause, data);
-  });
+  return pausePlanFixtureWith(fixture, (store, taskId) => pauseTaskFrom(store, taskId, origin, pause, data));
+}
+
+// Gives the task of the fixture a plan session and pauses it after a refine from refineOrigin (see pauseRefineFrom).
+// Returns the paused task.
+export function pausePlanFixtureRefine(
+  fixture: PlanFixture,
+  refineOrigin: TaskState,
+  pause: "quota_blocked" | "awaiting_quota_approval" | "interrupted",
+  data?: TransitionDetail,
+): Task {
+  return pausePlanFixtureWith(fixture, (store, taskId) =>
+    pauseRefineFrom(store, taskId, refineOrigin, pause, undefined, data),
+  );
 }
 
 export interface RefineFixture extends PlanFixture {

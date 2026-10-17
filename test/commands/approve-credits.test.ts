@@ -18,6 +18,7 @@ import {
   expectCommandRefused,
   expectNoAssistantRun,
   moveTaskThrough,
+  pausePlanFixtureRefine,
   pausePlanFixtureTask,
   usePlanFixture,
 } from "../helpers/task-fixtures.js";
@@ -78,27 +79,27 @@ describe("tasker approve-credits", () => {
       expectNoAssistantRun(fixture);
     });
 
-    it("refuses a warning pause from an origin with no step", async () => {
+    it("refuses a warning pause after a refine with no step", async () => {
       const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
-      pausePlanFixtureTask(fixture, "pushing", "awaiting_quota_approval");
+      pausePlanFixtureRefine(fixture, "accepted", "awaiting_quota_approval");
 
       await expectCommandRefused(
         fixture.started,
         () => runApprove(),
-        `the task of ${KEY} was paused from pushing; tasker approve-credits has no step for it\n`,
+        `the task of ${KEY} was paused from refining; tasker approve-credits has no step for it\n`,
       );
 
       expectNoAssistantRun(fixture);
     });
 
-    it("refuses an overage stop from verifying", async () => {
+    it("refuses an overage stop after a refine with no step", async () => {
       const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
-      pausePlanFixtureTask(fixture, "verifying", "quota_blocked", { cause: "overage", resetsAt: RESETS_AT });
+      pausePlanFixtureRefine(fixture, "accepted", "quota_blocked", { cause: "overage", resetsAt: RESETS_AT });
 
       await expectCommandRefused(
         fixture.started,
         () => runApprove(),
-        `the task of ${KEY} was paused from verifying; tasker approve-credits has no step for it\n`,
+        `the task of ${KEY} was paused from refining; tasker approve-credits has no step for it\n`,
       );
 
       expectNoAssistantRun(fixture);
