@@ -684,6 +684,7 @@ describe("executeTask push guard", () => {
 
     expect(result).toEqual({ exitCode: 1 });
     expect(io.err.join("")).toContain(await pushMessage(fixture));
+    expect(io.out.join("")).not.toContain("run tasker resume");
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
     expect(todoStates(fixture)).toContainEqual(["a", "in_progress"]);
   });

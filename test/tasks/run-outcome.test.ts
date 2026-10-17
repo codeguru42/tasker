@@ -53,12 +53,22 @@ function applyTo(
   outcome: RunOutcome,
   before?: (store: TaskStore, task: Task) => void,
   quota: ReturnType<typeof quotaOf> = quotaOf("decline"),
+  omitInterruptedLine?: boolean,
 ) {
   const { dataRoot, task } = planningTask();
   const io = captureIo();
   const result = withDataRootStore(dataRoot, (store) => {
     before?.(store, task);
-    return applyRunOutcome({ store, task, phase: "planning", timeoutMinutes: 30, io, outcome, quota });
+    return applyRunOutcome({
+      store,
+      task,
+      phase: "planning",
+      timeoutMinutes: 30,
+      io,
+      outcome,
+      quota,
+      omitInterruptedLine,
+    });
   });
   const state = withDataRootStore(dataRoot, (store) => store.getTask(task.id)!.state);
   const marker = readRunMarker(createDataRoot(dataRoot).database, task.id);
@@ -233,6 +243,25 @@ describe("applyRunOutcome with an interrupted run", () => {
       { type: "transition", data: { from: "planning", to: "interrupted", cause: "signal", signal } },
     ]);
     expect(io.out).toEqual([`planning interrupted by ${signal}; run tasker resume ${KEY} to continue\n`]);
+    expect(io.err).toEqual([]);
+  });
+
+  it.each(["SIGINT", "SIGTERM"] as const)("leaves out the interrupted line on %s with the option", (signal) => {
+    const { result, state, marker, events, io } = applyTo(
+      { kind: "interrupted", ...base(), signal },
+      undefined,
+      quotaOf("decline"),
+      true,
+    );
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(state).toBe("interrupted");
+    expect(marker).toBeUndefined();
+    expect(events).toEqual([
+      { type: "usage", data: { usage: USAGE } },
+      { type: "transition", data: { from: "planning", to: "interrupted", cause: "signal", signal } },
+    ]);
+    expect(io.out).toEqual([]);
     expect(io.err).toEqual([]);
   });
 });
