@@ -17,6 +17,7 @@ import {
   transitionFromEvents,
   transitionTask,
   transitionWithAcceptance,
+  transitionWithBranchUpdate,
   transitionWithExecution,
   transitionWithLanding,
   transitionWithMarkedLanding,
@@ -567,6 +568,75 @@ describe("task transitions", () => {
       expect(store.getTask(task.id)!.state).toBe("workspace_ready");
       expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBe(approvedAt);
       expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithBranchUpdate", () => {
+    const before = { head: "a".repeat(40), base: "main", baseRevision: "refs/remotes/origin/main" };
+    const after = { ...before, head: "b".repeat(40) };
+
+    it("moves the task with one branch_updated event in place of a transition event", () => {
+      const task = store.createTask(newTask("awaiting_work_review"));
+      transitionTask(store, task.id, "updating_branch");
+      const moved = transitionWithBranchUpdate(store, task.id, "executed", { before, after, how: "rebase" }, {});
+      expect(moved.state).toBe("executed");
+      const events = store.listEvents(task.id);
+      expect(events.map((e) => e.type)).toEqual(["created", "transition", "branch_updated"]);
+      expect(events[2].data).toEqual({ before, after, how: "rebase", from: "updating_branch", to: "executed" });
+    });
+
+    it("records the error of a failed update", () => {
+      const task = store.createTask(newTask("awaiting_work_review"));
+      transitionTask(store, task.id, "updating_branch");
+      transitionWithBranchUpdate(
+        store,
+        task.id,
+        "awaiting_work_review",
+        { before, after: before, how: "none", error: "conflict in a.txt" },
+        {},
+      );
+      expect(store.listEvents(task.id).at(-1)?.data).toEqual({
+        before,
+        after: before,
+        how: "none",
+        error: "conflict in a.txt",
+        from: "updating_branch",
+        to: "awaiting_work_review",
+      });
+    });
+
+    it("writes the base event before the branch_updated event and clears the approval", () => {
+      const task = store.createTask(newTask("planning"));
+      seedPinnedPlanRevision(store, task.id);
+      transitionTask(store, task.id, "updating_branch");
+      const base = { base: "main", revision: before.baseRevision };
+      transitionWithBranchUpdate(
+        store,
+        task.id,
+        "awaiting_plan_review",
+        { before, after, how: "merge" },
+        { base, clearPlanApproval: 1 },
+      );
+      expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBeNull();
+      const events = store.listEvents(task.id);
+      expect(events.slice(-2).map((e) => e.type)).toEqual(["base", "branch_updated"]);
+      expect(events.at(-2)!.data).toEqual({ ...base, source: "update" });
+    });
+
+    it("writes nothing for an illegal edge", () => {
+      const task = store.createTask(newTask("awaiting_work_review"));
+      const events = store.listEvents(task.id);
+      expect(() =>
+        transitionWithBranchUpdate(
+          store,
+          task.id,
+          "executed",
+          { before, after, how: "rebase" },
+          { base: { base: "main", revision: "r" } },
+        ),
+      ).toThrow("illegal state transition: awaiting_work_review -> executed");
+      expect(store.getTask(task.id)!.state).toBe("awaiting_work_review");
+      expect(store.listEvents(task.id)).toEqual(events);
     });
   });
 

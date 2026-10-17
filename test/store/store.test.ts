@@ -1452,6 +1452,84 @@ describe("task store", () => {
       });
     });
 
+    describe("updateBranchTask", () => {
+      const branchUpdated = () => ({ type: "branch_updated", data: { how: "rebase" } });
+      const base = { base: "main", revision: "refs/remotes/origin/main" };
+      const reviewTask = () => store.createTask({ ...newTask, state: "awaiting_plan_review" });
+      const approve = (taskId: number, version: number) => store.approvePlanRevision(taskId, version, "approved");
+
+      it("appends the base event before the event of check and moves the task", () => {
+        const task = runningTask("updating_branch");
+        const moved = store.updateBranchTask(task.id, "executed", { base }, branchUpdated);
+        expect(moved).toMatchObject({ id: task.id, state: "executed" });
+        expect(store.getTask(task.id)).toEqual(moved);
+        expect(store.listEvents(task.id).slice(-2)).toMatchObject([
+          { type: "base", at: "2026-01-01T00:00:00.000Z", data: { ...base, source: "update" } },
+          { type: "branch_updated", data: { how: "rebase" } },
+        ]);
+      });
+
+      it("writes only the event of check when writes is empty", () => {
+        const task = runningTask("updating_branch");
+        const events = eventCount();
+        store.updateBranchTask(task.id, "awaiting_work_review", {}, branchUpdated);
+        expect(eventCount()).toBe(events + 1);
+        expect(store.listEvents(task.id).at(-1)?.type).toBe("branch_updated");
+      });
+
+      it("deletes the run marker", () => {
+        const task = runningTask("updating_branch");
+        store.updateBranchTask(task.id, "executed", {}, branchUpdated);
+        expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+      });
+
+      it("clears the approval of the pinned version", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        approve(task.id, 1);
+        writeRunMarker(dbPath, task.id, "updating_branch", process.pid);
+        store.updateBranchTask(task.id, "awaiting_plan_review", { base, clearPlanApproval: 1 }, branchUpdated);
+        expect(store.getPlanRevision(task.id, 1)?.approvedAt).toBeNull();
+        expect(store.pinnedPlanRevision(task.id)).toBeUndefined();
+        expect(store.getTask(task.id)?.state).toBe("awaiting_plan_review");
+        expect(
+          store
+            .listEvents(task.id)
+            .slice(-2)
+            .map((e) => e.type),
+        ).toEqual(["base", "branch_updated"]);
+      });
+
+      it("writes nothing when the version is not pinned", () => {
+        const task = reviewTask();
+        seedPlanRevision(store, task.id);
+        approve(task.id, 1);
+        seedPlanRevision(store, task.id);
+        approve(task.id, 2);
+        writeRunMarker(dbPath, task.id, "updating_branch", process.pid);
+        expectNothingChanged(
+          task.id,
+          () => store.updateBranchTask(task.id, "awaiting_plan_review", { base, clearPlanApproval: 1 }, branchUpdated),
+          `task ${task.id}: plan revision 1 is not the pinned revision (2)`,
+        );
+        expect(store.pinnedPlanRevision(task.id)?.version).toBe(2);
+      });
+
+      it("writes nothing when check throws", () => {
+        const task = runningTask("updating_branch");
+        expectNothingChanged(
+          task.id,
+          () =>
+            store.updateBranchTask(task.id, "executed", { base }, () => {
+              throw new Error("check failed");
+            }),
+          "check failed",
+        );
+        expect(store.getTask(task.id)?.state).toBe("updating_branch");
+        expect(readRunMarker(dbPath, task.id)).toBeDefined();
+      });
+    });
+
     describe("questions", () => {
       const questionsOf = (taskId: number, version: number) => store.planQuestions(taskId, version);
 
