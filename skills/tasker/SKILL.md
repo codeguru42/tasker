@@ -49,7 +49,7 @@ For each of these errors, the command exits with code 1 and prints the error on 
 - Another command holds the clone for more than 5 minutes. The error says that the lock is busy. Run the command again.
 - The prompt cannot be archived. Fix the cause, then run the command again. The task keeps its state.
 - A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
-- A quota warning pauses the run under `overagePolicy: "ask"`, when the use of the quota window reaches `quotaApprovalThreshold`. The task goes to the state `awaiting_quota_approval`. The command prints the pause line on stdout. Run `tasker abort <issue>` to leave the state.
+- The quota pause: under `overagePolicy: "ask"`, the use of the quota window reaches `quotaApprovalThreshold`. The run ends first (for `tasker execute`, the turn ends first). Then the task goes to the state `awaiting_quota_approval`. The command prints the use of the quota window and its reset time on stdout, or says that the reset time is unknown. Run `tasker abort <issue>` to leave the state.
 - An unexpected error occurs after the run has started. The task goes to the state `failed`. The error is `<step> failed: <error>`. The step is `planning`, `refining`, `executing`, `verifying` or `reviewing`.
 
 ### A dead run
