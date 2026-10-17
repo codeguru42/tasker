@@ -78,6 +78,19 @@ export function uncommittedChangeText(change: UncommittedChange): string {
 
 export type ReconcileStrategy = "rebase" | "merge";
 
+export interface ResyncResult {
+  moved: boolean;
+  how: "none" | "fast-forward" | "rebase" | "merge";
+  head: string;
+}
+
+// The head, the task ref and the uncommitted changes of a workspace. taskRef is undefined for a detached head.
+export interface WorkspaceState {
+  head: string;
+  taskRef: string | undefined;
+  changes: UncommittedChange[];
+}
+
 export type RemoteTip = { state: "present"; revision: string } | { state: "absent" };
 
 export interface PublishResult {
@@ -152,6 +165,14 @@ export interface VcsProvider {
   // It does not fetch. Run resolveBase first, which fetches.
   // A conflict rejects with ReconcileConflictError (src/vcs/errors.ts).
   reconcile(ctx: VcsContext, o: { path: string; baseRevision: string; strategy: ReconcileStrategy }): Promise<string>;
+  // Moves the workspace onto baseRevision and says how the head moved. It does not fetch.
+  // A conflict rejects with ReconcileConflictError (src/vcs/errors.ts) and the workspace is restored.
+  resync(
+    ctx: VcsContext,
+    o: { path: string; baseRevision: string; strategy: ReconcileStrategy },
+  ): Promise<ResyncResult>;
+  // Reads the head, the task ref and the uncommitted changes of the workspace. It changes nothing.
+  workspaceState(ctx: VcsContext, o: { path: string }): Promise<WorkspaceState>;
   // Pushes taskRef to the remote. published is the revision that the last publish gave.
   publish(ctx: VcsContext, o: { taskRef: string; published: string | undefined }): Promise<PublishResult>;
   // Moves base on the remote to revision. It is a fast-forward.

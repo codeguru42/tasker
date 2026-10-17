@@ -22,7 +22,7 @@ import { gitDoctorChecks } from "./doctor.js";
 import { installPushHook } from "./push-guard.js";
 import { provisionClone } from "./provision.js";
 import { remoteTip } from "./remote-tip.js";
-import { reconcileWorktree } from "./reconcile.js";
+import { reconcileWorktree, resyncWorktree, worktreeState } from "./reconcile.js";
 import { repoPaths } from "./repo-paths.js";
 import {
   createTaskWorktree,
@@ -134,6 +134,15 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
     async reconcile(ctx, { path, baseRevision, strategy }) {
       const { clone } = pathsOf(ctx);
       return reconcileWorktree({ clone, env: ctx.env, path, baseRevision, strategy });
+    },
+    async resync(ctx, { path, baseRevision, strategy }) {
+      const { clone } = pathsOf(ctx);
+      return resyncWorktree({ clone, env: ctx.env, path, baseRevision, strategy });
+    },
+    async workspaceState(ctx, { path }) {
+      const { clone } = pathsOf(ctx);
+      const { head, branch, changes } = await worktreeState({ clone, env: ctx.env, path });
+      return { head, taskRef: branch, changes };
     },
     async publish(ctx, { taskRef, published }) {
       const result = await publishTaskBranch({ ...remoteOptionsOf(ctx), branch: taskRef, published });
