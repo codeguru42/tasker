@@ -197,7 +197,7 @@ flowchart LR
   Spawning -->|run died: detected, or tasker interrupted| X[interrupted]
 
   Q -->|tasker resume| T{{resume target}}
-  Q -->|tasker approve-credits| T
+  Q -->|tasker approve-credits: only a stop with the cause overage and a known window| T
   X -->|tasker resume| T
   QA -->|tasker approve-credits| T
 
@@ -207,7 +207,7 @@ flowchart LR
 
 - `run died: detected` means that a command found a dead run and moved the task to `interrupted`. [The `run_markers` table](dev/data-root.md#run_markers-table) says which commands find a dead run.
 - `verifying`, `pushing`, `opening_pr`, `merging`, `finishing` and `updating_branch` spawn no assistant. As a result, only `interrupted` can come from them in practice. No run can reach the two quota pauses from these states.
-- `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there. Under `ask`, a run whose use of the quota window reaches `quotaApprovalThreshold` pauses into `awaiting_quota_approval` when the run ends, unless the operator approved that window.
+- `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there when the stop named a window. Under `ask`, a run whose use of the quota window reaches `quotaApprovalThreshold` pauses into `awaiting_quota_approval` when the run ends, unless the operator approved that window with `approve-credits`.
 - A resume moves the task to the state before the spawn, then runs the same command again. So the task goes straight back into a spawning state.
 
 | Paused from                                 | Resumes to                             | Then runs                                                            |
@@ -292,24 +292,26 @@ flowchart LR
 
 `tasker show`, `tasker status` and the wrong-state error name the commands that are valid from the state of a task. They read one table. The table lives in `src/state/commands.ts`.
 
-| State                                                                                                                                                                                               | Primary command | Commands, in order                  |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------- |
-| `provisioning`                                                                                                                                                                                      | `start`         | `start`, `abort`                    |
-| `workspace_ready`                                                                                                                                                                                   | `plan`          | `plan`, `abort`                     |
-| `awaiting_plan_review`                                                                                                                                                                              | none            | `refine`, `approve`, `abort`        |
-| `approved`                                                                                                                                                                                          | `execute`       | `execute`, `unapprove`, `abort`     |
-| `executed`                                                                                                                                                                                          | `verify`        | `verify`, `abort`                   |
-| `awaiting_work_review`                                                                                                                                                                              | none            | `review`, `accept`, `abort`         |
-| `reviewed`                                                                                                                                                                                          | none            | `refine`, `dismiss-review`, `abort` |
-| `accepted`                                                                                                                                                                                          | `merge`         | `merge`, `mark-landed`, `abort`     |
-| `pushed`                                                                                                                                                                                            | none            | `mark-landed`, `abort`              |
-| `in_peer_review`                                                                                                                                                                                    | none            | `mark-landed`, `abort`              |
-| `landed`                                                                                                                                                                                            | `finish`        | `finish`, `abort`                   |
-| `cleanup_failed`                                                                                                                                                                                    | `finish`        | `finish`, `abort`                   |
-| `failed`                                                                                                                                                                                            | `retry`         | `retry`, `refine`, `abort`          |
-| `quota_blocked`, `interrupted`                                                                                                                                                                      | `resume`        | `resume`, `abort`                   |
-| each other state that is not terminal: `planning`, `refining`, `executing`, `verifying`, `reviewing`, `pushing`, `opening_pr`, `merging`, `finishing`, `updating_branch`, `awaiting_quota_approval` | none            | `abort`                             |
-| `finished`, `cancelled`                                                                                                                                                                             | no row          | no row                              |
+| State                                                                                                                                                                    | Primary command   | Commands, in order                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | ------------------------------------ |
+| `provisioning`                                                                                                                                                           | `start`           | `start`, `abort`                     |
+| `workspace_ready`                                                                                                                                                        | `plan`            | `plan`, `abort`                      |
+| `awaiting_plan_review`                                                                                                                                                   | none              | `refine`, `approve`, `abort`         |
+| `approved`                                                                                                                                                               | `execute`         | `execute`, `unapprove`, `abort`      |
+| `executed`                                                                                                                                                               | `verify`          | `verify`, `abort`                    |
+| `awaiting_work_review`                                                                                                                                                   | none              | `review`, `accept`, `abort`          |
+| `reviewed`                                                                                                                                                               | none              | `refine`, `dismiss-review`, `abort`  |
+| `accepted`                                                                                                                                                               | `merge`           | `merge`, `mark-landed`, `abort`      |
+| `pushed`                                                                                                                                                                 | none              | `mark-landed`, `abort`               |
+| `in_peer_review`                                                                                                                                                         | none              | `mark-landed`, `abort`               |
+| `landed`                                                                                                                                                                 | `finish`          | `finish`, `abort`                    |
+| `cleanup_failed`                                                                                                                                                         | `finish`          | `finish`, `abort`                    |
+| `failed`                                                                                                                                                                 | `retry`           | `retry`, `refine`, `abort`           |
+| `quota_blocked`                                                                                                                                                          | `resume`          | `resume`, `approve-credits`, `abort` |
+| `awaiting_quota_approval`                                                                                                                                                | `approve-credits` | `approve-credits`, `abort`           |
+| `interrupted`                                                                                                                                                            | `resume`          | `resume`, `abort`                    |
+| each other state that is not terminal: `planning`, `refining`, `executing`, `verifying`, `reviewing`, `pushing`, `opening_pr`, `merging`, `finishing`, `updating_branch` | none              | `abort`                              |
+| `finished`, `cancelled`                                                                                                                                                  | no row            | no row                               |
 
 The rules of the table:
 
