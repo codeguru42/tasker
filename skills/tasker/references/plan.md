@@ -32,7 +32,7 @@ These errors move the task to the state `failed`. The shared quota stop is the e
 - The assistant returns a plan that tasker refuses. The error lists each problem.
 - The plan file cannot be written. The error is `cannot write the plan file of revision v1: <error>`.
 
-For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked`, no command continues it yet. Run `tasker abort <issue>` to leave the state. A crash of tasker leaves the task in `planning`. Run `tasker abort <issue>` for it.
+For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked`, no command continues it yet. Run `tasker abort <issue>` to leave the state. After a crash of tasker, the next command that reads the task moves it to `interrupted`. See [A dead run](../SKILL.md#a-dead-run). Run `tasker abort <issue>` for it.
 
 If you press Ctrl-C, the assistant stops. The run ends as a failure, and the task goes to the state `failed`.
 

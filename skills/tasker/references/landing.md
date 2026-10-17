@@ -28,7 +28,7 @@ The task goes to `failed` with the error `merging failed: <reason>` when one of 
 
 The base can move on `origin` after `tasker accept`. Then the land fails, nothing moves on `origin`, and the task goes to `failed` from `merging`.
 
-A crash during the command leaves the task in `merging` with its run marker.
+A crash during the command leaves the task in `merging` with its run marker. The next command that reads the task moves it to `interrupted`.
 
 ## `tasker mark-landed`
 
@@ -64,4 +64,4 @@ The task goes to `cleanup_failed` when a step fails after the move to `finishing
 
 To recover, fix the cause and run `tasker finish` again. A second run finishes the steps that are left.
 
-The command keeps the files under `artifacts/`. A crash during the command leaves the task in `finishing` with its run marker.
+The command keeps the files under `artifacts/`. A crash during the command leaves the task in `finishing` with its run marker. The next command that reads the task moves it to `interrupted`.

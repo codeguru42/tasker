@@ -1,10 +1,12 @@
 # Inspect commands
 
-These commands print the state of tasks and the last quota event of each repo. They change nothing. [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share. [The task of a show command](../SKILL.md#the-task-of-a-show-command) says which task `show` and `show-bootstrap` use.
+These commands print the state of tasks and the last quota event of each repo. They change no task, except that a task with a dead run moves to `interrupted`. In that case, the command prints the notes of the dead run on stderr. See [A dead run](../SKILL.md#a-dead-run). [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share. [The task of a show command](../SKILL.md#the-task-of-a-show-command) says which task `show` and `show-bootstrap` use.
 
 ## `tasker status`
 
 Lists the tasks by issue key and state. With no option, it lists the active tasks of all repos. A task is active when its state is not `finished` and not `cancelled`.
+
+Before it lists, the command moves each task with a dead run to `interrupted`, also a task that the options hide. It prints the notes on stderr. See [A dead run](../SKILL.md#a-dead-run).
 
 If you give more than one option, a task must match all of them. With `--state finished` or `--state cancelled`, the command lists those tasks too.
 
@@ -38,7 +40,7 @@ If the repo key does not exist, the command prints an error that names the key a
 
 ## `tasker show`
 
-Prints the details of the task of an issue: `tasker show <issue>`.
+Prints the details of the task of an issue: `tasker show <issue>`. If the run of the task is dead, the command moves the task to `interrupted` first and prints the notes on stderr. See [A dead run](../SKILL.md#a-dead-run).
 
 The command prints one line for each field, as `<field>: <value>`, in this order:
 

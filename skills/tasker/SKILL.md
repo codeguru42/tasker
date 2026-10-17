@@ -51,6 +51,10 @@ For each of these errors, the command prints the error on stderr and exits with 
 - A quota limit stops the run. The task goes to the state `quota_blocked`. The command prints the reset time on stdout.
 - An unexpected error occurs after the run has started. The task goes to the state `failed`. The error is `<step> failed: <error>`. The step is `planning`, `refining`, `executing`, `verifying` or `reviewing`.
 
+### A dead run
+
+A run is dead when the task is in a spawning state and its tasker process is gone. The next command that reads the task moves it to `interrupted`. `tasker status` does this for each task in a spawning state. The command prints this line on stderr before its own output: `note: the run of <issue key> died in <state>; the task is now interrupted`. If the child of the run still ran, a second line follows: `note: stopped the process group <pid> of the dead run`, or `note: cannot stop the process group <pid> of the dead run: <error>`. After a failed stop, the task stays in `interrupted`. Then the command goes on with the task in `interrupted`. A command that does not accept `interrupted` prints the error of the item [The task is in a state that the command does not accept](#shared-errors).
+
 ### The number rule
 
 The value of `--version`, `--run`, `--command` and `--review` must be a whole number of 1 or more, with no sign and no leading zero. Without `--version`, `--run` or `--review`, the command uses the newest item. A bad value gives the error `--<option> must be a whole number of 1 or more: <value>`.
