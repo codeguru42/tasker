@@ -342,7 +342,7 @@ The plain-form rule does not cover these:
 
 ### The tool-block rule
 
-A tool block is a denial of a tool call by the permission rules or by the classifier of auto mode. [The plain-form rule](#the-plain-form-rule) covers a denied `tasker` command in the plain form. If any other tool block stops the agent, the agent reports the exact text of the denial to the orchestrator. Then the agent waits as [the answer-wait rule](#the-answer-wait-rule) says. The orchestrator tells the user. The orchestrator does not run the blocked action for the agent, unless the user tells it to.
+A tool block is a denial of a tool call by the permission rules or by the classifier of auto mode. In past sessions, the classifier of auto mode denied `gh auth token` and a `claude -p` run. [The plain-form rule](#the-plain-form-rule) covers a denied `tasker` command in the plain form. If any other tool block stops the agent, the agent reports the exact text of the denial to the orchestrator. Then the agent waits as [the answer-wait rule](#the-answer-wait-rule) says. The orchestrator tells the user. The orchestrator does not run the blocked action for the agent, unless the user tells it to.
 
 ### The command rules
 
