@@ -55,6 +55,9 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - A link must support the exact sentence that holds it. Ask the plan to compare each link sentence with its target, for example "X says that Y". The target must say Y. On #159, a link sentence claimed more than its target doc says. [The diff read](orchestration.md#the-diff-read) found it after execute. On #212, the compare found a real gap before execute, because [docs/config.md](../config.md#assistant) names the provider `claude-code`, not the `claude` command.
 - If a change makes an argument optional, ask the plan to list each doc sentence that depends on that argument, and to say for each one if it changes. On #159, the feedback of [`tasker refine`](tasks.md#refine) became optional. Review 2 found the sentence "a left-out question counts as answered by the feedback".
 - If a ticket adds an option that takes numbers, name the raw-string rule to the plan. The comment of the helper that reads whole-number options in `src/commands/shared.ts` gives the rule: an error prints the value as the user typed it. On #158, review 1 found that a very large `--finding` position printed a changed number.
+- Before the plan adds a test helper, ask it to search `test/commands/`, `test/tasks/` and `test/helpers/` for a helper that does the same job. On #178, one shared check of a refused command replaced three local copies.
+- The rule of [Tests](rules.md#tests) on shared test helpers also covers a one-line wrapper around a shared helper. The second copy of such a wrapper is a duplication. On #179, three such wrappers cost one review loop.
+- If a command has a failure path that ends in a state other than `failed`, ask the plan to give the shared failure step of `src/tasks/` the target state as an argument. On #180, the catch block of `finish` copied the steps, and the review found the copy.
 
 ## A ticket that only adds a layer, for example a schema
 
@@ -95,6 +98,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
   - A sorted diff of the bodies, without the import lines.
   - The import graph.
 - If a refactor moves tests onto shared defaults, ask the plan to compare the old local builder with the shared builder. Ask the plan to list each value that only the old builder has. Ask the plan to say for each value if a test depends on it. On #220, review 1 found a round-trip test that lost its check of two different times.
+- If a refactor moves steps of a command into a shared function, ask the plan to say where each input of the moved steps comes from. Ask the plan to pass an input that the caller already holds. On #180, the shared cleanup listed the worktrees a second time.
 
 ## A ticket that moves a task into or out of a group of states
 
