@@ -44,6 +44,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - If the issue gives a `gh issue list` command, ask the plan to add `--limit 1000`. By default, gh lists at most 30 issues (#200). [The priority rule](orchestration.md#pick-the-tickets) of `docs/dev/orchestration.md` holds such a command.
 - If a page has two headings with the same name, the issue gives the exact anchor (#194).
 - In step 7 of [the rebase-conflict procedure](rebase-conflicts.md#procedure), resolve only the conflict hunk. `git checkout --theirs <file>` takes the whole file. On #201, it dropped a word that another ticket had added. A script for the conflict chains its steps with `&&`, so that a failed step stops the script (#201).
+- If the issue puts a command out of scope, ask the plan not to edit the docs of that command. On #159, the plan narrowed a reason sentence in the "Retry" section of [tasks.md](tasks.md#retry). Review 1 read the new sentence as a promise of a case that the ticket did not build.
 
 ## A ticket that only adds a layer, for example a schema
 
