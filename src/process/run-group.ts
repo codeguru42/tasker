@@ -42,6 +42,54 @@ function groupRuns(pid: number): boolean {
   }
 }
 
+// Sends SIGTERM to the group of pid. It gives back the timer that sends SIGKILL after the grace time and then runs
+// onKill. A throw of the SIGKILL goes to onError. The caller clears the timer when the group is gone.
+function startStop(pid: number, onKill: () => void, onError: (error: unknown) => void): NodeJS.Timeout {
+  signalGroup(pid, "SIGTERM");
+  return setTimeout(() => {
+    try {
+      signalGroup(pid, "SIGKILL");
+    } catch (error) {
+      onError(error);
+      return;
+    }
+    onKill();
+  }, KILL_GRACE_MS);
+}
+
+// Stops the process group of pid: SIGTERM now, and SIGKILL after five seconds if the group still runs.
+// It resolves when the group is gone. An error of a signal or of the poll rejects. A pid below 2 or not whole
+// rejects with no signal, because process.kill(-1) signals every process of the user and -0 is the own group.
+export function stopGroup(pid: number): Promise<void> {
+  if (!Number.isInteger(pid) || pid < 2) {
+    return Promise.reject(
+      new RangeError(`cannot stop the process group of pid ${pid}: the pid must be a whole number of 2 or more`),
+    );
+  }
+  return new Promise((resolve, reject) => {
+    let graceTimer: NodeJS.Timeout | undefined;
+    const finish = (done: () => void) => {
+      clearTimeout(graceTimer);
+      clearInterval(pollTimer);
+      done();
+    };
+    const fail = (error: unknown) => finish(() => reject(error));
+    const poll = () => {
+      try {
+        if (!groupRuns(pid)) finish(resolve);
+      } catch (error) {
+        fail(error);
+      }
+    };
+    const pollTimer = setInterval(poll, POLL_MS);
+    try {
+      graceTimer = startStop(pid, poll, fail);
+    } catch (error) {
+      fail(error);
+    }
+  });
+}
+
 export interface SignalForward {
   // Gives the pid of the group. Each signal that came before goes to the group now, in the order that it came.
   attach: (pid: number) => void;
@@ -137,12 +185,16 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
       if (stopping) return;
       stopping = true;
       clearTimeout(deadlineTimer);
-      signalGroup(pid, "SIGTERM");
-      graceTimer = setTimeout(() => {
-        killed = true;
-        signalGroup(pid, "SIGKILL");
-        finishIfDone();
-      }, KILL_GRACE_MS);
+      graceTimer = startStop(
+        pid,
+        () => {
+          killed = true;
+          finishIfDone();
+        },
+        (error) => {
+          throw error;
+        },
+      );
       pollTimer = setInterval(finishIfDone, POLL_MS);
     };
     const armDeadline = () => {
