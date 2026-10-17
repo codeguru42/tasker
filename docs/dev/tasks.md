@@ -106,14 +106,16 @@ The step has these limits:
 
 ## The result of an assistant run
 
-One shared step maps the outcome of an assistant run to the next state of the task. Each command that runs the assistant (plan, refine, execute and review) must use it. As a result, each command moves the task and prints in the same way, and the rule has one home.
+One shared step maps the outcome of an assistant run to the next state of the task, or gives the command a quota warning. Each command that runs the assistant (plan, refine, execute and review) must use it. As a result, each command moves the task and prints in the same way, and the rule has one home.
 
-The step records the usage of the run first, for every outcome. Then it acts on the outcome:
+The step records the usage of the run first, for every outcome. Then it acts on the outcome. It moves the task only when the outcome says so below:
 
 - A success with no quota warning causes no move. The command that ran the assistant makes its own checks and its own move.
-- A success with a quota warning moves the task to `awaiting_quota_approval`. This happens only under `overagePolicy: "ask"`, when the use of the quota window reaches `quotaApprovalThreshold` in a window that the operator did not approve. The event holds the use and the reset time when it is known. The command prints both on stdout, or says that the reset time is unknown, and the exit code is 1.
+- A success with a quota warning causes no move. This happens only under `overagePolicy: "ask"`, when the use of the quota window reaches `quotaApprovalThreshold` in a window that the operator did not approve. The step gives the warning to the command.
 - A failure and a timeout move the task to `failed`. The error goes to the event and to stderr, and the exit code is 1.
 - A quota stop moves the task to `quota_blocked`. The event holds the cause and the reset time when it is known. The command prints the reset time on stdout, or says that it is unknown, and the exit code is 1.
+
+After a quota warning, the command pauses the task in `awaiting_quota_approval`. Plan, refine and review pause before they record the answer. Execute pauses after it records the result of the turn. The event holds the use and the reset time when it is known. The command prints both on stdout, or says that the reset time is unknown, and the exit code is 1.
 
 A failed run also spends tokens, so the usage is recorded for a failure too. The record of usage must be complete.
 
