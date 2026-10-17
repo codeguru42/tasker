@@ -21,6 +21,7 @@ import {
   claudeRateLimitEvent,
   claudeSample,
   claudeSampleEvents,
+  withEventFirst,
 } from "../helpers/fake-claude.js";
 import { turnResultStream } from "../helpers/plan.js";
 import { quotaEventsOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
@@ -91,6 +92,7 @@ const prepareAndStartExecute = async (
     session?: AssistantSessionRequest;
     env?: (env: NodeJS.ProcessEnv) => NodeJS.ProcessEnv;
     starts?: ExecuteStart[];
+    approvedResetsAt?: number;
   } = {},
 ) => {
   const fixture = await useAssistantRunFixture({ state: "executing", ...options });
@@ -103,6 +105,7 @@ const prepareAndStartExecute = async (
       task,
       session: run.session ?? { resume: false },
       env,
+      approvedResetsAt: run.approvedResetsAt,
     });
     const outcomes = [];
     for (const input of run.starts ?? [{ prompt: "p" }]) outcomes.push(await prepared.start(input));
@@ -271,13 +274,29 @@ describe("prepareTaskPlanModeRun", () => {
     expect(flagValues(argv, "--model")).toEqual(["haiku"]);
     expect(flagValues(argv, "--effort")).toEqual(["low"]);
     expect(prepared.session).toEqual(recorded);
+    expect(prepared.provider.id).toBe("claude-code");
+  });
+
+  it("gives the provider of a new session and the approved window of the request", async () => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+    const { prepared } = await runPlanMode(fixture, { approvedResetsAt: 1792206000 });
+
+    expect(prepared.provider.id).toBe("claude-code");
+    expect(prepared.approvedResetsAt).toBe(1792206000);
+  });
+
+  it("gives no approved window when the request has none", async () => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+    const { prepared } = await runPlanMode(fixture);
+
+    expect(prepared.approvedResetsAt).toBeUndefined();
   });
 });
 
 describe("prepareTaskPlanModeRun with an overage event", () => {
   const overage = claudeOverageEvent();
   const resetsAt = (overage.rate_limit_info as { resetsAt: number }).resetsAt;
-  const withOverage = () => [JSON.stringify(overage), ...claudeSample("plain")];
+  const withOverage = () => withEventFirst(overage, claudeSample("plain"));
 
   it("stops the run at paid usage under the decline policy", async () => {
     // The short deadline ends the child at once when the stop does not work.
@@ -311,6 +330,22 @@ describe("prepareTaskPlanModeRun with an overage event", () => {
 describe("prepareTaskExecuteRun", () => {
   // The rule form of claude: // marks an absolute path. It is computed here, apart from the code under test.
   const expectedRule = (tool: string, path: string) => `${tool}(/${path})`;
+
+  it("gives the provider and the approved window of the request", async () => {
+    const { prepared } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain") } },
+      { approvedResetsAt: 1792206000 },
+    );
+
+    expect(prepared.provider.id).toBe("claude-code");
+    expect(prepared.approvedResetsAt).toBe(1792206000);
+  });
+
+  it("gives no approved window when the request has none", async () => {
+    const { prepared } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
+
+    expect(prepared.approvedResetsAt).toBeUndefined();
+  });
 
   it("runs the assistant under dontAsk with the execute model and the file tools of the worktree", async () => {
     const { claude, env, models, started } = await prepareAndStartExecute({

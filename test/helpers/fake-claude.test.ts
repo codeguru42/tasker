@@ -14,6 +14,7 @@ import {
   TEST_SESSION_ID,
   useFakeClaude,
   useFakeClaudeOnPath,
+  withEventFirst,
   writePlaceholder,
 } from "./fake-claude.js";
 import { realCommandPath } from "./fake-commands.js";
@@ -167,6 +168,23 @@ describe("claudeOverageEvent", () => {
     });
 
     expect(claudeOverageEvent().rate_limit_info).toMatchObject({ utilization: 0.8 });
+  });
+});
+
+describe("withEventFirst", () => {
+  it("puts the event line first and keeps the lines of the stream", () => {
+    const event = claudeOverageEvent();
+    const stream = claudeSample("plain");
+
+    expect(withEventFirst(event, stream)).toEqual([JSON.stringify(event), ...stream]);
+  });
+
+  it("does not change the stream that it gets", () => {
+    const stream = ["a", "b"];
+
+    withEventFirst(claudeRateLimitEvent(), stream);
+
+    expect(stream).toEqual(["a", "b"]);
   });
 });
 

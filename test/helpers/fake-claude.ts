@@ -100,6 +100,11 @@ export function claudeOverageEvent(edit: (info: Record<string, unknown>) => void
   });
 }
 
+// The stream with event as its first line, before the lines of stream, for a test where the event comes first.
+export function withEventFirst(event: AssistantEvent, stream: readonly string[]): string[] {
+  return [JSON.stringify(event), ...stream];
+}
+
 export const TEST_SESSION_ID = "e5f6ebac-a40e-48af-befc-f9a7d1af4c5b";
 
 // The id of an execute session. It differs from TEST_SESSION_ID, because a session id is unique in the whole table.
