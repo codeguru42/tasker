@@ -197,14 +197,14 @@ describe("a refused approve", () => {
 });
 
 describe("a plan older than the last move of the worktree", () => {
-  const appendMove = (dataRoot: string, taskId: number, how: string) =>
-    withDataRootStore(dataRoot, (store) => store.appendEvent(taskId, "branch_updated", { how }));
+  const appendMove = (dataRoot: string, taskId: number, data: Record<string, string | undefined>) =>
+    withDataRootStore(dataRoot, (store) => store.appendEvent(taskId, "branch_updated", data));
   const STALE_ERROR = (version: number) =>
     `the plan v${version} of ${KEY} is older than the last move of the worktree; run tasker refine ${KEY} "<feedback>" first\n`;
 
   it("refuses the approval when the head moved after the plan", async () => {
     const { dataRoot, task } = seedPlanReviewTask();
-    appendMove(dataRoot, task.id, "rebase");
+    appendMove(dataRoot, task.id, { how: "rebase", sync: "none" });
     const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
 
     await expectCommandRefused({ dataRoot, key: KEY }, runApprove, STALE_ERROR(1));
@@ -214,7 +214,7 @@ describe("a plan older than the last move of the worktree", () => {
 
   it("approves a plan that a later revision replaced", async () => {
     const { dataRoot, task } = seedPlanReviewTask();
-    appendMove(dataRoot, task.id, "merge");
+    appendMove(dataRoot, task.id, { how: "merge", sync: "none" });
     withDataRootStore(dataRoot, (store) => seedPlanRevision(store, task.id));
 
     const result = await runApprove();
@@ -226,7 +226,30 @@ describe("a plan older than the last move of the worktree", () => {
 
   it("does not block when the head did not move", async () => {
     const { dataRoot, task } = seedPlanReviewTask();
-    appendMove(dataRoot, task.id, "none");
+    appendMove(dataRoot, task.id, { how: "none", sync: "none" });
+
+    const result = await runApprove();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("approved");
+  });
+
+  it("refuses the approval when only the sync step moved the head", async () => {
+    const { dataRoot, task } = seedPlanReviewTask();
+    appendMove(dataRoot, task.id, { how: "none", sync: "fast-forward" });
+    const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
+
+    await expectCommandRefused({ dataRoot, key: KEY }, runApprove, STALE_ERROR(1));
+
+    expectNoWrite(dataRoot, task.id, before);
+  });
+
+  it.each([
+    { how: "none", sync: "absent" },
+    { how: "none", sync: "fast-forward", error: "x" },
+  ])("does not block after the event %j", async (data) => {
+    const { dataRoot, task } = seedPlanReviewTask();
+    appendMove(dataRoot, task.id, data);
 
     const result = await runApprove();
 

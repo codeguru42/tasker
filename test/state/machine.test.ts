@@ -605,11 +605,24 @@ describe("task transitions", () => {
     it("moves the task with one branch_updated event in place of a transition event", () => {
       const task = store.createTask(newTask("awaiting_work_review"));
       transitionTask(store, task.id, "updating_branch");
-      const moved = transitionWithBranchUpdate(store, task.id, "executed", { before, after, how: "rebase" }, {});
+      const moved = transitionWithBranchUpdate(
+        store,
+        task.id,
+        "executed",
+        { before, after, how: "rebase", sync: "none" },
+        {},
+      );
       expect(moved.state).toBe("executed");
       const events = store.listEvents(task.id);
       expect(events.map((e) => e.type)).toEqual(["created", "transition", "branch_updated"]);
-      expect(events[2].data).toEqual({ before, after, how: "rebase", from: "updating_branch", to: "executed" });
+      expect(events[2].data).toEqual({
+        before,
+        after,
+        how: "rebase",
+        sync: "none",
+        from: "updating_branch",
+        to: "executed",
+      });
     });
 
     it("records the error of a failed update", () => {
@@ -619,13 +632,14 @@ describe("task transitions", () => {
         store,
         task.id,
         "awaiting_work_review",
-        { before, after: before, how: "none", error: "conflict in a.txt" },
+        { before, after: before, how: "none", sync: "fast-forward", error: "conflict in a.txt" },
         {},
       );
       expect(store.listEvents(task.id).at(-1)?.data).toEqual({
         before,
         after: before,
         how: "none",
+        sync: "fast-forward",
         error: "conflict in a.txt",
         from: "updating_branch",
         to: "awaiting_work_review",
@@ -641,7 +655,7 @@ describe("task transitions", () => {
         store,
         task.id,
         "awaiting_plan_review",
-        { before, after, how: "merge" },
+        { before, after, how: "merge", sync: "none" },
         { base, clearPlanApproval: 1 },
       );
       expect(store.getPlanRevision(task.id, 1)!.approvedAt).toBeNull();
@@ -658,7 +672,7 @@ describe("task transitions", () => {
           store,
           task.id,
           "executed",
-          { before, after, how: "rebase" },
+          { before, after, how: "rebase", sync: "none" },
           { base: { base: "main", revision: "r" } },
         ),
       ).toThrow("illegal state transition: awaiting_work_review -> executed");
