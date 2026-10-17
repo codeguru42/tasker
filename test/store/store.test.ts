@@ -137,6 +137,13 @@ describe("task store", () => {
     return task;
   };
 
+  const endDeadRun = (
+    id: number,
+    state: string,
+    check: Parameters<TaskStore["endDeadRun"]>[2] = () => ({ type: "transition", data: { to: state } }),
+    on: TaskStore = store,
+  ) => on.endDeadRun(id, state, check);
+
   const nextReview = (taskId: number) => store.nextReview(taskId);
   const addReview = (taskId: number, input: NewReview, state: string, check?: Parameters<TaskStore["addReview"]>[3]) =>
     store.addReview(taskId, input, state, check);
@@ -2747,6 +2754,91 @@ describe("task store", () => {
 
       it("throws for a missing task", () => {
         expect(() => store.endRun(9999, "executed")).toThrow("task not found: 9999");
+      });
+    });
+
+    describe("endDeadRun", () => {
+      it("gives undefined and changes nothing for a task with no run", () => {
+        const task = store.createTask({ ...newTask, state: "approved" });
+        const events = eventCount();
+
+        expect(endDeadRun(task.id, "interrupted")).toBeUndefined();
+
+        expect(store.getTask(task.id)?.state).toBe("approved");
+        expect(eventCount()).toBe(events);
+      });
+
+      it("gives undefined and changes nothing for a live run", () => {
+        const task = runningTask("executing");
+        const events = eventCount();
+
+        expect(endDeadRun(task.id, "interrupted")).toBeUndefined();
+
+        expect(store.getTask(task.id)?.state).toBe("executing");
+        expect(readRunMarker(dbPath, task.id)).toMatchObject({ pid: process.pid });
+        expect(eventCount()).toBe(events);
+      });
+
+      it("moves a spawning task with no marker, and appends the event of check", () => {
+        const task = store.createTask({ ...newTask, state: "executing" });
+        const checked: unknown[] = [];
+
+        const result = endDeadRun(task.id, "interrupted", (current, childPid) => {
+          checked.push([current.state, childPid]);
+          return { type: "transition", data: { cause: "dead_run", childPid } };
+        });
+
+        expect(result).toEqual({ task: store.getTask(task.id), from: "executing", childPid: null });
+        expect(result?.task.state).toBe("interrupted");
+        expect(checked).toEqual([["executing", null]]);
+        expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+        expect(store.listEvents(task.id).at(-1)).toMatchObject({
+          type: "transition",
+          data: { cause: "dead_run", childPid: null },
+        });
+      });
+
+      it("moves a task with a dead marker, gives the child pid to check and deletes the marker", () => {
+        const task = runningTask("executing", deadPid(), 4242);
+
+        const result = endDeadRun(task.id, "interrupted", (_current, childPid) => ({
+          type: "transition",
+          data: { childPid },
+        }));
+
+        expect(result).toEqual({ task: store.getTask(task.id), from: "executing", childPid: 4242 });
+        expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+        expect(store.listEvents(task.id).at(-1)?.data).toEqual({ childPid: 4242 });
+      });
+
+      it("writes nothing and keeps the marker when check throws", () => {
+        const task = runningTask("executing", deadPid(), 4242);
+
+        expectNothingChanged(
+          task.id,
+          () =>
+            endDeadRun(task.id, "interrupted", () => {
+              throw new Error("check refused");
+            }),
+          "check refused",
+        );
+        expect(readRunMarker(dbPath, task.id)).toMatchObject({ child_pid: 4242 });
+      });
+
+      it("moves the task once when a second store on the same file calls it after", () => {
+        const task = runningTask("executing", deadPid());
+        const second = openStore(dbPath, { now });
+
+        try {
+          expect(endDeadRun(task.id, "interrupted")).toBeDefined();
+          const events = eventCount();
+
+          expect(endDeadRun(task.id, "interrupted", undefined, second)).toBeUndefined();
+
+          expect(eventCount()).toBe(events);
+        } finally {
+          second.close();
+        }
       });
     });
 
