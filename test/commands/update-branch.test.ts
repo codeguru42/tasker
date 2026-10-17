@@ -5,6 +5,7 @@ import { updateBranch } from "../../src/commands/update-branch.js";
 import type { TaskState } from "../../src/state/machine.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
+import { commitInWorktree, copyCloneBranchToOrigin } from "../helpers/git.js";
 import { seedPinnedPlanRevision } from "../helpers/plan.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import {
@@ -31,6 +32,10 @@ const BASE_REVISION = "refs/remotes/origin/main";
 const NEEDS =
   "workspace_ready, awaiting_plan_review, approved, executed, awaiting_work_review, reviewed, accepted, pushed, in_peer_review, cleanup_failed or failed";
 
+// The note on stderr of a task whose branch is not on origin.
+const absentNote = (work: WorkReviewTask) =>
+  `note: origin/${String(work.task.branch)} does not exist; nothing to sync from\n`;
+
 const runUpdateBranch = (...args: string[]) => runCommand(updateBranch, "update-branch", KEY, "--repo", REPO, ...args);
 
 // The commit that HEAD of the worktree names, for example "HEAD^" for its first parent.
@@ -56,7 +61,7 @@ describe("tasker update-branch", () => {
     expect(result).toEqual({
       code: 0,
       out: `${KEY} is current with main at ${tip}; nothing moved\nstate: awaiting_work_review\n`,
-      err: "",
+      err: absentNote(work),
     });
     expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
     const snapshot = { head, base: "main", baseRevision: BASE_REVISION };
@@ -80,7 +85,7 @@ describe("tasker update-branch", () => {
     expect(result).toEqual({
       code: 0,
       out: `moved ${KEY} onto main at ${work.baseTip} by fast-forward: ${head} to ${work.baseTip}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`,
-      err: "",
+      err: absentNote(work),
     });
     expect(await taskBranchTipOf(work)).toBe(work.baseTip);
     expect(eventsOf(work.dataRoot, KEY).at(-1)).toMatchObject({
@@ -102,7 +107,7 @@ describe("tasker update-branch", () => {
     expect(result).toEqual({
       code: 0,
       out: `moved ${KEY} onto main at ${work.baseTip} by rebase: ${head} to ${newHead}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`,
-      err: "",
+      err: absentNote(work),
     });
     const before = { head, base: "main", baseRevision: BASE_REVISION };
     expect(eventsAfter(work, count)).toEqual([
@@ -120,7 +125,7 @@ describe("tasker update-branch", () => {
           before,
           after: { ...before, head: newHead },
           how: "rebase",
-          sync: "none",
+          sync: "absent",
           from: "updating_branch",
           to: "executed",
         },
@@ -166,6 +171,182 @@ describe("tasker update-branch", () => {
     const result = await runUpdateBranch();
 
     expect(result.out.endsWith(`demoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`)).toBe(true);
+  });
+
+  describe("the sync step", () => {
+    const divergedError = (work: WorkReviewTask) => {
+      const branch = String(work.task.branch);
+      return `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${KEY} again\n`;
+    };
+    const lastEvent = (work: WorkReviewTask) => eventsOf(work.dataRoot, KEY).at(-1);
+
+    it("moves nothing and writes the note when origin has no such branch", async () => {
+      const work = await useWorkReviewTask();
+      const head = await taskBranchTipOf(work);
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe(absentNote(work));
+      expect(result.out).not.toContain("synced");
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
+      expect(lastEvent(work)).toMatchObject({ type: "branch_updated", data: { sync: "absent", before: { head } } });
+    });
+
+    it("moves nothing and writes no note when the two tips are equal", async () => {
+      const work = await useWorkReviewTask();
+      const branch = work.task.branch!;
+      const head = await taskBranchTipOf(work);
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe("");
+      expect(result.out).not.toContain("synced");
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
+      expect(lastEvent(work)).toMatchObject({ type: "branch_updated", data: { sync: "none", before: { head } } });
+    });
+
+    it("fast-forwards the branch and the worktree to the remote tip and demotes the task", async () => {
+      const work = await useWorkReviewTask();
+      const branch = work.task.branch!;
+      const head = await taskBranchTipOf(work);
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+      const remote = await work.origin.addCommit(branch, { file: "remote.txt" });
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe("");
+      expect(result.out.split("\n")[0]).toBe(`synced ${branch} from origin/${branch} at ${remote} by fast-forward`);
+      expect(result.out.endsWith(`demoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`)).toBe(true);
+      expect(await taskBranchTipOf(work)).toBe(remote);
+      expect(await revisionOf(work, "HEAD")).toBe(remote);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("executed");
+      expect(lastEvent(work)).toMatchObject({
+        type: "branch_updated",
+        data: { sync: "fast-forward", before: { head } },
+      });
+    });
+
+    it("moves nothing and writes no note when the remote tip is an ancestor of the local tip", async () => {
+      const work = await useWorkReviewTask();
+      const branch = work.task.branch!;
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+      const head = await commitInWorktree(work.task.worktreePath!, work.env, { file: "local.txt" });
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe("");
+      expect(result.out).not.toContain("synced");
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
+      expect(lastEvent(work)).toMatchObject({ type: "branch_updated", data: { sync: "none", before: { head } } });
+    });
+
+    it("fails and moves nothing when the tips have diverged", async () => {
+      const work = await useWorkReviewTask();
+      const branch = work.task.branch!;
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+      await work.origin.addCommit(branch, { file: "remote.txt" });
+      const head = await commitInWorktree(work.task.worktreePath!, work.env, { file: "local.txt" });
+      const count = eventsOf(work.dataRoot, KEY).length;
+
+      const result = await runUpdateBranch();
+
+      expect(result).toEqual({ code: 1, out: "", err: divergedError(work) });
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
+      const snapshot = { head, base: "main", baseRevision: BASE_REVISION };
+      const events = eventsAfter(work, count);
+      expect(events.map((e) => e.type)).toEqual(["transition", "branch_updated"]);
+      expect(events.at(-1)).toMatchObject({
+        type: "branch_updated",
+        data: {
+          before: snapshot,
+          after: snapshot,
+          how: "none",
+          sync: "none",
+          error: divergedError(work).trimEnd(),
+          from: "updating_branch",
+          to: "awaiting_work_review",
+        },
+      });
+    });
+
+    it("rebases onto the moved base after a fast-forward of the sync step", async () => {
+      const work = await useMovedBaseTask();
+      const branch = work.task.branch!;
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+      const remote = await work.origin.addCommit(branch, { file: "remote.txt" });
+
+      const result = await runUpdateBranch();
+
+      const newHead = await taskBranchTipOf(work);
+      expect(result.code).toBe(0);
+      expect(result.out).toBe(
+        `synced ${branch} from origin/${branch} at ${remote} by fast-forward\n` +
+          `moved ${KEY} onto main at ${work.baseTip} by rebase: ${remote} to ${newHead}\n` +
+          `demoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`,
+      );
+      expect(await revisionOf(work, "HEAD^^")).toBe(work.baseTip);
+      expect(lastEvent(work)).toMatchObject({
+        type: "branch_updated",
+        data: { how: "rebase", sync: "fast-forward", after: { head: newHead } },
+      });
+    });
+
+    it("moves an approved task that only the sync step moved to awaiting_plan_review", async () => {
+      const work = await useWorkReviewTask();
+      const branch = work.task.branch!;
+      withDataRootStore(work.dataRoot, (store) => {
+        placeTask(store, work.task.id, "awaiting_plan_review");
+        seedPinnedPlanRevision(store, work.task.id, {}, "approved");
+      });
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+      await work.origin.addCommit(branch, { file: "remote.txt" });
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_plan_review");
+      withDataRootStore(work.dataRoot, (store) => {
+        expect(store.pinnedPlanRevision(work.task.id)).toBeUndefined();
+      });
+      expect(
+        result.out.endsWith(`demoted ${KEY} from approved to awaiting_plan_review\nstate: awaiting_plan_review\n`),
+      ).toBe(true);
+    });
+
+    it("moves the branch and the worktree back to the local tip when the base step fails after a fast-forward", async () => {
+      const work = await useMovedBaseTask({ baseChange: { file: "work.txt", content: "from the base\n" } });
+      const branch = work.task.branch!;
+      const head = await taskBranchTipOf(work);
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+      await work.origin.addCommit(branch, { file: "work.txt", content: "from the remote\n" });
+      const count = eventsOf(work.dataRoot, KEY).length;
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(1);
+      expect(result.out).toBe("");
+      expect(result.err).toContain("work.txt");
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
+      const snapshot = { head, base: "main", baseRevision: BASE_REVISION };
+      const events = eventsAfter(work, count);
+      expect(events.map((e) => e.type)).toEqual(["transition", "branch_updated"]);
+      expect(events.at(-1)).toMatchObject({
+        type: "branch_updated",
+        data: { before: snapshot, after: snapshot, how: "none", sync: "fast-forward", error: result.err.trimEnd() },
+      });
+    });
   });
 
   describe("the target of each origin state", () => {
@@ -280,6 +461,7 @@ describe("tasker update-branch", () => {
 
       expect(result.code).toBe(1);
       expect(result.out).toBe("");
+      expect(result.err.startsWith(absentNote(work))).toBe(true);
       expect(result.err).toContain("work.txt");
       expect(await taskBranchTipOf(work)).toBe(head);
       expect(await revisionOf(work, "HEAD")).toBe(head);
@@ -294,7 +476,8 @@ describe("tasker update-branch", () => {
           before: snapshot,
           after: snapshot,
           how: "none",
-          error: result.err.trimEnd(),
+          sync: "absent",
+          error: result.err.slice(absentNote(work).length).trimEnd(),
           from: "updating_branch",
           to: "awaiting_work_review",
         },
