@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { retry } from "../../src/commands/retry.js";
-import type { TaskState } from "../../src/state/machine.js";
+import { failedFrom, type TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID } from "../helpers/fake-claude.js";
 import {
@@ -195,30 +195,39 @@ describe("tasker retry", () => {
     },
   );
 
-  it("runs tasker execute in a new session for the todos that are not done", async () => {
-    const fixture = await useExecuteFixture({ stream: turnResultStream("done") }, { answer: { todos: TODOS } });
-    const { dataRoot } = fixture.started;
-    withDataRootStore(dataRoot, (store) => {
-      seedExecuteSession(store, fixture.task.id, 1);
-      seedExecuteTodoStates(store, fixture.task.id, 1, { a: "done" });
-      failTaskFrom(store, fixture.task.id, "executing");
-    });
+  it.each([
+    { origin: "executing" },
+    { origin: "quota_blocked", before: "executing" },
+    { origin: "interrupted", before: "executing" },
+  ] as { origin: TaskState; before?: TaskState }[])(
+    "runs tasker execute in a new session for the todos that are not done, for a task that failed in $origin",
+    async ({ origin, before }) => {
+      const fixture = await useExecuteFixture({ stream: turnResultStream("done") }, { answer: { todos: TODOS } });
+      const { dataRoot } = fixture.started;
+      withDataRootStore(dataRoot, (store) => {
+        seedExecuteSession(store, fixture.task.id, 1);
+        seedExecuteTodoStates(store, fixture.task.id, 1, { a: "done" });
+        if (before === undefined) failTaskFrom(store, fixture.task.id, origin);
+        else failTaskVia(store, fixture.task.id, before, origin);
+        expect(failedFrom(store, fixture.task.id)).toBe(origin);
+      });
 
-    const result = await runRetry();
+      const result = await runRetry();
 
-    expect(result.code).toBe(0);
-    expect(result.out.startsWith(firstLine("executing", "approved"))).toBe(true);
-    expect(result.out).toContain(executedLine(KEY, 1));
-    expect(result.out).toContain("todos: 2 of 2 done");
-    const calls = fixture.claude.calls();
-    expect(calls).toHaveLength(1);
-    expect(argAfter(calls[0].argv, "--session-id")).toBeDefined();
-    expect(calls[0].argv).not.toContain("--resume");
-    expect(latestTaskOf(dataRoot, KEY).state).toBe("executed");
-    expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
-      { origin: "executing", target: "approved", resumeExecute: false, from: "failed", to: "approved" },
-    ]);
-  });
+      expect(result.code).toBe(0);
+      expect(result.out.startsWith(firstLine(origin, "approved"))).toBe(true);
+      expect(result.out).toContain(executedLine(KEY, 1));
+      expect(result.out).toContain("todos: 2 of 2 done");
+      const calls = fixture.claude.calls();
+      expect(calls).toHaveLength(1);
+      expect(argAfter(calls[0].argv, "--session-id")).toBeDefined();
+      expect(calls[0].argv).not.toContain("--resume");
+      expect(latestTaskOf(dataRoot, KEY).state).toBe("executed");
+      expect(eventDataOf(dataRoot, KEY, "retry")).toEqual([
+        { origin, target: "approved", resumeExecute: false, from: "failed", to: "approved" },
+      ]);
+    },
+  );
 
   it("runs tasker verify for a task that failed in verifying", async () => {
     const fixture = await useVerifyFixture({ commands: ["true"] });

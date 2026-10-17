@@ -1,7 +1,7 @@
 import { rmSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
-import { failTask, transitionTask, type TaskState } from "../../src/state/machine.js";
+import { failedFrom, failTask, transitionTask, type TaskState } from "../../src/state/machine.js";
 import { verifyCommandLogPath } from "../../src/store/layout.js";
 import type { Task } from "../../src/store/store.js";
 import { retryTask } from "../../src/tasks/retry.js";
@@ -54,6 +54,18 @@ describe("retryTask checks", () => {
     withDataRootStore(dataRoot, (store) => failTaskVia(store, task.id, "in_peer_review", "merging"));
 
     await expectRetryRefused(dataRoot, task, `the task of ${KEY} failed in merging; tasker retry has no step for it`);
+  });
+
+  it("refuses a task that failed in interrupted after a move from pushing", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    withDataRootStore(dataRoot, (store) => failTaskVia(store, task.id, "pushing", "interrupted"));
+    withDataRootStore(dataRoot, (store) => expect(failedFrom(store, task.id)).toBe("interrupted"));
+
+    await expectRetryRefused(
+      dataRoot,
+      task,
+      `the task of ${KEY} failed in interrupted; tasker retry has no step for it`,
+    );
   });
 
   it("refuses --resume-execute for a task that failed in planning", async () => {
@@ -128,6 +140,30 @@ describe("retryTask origins", () => {
       state: "approved",
       sessions: { ...kept, execute: false },
     },
+    {
+      origin: "quota_blocked",
+      before: "executing",
+      target: "approved",
+      next: "execute",
+      state: "approved",
+      sessions: { ...kept, execute: false },
+    },
+    {
+      origin: "awaiting_quota_approval",
+      before: "executing",
+      target: "approved",
+      next: "execute",
+      state: "approved",
+      sessions: { ...kept, execute: false },
+    },
+    {
+      origin: "interrupted",
+      before: "executing",
+      target: "approved",
+      next: "execute",
+      state: "approved",
+      sessions: { ...kept, execute: false },
+    },
     { origin: "verifying", target: "executed", next: "verify", state: "executed", sessions: kept },
     { origin: "merging", before: "accepted", target: "accepted", next: "merge", state: "accepted", sessions: kept },
   ];
@@ -143,6 +179,7 @@ describe("retryTask origins", () => {
     withDataRootStore(dataRoot, (store) =>
       from === undefined ? failTaskFrom(store, task.id, origin) : failTaskVia(store, task.id, from, origin),
     );
+    withDataRootStore(dataRoot, (store) => expect(failedFrom(store, task.id)).toBe(origin));
     const before = eventsOf(dataRoot, KEY);
 
     const result = await retry(dataRoot, task);
