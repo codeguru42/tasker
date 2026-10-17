@@ -19,8 +19,9 @@ The command reads the origin. The origin is the state that the task left when it
 - `verifying`: the task goes to `executed`, and the command runs `tasker verify`.
 - `verifying` with `--resume-execute`: the task goes to `approved`. The command marks every todo of the pinned revision `done` and queues one fix turn. Then it runs `tasker execute`, which continues the execute session and runs only the fix turn.
 - `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review number, so that the next run starts a new session. Then it runs `tasker review`.
+- `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to `landed`.
 
-The origin of a refine is the state that the task left when the last refine started.
+The origin of a refine is the state that the task left when the last refine started. The state before the merge is the state that the task left when the last merge started.
 
 The deleted session matters because a run that failed before its first turn recorded a session id that names no conversation. A new run must not continue it.
 
@@ -34,7 +35,7 @@ For the origin `provisioning`, the target is `provisioning`, so the line is `ret
 
 For a task that failed in `provisioning`, the steps of `tasker start` run with no `--base`. If they stop because no base branch is known, run `tasker start <issue> --base <branch>`. `tasker start` continues the same task.
 
-The output of the next command follows: the output of `tasker start`, `tasker plan`, `tasker execute`, `tasker verify` or `tasker review`. The next command keeps its own errors and its own exit code. If it fails, the task goes to `failed` again with a new error, and you can run `tasker retry` again. For the origin `refining`, the command prints one line and exits with code 0. The line depends on the origin of the refine:
+The output of the next command follows: the output of `tasker start`, `tasker plan`, `tasker execute`, `tasker verify`, `tasker review` or `tasker merge`. The next command keeps its own errors and its own exit code. If it fails, the task goes to `failed` again with a new error, and you can run `tasker retry` again. For the origin `refining`, the command prints one line and exits with code 0. The line depends on the origin of the refine:
 
 - `awaiting_plan_review` or `failed`: `run tasker refine <issue key> "<feedback>" again`
 - `reviewed`: `run tasker refine <issue key> again to act on the findings, or tasker dismiss-review <issue key> "<reason>"`
@@ -42,7 +43,7 @@ The output of the next command follows: the output of `tasker start`, `tasker pl
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
-- The task failed in a state that retry has no step for. The error is `the task of <issue key> failed in <state>; tasker retry has no step for it`.
+- The task failed in a state that retry has no step for. The error is `the task of <issue key> failed in <state>; tasker retry has no step for it`. A task that failed in `merging` after a move from a state other than `accepted` gets this error too.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is `--resume-execute applies only to a task that failed in verifying`.
 
 ## `tasker resume`
@@ -58,6 +59,10 @@ The command reads the origin. The origin is the state that the task left when th
 - `executing`: the task goes to `approved`, and the command runs `tasker execute`. The execute session continues, and a todo that is `done` gets no new turn.
 - `verifying`: only a task in `interrupted` has this origin. The task goes to `executed`, and the command runs `tasker verify`. The verify run starts again from the first command, because a verify run has no session.
 - `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review number, and then runs `tasker review`, which starts a new session.
+- `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to `landed`.
+- `finishing`: the task goes to `landed`, and the command runs `tasker finish`. The target is `landed` also when the task came to `finishing` from `cleanup_failed`. Each cleanup step skips what is already done.
+
+The state before the merge is the state that the task left when the last merge started.
 
 The command prints this line on stdout, then releases the task lock and runs the next command:
 
@@ -70,7 +75,7 @@ The command does not wait for the reset time of a quota limit. You decide when t
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. If the run of the task is dead, the task moves to `interrupted` before the checks (see [A dead run](../SKILL.md#a-dead-run)). The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
 - The task is in a state other than `quota_blocked` or `interrupted`. The error is `the task of <issue key> is in <state>; tasker resume needs quota_blocked or interrupted`, then the commands that the state accepts. A task in `awaiting_quota_approval` gets this error.
-- The task paused from a state that resume has no step for. The error is `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task in `quota_blocked` that paused from `verifying` gets this error too.
+- The task paused from a state that resume has no step for. The error is `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task in `quota_blocked` that paused from `verifying` gets this error too. So does a task that paused in `merging` after a move from a state other than `accepted`.
 
 ## `tasker abort`
 
