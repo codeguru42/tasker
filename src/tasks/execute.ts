@@ -22,7 +22,7 @@ import {
   todosText,
 } from "../prompts/execute.js";
 import { fillTemplate } from "../prompts/template.js";
-import { transitionTask, transitionWithExecution } from "../state/machine.js";
+import { approvedResetsAt, transitionTask, transitionWithExecution } from "../state/machine.js";
 import { executeTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
@@ -30,7 +30,7 @@ import { type ExecuteFixTurn, type TaskStore } from "../store/store.js";
 import { type RemoteTip, vcsForRepo } from "../vcs/provider.js";
 import { tipMoved } from "../vcs/remote-tip.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
-import { applyRunOutcome, failRun } from "./run-outcome.js";
+import { applyRunOutcome, failRun, pauseForQuotaApproval } from "./run-outcome.js";
 import { assertSessionModel } from "./session-model.js";
 import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
@@ -95,6 +95,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     task,
     env,
     session: stored ? { resume: true, sessionId: stored.sessionId, recorded: stored } : { resume: false },
+    approvedResetsAt: approvedResetsAt(store.listEvents(task.id)),
   });
 
   const progress = store.executeTodoProgress(task.id, version);
@@ -228,6 +229,11 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
         if ("exitCode" in result) return result;
         if (read?.kind === "blocked") return fail(`${label} reported blocked: ${read.reason}`);
         if (read?.kind === "none") return fail(`${label} reported no result: ${read.detail}`);
+        // The turn is done and its commits are on the branch, so the pause comes after it and before the next turn.
+        if (result.warning !== undefined) {
+          flushDenials();
+          return pauseForQuotaApproval(store, task, io, "executing", result.warning);
+        }
       }
     } finally {
       closeSync(fd);
