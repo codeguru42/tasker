@@ -24,6 +24,7 @@ import {
   transitionWithPlanRevision,
   transitionWithPlanUnapproval,
   transitionWithRetry,
+  transitionWithResume,
   transitionWithReviewDismissal,
   transitionWithVerifyRun,
   type TaskState,
@@ -35,9 +36,10 @@ import {
   seedPinnedPlanRevision,
   seedPlanRevision,
   seedPlanSession,
+  seedReviewSession,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { newVerifyRun, seedCreditsApproval, seedReview } from "../helpers/store.js";
+import { newVerifyRun, reviewSessionRows, seedCreditsApproval, seedReview, writeRunMarker } from "../helpers/store.js";
 import { moveTaskThrough, TO_WORK_REVIEW } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -735,6 +737,58 @@ describe("task transitions", () => {
       expect(store.getTask(task.id)!.state).toBe("failed");
       expect(store.executeSession(task.id, 1)).toBeDefined();
       expect(store.listEvents(task.id).map((e) => e.type)).toEqual(["created", "plan_revision"]);
+    });
+  });
+
+  describe("transitionWithResume", () => {
+    it.each(["quota_blocked", "interrupted"])(
+      "writes a transition event, then a resume event, for a task paused in %s",
+      (pause) => {
+        const task = store.createTask(newTask(pause));
+
+        const moved = transitionWithResume(store, task.id, "approved", "executing", {});
+
+        expect(moved.state).toBe("approved");
+        const events = store.listEvents(task.id);
+        expect(events.map((e) => e.type)).toEqual(["created", "transition", "resume"]);
+        expect(events[1].data).toEqual({ from: pause, to: "approved" });
+        expect(events[2].data).toEqual({ origin: "executing", target: "approved" });
+      },
+    );
+
+    it("deletes the review session row of the given number and no other", () => {
+      const task = store.createTask(newTask("interrupted"));
+      seedReviewSession(store, task.id, 1);
+      seedReviewSession(store, task.id, 2);
+
+      transitionWithResume(store, task.id, "awaiting_work_review", "reviewing", { clearReviewSession: 2 });
+
+      expect(reviewSessionRows(dir, task.id).map((row) => row.review_number)).toEqual([1]);
+    });
+
+    it("deletes the run marker", () => {
+      const task = store.createTask(newTask("interrupted"));
+      writeRunMarker(join(dir, "tasker.db"), task.id, "executing", process.pid);
+
+      transitionWithResume(store, task.id, "approved", "executing", {});
+
+      expect(store.runStatus(task.id)).toEqual({ status: "none" });
+      // A marker that stays makes the next move into a spawning state fail.
+      expect(transitionTask(store, task.id, "executing").state).toBe("executing");
+    });
+
+    it("writes no state change, no clear and no event for an illegal edge", () => {
+      const task = store.createTask(newTask("quota_blocked"));
+      seedReviewSession(store, task.id, 1);
+      const before = store.listEvents(task.id);
+
+      expect(() => transitionWithResume(store, task.id, "executed", "verifying", { clearReviewSession: 1 })).toThrow(
+        "illegal state transition: quota_blocked -> executed",
+      );
+
+      expect(store.getTask(task.id)!.state).toBe("quota_blocked");
+      expect(reviewSessionRows(dir, task.id)).toHaveLength(1);
+      expect(store.listEvents(task.id)).toEqual(before);
     });
   });
 
