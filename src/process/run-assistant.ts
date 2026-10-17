@@ -57,7 +57,7 @@ export type AssistantResult =
 
 // Runs file with args as an assistant child in a new process group and session.
 // The prompt goes to stdin, and stdin closes after it. Each line of stdout goes to onLine.
-// The group, the deadline, the signals and the stop at the exit of the leader follow superviseGroup.
+// The group, the deadline, the signals, passedSignal and the stop at the exit of the leader follow superviseGroup.
 // Stderr never goes to the terminal.
 // A start that fails gives started false and an error text. notFound is true when the program is missing or the env has no PATH.
 // Otherwise, the result holds the last 64 KiB of stderr.

@@ -17,9 +17,13 @@ export interface RunGroupOptions {
 
 export interface GroupResult {
   code: number | null;
+  // The signal that stopped the leader.
   signal: NodeJS.Signals | null;
   timedOut: boolean;
   killed: boolean;
+  // The first SIGINT or SIGTERM that tasker passed to the group, or null. A stop by the deadline or an abort is
+  // not a passed signal. A signal that release gave back to tasker is not a passed signal either.
+  passedSignal: NodeJS.Signals | null;
 }
 
 // Sends signal to the process group of pid. A group that is gone (ESRCH) is not an error.
@@ -95,6 +99,8 @@ export interface SignalForward {
   attach: (pid: number) => void;
   // Removes the listeners. It is for the end of a run after attach. Each signal that came already went to the group.
   stop: () => void;
+  // Gives the first signal that went to the group, or null.
+  passed: () => NodeJS.Signals | null;
   // For a run with no group. A signal that comes in the poll phase of the event loop reaches the listener only in
   // the next poll phase. So it waits for two setImmediate turns in a row, with one full poll phase between them.
   // Then it removes the listeners. It sends each waiting signal to tasker again, in the order that it came.
@@ -107,8 +113,13 @@ export interface SignalForward {
 export function forwardSignals(): SignalForward {
   let pid: number | undefined;
   const waiting: NodeJS.Signals[] = [];
+  let passedSignal: NodeJS.Signals | null = null;
+  const pass = (groupPid: number, signal: NodeJS.Signals) => {
+    passedSignal ??= signal;
+    signalGroup(groupPid, signal);
+  };
   const forwarders = FORWARDED_SIGNALS.map(
-    (signal) => [signal, () => (pid === undefined ? waiting.push(signal) : signalGroup(pid, signal))] as const,
+    (signal) => [signal, () => (pid === undefined ? waiting.push(signal) : pass(pid, signal))] as const,
   );
   for (const [signal, handler] of forwarders) process.on(signal, handler);
   const stop = () => {
@@ -117,9 +128,10 @@ export function forwardSignals(): SignalForward {
   return {
     attach: (groupPid) => {
       pid = groupPid;
-      for (const signal of waiting.splice(0)) signalGroup(groupPid, signal);
+      for (const signal of waiting.splice(0)) pass(groupPid, signal);
     },
     stop,
+    passed: () => passedSignal,
     release: async () => {
       for (let turn = 0; turn < 2; turn++) await new Promise((resolve) => setImmediate(resolve));
       stop();
@@ -139,7 +151,7 @@ export interface SuperviseOptions {
 
 // Watches child, the leader of its own process group with pid pid, until it closes.
 // The caller starts options.forward right before the spawn. From the attach until the run ends, SIGINT and
-// SIGTERM of tasker go to the group. At the deadline, the group gets SIGTERM.
+// SIGTERM of tasker go to the group, and the result holds the first one in passedSignal. At the deadline, the group gets SIGTERM.
 // Five seconds later, it gets SIGKILL. After such a stop, it waits until the group is gone.
 // An abort of signal stops the group in the same way, but it does not set timedOut.
 // With stopOnExit, the exit of the leader stops the group in the same way.
@@ -178,7 +190,7 @@ export function superviseGroup(child: ChildProcess, pid: number, options: Superv
         return;
       }
       if (waitsForGroup()) return;
-      const result = { ...exited, timedOut, killed };
+      const result = { ...exited, timedOut, killed, passedSignal: options.forward.passed() };
       settle(() => (startError ? reject(startError.error) : resolve(result)));
     };
     const stop = () => {
