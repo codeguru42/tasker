@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   approvedResetsAt,
+  approvedResetsAtOf,
   SPAWNING_STATES,
   STATES,
   TERMINAL_STATES,
@@ -806,6 +807,42 @@ describe("task transitions", () => {
       expect(() => failTask(store, task.id, "again")).toThrow("illegal state transition: failed -> failed");
       expect(store.getTask(task.id)!.state).toBe("failed");
       expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("approvedResetsAtOf", () => {
+    it("gives undefined for a task with no approval", () => {
+      const task = store.createTask(newTask("planning"));
+      expect(approvedResetsAtOf(store, task.id)).toBeUndefined();
+    });
+
+    it("gives the reset time of the approval", () => {
+      const task = store.createTask(newTask("planning"));
+      seedCreditsApproval(store, task.id, 1792206000);
+      expect(approvedResetsAtOf(store, task.id)).toBe(1792206000);
+    });
+
+    it("gives the reset time of the last approval", () => {
+      const task = store.createTask(newTask("planning"));
+      seedCreditsApproval(store, task.id, 1792206000);
+      seedCreditsApproval(store, task.id, 1792810800);
+      expect(approvedResetsAtOf(store, task.id)).toBe(1792810800);
+    });
+
+    it("gives undefined when the reset time is not a number", () => {
+      const task = store.createTask(newTask("planning"));
+      store.appendEvent(task.id, "credits_approved", { resetsAt: "soon" });
+      expect(approvedResetsAtOf(store, task.id)).toBeUndefined();
+    });
+
+    it("does not count other event types", () => {
+      const task = store.createTask(newTask("planning"));
+      store.appendEvent(task.id, "note", { resetsAt: 1792206000 });
+      expect(approvedResetsAtOf(store, task.id)).toBeUndefined();
+    });
+
+    it("gives undefined for a missing task", () => {
+      expect(approvedResetsAtOf(store, 999)).toBeUndefined();
     });
   });
 
