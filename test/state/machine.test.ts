@@ -9,6 +9,7 @@ import {
   failTask,
   failedFrom,
   originText,
+  refineFeedbackOf,
   lastTransitionIndex,
   isSpawningState,
   isTerminalState,
@@ -953,6 +954,28 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("planning"));
       failTask(store, task.id, "boom");
       expect(transitionFromEvents(store.listEvents(task.id), "refining")).toBeUndefined();
+    });
+  });
+
+  describe("refineFeedbackOf", () => {
+    it("gives the feedback of the last move into refining", () => {
+      const task = store.createTask(newTask("awaiting_plan_review"));
+      store.appendEvent(task.id, "transition", { feedback: "old", from: "awaiting_plan_review", to: "refining" });
+      store.appendEvent(task.id, "transition", { feedback: "new", from: "failed", to: "refining" });
+      expect(refineFeedbackOf(store.listEvents(task.id))).toBe("new");
+    });
+
+    it("gives undefined when the last move has no feedback key", () => {
+      const task = store.createTask(newTask("awaiting_plan_review"));
+      store.appendEvent(task.id, "transition", { feedback: "old", from: "awaiting_plan_review", to: "refining" });
+      store.appendEvent(task.id, "transition", { from: "reviewed", to: "refining" });
+      expect(refineFeedbackOf(store.listEvents(task.id))).toBeUndefined();
+    });
+
+    it("gives undefined when the feedback is not a string", () => {
+      const task = store.createTask(newTask("awaiting_plan_review"));
+      store.appendEvent(task.id, "transition", { feedback: 7, from: "awaiting_plan_review", to: "refining" });
+      expect(refineFeedbackOf(store.listEvents(task.id))).toBeUndefined();
     });
   });
 

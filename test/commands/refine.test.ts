@@ -139,7 +139,7 @@ describe("refine", () => {
     expect(readFileSync(planRevisionPath(dataRoot, task, 2), "utf8")).toBe(V2_ANSWER.plan_markdown);
     expect(readFileSync(planRevisionPath(dataRoot, task, 1), "utf8")).toBe(V1_ANSWER.plan_markdown);
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
-      { type: "transition", data: { from: "awaiting_plan_review", to: "refining" } },
+      { type: "transition", data: { feedback: FEEDBACK, from: "awaiting_plan_review", to: "refining" } },
       { type: "usage", data: expect.anything() },
       { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
       { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },
@@ -370,6 +370,17 @@ describe("a promotion from reviewed", () => {
     });
   });
 
+  it("records the guidance of the operator in the move into refining", async () => {
+    const fixture = await useReviewedRefineFixture({ stream });
+
+    await runRefine(FEEDBACK);
+
+    const moves = eventsOf(fixture.started.dataRoot, KEY).filter(
+      (event) => (event.data as { to?: string }).to === "refining",
+    );
+    expect(moves.map((event) => event.data)).toEqual([{ feedback: FEEDBACK, from: "reviewed", to: "refining" }]);
+  });
+
   it("gives only the open findings, with their original positions", async () => {
     const fixture = await useReviewedRefineFixture({ stream });
     withDataRootStore(fixture.started.dataRoot, (store) => {
@@ -417,7 +428,7 @@ describe("a refine from failed", () => {
     expect(task.state).toBe("awaiting_plan_review");
     expect(revision).toMatchObject({ version: 2, source: "refine", feedback: FEEDBACK });
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
-      { type: "transition", data: { from: "failed", to: "refining" } },
+      { type: "transition", data: { feedback: FEEDBACK, from: "failed", to: "refining" } },
       { type: "usage", data: expect.anything() },
       { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
       { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },

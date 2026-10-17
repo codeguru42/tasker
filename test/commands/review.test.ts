@@ -303,7 +303,7 @@ describe("review with feedback", () => {
     expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
     expect(revision).toMatchObject({ version: 2, source: "review-feedback", feedback: FEEDBACK, answer: V2_ANSWER });
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
-      { type: "transition", data: { from: "awaiting_work_review", to: "refining" } },
+      { type: "transition", data: { feedback: FEEDBACK, from: "awaiting_work_review", to: "refining" } },
       { type: "usage", data: expect.anything() },
       { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
       { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },
