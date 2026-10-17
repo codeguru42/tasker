@@ -16,8 +16,10 @@ import {
 import { validReviewAnswer } from "../helpers/review.js";
 import {
   eventDataOf,
+  eventsOf,
   failRefineFrom,
   failTaskFrom,
+  failTaskVia,
   failVerifyRun,
   latestTaskOf,
   reviewSessionRows,
@@ -25,6 +27,8 @@ import {
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
+  landAcceptedTask,
+  useAcceptedTask,
   useExecuteFixture,
   usePlanFixture,
   useRefineFixture,
@@ -115,6 +119,39 @@ describe("tasker retry", () => {
         to: "awaiting_work_review",
       },
     ]);
+  });
+
+  it("runs tasker merge for a task that failed in merging", async () => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => failTaskVia(store, accepted.task.id, "accepted", "merging"));
+
+    const result = await runRetry();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toBe(
+      firstLine("merging", "accepted") + `merged ${KEY}\nlanded: ${accepted.revision} on origin/main\n`,
+    );
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
+    expect(await accepted.origin.branchHead("main")).toBe(accepted.revision);
+    expect(eventDataOf(accepted.dataRoot, KEY, "retry")).toEqual([
+      { origin: "merging", target: "accepted", resumeExecute: false, from: "failed", to: "accepted" },
+    ]);
+  });
+
+  it("pushes nothing on a retry after a push that was recorded as failed", async () => {
+    const accepted = await useAcceptedTask();
+    await landAcceptedTask(accepted);
+    const message = `merging failed: pushed ${accepted.revision} to origin/main, but tasker cannot record the result: test`;
+    withDataRootStore(accepted.dataRoot, (store) =>
+      failTaskVia(store, accepted.task.id, "accepted", "merging", message),
+    );
+
+    const result = await runRetry();
+
+    expect(result.code).toBe(0);
+    expect(result.out.endsWith(`already on origin/main: ${accepted.revision}. Nothing pushed.\n`)).toBe(true);
+    expect(eventsOf(accepted.dataRoot, KEY).at(-1)).toMatchObject({ type: "landed", data: { pushed: false } });
+    expect(await accepted.origin.branchHead("main")).toBe(accepted.revision);
   });
 
   const hints: { refineOrigin: TaskState; target: TaskState; hint: string }[] = [

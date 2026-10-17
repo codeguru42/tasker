@@ -10,8 +10,8 @@ import { seedApprovedTaskWithSessions, sessionsOf, seedExecuteTodoStates, seedRe
 import { expectRefusedWithoutChange } from "../helpers/task-fixtures.js";
 import {
   eventsOf,
-  failRefineFrom,
   failTaskFrom,
+  failTaskVia,
   failVerifyRun,
   latestTaskOf,
   seedReview,
@@ -42,11 +42,18 @@ describe("retryTask checks", () => {
     await expectRetryRefused(dataRoot, task, `the task of ${KEY} is in approved; tasker retry needs failed`);
   });
 
-  it.each(["approved", "merging"] as const)("refuses a task that failed in %s", async (origin) => {
+  it.each(["approved", "pushing"] as const)("refuses a task that failed in %s", async (origin) => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => failTaskFrom(store, task.id, origin));
 
     await expectRetryRefused(dataRoot, task, `the task of ${KEY} failed in ${origin}; tasker retry has no step for it`);
+  });
+
+  it("refuses a task that failed in merging after a move from in_peer_review", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    withDataRootStore(dataRoot, (store) => failTaskVia(store, task.id, "in_peer_review", "merging"));
+
+    await expectRetryRefused(dataRoot, task, `the task of ${KEY} failed in merging; tasker retry has no step for it`);
   });
 
   it("refuses --resume-execute for a task that failed in planning", async () => {
@@ -61,7 +68,7 @@ describe("retryTask origins", () => {
   const kept = { plan: true, execute: true, review: [1] };
   const rows: {
     origin: TaskState;
-    refineOrigin?: TaskState;
+    before?: TaskState;
     target: TaskState;
     next: string;
     state: string;
@@ -77,7 +84,7 @@ describe("retryTask origins", () => {
     },
     {
       origin: "refining",
-      refineOrigin: "awaiting_plan_review",
+      before: "awaiting_plan_review",
       target: "awaiting_plan_review",
       next: "refine",
       state: "awaiting_plan_review",
@@ -85,7 +92,7 @@ describe("retryTask origins", () => {
     },
     {
       origin: "refining",
-      refineOrigin: "failed",
+      before: "failed",
       target: "awaiting_plan_review",
       next: "refine",
       state: "awaiting_plan_review",
@@ -93,7 +100,7 @@ describe("retryTask origins", () => {
     },
     {
       origin: "refining",
-      refineOrigin: "reviewed",
+      before: "reviewed",
       target: "reviewed",
       next: "refine-findings",
       state: "reviewed",
@@ -101,7 +108,7 @@ describe("retryTask origins", () => {
     },
     {
       origin: "refining",
-      refineOrigin: "awaiting_work_review",
+      before: "awaiting_work_review",
       target: "awaiting_work_review",
       next: "review-feedback",
       state: "awaiting_work_review",
@@ -122,18 +129,19 @@ describe("retryTask origins", () => {
       sessions: { ...kept, execute: false },
     },
     { origin: "verifying", target: "executed", next: "verify", state: "executed", sessions: kept },
+    { origin: "merging", before: "accepted", target: "accepted", next: "merge", state: "accepted", sessions: kept },
   ];
 
   const labeled = rows.map((row) => ({
     ...row,
-    label: row.refineOrigin === undefined ? row.origin : `${row.origin} after a refine from ${row.refineOrigin}`,
+    label: row.before === undefined ? row.origin : `${row.origin} after a move from ${row.before}`,
   }));
 
   it.each(labeled)("moves a task that failed in $label", async (row) => {
-    const { origin, refineOrigin, target, next, state, sessions } = row;
+    const { origin, before: from, target, next, state, sessions } = row;
     const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) =>
-      refineOrigin === undefined ? failTaskFrom(store, task.id, origin) : failRefineFrom(store, task.id, refineOrigin),
+      from === undefined ? failTaskFrom(store, task.id, origin) : failTaskVia(store, task.id, from, origin),
     );
     const before = eventsOf(dataRoot, KEY);
 
