@@ -15,10 +15,23 @@ import {
 } from "../helpers/plan.js";
 import { deadRunNote, expectedShowLines } from "../helpers/state-commands.js";
 import { findingText, reviewFinding } from "../helpers/review.js";
-import { dayAt, seedDeadRun, seedReview, seedTaskWithReviews, seedTasks, withDataRootStore } from "../helpers/store.js";
+import {
+  dayAt,
+  pauseTaskFrom,
+  seedDeadRun,
+  seedReview,
+  seedTaskWithReviews,
+  seedTasks,
+  withDataRootStore,
+} from "../helpers/store.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
-import { transitionTask, transitionWithBranchUpdate } from "../../src/state/machine.js";
-import type { ExecuteTodoState } from "../../src/store/store.js";
+import {
+  transitionTask,
+  transitionWithBranchUpdate,
+  type TaskState,
+  type TransitionDetail,
+} from "../../src/state/machine.js";
+import type { ExecuteTodoState, Task } from "../../src/store/store.js";
 
 const TASKER = "codeguru42/tasker";
 const OTHER = "codeguru42/other";
@@ -45,6 +58,25 @@ const PADDED_BLOCK =
   "todos (approved v1):\n" +
   "  done         write-test    Add the a module\n" +
   "  not started  make-it-pass  Add the a module\n";
+
+// The text after the last event: line of the output of tasker show.
+function afterLastEvent(out: string): string {
+  const lines = out.split("\n");
+  return lines.slice(lines.findIndex((line) => line.startsWith("last event:")) + 1).join("\n");
+}
+
+// Seeds the task codeguru42/tasker#5 in workspace_ready, then pauses it in pause from origin with a real move.
+function seedPausedTask(
+  dataRoot: string,
+  origin: TaskState,
+  pause: "quota_blocked" | "awaiting_quota_approval" | "interrupted",
+  data?: TransitionDetail,
+): Task {
+  const [task] = seedTasks(dataRoot, [
+    { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "workspace_ready", at: dayAt(2) },
+  ]);
+  return withDataRootStore(dataRoot, (store) => pauseTaskFrom(store, task.id, origin, pause, data));
+}
 
 // Seeds the task codeguru42/tasker#5 in executed (or failed, with failWith) and its pinned revision v1.
 // The clock is fixed, so that the time fields do not change.
@@ -427,13 +459,81 @@ describe("show", () => {
 
     const { code, err, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
 
-    const lines = out.split("\n");
-    const rest = lines.slice(lines.findIndex((line) => line.startsWith("last event:")) + 1).join("\n");
     expect({ code, err }).toEqual({ code: 0, err: "" });
-    expect(rest).toBe(
+    expect(afterLastEvent(out)).toBe(
       expectedShowLines("reviewed", `${TASKER}#5`) +
         "review findings (review 2, at abc123def456):\n" +
         findingText("first", 1),
+    );
+  });
+
+  it.each([
+    {
+      pause: "quota_blocked",
+      origin: "executing",
+      data: { cause: "rate_limit", resetsAt: 1792206000 },
+      lines: "paused from: executing\ncause: rate_limit\nresets at: 2026-10-17T03:00:00.000Z\n",
+    },
+    {
+      pause: "quota_blocked",
+      origin: "planning",
+      data: { cause: "overage" },
+      lines: "paused from: planning\ncause: overage\nresets at: -\n",
+    },
+    {
+      pause: "awaiting_quota_approval",
+      origin: "planning",
+      data: { utilization: 0.95, resetsAt: 1792206000 },
+      lines: "paused from: planning\nutilization: 0.95\nresets at: 2026-10-17T03:00:00.000Z\n",
+    },
+    {
+      pause: "awaiting_quota_approval",
+      origin: "executing",
+      data: undefined,
+      lines: "paused from: executing\nutilization: 0.95\nresets at: -\n",
+    },
+    {
+      pause: "interrupted",
+      origin: "verifying",
+      data: undefined,
+      lines: "paused from: verifying\ncause: dead_run\n",
+    },
+    {
+      pause: "interrupted",
+      origin: "executing",
+      data: { cause: "signal", signal: "SIGTERM" },
+      lines: "paused from: executing\ncause: signal SIGTERM\n",
+    },
+  ] as const)("prints the facts of a task in $pause from $origin", async ({ pause, origin, data, lines }) => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedPausedTask(dataRoot, origin, pause, data);
+
+    const { code, err, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect({ code, err }).toEqual({ code: 0, err: "" });
+    expect(afterLastEvent(out)).toBe(lines + expectedShowLines(pause, `${TASKER}#5`));
+  });
+
+  it("prints no fact of a pause for a task in another state with a pause in its past", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const task = seedPausedTask(dataRoot, "executing", "quota_blocked", { cause: "rate_limit", resetsAt: 1792206000 });
+    withDataRootStore(dataRoot, (store) => store.updateTask(task.id, { state: "approved" }));
+
+    const { code, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(code).toBe(0);
+    expect(out).not.toMatch(/^(paused from|cause|utilization|resets at):/m);
+  });
+
+  it("prints - for each fact of a task in quota_blocked with no move into it", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "quota_blocked", at: dayAt(2) }]);
+
+    const { code, err, out } = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect({ code, err }).toEqual({ code: 0, err: "" });
+    expect(afterLastEvent(out)).toBe(
+      "paused from: -\ncause: -\nresets at: -\n" + expectedShowLines("quota_blocked", `${TASKER}#5`),
     );
   });
 
