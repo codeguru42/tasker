@@ -13,8 +13,8 @@ import { originRow, type OriginTables } from "./origin-row.js";
 import { taskInState } from "./task-state.js";
 
 // The command that runs after the move of a resume. A resume has no start and no refine of findings: retry prints a
-// hint for the refine values, and resume runs them.
-export type ResumeNext = Exclude<RetryNext, "start" | "refine-findings">;
+// hint for the refine values, and resume runs them. A resume also runs finish, which retry never does.
+export type ResumeNext = Exclude<RetryNext, "start" | "refine-findings"> | "finish";
 
 export interface ResumeRequest {
   ref: IssueRef;
@@ -49,6 +49,8 @@ const RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   executing: { target: "approved", next: "execute", clearReview: false, pauses: BOTH_PAUSES },
   verifying: { target: "executed", next: "verify", clearReview: false, pauses: ["interrupted"] },
   reviewing: { target: "awaiting_work_review", next: "review", clearReview: true, pauses: BOTH_PAUSES },
+  // The target is landed also when the task came to finishing from cleanup_failed: finish runs from landed too.
+  finishing: { target: "landed", next: "finish", clearReview: false, pauses: BOTH_PAUSES },
 };
 
 const PLAIN_REFINE_ROW: ResumeRow = {
