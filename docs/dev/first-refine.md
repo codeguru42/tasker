@@ -87,7 +87,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - Before a ticket splits a file, ask the plan to list each local function of the old file (a function that the file does not export) and to name each new file that uses it. A local function that two new files use must go to one shared place ([rules.md](rules.md#tests)). Otherwise the split makes a copy (#140).
 - If a move must keep the code exact, ask the plan for a scripted proof that execute runs and reports. A move changes each line of the file, so a read of the diff cannot show a dropped test or a changed body (#140). The proof compares the old and the new state in four ways:
   - The names of the exports.
-  - The names and the count of the tests, from `npm run test:list -- --json`.
+  - The names and the count of the tests, from `npm run test:list -- --json`. Put `--json` last, or use the form `--json=<path>`, because Vitest reads the word after `--json` as an output path. On #220, `npm run test:list -- --json <file>` wrote the JSON list over a test file in the worktree.
   - A sorted diff of the bodies, without the import lines.
   - The import graph.
 
