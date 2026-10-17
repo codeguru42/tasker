@@ -23,7 +23,7 @@ import {
   claudeSampleEvents,
 } from "../helpers/fake-claude.js";
 import { turnResultStream } from "../helpers/plan.js";
-import { readRunMarker, withDataRootStore } from "../helpers/store.js";
+import { quotaEventsOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { type AssistantRunFixture, useAssistantRunFixture } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -510,8 +510,6 @@ describe("prepareTaskExecuteRun", () => {
 });
 
 describe("the quota event record of a run", () => {
-  const listRecords = (dataRoot: string) => withDataRootStore(dataRoot, (store) => store.listQuotaEvents());
-
   // The sample plain without its rate_limit_event line.
   const plainWithoutQuota = () => claudeSample("plain").filter((line) => !line.includes('"rate_limit_event"'));
 
@@ -527,7 +525,7 @@ describe("the quota event record of a run", () => {
     const { events } = await runPlanMode(fixture);
 
     const after = Date.now();
-    const records = listRecords(fixture.started.dataRoot);
+    const records = quotaEventsOf(fixture.started.dataRoot);
     expect(records).toEqual([
       { repoKey: fixture.started.repoKey, provider: "claude-code", receivedAt: expect.any(String), event: added },
     ]);
@@ -541,7 +539,7 @@ describe("the quota event record of a run", () => {
   it("keeps the quota event of the execute role run for the repo", async () => {
     const { started } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
 
-    expect(listRecords(started.dataRoot)).toEqual([
+    expect(quotaEventsOf(started.dataRoot)).toEqual([
       {
         repoKey: started.repoKey,
         provider: "claude-code",
@@ -556,6 +554,6 @@ describe("the quota event record of a run", () => {
 
     await runPlanMode(fixture);
 
-    expect(listRecords(fixture.started.dataRoot)).toEqual([]);
+    expect(quotaEventsOf(fixture.started.dataRoot)).toEqual([]);
   });
 });

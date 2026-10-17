@@ -18,6 +18,7 @@ import {
   lastErrorOf,
   latestTaskOf,
   lockNames,
+  quotaEventsOf,
   readRunMarker,
   seedQuotaEvent,
   seedTasks,
@@ -108,7 +109,7 @@ describe("finish", () => {
     expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
     expect(lockNames(dataRoot)).toEqual([]);
     expect(existsSync(bootstrapLogPath(taskLogsDir(dataRoot, latestTaskOf(dataRoot, KEY))))).toBe(true);
-    expect(withDataRootStore(dataRoot, (store) => store.listQuotaEvents())).toEqual([seeded]);
+    expect(quotaEventsOf(dataRoot)).toEqual([seeded]);
   });
 
   it("finishes the steps that are left from cleanup_failed", async () => {

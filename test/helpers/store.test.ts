@@ -26,6 +26,7 @@ import {
   lockNames,
   newReview,
   newVerifyRun,
+  quotaEventsOf,
   readRunMarker,
   reviewSessionRows,
   seedQuotaEvent,
@@ -914,7 +915,7 @@ describe("seedQuotaEvent", () => {
     const record = seedQuotaEvent(dataRoot, "a/b");
 
     expect(record).toMatchObject({ repoKey: "a/b", provider: "claude-code", event: claudeRateLimitEvent() });
-    expect(withDataRootStore(dataRoot, (store) => store.listQuotaEvents())).toEqual([record]);
+    expect(quotaEventsOf(dataRoot)).toEqual([record]);
   });
 
   it("records the event that it gets", () => {
@@ -924,5 +925,21 @@ describe("seedQuotaEvent", () => {
     });
 
     expect(seedQuotaEvent(dataRoot, "a/b", event).event).toEqual(event);
+  });
+});
+
+describe("quotaEventsOf", () => {
+  it("gives the records of the data root sorted by repo key", () => {
+    const dataRoot = join(useTempDir("tasker-quota-events-"), "data");
+    const b = seedQuotaEvent(dataRoot, "b/repo");
+    const a = seedQuotaEvent(dataRoot, "a/repo");
+
+    expect(quotaEventsOf(dataRoot)).toEqual([a, b]);
+  });
+
+  it("gives no record for a data root with none", () => {
+    const dataRoot = join(useTempDir("tasker-quota-events-"), "data");
+
+    expect(quotaEventsOf(dataRoot)).toEqual([]);
   });
 });

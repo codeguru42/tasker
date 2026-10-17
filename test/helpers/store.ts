@@ -352,3 +352,8 @@ export function seedQuotaEvent(
     return store.listQuotaEvents(repoKey)[0];
   });
 }
+
+// The quota event records of the store of dataRoot, sorted by repo key.
+export function quotaEventsOf(dataRoot: string): QuotaEventRecord[] {
+  return withDataRootStore(dataRoot, (store) => store.listQuotaEvents());
+}
