@@ -39,6 +39,8 @@ The orchestrator waits in these cases:
 - The blocker is in any other state.
 - Two or more blockers of the ticket are open. The ticket waits until at most one is open, because `tasker start` refuses two ready blockers.
 
+If the orchestrator plans to start a ticket on a blocker that is not ready to stack yet, [the parent-hold rule](#the-parent-hold-rule) applies.
+
 The orchestrator reads the states at four moments:
 
 - Each time it reads the board
@@ -60,6 +62,8 @@ Two exceptions apply to a stacked ticket and its parent:
 ### The stacked-ticket rule
 
 A stacked ticket is a ticket that `tasker start` based on the branch of a blocker. Its parent is the ticket of that blocker. The stacked orchestrator is the orchestrator of the stacked ticket. The parent orchestrator is the orchestrator of the parent.
+
+Before a stacked ticket starts, [the parent-hold rule](#the-parent-hold-rule) can hold the parent. For the output of `tasker start` when the parent is not ready to stack, see [the facts of the installed tasker](#the-facts-of-the-installed-tasker).
 
 When a stacked ticket starts, the stacked orchestrator does these steps:
 
@@ -233,6 +237,8 @@ Before each such command, the agent reads the `base branch:` line of `tasker sho
 3. If a step uses `tasker/<parent branch>` in more than one command, read its hash one time with `git rev-parse --verify`, as [the shared-clone rule](#the-shared-clone-rule) says.
 
 A `tasker update-branch` with no conflict moves a stacked task onto the base of the parent after the parent lands.
+
+An agent of a stacked task meets a landed parent at `tasker verify` in `executed`. It also meets a landed parent at `tasker refine` in `awaiting_plan_review`, after `tasker finish` of the parent. [The facts of the installed tasker](#the-facts-of-the-installed-tasker) say what happens in each case.
 
 These steps use the base: the comeback rule, the diff read, the issue check, the broken-commit steps, the commit check, the same-patch rule, and steps 3 to 5 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) when those rules do them.
 
