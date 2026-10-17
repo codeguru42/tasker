@@ -644,6 +644,17 @@ These limits apply to the orchestrator and to the agents, except where a bullet 
 - Do not use `pkill` or `killall`. To stop a process that it started, the orchestrator or the agent uses `kill` with the process id that it saved. `pkill` matches by name, so it can stop a process of another session of the same user.
 - Never print a credential, for example an access token, a password or a key. If a command gives a credential, store its output in a shell variable, for example `token="$(gh auth token --hostname github.com --user <account>)"`. Do not print the variable. To make sure that the command succeeded, use its exit code or a test of the variable that prints nothing, for example `[ -n "$token" ]`. Pass the variable to later commands, for example `GH_TOKEN="$token" gh api user`. Do not put the credential itself in a command line, a file, a log, a feedback text or a comment. Never print the environment, for example with `env`, `printenv` or `set`, because it can hold a credential, for example the access token in `GH_TOKEN`. The assistant tools start a new shell for each tool call, and a shell variable lives only in its own shell. As a result, set the variable and use it in the same tool call. Never print the full command line of the sandbox, for example with `ps -o args`. The sandbox of a `claude` run is a `bwrap` process. Its command line holds a user name and a password of the local proxy of that run. On 2026-10-14, an agent printed them in its tool output with `ps`. To find a bind or a path in the command line, search it for only that item, and print only the match. For example, `ps -o args= -p <pid> | grep -o -F -- '<path>'` prints only `<path>`, and only when the command line holds it. This rule does not cover the code of tasker, which already keeps the access token out of its errors and logs.
 
+### The issue-link rule
+
+In each reply to the user, the orchestrator writes each mention of an issue as a markdown link. The link target is the page of the issue in its tracker. The link text is the issue key, in this form:
+
+- For an issue of this repo, the text is the short form `#<N>`, for example `[#159](https://github.com/codeguru42/tasker/issues/159)`.
+- For an issue of another repo, the text is the full key, for example `[owner/repo#12](https://github.com/owner/repo/issues/12)`.
+
+The rule covers the replies of the orchestrator to the user only. The text on GitHub keeps the plain key, because GitHub links it. The messages to an agent and to another orchestrator keep the plain key, because a session reads them as text. A key inside a code span or a code block stays as it is, for example a command line with an issue key.
+
+The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but in the terminal it is plain text.
+
 ### The own-worktree rule
 
 The orchestrator and the agents must not read the files that tasker keeps in its data folder. Never read, search or run anything in a worktree of tasker, also not with a read-only command such as `grep`. Do not change the repo or the worktrees of tasker by hand. Only `tasker` commands change them. The one exception to the read is a fetch through the read-only `tasker` remote, which reads the clone of tasker and changes nothing there. The worktrees of tasker are under `<dataRoot>/repos/<owner>-<repo>/worktrees/`.
