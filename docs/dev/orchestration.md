@@ -646,6 +646,7 @@ If a case says that the orchestrator schedules the next job, the orchestrator fi
 
 - The orchestrator must not use `/loop` or ScheduleWakeup for the wait. One wake-up waits at most one hour. A wake-up before the reset has no tokens to act.
 - An agent cannot make a job, because the agent does not have the tool for that. Only the orchestrator schedules jobs.
+- A `sleep` in a background Bash call of an agent ends after at most 30 minutes, and the agent then runs again. So an agent cannot wait for a reset time with such a sleep. The fact was measured on 2026-10-11.
 
 ## The handoff
 
