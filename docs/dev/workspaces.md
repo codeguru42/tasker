@@ -186,6 +186,23 @@ After a failed git step, the code runs the abort only when some path is unmerged
 - A base that got the task with a merge commit outside tasker gives a fast-forward, because the merge commit is ahead of HEAD.
 - A fast-forward has no conflicts.
 
+### The move to a revision
+
+The move puts the task branch, HEAD, the index and the tracked files at a revision. The revision can be an ancestor of HEAD, a descendant of HEAD or on another line. The command is `git reset --keep --no-recurse-submodules <sha>`.
+
+- The clean check runs first, as in the other reconcile functions. A worktree with uncommitted changes is refused.
+- `--keep` is used and `--hard` is not. `--keep` makes git refuse a change in a tracked file that the move changes (exit 128, HEAD and the change stay). It also refuses an untracked file in the path of a tracked file of the target (exit 128, HEAD stays). So a change that appears after the clean check is not lost. `--hard` deletes such a change.
+- `--no-recurse-submodules` stops `submodule.recurse` of the user configuration from changing the command. No submodule was tested.
+- A detached HEAD is refused before the reset. On a detached HEAD, `git reset --keep` moves only HEAD, and the move must change the task branch.
+- The branch must have the task branch shape, as for each function that writes a branch.
+- After a `GitError`, the restore of the reconcile runs.
+
+Side effects:
+
+- `git reset --keep` runs no `post-checkout` hook. It runs only the `reference-transaction` hook.
+- It prints nothing on stdout.
+- An ignored file in the path of a tracked file of the target is written over.
+
 ### The restore
 
 - `rebase --quit` runs first, because a failed or conflicted rebase leaves `rebase-merge/`, and `checkout --force` does not remove it.

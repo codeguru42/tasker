@@ -396,7 +396,7 @@ These reasons explain its rules:
 
 ## Update branch
 
-`tasker update-branch` brings the worktree of a task up to date with its base branch. The task goes through `updating_branch` and then to its origin state or to the target of the demotion table in [the state machine](../statemachine.md#update-branch).
+`tasker update-branch` brings the worktree of a task up to date with its copy on origin and with its base branch. The task goes through `updating_branch` and then to its origin state or to the target of the demotion table in [the state machine](../statemachine.md#update-branch).
 
 These reasons explain its rules:
 
@@ -404,6 +404,9 @@ These reasons explain its rules:
 - The locks: the task lock does not wait, as [The locks](#the-locks) says. The repo lock waits, because the fetch and the move of the branch change the clone. [The locks table](data-root.md#locks-table) requires it.
 - The `base` event is `{ base, revision, source: "update" }`. The command writes it only when the head moved. The `revision` is the stored base revision.
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base` event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
+- The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local tip.
+- The diverged tips: the command refuses them, because tasker pulls in an external change only by a fast-forward, and in each other case the user fixes the branch.
+- The undo of the sync move: a failed base step also moves the branch and the worktree back to the local tip from before the sync step, so that a failed update changes nothing.
 - The demotion: when the head moved, the old approval or the old verify result no longer describes the tree.
 - The restore rule: the task goes back to its origin state when three facts hold. The head is the head of the start, the worktree is on the task branch, and the worktree is clean. Otherwise the task goes to `failed`.
 - The missing retry row: `tasker retry` has no row for a task that failed in `updating_branch`. The error of a failed restore names the git commands that put the worktree back. After that, `tasker update-branch` runs from `failed`, or `tasker abort` ends the task.
