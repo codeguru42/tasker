@@ -271,18 +271,20 @@ export function transitionWithRetry(
 }
 
 // Moves the task to to with one transition event { from, to }, writes writes and then appends one resume event
-// { origin, target }, in one transaction. An illegal edge or a failing write writes nothing.
+// { origin, target } and then each event of extra in order, in one transaction. An illegal edge or a failing write
+// writes nothing.
 export function transitionWithResume(
   store: TaskStore,
   id: number,
   to: TaskState,
   origin: TaskState,
   writes: ResumeWrites,
+  extra: readonly NewEvent[] = [],
 ): Task {
-  return store.resumeTask(id, to, writes, transitionCheck("transition", to), {
-    type: "resume",
-    data: { origin, target: to },
-  });
+  return store.resumeTask(id, to, writes, transitionCheck("transition", to), [
+    { type: "resume", data: { origin, target: to } },
+    ...extra,
+  ]);
 }
 
 // Approves revision version, appends the approved event { version, openQuestions, from, to } and moves the task to

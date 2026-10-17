@@ -398,14 +398,14 @@ export interface TaskStore extends LockStore {
   // check, in one transaction. A throw of any step writes nothing.
   retryTask(taskId: number, state: string, writes: RetryWrites, check?: (current: Task) => NewEvent | undefined): Task;
   // The move of a resume: the move to state, the run marker delete, the delete of the review session of
-  // writes.clearReviewSession, the transition event of check and then event, in one transaction. A throw of any
-  // step writes nothing.
+  // writes.clearReviewSession, the transition event of check and then each of events in order, in one
+  // transaction. A throw of any step writes nothing.
   resumeTask(
     taskId: number,
     state: string,
     writes: ResumeWrites,
     check: (current: Task) => NewEvent | undefined,
-    event: NewEvent,
+    events: readonly NewEvent[],
   ): Task;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
@@ -1452,14 +1452,14 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       });
     },
 
-    resumeTask(taskId, state, writes, check, event) {
+    resumeTask(taskId, state, writes, check, events) {
       return immediateTransaction(db, () => {
         let at = "";
         const task = writeTaskStep(taskId, { state }, check, (stepAt) => {
           at = stepAt;
           endRunAndClearReviewStep(taskId, state, writes.clearReviewSession);
         });
-        writeEvent(taskId, at, event.type, event.data);
+        for (const event of events) writeEvent(taskId, at, event.type, event.data);
         return task;
       });
     },
