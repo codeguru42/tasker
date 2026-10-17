@@ -759,7 +759,7 @@ describe("task transitions", () => {
     it("deletes the review session row of the given number and no other", () => {
       const task = store.createTask(newTask("interrupted"));
       seedReviewSession(store, task.id, 1);
-      seedReviewSession(store, task.id, 2);
+      seedReviewSession(store, task.id, 2, { sessionId: "review-session-2" });
 
       transitionWithResume(store, task.id, "awaiting_work_review", "reviewing", { clearReviewSession: 2 });
 

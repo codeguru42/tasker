@@ -207,6 +207,9 @@ export interface RetryWrites {
   resumeExecute?: { version: number; fixTurn: NewExecuteFixTurn };
 }
 
+// The writes of a resume beside the move. They share the transaction of the move.
+export type ResumeWrites = Pick<RetryWrites, "clearReviewSession">;
+
 export interface ExecuteFixTurn extends NewExecuteFixTurn {
   queuedAt: string;
 }
@@ -394,6 +397,16 @@ export interface TaskStore extends LockStore {
   // The writes of a retry beside the move: the move to state, the run marker delete, the writes and the event of
   // check, in one transaction. A throw of any step writes nothing.
   retryTask(taskId: number, state: string, writes: RetryWrites, check?: (current: Task) => NewEvent | undefined): Task;
+  // The move of a resume: the move to state, the run marker delete, the delete of the review session of
+  // writes.clearReviewSession, the transition event of check and then event, in one transaction. A throw of any
+  // step writes nothing.
+  resumeTask(
+    taskId: number,
+    state: string,
+    writes: ResumeWrites,
+    check: (current: Task) => NewEvent | undefined,
+    event: NewEvent,
+  ): Task;
   getDefaultBaseBranch(repoKey: string): string | undefined;
   setDefaultBaseBranch(repoKey: string, branch: string): void;
   // Deletes the row only when it holds this branch. A value that another process saved stays.
@@ -945,6 +958,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     return immediateTransaction(db, () => writeTaskStep(id, changes, check, markerStep));
   }
 
+  // The marker step that retryTask and resumeTask share: the run marker delete, and the delete of the review
+  // session of reviewNumber when it is given.
+  function endRunAndClearReviewStep(taskId: number, state: string, reviewNumber: number | undefined): void {
+    endRunStep(taskId, state);
+    if (reviewNumber !== undefined) deleteSessionStep(taskId, { role: "review", reviewNumber });
+  }
+
   // The frame of a new row at the end of a run: the insert, its event, the move to a state that is
   // not spawning and the marker delete, in one transaction.
   function addRowAtRunEnd(
@@ -1419,19 +1439,28 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     retryTask(taskId, state, writes, check) {
       return writeTask(taskId, { state }, check, (at) => {
-        endRunStep(taskId, state);
+        endRunAndClearReviewStep(taskId, state, writes.clearReviewSession);
         if (writes.clearPlanSession === true) deleteSessionStep(taskId, { role: "plan" });
         if (writes.clearExecuteSession !== undefined) {
           deleteSessionStep(taskId, { role: "execute", planVersion: writes.clearExecuteSession });
-        }
-        if (writes.clearReviewSession !== undefined) {
-          deleteSessionStep(taskId, { role: "review", reviewNumber: writes.clearReviewSession });
         }
         if (writes.resumeExecute !== undefined) {
           const { version, fixTurn } = writes.resumeExecute;
           markExecuteTodosDoneStep(taskId, version, at);
           queueExecuteFixTurnStep(taskId, version, fixTurn, at);
         }
+      });
+    },
+
+    resumeTask(taskId, state, writes, check, event) {
+      return immediateTransaction(db, () => {
+        let at = "";
+        const task = writeTaskStep(taskId, { state }, check, (stepAt) => {
+          at = stepAt;
+          endRunAndClearReviewStep(taskId, state, writes.clearReviewSession);
+        });
+        writeEvent(taskId, at, event.type, event.data);
+        return task;
       });
     },
 

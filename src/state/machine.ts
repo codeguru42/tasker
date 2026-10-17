@@ -2,6 +2,7 @@ import type {
   NewEvent,
   NewReview,
   RetryWrites,
+  ResumeWrites,
   NewPlanRevision,
   NewVerifyRun,
   Task,
@@ -266,6 +267,21 @@ export function transitionWithRetry(
     resumeExecute: detail.resumeExecute,
   });
   return store.retryTask(id, to, writes, check);
+}
+
+// Moves the task to to with one transition event { from, to }, writes writes and then appends one resume event
+// { origin, target }, in one transaction. An illegal edge or a failing write writes nothing.
+export function transitionWithResume(
+  store: TaskStore,
+  id: number,
+  to: TaskState,
+  origin: TaskState,
+  writes: ResumeWrites,
+): Task {
+  return store.resumeTask(id, to, writes, transitionCheck("transition", to), {
+    type: "resume",
+    data: { origin, target: to },
+  });
 }
 
 // Approves revision version, appends the approved event { version, openQuestions, from, to } and moves the task to
