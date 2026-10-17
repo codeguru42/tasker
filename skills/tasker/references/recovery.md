@@ -62,8 +62,6 @@ The command reads the origin. The origin is the state that the task left when th
 - `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to `landed`.
 - `finishing`: the task goes to `landed`, and the command runs `tasker finish`. The target is `landed` also when the task came to `finishing` from `cleanup_failed`. Each cleanup step skips what is already done.
 
-The state before the merge is the state that the task left when the last merge started.
-
 The command prints this line on stdout, then releases the task lock and runs the next command:
 
 - `resumed <issue key>: paused in <origin>, back in <target>`

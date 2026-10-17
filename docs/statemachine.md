@@ -210,21 +210,21 @@ flowchart LR
 - `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there. Under `ask`, a run whose use of the quota window reaches `quotaApprovalThreshold` pauses into `awaiting_quota_approval` when the run ends, unless the operator approved that window.
 - A resume moves the task to the state before the spawn, then runs the same command again. So the task goes straight back into a spawning state.
 
-| Paused from                                 | Resumes to                                                 | Then runs                                                            |
-| ------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------- |
-| `planning`                                  | `workspace_ready`                                          | `plan` (continues the session)                                       |
-| `refining` (plain refine, or from `failed`) | `awaiting_plan_review`                                     | `refine`, with the recorded feedback                                 |
-| `refining` (from `tasker reopen`)           | `accepted`                                                 | `reopen`                                                             |
-| `refining` (promoted from `reviewed`)       | `reviewed`                                                 | `refine`, with the recorded feedback or none                         |
-| `refining` (from `tasker review FEEDBACK`)  | `awaiting_work_review`                                     | `review`, with the recorded feedback                                 |
-| `executing`                                 | `approved`                                                 | `execute` (continues the session)                                    |
-| `verifying` (interrupted only)              | `executed`                                                 | `verify`                                                             |
-| `reviewing`                                 | `awaiting_work_review`                                     | `review` (in a new session)                                          |
-| `pushing` (interrupted only)                | `accepted`                                                 | `push`. No second push if `origin` already has the sha.              |
-| `opening_pr` (interrupted only)             | `pushed`                                                   | `open-pr`. It adopts an open PR and does not open a second one.      |
-| `merging`                                   | the recorded merge origin (`accepted` or `in_peer_review`) | `merge`. No second push or merge if the work is already on the base. |
-| `finishing`                                 | `landed`                                                   | `finish`. Each cleanup step skips what is already done.              |
-| `updating_branch` (interrupted only)        | its origin state                                           | nothing. Run `update-branch` again.                                  |
+| Paused from                                 | Resumes to                             | Then runs                                                            |
+| ------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| `planning`                                  | `workspace_ready`                      | `plan` (continues the session)                                       |
+| `refining` (plain refine, or from `failed`) | `awaiting_plan_review`                 | `refine`, with the recorded feedback                                 |
+| `refining` (from `tasker reopen`)           | `accepted`                             | `reopen`                                                             |
+| `refining` (promoted from `reviewed`)       | `reviewed`                             | `refine`, with the recorded feedback or none                         |
+| `refining` (from `tasker review FEEDBACK`)  | `awaiting_work_review`                 | `review`, with the recorded feedback                                 |
+| `executing`                                 | `approved`                             | `execute` (continues the session)                                    |
+| `verifying` (interrupted only)              | `executed`                             | `verify`                                                             |
+| `reviewing`                                 | `awaiting_work_review`                 | `review` (in a new session)                                          |
+| `pushing` (interrupted only)                | `accepted`                             | `push`. No second push if `origin` already has the sha.              |
+| `opening_pr` (interrupted only)             | `pushed`                               | `open-pr`. It adopts an open PR and does not open a second one.      |
+| `merging`                                   | the recorded merge origin (`accepted`) | `merge`. No second push or merge if the work is already on the base. |
+| `finishing`                                 | `landed`                               | `finish`. Each cleanup step skips what is already done.              |
+| `updating_branch` (interrupted only)        | its origin state                       | nothing. Run `update-branch` again.                                  |
 
 ## Failure and retry
 
@@ -257,7 +257,7 @@ flowchart LR
 | `accepted` (a failed `tasker push`)                         | `accepted`                                                                    | `push`                                                                                                                  |
 | `pushing` (the push ended before tasker recorded it)        | `accepted`                                                                    | `push`. No second push if `origin` already has the sha.                                                                 |
 | `opening_pr`                                                | `pushed`                                                                      | `open-pr`. It adopts an open PR and does not open a second one.                                                         |
-| `merging`                                                   | the recorded merge origin (`accepted` or `in_peer_review`)                    | `merge`. It lands with no second push or merge if the work is already on the base.                                      |
+| `merging`                                                   | the recorded merge origin (`accepted`)                                        | `merge`. It lands with no second push or merge if the work is already on the base.                                      |
 
 - If git refuses a merge because the base moved, the task also fails from `merging`. Do not retry it. Run `update-branch`, which demotes the task to `executed` (see "Update branch").
 - A stopped `finish` does not go to `failed`. It rests in `cleanup_failed`, and `finish` runs again from there.
