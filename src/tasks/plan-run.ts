@@ -45,6 +45,8 @@ export interface PlanModeAnswerRequest<A, R> {
   // The spawning state of the run. The messages name it.
   phase: "planning" | "refining" | "reviewing";
   prompt: string;
+  // The operator feedback of a refine. The move into the phase records it.
+  feedback?: string;
   prepared: PreparedPlanModeRun;
   transcriptPath: string;
   jsonSchema: Record<string, unknown>;
@@ -58,9 +60,22 @@ export interface PlanModeAnswerRequest<A, R> {
 // Runs the assistant in plan mode, writes its events to the transcript and checks its answer. The caller holds the
 // task lock. A failure moves the task to failed through failRun, so a result with exitCode already printed its message.
 export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, R>): Promise<R | { exitCode: number }> {
-  const { store, config, task, io, phase, prompt, prepared, transcriptPath, jsonSchema, check, refused, record } =
-    request;
-  transitionTask(store, task.id, phase);
+  const {
+    store,
+    config,
+    task,
+    io,
+    phase,
+    prompt,
+    feedback,
+    prepared,
+    transcriptPath,
+    jsonSchema,
+    check,
+    refused,
+    record,
+  } = request;
+  transitionTask(store, task.id, phase, feedback === undefined ? undefined : { feedback });
   try {
     const startedAt = new Date().toISOString();
     mkdirSync(dirname(transcriptPath), { recursive: true });
@@ -114,6 +129,7 @@ export function runPlanRevision(request: PlanRunRequest): Promise<PlanResult> {
     io,
     phase,
     prompt,
+    feedback,
     prepared,
     transcriptPath: planTranscriptPath(config.dataRoot, task, version),
     jsonSchema: planAnswerJsonSchema(),

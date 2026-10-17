@@ -365,6 +365,14 @@ export function transitionFromEvents(events: readonly TaskEvent[], to: TaskState
   return typeof from === "string" && isTaskState(from) ? from : undefined;
 }
 
+// The operator feedback that the last move into refining recorded, or undefined when it recorded none.
+export function refineFeedbackOf(events: readonly TaskEvent[]): string | undefined {
+  const index = lastTransitionIndex(events, "refining");
+  if (index < 0) return undefined;
+  const feedback = (events[index].data as { feedback?: unknown }).feedback;
+  return typeof feedback === "string" ? feedback : undefined;
+}
+
 // The origin of the last move into the state as text for an error, or "unknown".
 export function originText(events: readonly TaskEvent[], to: TaskState): string {
   return transitionFromEvents(events, to) ?? "unknown";
