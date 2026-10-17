@@ -158,7 +158,7 @@ describe("runAssistant", () => {
     controller.abort();
 
     const { result } = await running;
-    expect(result).toMatchObject({ code: null, signal: "SIGTERM", timedOut: false, killed: false });
+    expect(result).toMatchObject({ code: null, signal: "SIGTERM", timedOut: false, killed: false, passedSignal: null });
     await waitUntilGone(childPid, 5000);
     expect(signalListenerCounts()).toEqual(before);
   });
@@ -168,7 +168,7 @@ describe("runAssistant", () => {
 
     const { result, pids } = await runCollected("sleep 30", { signal: AbortSignal.abort() });
 
-    expect(result).toMatchObject({ signal: "SIGTERM", timedOut: false, killed: false });
+    expect(result).toMatchObject({ signal: "SIGTERM", timedOut: false, killed: false, passedSignal: null });
     expect(Date.now() - start).toBeLessThan(2000);
     expect(pids).toHaveLength(1);
   });
@@ -186,7 +186,7 @@ describe("runAssistant", () => {
     controller.abort();
 
     const { result } = await running;
-    expect(result).toMatchObject({ timedOut: false, killed: true });
+    expect(result).toMatchObject({ timedOut: false, killed: true, passedSignal: null });
     expect(performance.now() - abortedAt).toBeGreaterThan(GRACE_MS - TIMER_CLOCK_STEP_MS);
     await waitUntilGone(leaderPid, 5000);
   });
@@ -266,7 +266,15 @@ describe("runAssistant", () => {
     // /bin/sh, because the bash of some hosts writes a startup warning to stderr.
     const { result } = await runCollected("exit 0", { file: "/bin/sh" });
 
-    expect(result).toEqual({ started: true, code: 0, signal: null, timedOut: false, killed: false, stderrTail: "" });
+    expect(result).toEqual({
+      started: true,
+      code: 0,
+      signal: null,
+      timedOut: false,
+      killed: false,
+      passedSignal: null,
+      stderrTail: "",
+    });
   });
 
   it("gives an error for a cwd that does not exist", async () => {
@@ -332,7 +340,7 @@ describe("runAssistant", () => {
   it("stops the group at the deadline", { timeout: 20_000 }, async () => {
     const { result } = await runCollected("sleep 30", { deadline: Date.now() + 300 });
 
-    expect(result).toMatchObject({ code: null, signal: "SIGTERM", timedOut: true, killed: false });
+    expect(result).toMatchObject({ code: null, signal: "SIGTERM", timedOut: true, killed: false, passedSignal: null });
   });
 
   it("removes its signal listeners after a normal run", async () => {
@@ -381,7 +389,7 @@ describe("runAssistant with the signals of tasker", () => {
       const fixture = startFixture("run-assistant-signal.ts", [dir, "60000", "sleep 30", signal]);
 
       const { result, before, after } = JSON.parse(await fixture.firstLine);
-      expect(result).toMatchObject({ started: true, signal, timedOut: false, killed: false });
+      expect(result).toMatchObject({ started: true, signal, timedOut: false, killed: false, passedSignal: signal });
       expect(after).toEqual(before);
       await fixture.exited;
     },
@@ -430,7 +438,7 @@ describe("runAssistant with the signals of tasker", () => {
       process.kill(fixture.pid, signal);
 
       const { result, before, after } = JSON.parse(await fixture.firstLine);
-      expect(result).toMatchObject({ signal, timedOut: false, killed: false });
+      expect(result).toMatchObject({ signal, timedOut: false, killed: false, passedSignal: signal });
       expect(after).toEqual(before);
       await fixture.exited;
     },

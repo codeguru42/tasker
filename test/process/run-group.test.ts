@@ -92,13 +92,13 @@ describe("runInGroup", () => {
   it("gives the exit code", async () => {
     const { result } = await runLogged("exit 3");
 
-    expect(result).toEqual({ code: 3, signal: null, timedOut: false, killed: false });
+    expect(result).toEqual({ code: 3, signal: null, timedOut: false, killed: false, passedSignal: null });
   });
 
   it("gives the signal that stopped the leader", async () => {
     const { result } = await runLogged("kill -TERM $$");
 
-    expect(result).toEqual({ code: null, signal: "SIGTERM", timedOut: false, killed: false });
+    expect(result).toEqual({ code: null, signal: "SIGTERM", timedOut: false, killed: false, passedSignal: null });
   });
 
   it("runs the command in cwd", async () => {
@@ -119,7 +119,7 @@ describe("runInGroup", () => {
 
     const { result } = await runLogged("sleep 30 & echo $! > child.pid; exit 0", { cwd });
 
-    expect(result).toEqual({ code: 0, signal: null, timedOut: false, killed: false });
+    expect(result).toEqual({ code: 0, signal: null, timedOut: false, killed: false, passedSignal: null });
     const childPid = await readPidFile(join(cwd, "child.pid"), 5000);
     expect(isAlive(childPid)).toBe(true);
   });
@@ -159,7 +159,7 @@ describe("runInGroup", () => {
 
     const { result } = await running;
 
-    expect(result).toEqual({ code: null, signal: "SIGTERM", timedOut: true, killed: false });
+    expect(result).toEqual({ code: null, signal: "SIGTERM", timedOut: true, killed: false, passedSignal: null });
     await waitUntilGone(childPid, 5000);
   });
 
@@ -208,7 +208,7 @@ describe("runInGroup", () => {
     const { result } = await runLogged("exit 0", { deadline: Date.now() + 2 ** 40 });
     await new Promise((done) => setImmediate(done));
 
-    expect(result).toEqual({ code: 0, signal: null, timedOut: false, killed: false });
+    expect(result).toEqual({ code: 0, signal: null, timedOut: false, killed: false, passedSignal: null });
     expect(warnings.map((warning) => warning.name)).not.toContain("TimeoutOverflowWarning");
   });
 });
@@ -322,7 +322,7 @@ describe("runInGroup with the signals of tasker", () => {
 
       expect(await fixture.exit).toEqual({ code: 0, signal: null });
       const { result, before, after } = await fixture.line();
-      expect(result).toEqual({ code: null, signal, timedOut: false, killed: false });
+      expect(result).toEqual({ code: null, signal, timedOut: false, killed: false, passedSignal: signal });
       expect(after).toEqual(before);
       expect(existsSync(join(fixture.dir, "after"))).toBe(false);
       expect(fixture.stdout().trim().split("\n")).toHaveLength(1);
@@ -341,7 +341,7 @@ describe("runInGroup with the signals of tasker", () => {
 
       expect(await fixture.exit).toEqual({ code: 0, signal: null });
       const { result, before, after } = await fixture.line();
-      expect(result).toEqual({ code: null, signal, timedOut: false, killed: false });
+      expect(result).toEqual({ code: null, signal, timedOut: false, killed: false, passedSignal: signal });
       expect(after).toEqual(before);
       expect(existsSync(join(fixture.dir, "after"))).toBe(false);
     },
