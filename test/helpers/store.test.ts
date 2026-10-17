@@ -3,7 +3,13 @@ import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
-import { failedFrom, lastTransitionError, transitionFromEvents, transitionTask } from "../../src/state/machine.js";
+import {
+  failedFrom,
+  lastTransitionError,
+  refineFeedbackOf,
+  transitionFromEvents,
+  transitionTask,
+} from "../../src/state/machine.js";
 import { taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { thrownBy } from "./errors.js";
@@ -21,6 +27,8 @@ import {
   failRefineFrom,
   failTaskFrom,
   failVerifyRun,
+  pauseRefineFrom,
+  pauseTaskFrom,
   lastErrorOf,
   latestTaskOf,
   lockNames,
@@ -776,6 +784,85 @@ describe("failRefineFrom", () => {
       failRefineFrom(store, task.id, "reviewed", "boom");
 
       expect(lastTransitionError(store.listEvents(task.id))).toBe("boom");
+    });
+  });
+});
+
+describe("pauseTaskFrom", () => {
+  it.each(["quota_blocked", "interrupted"] as const)("pauses the task in %s from the origin", (pause) => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseTaskFrom(store, task.id, "executing", pause);
+
+      expect(store.getTask(task.id)?.state).toBe(pause);
+      expect(transitionFromEvents(store.listEvents(task.id), pause)).toBe("executing");
+    });
+  });
+
+  it("writes the detail of src by default", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseTaskFrom(store, task.id, "planning", "quota_blocked");
+      pauseTaskFrom(store, task.id, "executing", "interrupted");
+
+      const moves = store.listEvents(task.id).filter((event) => event.type === "transition");
+      expect(moves.map((event) => event.data)).toEqual([
+        { cause: "rate_limit", from: "planning", to: "quota_blocked" },
+        { cause: "dead_run", childPid: null, from: "executing", to: "interrupted" },
+      ]);
+    });
+  });
+
+  it("writes the given detail in place of the default", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseTaskFrom(store, task.id, "planning", "quota_blocked", { cause: "overage", resetsAt: 1792206000 });
+
+      expect(store.listEvents(task.id).at(-1)?.data).toEqual({
+        cause: "overage",
+        resetsAt: 1792206000,
+        from: "planning",
+        to: "quota_blocked",
+      });
+    });
+  });
+});
+
+describe("pauseRefineFrom", () => {
+  it.each(["quota_blocked", "interrupted"] as const)("pauses the task in %s after a refine", (pause) => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseRefineFrom(store, task.id, "reviewed", pause);
+
+      const events = store.listEvents(task.id);
+      expect(store.getTask(task.id)?.state).toBe(pause);
+      expect(transitionFromEvents(events, pause)).toBe("refining");
+      expect(transitionFromEvents(events, "refining")).toBe("reviewed");
+    });
+  });
+
+  it("records the feedback in the move into refining", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseRefineFrom(store, task.id, "awaiting_plan_review", "interrupted", "Keep the loop.");
+
+      expect(refineFeedbackOf(store.listEvents(task.id))).toBe("Keep the loop.");
+    });
+  });
+
+  it("records no feedback key when none is given", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseRefineFrom(store, task.id, "reviewed", "quota_blocked");
+
+      const move = store.listEvents(task.id).find((event) => (event.data as { to?: string }).to === "refining");
+      expect(move?.data).toEqual({ from: "reviewed", to: "refining" });
     });
   });
 });

@@ -6,13 +6,7 @@ import { verifyCommandLogPath } from "../../src/store/layout.js";
 import type { Task } from "../../src/store/store.js";
 import { retryTask } from "../../src/tasks/retry.js";
 import { configWithTrackers } from "../helpers/config.js";
-import {
-  seedApprovedTask,
-  seedExecuteSession,
-  seedExecuteTodoStates,
-  seedPlanSession,
-  seedReviewSession,
-} from "../helpers/plan.js";
+import { seedApprovedTaskWithSessions, sessionsOf, seedExecuteTodoStates, seedReviewSession } from "../helpers/plan.js";
 import { expectRefusedWithoutChange } from "../helpers/task-fixtures.js";
 import {
   eventsOf,
@@ -20,7 +14,6 @@ import {
   failTaskFrom,
   failVerifyRun,
   latestTaskOf,
-  reviewSessionRows,
   seedReview,
   withDataRootStore,
 } from "../helpers/store.js";
@@ -35,27 +28,6 @@ function retry(dataRoot: string, task: Task, resumeExecute = false) {
   return withDataRootStore(dataRoot, (store) => retryTask(store, { config, ref, taskId: task.id, resumeExecute }));
 }
 
-// The task of the issue 5 in approved, with the pinned revision v1, a plan session, an execute session and the review
-// session of review 1.
-function approvedTask() {
-  const { dataRoot, task } = seedApprovedTask();
-  withDataRootStore(dataRoot, (store) => {
-    seedPlanSession(store, task.id);
-    seedExecuteSession(store, task.id, 1);
-    seedReviewSession(store, task.id, 1);
-  });
-  return { dataRoot, task };
-}
-
-// Whether the plan session and the execute session v1 of the task exist, and the numbers of its review sessions.
-function sessionsOf(dataRoot: string, task: Task) {
-  return withDataRootStore(dataRoot, (store) => ({
-    plan: store.planSession(task.id) !== undefined,
-    execute: store.executeSession(task.id, 1) !== undefined,
-    review: reviewSessionRows(dataRoot, task.id).map((row) => row.review_number),
-  }));
-}
-
 // Expects that retry refuses with message, and that the state, the events and the sessions stay the same.
 async function expectRetryRefused(dataRoot: string, task: Task, message: string, resumeExecute = false) {
   const sessions = sessionsOf(dataRoot, task);
@@ -65,20 +37,20 @@ async function expectRetryRefused(dataRoot: string, task: Task, message: string,
 
 describe("retryTask checks", () => {
   it("refuses a task that is not in failed", async () => {
-    const { dataRoot, task } = approvedTask();
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
 
     await expectRetryRefused(dataRoot, task, `the task of ${KEY} is in approved; tasker retry needs failed`);
   });
 
   it.each(["approved", "merging"] as const)("refuses a task that failed in %s", async (origin) => {
-    const { dataRoot, task } = approvedTask();
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => failTaskFrom(store, task.id, origin));
 
     await expectRetryRefused(dataRoot, task, `the task of ${KEY} failed in ${origin}; tasker retry has no step for it`);
   });
 
   it("refuses --resume-execute for a task that failed in planning", async () => {
-    const { dataRoot, task } = approvedTask();
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => failTaskFrom(store, task.id, "planning"));
 
     await expectRetryRefused(dataRoot, task, "--resume-execute applies only to a task that failed in verifying", true);
@@ -159,7 +131,7 @@ describe("retryTask origins", () => {
 
   it.each(labeled)("moves a task that failed in $label", async (row) => {
     const { origin, refineOrigin, target, next, state, sessions } = row;
-    const { dataRoot, task } = approvedTask();
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) =>
       refineOrigin === undefined ? failTaskFrom(store, task.id, origin) : failRefineFrom(store, task.id, refineOrigin),
     );
@@ -180,7 +152,7 @@ describe("retryTask origins", () => {
 
 describe("retryTask review session", () => {
   it("deletes only the review session of the next review number", async () => {
-    const { dataRoot, task } = approvedTask();
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => {
       seedReview(store, task.id);
       seedReviewSession(store, task.id, 2, { sessionId: "r-2" });
@@ -205,7 +177,7 @@ describe("retryTask --resume-execute", () => {
   const failedRun: Parameters<typeof failVerifyRun>[3] = { result: "failed", commands: ["a", "b"], failingCommand: 2 };
 
   it("marks every todo done and queues the fix turn with the error and the log tail", async () => {
-    const { dataRoot, task } = approvedTask();
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
     failedVerify(dataRoot, task, failedRun, ["log a\n", "log b\n"]);
 
     const result = await retry(dataRoot, task, true);
@@ -227,7 +199,7 @@ describe("retryTask --resume-execute", () => {
   });
 
   it("marks a todo that was in progress done", async () => {
-    const { dataRoot, task } = approvedTask();
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => seedExecuteTodoStates(store, task.id, 1, { "write-test": "in_progress" }));
     failedVerify(dataRoot, task, failedRun, ["log a\n", "log b\n"]);
 
@@ -244,7 +216,7 @@ describe("retryTask --resume-execute", () => {
       "the verify commands passed, but the run could not be recorded: disk full",
       "verifying failed: boom",
     ])("after the failure %s, which records no run", async (message) => {
-      const { dataRoot, task } = approvedTask();
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
       failedVerify(dataRoot, task, failedRun, ["log a\n", "log b\n"], "old failure");
       withDataRootStore(dataRoot, (store) => {
         transitionTask(store, task.id, "executed");
@@ -261,7 +233,7 @@ describe("retryTask --resume-execute", () => {
     });
 
     it("for a run with no failing command", async () => {
-      const { dataRoot, task } = approvedTask();
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
       failedVerify(dataRoot, task, { result: "failed", failingCommand: null }, ["log\n"]);
 
       await retry(dataRoot, task, true);
@@ -270,7 +242,7 @@ describe("retryTask --resume-execute", () => {
     });
 
     it("for a failing command that never started and has no log", async () => {
-      const { dataRoot, task } = approvedTask();
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
       failedVerify(dataRoot, task, { result: "failed", commands: ["a", "b"], failingCommand: 3 }, [
         "log a\n",
         "log b\n",
@@ -282,7 +254,7 @@ describe("retryTask --resume-execute", () => {
     });
 
     it("for a log file that was removed", async () => {
-      const { dataRoot, task } = approvedTask();
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
       failedVerify(dataRoot, task, failedRun, ["log a\n", "log b\n"]);
       rmSync(verifyCommandLogPath(dataRoot, task, 1, 2));
 

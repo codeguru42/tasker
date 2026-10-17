@@ -21,7 +21,15 @@ import {
   TEST_SESSION_ID,
 } from "./fake-claude.js";
 import { useThreeRepoDataRoot } from "./config.js";
-import { dayAt, eventsOf, latestTaskOf, type SeedTask, seedTasks, withDataRootStore } from "./store.js";
+import {
+  dayAt,
+  eventsOf,
+  latestTaskOf,
+  reviewSessionRows,
+  type SeedTask,
+  seedTasks,
+  withDataRootStore,
+} from "./store.js";
 
 // The questions block that show-plan and show-questions print for the one open question of validPlanAnswer.
 export const OPEN_QUESTION_BLOCK =
@@ -303,6 +311,27 @@ export function seedApprovedTask(
     return store.getTask(task.id)!;
   });
   return { dataRoot, task: seeded };
+}
+
+// The task of the issue 5 in approved, with the pinned revision v1, a plan session, an execute session and the review
+// session of review 1.
+export function seedApprovedTaskWithSessions(): { dataRoot: string; task: Task } {
+  const { dataRoot, task } = seedApprovedTask();
+  withDataRootStore(dataRoot, (store) => {
+    seedPlanSession(store, task.id);
+    seedExecuteSession(store, task.id, 1);
+    seedReviewSession(store, task.id, 1);
+  });
+  return { dataRoot, task };
+}
+
+// Whether the plan session and the execute session v1 of the task exist, and the numbers of its review sessions.
+export function sessionsOf(dataRoot: string, task: Task) {
+  return withDataRootStore(dataRoot, (store) => ({
+    plan: store.planSession(task.id) !== undefined,
+    execute: store.executeSession(task.id, 1) !== undefined,
+    review: reviewSessionRows(dataRoot, task.id).map((row) => row.review_number),
+  }));
 }
 
 // Runs tasker approve for key in the repo codeguru42/tasker, the repo of the task of seedPlanReviewTask, with extra

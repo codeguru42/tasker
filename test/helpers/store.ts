@@ -10,7 +10,7 @@ import {
   transitionTask,
   transitionWithVerifyRun,
 } from "../../src/state/machine.js";
-import type { TaskState } from "../../src/state/machine.js";
+import type { TaskState, TransitionDetail } from "../../src/state/machine.js";
 import { createDataRoot, taskLogsDir, verifyCommandLogPath } from "../../src/store/layout.js";
 import {
   type NewReview,
@@ -353,6 +353,13 @@ export function failTaskFrom(
   return failTask(store, taskId, message);
 }
 
+// Moves the task to refineOrigin with no edge check, then into refining. It records a real move into refining, so
+// transitionFromEvents(events, "refining") gives refineOrigin. The move records feedback only when one is given.
+function enterRefineFrom(store: TaskStore, taskId: number, refineOrigin: TaskState, feedback?: string): Task {
+  placeTask(store, taskId, refineOrigin);
+  return transitionTask(store, taskId, "refining", feedback === undefined ? undefined : { feedback });
+}
+
 // Moves the task to refineOrigin with no edge check, then into refining, then fails it with message. It records a real
 // move into refining, so transitionFromEvents(events, "refining") gives refineOrigin. failedFrom gives refining.
 export function failRefineFrom(
@@ -361,9 +368,42 @@ export function failRefineFrom(
   refineOrigin: TaskState,
   message = "refining failed: test",
 ): Task {
-  placeTask(store, taskId, refineOrigin);
-  transitionTask(store, taskId, "refining");
+  enterRefineFrom(store, taskId, refineOrigin);
   return failTask(store, taskId, message);
+}
+
+// The detail of the move into each pause, as src writes it: run-outcome.ts writes a rate limit stop with no reset time
+// known, and interruptDeadRun writes the dead run with no child process.
+const PAUSE_DATA: Record<"quota_blocked" | "interrupted", TransitionDetail> = {
+  quota_blocked: { cause: "rate_limit" },
+  interrupted: { cause: "dead_run", childPid: null },
+};
+
+// Moves the task to origin with no edge check, then pauses it. A spawning origin starts a run, so the run marker exists
+// as in a real pause. transitionFromEvents(events, pause) gives origin. data replaces the default detail of the pause,
+// for example { cause: "rate_limit", resetsAt } for a quota stop with a known reset time.
+export function pauseTaskFrom(
+  store: TaskStore,
+  taskId: number,
+  origin: TaskState,
+  pause: "quota_blocked" | "interrupted",
+  data?: TransitionDetail,
+): Task {
+  placeTask(store, taskId, origin);
+  return transitionTask(store, taskId, pause, data ?? PAUSE_DATA[pause]);
+}
+
+// Moves the task to refineOrigin with no edge check, then into refining, then pauses it. feedback is the feedback that
+// the move into refining records. transitionFromEvents(events, "refining") gives refineOrigin.
+export function pauseRefineFrom(
+  store: TaskStore,
+  taskId: number,
+  refineOrigin: TaskState,
+  pause: "quota_blocked" | "interrupted",
+  feedback?: string,
+): Task {
+  enterRefineFrom(store, taskId, refineOrigin, feedback);
+  return transitionTask(store, taskId, pause, PAUSE_DATA[pause]);
 }
 
 // Creates the task a/b#1 in the planning state, the task that the store tests of the helpers use.

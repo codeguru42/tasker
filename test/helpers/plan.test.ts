@@ -21,6 +21,8 @@ import {
   planTodo,
   runApprove,
   seedApprovedTask,
+  seedApprovedTaskWithSessions,
+  sessionsOf,
   seedTaskWithPlanFiles,
   transcriptLines,
   turnResultStream,
@@ -513,6 +515,21 @@ describe("seedApprovedTask", () => {
     expect(planRevisionOf(dataRoot, task.id, 3)?.approvedAt).not.toBeNull();
     expect(withDataRootStore(dataRoot, (store) => store.pinnedPlanRevision(task.id))?.version).toBe(3);
     expect(task.state).toBe("approved");
+  });
+});
+
+describe("seedApprovedTaskWithSessions and sessionsOf", () => {
+  it("gives an approved task with the plan, execute and review sessions", () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+
+    expect(task.state).toBe("approved");
+    expect(sessionsOf(dataRoot, task)).toEqual({ plan: true, execute: true, review: [1] });
+  });
+
+  it("gives false and an empty list for a task with no session", () => {
+    const { dataRoot, task } = seedApprovedTask();
+
+    expect(sessionsOf(dataRoot, task)).toEqual({ plan: false, execute: false, review: [] });
   });
 });
 
