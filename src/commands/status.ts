@@ -1,8 +1,16 @@
 import type { RegisterCommand } from "../cli.js";
 import { nextCell } from "../state/commands.js";
-import { isTaskState, STATES } from "../state/machine.js";
+import { isTaskState, SPAWNING_STATES, STATES } from "../state/machine.js";
 import type { TaskFilter } from "../store/store.js";
-import { fail, formatColumns, loadConfigOrFail, repoKeyOrFail, resolveIssueKeyOrFail, withStore } from "./shared.js";
+import { handleDeadRun } from "../tasks/dead-run.js";
+import {
+  fail,
+  formatColumns,
+  loadConfigOrFail,
+  repoKeyOrFail,
+  resolveIssueKeyOrFail,
+  withStoreAsync,
+} from "./shared.js";
 
 const HEADERS = ["ISSUE", "REPO", "STATE", "UPDATED", "NEXT"];
 
@@ -13,7 +21,7 @@ export const status: RegisterCommand = (program, io) => {
     .option("--repo <key>", "List only the tasks of the repo with this key")
     .option("--state <state>", "List only the tasks in this state, also finished or cancelled")
     .option("--issue <issue>", "List only the tasks of this issue key")
-    .action((options: { repo?: string; issue?: string; state?: string }) => {
+    .action(async (options: { repo?: string; issue?: string; state?: string }) => {
       const config = loadConfigOrFail(io);
       const filter: TaskFilter = {};
       if (options.repo !== undefined) {
@@ -31,7 +39,13 @@ export const status: RegisterCommand = (program, io) => {
         filter.issueKey = ref.key;
         filter.repoKey = ref.repoKey;
       }
-      const tasks = withStore(config, (store) => store.listTasks(filter));
+      const tasks = await withStoreAsync(config, async (store) => {
+        // Each task in a spawning state is checked, also a task that the filter hides.
+        for (const task of store.listTasks({ states: [...SPAWNING_STATES] })) {
+          for (const note of (await handleDeadRun(store, task)).notes) io.stderr(`${note}\n`);
+        }
+        return store.listTasks(filter);
+      });
       io.stdout(
         tasks.length === 0
           ? "no tasks\n"
