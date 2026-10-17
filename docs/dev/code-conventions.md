@@ -106,3 +106,4 @@ As a result, when a check must report all problems in one run, as [rules.md](rul
 - In Vitest 5.0.3, an `onTestFinished` callback runs after the `afterEach` hooks.
 - Node 26 runs a `.ts` file of the repo directly. So a copy of a file of the repo, with its `.js` imports changed to `.ts`, tests a fact of the code with no `node_modules`.
 - A boundary test cannot find a module name that the code builds at run time. It also cannot find a git name or a `gh` command name that the code builds at run time.
+- A test that must send a signal inside `spawn()` replaces `spawn` of `node:child_process` in a fixture module. Then the fixture calls `syncBuiltinESMExports()` from `node:module`. `test/fixtures/signal-in-spawn.ts` is the example. Under `tsx`, a static import of `spawn` under `src/` also gets the replacement (tested on Node v26.7.0).
