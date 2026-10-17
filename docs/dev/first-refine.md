@@ -45,6 +45,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - If a page has two headings with the same name, the issue gives the exact anchor (#194).
 - In step 7 of [the rebase-conflict procedure](rebase-conflicts.md#procedure), resolve only the conflict hunk. `git checkout --theirs <file>` takes the whole file. On #201, it dropped a word that another ticket had added. A script for the conflict chains its steps with `&&`, so that a failed step stops the script (#201).
 - If the issue puts a command out of scope, ask the plan not to edit the docs of that command. On #159, the plan narrowed a reason sentence in the "Retry" section of [tasks.md](tasks.md#retry). Review 1 read the new sentence as a promise of a case that the ticket did not build.
+- A link must support the exact sentence that holds it. Ask the plan to compare each link sentence with its target, for example "X says that Y". The target must say Y. On #159, a link sentence claimed more than its target doc says. [The diff read](orchestration.md#the-diff-read) found it after execute. On #212, the compare found a real gap before execute, because [docs/config.md](../config.md#assistant) names the provider `claude-code`, not the `claude` command.
 
 ## A ticket that only adds a layer, for example a schema
 
@@ -143,7 +144,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 ## A ticket that adds a doc of rules or hints
 
 - Name the docs that already hold some of the rules or hints, because they draw duplication findings (#116).
-- Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its lead-in names. A link must support the exact sentence that holds it. If a hint links to a rule to prevent a repeat, put the link on the sentence that the rule supports, not on the new fact. On #149, review 1 found two links that only pointed near the topic.
+- Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its lead-in names. If a hint links to a rule to prevent a repeat, put the link on the sentence that the rule supports, not on the new fact. On #149, review 1 found two links that only pointed near the topic.
 - Before the agent asks a plan to extend a bullet, the agent runs `git blame` on that bullet. The issue can put the bullets of earlier tickets out of scope (#169).
 - If a hint of the issue starts with a rule that a doc already gives, ask the plan to state only the new fact. Then the old rule is only the source of an example, with a link. On #186, a link plus a restatement still counted as a copy, and it cost one loop.
 - A hint that gives a read of a remote-tracking ref also gives the fetch before the read and the `--verify` of [the shared-clone rule](orchestration.md#the-shared-clone-rule). A hint about a value that changes later names the moment that it covers. On #169, review 1 found both.
