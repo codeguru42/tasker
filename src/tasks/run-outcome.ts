@@ -47,14 +47,37 @@ export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
     case "quota": {
       const { cause, resetsAt } = outcome;
       transitionTask(store, task.id, "quota_blocked", resetsAt === undefined ? { cause } : { cause, resetsAt });
-      const reset =
-        resetsAt === undefined
-          ? "the reset time is unknown"
-          : `it resets at ${new Date(resetsAt * 1000).toISOString()}`;
-      io.stdout(`${phase} stopped by a quota limit; ${reset}\n`);
+      io.stdout(`${phase} stopped by a quota limit; ${resetText(resetsAt)}\n`);
       return { exitCode: 1 };
     }
   }
+}
+
+// The part of a quota message that names the reset time of the window.
+function resetText(resetsAt: number | undefined): string {
+  return resetsAt === undefined
+    ? "the reset time is unknown"
+    : `it resets at ${new Date(resetsAt * 1000).toISOString()}`;
+}
+
+// Moves the task to awaiting_quota_approval with the warning, prints the pause line on stdout and gives exit code 1.
+export function pauseForQuotaApproval(
+  store: TaskStore,
+  task: Task,
+  io: Io,
+  phase: TaskState,
+  warning: QuotaApprovalWarning,
+): { exitCode: number } {
+  const { utilization, resetsAt } = warning;
+  transitionTask(
+    store,
+    task.id,
+    "awaiting_quota_approval",
+    resetsAt === undefined ? { utilization } : { utilization, resetsAt },
+  );
+  const percent = Math.round(utilization * 100);
+  io.stdout(`${phase} paused by a quota warning: the use of the quota window is ${percent}%; ${resetText(resetsAt)}\n`);
+  return { exitCode: 1 };
 }
 
 // The warning that pauses the task, or undefined. Only the policy ask looks for one. The provider reads the events.
