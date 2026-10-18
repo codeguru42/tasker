@@ -141,14 +141,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   const base = requireBase(task);
   const baseRevision = requireBaseRevision(store, task);
   const parent = parentOf(store, task);
-  if (parent !== undefined && request.strategy !== undefined) {
-    throw new Error(
-      "--strategy does not apply to a stacked task; tasker update-branch replays its commits with a rebase",
-    );
-  }
-  // A stacked task has no strategy: the base step replays its commits with a rebase.
-  const strategy =
-    parent === undefined ? strategyOf(request.strategy, config.repos[task.repoKey].updateBranchStrategy) : undefined;
+  const strategy = strategyOf(request.strategy, config.repos[task.repoKey].updateBranchStrategy);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   const start = await vcs.workspaceState(ctx, { path });
   if (start.changes.length > 0) {
@@ -196,10 +189,11 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const upToDate = contains && synced.sync !== "take-remote";
       const resynced: Pick<ResyncResult, "how" | "head"> = upToDate
         ? { how: "none", head: syncedHead }
-        : strategy === undefined
+        : parent !== undefined && strategy === "rebase"
           ? // The new tip of a stacked task is the tip of the branch of the parent while the parent is in flight,
-            // and the tip of the base of the parent after the parent landed. The replay puts the commits after
-            // the merge base onto the new tip, with a rebase.
+            // and the tip of the base of the parent after the parent landed. Under rebase, the replay puts the
+            // commits after the merge base onto the new tip, with a rebase. Under merge, a stacked task uses the
+            // resync of every other task.
             { how: "rebase", head: await vcs.replayOnto(ctx, { path, onto: baseTip }) }
           : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
       const moved = "remoteTip" in synced || resynced.how !== "none";

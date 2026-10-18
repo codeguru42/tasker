@@ -15,13 +15,13 @@ export const updateBranch: RegisterCommand = (program, io) => {
   program
     .command("update-branch")
     .description(
-      "Bring the task branch current with its copy on origin, and bring the worktree of the task up to date with its base branch. The command does the first step first. Without --take-remote, it moves the branch only by a fast-forward, and tips that have diverged are an error. The task goes through updating_branch. When the head moved, the task goes back to executed, or to awaiting_plan_review for an approved plan, because the old approval or verify result no longer describes the tree. A task stacked on the branch of a parent task moves onto the tip of that branch: the command replays the commits of the task after the merge base with a rebase",
+      "Bring the task branch current with its copy on origin, and bring the worktree of the task up to date with its base branch. The command does the first step first. Without --take-remote, it moves the branch only by a fast-forward, and tips that have diverged are an error. The task goes through updating_branch. When the head moved, the task goes back to executed, or to awaiting_plan_review for an approved plan, because the old approval or verify result no longer describes the tree. A task stacked on the branch of a parent task moves onto the tip of that branch. Under the rebase strategy, the command replays the commits of the task after the merge base with a rebase",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option(
       "--strategy <value>",
-      "How to bring the branch up to date: rebase or merge. The option overrides updateBranchStrategy of the repo for one run. It does not apply to a stacked task",
+      "How to bring the branch up to date: rebase or merge. The option overrides updateBranchStrategy of the repo for one run",
     )
     .option(
       "--take-remote",
