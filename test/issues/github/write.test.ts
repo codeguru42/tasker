@@ -127,6 +127,34 @@ describe("markGithubInProgress", () => {
   });
 });
 
+describe("clearGithubInProgress", () => {
+  it("removes the label with one edit call", async () => {
+    const fake = fakeGh(dir, {}, [token, { args: editArgs("--remove-label", "wip") }]);
+    await write.clearGithubInProgress(ref, "wip", "octo", fake.env);
+    expect(fake.calls().map((call) => call.args)).toEqual([token.args, editArgs("--remove-label", "wip")]);
+  });
+
+  it("rejects with an IssueWriteError that names the configuration key", async () => {
+    const stderr = editFailure("HTTP 502");
+    const fake = fakeGh(dir, {}, [token, { args: editArgs("--remove-label", "wip"), exitCode: 1, stderr }]);
+    const error = await failureOf(write.clearGithubInProgress(ref, "wip", "octo", fake.env), issue.IssueWriteError);
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.configKey).toBe("issueTracker.inProgressLabel");
+    expect(error.message).toBe(
+      'could not remove the label "wip" of issueTracker.inProgressLabel from octo/repo#7: gh issue edit failed with exit code 1: failed to update https://github.com/octo/repo/issues/7: HTTP 502\nfailed to update 1 issue',
+    );
+    expect(fake.calls()).toHaveLength(2);
+  });
+
+  it("passes the GhError of a token call that a signal stops", async () => {
+    const fake = fakeGh(dir, {}, [{ ...token, killWith: "TERM" }]);
+    const error = await failureOf(write.clearGithubInProgress(ref, "wip", "octo", fake.env), gh.GhError);
+    expect(error).not.toBeInstanceOf(issue.IssueWriteError);
+    expect(error.subcommand).toBe("auth token");
+    expect(fake.calls()).toHaveLength(1);
+  });
+});
+
 describe("markGithubDone without a done label", () => {
   it("closes the issue as completed with one close call", async () => {
     const fake = fakeGh(dir, {}, [token, { args: closeArgs }]);

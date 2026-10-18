@@ -142,6 +142,16 @@ describe("createGithubProvider", () => {
     expect(first).toEqual(second);
   });
 
+  it("clears the in-progress marker as clearGithubInProgress does", async () => {
+    const { first, second } = await compareCalls(
+      [{ args: editArgs("--remove-label", "wip") }],
+      (env) => provider().clearInProgress(ref, "wip", env),
+      (env) => writeModule.clearGithubInProgress(ref, "wip", "octo", env),
+    );
+    expect(first).toEqual([editArgs("--remove-label", "wip")]);
+    expect(first).toEqual(second);
+  });
+
   it("marks done with a label as markGithubDone does", async () => {
     const { first, second } = await compareCalls(
       [{ args: editArgs("--add-label", "done") }],
