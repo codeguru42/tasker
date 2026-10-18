@@ -39,6 +39,8 @@ export interface GitOrigin {
   env: NodeJS.ProcessEnv;
   // Adds one commit to branch and returns the new commit SHA.
   addCommit(branch: string, change?: { file?: string; content?: string; message?: string }): Promise<string>;
+  // Merges the head of from (default "main") into branch with a merge commit and returns the new commit SHA.
+  addMerge(branch: string, from?: string): Promise<string>;
   // Makes branch name at the head of from (default "main").
   createBranch(name: string, from?: string): Promise<void>;
   // The head SHA of branch, or undefined when the branch is missing.
@@ -136,6 +138,15 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
       const sha = await writeAndCommit(work, env, target, change.content ?? message, message, ["--allow-empty"]);
       await runGit(["push", "origin", `HEAD:refs/heads/${branch}`], { cwd: work, env });
       return sha;
+    },
+    async addMerge(branch, from = "main") {
+      assertBranchName(branch);
+      assertBranchName(from);
+      await runGit(["fetch", "origin"], { cwd: work, env });
+      await runGit(["checkout", "-B", branch, `origin/${branch}`], { cwd: work, env });
+      await runGit(["merge", "--no-ff", "--no-edit", `origin/${from}`], { cwd: work, env });
+      await runGit(["push", "origin", `HEAD:refs/heads/${branch}`], { cwd: work, env });
+      return gitOutput({ cwd: work }, env, "rev-parse", "HEAD");
     },
     async createBranch(name, from = "main") {
       assertBranchName(name);
@@ -263,6 +274,13 @@ export async function commitInWorktree(
   worktreeCommitCount += 1;
   const message = change.message ?? `worktree commit ${worktreeCommitCount}`;
   return writeAndCommit(worktree, env, target, change.content ?? message, message, []);
+}
+
+// Changes only the message of the head commit of the worktree and returns the new head.
+// The patch of the commit stays the same.
+export async function amendWorktreeMessage(worktree: string, env: NodeJS.ProcessEnv, message: string): Promise<string> {
+  await runGit(["commit", "--amend", "--only", "-m", message], { cwd: worktree, env });
+  return gitOutput({ cwd: worktree }, env, "rev-parse", "HEAD");
 }
 
 // Names that pass the syntax check of a task branch but not the shape check.

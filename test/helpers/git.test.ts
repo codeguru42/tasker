@@ -13,6 +13,7 @@ import { failureOf } from "./errors.js";
 import { readArgLog, realCommandPath } from "./fake-commands.js";
 import {
   addCloneCommit,
+  amendWorktreeMessage,
   commitInWorktree,
   copyCloneBranchToOrigin,
   GIT_TEST_IDENTITY,
@@ -54,6 +55,16 @@ describe("makeGitOrigin", () => {
     const sha = await origin.addCommit("main");
     expect(await origin.branchHead("main")).toBe(sha);
     expect(await git("rev-list", "--count", "main")).toBe("2");
+  });
+
+  it("merges the head of another branch into a branch with a merge commit", async () => {
+    await origin.createBranch("feature");
+    await origin.addCommit("feature", { file: "a.txt", content: "x" });
+    const mainHead = await origin.addCommit("main");
+    const sha = await origin.addMerge("feature");
+    expect(await origin.branchHead("feature")).toBe(sha);
+    expect((await git("rev-list", "--parents", "-n", "1", sha)).split(" ")).toHaveLength(3);
+    expect(await git("rev-parse", `${sha}^2`)).toBe(mainHead);
   });
 
   it("creates a branch at the head of main", async () => {
@@ -344,6 +355,40 @@ describe("commitInWorktree", () => {
     await expect(commitInWorktree(worktree, origin.env, { file: "../x" })).rejects.toThrow(
       "commitInWorktree needs a file inside the worktree: ../x",
     );
+  });
+});
+
+describe("amendWorktreeMessage", () => {
+  let origin: GitOrigin;
+  let worktree: string;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    const clone = await makeGitClone(origin);
+    const names = taskNames(join(origin.dir, "worktrees"), 16);
+    worktree = names.worktree;
+    await createTaskWorktree({
+      clone,
+      env: origin.env,
+      path: worktree,
+      branch: names.branch,
+      baseRevision: "refs/remotes/origin/main",
+    });
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  const git = (...args: string[]) => gitOutput({ cwd: worktree }, origin.env, ...args);
+
+  it("changes the message and keeps the patch", async () => {
+    const old = await commitInWorktree(worktree, origin.env, { file: "a.txt", content: "x", message: "old" });
+    const sha = await amendWorktreeMessage(worktree, origin.env, "new");
+    expect(sha).not.toBe(old);
+    expect(await git("rev-parse", "HEAD")).toBe(sha);
+    expect(await git("diff", old, sha)).toBe("");
+    expect(await git("log", "-1", "--format=%s", sha)).toBe("new");
   });
 });
 
