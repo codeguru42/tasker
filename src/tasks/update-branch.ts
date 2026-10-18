@@ -90,10 +90,10 @@ function strategyOf(raw: string | undefined, fallback: ReconcileStrategy): Recon
   throw new Error(`--strategy must be rebase or merge: ${raw}`);
 }
 
-// Throws when the branch of the parent of a stacked task is gone from the clone. The base is the stored base of the
-// stacked task, so the name of the branch comes from it.
+// Throws when the branch of the parent of a stacked task is gone from the clone. The name of the branch comes from
+// the parent task. The stored base of the stacked task is only for the error text.
 async function requireParentBranch(vcs: VcsProvider, ctx: VcsContext, parent: Task, base: string): Promise<void> {
-  if (!(await vcs.taskRefExists(ctx, { taskRef: base.slice(LOCAL_PREFIX.length) }))) {
+  if (!(await vcs.taskRefExists(ctx, { taskRef: requireBranch(parent) }))) {
     throw new Error(`the branch of the parent ${parent.issueKey} is gone: ${base}`);
   }
 }
