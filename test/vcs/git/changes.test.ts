@@ -75,10 +75,9 @@ describe("git changes", () => {
   const onBase = (extra: Partial<Parameters<typeof fetchOnBase>[0]> = {}) =>
     fetchOnBase({ clone, env, sshKey: undefined, branch, baseRevision: BASE, ...extra });
   // The tip of the base in the clone.
-  const baseTip = () => runGit(["rev-parse", BASE], { gitDir: clone, env }).then((out) => out.trim());
+  const baseTip = () => gitOutput({ gitDir: clone }, env, "rev-parse", BASE);
   // The tip of the task branch in the clone.
-  const branchTip = () =>
-    runGit(["rev-parse", `refs/heads/${branch}`], { gitDir: clone, env }).then((out) => out.trim());
+  const branchTip = () => gitOutput({ gitDir: clone }, env, "rev-parse", `refs/heads/${branch}`);
   // Adds a commit to the base on origin and fetches it into the clone.
   const moveBase = async () => {
     await origin.addCommit("main", { file: "base-only.txt" });
@@ -447,8 +446,7 @@ describe("git changes", () => {
   describe("mergeBase", () => {
     const base = (a: string, b: string) => mergeBase({ clone, env, a, b });
     // Runs plain git merge-base in the clone, as a separate read of the same answer.
-    const plain = (a: string, b: string) =>
-      runGit(["merge-base", a, b], { gitDir: clone, env }).then((out) => out.trim());
+    const plain = (a: string, b: string) => gitOutput({ gitDir: clone }, env, "merge-base", a, b);
 
     it("gives the fork commit of a branch and its moved base", async () => {
       const fork = await baseTip();

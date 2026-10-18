@@ -326,7 +326,7 @@ describe("git reconcile", () => {
       await commitInWorktree(path, env, { file: "g.txt" });
       const tree = await git("rev-parse", `${p}^{tree}`);
       // A new commit on top of p, as a parent branch that gained a commit.
-      const tip = (await runGit(["commit-tree", tree, "-p", p, "-m", "parent next"], { gitDir: clone, env })).trim();
+      const tip = await git("commit-tree", tree, "-p", p, "-m", "parent next");
       const result = await replay(tip);
       expect(result).toBe(await git("rev-parse", "HEAD"));
       expect(await git("rev-parse", "HEAD~1")).toBe(tip);

@@ -149,10 +149,7 @@ describe("git fixture", () => {
   const gitIn = (cwd: string, ...args: string[]) => gitOutput({ cwd }, env, ...args);
   const list = () => listWorktrees({ clone, env });
   const head = (branch: string) =>
-    runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {
-      gitDir: clone,
-      env,
-    }).then((out) => out.trim());
+    gitOutput({ gitDir: clone }, env, "show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`);
   const addWorktree = (...args: string[]) => runGit(["worktree", "add", ...args], { gitDir: clone, env });
   const remove = (extra: Partial<Parameters<typeof removeTaskWorktree>[0]> = {}) =>
     removeTaskWorktree({ clone, env, path: path(), ...extra });

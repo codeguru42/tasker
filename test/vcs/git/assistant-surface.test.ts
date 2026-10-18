@@ -30,6 +30,7 @@ import { readArgLog } from "../../helpers/fake-commands.js";
 import {
   commitInWorktree,
   gitCloneTokens,
+  gitOutput,
   gitRecorderEnv,
   makeGitClone,
   makeGitOrigin,
@@ -236,8 +237,8 @@ describe("task worktree operations", () => {
       const commit = inSandbox(writable, realWorktree, env, ["git", "commit", "-m", "sandboxed commit"]);
       expect(commit.status).toBe(0);
       expect(await tip()).not.toBe(before);
-      const subject = await runGit(["log", "-1", "--format=%s"], { cwd: worktree, env });
-      expect(subject.trim()).toBe("sandboxed commit");
+      const subject = await gitOutput({ cwd: worktree }, env, "log", "-1", "--format=%s");
+      expect(subject).toBe("sandboxed commit");
       for (const file of [
         join(real, "config"),
         join(real, "hooks", "blocked"),

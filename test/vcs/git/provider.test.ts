@@ -34,6 +34,7 @@ import {
 import {
   commitInWorktree,
   copyCloneBranchToOrigin,
+  gitOutput,
   localBranches,
   makeProviderFixture,
   type ProviderFixture,
@@ -168,8 +169,8 @@ describe("createGitProvider", () => {
       const head = await commitInWorktree(path, env, { file: "a.txt" });
       const tip = await fixture.origin.addCommit("main");
       expect(await containment(git, taskRef)).toEqual({ revision: head, baseTip: tip, contains: false });
-      const moved = await runGit(["rev-parse", base], { gitDir: paths().clone, env });
-      expect(moved.trim()).toBe(tip);
+      const moved = await gitOutput({ gitDir: paths().clone }, env, "rev-parse", base);
+      expect(moved).toBe(tip);
     });
 
     it("fetches origin and says whether the base contains the task ref", async () => {
@@ -182,8 +183,8 @@ describe("createGitProvider", () => {
         baseTip: tip,
         onBase: false,
       });
-      const moved = await runGit(["rev-parse", base], { gitDir: paths().clone, env });
-      expect(moved.trim()).toBe(tip);
+      const moved = await gitOutput({ gitDir: paths().clone }, env, "rev-parse", base);
+      expect(moved).toBe(tip);
     });
 
     it("gives the changed paths like changedPaths", async () => {
@@ -267,7 +268,7 @@ describe("createGitProvider", () => {
         baseRevision: resolved.revision,
         strategy: "rebase",
       });
-      expect(head).toBe((await runGit(["rev-parse", "HEAD"], { cwd: path, env: fixture.context.env })).trim());
+      expect(head).toBe(await gitOutput({ cwd: path }, fixture.context.env, "rev-parse", "HEAD"));
     });
 
     it("gives the head, the task ref and the changes of a workspace like worktreeState", async () => {
@@ -301,7 +302,7 @@ describe("createGitProvider", () => {
       const { baseTip } = await containment(git, taskRef);
       const result = await git.resync(fixture.context, { path, baseRevision: baseTip, strategy: "rebase" });
       expect(result).toEqual({ moved: true, how: "fast-forward", head: baseTip });
-      expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(baseTip);
+      expect(await gitOutput({ cwd: path }, env, "rev-parse", "HEAD")).toBe(baseTip);
     });
 
     it("leaves the head alone when the workspace contains the base", async () => {
@@ -311,7 +312,7 @@ describe("createGitProvider", () => {
       const { baseTip } = await containment(git, taskRef);
       const result = await git.resync(fixture.context, { path, baseRevision: baseTip, strategy: "merge" });
       expect(result).toEqual({ moved: false, how: "none", head });
-      expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(head);
+      expect(await gitOutput({ cwd: path }, env, "rev-parse", "HEAD")).toBe(head);
     });
 
     it("replays the commits of the workspace onto a moved base and gives the new head", async () => {
@@ -321,9 +322,9 @@ describe("createGitProvider", () => {
       await fixture.origin.addCommit("main", { file: "other.txt" });
       const { baseTip } = await containment(git, taskRef);
       const result = await git.replayOnto(fixture.context, { path, onto: baseTip });
-      const head = (await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim();
+      const head = await gitOutput({ cwd: path }, env, "rev-parse", "HEAD");
       expect(result).toBe(head);
-      expect((await runGit(["rev-parse", "HEAD^"], { cwd: path, env })).trim()).toBe(baseTip);
+      expect(await gitOutput({ cwd: path }, env, "rev-parse", "HEAD^")).toBe(baseTip);
       expect(existsSync(join(path, "a.txt"))).toBe(true);
     });
 
@@ -336,7 +337,7 @@ describe("createGitProvider", () => {
       await expect(
         git.resync(fixture.context, { path, baseRevision: baseTip, strategy: "rebase" }),
       ).rejects.toBeInstanceOf(ReconcileConflictError);
-      expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(start);
+      expect(await gitOutput({ cwd: path }, env, "rev-parse", "HEAD")).toBe(start);
       expect(await git.uncommittedChanges(fixture.context, { path })).toEqual([]);
     });
   });
@@ -361,10 +362,10 @@ describe("createGitProvider", () => {
     it("moves the task ref and the head of the workspace to a revision and gives the head", async () => {
       const { git, path, taskRef } = await workspace();
       const env = fixture.context.env;
-      const start = (await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim();
+      const start = await gitOutput({ cwd: path }, env, "rev-parse", "HEAD");
       const tip = await commitInWorktree(path, env, { file: "a.txt" });
       expect(await git.moveWorkspace(fixture.context, { path, revision: start })).toBe(start);
-      expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(start);
+      expect(await gitOutput({ cwd: path }, env, "rev-parse", "HEAD")).toBe(start);
       expect(await taskBranchRevision({ clone: paths().clone, env, branch: taskRef })).toBe(start);
       expect(await git.moveWorkspace(fixture.context, { path, revision: tip })).toBe(tip);
       expect(await taskBranchRevision({ clone: paths().clone, env, branch: taskRef })).toBe(tip);

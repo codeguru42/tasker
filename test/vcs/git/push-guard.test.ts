@@ -8,7 +8,7 @@ import { GitError, runGit } from "../../../src/vcs/git/run.js";
 import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
-import { NO_TOKEN, makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
+import { NO_TOKEN, gitOutput, makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const HEX = "0123456789abcdef";
@@ -92,7 +92,7 @@ describe("the pre-push hook", () => {
     mkdirSync(tokens, { recursive: true });
     writeFileSync(join(tokens, token), "");
     await pushWith(token);
-    const head = (await runGit(["rev-parse", "HEAD"], { cwd: wt, env: origin.env })).trim();
+    const head = await gitOutput({ cwd: wt }, origin.env, "rev-parse", "HEAD");
     expect(await origin.branchHead("x")).toBe(head);
     expect(existsSync(join(tokens, token))).toBe(false);
     const error = await failureOf(pushWith(token), GitError);
@@ -150,7 +150,7 @@ describe("the pre-push hook", () => {
     ): Promise<void> => pushWithToken(args, { location, publishTokens: tokens, sshKey, env });
 
     async function worktreeHead(): Promise<string> {
-      return (await runGit(["rev-parse", "HEAD"], { cwd: wt, env: origin.env })).trim();
+      return await gitOutput({ cwd: wt }, origin.env, "rev-parse", "HEAD");
     }
 
     it("pushes from a worktree and leaves no token file", async () => {

@@ -8,7 +8,7 @@ import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh, type FakeSsh } from "../../helpers/fake-ssh.js";
-import { makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
+import { gitOutput, makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 describe("parseBaseInput", () => {
@@ -113,7 +113,7 @@ describe("resolveBaseBranch", () => {
   }
 
   async function revParse(ref: string): Promise<string> {
-    return (await runGit(["rev-parse", ref], { gitDir: clone, env })).trim();
+    return await gitOutput({ gitDir: clone }, env, "rev-parse", ref);
   }
 
   // Makes the local branch refs/heads/<name> of the clone at the tip of refs/remotes/origin/main.
@@ -324,11 +324,16 @@ describe("resolveBaseBranch", () => {
       expect(result.revision).toBe("refs/remotes/origin/main");
       const head = await revParse(result.revision);
       expect(head).toBe(await origin.branchHead("main"));
-      const shadow = await runGit(["show-ref", "--verify", "--hash", "--", "refs/heads/origin/main"], {
-        gitDir: clone,
+      const shadow = await gitOutput(
+        { gitDir: clone },
         env,
-      });
-      expect(head).not.toBe(shadow.trim());
+        "show-ref",
+        "--verify",
+        "--hash",
+        "--",
+        "refs/heads/origin/main",
+      );
+      expect(head).not.toBe(shadow);
     });
 
     it("gives the remote main when the remote has a branch named origin/main", async () => {
@@ -339,12 +344,17 @@ describe("resolveBaseBranch", () => {
       expect(result.revision).toBe("refs/remotes/origin/main");
       const head = await revParse(result.revision);
       expect(head).toBe(await origin.branchHead("main"));
-      const tag = await runGit(["show-ref", "--verify", "--hash", "--", "refs/tags/origin/main"], {
-        gitDir: clone,
+      const tag = await gitOutput(
+        { gitDir: clone },
         env,
-      });
-      expect(tag.trim()).toMatch(/^[0-9a-f]{40}$/);
-      expect(head).not.toBe(tag.trim());
+        "show-ref",
+        "--verify",
+        "--hash",
+        "--",
+        "refs/tags/origin/main",
+      );
+      expect(tag).toMatch(/^[0-9a-f]{40}$/);
+      expect(head).not.toBe(tag);
     });
   });
 

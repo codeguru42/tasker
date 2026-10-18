@@ -10,6 +10,7 @@ import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh, type FakeSsh } from "../../helpers/fake-ssh.js";
 import {
+  gitOutput,
   gitRecorderEnv,
   localBranches,
   makeGitOrigin,
@@ -48,7 +49,7 @@ describe("provisionClone", () => {
   }
 
   function revParse(ref: string): Promise<string> {
-    return runGit(["rev-parse", ref], { gitDir: clone, env: origin.env }).then((out) => out.trim());
+    return gitOutput({ gitDir: clone }, origin.env, "rev-parse", ref);
   }
 
   it("rejects when the remote does not answer and creates no folder", async () => {
@@ -104,11 +105,8 @@ describe("provisionClone", () => {
 
   it("makes a sha1 clone when the user default is sha256", async () => {
     await provision({ env: { ...origin.env, GIT_DEFAULT_HASH: "sha256" } });
-    const format = await runGit(["rev-parse", "--show-object-format"], {
-      gitDir: clone,
-      env: origin.env,
-    });
-    expect(format.trim()).toBe("sha1");
+    const format = await gitOutput({ gitDir: clone }, origin.env, "rev-parse", "--show-object-format");
+    expect(format).toBe("sha1");
     expect(await revParse("refs/remotes/origin/main")).toBe(await origin.branchHead("main"));
   });
 
@@ -150,11 +148,7 @@ describe("provisionClone", () => {
   // The value of key in the clone, or undefined when git exits with 1 (the key is not set).
   async function localConfig(key: string): Promise<string | undefined> {
     try {
-      const out = await runGit(["config", "--local", "--get", key], {
-        gitDir: clone,
-        env: origin.env,
-      });
-      return out.trim();
+      return await gitOutput({ gitDir: clone }, origin.env, "config", "--local", "--get", key);
     } catch (error) {
       if (error instanceof GitError && error.exitCode === 1) {
         return undefined;
@@ -272,14 +266,11 @@ describe("provisionClone", () => {
     // A separate plain clone that provision never touches, so its url is what git clone wrote.
     const plain = join(tmp, "plain.git");
     await runGit(["clone", "--bare", "--", remote, plain], { cwd: remoteCwd(), env: origin.env });
-    const written = await runGit(["config", "--get", "remote.origin.url"], {
-      gitDir: plain,
-      env: origin.env,
-    });
+    const written = await gitOutput({ gitDir: plain }, origin.env, "config", "--get", "remote.origin.url");
     await provision({ remote });
-    expect(await localConfigAll("remote.origin.url")).toEqual([written.trim()]);
+    expect(await localConfigAll("remote.origin.url")).toEqual([written]);
     await provision({ remote });
-    expect(await localConfigAll("remote.origin.url")).toEqual([written.trim()]);
+    expect(await localConfigAll("remote.origin.url")).toEqual([written]);
   });
 
   // Adds each value as one more local line of key in the clone.
@@ -486,11 +477,11 @@ describe("provisionClone", () => {
       const env = origin.env;
       await provision();
       const get = (...args: string[]): Promise<string> =>
-        runGit(["config", ...args, "core.hooksPath"], { gitDir: clone, env });
-      expect((await get("--get")).trim()).toBe(resolve(clone, "hooks"));
+        gitOutput({ gitDir: clone }, env, "config", ...args, "core.hooksPath");
+      expect(await get("--get")).toBe(resolve(clone, "hooks"));
       await runGit(["config", "core.hooksPath", join(tmp, "other")], { gitDir: clone, env });
       await provision();
-      expect((await get("--get")).trim()).toBe(resolve(clone, "hooks"));
+      expect(await get("--get")).toBe(resolve(clone, "hooks"));
       expect(await localConfigAll("core.hooksPath")).toEqual([resolve(clone, "hooks")]);
     });
 
