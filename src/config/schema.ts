@@ -162,12 +162,26 @@ const RepoSchema = z
   })
   .superRefine(checkModels, { when: () => true });
 
-// A github tracker needs the account that runs gh. tasker checks the merged issueTracker,
-// so a definition under trackers can leave account out.
-function githubAccountIssues(key: string, issueTracker: Record<string, unknown>): string[] {
-  return issueTracker.provider === "github" && issueTracker.account === undefined
-    ? [issueLine(["repos", key, "issueTracker", "account"], "is required for the github tracker")]
-    : [];
+// The github writes pass these values to a gh flag that splits on commas.
+const GH_COMMA_SPLIT_KEYS = ["assignee", "inProgressLabel", "doneLabel"] as const;
+
+// A github tracker needs the account that runs gh, and no comma in a value that gh splits.
+// tasker checks the merged issueTracker, so a definition under trackers can leave account out.
+function githubTrackerIssues(key: string, issueTracker: Record<string, unknown>): string[] {
+  if (issueTracker.provider !== "github") {
+    return [];
+  }
+  const issues: string[] = [];
+  if (issueTracker.account === undefined) {
+    issues.push(issueLine(["repos", key, "issueTracker", "account"], "is required for the github tracker"));
+  }
+  for (const name of GH_COMMA_SPLIT_KEYS) {
+    const value = issueTracker[name];
+    if (typeof value === "string" && value.includes(",")) {
+      issues.push(issueLine(["repos", key, "issueTracker", name], "must not contain a comma for the github tracker"));
+    }
+  }
+  return issues;
 }
 
 interface Prepared {
@@ -207,7 +221,7 @@ function prepareConfig(raw: unknown): Prepared {
     const issueTracker = isObject(repo) ? repo.issueTracker : undefined;
     if (!isObject(repo) || !isObject(issueTracker) || typeof issueTracker.tracker !== "string") {
       if (isObject(repo) && isObject(issueTracker)) {
-        issues.push(...githubAccountIssues(key, issueTracker));
+        issues.push(...githubTrackerIssues(key, issueTracker));
       }
       repos[key] = repo;
       continue;
@@ -241,7 +255,7 @@ function prepareConfig(raw: unknown): Prepared {
     const merged = validDefinition ? { ...(definition as Record<string, unknown>), ...own } : placeholder;
     if (validDefinition) {
       // Never on the placeholder: the real error is already reported.
-      issues.push(...githubAccountIssues(key, merged));
+      issues.push(...githubTrackerIssues(key, merged));
     }
     repos[key] = { ...repo, issueTracker: merged };
   }
