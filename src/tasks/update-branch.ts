@@ -10,7 +10,7 @@ import {
   transitionWithBranchUpdate,
 } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
-import type { BranchUpdateWrites, TaskStore } from "../store/store.js";
+import type { BranchUpdateWrites, Task, TaskStore } from "../store/store.js";
 import {
   type ReconcileStrategy,
   type ResyncResult,
@@ -19,6 +19,8 @@ import {
   uncommittedChangeText,
   vcsForRepo,
 } from "../vcs/provider.js";
+import { LOCAL_PREFIX } from "../vcs/local-branch.js";
+import { hasLanded, parentOf } from "./parent.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBaseRevision, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
@@ -86,6 +88,26 @@ function strategyOf(raw: string | undefined, fallback: ReconcileStrategy): Recon
   throw new Error(`--strategy must be rebase or merge: ${raw}`);
 }
 
+// Throws when the branch of the parent of a stacked task is gone from the clone. The base is the stored base of the
+// stacked task, so the name of the branch comes from it.
+async function requireParentBranch(vcs: VcsProvider, ctx: VcsContext, parent: Task, base: string): Promise<void> {
+  if (!(await vcs.taskRefExists(ctx, { taskRef: base.slice(LOCAL_PREFIX.length) }))) {
+    throw new Error(`the branch of the parent ${parent.issueKey} is gone: ${base}`);
+  }
+}
+
+// The base step of a task stacked on a parent that is in flight. The tip of the branch of the parent is the new tip.
+// Nothing moves when the task branch already contains it. Otherwise the step replays the commits after the merge base
+// onto it, with a rebase.
+async function stackedBaseStep(
+  vcs: VcsProvider,
+  ctx: VcsContext,
+  o: { path: string; baseTip: string; contains: boolean; syncedHead: string },
+): Promise<Pick<ResyncResult, "how" | "head">> {
+  if (o.contains) return { how: "none", head: o.syncedHead };
+  return { how: "rebase", head: await vcs.replayOnto(ctx, { path: o.path, onto: o.baseTip }) };
+}
+
 // True when the worktree is at the head of the start, on the task branch and clean. A failed read of the state counts
 // as not back at the start.
 async function backAtStart(
@@ -119,7 +141,14 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   const path = requireWorktree(task);
   const base = requireBase(task);
   const baseRevision = requireBaseRevision(store, task);
-  const strategy = strategyOf(request.strategy, config.repos[task.repoKey].updateBranchStrategy);
+  const parent = parentOf(store, task);
+  if (parent !== undefined && request.strategy !== undefined) {
+    throw new Error(
+      "--strategy does not apply to a stacked task; tasker update-branch replays its commits with a rebase",
+    );
+  }
+  const strategy =
+    parent === undefined ? strategyOf(request.strategy, config.repos[task.repoKey].updateBranchStrategy) : "rebase";
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   const start = await vcs.workspaceState(ctx, { path });
   if (start.changes.length > 0) {
@@ -140,6 +169,8 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
     let synced: SyncOutcome = { sync: "none" };
     let syncedHead = before.head;
     try {
+      const inFlight = parent !== undefined && !hasLanded(parent);
+      if (inFlight) await requireParentBranch(vcs, ctx, parent, base);
       const { revision, baseTip, contains } = await vcs.baseContainment(ctx, { taskRef: branch, baseRevision });
       const remote = await vcs.fetchedRemoteTaskRef(ctx, { taskRef: branch, revision });
       if (remote.state === "absent") {
@@ -158,8 +189,10 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         );
       }
       // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
-      const resynced: Pick<ResyncResult, "how" | "head"> =
-        contains && synced.sync !== "take-remote"
+      const upToDate = contains && synced.sync !== "take-remote";
+      const resynced: Pick<ResyncResult, "how" | "head"> = inFlight
+        ? await stackedBaseStep(vcs, ctx, { path, baseTip, contains: upToDate, syncedHead })
+        : upToDate
           ? { how: "none", head: syncedHead }
           : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
       const moved = "remoteTip" in synced || resynced.how !== "none";
