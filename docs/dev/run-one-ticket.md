@@ -49,9 +49,9 @@ A `tasker update-branch` with no conflict moves a stacked task onto the base of 
 
 An agent of a stacked task meets a landed parent at `tasker verify` in `executed`. It also meets a landed parent at `tasker refine` in `awaiting_plan_review`, after `tasker finish` of the parent. [The facts of the installed tasker](orchestration.md#the-facts-of-the-installed-tasker) say what happens in each case.
 
-These steps use the base: the comeback rule, the diff read, the issue check, the broken-commit steps, the commit check, the same-patch rule, and steps 3 to 5 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) when those rules do them.
+These steps use the base: the comeback rule, the diff read, [the issue check](orchestration.md#the-issue-check), [the broken-commit steps](orchestration.md#the-broken-commit-steps), [the commit check](orchestration.md#the-commit-check), [the same-patch rule](orchestration.md#review-findings), and steps 3 to 5 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) when those rules do them.
 
-Step 4 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) does not stop for a stacked task when the diff read, the comeback rule or the commit check does the steps of that page. The manual fix and the procedure for a rebase conflict keep the stop.
+Step 4 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) does not stop for a stacked task when the diff read, the comeback rule or the commit check does the steps of that page. [The manual fix](orchestration.md#the-manual-fix) and the procedure for a rebase conflict keep the stop.
 
 ### The add-work rule
 
