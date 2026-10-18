@@ -214,3 +214,28 @@ export function blockersPageJson(
 ): string {
   return JSON.stringify({ data: { repository: { issue: { blockedBy: { pageInfo, nodes } } } } });
 }
+
+// The answer of the blockers read of an issue. A blocker without a project is in the project of the issue.
+export function githubBlockersAnswer(issue: {
+  project: string;
+  number: number;
+  blockers?: readonly { number: number; state: "OPEN" | "CLOSED"; project?: string }[];
+}): FakeGhAnswer {
+  const [owner, name] = issue.project.split("/");
+  return {
+    args: blockersGraphqlArgs(owner, name, String(issue.number)),
+    stdout: blockersPageJson(
+      (issue.blockers ?? []).map((blocker) =>
+        blockersNode(blocker.number, blocker.state, blocker.project ?? issue.project),
+      ),
+    ),
+  };
+}
+
+// The argument lists of the calls of gh that read blockers (api graphql), in order.
+export function blockerReadCalls(gh: FakeGh): string[][] {
+  return gh
+    .calls()
+    .map((call) => call.args)
+    .filter(([command, verb]) => command === "api" && verb === "graphql");
+}

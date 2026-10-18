@@ -2,10 +2,13 @@ import { spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
+import { readGithubBlockers } from "../../src/issues/github/blockers.js";
 import { readGithubIssue } from "../../src/issues/github/issue.js";
 import {
+  blockerReadCalls,
   fakeGh,
   ghTokenAnswer,
+  githubBlockersAnswer,
   githubIssueAnswer,
   githubWriteAnswer,
   trackerWriteCalls,
@@ -232,5 +235,60 @@ describe("trackerWriteCalls", () => {
     const gh = fakeGh(useTempDir("tasker-write-calls-"), {}, []);
 
     expect(trackerWriteCalls(gh)).toEqual([]);
+  });
+});
+
+describe("githubBlockersAnswer", () => {
+  const ref = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
+
+  it("answers the read of the blockers of the issue", async () => {
+    const gh = fakeGh(useTempDir("tasker-blockers-answer-"), {}, [
+      ghTokenAnswer("octo", "t"),
+      githubBlockersAnswer({
+        project: "octo/repo",
+        number: 7,
+        blockers: [
+          { number: 3, state: "OPEN" },
+          { number: 9, state: "CLOSED", project: "other/lib" },
+        ],
+      }),
+    ]);
+
+    await expect(readGithubBlockers(ref, "octo", gh.env)).resolves.toEqual([
+      { key: "octo/repo#3", state: "open" },
+      { key: "other/lib#9", state: "closed" },
+    ]);
+  });
+
+  it("answers an empty list when the issue has no blockers", async () => {
+    const gh = fakeGh(useTempDir("tasker-blockers-answer-"), {}, [
+      ghTokenAnswer("octo", "t"),
+      githubBlockersAnswer({ project: "octo/repo", number: 7 }),
+    ]);
+
+    await expect(readGithubBlockers(ref, "octo", gh.env)).resolves.toEqual([]);
+  });
+});
+
+describe("blockerReadCalls", () => {
+  it("gives the arguments of the graphql calls only, in order", () => {
+    const gh = fakeGh(useTempDir("tasker-blocker-calls-"), {}, [
+      ghTokenAnswer("octo", "t"),
+      githubIssueAnswer({ project: "octo/repo", number: 7 }),
+      githubBlockersAnswer({ project: "octo/repo", number: 7 }),
+    ]);
+    const run = (...args: string[]) => spawnSync("gh", args, { env: gh.env, encoding: "utf8" });
+    const blockersArgs = githubBlockersAnswer({ project: "octo/repo", number: 7 }).args;
+
+    run("issue", "view", "7", "-R", "octo/repo", "--json", "number,title,body,url,labels,state");
+    run(...blockersArgs);
+
+    expect(blockerReadCalls(gh)).toEqual([blockersArgs]);
+  });
+
+  it("gives an empty list when gh made no graphql call", () => {
+    const gh = fakeGh(useTempDir("tasker-blocker-calls-"), {}, []);
+
+    expect(blockerReadCalls(gh)).toEqual([]);
   });
 });

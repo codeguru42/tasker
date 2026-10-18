@@ -11,7 +11,7 @@ import { changedPaths } from "../../src/vcs/git/changes.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { failureOf } from "./errors.js";
-import { githubWriteAnswer, trackerWriteCalls } from "./fake-gh.js";
+import { githubBlockersAnswer, githubWriteAnswer, trackerWriteCalls } from "./fake-gh.js";
 import { GIT_TEST_IDENTITY, commitInWorktree, localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { answerStream, planTodo, validPlanAnswer } from "./plan.js";
@@ -84,6 +84,38 @@ describe("useStartFixture", () => {
     const issue = await provider.fetchIssue(ref, process.env);
 
     expect(issue.title).toBe("Issue 5");
+  });
+
+  it("answers the read of the blockers of each issue with no blockers", async () => {
+    const fixture = await useStartFixture({
+      issues: [
+        { project: "codeguru42/tasker", number: 5 },
+        { project: "codeguru42/tasker", number: 6 },
+      ],
+    });
+    const provider = issueProviderFor(fixture.config, fixture.repoKey);
+    const refOf = (n: number) => ({
+      key: `codeguru42/tasker#${n}`,
+      repoKey: fixture.repoKey,
+      shortRef: `codeguru42-tasker-${n}`,
+    });
+
+    await expect(provider.blockingIssues(refOf(5), process.env)).resolves.toEqual([]);
+    await expect(provider.blockingIssues(refOf(6), process.env)).resolves.toEqual([]);
+  });
+
+  it("lets a blockers answer of ghAnswers win over the default", async () => {
+    const fixture = await useStartFixture({
+      ghAnswers: [
+        githubBlockersAnswer({ project: "codeguru42/tasker", number: 5, blockers: [{ number: 3, state: "OPEN" }] }),
+      ],
+    });
+    const provider = issueProviderFor(fixture.config, fixture.repoKey);
+    const ref = { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: "codeguru42-tasker-5" };
+
+    await expect(provider.blockingIssues(ref, process.env)).resolves.toEqual([
+      { key: "codeguru42/tasker#3", state: "open" },
+    ]);
   });
 
   it("removes a repo key that is set to undefined", async () => {

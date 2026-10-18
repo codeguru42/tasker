@@ -30,7 +30,14 @@ import { failureOf } from "./errors.js";
 import { validConfig, writeDataRootConfig } from "./config.js";
 import { useFakeSandboxBin } from "./fake-commands.js";
 import { type FakeClaude, type FakeClaudeControl, useFakeClaude, useFakeClaudeOnPath } from "./fake-claude.js";
-import { type FakeGh, type FakeGhAnswer, fakeGh, ghTokenAnswer, githubIssueAnswer } from "./fake-gh.js";
+import {
+  type FakeGh,
+  type FakeGhAnswer,
+  fakeGh,
+  ghTokenAnswer,
+  githubBlockersAnswer,
+  githubIssueAnswer,
+} from "./fake-gh.js";
 import {
   GIT_TEST_IDENTITY,
   type GitOrigin,
@@ -98,6 +105,8 @@ export interface StartFixture {
 // The default issue is codeguru42/tasker#5. A key of options.repo that is undefined is removed.
 // options.limits changes the limits of the configuration file.
 // options.ghAnswers adds answers to the fake gh, after the token and issue answers.
+// Last, each issue gets an answer of the blockers read with no blockers. An answer of
+// options.ghAnswers for the same read comes first, so it wins.
 // The fake gh comes first on the PATH, so the real gh never runs and git still runs.
 // Call it inside a test. After the test, it removes the folders and restores the env.
 export async function useStartFixture(
@@ -128,10 +137,12 @@ export async function useStartFixture(
   raw.limits = { ...raw.limits, ...options.limits };
   const written = writeDataRootConfig(raw);
   onTestFinished(() => rmSync(written.dir, { recursive: true, force: true }));
+  const issues = options.issues ?? [{ project: repoKey, number: 5 }];
   const gh = fakeGh(written.dir, {}, [
     ghTokenAnswer("codeguru42", "gho_test"),
-    ...(options.issues ?? [{ project: repoKey, number: 5 }]).map(githubIssueAnswer),
+    ...issues.map(githubIssueAnswer),
     ...(options.ghAnswers ?? []),
+    ...issues.map(({ project, number }) => githubBlockersAnswer({ project, number })),
   ]);
   useProcessEnv({
     TASKER_CONFIG: written.path,
