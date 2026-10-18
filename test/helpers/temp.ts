@@ -1,6 +1,6 @@
-import { lstatSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { onTestFinished, vi } from "vitest";
 
 // A new empty folder under the system temp folder. The caller removes it.
@@ -70,4 +70,10 @@ export function treeSnapshot(folder: string): TreeEntry[] {
   };
   walk(folder);
   return entries.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+}
+
+// Writes the text to the file at the path and makes its missing parent folders.
+export function writeFileWithParents(path: string, text: string): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, text);
 }

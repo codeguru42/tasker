@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
@@ -36,7 +36,7 @@ import {
   trackerRepo,
   useStartFixture,
 } from "../helpers/task-fixtures.js";
-import { useTempDir } from "../helpers/temp.js";
+import { useTempDir, writeFileWithParents } from "../helpers/temp.js";
 
 const KEY = "codeguru42/tasker#5";
 const PROJECT = "codeguru42/tasker";
@@ -204,8 +204,7 @@ describe("start", () => {
   it("fails the task when the workspace cannot be made", async () => {
     const fixture = await useStartFixture();
     const { worktree } = taskNames(repoPaths(fixture.dataRoot, fixture.repoKey).worktrees, 5, "Issue 5");
-    mkdirSync(dirname(worktree), { recursive: true });
-    writeFileSync(worktree, "in the way");
+    writeFileWithParents(worktree, "in the way");
 
     const result = await runCommand(start, "start", KEY);
 

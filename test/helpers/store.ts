@@ -1,5 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
@@ -28,7 +27,7 @@ import {
 import { claudeRateLimitEvent } from "./fake-claude.js";
 import { deadPid } from "./processes.js";
 import { reviewFinding } from "./review.js";
-import { useTempDir } from "./temp.js";
+import { useTempDir, writeFileWithParents } from "./temp.js";
 
 // Runs fn with resource, then closes resource. When fn gives a promise, resource closes after the
 // promise settles. When fn throws, resource closes and the error goes on.
@@ -224,8 +223,7 @@ export function seedOneTask(state: string, issueKey: string, repoKey: string): {
 // Writes text as the bootstrap log of the attempt of task under dataRoot.
 export function writeBootstrapLog(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">, text: string): void {
   const path = bootstrapLogPath(taskLogsDir(dataRoot, task));
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, text);
+  writeFileWithParents(path, text);
 }
 
 // A new verify run of task with the defaults of a passed run of one command. The number defaults to the next number
@@ -252,8 +250,7 @@ function writeVerifyLogs(
   const texts = logs ?? run.commands.map((command) => `$ ${command}\n--- exit code 0\n`);
   texts.forEach((text, i) => {
     const path = verifyCommandLogPath(dataRoot, task, run.number, i + 1);
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, text);
+    writeFileWithParents(path, text);
   });
 }
 

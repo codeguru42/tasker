@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Config } from "../../src/config/schema.js";
 import { promptVersion } from "../../src/prompts/archive.js";
@@ -43,6 +43,7 @@ import {
   turnResultStream,
 } from "../helpers/plan.js";
 import { quotaPauseLineExpected } from "../helpers/quota.js";
+import { writeFileWithParents } from "../helpers/temp.js";
 import {
   databasePathOf,
   eventsOf,
@@ -371,8 +372,7 @@ describe("executeTask turns", () => {
   it("fails the task with executing failed when an unexpected error follows the move to executing", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
     const transcripts = taskTranscriptsDir(fixture.config.dataRoot, fixture.task);
-    mkdirSync(dirname(transcripts), { recursive: true });
-    writeFileSync(transcripts, "a file, not a folder");
+    writeFileWithParents(transcripts, "a file, not a folder");
 
     const { result, io } = await runExecute(fixture);
 

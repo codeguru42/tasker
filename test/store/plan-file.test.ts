@@ -1,5 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { planRevisionPath, taskPlansDir } from "../../src/store/layout.js";
 import { PlanFileWriteError, readPlanFile } from "../../src/store/plan-file.js";
@@ -7,7 +6,7 @@ import { transitionTask } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
 import { recordTestPlanRevision, validPlanAnswer } from "../helpers/plan.js";
 import { withDataRootStore } from "../helpers/store.js";
-import { useTempDir } from "../helpers/temp.js";
+import { useTempDir, writeFileWithParents } from "../helpers/temp.js";
 
 const newTask = { issueKey: "codeguru42/tasker#91", repoKey: "tasker", state: "planning" };
 
@@ -52,8 +51,7 @@ describe("recordPlanRevision", () => {
     withDataRootStore(dataRoot, (store) => {
       const task = store.createTask(newTask);
       const path = planRevisionPath(dataRoot, task, 1);
-      mkdirSync(dirname(path), { recursive: true });
-      writeFileSync(path, "left by a stopped run");
+      writeFileWithParents(path, "left by a stopped run");
 
       recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: "new text\n" }) });
 
@@ -66,8 +64,7 @@ describe("recordPlanRevision", () => {
     withDataRootStore(dataRoot, (store) => {
       const task = store.createTask(newTask);
       const plansDir = taskPlansDir(dataRoot, task);
-      mkdirSync(dirname(plansDir), { recursive: true });
-      writeFileSync(plansDir, "a file, not a folder");
+      writeFileWithParents(plansDir, "a file, not a folder");
 
       const error = thrownBy(() =>
         recordTestPlanRevision(store, dataRoot, task.id, { answer: validPlanAnswer({ plan_markdown: "text\n" }) }),

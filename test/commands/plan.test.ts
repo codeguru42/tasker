@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { plan } from "../../src/commands/plan.js";
@@ -44,6 +44,7 @@ import {
 } from "../helpers/store.js";
 import { expectNoAssistantRun, startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { writeFileWithParents } from "../helpers/temp.js";
 import { plannedLine } from "../helpers/command-output.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -221,8 +222,7 @@ describe("plan", () => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const plansDir = taskPlansDir(fixture.started.dataRoot, task);
-    mkdirSync(dirname(plansDir), { recursive: true });
-    writeFileSync(plansDir, "a file, not a folder");
+    writeFileWithParents(plansDir, "a file, not a folder");
 
     const result = await runPlan();
 
@@ -259,8 +259,7 @@ describe("plan", () => {
     const answer = validPlanAnswer();
     const fixture = await usePlanFixture({ stream: answerStream(answer) });
     const path = planRevisionPath(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY), 1);
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, "left by a stopped run");
+    writeFileWithParents(path, "left by a stopped run");
 
     const result = await runPlan();
 

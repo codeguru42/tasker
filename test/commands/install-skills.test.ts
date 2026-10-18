@@ -1,22 +1,17 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { installSkillsFrom } from "../../src/commands/install-skills.js";
 import { runCommand } from "../helpers/cli.js";
 import { useConfigFile, validConfig } from "../helpers/config.js";
-import { treeSnapshot, useTempDir } from "../helpers/temp.js";
-
-function write(path: string, text: string): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, text);
-}
+import { treeSnapshot, useTempDir, writeFileWithParents } from "../helpers/temp.js";
 
 function makeSource(): string {
   const source = useTempDir("tasker-skills-source-");
-  write(join(source, "tasker", "SKILL.md"), "tasker skill\n");
-  write(join(source, "tasker", "references", "setup.md"), "setup\n");
-  write(join(source, "alpha", "SKILL.md"), "alpha skill\n");
-  write(join(source, "README.md"), "not a skill\n");
+  writeFileWithParents(join(source, "tasker", "SKILL.md"), "tasker skill\n");
+  writeFileWithParents(join(source, "tasker", "references", "setup.md"), "setup\n");
+  writeFileWithParents(join(source, "alpha", "SKILL.md"), "alpha skill\n");
+  writeFileWithParents(join(source, "README.md"), "not a skill\n");
   return source;
 }
 
@@ -51,8 +46,8 @@ describe("install-skills", () => {
   it("replaces a skill that exists and removes its extra file", async () => {
     const source = makeSource();
     const dir = useTempDir("tasker-skills-target-");
-    write(join(dir, "tasker", "old.md"), "old\n");
-    write(join(dir, "tasker", "SKILL.md"), "old skill\n");
+    writeFileWithParents(join(dir, "tasker", "old.md"), "old\n");
+    writeFileWithParents(join(dir, "tasker", "SKILL.md"), "old skill\n");
     useSkillsDirs([dir]);
 
     const { code } = await install(source);

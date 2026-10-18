@@ -1,5 +1,5 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { provisionClone } from "../../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../../src/vcs/git/repo-paths.js";
@@ -8,7 +8,7 @@ import { shellQuote } from "../../src/vcs/git/ssh.js";
 import { taskBranchName, taskWorktreePath } from "../../src/vcs/git/worktree.js";
 import type { VcsContext } from "../../src/vcs/provider.js";
 import { logLine, pathWithFirst, realCommandPath, writeFakeCommand } from "./fake-commands.js";
-import { makeTempDir } from "./temp.js";
+import { makeTempDir, writeFileWithParents } from "./temp.js";
 
 // The fixed author and committer of every commit that a git test makes.
 export const GIT_TEST_IDENTITY = { name: "Tasker Test", email: "tasker-test@example.com" };
@@ -75,8 +75,7 @@ async function writeAndCommit(
   message: string,
   commitArgs: readonly string[],
 ): Promise<string> {
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, content);
+  writeFileWithParents(target, content);
   await runGit(["add", "-A"], { cwd: folder, env });
   await runGit(["commit", ...commitArgs, "-m", message], { cwd: folder, env });
   return gitOutput({ cwd: folder }, env, "rev-parse", "HEAD");
