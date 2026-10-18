@@ -470,7 +470,7 @@ describe("git changes", () => {
       await origin.addCommit(branch, { file: "remote.txt" });
       const main = await origin.addCommit("main", { file: "main-only.txt" });
       await fetchAll();
-      await runGit(["merge", "--no-edit", "refs/remotes/origin/main"], { cwd: path, env });
+      await runGit(["merge", "--no-ff", "--no-edit", "refs/remotes/origin/main"], { cwd: path, env });
       const merge = await branchTip();
       const result = await sides({ baseTip: main });
       expect(result.local).toMatchObject([
@@ -490,6 +490,8 @@ describe("git changes", () => {
     });
 
     it("rejects a bad branch name before any git call", async () => {
+      await copyBranch();
+      await fetchAll();
       const recorded = gitRecorderEnv(origin.dir, env);
       const error = await failureOf(sides({ branch: "-x", env: recorded.env }), Error);
       expect(error.message).toBe('not a task branch name: "-x"');

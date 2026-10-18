@@ -1,4 +1,10 @@
-import type { BaseContainment, FetchedRemoteTaskRef, TaskRefOnBase, UncommittedChange } from "../provider.js";
+import type {
+  BaseContainment,
+  FetchedRemoteTaskRef,
+  RemoteTaskRefSides,
+  TaskRefOnBase,
+  UncommittedChange,
+} from "../provider.js";
 import { assertRevision, assertRevisionInput, originRef, refRevision, resolveRevision } from "./refs.js";
 import { isGitExit, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
@@ -207,6 +213,84 @@ export async function remoteTaskBranchState(o: {
     return { state: "present", revision: remote, relation: "remote-ancestor" };
   }
   return { state: "present", revision: remote, relation: "diverged" };
+}
+
+// Which side of the range <local>...<remote> a read lists.
+type Side = "left" | "right";
+
+// The commits that only one tip reaches, oldest first. --cherry-mark gives %m "=" for a commit with a
+// same-patch commit on the other side. With --left-only or --right-only, one call gives one side.
+async function sideCommits(
+  o: { clone: string; env: NodeJS.ProcessEnv; local: string; remote: string },
+  side: Side,
+): Promise<{ mark: string; revision: string; merge: boolean; subject: string }[]> {
+  const { clone, env, local, remote } = o;
+  const output = await runGit(
+    [
+      "log",
+      "--no-color",
+      "--no-show-signature",
+      "--encoding=UTF-8",
+      "--cherry-mark",
+      side === "left" ? "--left-only" : "--right-only",
+      "--topo-order",
+      "--reverse",
+      "-z",
+      "--format=%m%x00%H%x00%P%x00%s",
+      `${local}...${remote}`,
+      "--",
+    ],
+    { gitDir: clone, env },
+  );
+  const fields = nulFields(output);
+  const commits = [];
+  for (let i = 0; i + 3 < fields.length; i += 4) {
+    commits.push({
+      mark: fields[i] ?? "",
+      revision: fields[i + 1] ?? "",
+      merge: (fields[i + 2] ?? "").split(" ").length > 1,
+      subject: fields[i + 3] ?? "",
+    });
+  }
+  return commits;
+}
+
+// Reads the two sides of a divergence of the local tip and the remote tip, oldest commit first. A commit
+// has samePatch when the other side has a commit with the same patch. Only the mark "=" means that.
+// onBase is true for a local-side commit that the base tip reaches. All inputs are full revisions.
+// The function does not fetch and changes nothing. It runs each git read in its own call.
+export async function remoteTaskBranchSides(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  branch: string;
+  local: string;
+  remote: string;
+  baseTip: string;
+}): Promise<RemoteTaskRefSides> {
+  const { clone, env, branch, local, remote, baseTip } = o;
+  assertTaskBranch(branch);
+  assertRevision("the local tip", local);
+  assertRevision("the remote tip", remote);
+  assertRevision("the base tip", baseTip);
+  const localSide = await sideCommits({ clone, env, local, remote }, "left");
+  const remoteSide = await sideCommits({ clone, env, local, remote }, "right");
+  const unreached = await runGit(["rev-list", local, `^${remote}`, `^${baseTip}`, "--"], { gitDir: clone, env });
+  const notOnBase = new Set(unreached.split("\n"));
+  return {
+    local: localSide.map((c) => ({
+      revision: c.revision,
+      subject: c.subject,
+      merge: c.merge,
+      samePatch: c.mark === "=",
+      onBase: !notOnBase.has(c.revision),
+    })),
+    remote: remoteSide.map((c) => ({
+      revision: c.revision,
+      subject: c.subject,
+      merge: c.merge,
+      samePatch: c.mark === "=",
+    })),
+  };
 }
 
 // Fetches origin into the clone with the ssh key of the repo. It uses runRemoteGit(). The fetch

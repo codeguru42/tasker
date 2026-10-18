@@ -114,6 +114,26 @@ export type RemoteTaskRefRelation = "equal" | "local-ancestor" | "remote-ancesto
 export type FetchedRemoteTaskRef =
   { state: "absent" } | { state: "present"; revision: string; relation: RemoteTaskRefRelation };
 
+// One commit of one side of a divergence. samePatch is true when the other side has a commit with the
+// same patch. merge is true for a commit with more than one parent.
+export interface SideRevision {
+  revision: string;
+  subject: string;
+  merge: boolean;
+  samePatch: boolean;
+}
+
+// A commit of the local side. onBase is true when the base tip reaches the commit.
+export interface LocalSideRevision extends SideRevision {
+  onBase: boolean;
+}
+
+// The commits that only one tip reaches, oldest first.
+export interface RemoteTaskRefSides {
+  local: LocalSideRevision[];
+  remote: SideRevision[];
+}
+
 export type RemoteTip = { state: "present"; revision: string } | { state: "absent" };
 
 export interface PublishResult {
@@ -188,6 +208,12 @@ export interface VcsProvider {
   // fetch. Run baseContainment first, which fetches. The revision is the local tip of the task ref,
   // as baseContainment gives it.
   fetchedRemoteTaskRef(ctx: VcsContext, o: { taskRef: string; revision: string }): Promise<FetchedRemoteTaskRef>;
+  // Reads the two sides of a divergence of the local tip (revision) and the remote tip, as the last fetch left
+  // it. The operation does not fetch and changes nothing.
+  remoteTaskRefSides(
+    ctx: VcsContext,
+    o: { taskRef: string; revision: string; remoteRevision: string; baseRevision: string },
+  ): Promise<RemoteTaskRefSides>;
   // Moves the task ref and the workspace to revision and gives the new head revision. The revision can
   // be an ancestor, a descendant or on another line. It refuses a workspace with uncommitted changes,
   // a detached head and a task ref without the shape of a task ref. It does not fetch.

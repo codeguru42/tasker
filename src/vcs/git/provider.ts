@@ -14,6 +14,7 @@ import {
   fetchBaseContainment,
   fetchOnBase,
   ownCommitsText,
+  remoteTaskBranchSides,
   remoteTaskBranchState,
   uncommittedChanges,
   worktreeDiff,
@@ -143,6 +144,17 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
     async fetchedRemoteTaskRef(ctx, { taskRef, revision }) {
       const { clone } = pathsOf(ctx);
       return remoteTaskBranchState({ clone, env: ctx.env, branch: taskRef, local: revision });
+    },
+    async remoteTaskRefSides(ctx, { taskRef, revision, remoteRevision, baseRevision }) {
+      const { clone } = pathsOf(ctx);
+      return remoteTaskBranchSides({
+        clone,
+        env: ctx.env,
+        branch: taskRef,
+        local: revision,
+        remote: remoteRevision,
+        baseTip: baseRevision,
+      });
     },
     async moveWorkspace(ctx, { path, revision }) {
       const { clone } = pathsOf(ctx);
