@@ -29,6 +29,19 @@ The orchestrator waits in these cases:
 - The blocker is in any other state.
 - Two or more blockers of the ticket are open. The ticket waits until at most one is open, because `tasker start` refuses two ready blockers.
 
+Before the orchestrator starts a stacked ticket, it makes sure that the branch of the parent contains the tip of the base of the parent. It uses the fetch and `git merge-base --is-ancestor` of [the diff read](run-one-ticket.md#the-diff-read), with the task branch and the base of the parent. If the exit code is 1, the orchestrator tells the agent of the parent to run `tasker update-branch`. If a command fails, or the exit code is not 0 and not 1, [the failure rule](limits.md#the-failure-rule) applies to the orchestrator. Then the stacked ticket does not start at that moment.
+
+If the review loop 1 of the parent has findings, or the diff read of the parent finds work, the orchestrator waits. It waits until the agent of the parent ends that round and the parent is in a ready state again. A fix as a new commit on top of the parent is better than a fixup, because a fixup rewrites the commits under the stacked ticket. While the parent ends its update or its fix round, the orchestrator only waits and starts nothing. If that work moves the parent out of a ready state, [the parent-hold rule](#the-parent-hold-rule) applies as it says. On 2026-10-17, the user decided for #172: "do the `update-branch` before starting stacked children".
+
+One exception applies. If the new commits on the base change no file of the parent, the orchestrator starts the stacked ticket without another update of the parent. To find this out, the orchestrator reads two lists in its local clone, after the fetch of the check. It uses the base of [the base rule](run-one-ticket.md#the-base-rule) for the parent.
+
+- The files of the parent: `git diff --name-only origin/<base branch>...tasker/<parent branch>`
+- The files of the new commits on the base: `git diff --name-only tasker/<parent branch>...origin/<base branch>`
+
+If no path is in both lists, the exception applies. If a command fails, the exception does not apply. In the exception, the stacked orchestrator tells the agent of the stacked ticket to follow the moved parent with one `tasker update-branch` before its first refine.
+
+On 2026-10-18, `main` moved two times during the hold of #340 and two times during the hold of #347. Each move came from Docs commits that changed no file of the parent. Each move cost the parent one more `tasker update-branch`, `tasker verify` and same-patch review. Then orchestrator-m13 started #347 on #340 and #346 on #347 without that update. Each child followed with one update and no conflict.
+
 If the orchestrator plans to start a ticket on a blocker that is not ready to stack yet, [the parent-hold rule](#the-parent-hold-rule) applies.
 
 The orchestrator reads the states at four moments:
