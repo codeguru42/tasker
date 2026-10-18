@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, realpathSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { CommanderError } from "commander";
 import type { RegisterCommand } from "../cli.js";
@@ -6,6 +6,14 @@ import { compareText } from "../compare-text.js";
 import { errorMessage } from "../error-message.js";
 import { packagePath } from "../package-path.js";
 import { loadConfigOrFail, orFail } from "./shared.js";
+
+function isSourceFolder(folder: string, sourceReal: string): boolean {
+  try {
+    return realpathSync(folder) === sourceReal;
+  } catch {
+    return false;
+  }
+}
 
 export function installSkillsFrom(sourceDir: string): RegisterCommand {
   return (program, io) => {
@@ -20,11 +28,18 @@ export function installSkillsFrom(sourceDir: string): RegisterCommand {
             .map((entry) => entry.name)
             .sort(compareText),
         );
+        const sourceReal = orFail(io, () => realpathSync(sourceDir));
         let failed = false;
         // mkdirSync with recursive makes a missing skills folder and its missing parents.
         // rmSync with force gives no error for a missing <folder>/<name>. On a symlink, it removes only the link.
-        // Symlinks are out of scope, so the command has no symlink check.
+        // Step 2 removes the source skill when the folder is the skills folder of tasker, so the command compares real paths first.
+        // A folder with no real path, for example a missing folder or a path under a file, is not the source, because the source exists.
         for (const folder of config.skillsDirs) {
+          if (isSourceFolder(folder, sourceReal)) {
+            io.stderr(`error: cannot install to ${folder}: it is the skills folder of tasker\n`);
+            failed = true;
+            continue;
+          }
           for (const name of names) {
             const target = join(folder, name);
             try {
