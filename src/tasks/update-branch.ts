@@ -153,11 +153,9 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
           `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${task.issueKey} again`,
         );
       }
-      // contains describes the tip before the sync step, so it is not valid after a sync move.
-      const resynced: Pick<ResyncResult, "how" | "head"> =
-        contains && sync !== "fast-forward"
-          ? { how: "none", head: syncedHead }
-          : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
+      const resynced: Pick<ResyncResult, "how" | "head"> = contains
+        ? { how: "none", head: syncedHead }
+        : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
       const moved = sync === "fast-forward" || resynced.how !== "none";
       const state = moved ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
