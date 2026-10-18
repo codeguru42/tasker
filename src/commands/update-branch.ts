@@ -15,7 +15,7 @@ export const updateBranch: RegisterCommand = (program, io) => {
   program
     .command("update-branch")
     .description(
-      "Bring the task branch current with its copy on origin, and bring the worktree of the task up to date with its base branch. The command does the first step first. Without --take-remote, it moves the branch only by a fast-forward, and tips that have diverged are an error. The task goes through updating_branch. When the head moved, the task goes back to executed, or to awaiting_plan_review for an approved plan, because the old approval or verify result no longer describes the tree. A task stacked on the branch of a parent task moves onto the tip of that branch. Under the rebase strategy, the command replays the commits of the task after the merge base with a rebase",
+      "Bring the task branch current with its copy on origin, and bring the worktree of the task up to date with its base branch. The command does the first step first. It moves the branch by a fast-forward. For tips that have diverged, it compares the patches of the two sides. It moves the branch to origin when origin has a commit that is only on origin and no local work is at risk. It fails and lists the local commits that origin has no copy of when local work is at risk. The task goes through updating_branch. When the head moved, the task goes back to executed, or to awaiting_plan_review for an approved plan, because the old approval or verify result no longer describes the tree. A task stacked on the branch of a parent task moves onto the tip of that branch. Under the rebase strategy, the command replays the commits of the task after the merge base with a rebase",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
@@ -25,7 +25,7 @@ export const updateBranch: RegisterCommand = (program, io) => {
     )
     .option(
       "--take-remote",
-      "Move the task branch and the worktree to origin/<task branch> when the tips differ. The option discards the local commits that origin does not hold",
+      "Move the task branch and the worktree to origin/<task branch> when the tips have diverged. The option drops the local commits that origin has no copy of. It does nothing in any other case",
     )
     .action(async (issue: string, options: { repo?: string; strategy?: string; takeRemote?: boolean }) => {
       const config = loadConfigOrFail(io);

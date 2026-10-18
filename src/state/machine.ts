@@ -306,8 +306,8 @@ export interface BranchSnapshot {
 }
 
 // How the sync step of tasker update-branch found the copy of the task branch on origin: "absent" when origin has no
-// such branch, "fast-forward" when the step moved the task branch to it, "take-remote" when --take-remote moved the task
-// branch to it, and "none" when nothing moved.
+// such branch, "fast-forward" when the step moved the task branch to it, "take-remote" when the step moved the task
+// branch to a remote tip that diverged from it, and "none" when nothing moved.
 export type BranchSync = "absent" | "none" | "fast-forward" | "take-remote";
 
 // True when a branch_updated event records a move of the head. An event with an error moved nothing. Else a move of the

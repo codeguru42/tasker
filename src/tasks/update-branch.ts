@@ -14,6 +14,7 @@ import type { BranchUpdateWrites, Task, TaskStore } from "../store/store.js";
 import {
   type ReconcileStrategy,
   type ResyncResult,
+  type RemoteTaskRefSides,
   type VcsProvider,
   type VcsContext,
   uncommittedChangeText,
@@ -30,7 +31,8 @@ export interface UpdateBranchRequest {
   taskId: number;
   // The raw value of --strategy, or undefined when the option is absent.
   strategy: string | undefined;
-  // True with --take-remote: the sync step moves the branch and the worktree to the remote tip when it differs.
+  // True with --take-remote: for tips that have diverged, the sync step moves the branch and the worktree to the remote tip
+  // also when local work is at risk.
   takeRemote: boolean;
   env: NodeJS.ProcessEnv;
   io: Io;
@@ -122,12 +124,35 @@ async function backAtStart(
   }
 }
 
+// Decides the move of the sync step for tips that have diverged. A commit only on origin is a remote-side commit with
+// no same-patch commit on the local side. A remote merge commit always counts. Local work at risk is a local-side
+// commit that is not a merge commit, has no same-patch commit on the remote side, and that the base tip does not reach.
+// It throws the error that lists the commits at risk when there are some and takeRemote is false. Otherwise the step
+// moves to the remote tip when takeRemote is true or when origin has a commit that is only on origin.
+function divergedTake(
+  sides: RemoteTaskRefSides,
+  o: { branch: string; issueKey: string; takeRemote: boolean },
+): boolean {
+  const { branch, issueKey, takeRemote } = o;
+  const atRisk = sides.local.filter((c) => !c.merge && !c.samePatch && !c.onBase);
+  if (atRisk.length > 0 && !takeRemote) {
+    throw new Error(
+      [
+        `${branch} and origin/${branch} have diverged, and origin/${branch} has no copy of these commits:`,
+        ...atRisk.map((c) => `${c.revision.slice(0, 7)} ${c.subject}`),
+        `run tasker update-branch ${issueKey} --take-remote to take origin/${branch} and drop them`,
+      ].join("\n"),
+    );
+  }
+  return takeRemote || sides.remote.some((c) => c.merge || !c.samePatch);
+}
+
 // Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base.
 // The task lock covers all the steps and does not wait. The repo lock covers the fetch and the move of the branch. The
-// sync step comes first. It moves the task branch to the copy on origin only by a fast-forward, and it refuses tips
-// that have diverged. With takeRemote, it moves the task branch and the worktree to the copy on origin whenever the
-// tips differ, and it fails when origin has no such branch. Then the base step runs on the new local tip. A failed base
-// step also undoes the sync move. When the head moved in either step, the task goes to the target of the demotion
+// sync step comes first. It fast-forwards the task branch to the copy on origin. For tips that have diverged, it compares
+// the patches of the two sides. It moves the task branch and the worktree to the copy on origin when origin has a commit
+// only on origin, or with takeRemote. It fails and lists the commits at risk when local work is at risk and takeRemote is
+// off. Then the base step runs on the new local tip. A failed base step also undoes the sync move. When the head moved in either step, the task goes to the target of the demotion
 // table. Otherwise it goes back to its origin state.
 export async function updateBranchTask(store: TaskStore, request: UpdateBranchRequest): Promise<UpdateBranchResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => updateBranchLocked(store, request));
@@ -172,18 +197,21 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const remote = await vcs.fetchedRemoteTaskRef(ctx, { taskRef: branch, revision });
       if (remote.state === "absent") {
         synced = { sync: "absent" };
-        if (request.takeRemote) throw new Error(`--take-remote: origin/${branch} does not exist`);
         io.stderr(`note: origin/${branch} does not exist; nothing to sync from\n`);
-      } else if (request.takeRemote && remote.relation !== "equal") {
-        syncedHead = await vcs.moveWorkspace(ctx, { path, revision: remote.revision });
-        synced = { sync: "take-remote", remoteTip: remote.revision };
       } else if (remote.relation === "local-ancestor") {
         syncedHead = await vcs.moveWorkspace(ctx, { path, revision: remote.revision });
         synced = { sync: "fast-forward", remoteTip: remote.revision };
       } else if (remote.relation === "diverged") {
-        throw new Error(
-          `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${task.issueKey} again, or run tasker update-branch ${task.issueKey} --take-remote to take origin/${branch}`,
-        );
+        const sides = await vcs.remoteTaskRefSides(ctx, {
+          taskRef: branch,
+          revision,
+          remoteRevision: remote.revision,
+          baseRevision: baseTip,
+        });
+        if (divergedTake(sides, { branch, issueKey: task.issueKey, takeRemote: request.takeRemote })) {
+          syncedHead = await vcs.moveWorkspace(ctx, { path, revision: remote.revision });
+          synced = { sync: "take-remote", remoteTip: remote.revision };
+        }
       }
       // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
       const upToDate = contains && synced.sync !== "take-remote";
