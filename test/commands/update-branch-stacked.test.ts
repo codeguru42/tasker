@@ -116,14 +116,85 @@ describe("tasker update-branch for a stacked task", () => {
     expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toHaveProperty("error");
   });
 
-  it("refuses --strategy for a stacked task", async () => {
+  it("refuses a bad --strategy for a stacked task", async () => {
     const fixture = await useStackedTasks();
 
     await expectCommandRefused(
       { dataRoot: fixture.dataRoot, key: fixture.stacked.key },
-      () => update(fixture, "--strategy", "merge"),
-      "--strategy does not apply to a stacked task; tasker update-branch replays its commits with a rebase\n",
+      () => update(fixture, "--strategy", "squash"),
+      "--strategy must be rebase or merge: squash\n",
     );
+  });
+
+  it("merges new commits of the parent when updateBranchStrategy is merge", async () => {
+    const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+    const head = await inStacked(fixture, "rev-parse", "HEAD");
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-more.txt" });
+    const tip = await inClone(fixture, "rev-parse", parentRef(fixture));
+
+    const result = await update(fixture);
+
+    const moved = await inStacked(fixture, "rev-parse", "HEAD");
+    expect(result).toEqual({
+      code: 0,
+      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by merge: ${head} to ${moved}\nstate: executed\n`,
+      err: absentRemoteNote(fixture.stacked.branch),
+    });
+    expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
+    expect(await inStacked(fixture, "rev-parse", "HEAD^2")).toBe(tip);
+    expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
+      before: { head },
+      after: { head: moved },
+      how: "merge",
+    });
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+  });
+
+  it("fast-forwards when the head is an ancestor of the tip of the parent under merge", async () => {
+    const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+    await inStacked(fixture, "reset", "--hard", "HEAD^");
+    const head = await inStacked(fixture, "rev-parse", "HEAD");
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-more.txt" });
+    const tip = await inClone(fixture, "rev-parse", parentRef(fixture));
+
+    const result = await update(fixture);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by fast-forward: ${head} to ${tip}\nstate: executed\n`,
+      err: absentRemoteNote(fixture.stacked.branch),
+    });
+    expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(tip);
+    expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({ how: "fast-forward" });
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+  });
+
+  it("replays with a rebase under --strategy rebase when updateBranchStrategy is merge", async () => {
+    const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-more.txt" });
+    const tip = await inClone(fixture, "rev-parse", parentRef(fixture));
+
+    const result = await update(fixture, "--strategy", "rebase");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("by rebase:");
+    expect(await inStacked(fixture, "rev-parse", "HEAD^")).toBe(tip);
+    expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({ how: "rebase" });
+  });
+
+  it("merges under --strategy merge when updateBranchStrategy is rebase", async () => {
+    const fixture = await useStackedTasks();
+    const head = await inStacked(fixture, "rev-parse", "HEAD");
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-more.txt" });
+    const tip = await inClone(fixture, "rev-parse", parentRef(fixture));
+
+    const result = await update(fixture, "--strategy", "merge");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("by merge:");
+    expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
+    expect(await inStacked(fixture, "rev-parse", "HEAD^2")).toBe(tip);
+    expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({ how: "merge" });
   });
 
   it("restores the worktree when a commit of the parent conflicts", async () => {
@@ -175,6 +246,32 @@ describe("tasker update-branch for a stacked task", () => {
       expect(second.code).toBe(0);
       expect(second.out).toContain("nothing moved");
       expect(second.out).not.toContain("no longer stacked");
+    });
+
+    it("merges the base of a landed parent when updateBranchStrategy is merge", async () => {
+      const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+      const head = await inStacked(fixture, "rev-parse", "HEAD");
+      await landParent(fixture, ["accepted", "landed"]);
+      const tip = await fixture.origin.addCommit("main");
+
+      const result = await update(fixture);
+
+      const moved = await inStacked(fixture, "rev-parse", "HEAD");
+      expect(result).toEqual({
+        code: 0,
+        out: `moved ${fixture.stacked.key} onto main at ${tip} by merge: ${head} to ${moved}\n${noLongerStacked(fixture)}\nstate: executed\n`,
+        err: absentRemoteNote(fixture.stacked.branch),
+      });
+      expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
+      expect(await inStacked(fixture, "rev-parse", "HEAD^2")).toBe(tip);
+      expect(eventsOfType(fixture, "base").map((event) => event.data)).toContainEqual({
+        base: "main",
+        revision: "refs/remotes/origin/main",
+        source: "parent",
+      });
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe("main");
+      expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({ how: "merge" });
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
     });
 
     it("moves the task when the parent finished and its branch and worktree are gone", async () => {
