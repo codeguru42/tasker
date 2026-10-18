@@ -78,6 +78,23 @@ export function trackerWriteCalls(gh: FakeGh): string[][] {
     .filter(([command, verb]) => command === "issue" && (verb === "edit" || verb === "close"));
 }
 
+// The labels of an issue after the logged writes of gh. It starts from issue.labels and applies each logged
+// issue edit call of the issue in order: --add-label adds a label once, --remove-label removes it. It models
+// GitHub, so a test can use it as an expected value. It does not read the code under test.
+export function githubLabelsAfter(
+  gh: FakeGh,
+  issue: { project: string; number: number; labels?: readonly string[] },
+): string[] {
+  const labels = [...(issue.labels ?? [])];
+  for (const args of trackerWriteCalls(gh)) {
+    const [, verb, number, flagR, project, flag, label] = args;
+    if (verb !== "edit" || number !== String(issue.number) || flagR !== "-R" || project !== issue.project) continue;
+    if (flag === "--add-label" && !labels.includes(label)) labels.push(label);
+    if (flag === "--remove-label" && labels.includes(label)) labels.splice(labels.indexOf(label), 1);
+  }
+  return labels;
+}
+
 const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const signalNamePattern = /^[A-Z0-9]+$/;
 

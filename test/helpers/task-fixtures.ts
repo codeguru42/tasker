@@ -1,5 +1,5 @@
 import { existsSync, rmSync } from "node:fs";
-import { delimiter } from "node:path";
+import { delimiter, dirname } from "node:path";
 import { expect, onTestFinished } from "vitest";
 import { accept } from "../../src/commands/accept.js";
 import { merge } from "../../src/commands/merge.js";
@@ -100,6 +100,30 @@ export interface StartFixture {
   config: Config;
 }
 
+// The answers of the fake gh of a start fixture, in order: the token, the read of each issue, the extra answers,
+// then the blockers read of each issue. The default issue is number 5 of repoKey.
+function startGhAnswers(
+  repoKey: string,
+  options: { issues?: Parameters<typeof githubIssueAnswer>[0][]; ghAnswers?: readonly FakeGhAnswer[] },
+): FakeGhAnswer[] {
+  const issues = options.issues ?? [{ project: repoKey, number: 5 }];
+  return [
+    ghTokenAnswer("codeguru42", "gho_test"),
+    ...issues.map(githubIssueAnswer),
+    ...(options.ghAnswers ?? []),
+    ...issues.map(({ project, number }) => githubBlockersAnswer({ project, number })),
+  ];
+}
+
+// Replaces the answers of the fake gh of a start fixture. The options are the issues and ghAnswers options of
+// useStartFixture, with the same answer order. The log of the calls stays, and the PATH stays valid.
+export function replaceStartGh(
+  fixture: Pick<StartFixture, "gh" | "repoKey">,
+  options: { issues?: Parameters<typeof githubIssueAnswer>[0][]; ghAnswers?: readonly FakeGhAnswer[] },
+): void {
+  fakeGh(dirname(fixture.gh.logPath), {}, startGhAnswers(fixture.repoKey, options));
+}
+
 // The setup of the tests of tasker start: a local origin with main, one repo codeguru42/tasker that
 // uses it as the remote, and a fake gh that answers the token call and the read of each issue.
 // The default issue is codeguru42/tasker#5. A key of options.repo that is undefined is removed.
@@ -137,13 +161,7 @@ export async function useStartFixture(
   raw.limits = { ...raw.limits, ...options.limits };
   const written = writeDataRootConfig(raw);
   onTestFinished(() => rmSync(written.dir, { recursive: true, force: true }));
-  const issues = options.issues ?? [{ project: repoKey, number: 5 }];
-  const gh = fakeGh(written.dir, {}, [
-    ghTokenAnswer("codeguru42", "gho_test"),
-    ...issues.map(githubIssueAnswer),
-    ...(options.ghAnswers ?? []),
-    ...issues.map(({ project, number }) => githubBlockersAnswer({ project, number })),
-  ]);
+  const gh = fakeGh(written.dir, {}, startGhAnswers(repoKey, options));
   useProcessEnv({
     TASKER_CONFIG: written.path,
     PATH: `${String(gh.env.PATH)}${delimiter}${String(process.env.PATH)}`,

@@ -56,6 +56,7 @@ import {
   useStartedTask,
   useReviewFixture,
   useSeededTask,
+  replaceStartGh,
   trackerRepo,
   useStartFixture,
   useVerifyFixture,
@@ -927,6 +928,22 @@ describe("trackerRepo", () => {
       updateOnStart: true,
       inProgressLabel: "wip",
     });
+  });
+});
+
+describe("replaceStartGh", () => {
+  it("gives a later read of the issue the new labels and keeps the old log", async () => {
+    const fixture = await useStartFixture();
+    const ref = issueRefOf(fixture, 5);
+    const provider = issueProviderFor(fixture.config, fixture.repoKey);
+    await provider.fetchIssue(ref, fixture.gh.env);
+    const callsBefore = fixture.gh.calls().length;
+
+    replaceStartGh(fixture, { issues: [{ project: fixture.repoKey, number: 5, labels: ["wip"] }] });
+    const issue = await provider.fetchIssue(ref, fixture.gh.env);
+
+    expect(issue.labels).toEqual(["wip"]);
+    expect(fixture.gh.calls().length).toBe(callsBefore + 1);
   });
 });
 

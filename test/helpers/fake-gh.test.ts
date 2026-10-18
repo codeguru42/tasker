@@ -10,6 +10,7 @@ import {
   ghTokenAnswer,
   githubBlockersAnswer,
   githubIssueAnswer,
+  githubLabelsAfter,
   githubWriteAnswer,
   trackerWriteCalls,
   writeFakeGh,
@@ -235,6 +236,35 @@ describe("trackerWriteCalls", () => {
     const gh = fakeGh(useTempDir("tasker-write-calls-"), {}, []);
 
     expect(trackerWriteCalls(gh)).toEqual([]);
+  });
+});
+
+describe("githubLabelsAfter", () => {
+  const edit = (number: number, flag: string, label: string) =>
+    githubWriteAnswer({ project: "octo/repo", number, verb: "edit", rest: [flag, label] });
+
+  it("applies the logged add and remove calls to the start labels, in order", () => {
+    const answers = [
+      edit(7, "--add-label", "wip"),
+      edit(7, "--add-label", "wip"),
+      edit(7, "--remove-label", "bug"),
+      edit(7, "--remove-label", "none"),
+    ];
+    const gh = fakeGh(useTempDir("tasker-labels-after-"), {}, answers);
+    for (const answer of answers) spawnSync("gh", [...answer.args], { env: gh.env, encoding: "utf8" });
+
+    expect(githubLabelsAfter(gh, { project: "octo/repo", number: 7, labels: ["bug", "docs"] })).toEqual([
+      "docs",
+      "wip",
+    ]);
+  });
+
+  it("ignores a call for another issue number", () => {
+    const answer = edit(8, "--add-label", "wip");
+    const gh = fakeGh(useTempDir("tasker-labels-after-"), {}, [answer]);
+    spawnSync("gh", [...answer.args], { env: gh.env, encoding: "utf8" });
+
+    expect(githubLabelsAfter(gh, { project: "octo/repo", number: 7 })).toEqual([]);
   });
 });
 
