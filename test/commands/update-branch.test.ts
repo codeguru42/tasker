@@ -5,6 +5,7 @@ import { updateBranch } from "../../src/commands/update-branch.js";
 import type { TaskState } from "../../src/state/machine.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
+import { absentRemoteNote } from "../helpers/command-output.js";
 import { commitInWorktree, copyCloneBranchToOrigin } from "../helpers/git.js";
 import { seedPinnedPlanRevision } from "../helpers/plan.js";
 import { wrongStateError } from "../helpers/state-commands.js";
@@ -32,10 +33,6 @@ const BASE_REVISION = "refs/remotes/origin/main";
 const NEEDS =
   "workspace_ready, awaiting_plan_review, approved, executed, awaiting_work_review, reviewed, accepted, pushed, in_peer_review, cleanup_failed or failed";
 
-// The note on stderr of a task whose branch is not on origin.
-const absentNote = (work: WorkReviewTask) =>
-  `note: origin/${String(work.task.branch)} does not exist; nothing to sync from\n`;
-
 const runUpdateBranch = (...args: string[]) => runCommand(updateBranch, "update-branch", KEY, "--repo", REPO, ...args);
 
 // The commit that HEAD of the worktree names, for example "HEAD^" for its first parent.
@@ -61,7 +58,7 @@ describe("tasker update-branch", () => {
     expect(result).toEqual({
       code: 0,
       out: `${KEY} is current with main at ${tip}; nothing moved\nstate: awaiting_work_review\n`,
-      err: absentNote(work),
+      err: absentRemoteNote(String(work.task.branch)),
     });
     expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
     const snapshot = { head, base: "main", baseRevision: BASE_REVISION };
@@ -85,7 +82,7 @@ describe("tasker update-branch", () => {
     expect(result).toEqual({
       code: 0,
       out: `moved ${KEY} onto main at ${work.baseTip} by fast-forward: ${head} to ${work.baseTip}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`,
-      err: absentNote(work),
+      err: absentRemoteNote(String(work.task.branch)),
     });
     expect(await taskBranchTipOf(work)).toBe(work.baseTip);
     expect(eventsOf(work.dataRoot, KEY).at(-1)).toMatchObject({
@@ -107,7 +104,7 @@ describe("tasker update-branch", () => {
     expect(result).toEqual({
       code: 0,
       out: `moved ${KEY} onto main at ${work.baseTip} by rebase: ${head} to ${newHead}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`,
-      err: absentNote(work),
+      err: absentRemoteNote(String(work.task.branch)),
     });
     const before = { head, base: "main", baseRevision: BASE_REVISION };
     expect(eventsAfter(work, count)).toEqual([
@@ -187,7 +184,7 @@ describe("tasker update-branch", () => {
       const result = await runUpdateBranch();
 
       expect(result.code).toBe(0);
-      expect(result.err).toBe(absentNote(work));
+      expect(result.err).toBe(absentRemoteNote(String(work.task.branch)));
       expect(result.out).not.toContain("synced");
       expect(await taskBranchTipOf(work)).toBe(head);
       expect(await revisionOf(work, "HEAD")).toBe(head);
@@ -644,7 +641,7 @@ describe("tasker update-branch", () => {
 
       expect(result.code).toBe(1);
       expect(result.out).toBe("");
-      expect(result.err.startsWith(absentNote(work))).toBe(true);
+      expect(result.err.startsWith(absentRemoteNote(String(work.task.branch)))).toBe(true);
       expect(result.err).toContain("work.txt");
       expect(await taskBranchTipOf(work)).toBe(head);
       expect(await revisionOf(work, "HEAD")).toBe(head);
@@ -660,7 +657,7 @@ describe("tasker update-branch", () => {
           after: snapshot,
           how: "none",
           sync: "absent",
-          error: result.err.slice(absentNote(work).length).trimEnd(),
+          error: result.err.slice(absentRemoteNote(String(work.task.branch)).length).trimEnd(),
           from: "updating_branch",
           to: "awaiting_work_review",
         },
@@ -674,8 +671,10 @@ describe("tasker update-branch", () => {
       const result = await runUpdateBranch();
 
       expect(result.code).toBe(1);
-      expect(result.err.startsWith(absentNote(work))).toBe(true);
-      expect(result.err.slice(absentNote(work).length)).toMatch(/^updating branch failed: cannot restore the worktree/);
+      expect(result.err.startsWith(absentRemoteNote(String(work.task.branch)))).toBe(true);
+      expect(result.err.slice(absentRemoteNote(String(work.task.branch)).length)).toMatch(
+        /^updating branch failed: cannot restore the worktree/,
+      );
       expect(latestTaskOf(work.dataRoot, KEY).state).toBe("failed");
       expect(lastErrorOf(work.dataRoot, work.task.id)).toMatch(/^updating branch failed: cannot restore the worktree/);
       expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();

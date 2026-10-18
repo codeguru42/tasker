@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  absentRemoteNote,
   executedLine,
   plannedLine,
   refinedLine,
@@ -33,5 +34,9 @@ describe("command output lines", () => {
     expect(resumedLine("a/b#1", "planning", "workspace_ready")).toBe(
       "resumed a/b#1: paused in planning, back in workspace_ready\n",
     );
+  });
+
+  it("builds the note of a branch that origin does not have", () => {
+    expect(absentRemoteNote("tasker/a-1")).toBe("note: origin/tasker/a-1 does not exist; nothing to sync from\n");
   });
 });

@@ -27,3 +27,8 @@ export function reviewedLinePrefix(key: string, number: number): string {
 export function resumedLine(key: string, origin: string, target: string): string {
   return `resumed ${key}: paused in ${origin}, back in ${target}\n`;
 }
+
+// The note on stderr of tasker update-branch for a task branch that origin does not have.
+export function absentRemoteNote(branch: string): string {
+  return `note: origin/${branch} does not exist; nothing to sync from\n`;
+}
