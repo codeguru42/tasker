@@ -52,7 +52,7 @@ async function updateBranchIssue(
     throw new CommanderError(result.exitCode, "tasker.update-branch", "the update did not succeed");
   }
   if (result.sync === "fast-forward") {
-    io.stdout(`synced ${result.branch} from origin/${result.branch} at ${String(result.remoteTip)} by fast-forward\n`);
+    io.stdout(`synced ${result.branch} from origin/${result.branch} at ${result.remoteTip} by fast-forward\n`);
   }
   if (result.how === "none") {
     io.stdout(`${result.issueKey} is current with ${result.base} at ${result.baseTip}; nothing moved\n`);

@@ -36,17 +36,16 @@ export interface UpdateBranchRequest {
   repoLockWaitMs: number;
 }
 
-export interface BranchUpdated {
+// What the sync step did. Only a fast-forward has a remote tip: the tip of the copy on origin that the step moved to.
+export type SyncOutcome = { sync: "fast-forward"; remoteTip: string } | { sync: Exclude<BranchSync, "fast-forward"> };
+
+export type BranchUpdated = SyncOutcome & {
   issueKey: string;
   base: string;
   // The tip of the base that the command read.
   baseTip: string;
   // The task branch.
   branch: string;
-  // What the sync step did with the copy of the task branch on origin.
-  sync: BranchSync;
-  // The tip of the copy on origin that the sync step fast-forwarded to. It is undefined when the sync step moved nothing.
-  remoteTip: string | undefined;
   how: ResyncResult["how"];
   // The head at the start of the base step. After a fast-forward of the sync step, this is the remote tip.
   headBefore: string;
@@ -55,7 +54,7 @@ export interface BranchUpdated {
   origin: TaskState;
   // The state of the task after the command.
   state: TaskState;
-}
+};
 
 // A result with exitCode means that the step already printed the message.
 export type UpdateBranchResult = BranchUpdated | { exitCode: number };
@@ -135,19 +134,17 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     transitionTask(store, task.id, "updating_branch");
     // What the sync step did, and the head after it. The catch reads both to undo a sync move.
-    let sync: BranchSync = "none";
+    let synced: SyncOutcome = { sync: "none" };
     let syncedHead = before.head;
-    let remoteTip: string | undefined;
     try {
       const { revision, baseTip, contains } = await vcs.baseContainment(ctx, { taskRef: branch, baseRevision });
       const remote = await vcs.fetchedRemoteTaskRef(ctx, { taskRef: branch, revision });
       if (remote.state === "absent") {
-        sync = "absent";
+        synced = { sync: "absent" };
         io.stderr(`note: origin/${branch} does not exist; nothing to sync from\n`);
       } else if (remote.relation === "local-ancestor") {
         syncedHead = await vcs.moveWorkspace(ctx, { path, revision: remote.revision });
-        sync = "fast-forward";
-        remoteTip = remote.revision;
+        synced = { sync: "fast-forward", remoteTip: remote.revision };
       } else if (remote.relation === "diverged") {
         throw new Error(
           `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${task.issueKey} again`,
@@ -156,7 +153,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const resynced: Pick<ResyncResult, "how" | "head"> = contains
         ? { how: "none", head: syncedHead }
         : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
-      const moved = sync === "fast-forward" || resynced.how !== "none";
+      const moved = synced.sync === "fast-forward" || resynced.how !== "none";
       const state = moved ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
       if (moved) {
@@ -164,14 +161,19 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         if (origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       }
       const after: BranchSnapshot = { ...before, head: resynced.head };
-      transitionWithBranchUpdate(store, task.id, state, { before, after, how: resynced.how, sync }, writes);
+      transitionWithBranchUpdate(
+        store,
+        task.id,
+        state,
+        { before, after, how: resynced.how, sync: synced.sync },
+        writes,
+      );
       return {
         issueKey: task.issueKey,
         base,
         baseTip,
         branch,
-        sync,
-        remoteTip,
+        ...synced,
         how: resynced.how,
         headBefore: syncedHead,
         headAfter: resynced.head,
@@ -190,7 +192,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
           store,
           task.id,
           origin,
-          { before, after: before, how: "none", sync, error: message },
+          { before, after: before, how: "none", sync: synced.sync, error: message },
           {},
         );
         io.stderr(`${message}\n`);
