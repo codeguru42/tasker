@@ -114,7 +114,7 @@ Removes the worktree and the local task branch of an active task, and moves the 
 
 `--force` discards the uncommitted changes of the worktree before the abort.
 
-The command prints one line for each step that ran, then `cancelled <issue>`. If the run of the task is dead, the notes of the dead run come on stderr before the steps. See [A dead run](../SKILL.md#a-dead-run). The steps are the discard of the uncommitted changes (only with `--force`), the removal of the worktree and the deletion of the branch. A step that has nothing to do prints no line. The files under `artifacts/` stay.
+The command prints one line for each step that ran, then `cancelled <issue>`. If the run of the task is dead, the notes of the dead run come on stderr before the steps. See [A dead run](../SKILL.md#a-dead-run). The steps are the discard of the uncommitted changes (only with `--force`), the removal of the worktree and the deletion of the branch. Then comes the tracker step. It runs only when `issueTracker.updateOnStart` is `true` and the repo sets `inProgressLabel`. It removes the in-progress label from the issue and prints `cleared the in-progress marker of <issue> on the tracker`. The assignee stays. If the write fails, stderr gets `warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. The task still goes to `cancelled` and the command exits with 0. A step that has nothing to do prints no line. The files under `artifacts/` stay.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. The shared errors of the task lock and of the clone lock belong to this list:
 
