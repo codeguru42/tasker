@@ -77,7 +77,7 @@ When the orchestrator plans to start a stacked ticket on a parent that is not re
 
 While the hold runs, the agent of the parent continues ["Run one ticket"](run-one-ticket.md#run-one-ticket). After `tasker verify` passes, the agent of the parent continues with `tasker review`, because `reviewing` and `reviewed` are ready states. The agent of the parent also runs `tasker dismiss-review` and `tasker accept`, because the task stays in a ready state.
 
-Before a command that moves the task out of a ready state, the agent of the parent sends a report with `SendMessage`, as [the address rule](limits.md#the-address-rule) says. The report gives the state of the task and says that the agent holds. Then the agent of the parent gives its final answer, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. If `SendMessage` fails, the agent of the parent puts the report in its final answer. The task keeps its state, for example `reviewed`, `awaiting_work_review` or `accepted`.
+Before a command that moves the task out of a ready state, the agent of the parent [stops](limits.md#the-answer-wait-rule). The report gives the state of the task and says that the agent holds. If `SendMessage` fails, the agent of the parent puts the report in its final answer.
 
 This report is a report of a ready state of the stacking rule. The orchestrator then does the steps of the paragraph of [the stacking rule](#the-stacking-rule) that starts "After a report of a ready state".
 
