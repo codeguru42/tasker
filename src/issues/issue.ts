@@ -79,10 +79,11 @@ export function baseBranchHint(issue: Issue): string | undefined {
   return hint;
 }
 
-// True when label is set and the issue has it. The compare uses toLowerCase() of both names,
-// because GitHub label names are unique without regard to case.
+// True when label is set and the issue has it. The compare folds both names, because GitHub
+// label names are unique without regard to case. It folds with asciiFold() (see
+// src/ascii-fold.ts), because toLowerCase() maps some non-ASCII letters to ASCII letters.
 export function inProgressMarker(issue: Issue, label: string | undefined): boolean {
   if (label === undefined) return false;
-  const wanted = label.toLowerCase();
-  return issue.labels.some((name) => name.toLowerCase() === wanted);
+  const wanted = asciiFold(label);
+  return issue.labels.some((name) => asciiFold(name) === wanted);
 }
