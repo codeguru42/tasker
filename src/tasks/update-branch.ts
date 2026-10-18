@@ -157,7 +157,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   const origin = task.state as TaskState;
   const failedIn = origin === "failed" ? transitionFromEvents(store.listEvents(task.id), "failed") : undefined;
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
-    transitionTask(store, task.id, "updating_branch");
+    transitionTask(store, task.id, "updating_branch", { head: before.head });
     // What the sync step did, and the head after it. The catch reads both to undo a sync move.
     let synced: SyncOutcome = { sync: "none" };
     let syncedHead = before.head;
