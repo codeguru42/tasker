@@ -55,18 +55,22 @@ An agent reads stdout. It holds the fields of the task, then the lines of the tr
 
 ### The tracker writes
 
-If `issueTracker.updateOnStart` is `true`, the start assigns the issue and marks it in progress. Each write appends one `tracker_update` event. The data is `{ action, result }` when the write works, and `{ action, result: "failed", error }` when it fails. The value of `action` is `assign`, `in_progress` or `done`.
+If `issueTracker.updateOnStart` is `true`, the start assigns the issue and marks it in progress. Each write appends one `tracker_update` event. The data is `{ action, result }` when the write works, and `{ action, result: "failed", error }` when it fails. The value of `action` is `assign`, `in_progress`, `clear_in_progress` or `done`.
+
+The abort also makes a tracker write. If `issueTracker.updateOnStart` is `true` and the repo sets the in-progress label, it removes the marker with the action `clear_in_progress`. A failed write is a warning, the same as for the start.
 
 The start follows the check-before-write rule in the [intro](#the-task-commands) and the rules in [The locks](#the-locks). These are the reasons of the tracker writes:
 
 - A failed write is a warning. The reason: the task and the clone are correct, and a person can mark the issue on the tracker.
 - The marker check runs before the task exists. The reason: a refused start leaves no task, as [The order of the steps](#the-order-of-the-steps) says. The check protects against two machines that work on the same issue.
-- The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked, and tasker cannot undo a tracker write.
+- The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked, because a failed start does not abort. The abort removes the marker only. The assignee stays, so tasker does not undo the assign.
 - The write of finish comes before the move to `finished`. The reason: a second run after a crash runs it again, and the writes are safe to repeat. [Writes](issue-trackers.md#writes) gives the facts.
 
 ## Abort
 
 A dirty worktree needs `--force`, because the abort cannot bring the work back. A refused abort also leaves the worktree and the branch as they were.
+
+The abort removes the in-progress marker of the issue on the tracker. The reason: the marker protects an issue against two machines, and after an abort no machine works on the issue. [The tracker writes](#the-tracker-writes) gives the rule for a failed write.
 
 A task that is `finished` or `cancelled` is an error, because it has nothing to abort.
 

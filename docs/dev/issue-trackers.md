@@ -93,9 +93,18 @@ The writes read nothing before they write. They rely on these facts of the gh 2.
 
 As a result, exit 0 is success and the code has no special case. The label must exist on GitHub. The writes do not create it.
 
+The remove of the in-progress label uses `gh issue edit --remove-label`. The facts below come from a measure of gh 2.101.0 against a fake local HTTPS server:
+
+- The issue has no such label, and the repo has it. `gh` exits 0, prints the issue URL and sends the `IssueByNumber` query, the `RepositoryLabelList` query and the `removeLabelsFromLabelable` mutation.
+- The issue has the label. `gh` exits 0 and sends the same calls. So `gh` does not read the labels of the issue before the remove, and it has no separate path for a label that the issue does not have.
+- The repo does not have the label. `gh` sends no mutation, prints `failed to update <issue url>: '<label>' not found` and `failed to update 1 issue`, and exits 1.
+- `--remove-label "a,b"` sends one mutation with two label ids. So `gh` splits the value on commas.
+
+Limit: the fake server answered the mutation, so nobody measured how GitHub itself answers a remove of a label that the issue does not have. The code has no special case. Exit 0 is success, and a failed write only warns.
+
 The assignee `@me` passes to `gh` as it is. `gh` resolves it to the user of the token, which is the account of the tracker.
 
-`gh issue edit` splits the value of `--add-label` and of `--add-assignee` on commas (gh 2.101.0).
+`gh issue edit` splits the value of `--add-label`, of `--remove-label` and of `--add-assignee` on commas (gh 2.101.0).
 
 Limit: the in-progress marker is a label only. GitHub Projects (v2) columns are not supported.
 
