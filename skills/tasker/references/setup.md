@@ -34,7 +34,9 @@ The checks never change the remote, GitHub or the clone. The only write is one t
 
 Copies each skill of the installed tasker into each folder of `skillsDirs`. The command has no options.
 
-A skill is a folder under the `skills` folder of the installed tasker. For each folder of `skillsDirs`, in order, and for each skill, in name order, the command does these steps:
+A skill is a folder under the `skills` folder of the installed tasker. Before the steps for a folder, the command compares the real path of the folder with the real path of the `skills` folder of the installed tasker. A real path is the path with each symbolic link resolved. If the two real paths are the same, the command does no step for that folder. It prints `error: cannot install to <folder>: it is the skills folder of tasker` on stderr. Then the command goes on with the next folder.
+
+For each other folder of `skillsDirs`, in order, and for each skill, in name order, the command does these steps:
 
 1. Make the folder, with its missing parents, when it does not exist.
 2. Remove `<folder>/<name>` when it exists.
@@ -45,7 +47,7 @@ After the copy, the command prints `installed <name> to <folder>/<name>`. When a
 The command exits with these codes:
 
 - 1 when the configuration does not load. Nothing is copied.
-- 1 when a step for a folder fails. The next folder still gets the skills.
+- 1 when a step for a folder fails, or when the command refuses a folder. The next folder still gets the skills.
 - 0 in all other cases.
 
 ## `tasker model`
