@@ -67,10 +67,10 @@ describe("parentOf", () => {
 
 describe("hasLanded", () => {
   it.each(["landed", "finishing", "cleanup_failed", "finished"])("is true for a task in %s", (state) => {
-    expect(hasLanded({ state })).toBe(true);
+    expect(hasLanded({ state } as Task)).toBe(true);
   });
 
   it("is false for a task in accepted", () => {
-    expect(hasLanded({ state: "accepted" })).toBe(false);
+    expect(hasLanded({ state: "accepted" } as Task)).toBe(false);
   });
 });
