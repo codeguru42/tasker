@@ -122,6 +122,9 @@ The order in each function is: the input checks, then the worktree guard, then t
 - `--no-color`, `--no-ext-diff` and `--no-textconv` stop colors, `diff.external` and textconv filters of the user configuration from changing the text. `diff.noprefix` still changes the `a/` and `b/` prefixes of the diff text.
 - The explicit `--format` stops `format.pretty` and `log.decorate` of the user from changing the text.
 - `--no-show-signature` stops `log.showSignature` of the user configuration. Git then starts no gpg and adds no signature lines to the text.
+- `--cherry-mark` with `--left-only` or `--right-only` in `remoteTaskBranchSides` marks a commit that has a same-patch commit on the other side. With `--left-right` and `--cherry-mark`, git prints `=` for such a commit and hides its side, so one call cannot give both sides. The function runs one call for each side.
+- `--topo-order --reverse` gives the oldest commit first on each side.
+- `--encoding=UTF-8` makes git print a non-ASCII subject as UTF-8. With `i18n.logOutputEncoding=ISO-8859-1` in the user configuration, git re-encodes the subject without it.
 
 ### Git facts of the results
 
@@ -130,6 +133,16 @@ The order in each function is: the input checks, then the worktree guard, then t
 - `rev-list --count <head> --not` with no others counts every commit that the head reaches.
 - Only exit code 1 of `merge-base --is-ancestor` means "no". Exit code 128, for example for a revision that the clone does not have, is an error.
 - A staged rename gives a delete and an add.
+
+### Git facts of the read of the two sides
+
+`remoteTaskBranchSides` reads the two sides of the range `<local>...<remote>` with `git log --cherry-mark`, one call for each side.
+
+- The mark `%m` is never `+`. It is `=` for a commit with a same-patch commit on the other side. Otherwise it is `<` on the left side and `>` on the right side. The code treats only `=` as the same patch.
+- A merge commit on either side is never `=`. It is `<` or `>`, and `%P` holds two hashes divided by a space.
+- `git cherry` leaves out each merge commit on both sides, so the read does not use `git cherry`.
+- A commit that differs only in its message and its author gives `=` on both sides. A commit that differs only in whitespace at the end of a line also gives `=`.
+- `git rev-list <local> ^<remote> ^<base tip>` prints the local-side commits that the base tip does not reach. It leaves out a base commit that the local side holds. It keeps a local merge commit and a rebased commit. The read uses this output for `onBase`.
 
 ## Reconcile
 
