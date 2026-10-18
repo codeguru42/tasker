@@ -36,6 +36,7 @@ These rules apply to each `tasker` command that the agent runs, also to a read-o
 ## The facts of the installed tasker
 
 - `tasker plan` can fail with "planning returned no structured output; the assistant produced no plan object". The task goes to `failed`. This failure does not come from the code. One `tasker retry <issue>` plans again.
+- When the login of the Claude account expires during `tasker execute`, the execute session ends. `tasker execute` then fails with `executing todo '<todo>' ... failed: claude exited 1`. The task goes to `failed`, and the task branch is unchanged. This failure does not come from the code. After the user logs in to Claude again, `tasker retry <issue>` moves the task to `approved` and runs `tasker execute` again. On #273, on 2026-10-17, the retry ran the same plan with no loss.
 - `tasker start` can wait about 10 minutes on `git ls-remote` over ssh and then fail with a git transport error. If `tasker doctor` then passes, the agent runs `tasker start` again.
 - `tasker update-branch` prints `origin/<branch> does not exist; nothing to sync from` for a task branch that was never pushed. This output is normal.
 - `tasker dismiss-review` prints `dismissed review findings for <issue key>`. This output is normal. It differs from the output that [skills/tasker/references/work-review.md](../../skills/tasker/references/work-review.md#tasker-dismiss-review) gives for the `tasker dismiss-review` of this repo.

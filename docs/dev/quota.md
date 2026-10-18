@@ -11,7 +11,7 @@ The quota belongs to the whole account. If a task stops in `quota_blocked`, the 
 - The reset time is the time when the quota of the account becomes available again. The quota resets at the exact reset time.
 - A cron job (a job, on [the orchestration pages](orchestration.md)) is a prompt that the orchestrator schedules for a time. A one-shot job fires one time and then deletes itself. A job fires only while the orchestrator is idle. A job lives only in the session of the orchestrator.
 - The five-hour job is the job for the five-hour reset time. The seven-day job is the job for the seven-day reset time. On [the orchestration pages](orchestration.md), "an agent has a job", "has no job" and "an agent without a job" mean the five-hour job. A seven-day job alone does not count.
-- An agent is running while it works on its turn. An agent has ended when its turn is over, for example after a tasker command stops in `quota_blocked` or `interrupted`. A message to an agent that has ended starts the agent again, and the agent keeps its context.
+- An agent is running while it works on its turn. An agent has ended when its turn is over, for example after a tasker command stops in `quota_blocked` or `interrupted`. A message to an agent that has ended starts the agent again, and the agent keeps its context. A login expiry also ends the session of the agent itself, with the error `Login expired · Please run /login`. After the user logs in again, the orchestrator resumes the agent with a message.
 - `tasker show-quota` prints the last quota event of each repo as a JSON list. It has no `--json` flag. Each entry has `repo`, `provider`, `receivedAt` and `event`. `event` is the raw `rate_limit_event` of the assistant. For example:
 
   ```json
