@@ -8,7 +8,7 @@ This rule applies to each `tasker` command that the agent runs and that changes 
 
 The reason: the repo file `.claude/settings.json` allows `Bash(tasker *)`. A Bash call matches this permission rule only when the call is one `tasker` command. Claude Code sends a call that does not match to the classifier of its auto mode (the check that allows or denies a tool call). The classifier can deny the call. For example, the classifier denied `tasker accept 'codeguru42/tasker#81' 2>&1 | tail -5`, but it allowed `tasker accept codeguru42/tasker#81`. On 2026-10-17, the agent of #229 ran `tasker refine` with feedback text from a file in the allowed form, in auto mode, and the call ran.
 
-If the classifier denies a `tasker` command in the plain form, the agent does not try another form. The agent stops and reports the exact text of the denial to the orchestrator. The orchestrator tells the user. The command did not run, so the task keeps its state. The agent runs no other `tasker` command until the orchestrator tells it the next step. The agent waits as [the answer-wait rule](limits.md#the-answer-wait-rule) says.
+If the classifier denies a `tasker` command in the plain form, the agent does not try another form. The agent [stops](limits.md#the-answer-wait-rule) and reports the exact text of the denial. The orchestrator tells the user. The command did not run.
 
 The plain-form rule does not cover these:
 
@@ -17,7 +17,7 @@ The plain-form rule does not cover these:
 
 ## The tool-block rule
 
-A tool block is a denial of a tool call by the permission rules or by the classifier of auto mode. In past sessions, the classifier of auto mode denied `gh auth token` and a `claude -p` run. [The plain-form rule](#the-plain-form-rule) covers a denied `tasker` command in the plain form. If any other tool block stops the agent, the agent reports the exact text of the denial to the orchestrator. Then the agent waits as [the answer-wait rule](limits.md#the-answer-wait-rule) says. The orchestrator tells the user. The orchestrator does not run the blocked action for the agent, unless the user tells it to.
+A tool block is a denial of a tool call by the permission rules or by the classifier of auto mode. In past sessions, the classifier of auto mode denied `gh auth token` and a `claude -p` run. [The plain-form rule](#the-plain-form-rule) covers a denied `tasker` command in the plain form. If any other tool block stops the agent, the agent [stops](limits.md#the-answer-wait-rule) and reports the exact text of the denial. The orchestrator tells the user. The orchestrator does not run the blocked action for the agent, unless the user tells it to.
 
 ## The command rules
 
