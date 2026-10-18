@@ -28,6 +28,7 @@ export const abort: RegisterCommand = (program, io) => {
             env: process.env,
             repoLockWaitMs: REPO_LOCK_WAIT_MS,
             report: (line) => io.stdout(`${line}\n`),
+            trackerIo: { stdout: io.stdout, stderr: io.stderr },
           }),
         );
         io.stdout(`cancelled ${task.issueKey}\n`);

@@ -21,7 +21,7 @@ export function trackerTargets(issueTracker: RepoConfig["issueTracker"]): {
   return { inProgress: issueTracker[keys.inProgress], done: issueTracker[keys.done] };
 }
 
-export type TrackerAction = "assign" | "in_progress" | "done";
+export type TrackerAction = "assign" | "in_progress" | "clear_in_progress" | "done";
 
 // One write to the issue tracker. text finishes "warning: cannot ... on the tracker: <error>".
 // success is the line that stdout gets when the write works.

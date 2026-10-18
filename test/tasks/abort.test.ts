@@ -43,6 +43,7 @@ describe("abortTask", () => {
         env: process.env,
         repoLockWaitMs: 300,
         report: () => {},
+        trackerIo: { stdout: () => {}, stderr: () => {} },
       });
       return { cancelled, worktree };
     });
@@ -72,6 +73,7 @@ describe("abortTask", () => {
         env: process.env,
         repoLockWaitMs: 300,
         report: () => {},
+        trackerIo: { stdout: () => {}, stderr: () => {} },
       }).catch((caught: unknown) => caught),
     );
 
@@ -100,6 +102,7 @@ describe("abortTask", () => {
         env: process.env,
         repoLockWaitMs: 300,
         report: () => {},
+        trackerIo: { stdout: () => {}, stderr: () => {} },
       }).catch((caught: unknown) => caught),
     );
 
