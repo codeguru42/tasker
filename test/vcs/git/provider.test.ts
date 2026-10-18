@@ -488,26 +488,44 @@ describe("createGitProvider", () => {
       );
     });
 
-    it("gives the checks of gitDoctorChecks for the repos of the list", () => {
-      const keys = [fixture.context.repoKey, "other"];
-      const list = keys.map((key) => ({
+    it("gives the checks of gitDoctorChecks for the repos of the list", async () => {
+      await provider().provision(fixture.context);
+      const values = [
+        {
+          key: fixture.context.repoKey,
+          remote: fixture.origin.path,
+          config: { ...keyed(), authorName: "Doctor Author" },
+        },
+        { key: "other", remote: join(fixture.origin.dir, "missing.git"), config: {} },
+      ];
+      const list = values.map(({ key, remote, config }) => ({
         key,
-        repo: { remote: fixture.origin.path, vcs: { provider: "git" as const, config: keyed() } },
+        repo: { remote, vcs: { provider: "git" as const, config } },
       }));
       const o = { procRoot: "/proc", platform: "linux" } as const;
 
       const checks = keyedProvider().doctorChecks(list, { dataRoot: fixture.context.dataRoot, ...o });
 
       const direct = gitDoctorChecks({
-        repos: keys.map((key) => ({
+        repos: values.map(({ key, remote, config }) => ({
           key,
-          remote: fixture.origin.path,
+          remote,
           clone: repoPaths(fixture.context.dataRoot, key).clone,
-          config: keyed(),
+          config,
         })),
         ...o,
       });
       expect(checkSummaries(checks)).toEqual(checkSummaries(direct));
+
+      const results = await Promise.all(checks.map((check) => check.run(fixture.context.env)));
+      const directResults = await Promise.all(direct.map((check) => check.run(fixture.context.env)));
+      expect(results).toEqual(directResults);
+
+      const resultOf = (name: string) => results[checks.findIndex((check) => check.name === name)];
+      const identity = resultOf(`git identity: ${fixture.context.repoKey}`);
+      expect(identity?.status).toBe("warn");
+      expect(identity?.detail).toContain('vcs.config.authorName is "Doctor Author"');
+      expect(resultOf(`git connection: ${fixture.context.repoKey}`)).not.toEqual(resultOf("git connection: other"));
     });
   });
 });
