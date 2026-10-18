@@ -284,7 +284,7 @@ flowchart LR
 ```
 
 - The 11 origin states: `workspace_ready`, `awaiting_plan_review`, `approved`, `executed`, `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`, `failed`, `cleanup_failed`.
-- A task stacked on a parent that landed moves onto the base of the parent. If the parent changed when it landed, only the commits of the task are replayed.
+- A task stacked on a parent moves onto the tip of the branch of the parent while the parent is in flight. After the parent landed, it moves onto the base of the parent, and the task is no longer stacked. If the parent changed, only the commits of the task are replayed.
 - If the worktree moved, the old plan approval or verify result no longer describes the tree. So the task is demoted:
 
 | Origin                                                                     | Demoted to             | Why                                                                                                                |

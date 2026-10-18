@@ -31,7 +31,7 @@ Names such as `-x` and `a..b` pass the parse of the text that a user types. [The
 
 ### Stacked task
 
-A stacked task is a task whose base has the form `refs/heads/<x>`, where `<x>` is the branch of a task of the same repo. Its parent is the newest task of the repo with that branch.
+A stacked task is a task whose base has the form `refs/heads/<x>`, where `<x>` is the branch of a task of the same repo. Its parent is the newest task of the repo with that branch. The parent has landed when its task is in `landed`, `finishing`, `cleanup_failed` or `finished`. After `tasker update-branch` moves a task whose parent landed, the task is no longer stacked: its base is the base of the parent.
 
 ### The resolve
 
