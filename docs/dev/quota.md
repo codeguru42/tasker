@@ -72,9 +72,9 @@ Each time the orchestrator runs `tasker show-quota` and reads the reset time, as
 
 The rule has three failure cases:
 
-- If `tasker show-quota` fails, or the `jq` read of `seven_day` gives `null`, there is no seven-day reset time yet. No seven-day job changes. If `tasker show-quota` itself fails, the orchestrator tells the user the command and the error.
-- If CronCreate of a seven-day job fails, the orchestrator tells the user the tool and the error. The agent has no seven-day job. The next read tries again, because the rule schedules a seven-day job for each agent that has none.
-- If CronDelete of the old seven-day job fails, the orchestrator tells the user the tool and the error. The old job and its id stay. The orchestrator does not schedule the new job at that read. The next read tries again, because the time still differs.
+- If `tasker show-quota` fails, or the `jq` read of `seven_day` gives `null`, there is no seven-day reset time yet. No seven-day job changes. If `tasker show-quota` itself fails, [the failure rule](limits.md#the-failure-rule) applies.
+- If CronCreate of a seven-day job fails, the failure rule applies. The agent has no seven-day job. The next read tries again, because the rule schedules a seven-day job for each agent that has none.
+- If CronDelete of the old seven-day job fails, the failure rule applies. The old job and its id stay. The orchestrator does not schedule the new job at that read. The next read tries again, because the time still differs.
 
 ### When there is no reset time yet
 
@@ -88,7 +88,7 @@ The rule has three failure cases:
 
 ### When the job fires
 
-When a seven-day job fires, the orchestrator first runs CronList. The orchestrator deletes with CronDelete each job of the ticket whose time is in the past. After the delete, the ticket has no job of that kind, as [Schedule a job when an agent starts](#schedule-a-job-when-an-agent-starts) says for a deleted id. Then the orchestrator does the steps of this section one time. The reason is that the time of such a job can fall inside a stop of the seven-day window. No session has tokens then, so the job does not fire. Such a job can fire late, next to the seven-day job, and send a second resume message. If CronList or CronDelete fails, the orchestrator tells the user the tool and the error. Then it does the steps of this section.
+When a seven-day job fires, the orchestrator first runs CronList. The orchestrator deletes with CronDelete each job of the ticket whose time is in the past. After the delete, the ticket has no job of that kind, as [Schedule a job when an agent starts](#schedule-a-job-when-an-agent-starts) says for a deleted id. Then the orchestrator does the steps of this section one time. The reason is that the time of such a job can fall inside a stop of the seven-day window. No session has tokens then, so the job does not fire. Such a job can fire late, next to the seven-day job, and send a second resume message. If CronList or CronDelete fails, [the failure rule](limits.md#the-failure-rule) applies. Then the orchestrator does the steps of this section.
 
 When a job of a ticket fires, a five-hour job or a seven-day job, the orchestrator runs `tasker status --issue <issue>` and `tasker show <issue>`. Apart from the CronList step of the paragraph above, the steps are the same for both jobs. Then exactly one of these cases applies:
 
@@ -117,7 +117,7 @@ If a case says that the orchestrator schedules the next job, the orchestrator fi
 - If an agent stops for another reason and the orchestrator does not start it again, the orchestrator must delete each job of that agent whose id still lives with CronDelete.
 - When the user defers a ticket that has a task in flight (see [the defer rule](pick-the-tickets.md#the-defer-rule)), the orchestrator must delete each job of that agent whose id still lives with CronDelete.
 - In each of these cases, the orchestrator frees the slot of the agent. This also applies when the agent has no job. The schedule-all rule also leaves out this agent until the orchestrator starts it again, as "Schedule a job when an agent starts" says.
-- If CronDelete fails, the orchestrator tells the user the tool and the error. The job stays. When the job fires, the case of "When the job fires" for its state applies. An example is the case of a finished task, which schedules nothing.
+- If CronDelete fails, [the failure rule](limits.md#the-failure-rule) applies. The job stays. When the job fires, the case of "When the job fires" for its state applies. An example is the case of a finished task, which schedules nothing.
 
 ### Do not use these
 
