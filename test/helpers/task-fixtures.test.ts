@@ -4,6 +4,8 @@ import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { canTransition, failTask, transitionFromEvents, type TaskState } from "../../src/state/machine.js";
 import { loadConfig } from "../../src/config/load.js";
+import type { IssueRef } from "../../src/issue-key/ref.js";
+import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
 import { baseRevisionOf } from "../../src/tasks/base-revision.js";
 import { dataRootLayout, planRevisionPath } from "../../src/store/layout.js";
@@ -57,7 +59,13 @@ import {
   useVerifyFixture,
   useMovedBaseTask,
   useWorkReviewTask,
+  type StartFixture,
 } from "./task-fixtures.js";
+
+// The ref of codeguru42/tasker#<n> in the repo of the fixture, with the short ref that the code makes.
+function issueRefOf(fixture: Pick<StartFixture, "repoKey">, n: number): IssueRef {
+  return { key: `codeguru42/tasker#${n}`, repoKey: fixture.repoKey, shortRef: githubShortRef(String(n)) };
+}
 
 describe("useStartFixture", () => {
   it("gives a configuration with the origin as the remote and main as the base", async () => {
@@ -79,7 +87,7 @@ describe("useStartFixture", () => {
   it("answers the read of issue 5 through the fake gh", async () => {
     const fixture = await useStartFixture();
     const provider = issueProviderFor(fixture.config, fixture.repoKey);
-    const ref = { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: "codeguru42-tasker-5" };
+    const ref = issueRefOf(fixture, 5);
 
     const issue = await provider.fetchIssue(ref, process.env);
 
@@ -94,14 +102,9 @@ describe("useStartFixture", () => {
       ],
     });
     const provider = issueProviderFor(fixture.config, fixture.repoKey);
-    const refOf = (n: number) => ({
-      key: `codeguru42/tasker#${n}`,
-      repoKey: fixture.repoKey,
-      shortRef: `codeguru42-tasker-${n}`,
-    });
 
-    await expect(provider.blockingIssues(refOf(5), process.env)).resolves.toEqual([]);
-    await expect(provider.blockingIssues(refOf(6), process.env)).resolves.toEqual([]);
+    await expect(provider.blockingIssues(issueRefOf(fixture, 5), process.env)).resolves.toEqual([]);
+    await expect(provider.blockingIssues(issueRefOf(fixture, 6), process.env)).resolves.toEqual([]);
   });
 
   it("lets a blockers answer of ghAnswers win over the default", async () => {
@@ -111,7 +114,7 @@ describe("useStartFixture", () => {
       ],
     });
     const provider = issueProviderFor(fixture.config, fixture.repoKey);
-    const ref = { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: "codeguru42-tasker-5" };
+    const ref = issueRefOf(fixture, 5);
 
     await expect(provider.blockingIssues(ref, process.env)).resolves.toEqual([
       { key: "codeguru42/tasker#3", state: "open" },

@@ -1,13 +1,14 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { IssueRef } from "../../src/issue-key/ref.js";
+import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import type { Blocker } from "../../src/issues/issue.js";
 import { blockerBase } from "../../src/tasks/blocker-base.js";
 import { dayAt, seedTasks, withDataRootStore, type SeedTask } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
 
 const REPO = "codeguru42/tasker";
-const ref: IssueRef = { key: `${REPO}#5`, repoKey: REPO, shortRef: "codeguru42-tasker-5" };
+const ref: IssueRef = { key: `${REPO}#5`, repoKey: REPO, shortRef: githubShortRef("5") };
 const open = (number: number, project = REPO): Blocker => ({ key: `${project}#${number}`, state: "open" });
 const closed = (number: number, project = REPO): Blocker => ({ key: `${project}#${number}`, state: "closed" });
 
