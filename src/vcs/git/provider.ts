@@ -194,10 +194,14 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
         trackedPaths: (path, paths) => trackedPaths({ env: ctx.env, path, paths }),
       };
     },
-    doctorChecks(ctx, { procRoot, platform }) {
-      const { clone } = pathsOf(ctx);
+    doctorChecks(repos, { dataRoot, procRoot, platform }) {
       return gitDoctorChecks({
-        repos: [{ key: ctx.repoKey, remote, clone, config }],
+        repos: repos.map((r) => ({
+          key: r.key,
+          remote: r.repo.remote,
+          clone: repoPaths(dataRoot, r.key).clone,
+          config: r.repo.vcs.config,
+        })),
         procRoot,
         platform,
       });

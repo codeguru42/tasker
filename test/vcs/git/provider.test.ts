@@ -20,6 +20,7 @@ import {
 } from "../../../src/vcs/git/changes.js";
 import { worktreeState } from "../../../src/vcs/git/reconcile.js";
 import { ReconcileConflictError } from "../../../src/vcs/errors.js";
+import { gitDoctorChecks } from "../../../src/vcs/git/doctor.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
 import { remoteTip } from "../../../src/vcs/git/remote-tip.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
@@ -486,17 +487,28 @@ describe("createGitProvider", () => {
       );
     });
 
-    it("names the four checks of the repo", () => {
-      const checks = keyedProvider().doctorChecks(fixture.context, {
-        procRoot: "/proc",
-        platform: "linux",
+    it("gives the checks of gitDoctorChecks for the repos of the list", () => {
+      const keys = [fixture.context.repoKey, "other"];
+      const list = keys.map((key) => ({
+        key,
+        repo: { remote: fixture.origin.path, vcs: { provider: "git" as const, config: keyed() } },
+      }));
+      const o = { procRoot: "/proc", platform: "linux" } as const;
+
+      const checks = keyedProvider().doctorChecks(list, { dataRoot: fixture.context.dataRoot, ...o });
+
+      const direct = gitDoctorChecks({
+        repos: keys.map((key) => ({
+          key,
+          remote: fixture.origin.path,
+          clone: repoPaths(fixture.context.dataRoot, key).clone,
+          config: keyed(),
+        })),
+        ...o,
       });
-      expect(checks.map((check) => check.name)).toEqual([
-        "git version",
-        "git identity: tasker",
-        "git connection: tasker",
-        "git lock files: tasker",
-      ]);
+      const summary = (list: typeof checks) =>
+        list.map(({ name, required, timeoutMs }) => ({ name, required, timeoutMs }));
+      expect(summary(checks)).toEqual(summary(direct));
     });
   });
 });

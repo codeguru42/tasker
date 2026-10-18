@@ -267,7 +267,6 @@ export function staleLockCheck(repo: GitDoctorRepo, procView: () => ProcView | u
 
 // All git checks: the version check, then the identity, connection and lock-file checks of each
 // repo. The lock-file checks share one read of procRoot, made at the first stale lock.
-// The caller passes procRoot "/proc" and platform process.platform.
 export function gitDoctorChecks(options: {
   repos: readonly GitDoctorRepo[];
   procRoot: string;

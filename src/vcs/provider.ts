@@ -1,6 +1,13 @@
+import { reposByProvider } from "../config/repo-groups.js";
 import type { Config, RepoConfig } from "../config/schema.js";
 import type { Check } from "../doctor/check.js";
 import { createGitProvider } from "./git/provider.js";
+
+// One repo of the doctor checks: its key and its own remote and configuration.
+export interface VcsDoctorRepo {
+  key: string;
+  repo: Pick<RepoConfig, "remote" | "vcs">;
+}
 
 // The local state of one repo, and the env of each child process.
 export interface VcsContext {
@@ -214,8 +221,14 @@ export interface VcsProvider {
   remoteTaskRefTip(ctx: VcsContext, o: { taskRef: string }): Promise<RemoteTip>;
   // The text and the paths that the provider adds to the assistant of a task.
   assistantSurface(ctx: VcsContext): AssistantSurface;
-  // The doctor checks of the repo. The checks do not run until the caller runs them.
-  doctorChecks(ctx: VcsContext, o: { procRoot: string; platform: NodeJS.Platform }): Check[];
+  // The doctor checks of the repos. vcsDoctorChecks() calls it one time with all the repos of the
+  // provider. Each repo of the list names its own remote and configuration. The provider that gets
+  // the call comes from the first repo of the list, and the operation does not use the remote and
+  // the configuration of that provider. The checks do not run until the caller runs them.
+  doctorChecks(
+    repos: readonly VcsDoctorRepo[],
+    o: { dataRoot: string; procRoot: string; platform: NodeJS.Platform },
+  ): Check[];
   // Writes the push guard again.
   installPushGuard(ctx: VcsContext): void;
 }
@@ -226,6 +239,18 @@ export function createVcsProvider(repo: Pick<RepoConfig, "remote" | "vcs">): Vcs
     case "git":
       return createGitProvider({ remote: repo.remote, config: repo.vcs.config });
   }
+}
+
+// The doctor checks of all repos. It groups the repos by vcs.provider. It calls doctorChecks() one
+// time for each id, with all the repos of that id, in the order of the configuration.
+// The caller passes procRoot "/proc" and platform process.platform.
+// A configuration with no repo gives [].
+export function vcsDoctorChecks(config: Config, o: { procRoot: string; platform: NodeJS.Platform }): Check[] {
+  return reposByProvider(
+    config,
+    (repo) => repo.vcs.provider,
+    (key, repo): VcsDoctorRepo => ({ key, repo }),
+  ).flatMap(([, repos]) => createVcsProvider(repos[0].repo).doctorChecks(repos, { dataRoot: config.dataRoot, ...o }));
 }
 
 // The provider and the context of one repo of the configuration.
