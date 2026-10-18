@@ -40,7 +40,7 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
   - The report of every configuration error in one run, as [rules.md](rules.md#code) says.
   - [The fact test](plan-review.md#the-fact-test) for each fact about an outside tool.
 - An issue body has no dependency text, for example no "Depends on" section. The blocked-by links hold the order.
-- A planned issue gets no priority label. The blocked-by links hold the order of the work in a milestone. Only an issue outside the plan gets a priority label. An example is an issue of a failed CI run, as [A failed CI run](orchestration.md#a-failed-ci-run) of orchestration.md says.
+- A planned issue gets no priority label. The blocked-by links hold the order of the work in a milestone. Only an issue outside the plan gets a priority label. An example is an issue of a failed CI run, as [A failed CI run](ci-wait.md#a-failed-ci-run) of ci-wait.md says.
 - An issue needs no line for commit style, because the prompts of the installed tasker already name it. [rules.md](rules.md#commits) is the home of the commit rules.
 
 ## The blocked-by links
