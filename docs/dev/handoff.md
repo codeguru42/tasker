@@ -29,6 +29,8 @@ The old orchestrator puts these items in the handoff file:
 - A table of the open issues of the milestone, with the columns issue, topic, blockers and files.
 - Each finding of the review rounds, with its state, handled or open.
 
+The docs that the prompt names are docs of the orchestrator of [the re-read rule](doc-reads.md#the-re-read-rule).
+
 The old orchestrator puts no rule in the handoff file. The rules stay in the docs, and the prompt points to them.
 
 The user pastes the prompt as the first message of the new session. The user names the session `orchestrator-<milestone>`, for example `orchestrator-docs`, as [the notice rule](doc-reads.md#the-notice-rule) says. The new orchestrator then starts with the re-read rule. Right after the first doc read, the new orchestrator does the check of the handoff folder that follows.
