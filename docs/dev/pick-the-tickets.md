@@ -41,8 +41,8 @@ On 2026-10-17, the user decided for #172: "do the `update-branch` before startin
 
 One exception applies. If the new commits on the base change no file of the parent, the orchestrator starts the stacked ticket without another update of the parent. To find this out, the orchestrator reads two lists in its local clone, with the two hashes of the check.
 
-- The files of the parent: `git diff --name-only <base tip>...<parent tip>`
-- The files of the new commits on the base: `git diff --name-only <parent tip>...<base tip>`
+- The files of the parent: `git diff --no-renames --name-only <base tip>...<parent tip>`
+- The files of the new commits on the base: `git diff --no-renames --name-only <parent tip>...<base tip>`
 
 If no path is in both lists, the exception applies. If a command of the two lists fails, the exception does not apply. In the exception, the stacked orchestrator tells the agent of the stacked ticket to follow the moved parent with one `tasker update-branch` before its first refine.
 
