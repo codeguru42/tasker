@@ -18,7 +18,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint:fix": "eslint . --fix",
-    "test:list": "vitest list"
+    "test:list": "vitest list",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "commander": "^15.0.0",
@@ -34,5 +35,9 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.1",
     "vitest": "^5.0.3"
-  }
+  },
+  "files": [
+    "dist",
+    "skills"
+  ]
 }
