@@ -173,7 +173,7 @@ When a rate limit stops a run, the last event is a `result` with `terminal_reaso
 
 A quota outcome wins over a failure, because the next step is a resume, not a fix.
 
-A quota outcome also wins over the interrupted outcome, because a quota outcome rests on a parsed event. The interrupted outcome wins over the timeout and over the failures.
+[The outcome of an interrupted run](#the-outcome-of-an-interrupted-run) gives the order of a quota outcome, the interrupted outcome, a failure and a timeout.
 
 The provider says which events are quota events, because only the provider can read its own stream. During each run, tasker records the last quota event of the repo. The record comes after the transcript write, so a failed record write cannot drop a transcript line. [The `quota_events` table](data-root.md#quota_events-table) holds the record.
 
