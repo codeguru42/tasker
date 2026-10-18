@@ -306,7 +306,7 @@ describe("tasker resume", () => {
 
     expect(code).toBe(0);
     expect(help).toContain(
-      "Move a task in quota_blocked or interrupted back to the state before the run that stopped, and run the same command again",
+      "Move a task in quota_blocked or interrupted back to the state before the run that stopped, and run the same command again. A resume from updating_branch runs nothing",
     );
     expect(help).toContain("Use the repo with this key when two repos share the project of the issue");
   });
