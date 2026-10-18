@@ -30,6 +30,20 @@ function resume(dataRoot: string, task: Task) {
   return withDataRootStore(dataRoot, (store) => resumeTask(store, { ref, taskId: task.id }));
 }
 
+const UPDATE_ORIGINS: readonly TaskState[] = [
+  "workspace_ready",
+  "awaiting_plan_review",
+  "approved",
+  "executed",
+  "awaiting_work_review",
+  "reviewed",
+  "accepted",
+  "pushed",
+  "in_peer_review",
+  "cleanup_failed",
+  "failed",
+];
+
 const kept = { plan: true, execute: true, review: [1] };
 
 describe("resumeTask origins", () => {
@@ -93,6 +107,14 @@ describe("resumeTask origins", () => {
       pauses: BOTH,
       sessions: kept,
     },
+    ...UPDATE_ORIGINS.map((origin) => ({
+      origin: "updating_branch" as const,
+      before: origin,
+      target: origin,
+      next: "update-branch",
+      pauses: ["interrupted"] as readonly Pause[],
+      sessions: kept,
+    })),
   ];
 
   function rowLabel(row: { origin: TaskState; refineOrigin?: TaskState; before?: TaskState }): string {
@@ -207,5 +229,12 @@ describe("resumeTask checks", () => {
     withDataRootStore(dataRoot, (store) => pauseRefineFrom(store, task.id, "accepted", "interrupted"));
 
     await expectResumeRefused(dataRoot, task, noStep("refining"));
+  });
+
+  it("refuses an update whose origin has no record", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    withDataRootStore(dataRoot, (store) => pauseTaskFrom(store, task.id, "updating_branch", "interrupted"));
+
+    await expectResumeRefused(dataRoot, task, noStep("updating_branch"));
   });
 });

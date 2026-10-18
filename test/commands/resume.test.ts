@@ -181,6 +181,22 @@ describe("tasker resume", () => {
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_work_review");
   });
 
+  it("prints the update-branch hint and runs nothing for a task paused in interrupted from updating_branch", async () => {
+    const fixture = await useVerifyFixture({ commands: ["true"] });
+    const { dataRoot } = fixture.started;
+    withDataRootStore(dataRoot, (store) => pauseTaskVia(store, fixture.task.id, "executed", "updating_branch"));
+
+    const result = await runResume();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toBe(
+      resumedLine(KEY, "updating_branch", "executed") + `run tasker update-branch ${KEY} again\n`,
+    );
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("executed");
+    expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "updating_branch", target: "executed" }]);
+    expect(withDataRootStore(dataRoot, (store) => store.latestVerifyRun(fixture.task.id))).toBeUndefined();
+  });
+
   it.each(PAUSES)("runs the review in a new session for a task paused in %s from reviewing", async (pause) => {
     const work = await useReviewFixture({ stream: answerStream(validReviewAnswer()) });
     const { dataRoot } = work;
