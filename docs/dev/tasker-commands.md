@@ -1,6 +1,6 @@
 # Tasker commands
 
-The reader of this page is the agent of a ticket.
+The readers of this page are the agent of a ticket, and the orchestrator for the plain-form rule and the tool-block rule.
 
 ## The plain-form rule
 
