@@ -108,18 +108,6 @@ function landedParentBase(store: TaskStore, task: Task, parent: Task): { base: s
   return { base, revision: requireBaseRevision(store, parent) };
 }
 
-// The base step of a stacked task. The new tip is the tip of the branch of the parent while the parent is in flight,
-// and the tip of the base of the parent after the parent landed. Nothing moves when the task branch already contains
-// it. Otherwise the step replays the commits after the merge base onto it, with a rebase.
-async function stackedBaseStep(
-  vcs: VcsProvider,
-  ctx: VcsContext,
-  o: { path: string; baseTip: string; contains: boolean; syncedHead: string },
-): Promise<Pick<ResyncResult, "how" | "head">> {
-  if (o.contains) return { how: "none", head: o.syncedHead };
-  return { how: "rebase", head: await vcs.replayOnto(ctx, { path: o.path, onto: o.baseTip }) };
-}
-
 // True when the worktree is at the head of the start, on the task branch and clean. A failed read of the state counts
 // as not back at the start.
 async function backAtStart(
@@ -207,12 +195,14 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       }
       // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
       const upToDate = contains && synced.sync !== "take-remote";
-      const resynced: Pick<ResyncResult, "how" | "head"> =
-        strategy === undefined
-          ? await stackedBaseStep(vcs, ctx, { path, baseTip, contains: upToDate, syncedHead })
-          : upToDate
-            ? { how: "none", head: syncedHead }
-            : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
+      const resynced: Pick<ResyncResult, "how" | "head"> = upToDate
+        ? { how: "none", head: syncedHead }
+        : strategy === undefined
+          ? // The new tip of a stacked task is the tip of the branch of the parent while the parent is in flight,
+            // and the tip of the base of the parent after the parent landed. The replay puts the commits after
+            // the merge base onto the new tip, with a rebase.
+            { how: "rebase", head: await vcs.replayOnto(ctx, { path, onto: baseTip }) }
+          : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
       const moved = "remoteTip" in synced || resynced.how !== "none";
       const state = moved ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
