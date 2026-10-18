@@ -34,7 +34,7 @@ If the base step fails after a move of the sync step, the command also moves the
 
 The `branch_updated` event has the key `sync`. Its value is `absent`, `none`, `fast-forward` or `take-remote`. `before.head` is the local tip before the sync step.
 
-When the head moved in the sync step or in the base step, the command writes a `base` event `{ base, revision, source: "update" }`. The `base` is the stored base. The `revision` is the stored base revision, for example `refs/remotes/origin/main`. The command writes no `base` event when the head did not move.
+When the head moved in the sync step or in the base step, the command writes a `base` event `{ base, revision, source: "update" }`. The `base` is the stored base. The `revision` is the stored base revision, a ref, for example `refs/remotes/origin/main`. The command writes no `base` event when the head did not move. A task whose parent landed is the exception: [The base step of a stacked task](#the-base-step-of-a-stacked-task) gives its `base` event.
 
 On success, the command prints these lines on stdout:
 
@@ -43,6 +43,24 @@ On success, the command prints these lines on stdout:
 - `moved <issue key> onto <base> at <base tip> by <how>: <head before> to <head after>` when the base step moved the head. `<head before>` is the head at the start of the base step. The value of `<how>` is `fast-forward`, `rebase` or `merge`.
 - `demoted <issue key> from <origin> to <target>` only when the target differs from the origin state.
 - `state: <state>` as the last line.
+
+### The base step of a stacked task
+
+A stacked task is a task whose base is `refs/heads/<x>`, where `<x>` is the branch of a task of the same repo. That task is the parent. If more than one task has the branch, the parent is the newest of them. The parent has landed when its task is in `landed`, `finishing`, `cleanup_failed` or `finished`.
+
+The new tip depends on the parent:
+
+- While the parent is in flight, the new tip is the tip of `refs/heads/<parent branch>`.
+- After the parent landed, the new tip is the tip of the base of the parent on `origin`, read after the fetch. The task is then no longer stacked.
+
+The command replays the commits of the task branch after the merge base of the task branch and the new tip onto the new tip, with a rebase. Git skips each old commit of the parent whose patch the new tip already holds. A commit that git cannot replay is an ordinary rebase conflict, and the rule of a failure after the move applies as it is. If the task branch already contains the new tip, nothing moves: the head and the worktree stay as they are.
+
+The `revision` of each `base` event is a ref, never a commit id:
+
+- While the parent is in flight, a move writes `{ base: "refs/heads/<parent branch>", revision: "refs/heads/<parent branch>", source: "update" }`. The command writes no `base` event when nothing moved.
+- After the parent landed, the command always writes `{ base: <base of the parent>, revision: <stored base revision of the parent>, source: "parent" }`, also when the head does not move. The task row gets the new base. The `revision` is a ref such as `refs/remotes/origin/main`.
+
+After the parent landed, the command prints `<issue key> is no longer stacked on <parent key>` after the current line or the moved line and before the demoted line. A later run uses the plain base step with the new base. The demotion and the stale-plan rule apply only when the head moved.
 
 ### The state after the command
 
@@ -65,12 +83,15 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 - The task has no branch, no worktree, no base or no base revision.
 - The value of `--strategy` is not `rebase` or `merge`. The error is `--strategy must be rebase or merge: <value>`.
+- The task is stacked and the command has `--strategy`. The error is `--strategy does not apply to a stacked task; tasker update-branch replays its commits with a rebase`.
 - The worktree has uncommitted changes. The error has the line `the worktree has uncommitted changes: <path>`, then one line for each change, and the last line `tasker update-branch needs a clean worktree`.
 
 When a step fails after the move to `updating_branch`, the command prints the error on stderr and stops with exit code 1. The step can be the fetch, the sync step, the move of the branch, a conflict, a failed restore or a failed write. Diverged tips are one such failure. The absent remote tip with `--take-remote` is another. A conflict message names each path in conflict. A failed restore names the git commands that put the worktree back. The state after the failure depends on the worktree:
 
 - The worktree is back at the start when three facts hold: the head is the head of the start, the worktree is on the task branch, and the worktree is clean. Then the task goes back to its origin state. The command writes a `branch_updated` event with `error`, `how: "none"` and `after` equal to `before`, in place of a `transition` event. The error on stderr and in the event is the bare message.
 - In each other case, the task goes to `failed` with the error `updating branch failed: <message>`. The command prints the same error on stderr.
+
+A stacked task fails in the same way in two more cases. The branch of the parent, while the parent is in flight, is gone from the clone: `the branch of the parent <parent key> is gone: <base>`. The parent landed and is stacked too: `the parent <parent key> of <issue key> is stacked too; its base is <base of the parent>`.
 
 A failed read of the state of the worktree counts as not back at the start. `tasker retry` has no row for a task that failed in `updating_branch`. After a failed restore, run the git commands that the error names. Then run `tasker update-branch` again from `failed`, or run `tasker abort` to end the task.
 

@@ -69,6 +69,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 These errors leave the task in its state. The command writes no event and no verify run. The shared errors of no task, of the wrong state and of the task lock belong to this group:
 
 - The task has no worktree. The error is `the task of <issue key> has no worktree`.
+- The task is stacked and its parent has landed. The error is `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`. See [`tasker update-branch`](keeping-current.md#the-base-step-of-a-stacked-task).
 
 These errors move the task to the state `failed`. The shared unexpected error belongs to this group:
 
