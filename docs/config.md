@@ -21,7 +21,7 @@ A variable that is empty or has only spaces counts as not set.
 
 ## See the configuration with the defaults
 
-Run `tasker show-config` to print the configuration as tasker reads it. The output has every default filled in and `dataRoot` expanded.
+Run `tasker show-config` to print the configuration as tasker reads it. The output has every default filled in, and `dataRoot` and `skillsDirs` expanded.
 
 Run `tasker show-config --repo <key>` to print one repo.
 
@@ -29,14 +29,15 @@ If the configuration is invalid, the command prints the errors from the "Errors"
 
 ## Top level
 
-| Key                    | Type            | Default      | Notes                                                                                                                                                                                              |
-| ---------------------- | --------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dataRoot`             | string          | required     | The folder where tasker keeps its data. tasker expands a leading `~` and each `$NAME` or `${NAME}` first. The result must be an absolute path. A variable that is not set or is empty is an error. |
-| `retentionDays`        | number          | `30`         | How many days tasker keeps data.                                                                                                                                                                   |
-| `dataRootMinFreeBytes` | positive number | `1073741824` | The free space that `dataRoot` must have, in bytes.                                                                                                                                                |
-| `limits`               | object          | required     | See [`limits`](#limits).                                                                                                                                                                           |
-| `trackers`             | object          | `{}`         | Named issue tracker definitions that repos share. See [`trackers`](#trackers).                                                                                                                     |
-| `repos`                | object          | required     | Maps each repo key to a repo. See [`repos.<key>`](#reposkey).                                                                                                                                      |
+| Key                    | Type            | Default                | Notes                                                                                                                                                                                              |
+| ---------------------- | --------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dataRoot`             | string          | required               | The folder where tasker keeps its data. tasker expands a leading `~` and each `$NAME` or `${NAME}` first. The result must be an absolute path. A variable that is not set or is empty is an error. |
+| `retentionDays`        | number          | `30`                   | How many days tasker keeps data.                                                                                                                                                                   |
+| `dataRootMinFreeBytes` | positive number | `1073741824`           | The free space that `dataRoot` must have, in bytes.                                                                                                                                                |
+| `skillsDirs`           | list of strings | `["~/.claude/skills"]` | The folders where `tasker install-skills` copies the skills. tasker expands each string as it expands `dataRoot`. The list must not be empty.                                                      |
+| `limits`               | object          | required               | See [`limits`](#limits).                                                                                                                                                                           |
+| `trackers`             | object          | `{}`                   | Named issue tracker definitions that repos share. See [`trackers`](#trackers).                                                                                                                     |
+| `repos`                | object          | required               | Maps each repo key to a repo. See [`repos.<key>`](#reposkey).                                                                                                                                      |
 
 The file has no `landing` key. If it has one, tasker reports this error: `landing: is not accepted: there is no landing setting; the command you run picks how a task lands`.
 
@@ -194,6 +195,7 @@ The message of a built-in check can differ from this example. The path always na
 ```json
 {
   "dataRoot": "$HOME/.local/share/tasker",
+  "skillsDirs": ["~/.claude/skills", "~/.agents/skills"],
   "limits": { "bootstrapTimeoutMin": 10, "verifyTimeoutMin": 20 },
   "repos": {
     "tasker": {
