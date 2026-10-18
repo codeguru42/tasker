@@ -57,11 +57,10 @@ const BASE_PREFIX = "base:";
 // The base branch hint of issue: the text after "base:" of its one base: label, without the
 // white space that String.prototype.trim() removes at the start and the end, for example
 // spaces, tabs and line ends. The prefix matches without regard to case, because GitHub label
-// names are unique without regard to case. Only the letters A to Z fold, because toLowerCase()
-// maps some non-ASCII letters to ASCII letters, for example the Kelvin sign to k. The text
-// after the prefix keeps its case, because branch names use case. The function reads only issue
-// and makes no tracker call. It does not check the hint as a branch name: the base branch
-// resolve in src/vcs/git/ does that.
+// names are unique without regard to case. Only the letters A to Z fold, with asciiFold() (see
+// src/ascii-fold.ts for the reason). The text after the prefix keeps its case, because branch
+// names use case. The function reads only issue and makes no tracker call. It does not check the
+// hint as a branch name: the base branch resolve in src/vcs/git/ does that.
 export function baseBranchHint(issue: Issue): string | undefined {
   const found = issue.labels.filter((label) => asciiFold(label.slice(0, BASE_PREFIX.length)) === BASE_PREFIX);
   if (found.length === 0) return undefined;
