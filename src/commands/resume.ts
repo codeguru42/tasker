@@ -53,7 +53,8 @@ export async function runResumed(
   // UPDATE_BRANCH_RESUME_TABLE in src/tasks/resume.ts says more. The restore and the move are done, so these lines
   // come last.
   if (next === "update-branch") {
-    io.stdout(`restored the worktree of ${key} to ${String(head)}\n`);
+    // A resume from updating_branch always gives the restored head.
+    io.stdout(`restored the worktree of ${key} to ${head!}\n`);
     io.stdout(`run tasker update-branch ${key} again\n`);
     return;
   }

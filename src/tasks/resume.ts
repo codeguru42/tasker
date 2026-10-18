@@ -132,18 +132,14 @@ async function resumeLocked(store: TaskStore, request: ResumeRequest): Promise<R
 }
 
 // What a resume of a task in a pause does: the state that the run left, and the row for it.
-export interface ResumeMove {
+interface ResumeMove {
   origin: TaskState;
   row: ResumeRow;
 }
 
 // Finds the move of a task in a pause back to the state before the run that stopped. The caller holds the task lock and
 // made sure that the task is in a pause that command accepts. It refuses an origin with no row. It writes nothing.
-export function resumeMoveOf(
-  task: Task,
-  events: readonly TaskEvent[],
-  command: "resume" | "approve-credits",
-): ResumeMove {
+function resumeMoveOf(task: Task, events: readonly TaskEvent[], command: "resume" | "approve-credits"): ResumeMove {
   // The state check made sure that the task is in a pause, so its state is a task state.
   const pause = task.state as TaskState;
   const origin = transitionFromEvents(events, pause);
@@ -159,7 +155,7 @@ export function resumeMoveOf(
 
 // Moves the task back with the events of extra after the resume event, in one transaction. detail goes into the resume
 // event.
-export function applyResumeMove(
+function applyResumeMove(
   store: TaskStore,
   task: Task,
   events: readonly TaskEvent[],
