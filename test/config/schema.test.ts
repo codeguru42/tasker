@@ -780,3 +780,49 @@ describe("parseConfig named trackers", () => {
     expect(raw).toEqual(withLanding);
   });
 });
+
+describe("parseConfig skillsDirs", () => {
+  function withSkillsDirs(skillsDirs: unknown): Record<string, unknown> {
+    return { ...validConfig(), skillsDirs };
+  }
+
+  it("gives ~/.claude/skills, expanded, as the default", () => {
+    expect(parseConfig(validConfig(), {}, home).skillsDirs).toEqual(["/home/me/.claude/skills"]);
+  });
+
+  it("expands ~ and each variable in skillsDirs", () => {
+    const raw = withSkillsDirs(["~/a", "$ROOT/b", "${ROOT}/c"]);
+    expect(parseConfig(raw, { ROOT: "/srv" }, home).skillsDirs).toEqual(["/home/me/a", "/srv/b", "/srv/c"]);
+  });
+
+  it("rejects a relative folder in skillsDirs", () => {
+    expect(issuesOf(withSkillsDirs(["/ok", "rel"]))).toContainEqual(
+      expect.stringMatching(/^skillsDirs\.1: must resolve to an absolute path/),
+    );
+  });
+
+  it("rejects a skillsDirs folder with an undefined or empty variable", () => {
+    expect(issuesOf(withSkillsDirs(["$UNSET/x"]))).toContainEqual(expect.stringMatching(/^skillsDirs\.0: .*\$UNSET/));
+    expect(issuesOf(withSkillsDirs(["$EMPTY/x"]), { EMPTY: "" })).toContainEqual(
+      expect.stringMatching(/^skillsDirs\.0: .*\$EMPTY/),
+    );
+  });
+
+  it("rejects an empty skillsDirs", () => {
+    expect(issuesOf(withSkillsDirs([]))).toContain("skillsDirs: Too small: expected array to have >=1 items");
+  });
+
+  it("rejects a skillsDirs that is not a list of strings", () => {
+    expectIssueAt(issuesOf(withSkillsDirs("~/x")), "skillsDirs");
+    expectIssueAt(issuesOf(withSkillsDirs([1])), "skillsDirs.0");
+  });
+
+  it("reports each skillsDirs problem with the other problems in one run", () => {
+    const raw = { ...withSkillsDirs(["rel", "$UNSET/x"]), dataRoot: "data" };
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(3);
+    expectIssueAt(issues, "skillsDirs.0");
+    expectIssueAt(issues, "skillsDirs.1");
+    expectIssueAt(issues, "dataRoot");
+  });
+});
