@@ -102,4 +102,4 @@ A failed read of the state of the worktree counts as not back at the start. `tas
 
 A crash during the command leaves the task in `updating_branch` with its run marker. The next command that reads the task moves it to `interrupted`.
 
-Run `tasker resume` for a task in `interrupted` that stopped in `updating_branch`. The command moves the task back to its origin state and prints `run tasker update-branch <issue key> again`. [`tasker resume`](recovery.md#tasker-resume) says what to do before you run `tasker update-branch` again.
+Run `tasker resume` for a task in `interrupted` that stopped in `updating_branch`. The command moves the task back to its origin state and prints `run tasker update-branch <issue key> again`. Before the move, `tasker resume` first puts the worktree back at the head from before the update. [`tasker resume`](recovery.md#tasker-resume) gives the details.
