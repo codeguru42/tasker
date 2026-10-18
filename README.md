@@ -19,6 +19,7 @@ tasker takes an issue from an issue tracker and drives an AI coding assistant th
 5. Make the package file: `npm pack`
 6. Install the package file: `npm install -g ./tasker-<version>.tgz`
 7. Make sure that `tasker --version` prints `<version>`.
+8. Run `tasker install-skills`, so that an assistant finds the `tasker` skill.
 
 For an update, do the same steps with the tag of the new version.
 
