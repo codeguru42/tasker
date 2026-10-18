@@ -36,3 +36,4 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/phases.md](docs/dev/phases.md): the phases: the environment of a phase, the deadline, the stop rules, the log and the marker.
 - [docs/dev/assistants.md](docs/dev/assistants.md): the assistant provider interface: its purpose, the rule "refuse, never drop", the session id, the prompt on stdin and the provider of a new and a continued session.
 - [docs/dev/release.md](docs/dev/release.md): the releases: the definition of a version, the steps to make a new version, the reason of the tag and the npm facts of the package file.
+- [docs/dev/setup.md](docs/dev/setup.md): the steps to set up a new machine for an orchestrator: the tools, the local clone, the installed tasker and its configuration, and the Claude Code settings, skills and plugin.
