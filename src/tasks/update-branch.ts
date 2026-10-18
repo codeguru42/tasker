@@ -154,7 +154,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         synced = { sync: "fast-forward", remoteTip: remote.revision };
       } else if (remote.relation === "diverged") {
         throw new Error(
-          `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${task.issueKey} again`,
+          `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${task.issueKey} again, or run tasker update-branch ${task.issueKey} --take-remote to take origin/${branch}`,
         );
       }
       const resynced: Pick<ResyncResult, "how" | "head"> = contains
