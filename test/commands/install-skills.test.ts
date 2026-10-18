@@ -96,10 +96,14 @@ describe("install-skills", () => {
     const good = join(base, "good");
     useSkillsDirs([bad, good]);
 
-    const { code, err } = await install(source);
+    const { code, out, err } = await install(source);
 
     expect(code).toBe(1);
     expect(err.startsWith(`error: cannot install alpha to ${bad}/alpha: `)).toBe(true);
+    expect(err.endsWith("\n")).toBe(true);
+    expect(err.split("\n")).toHaveLength(2);
+    expect(err).not.toContain("install tasker");
+    expect(out).toBe(`installed alpha to ${good}/alpha\ninstalled tasker to ${good}/tasker\n`);
     expect(existsSync(join(good, "tasker", "SKILL.md"))).toBe(true);
     expect(existsSync(join(good, "alpha", "SKILL.md"))).toBe(true);
     expect(readFileSync(plain, "utf8")).toBe("plain text\n");
