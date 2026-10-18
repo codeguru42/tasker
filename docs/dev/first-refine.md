@@ -47,6 +47,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - For [a fact test](orchestration.md#the-fact-test) in a scratch repo, make a new folder inside [the folder of the agent](orchestration.md#limits) with `mkdir`. Do not clear a folder with `rm -rf`. On #231, a Bash call with `rm -rf` drew a permission prompt. The same test in a new folder ran with no prompt.
 - If a script for [a fact test](orchestration.md#the-fact-test) in [the folder of the agent](orchestration.md#limits), outside the repo, uses top-level `await`, give the script the extension `.mts`. No `package.json` in that folder sets `"type": "module"`. As a result, `tsx` builds a `.ts` file there as CommonJS and refuses top-level `await`. On #225, `tsx` refused such a `.ts` script, and the same script ran as `.mts`.
 - For [a fact test](orchestration.md#the-fact-test) about `grep`, call `/usr/bin/grep`. In the Bash tool of an agent, `grep` is a shell function that runs `ugrep`, not GNU grep. On #280, the agent measured its pattern with GNU grep 3.11.
+- To read a value in a scratch test, for example the real error of a git command, write the value to a file in [the folder of the agent](orchestration.md#limits), for example with `appendFileSync`. On #287, the output of `console.log` in a scratch test did not show in the output of `npm test`. The write to a file showed the error.
 - If an issue records an output of [the installed tasker](orchestration.md) that the agent cannot measure, say so in the feedback text and in [the comment of step 11](orchestration.md#run-one-ticket). Name the issue as the source of the output. On #240, the agent had no task in the state that prints the output.
 - In a feedback text, name a file [outside the worktree](orchestration.md#the-repo-files-rule) only as "a file outside the worktree". On #252, refine 1 named the location of such a file, the plan copied the name, and refine 2 had to remove it.
 - If the issue gives the exact form of a line, for example an index line of `AGENTS.md`, say "no other words after the colon" in the first refine. Otherwise the plan adds a lead-in, as other lines have. On #151, this cost one refine.
@@ -104,6 +105,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - A promise in a doc about the environment names exactly what tasker removes and what still passes. A broad sentence such as "the caller cannot pass X" causes a finding.
 - A test that must move a ref of origin between a tip read and a push cannot use a pre-receive hook. With git 2.47.3, a ref update inside the hook fails with `ref updates forbidden inside quarantine environment`. Use a git wrapper first on PATH that runs a command before each push. `test/helpers/git.ts` holds such a wrapper since #43. Each command inside the wrapper calls the real git by its path. A plain `git` inside the wrapper runs the wrapper again.
 - Before the landing, the agent runs each test file of a command that makes git commits, for example with a rebase or a merge, with the global git configuration hidden: `GIT_CONFIG_GLOBAL=/dev/null npm test -- <test file>`. Then the tests run with no global git identity, as on the GitHub runner ([Tests](code-conventions.md#tests)). On #273, 21 tests of `test/commands/update-branch.test.ts` passed on the local machine and failed on CI. #287 fixed them.
+- To find each test that needs [a git identity](code-conventions.md#tests), run the whole test suite with no global and no system git configuration: `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm test`. On #287, this run took about 30 seconds. It showed that only the tests of `test/commands/update-branch.test.ts` had the gap.
 
 ## A ticket that adds a check of `tasker doctor`
 
@@ -146,6 +148,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 - Name the import rule of `test/fixtures/` ([code-conventions.md](code-conventions.md#layout)).
 - The agent can record fixture data on the local machine and put it in the refine with "write them exactly as given". About 45 KB worked. Then the agent compares each file with `cmp` against `tasker/<task branch>`.
+- If an issue asks that each test of a file gets a value from a fixture, ask the plan to name the fixture that each test of the file calls. Ask the plan to put the value in the inner fixture. Then the value reaches the tests that call the inner fixture and the tests that call an outer fixture that calls it. On #287, plan v1 put the git identity in `useMovedBaseTask`. Some tests of `test/commands/update-branch.test.ts` call `useWorkReviewTask` directly, so refine 1 moved the identity into `useWorkReviewTask`.
 
 ## A ticket that changes a procedure doc
 
