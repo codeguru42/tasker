@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BaseHintError, type Issue, baseBranchHint, inProgressMarker } from "../../src/issues/issue.js";
+import { thrownBy } from "../helpers/errors.js";
 
 function issueWith(labels: string[]): Issue {
   return {
@@ -29,22 +30,21 @@ describe("baseBranchHint", () => {
     ["base:fêature-ü", "fêature-ü"],
     ["base:🚀", "🚀"],
     ["base:refs/heads/x", "refs/heads/x"],
+    ["Base:x", "x"],
+    ["BASE:x", "x"],
+    ["bAsE:x", "x"],
+    ["base:Mixed-Case", "Mixed-Case"],
   ])("reads the hint of the label %j as %j", (label, hint) => {
     expect(baseBranchHint(issueWith(["bug", label]))).toBe(hint);
   });
 
-  it.each(["BASE:x", "Base:x", " base:x", "bug fix", "basement"])("gives undefined for the label %j", (label) => {
+  it.each(["\u212Aase:x", " base:x", "bug fix", "basement"])("gives undefined for the label %j", (label) => {
     expect(baseBranchHint(issueWith([label]))).toBeUndefined();
   });
 
   it.each(["base:", "base:   ", "base: \t "])("throws BaseHintError for the empty label %j", (label) => {
     const issue = issueWith([label]);
-    let error: unknown;
-    try {
-      baseBranchHint(issue);
-    } catch (caught) {
-      error = caught;
-    }
+    const error = thrownBy(() => baseBranchHint(issue), "a BaseHintError");
     expect(error).toBeInstanceOf(BaseHintError);
     const hintError = error as BaseHintError;
     expect(hintError.labels).toEqual([label]);
@@ -65,13 +65,16 @@ describe("baseBranchHint", () => {
       ["base:", "base:main"],
       ["base:", "base:main"],
     ],
+    [
+      ["base:a", "BASE:b"],
+      ["base:a", "BASE:b"],
+    ],
+    [
+      ["base:main", "Base:main"],
+      ["base:main", "Base:main"],
+    ],
   ])("throws BaseHintError for the labels %j", (labels, found) => {
-    let error: unknown;
-    try {
-      baseBranchHint(issueWith(labels));
-    } catch (caught) {
-      error = caught;
-    }
+    const error = thrownBy(() => baseBranchHint(issueWith(labels)), "a BaseHintError");
     expect(error).toBeInstanceOf(BaseHintError);
     const hintError = error as BaseHintError;
     expect(hintError.labels).toEqual(found);
