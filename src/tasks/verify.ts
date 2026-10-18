@@ -9,8 +9,9 @@ import { verifyCommandLogPath, verifyRunDir } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import type { NewVerifyRun, TaskStore } from "../store/store.js";
 import { type UncommittedChange, uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
+import { hasLanded, parentOf } from "./parent.js";
 import { failRun } from "./run-outcome.js";
-import { requireWorktree, taskInState } from "./task-state.js";
+import { requireBase, requireWorktree, taskInState } from "./task-state.js";
 
 export interface VerifyRequest {
   config: Config;
@@ -47,6 +48,13 @@ async function verifyLocked(store: TaskStore, request: VerifyRequest): Promise<V
   const { config, env, io } = request;
   const task = taskInState(store, request.taskId, "verify");
   const worktreePath = requireWorktree(task);
+  // A run on a task whose parent landed would test a tree without the current base.
+  const parent = parentOf(store, task);
+  if (parent !== undefined && hasLanded(parent)) {
+    throw new Error(
+      `the parent ${parent.issueKey} of ${task.issueKey} has landed; run tasker update-branch ${task.issueKey} to move the task onto ${requireBase(parent)} first`,
+    );
+  }
   const repo = config.repos[task.repoKey];
   const number = store.nextVerifyRun(task.id);
   const startedAt = new Date().toISOString();
