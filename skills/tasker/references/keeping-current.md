@@ -38,7 +38,7 @@ On success, the command prints these lines on stdout:
 
 - `synced <task branch> from origin/<task branch> at <remote tip> by fast-forward` first, only when the sync step moved the head.
 - `<issue key> is current with <base> at <base tip>; nothing moved` when the base step did not move the head. The line describes only the base step.
-- `moved <issue key> onto <base> at <base tip> by <how>: <head before> to <head after>` when the head moved. The value of `<how>` is `fast-forward`, `rebase` or `merge`.
+- `moved <issue key> onto <base> at <base tip> by <how>: <head before> to <head after>` when the base step moved the head. `<head before>` is the head at the start of the base step. The value of `<how>` is `fast-forward`, `rebase` or `merge`.
 - `demoted <issue key> from <origin> to <target>` only when the target differs from the origin state.
 - `state: <state>` as the last line.
 
