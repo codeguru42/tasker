@@ -316,7 +316,6 @@ These reasons explain its rules:
 - A refine needs feedback, and tasker can refuse a plan again. A promotion from `reviewed` and a feedback refine from `awaiting_work_review` also need you again, because the findings or the feedback can change. So retry runs nothing for the origin `refining`. It moves the task back to the state of the origin of the refine and prints a hint, and you decide the next step.
 - A merge that failed can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on the base, so a second run lands the task with no second push.
 - After a turn that pushed, `tasker execute` moves the task to its pause first, and the push guard then fails the task. So the last move into `failed` comes from the pause, and retry reads the origin of the pause.
-- A resume from `updating_branch` runs nothing. A crash during `tasker update-branch` can leave the worktree in a rebase or with changes, so the operator looks at the worktree before the next `tasker update-branch`.
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait, so retry must release the lock first.
 - The fix turn gets the tail of the log from tasker, not from the sandbox. The log is in the data root, outside the worktree, and the sandbox gives the shell only the worktree. The bound of 200 lines and 64 KiB keeps a large log out of the prompt.
 - The tail comes only from the verify run of this failure. Some verify failures record no run, and then the latest run belongs to an earlier verify. Its log gives the fix turn false data, so the fix turn gets no tail.
@@ -337,6 +336,7 @@ These reasons explain its rules:
 - A verify run has no session, so the verify runs again from the first command.
 - A merge that stopped can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on the base, so a second run lands the task with no second push.
 - Each cleanup step of `tasker finish` skips what is done, so a second run finishes the rest. The target of `finishing` is `landed`, also when the task came from `cleanup_failed`, because `tasker finish` runs from `landed` with the same steps.
+- A resume from `updating_branch` runs nothing. A crash during `tasker update-branch` can leave the worktree in a rebase or with changes, so the operator looks at the worktree before the next `tasker update-branch`.
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait (see [The locks](#the-locks)), so resume must release the lock first.
 
 The command has these limits:
