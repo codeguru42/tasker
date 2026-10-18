@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { useProcessEnv, useTempDir, useTempFile, useTempHome } from "./temp.js";
+import { useProcessEnv, useTempDir, useTempFile, useTempHome, writeFileWithParents } from "./temp.js";
 
 describe("useTempDir", () => {
   let saved = "";
@@ -72,5 +72,26 @@ describe("useTempHome", () => {
     const env = useTempHome();
     expect(existsSync(env.HOME)).toBe(true);
     expect(env.XDG_CONFIG_HOME).toBe(join(env.HOME, "config"));
+  });
+});
+
+describe("writeFileWithParents", () => {
+  it("writes the text to a file in a missing nested folder", () => {
+    const dir = useTempDir("tasker-write-parents-");
+    const path = join(dir, "a", "b", "note.txt");
+
+    writeFileWithParents(path, "hello\n");
+
+    expect(readFileSync(path, "utf8")).toBe("hello\n");
+  });
+
+  it("replaces the text of a file that exists", () => {
+    const dir = useTempDir("tasker-write-parents-");
+    const path = join(dir, "a", "note.txt");
+    writeFileWithParents(path, "old\n");
+
+    writeFileWithParents(path, "new\n");
+
+    expect(readFileSync(path, "utf8")).toBe("new\n");
   });
 });
