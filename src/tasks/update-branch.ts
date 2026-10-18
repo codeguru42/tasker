@@ -53,6 +53,8 @@ export type BranchUpdated = SyncOutcome & {
   // The head at the start of the base step. After a move of the sync step, this is the remote tip.
   headBefore: string;
   headAfter: string;
+  // The key of the parent that the task is no longer stacked on, set when the parent landed.
+  unstackedFrom?: string;
   // The state of the task before the command.
   origin: TaskState;
   // The state of the task after the command.
@@ -96,8 +98,18 @@ async function requireParentBranch(vcs: VcsProvider, ctx: VcsContext, parent: Ta
   }
 }
 
-// The base step of a task stacked on a parent that is in flight. The tip of the branch of the parent is the new tip.
-// Nothing moves when the task branch already contains it. Otherwise the step replays the commits after the merge base
+// The base of a task whose parent landed: the base of the parent, and the stored revision of that base. The parent
+// must not be stacked too.
+function landedParentBase(store: TaskStore, task: Task, parent: Task): { base: string; revision: string } {
+  const base = requireBase(parent);
+  if (base.startsWith(LOCAL_PREFIX)) {
+    throw new Error(`the parent ${parent.issueKey} of ${task.issueKey} is stacked too; its base is ${base}`);
+  }
+  return { base, revision: requireBaseRevision(store, parent) };
+}
+
+// The base step of a stacked task. The new tip is the tip of the branch of the parent while the parent is in flight,
+// and the tip of the base of the parent after the parent landed. Nothing moves when the task branch already contains it. Otherwise the step replays the commits after the merge base
 // onto it, with a rebase.
 async function stackedBaseStep(
   vcs: VcsProvider,
@@ -169,9 +181,13 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
     let synced: SyncOutcome = { sync: "none" };
     let syncedHead = before.head;
     try {
-      const inFlight = parent !== undefined && !hasLanded(parent);
-      if (inFlight) await requireParentBranch(vcs, ctx, parent, base);
-      const { revision, baseTip, contains } = await vcs.baseContainment(ctx, { taskRef: branch, baseRevision });
+      const landed = parent !== undefined && hasLanded(parent);
+      const target = landed ? landedParentBase(store, task, parent) : { base, revision: baseRevision };
+      if (parent !== undefined && !landed) await requireParentBranch(vcs, ctx, parent, base);
+      const { revision, baseTip, contains } = await vcs.baseContainment(ctx, {
+        taskRef: branch,
+        baseRevision: target.revision,
+      });
       const remote = await vcs.fetchedRemoteTaskRef(ctx, { taskRef: branch, revision });
       if (remote.state === "absent") {
         synced = { sync: "absent" };
@@ -190,19 +206,26 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       }
       // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
       const upToDate = contains && synced.sync !== "take-remote";
-      const resynced: Pick<ResyncResult, "how" | "head"> = inFlight
-        ? await stackedBaseStep(vcs, ctx, { path, baseTip, contains: upToDate, syncedHead })
-        : upToDate
-          ? { how: "none", head: syncedHead }
-          : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
+      const resynced: Pick<ResyncResult, "how" | "head"> =
+        parent !== undefined
+          ? await stackedBaseStep(vcs, ctx, { path, baseTip, contains: upToDate, syncedHead })
+          : upToDate
+            ? { how: "none", head: syncedHead }
+            : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
       const moved = "remoteTip" in synced || resynced.how !== "none";
       const state = moved ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
       if (moved) {
-        writes.base = { base, revision: baseRevision, source: "update" };
+        writes.base = { ...target, source: "update" };
         if (origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       }
-      const after: BranchSnapshot = { ...before, head: resynced.head };
+      // After the parent landed, the base switches also when the head does not move.
+      if (landed) writes.base = { ...target, source: "parent" };
+      const after: BranchSnapshot = {
+        head: resynced.head,
+        base: writes.base?.base ?? base,
+        baseRevision: writes.base?.revision ?? baseRevision,
+      };
       transitionWithBranchUpdate(
         store,
         task.id,
@@ -212,8 +235,9 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       );
       return {
         issueKey: task.issueKey,
-        base,
+        base: target.base,
         baseTip,
+        ...(landed ? { unstackedFrom: parent.issueKey } : {}),
         branch,
         ...synced,
         how: resynced.how,

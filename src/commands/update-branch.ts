@@ -66,6 +66,9 @@ async function updateBranchIssue(
       `moved ${result.issueKey} onto ${result.base} at ${result.baseTip} by ${result.how}: ${result.headBefore} to ${result.headAfter}\n`,
     );
   }
+  if (result.unstackedFrom !== undefined) {
+    io.stdout(`${result.issueKey} is no longer stacked on ${result.unstackedFrom}\n`);
+  }
   if (result.state !== result.origin) {
     io.stdout(`demoted ${result.issueKey} from ${result.origin} to ${result.state}\n`);
   }
