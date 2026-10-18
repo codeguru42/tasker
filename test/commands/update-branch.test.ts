@@ -63,7 +63,7 @@ describe("tasker update-branch", () => {
     expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
     const snapshot = { head, base: "main", baseRevision: BASE_REVISION };
     expect(eventsAfter(work, count)).toMatchObject([
-      { type: "transition", data: { from: "awaiting_work_review", to: "updating_branch" } },
+      { type: "transition", data: { head, from: "awaiting_work_review", to: "updating_branch" } },
       {
         type: "branch_updated",
         data: { before: snapshot, after: snapshot, how: "none", from: "updating_branch", to: "awaiting_work_review" },
@@ -110,7 +110,7 @@ describe("tasker update-branch", () => {
     expect(eventsAfter(work, count)).toEqual([
       expect.objectContaining({
         type: "transition",
-        data: { from: "awaiting_work_review", to: "updating_branch" },
+        data: { head, from: "awaiting_work_review", to: "updating_branch" },
       }),
       expect.objectContaining({
         type: "base",
