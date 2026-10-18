@@ -21,6 +21,7 @@ The orchestration pages are `docs/dev/orchestration.md` and the pages of this li
 - [docs/dev/tasker-commands.md](tasker-commands.md): the plain-form rule, the tool-block rule, the command rules, the facts of the installed tasker and the run times.
 - [docs/dev/verify-failures.md](verify-failures.md): the verify-failure rule, the broken-commit steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](ci-wait.md): the CI wait and "A failed CI run".
+- [docs/dev/review-findings.md](review-findings.md): "Review findings".
 
 ## Land the work
 

@@ -20,6 +20,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/tasker-commands.md](docs/dev/tasker-commands.md): the plain-form rule, the tool-block rule, the command rules, the facts of the installed tasker and the run times.
 - [docs/dev/verify-failures.md](docs/dev/verify-failures.md): the verify-failure rule, the broken-commit steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the CI wait and "A failed CI run".
+- [docs/dev/review-findings.md](docs/dev/review-findings.md): "Review findings".
 - [docs/dev/planning.md](docs/dev/planning.md): the rules for a planning session that plans a milestone and writes its issues: the order of the work, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the operator.
 - [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, and the steps of the planning session for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user: a decision of the user, a question of the user, core features first and the work that waits, simplify over special rules, and the tools of a session.
