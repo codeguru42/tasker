@@ -165,7 +165,7 @@ Moves a task in `failed` back to the state before the step that failed, and runs
 
 ### `tasker resume`
 
-Moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again. See [the reference](references/recovery.md#tasker-resume).
+Moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again. A resume from `updating_branch` runs nothing. See [the reference](references/recovery.md#tasker-resume).
 
 ### `tasker approve-credits`
 
