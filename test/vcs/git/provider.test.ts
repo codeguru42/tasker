@@ -2,6 +2,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { BaseBranchMemory } from "../../../src/vcs/provider.js";
+import { checkSummaries } from "../../helpers/doctor.js";
 import {
   DENY_RULES,
   EXECUTE_COMMIT_TEXT,
@@ -506,9 +507,7 @@ describe("createGitProvider", () => {
         })),
         ...o,
       });
-      const summary = (list: typeof checks) =>
-        list.map(({ name, required, timeoutMs }) => ({ name, required, timeoutMs }));
-      expect(summary(checks)).toEqual(summary(direct));
+      expect(checkSummaries(checks)).toEqual(checkSummaries(direct));
     });
   });
 });

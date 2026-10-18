@@ -14,6 +14,7 @@ import type { GitVcsConfig } from "../../../src/vcs/git/config.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { type ProcView, readProcView } from "../../../src/vcs/git/stale-locks.js";
+import { checkSummaries } from "../../helpers/doctor.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
 import {
@@ -448,7 +449,7 @@ describe("gitDoctorChecks", () => {
   }
 
   it("gives the version check, then three checks for each repo", () => {
-    expect(checks().map(({ name, required, timeoutMs }) => ({ name, required, timeoutMs }))).toEqual([
+    expect(checkSummaries(checks())).toEqual([
       { name: "git version", required: true, timeoutMs: 5000 },
       { name: "git identity: a/one", required: false, timeoutMs: 5000 },
       { name: "git connection: a/one", required: true, timeoutMs: 30000 },

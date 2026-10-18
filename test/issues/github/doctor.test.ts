@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { checkSummaries } from "../../helpers/doctor.js";
 import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
 import { useTempDir } from "../../helpers/temp.js";
 
@@ -464,8 +465,6 @@ describe("gh doctor checks", () => {
       const { issueTracker } = githubRepo("j/jira");
       return { key: "j/jira", issueTracker: { ...issueTracker, provider: "jira" } as Tracker };
     };
-    const summary = (checks: { name: string; required: boolean; timeoutMs: number }[]) =>
-      checks.map(({ name, required, timeoutMs }) => ({ name, required, timeoutMs }));
 
     it("gives no check when no repo uses the github tracker", () => {
       expect(doctor.githubDoctorChecks([])).toEqual([]);
@@ -479,7 +478,7 @@ describe("gh doctor checks", () => {
         githubRepo("a/two"),
         githubRepo("b/three", { account: "hubot" }),
       ]);
-      expect(summary(checks)).toEqual([
+      expect(checkSummaries(checks)).toEqual([
         { name: "gh version", required: true, timeoutMs: 5000 },
         { name: "gh auth: octo", required: true, timeoutMs: 15000 },
         { name: "gh auth: hubot", required: true, timeoutMs: 15000 },
