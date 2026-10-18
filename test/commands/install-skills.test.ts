@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { installSkillsFrom } from "../../src/commands/install-skills.js";
@@ -6,8 +6,7 @@ import { runCommand } from "../helpers/cli.js";
 import { useConfigFile, validConfig } from "../helpers/config.js";
 import { treeSnapshot, useTempDir, writeFileWithParents } from "../helpers/temp.js";
 
-function makeSource(): string {
-  const source = useTempDir("tasker-skills-source-");
+function makeSource(source = useTempDir("tasker-skills-source-")): string {
   writeFileWithParents(join(source, "tasker", "SKILL.md"), "tasker skill\n");
   writeFileWithParents(join(source, "tasker", "references", "setup.md"), "setup\n");
   writeFileWithParents(join(source, "alpha", "SKILL.md"), "alpha skill\n");
@@ -103,6 +102,46 @@ describe("install-skills", () => {
     expect(existsSync(join(good, "alpha", "SKILL.md"))).toBe(true);
     expect(readFileSync(plain, "utf8")).toBe("plain text\n");
     expect(existsSync(bad)).toBe(false);
+  });
+
+  it.each([
+    [
+      "the skills folder of tasker",
+      () => {
+        const source = makeSource();
+        return { source, entry: source };
+      },
+    ],
+    [
+      "a symbolic link to the skills folder of tasker",
+      (base: string) => {
+        const source = makeSource();
+        const entry = join(base, "link");
+        symlinkSync(source, entry);
+        return { source, entry };
+      },
+    ],
+    [
+      "a path through a symbolic link to a parent of the skills folder of tasker",
+      (base: string) => {
+        const source = makeSource(join(base, "real", "skills"));
+        symlinkSync(join(base, "real"), join(base, "parent"));
+        return { source, entry: join(base, "parent", "skills") };
+      },
+    ],
+  ])("refuses %s", async (_name, setup) => {
+    const base = useTempDir("tasker-skills-target-");
+    const { source, entry } = setup(base);
+    const good = join(base, "good");
+    useSkillsDirs([entry, good]);
+    const before = treeSnapshot(source);
+
+    const { code, out, err } = await install(source);
+
+    expect(code).toBe(1);
+    expect(err).toBe(`error: cannot install to ${entry}: it is the skills folder of tasker\n`);
+    expect(out).toBe(`installed alpha to ${good}/alpha\ninstalled tasker to ${good}/tasker\n`);
+    expect(treeSnapshot(source)).toEqual(before);
   });
 
   it("copies nothing when the configuration does not load", async () => {
