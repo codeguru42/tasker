@@ -49,7 +49,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 ## `tasker resume`
 
-Moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again: `tasker resume <issue>`.
+Moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs the same command again, except for a task that stopped in `updating_branch`, which runs nothing: `tasker resume <issue>`.
 
 The command reads the origin. The origin is the state that the task left when the run stopped. The command looks up the origin in this table:
 
@@ -62,19 +62,26 @@ The command reads the origin. The origin is the state that the task left when th
 - `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review number, and then runs `tasker review`, which starts a new session.
 - `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to `landed`.
 - `finishing`: the task goes to `landed`, and the command runs `tasker finish`. The target is `landed` also when the task came to `finishing` from `cleanup_failed`. Each cleanup step skips what is already done.
+- `updating_branch`: only a task in `interrupted` has this origin. The task goes back to the origin of the update, which is the state that it left when `tasker update-branch` started. The command runs nothing. A crash during `tasker update-branch` can leave the worktree in a rebase or with changes, so you look at the worktree before you run `tasker update-branch` again.
 
 The command prints this line on stdout, then releases the task lock and runs the next command:
 
 - `resumed <issue key>: paused in <origin>, back in <target>`
 
-The next command keeps its own output, its own errors and its own exit code. The reference section of the next command gives them. If the assistant never created the session that the next command continues, the next command fails. Then `tasker retry` starts a new session.
+For a task that stopped in `updating_branch`, the command prints a second line on stdout after the move is written, and then stops with exit code 0:
+
+- `run tasker update-branch <issue key> again`
+
+For the other origins, the next command keeps its own output, its own errors and its own exit code. The reference section of the next command gives them. If the assistant never created the session that the next command continues, the next command fails. Then `tasker retry` starts a new session.
 
 The command does not wait for the reset time of a quota limit. You decide when to run it. If the run of the task is dead, the note of the dead run comes on stderr first. See [A dead run](../SKILL.md#a-dead-run).
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state and the command writes nothing. If the run of the task is dead, the task moves to `interrupted` before the checks (see [A dead run](../SKILL.md#a-dead-run)). The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
 - The task is in a state other than `quota_blocked` or `interrupted`. The error is `the task of <issue key> is in <state>; tasker resume needs quota_blocked or interrupted`, then the commands that the state accepts. For a task in `awaiting_quota_approval`, run [`tasker approve-credits`](#tasker-approve-credits).
-- The task paused from a state that resume has no step for. The error is `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task that paused in `merging` after a move from a state other than `accepted` gets this error too.
+- The task paused from a state that resume has no step for. The error is `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task that paused in `merging` after a move from a state other than `accepted` gets this error too. A task in `quota_blocked` that paused from `updating_branch` gets this error, and so does an update whose origin has no record.
+
+A resume to `failed` writes a move from `interrupted` to `failed`. The last move into `failed` then comes from `interrupted`, so `tasker retry` has no step for the task.
 
 ## `tasker approve-credits`
 

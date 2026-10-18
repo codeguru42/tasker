@@ -73,3 +73,5 @@ When a step fails after the move to `updating_branch`, the command prints the er
 A failed read of the state of the worktree counts as not back at the start. `tasker retry` has no row for a task that failed in `updating_branch`. After a failed restore, run the git commands that the error names. Then run `tasker update-branch` again from `failed`, or run `tasker abort` to end the task.
 
 A crash during the command leaves the task in `updating_branch` with its run marker. The next command that reads the task moves it to `interrupted`.
+
+Run `tasker resume` for a task in `interrupted` that stopped in `updating_branch`. The command moves the task back to its origin state and prints `run tasker update-branch <issue key> again`. Look at the worktree first. Then run `tasker update-branch` again.
