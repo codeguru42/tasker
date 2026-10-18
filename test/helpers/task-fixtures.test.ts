@@ -13,7 +13,7 @@ import { changedPaths } from "../../src/vcs/git/changes.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { failureOf } from "./errors.js";
-import { githubBlockersAnswer, githubWriteAnswer, trackerWriteCalls } from "./fake-gh.js";
+import { githubBlockersAnswer, trackerWriteCalls } from "./fake-gh.js";
 import { GIT_TEST_IDENTITY, commitInWorktree, gitOutput, localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { answerStream, planTodo, validPlanAnswer } from "./plan.js";
@@ -63,6 +63,8 @@ import {
   useMovedBaseTask,
   useWorkReviewTask,
   type StartFixture,
+  fixtureTrackerAnswer,
+  fixtureTrackerCall,
 } from "./task-fixtures.js";
 
 // The ref of codeguru42/tasker#<n> in the repo of the fixture, with the short ref that the code makes.
@@ -895,17 +897,53 @@ describe("moveTaskThrough", () => {
 
 describe("useStartFixture with ghAnswers", () => {
   it("adds the answers after the token and issue answers", async () => {
-    const answer = githubWriteAnswer({
-      project: "codeguru42/tasker",
-      number: 5,
-      verb: "edit",
-      rest: ["--add-assignee", "@me"],
-    });
+    const answer = fixtureTrackerAnswer("assign");
     const fixture = await useStartFixture({ ghAnswers: [answer] });
     const result = spawnSync("gh", [...answer.args], { env: fixture.gh.env, encoding: "utf8" });
 
     expect(result.status).toBe(0);
     expect(trackerWriteCalls(fixture.gh)).toEqual([[...answer.args]]);
+  });
+});
+
+describe("fixtureTrackerCall", () => {
+  it.each([
+    ["assign", ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-assignee", "@me"]],
+    ["inProgress", ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "in progress"]],
+    ["clearInProgress", ["issue", "edit", "5", "-R", "codeguru42/tasker", "--remove-label", "in progress"]],
+    ["doneLabel", ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "done"]],
+    ["close", ["issue", "close", "5", "-R", "codeguru42/tasker", "--reason", "completed"]],
+  ] as const)("gives the argument list of %s", (write, expected) => {
+    expect(fixtureTrackerCall(write)).toEqual(expected);
+  });
+});
+
+describe("fixtureTrackerAnswer", () => {
+  it.each(["assign", "inProgress", "clearInProgress", "doneLabel", "close"] as const)(
+    "answers the call of %s and has no failure",
+    (write) => {
+      const answer = fixtureTrackerAnswer(write);
+
+      expect([...answer.args]).toEqual(fixtureTrackerCall(write));
+      expect(answer.stderr).toBeUndefined();
+      expect(answer.exitCode).toBeUndefined();
+    },
+  );
+
+  it("passes a failure to the answer", () => {
+    const answer = fixtureTrackerAnswer("assign", { stderr: "x\n", exitCode: 1 });
+
+    expect(answer.stderr).toBe("x\n");
+    expect(answer.exitCode).toBe(1);
+  });
+
+  it("works in useStartFixture, and trackerWriteCalls logs the call", async () => {
+    const fixture = await useStartFixture({ ghAnswers: [fixtureTrackerAnswer("close", { exitCode: 3 })] });
+
+    const result = spawnSync("gh", fixtureTrackerCall("close"), { env: fixture.gh.env, encoding: "utf8" });
+
+    expect(result.status).toBe(3);
+    expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("close")]);
   });
 });
 

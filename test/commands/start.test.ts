@@ -13,7 +13,6 @@ import {
   blockersGraphqlArgs,
   ghTokenAnswer,
   githubBlockersAnswer,
-  githubWriteAnswer,
   trackerWriteCalls,
   writeFakeGh,
 } from "../helpers/fake-gh.js";
@@ -29,7 +28,14 @@ import {
   seedTasks,
   withDataRootStore,
 } from "../helpers/store.js";
-import { expectCommandRefused, startIssueTask, trackerRepo, useStartFixture } from "../helpers/task-fixtures.js";
+import {
+  expectCommandRefused,
+  fixtureTrackerAnswer,
+  fixtureTrackerCall,
+  startIssueTask,
+  trackerRepo,
+  useStartFixture,
+} from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -479,18 +485,6 @@ describe("start", () => {
   });
 
   describe("the tracker writes", () => {
-    const ASSIGN = ["issue", "edit", "5", "-R", PROJECT, "--add-assignee", "@me"];
-    const LABEL = ["issue", "edit", "5", "-R", PROJECT, "--add-label", "in progress"];
-    const assignAnswer = (failure: { stderr: string; exitCode: number } | object = {}) =>
-      githubWriteAnswer({ project: PROJECT, number: 5, verb: "edit", rest: ["--add-assignee", "@me"], ...failure });
-    const labelAnswer = (failure: { stderr: string; exitCode: number } | object = {}) =>
-      githubWriteAnswer({
-        project: PROJECT,
-        number: 5,
-        verb: "edit",
-        rest: ["--add-label", "in progress"],
-        ...failure,
-      });
     it("makes no write and no event when updateOnStart is false", async () => {
       const fixture = await useStartFixture({
         repo: trackerRepo({ updateOnStart: false, inProgressLabel: "in progress" }),
@@ -507,7 +501,7 @@ describe("start", () => {
     it("assigns the issue and adds the label after the fields, and records two ok events", async () => {
       const fixture = await useStartFixture({
         repo: trackerRepo({ updateOnStart: true, inProgressLabel: "in progress" }),
-        ghAnswers: [assignAnswer(), labelAnswer()],
+        ghAnswers: [fixtureTrackerAnswer("assign"), fixtureTrackerAnswer("inProgress")],
       });
 
       const result = await runCommand(start, "start", KEY);
@@ -516,7 +510,7 @@ describe("start", () => {
       expect(result.out).toBe(
         `${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\nmarked ${KEY} in progress on the tracker\n`,
       );
-      expect(trackerWriteCalls(fixture.gh)).toEqual([ASSIGN, LABEL]);
+      expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("assign"), fixtureTrackerCall("inProgress")]);
       const types = eventsOf(fixture.dataRoot, KEY).map((event) => event.type);
       expect(types.slice(-3)).toEqual(["transition", "tracker_update", "tracker_update"]);
       expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([
@@ -528,14 +522,14 @@ describe("start", () => {
     it("only assigns the issue when there is no in-progress label", async () => {
       const fixture = await useStartFixture({
         repo: trackerRepo({ updateOnStart: true }),
-        ghAnswers: [assignAnswer()],
+        ghAnswers: [fixtureTrackerAnswer("assign")],
       });
 
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
       expect(result.out).toBe(`${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\n`);
-      expect(trackerWriteCalls(fixture.gh)).toEqual([ASSIGN]);
+      expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("assign")]);
       expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([{ action: "assign", result: "ok" }]);
     });
 
@@ -543,8 +537,8 @@ describe("start", () => {
       const fixture = await useStartFixture({
         repo: trackerRepo({ updateOnStart: true, inProgressLabel: "in progress" }),
         ghAnswers: [
-          assignAnswer({ stderr: "cannot assign\nsecond line\n", exitCode: 1 }),
-          labelAnswer({ stderr: "cannot label\n", exitCode: 1 }),
+          fixtureTrackerAnswer("assign", { stderr: "cannot assign\nsecond line\n", exitCode: 1 }),
+          fixtureTrackerAnswer("inProgress", { stderr: "cannot label\n", exitCode: 1 }),
         ],
       });
 
@@ -564,7 +558,7 @@ describe("start", () => {
       expect(result.err).toContain(`warning: cannot assign ${KEY} to @me on the tracker: ${events[0].error}\n`);
       expect(result.err).toContain(`warning: cannot mark ${KEY} in progress on the tracker: ${events[1].error}\n`);
       expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("workspace_ready");
-      expect(trackerWriteCalls(fixture.gh)).toEqual([ASSIGN, LABEL]);
+      expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("assign"), fixtureTrackerCall("inProgress")]);
     });
     describe("the in-progress marker", () => {
       const marked = { project: PROJECT, number: 5, labels: ["In Progress"] };
@@ -588,14 +582,14 @@ describe("start", () => {
         const fixture = await useStartFixture({
           issues: [marked],
           repo: markerRepo(true),
-          ghAnswers: [assignAnswer(), labelAnswer()],
+          ghAnswers: [fixtureTrackerAnswer("assign"), fixtureTrackerAnswer("inProgress")],
         });
 
         const result = await runCommand(start, "start", KEY, "--reclaim");
 
         expect(result.code).toBe(0);
         expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("workspace_ready");
-        expect(trackerWriteCalls(fixture.gh)).toEqual([ASSIGN, LABEL]);
+        expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("assign"), fixtureTrackerCall("inProgress")]);
       });
 
       it("makes no check and no write for a task that is already started", async () => {

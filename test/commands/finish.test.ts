@@ -8,7 +8,7 @@ import { taskLogsDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "../helpers/cli.js";
-import { githubWriteAnswer, trackerWriteCalls } from "../helpers/fake-gh.js";
+import { trackerWriteCalls } from "../helpers/fake-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -32,6 +32,8 @@ import {
   useAcceptedTask,
   useLandedTask,
   useStartFixture,
+  fixtureTrackerAnswer,
+  fixtureTrackerCall,
 } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 
@@ -174,15 +176,10 @@ describe("finish", () => {
 });
 
 describe("finish with the tracker write", () => {
-  const LABEL_CALL = ["issue", "edit", "5", "-R", REPO, "--add-label", "done"];
-  const CLOSE_CALL = ["issue", "close", "5", "-R", REPO, "--reason", "completed"];
-  const labelAnswer = (failure: { stderr: string; exitCode: number } | object = {}) =>
-    githubWriteAnswer({ project: REPO, number: 5, verb: "edit", rest: ["--add-label", "done"], ...failure });
-
   it("adds the done label after the cleanup and before the move to finished", async () => {
     const landed = await useLandedTask({
       repo: trackerRepo({ updateOnFinish: true, doneLabel: "done" }),
-      ghAnswers: [labelAnswer()],
+      ghAnswers: [fixtureTrackerAnswer("doneLabel")],
     });
     const { dataRoot, worktree, branch } = landed;
 
@@ -195,7 +192,7 @@ describe("finish with the tracker write", () => {
         `marked ${KEY} done on the tracker\nfinished ${KEY}\n`,
       err: "",
     });
-    expect(trackerWriteCalls(landed.gh)).toEqual([LABEL_CALL]);
+    expect(trackerWriteCalls(landed.gh)).toEqual([fixtureTrackerCall("doneLabel")]);
     const events = eventsOf(dataRoot, KEY);
     expect(events.at(-2)).toEqual({ type: "tracker_update", data: { action: "done", result: "ok" } });
     expect(events.at(-1)?.data).toMatchObject({ from: "finishing", to: "finished" });
@@ -204,20 +201,20 @@ describe("finish with the tracker write", () => {
   it("closes the issue as completed when there is no done label", async () => {
     const landed = await useLandedTask({
       repo: trackerRepo({ updateOnFinish: true }),
-      ghAnswers: [githubWriteAnswer({ project: REPO, number: 5, verb: "close", rest: ["--reason", "completed"] })],
+      ghAnswers: [fixtureTrackerAnswer("close")],
     });
 
     const result = await runFinish();
 
     expect(result.code).toBe(0);
     expect(result.out).toContain(`marked ${KEY} done on the tracker\n`);
-    expect(trackerWriteCalls(landed.gh)).toEqual([CLOSE_CALL]);
+    expect(trackerWriteCalls(landed.gh)).toEqual([fixtureTrackerCall("close")]);
   });
 
   it("warns for a failed write, exits with 0 and still finishes the task", async () => {
     const landed = await useLandedTask({
       repo: trackerRepo({ updateOnFinish: true, doneLabel: "done" }),
-      ghAnswers: [labelAnswer({ stderr: "cannot label\n", exitCode: 1 })],
+      ghAnswers: [fixtureTrackerAnswer("doneLabel", { stderr: "cannot label\n", exitCode: 1 })],
     });
 
     const result = await runFinish();
@@ -233,7 +230,7 @@ describe("finish with the tracker write", () => {
     expect(event).toEqual({ action: "done", result: "failed", error: expect.stringContaining("cannot label") });
     expect(result.err).toBe(`warning: cannot mark ${KEY} done on the tracker: ${event.error}\n`);
     expect(latestTaskOf(landed.dataRoot, KEY).state).toBe("finished");
-    expect(trackerWriteCalls(landed.gh)).toEqual([LABEL_CALL]);
+    expect(trackerWriteCalls(landed.gh)).toEqual([fixtureTrackerCall("doneLabel")]);
   });
 
   it("makes no write and no event when updateOnFinish is false", async () => {

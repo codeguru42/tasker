@@ -36,6 +36,7 @@ import {
   ghTokenAnswer,
   githubBlockersAnswer,
   githubIssueAnswer,
+  githubWriteAnswer,
 } from "./fake-gh.js";
 import {
   GIT_TEST_IDENTITY,
@@ -89,6 +90,35 @@ export async function useSeededTask(
 // A test names only the keys that differ, for example trackerRepo({ updateOnStart: true }).
 export function trackerRepo(keys: Record<string, unknown>): { issueTracker: Record<string, unknown> } {
   return { issueTracker: { provider: "github", account: "codeguru42", ...keys } };
+}
+
+const FIXTURE_REPO = "codeguru42/tasker";
+
+// The tracker writes of issue 5 of the fixture repo. The labels are the ones that the tests give to trackerRepo
+// (inProgressLabel "in progress", doneLabel "done"), and the assignee is the default @me.
+const FIXTURE_TRACKER_WRITES = {
+  assign: { verb: "edit", rest: ["--add-assignee", "@me"] },
+  inProgress: { verb: "edit", rest: ["--add-label", "in progress"] },
+  clearInProgress: { verb: "edit", rest: ["--remove-label", "in progress"] },
+  doneLabel: { verb: "edit", rest: ["--add-label", "done"] },
+  close: { verb: "close", rest: ["--reason", "completed"] },
+} as const;
+
+export type FixtureTrackerWrite = keyof typeof FIXTURE_TRACKER_WRITES;
+
+// The argument list that trackerWriteCalls logs for a tracker write of issue 5 of the fixture repo.
+export function fixtureTrackerCall(write: FixtureTrackerWrite): string[] {
+  const { verb, rest } = FIXTURE_TRACKER_WRITES[write];
+  return ["issue", verb, "5", "-R", FIXTURE_REPO, ...rest];
+}
+
+// The fake gh answer for a tracker write of issue 5 of the fixture repo. A failure gives stderr and exitCode.
+export function fixtureTrackerAnswer(
+  write: FixtureTrackerWrite,
+  failure: { stderr?: string; exitCode?: number } = {},
+): FakeGhAnswer {
+  const { verb, rest } = FIXTURE_TRACKER_WRITES[write];
+  return githubWriteAnswer({ project: FIXTURE_REPO, number: 5, verb, rest: [...rest], ...failure });
 }
 
 export interface StartFixture {
@@ -147,7 +177,7 @@ export async function useStartFixture(
   const provider = await makeProviderFixture();
   onTestFinished(() => provider.remove());
   const { origin } = provider;
-  const repoKey = "codeguru42/tasker";
+  const repoKey = FIXTURE_REPO;
   const raw = validConfig();
   const repo: Record<string, unknown> = Object.fromEntries(
     Object.entries({
