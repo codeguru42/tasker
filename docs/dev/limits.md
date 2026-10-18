@@ -94,3 +94,7 @@ For a resume message during the wait, see [the resume rule](quota.md#when-the-jo
 A wait point is a place where the agent waits for an answer or a next step from the orchestrator. Each stop is a wait point. At each wait point, the orchestrator expects an interim report from the agent. The harness is the tool that runs the agent. The harness can deliver the final answer of the agent to the orchestrator in the same way as the final report. At a wait point, the agent starts its interim report with a line that says that the report is not the final report. That line also names what the agent waits for.
 
 The orchestrator does not treat an interim report as the end of the ticket. For an interim report alone, the orchestrator does not free the slot, delete a quota job or read the board for the ticket. The orchestrator still follows the bullets of [Delete the job](quota.md#delete-the-job). The orchestrator still does each read that a rule gives after a report of an agent, for example in [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule). On #160, #161 and #221, the agents ended their turns at a wait point, and a message of the orchestrator resumed each one.
+
+### The failure rule
+
+If a command or a tool call of the orchestrator fails, the orchestrator tells the user the command, or the tool, and the error. No task changes. The orchestrator does the other steps of its rule, unless the rule says that it stops or waits.
