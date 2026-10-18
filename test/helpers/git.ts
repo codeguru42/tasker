@@ -53,6 +53,16 @@ function assertBranchName(name: string): void {
   }
 }
 
+// Runs git with args at a worktree (cwd) or in a repo (gitDir) and gives the output without the leading and trailing
+// white space.
+export async function gitOutput(
+  at: { cwd: string } | { gitDir: string },
+  env: NodeJS.ProcessEnv,
+  ...args: string[]
+): Promise<string> {
+  return (await runGit(args, { ...at, env })).trim();
+}
+
 // Writes content to target, then commits all changes in folder with message and the extra
 // commit arguments. It returns the new SHA.
 async function writeAndCommit(
@@ -67,7 +77,7 @@ async function writeAndCommit(
   writeFileSync(target, content);
   await runGit(["add", "-A"], { cwd: folder, env });
   await runGit(["commit", ...commitArgs, "-m", message], { cwd: folder, env });
-  return (await runGit(["rev-parse", "HEAD"], { cwd: folder, env })).trim();
+  return gitOutput({ cwd: folder }, env, "rev-parse", "HEAD");
 }
 
 // The absolute path of file in work. It throws with refusal as the text before the file
@@ -168,7 +178,7 @@ export async function addCloneCommit(
       throw new Error(`a name must not start with "-": ${JSON.stringify(name)}`);
     }
   }
-  const git = (...args: string[]) => runGit(args, { gitDir: clone, env }).then((out) => out.trim());
+  const git = (...args: string[]) => gitOutput({ gitDir: clone }, env, ...args);
   const ref = `refs/heads/${branch}`;
   const base =
     parent ??

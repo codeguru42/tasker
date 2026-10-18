@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { removeTaskWorktree, deleteTaskBranch } from "../../src/vcs/git/worktree.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
-import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
-import { commitInWorktree, landBranchOnOriginMain } from "../helpers/git.js";
+import { commitInWorktree, gitOutput, landBranchOnOriginMain } from "../helpers/git.js";
 import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { expectCommandRefused, moveTaskThrough, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
 
@@ -15,15 +14,15 @@ const update = (fixture: StackedTasks, ...args: string[]) =>
 
 // Runs git in the clone and gives the trimmed output.
 const inClone = async (fixture: StackedTasks, ...args: string[]) =>
-  (await runGit(args, { gitDir: fixture.clone, env: fixture.env })).trim();
+  gitOutput({ gitDir: fixture.clone }, fixture.env, ...args);
 
 // Runs git in the worktree of the stacked task and gives the trimmed output.
 const inStacked = async (fixture: StackedTasks, ...args: string[]) =>
-  (await runGit(args, { cwd: fixture.stacked.worktree, env: fixture.env })).trim();
+  gitOutput({ cwd: fixture.stacked.worktree }, fixture.env, ...args);
 
 // Runs git in the worktree of the parent and gives the trimmed output.
 const inParent = async (fixture: StackedTasks, ...args: string[]) =>
-  (await runGit(args, { cwd: fixture.parent.worktree, env: fixture.env })).trim();
+  gitOutput({ cwd: fixture.parent.worktree }, fixture.env, ...args);
 
 // The base of the stacked task while its parent is in flight: the branch of the parent.
 const parentRef = (fixture: StackedTasks) => `refs/heads/${fixture.parent.branch}`;

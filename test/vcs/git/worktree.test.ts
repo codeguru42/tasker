@@ -21,7 +21,14 @@ import {
   taskWorktreePath,
 } from "../../../src/vcs/git/worktree.js";
 import { failureOf } from "../../helpers/errors.js";
-import { NOT_TASK_BRANCHES, localBranches, makeGitClone, makeGitOrigin, type GitOrigin } from "../../helpers/git.js";
+import {
+  NOT_TASK_BRANCHES,
+  gitOutput,
+  localBranches,
+  makeGitClone,
+  makeGitOrigin,
+  type GitOrigin,
+} from "../../helpers/git.js";
 
 const BRANCH = taskBranchName("issue-1", "x");
 const OTHER_BRANCH = taskBranchName("issue-2", "y");
@@ -139,7 +146,7 @@ describe("git fixture", () => {
       baseRevision: base,
       ...extra,
     });
-  const gitIn = (cwd: string, ...args: string[]) => runGit(args, { cwd, env }).then((out) => out.trim());
+  const gitIn = (cwd: string, ...args: string[]) => gitOutput({ cwd }, env, ...args);
   const list = () => listWorktrees({ clone, env });
   const head = (branch: string) =>
     runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {

@@ -18,6 +18,7 @@ import {
   GIT_TEST_IDENTITY,
   landBranchOnOriginMain,
   gitCloneTokens,
+  gitOutput,
   gitBeforePushEnv,
   gitRecorderEnv,
   gitTestEnv,
@@ -41,7 +42,7 @@ describe("makeGitOrigin", () => {
     origin.remove();
   });
 
-  const git = (...args: string[]) => runGit(args, { gitDir: origin.path, env: origin.env }).then((out) => out.trim());
+  const git = (...args: string[]) => gitOutput({ gitDir: origin.path }, origin.env, ...args);
 
   it("makes a bare origin with one commit on main", async () => {
     expect(await git("rev-parse", "--is-bare-repository")).toBe("true");
@@ -157,7 +158,7 @@ describe("makeGitClone", () => {
 
   it("makes a bare clone inside the origin folder with the remote branches fetched", async () => {
     const clone = await makeGitClone(origin);
-    const git = (...args: string[]) => runGit(args, { gitDir: clone, env: origin.env }).then((out) => out.trim());
+    const git = (...args: string[]) => gitOutput({ gitDir: clone }, origin.env, ...args);
 
     expect(clone.startsWith(`${origin.dir}${sep}`)).toBe(true);
     expect(await git("rev-parse", "--is-bare-repository")).toBe("true");
@@ -190,7 +191,7 @@ describe("addCloneCommit", () => {
     origin.remove();
   });
 
-  const git = (...args: string[]) => runGit(args, { gitDir: clone, env: origin.env }).then((out) => out.trim());
+  const git = (...args: string[]) => gitOutput({ gitDir: clone }, origin.env, ...args);
 
   it("makes a new branch with origin main as the parent", async () => {
     const sha = await addCloneCommit(clone, origin.env, "b1");
@@ -331,7 +332,7 @@ describe("commitInWorktree", () => {
     origin.remove();
   });
 
-  const git = (...args: string[]) => runGit(args, { cwd: worktree, env: origin.env }).then((out) => out.trim());
+  const git = (...args: string[]) => gitOutput({ cwd: worktree }, origin.env, ...args);
 
   it("commits the file and returns the new head", async () => {
     const sha = await commitInWorktree(worktree, origin.env, { file: "a/b.txt", content: "x" });
@@ -343,6 +344,39 @@ describe("commitInWorktree", () => {
     await expect(commitInWorktree(worktree, origin.env, { file: "../x" })).rejects.toThrow(
       "commitInWorktree needs a file inside the worktree: ../x",
     );
+  });
+});
+
+describe("gitOutput", () => {
+  let origin: GitOrigin;
+  let clone: string;
+
+  beforeEach(async () => {
+    origin = await makeGitOrigin();
+    clone = await makeGitClone(origin);
+  });
+
+  afterEach(() => {
+    origin.remove();
+  });
+
+  it("gives the trimmed output of git in a worktree", async () => {
+    const names = taskNames(join(origin.dir, "worktrees"), 16);
+    await createTaskWorktree({
+      clone,
+      env: origin.env,
+      path: names.worktree,
+      branch: names.branch,
+      baseRevision: "refs/remotes/origin/main",
+    });
+    const sha = await commitInWorktree(names.worktree, origin.env, { file: "a.txt", content: "x" });
+    expect(await gitOutput({ cwd: names.worktree }, origin.env, "rev-parse", "HEAD")).toBe(sha);
+  });
+
+  it("gives the trimmed output of git in a repo", async () => {
+    const plain = await runGit(["rev-parse", "refs/remotes/origin/main"], { gitDir: clone, env: origin.env });
+    expect(plain.endsWith("\n")).toBe(true);
+    expect(await gitOutput({ gitDir: clone }, origin.env, "rev-parse", "refs/remotes/origin/main")).toBe(plain.trim());
   });
 });
 

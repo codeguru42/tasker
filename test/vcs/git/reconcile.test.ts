@@ -22,6 +22,7 @@ import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import {
   commitInWorktree,
+  gitOutput,
   gitRecorderEnv,
   landBranchOnOriginMain,
   makeGitClone,
@@ -55,7 +56,7 @@ describe("git reconcile", () => {
   });
 
   // Runs git in the worktree and gives the trimmed output.
-  const git = (...args: string[]) => runGit(args, { cwd: path, env }).then((out) => out.trim());
+  const git = (...args: string[]) => gitOutput({ cwd: path }, env, ...args);
   // Adds a commit to the base on origin and fetches it into the clone.
   const moveBase = async (change: { file?: string; content?: string; message?: string }) => {
     const tip = await origin.addCommit("main", change);

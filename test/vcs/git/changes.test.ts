@@ -27,6 +27,7 @@ import {
   addCloneCommit,
   commitInWorktree,
   copyCloneBranchToOrigin,
+  gitOutput,
   gitRecorderEnv,
   landBranchOnOriginMain,
   makeGitClone,
@@ -60,7 +61,7 @@ describe("git changes", () => {
   });
 
   // Runs git in the worktree and gives the trimmed output.
-  const git = (...args: string[]) => runGit(args, { cwd: path, env }).then((out) => out.trim());
+  const git = (...args: string[]) => gitOutput({ cwd: path }, env, ...args);
   const diff = (extra: Partial<Parameters<typeof worktreeDiff>[0]> = {}) =>
     worktreeDiff({ clone, env, path, baseRevision: BASE, ...extra });
   const paths = (extra: Partial<Parameters<typeof changedPaths>[0]> = {}) =>
