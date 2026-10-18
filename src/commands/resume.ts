@@ -14,7 +14,7 @@ export const resume: RegisterCommand = (program, io) => {
   program
     .command("resume")
     .description(
-      "Move a task in quota_blocked or interrupted back to the state before the run that stopped, and run the same command again",
+      "Move a task in quota_blocked or interrupted back to the state before the run that stopped, and run the same command again. A resume from updating_branch runs nothing",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
