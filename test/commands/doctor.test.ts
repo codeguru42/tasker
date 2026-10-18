@@ -99,6 +99,23 @@ describe("doctor", () => {
     expect(gitAfterGh).toEqual([]);
   });
 
+  it("shows the git version check once for two git repos", async () => {
+    await setUpTwoRepos();
+
+    const { out } = await runCommand(doctor, "doctor");
+
+    const lines = statusLines(out);
+    expect(lines.filter((line) => line.includes(" git version"))).toHaveLength(1);
+    const versionAt = lines.findIndex((line) => line.includes(" git version"));
+    for (const name of ["identity", "connection", "lock files"]) {
+      for (const key of ["tasker", "other"]) {
+        const matching = lines.filter((line) => line.includes(` git ${name}: ${key}`));
+        expect(matching).toHaveLength(1);
+        expect(versionAt).toBeLessThan(lines.indexOf(matching[0]));
+      }
+    }
+  });
+
   it("gives 1 and the fix when claude is not on PATH", async () => {
     await setUp(GOOD_GH, () => {}, false);
 

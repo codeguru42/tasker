@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { parseConfig } from "../../src/config/schema.js";
-import { createVcsProvider, uncommittedChangeText, vcsForRepo } from "../../src/vcs/provider.js";
+import { createVcsProvider, uncommittedChangeText, vcsDoctorChecks, vcsForRepo } from "../../src/vcs/provider.js";
 import { validConfig } from "../helpers/config.js";
 import { gitOutput, makeProviderFixture, type ProviderFixture } from "../helpers/git.js";
 
@@ -39,6 +39,35 @@ describe("vcsForRepo", () => {
 
     expect(ctx).toEqual({ dataRoot: config.dataRoot, repoKey: key, env });
     expect(vcs.provision).toBeTypeOf("function");
+  });
+});
+
+describe("vcsDoctorChecks", () => {
+  const o = { procRoot: "/proc", platform: "linux" } as const;
+
+  it("gives one git version check for two git repos", () => {
+    const raw = validConfig();
+    const [first] = Object.keys(raw.repos);
+    raw.repos.other = { ...raw.repos[first] };
+    const config = parseConfig(raw, {}, "/home/test");
+
+    const names = vcsDoctorChecks(config, o).map((check) => check.name);
+
+    expect(names).toEqual([
+      "git version",
+      `git identity: ${first}`,
+      `git connection: ${first}`,
+      `git lock files: ${first}`,
+      "git identity: other",
+      "git connection: other",
+      "git lock files: other",
+    ]);
+  });
+
+  it("gives no doctor checks for a configuration with no repo", () => {
+    const config = parseConfig(validConfig(), {}, "/home/test");
+
+    expect(vcsDoctorChecks({ ...config, repos: {} }, o)).toEqual([]);
   });
 });
 
