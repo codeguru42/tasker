@@ -29,6 +29,7 @@ import {
 } from "./store.js";
 import { useTempDir } from "./temp.js";
 import {
+  useStackedTasks,
   appendBaseEvent,
   expectCommandRefused,
   expectNoAssistantRun,
@@ -733,6 +734,34 @@ describe("useVerifyFixture", () => {
     expect(fixture.config.repos[fixture.started.repoKey].verify.commands).toEqual(["true", "echo hi"]);
     expect(fixture.config.limits.verifyTimeoutMin).toBe(3);
     expect(fixture.env).toBe(fixture.started.env);
+  });
+});
+
+describe("useStackedTasks", () => {
+  it("gives the parent in awaiting_work_review and the stacked task in executed", async () => {
+    const fixture = await useStackedTasks();
+
+    expect(fixture.parent.key).toBe("codeguru42/tasker#5");
+    expect(fixture.stacked.key).toBe("codeguru42/tasker#6");
+    expect(latestTaskOf(fixture.dataRoot, fixture.parent.key).state).toBe("awaiting_work_review");
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+    expect(fixture.parent.task.state).toBe("awaiting_work_review");
+    expect(fixture.stacked.task.state).toBe("executed");
+  });
+
+  it("bases the stacked task on the branch of the parent", async () => {
+    const fixture = await useStackedTasks();
+
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe(`refs/heads/${fixture.parent.branch}`);
+  });
+
+  it("puts the commit of the parent on the stacked branch", async () => {
+    const fixture = await useStackedTasks();
+    const files = (await runGit(["ls-files"], { cwd: fixture.stacked.worktree, env: fixture.env })).split("\n");
+
+    expect(files).toContain("parent.txt");
+    expect(files).toContain("stacked.txt");
+    expect(existsSync(join(fixture.parent.worktree, "stacked.txt"))).toBe(false);
   });
 });
 

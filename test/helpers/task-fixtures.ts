@@ -162,14 +162,15 @@ export interface StartedTask extends StartFixture {
 }
 
 // Runs tasker start for codeguru42/tasker#<number> in the fixture and gives the key, the result and the names of
-// its clone, branch and worktree. It makes no assertion. The fake gh of the fixture must answer the read of the
+// its clone, branch and worktree. args are more arguments of tasker start. It makes no assertion. The fake gh of the fixture must answer the read of the
 // issue (see the issues option of useStartFixture).
 export async function startIssueTask(
   fixture: StartFixture,
   number: number,
+  ...args: string[]
 ): Promise<Pick<StartedTask, "key" | "result" | "branch" | "worktree" | "clone">> {
   const key = `codeguru42/tasker#${number}`;
-  const result = await runCommand(start, "start", key);
+  const result = await runCommand(start, "start", key, ...args);
   const { clone, worktrees } = repoPaths(fixture.dataRoot, fixture.repoKey);
   const { branch, worktree } = taskNames(worktrees, number, `Issue ${number}`);
   return { key, result, branch, worktree, clone };
@@ -531,6 +532,52 @@ export async function useWorkReviewTask(
   await startTaskWithCommits(fixture, 5, files);
   const task = walkTask(fixture.dataRoot, fixture.repoKey, key, TO_WORK_REVIEW);
   return { ...fixture, key, task, clone: repoPaths(fixture.dataRoot, fixture.repoKey).clone, env: fixture.origin.env };
+}
+
+export interface StackedTasks extends StartFixture {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  // The parent, issue 5, in awaiting_work_review with the commit parent.txt.
+  parent: { key: string; task: Task; branch: string; worktree: string };
+  // The stacked task, issue 6, in executed with the commit stacked.txt. Its base is the branch of the parent.
+  stacked: { key: string; task: Task; branch: string; worktree: string };
+}
+
+// Runs useStartFixture with the issues 5 and 6, starts the task of issue 5 with one commit parent.txt and moves it to
+// awaiting_work_review. Then it starts the task of issue 6 with --base refs/heads/<branch of the parent>, commits
+// stacked.txt and moves it to executed. It throws when a start fails. It sets the git identity of the clone to
+// GIT_TEST_IDENTITY through vcs.config, and a vcs key of options.repo replaces this default. Call it inside a test.
+export async function useStackedTasks(options: Parameters<typeof useStartFixture>[0] = {}): Promise<StackedTasks> {
+  const fixture = await useStartFixture({
+    ...options,
+    issues: [
+      { project: "codeguru42/tasker", number: 5 },
+      { project: "codeguru42/tasker", number: 6 },
+    ],
+    repo: {
+      vcs: { provider: "git", config: { authorName: GIT_TEST_IDENTITY.name, authorEmail: GIT_TEST_IDENTITY.email } },
+      ...options.repo,
+    },
+  });
+  const { repoKey, dataRoot } = fixture;
+  const parentStart = await startIssueTask(fixture, 5);
+  if (parentStart.result.code !== 0)
+    throw new Error(`tasker start failed for ${parentStart.key}: ${parentStart.result.err}`);
+  await commitInWorktree(parentStart.worktree, fixture.origin.env, { file: "parent.txt" });
+  const parent = walkTask(dataRoot, repoKey, parentStart.key, TO_WORK_REVIEW);
+  const stackedStart = await startIssueTask(fixture, 6, "--base", `refs/heads/${parentStart.branch}`);
+  if (stackedStart.result.code !== 0) {
+    throw new Error(`tasker start failed for ${stackedStart.key}: ${stackedStart.result.err}`);
+  }
+  await commitInWorktree(stackedStart.worktree, fixture.origin.env, { file: "stacked.txt" });
+  const stacked = walkTask(dataRoot, repoKey, stackedStart.key, TO_WORK_REVIEW.slice(0, 5));
+  return {
+    ...fixture,
+    clone: parentStart.clone,
+    env: fixture.origin.env,
+    parent: { key: parentStart.key, task: parent, branch: parentStart.branch, worktree: parentStart.worktree },
+    stacked: { key: stackedStart.key, task: stacked, branch: stackedStart.branch, worktree: stackedStart.worktree },
+  };
 }
 
 export interface MovedBaseTask extends WorkReviewTask {
