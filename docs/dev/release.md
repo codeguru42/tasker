@@ -14,6 +14,6 @@ The installed `tasker` runs the tickets of this repo. It must not change while a
 
 ## The npm facts
 
-- Without a `files` list, npm leaves out each path of `.gitignore`. `dist/` is in `.gitignore`, so `package.json` has a `files` list that names `dist` and `skills`.
-- `npm pack` runs `npm run build` first, through the `prepack` script. As a result, `dist/` always comes from the source of the commit that is checked out.
+- Without a `files` list, npm leaves out each path of `.gitignore`. `dist/` is in `.gitignore`, so `package.json` has a `files` list.
+- `npm pack` first deletes `dist/` and then runs `npm run build`, through the `prepack` script. As a result, `dist/` holds only the build of the commit that is checked out.
 - `npm install -g` of a package file copies the files into the global folder of npm. A later change of the clone does not change the installed `tasker`.
