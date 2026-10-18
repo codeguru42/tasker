@@ -38,7 +38,7 @@ The old orchestrator can suggest a handoff to the user. The suggestion does not 
 After the start, the old orchestrator does these steps:
 
 1. Start no new ticket.
-2. Wait until each task in flight lands. For each landing, do the usual steps: delete the jobs (see [Delete the job](#delete-the-job)), do [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step of the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) and do [the notice rule](doc-reads.md#the-notice-rule). The reason: a job lives only in the session of the orchestrator (see [Terms](#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
+2. Wait until each task in flight lands. For each landing, do the usual steps: delete the jobs (see [Delete the job](quota.md#delete-the-job)), do [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step of the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) and do [the notice rule](doc-reads.md#the-notice-rule). The reason: a job lives only in the session of the orchestrator (see [Terms](quota.md#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
 3. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round finds nothing new. The user asked for this rule on 2026-10-17. Then write the handoff file `$HOME/Documents/tasker/handoff/<date>-<role>.md`, for example `2026-10-15-docs-orchestrator.md`. If a file with that name exists, add a number, for example `2026-10-15-docs-orchestrator-2.md`.
 4. Give the path of the file in the reply to the user.
 
@@ -169,10 +169,10 @@ On [the orchestration pages](orchestration.md), the agent waits for the orchestr
 - [Land the work](land-the-work.md#land-the-work): after the later agent stops waiting
 - [docs/dev/rebase-conflicts.md](rebase-conflicts.md): each stop of its procedure, when a step of [the orchestration pages](orchestration.md) sends the agent there
 - [The hold rule](land-the-work.md#the-hold-rule): before `tasker accept`
-- [What the agent does](#what-the-agent-does) in "Quota": the end of the turn after a stop in `quota_blocked` or `interrupted`, and the report for `awaiting_quota_approval`
+- [What the agent does](quota.md#what-the-agent-does) in "Quota": the end of the turn after a stop in `quota_blocked` or `interrupted`, and the report for `awaiting_quota_approval`
 - A question of the agent, in the sources bullet of [Limits](#limits)
 - The read bullet of [Limits](#limits): a failed command
 - [The own-worktree rule](#the-own-worktree-rule): each stop of the make and of the branch-exists case
 - [The doc-read rule](doc-reads.md#the-doc-read-rule): each stop of an agent
 
-The orchestrator does not treat an interim report as the end of the ticket. For an interim report alone, the orchestrator does not free the slot, delete a quota job or read the board for the ticket. The orchestrator still follows the bullets of [Delete the job](#delete-the-job). The orchestrator still does each read that a rule gives after a report of an agent, for example in [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule). On #160, #161 and #221, the agents ended their turns at a wait point, and a message of the orchestrator resumed each one.
+The orchestrator does not treat an interim report as the end of the ticket. For an interim report alone, the orchestrator does not free the slot, delete a quota job or read the board for the ticket. The orchestrator still follows the bullets of [Delete the job](quota.md#delete-the-job). The orchestrator still does each read that a rule gives after a report of an agent, for example in [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule). On #160, #161 and #221, the agents ended their turns at a wait point, and a message of the orchestrator resumed each one.
