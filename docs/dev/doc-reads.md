@@ -8,7 +8,7 @@ The orchestrator works from the current docs. The docs are `AGENTS.md` and the d
 
 At the start of its session, the orchestrator does the fetch and the fast-forward of [the doc-read rule](#the-doc-read-rule). Then it runs `git rev-parse --verify HEAD` in its local clone. The hash that this command prints is the first last read. Then the orchestrator reads the docs.
 
-Each time a ticket lands, the orchestrator does these steps in its local clone, at the place that the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](orchestration.md#land-the-work) gives. The steps change no task.
+Each time a ticket lands, the orchestrator does these steps in its local clone, at the place that the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) gives. The steps change no task.
 
 1. Run `git fetch origin`, as [the doc-read rule](#the-doc-read-rule) says.
 2. Read the tip of `main` one time: `git rev-parse --verify origin/main`. This rule calls the hash `<tip>`. Use `<tip>`, not `origin/main`, in the next steps, as [the shared-clone rule](orchestration.md#the-shared-clone-rule) says.
@@ -29,7 +29,7 @@ The orchestrator of the ticket does these steps:
 3. List the sessions with the session list of your tools, for example `ListAgents`. Each session whose name starts with `orchestrator-`, except your own session, is another orchestrator. A session with another name, for example `planner-m7`, gets no notice.
 4. Send one notice to each other orchestrator with `SendMessage`. Take the landed commit and the sections that changed from the same report. The notice names them in one or two lines.
 
-   For example: Landed `<commit>` on `main`. `docs/dev/run-one-ticket.md` changed in "Run one ticket", and `docs/dev/orchestration.md` changed in "Land the work".
+   For example: Landed `<commit>` on `main`. `docs/dev/run-one-ticket.md` changed in "Run one ticket", and `docs/dev/land-the-work.md` changed in "Land the work".
 
 The notice does not depend on the re-read rule. If the re-read rule fails at this landing, the orchestrator of the ticket still sends the notice, and it tells the user the failed command and the error, as the re-read rule says. If the session list or a message fails, the orchestrator of the ticket tells the user the tool and the error, and it continues its work. A session that does not answer gets no second notice. The re-read rule covers that session at its next landing.
 
