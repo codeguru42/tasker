@@ -2,6 +2,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { abort } from "../../src/commands/abort.js";
+import { start } from "../../src/commands/start.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
 import { canonicalPath } from "../../src/real-path.js";
 import { transitionTask } from "../../src/state/machine.js";
@@ -10,11 +11,13 @@ import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "../helpers/cli.js";
+import { githubLabelsAfter, githubWriteAnswer, trackerWriteCalls } from "../helpers/fake-gh.js";
 import { localBranches } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { deadRunNote } from "../helpers/state-commands.js";
 import {
   databasePathOf,
+  eventDataOf,
   eventsOf,
   latestTaskOf,
   lockNames,
@@ -25,7 +28,13 @@ import {
   seedTasks,
   withDataRootStore,
 } from "../helpers/store.js";
-import { taskWorkspaceState, useStartFixture, useStartedTask } from "../helpers/task-fixtures.js";
+import {
+  replaceStartGh,
+  taskWorkspaceState,
+  trackerRepo,
+  useStartFixture,
+  useStartedTask,
+} from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -193,6 +202,111 @@ describe("abort", () => {
       });
       expect(await taskWorkspaceState(started)).toMatchObject({ state: "cancelled", worktree: false });
       expect(lockNames(started.dataRoot)).toEqual([]);
+    });
+  });
+
+  describe("the tracker write", () => {
+    const ASSIGN = ["issue", "edit", "5", "-R", REPO, "--add-assignee", "@me"];
+    const LABEL = ["issue", "edit", "5", "-R", REPO, "--add-label", "in progress"];
+    const REMOVE = ["issue", "edit", "5", "-R", REPO, "--remove-label", "in progress"];
+    const writeAnswer = (rest: string[], failure: { stderr: string; exitCode: number } | object = {}) =>
+      githubWriteAnswer({ project: REPO, number: 5, verb: "edit", rest, ...failure });
+    const assignAnswer = () => writeAnswer(["--add-assignee", "@me"]);
+    const labelAnswer = () => writeAnswer(["--add-label", "in progress"]);
+    const removeAnswer = (failure: { stderr: string; exitCode: number } | object = {}) =>
+      writeAnswer(["--remove-label", "in progress"], failure);
+    const tracked = trackerRepo({ updateOnStart: true, inProgressLabel: "in progress" });
+
+    it("makes no write and no event when updateOnStart is false", async () => {
+      const started = await useStartedTask({
+        repo: trackerRepo({ updateOnStart: false, inProgressLabel: "in progress" }),
+      });
+
+      const result = await runCommand(abort, "abort", KEY);
+
+      expect(result.code).toBe(0);
+      expect(result.out).not.toContain("in-progress marker");
+      expect(trackerWriteCalls(started.gh)).toEqual([]);
+      expect(eventDataOf(started.dataRoot, KEY, "tracker_update")).toEqual([]);
+    });
+
+    it("makes no remove call when there is no in-progress label", async () => {
+      const started = await useStartedTask({
+        repo: trackerRepo({ updateOnStart: true }),
+        ghAnswers: [assignAnswer()],
+      });
+
+      const result = await runCommand(abort, "abort", KEY);
+
+      expect(result.code).toBe(0);
+      expect(trackerWriteCalls(started.gh)).toEqual([ASSIGN]);
+    });
+
+    it("removes the label after the cleanup and records an ok event", async () => {
+      const started = await useStartedTask({
+        repo: tracked,
+        ghAnswers: [assignAnswer(), labelAnswer(), removeAnswer()],
+      });
+
+      const result = await runCommand(abort, "abort", KEY);
+
+      expect(result).toEqual({
+        code: 0,
+        out: `removed the worktree ${canonicalPath(started.worktree)}\ndeleted the branch ${started.branch}\ncleared the in-progress marker of ${KEY} on the tracker\ncancelled ${KEY}\n`,
+        err: "",
+      });
+      expect(trackerWriteCalls(started.gh).at(-1)).toEqual(REMOVE);
+      expect(eventDataOf(started.dataRoot, KEY, "tracker_update").at(-1)).toEqual({
+        action: "clear_in_progress",
+        result: "ok",
+      });
+      expect(
+        eventsOf(started.dataRoot, KEY)
+          .slice(-2)
+          .map((event) => event.type),
+      ).toEqual(["tracker_update", "transition"]);
+    });
+
+    it("warns for a failed write, exits with 0 and cancels the task", async () => {
+      const started = await useStartedTask({
+        repo: tracked,
+        ghAnswers: [assignAnswer(), labelAnswer(), removeAnswer({ stderr: "cannot unlabel\n", exitCode: 1 })],
+      });
+
+      const result = await runCommand(abort, "abort", KEY);
+
+      expect(result.code).toBe(0);
+      const event = eventDataOf(started.dataRoot, KEY, "tracker_update").at(-1) as { error: string };
+      expect(event).toEqual({
+        action: "clear_in_progress",
+        result: "failed",
+        error: expect.stringContaining("cannot unlabel") as unknown,
+      });
+      expect(result.err).toContain(
+        `warning: cannot clear the in-progress marker of ${KEY} on the tracker: ${event.error}\n`,
+      );
+      expect(trackerWriteCalls(started.gh).at(-1)).toEqual(REMOVE);
+      expect(latestTaskOf(started.dataRoot, KEY).state).toBe("cancelled");
+      expect(result.out).not.toContain("cleared the in-progress marker");
+      expect(result.out.endsWith(`cancelled ${KEY}\n`)).toBe(true);
+    });
+
+    it("lets a later start pass the marker check without --reclaim", async () => {
+      const started = await useStartedTask({
+        repo: tracked,
+        ghAnswers: [assignAnswer(), labelAnswer(), removeAnswer()],
+      });
+      await runCommand(abort, "abort", KEY);
+      expect(trackerWriteCalls(started.gh)).toEqual([ASSIGN, LABEL, REMOVE]);
+
+      replaceStartGh(started, {
+        issues: [{ project: REPO, number: 5, labels: githubLabelsAfter(started.gh, { project: REPO, number: 5 }) }],
+        ghAnswers: [assignAnswer(), labelAnswer()],
+      });
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(started.dataRoot, KEY).state).toBe("workspace_ready");
     });
   });
 
