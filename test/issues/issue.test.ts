@@ -101,7 +101,8 @@ describe("inProgressMarker", () => {
   it.each([
     ["wip", "wip", true],
     ["In Progress", "in progress", true],
-    ["ÜBER", "über", true],
+    ["ÜBER", "über", false],
+    ["\u212Aey", "key", false],
     ["BASE:X", "base:x", true],
     ["base:", "base:", true],
     ["wip ", "wip", false],
