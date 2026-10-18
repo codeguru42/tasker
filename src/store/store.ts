@@ -1514,7 +1514,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     updateBranchTask(taskId, state, writes, check) {
-      return writeTask(taskId, { state }, check, (at) => {
+      return writeTask(taskId, { state, base: writes.base?.base }, check, (at) => {
         endRunStep(taskId, state);
         if (writes.clearPlanApproval !== undefined) clearPinnedApprovalStep(taskId, writes.clearPlanApproval);
         if (writes.base !== undefined) writeEvent(taskId, at, "base", writes.base);
