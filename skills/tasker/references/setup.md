@@ -30,6 +30,24 @@ The command exits with these codes:
 
 The checks never change the remote, GitHub or the clone. The only write is one temporary file in `dataRoot`, which the check deletes.
 
+## `tasker install-skills`
+
+Copies each skill of the installed tasker into each folder of `skillsDirs`. The command has no options.
+
+A skill is a folder under the `skills` folder of the installed tasker. For each folder of `skillsDirs`, in order, and for each skill, in name order, the command does these steps:
+
+1. Make the folder, with its missing parents, when it does not exist.
+2. Remove `<folder>/<name>` when it exists.
+3. Copy the skill to `<folder>/<name>`.
+
+After the copy, the command prints `installed <name> to <folder>/<name>`. When a step fails, the command prints `error: cannot install <name> to <folder>/<name>: <reason>` on stderr. The next skill and the next folder still get their turn.
+
+The command exits with these codes:
+
+- 1 when the configuration does not load. Nothing is copied.
+- 1 when a step for a folder fails. The next folder still gets the skills.
+- 0 in all other cases.
+
 ## `tasker model`
 
 Prints or sets the model and the effort of each assistant role for the repo of an issue: `tasker model <issue> [<model>] [--role <role>] [--repo <key>] [--effort <effort>]`. The command needs no task and changes no task. For the configuration file, see [the Configuration section](../SKILL.md#configuration).

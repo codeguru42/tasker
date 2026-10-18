@@ -5,6 +5,7 @@ import { approve } from "./approve.js";
 import { doctor } from "./doctor.js";
 import { execute } from "./execute.js";
 import { finish } from "./finish.js";
+import { installSkills } from "./install-skills.js";
 import { markLanded } from "./mark-landed.js";
 import { updateBranch } from "./update-branch.js";
 import { merge } from "./merge.js";
@@ -58,5 +59,6 @@ export const commands: RegisterCommand[] = [
   abort,
   status,
   doctor,
+  installSkills,
   model,
 ];

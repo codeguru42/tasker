@@ -83,6 +83,10 @@ Prints the last quota event of each repo as JSON, and needs no task. See [the re
 
 Makes sure that the configuration, the data root, git, `gh`, `claude` and the accounts work, and needs no task. See [the reference](references/setup.md#tasker-doctor).
 
+### `tasker install-skills`
+
+Copies the skills of the installed tasker into each folder of `skillsDirs`, and needs no task. See [the reference](references/setup.md#tasker-install-skills).
+
 ### `tasker model`
 
 Prints or sets the model and the effort of each assistant role for the repo of an issue. It needs no task and changes no task. See [the reference](references/setup.md#tasker-model).
