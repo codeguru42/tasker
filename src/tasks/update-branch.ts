@@ -206,12 +206,9 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const moved = "remoteTip" in synced || resynced.how !== "none";
       const state = moved ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
-      if (moved) {
-        writes.base = { ...target, source: "update" };
-        if (origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
-      }
       // After the parent landed, the base switches also when the head does not move.
-      if (landed) writes.base = { ...target, source: "parent" };
+      if (moved || landed) writes.base = { ...target, source: landed ? "parent" : "update" };
+      if (moved && origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       const after: BranchSnapshot = {
         head: resynced.head,
         base: writes.base?.base ?? base,
