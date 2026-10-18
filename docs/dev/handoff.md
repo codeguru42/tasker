@@ -16,7 +16,7 @@ After the start, the old orchestrator does these steps:
 
 1. Start no new ticket.
 2. Wait until each task in flight lands. For each landing, do the usual steps: delete the jobs (see [Delete the job](quota.md#delete-the-job)), do [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step of the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) and do [the notice rule](doc-reads.md#the-notice-rule). The reason: a job lives only in the session of the orchestrator (see [Terms](quota.md#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
-3. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round finds nothing new. The user asked for this rule on 2026-10-17. Then write the handoff file `$HOME/Documents/tasker/handoff/<date>-<role>.md`, for example `2026-10-15-docs-orchestrator.md`. If a file with that name exists, add a number, for example `2026-10-15-docs-orchestrator-2.md`.
+3. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round finds nothing new. The user asked for this rule on 2026-10-17. Then write the handoff file `$HOME/Documents/tasker/handoff/<date>-<time>-<role>.md`, for example `2026-10-17-1505-docs-orchestrator.md`. The time is the local time of the machine, to the minute. The command `date +%Y-%m-%d-%H%M` prints the date and the time. Take the date and the time when you write the file, not at the start of the handoff.
 4. Give the path of the file in the reply to the user.
 
 Only the user ends a handoff that started. The handoff ends when the user clears the old session and starts the new session with the prompt of the handoff file. Until then, the old orchestrator starts no new ticket, also after step 4. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new ticket without the word of the user.
@@ -35,7 +35,7 @@ The user pastes the prompt as the first message of the new session. The user nam
 
 The new orchestrator does this check before any other step of the prompt. It lists the folder `$HOME/Documents/tasker/handoff/` with `ls`.
 
-The files of its role are the files whose names step 3 gives for that role. The new orchestrator orders them as step 3 says. A file with a later date is newer. A file with no number is the first file of its date. For two files of the same date, the file with the higher number is newer.
+The files of its role are the files whose names step 3 gives for that role. A file with a later date and time in its name is newer.
 
 The file of the first message is the handoff file whose path the first message names.
 
