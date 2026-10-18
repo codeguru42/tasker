@@ -5,8 +5,9 @@ This repo is a rebuild of tasker. The [project board](https://github.com/users/c
 ## Set up a working copy
 
 1. Use the Node version of `.nvmrc`. The `.nvmrc` file sets the Node version for local work and for CI.
-2. Follow steps 1 to 3 of [the install steps](README.md#install-from-source) to clone the repo and install the dependencies.
-3. Install git. The tests run git.
+2. Clone the repo: `git clone https://github.com/codeguru42/tasker.git`
+3. Install the dependencies. Run `npm ci` in the new folder.
+4. Install git. The tests run git.
 
 ## Run the checks
 
