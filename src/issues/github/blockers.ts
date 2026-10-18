@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { asciiFold } from "../../ascii-fold.js";
 import { detailSuffix } from "../../detail-suffix.js";
-import { asciiFold, splitGithubKey } from "../../issue-key/github.js";
+import { splitGithubKey } from "../../issue-key/github.js";
 import { IssueKeyError, type IssueRef } from "../../issue-key/ref.js";
 import { isObject } from "../../object.js";
 import { type Blocker, IssueReadError } from "../issue.js";

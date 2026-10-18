@@ -1,4 +1,4 @@
-import { asciiFold } from "../../issue-key/github.js";
+import { asciiFold } from "../../ascii-fold.js";
 import { GhError, GhLoginError, GhNotInstalledError, runGh } from "./run.js";
 import type { AuthStatus } from "../provider.js";
 

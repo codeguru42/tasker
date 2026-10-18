@@ -1,5 +1,6 @@
 import type { Config, RepoConfig } from "../config/schema.js";
-import { asciiFold, splitGithubKey } from "./github.js";
+import { asciiFold } from "../ascii-fold.js";
+import { splitGithubKey } from "./github.js";
 import { parseJiraKey } from "./jira.js";
 import { IssueKeyError, type IssueRef } from "./ref.js";
 import { githubShortRef } from "./short-ref.js";
@@ -19,6 +20,8 @@ export type KeyParser = (rawKey: string, repoKey: string, project: string) => Is
 export const KEY_PARSERS: Record<Provider, KeyParser> = {
   github: (rawKey, repoKey, project) => {
     const parts = splitGithubKey(rawKey);
+    // GitHub names are ASCII and have no case. A match means that the project has the same
+    // ASCII characters as the key, and the stored key is a GitHub key.
     if (asciiFold(parts.project) !== asciiFold(project)) return undefined;
     return { key: `${project}#${parts.number}`, repoKey, shortRef: githubShortRef(parts.number) };
   },

@@ -1,4 +1,4 @@
-import { asciiFold } from "../issue-key/github.js";
+import { asciiFold } from "../ascii-fold.js";
 import type { IssueRef } from "../issue-key/ref.js";
 
 // One issue of a tracker.
