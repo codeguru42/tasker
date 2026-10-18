@@ -16,7 +16,6 @@ One factory is the only place that picks a provider. It reads `vcs.provider`. Gi
 - The doctor check type stays in `src/doctor/`, because it is not a version control type.
 - Reconcile does not fetch. [The fetch](workspaces.md#the-fetch) gives the rule.
 - Push guard rule: a provider that cannot guard a push refuses to provision, and it never runs with a weaker guard. The git provider guards a push with the pre-push hook that provision writes (see [Push guard](#push-guard)).
-- Limit: each git provider gives its own version check, and its lock-file check reads `/proc` in its own call. A doctor run over two git repos has two version checks and can read `/proc` two times.
 
 Import boundary: no file under `src/` outside `src/vcs/` imports from `src/vcs/git/`. A [boundary test](code-conventions.md#tests) enforces this rule. Files under `test/` are out of scope, because the tests of the git code import it.
 
@@ -243,7 +242,9 @@ The delete needs the lease, because a plain delete of a branch that origin does 
 
 ## Doctor checks
 
-The caller of the git doctor checks must pass `procRoot: "/proc"` and `platform: process.platform`.
+The caller of `vcsDoctorChecks()` must pass `procRoot: "/proc"` and `platform: process.platform`.
+
+`tasker doctor` calls `doctorChecks()` of each version control provider one time, with all the repos of that provider. As a result, the doctor command shows the git version check one time. The git version check does not depend on the repo. The lock-file checks of all git repos share one read of `/proc`.
 
 [doctor.md](doctor.md) gives the rules of the check type and the timeout.
 
