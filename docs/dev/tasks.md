@@ -396,7 +396,7 @@ These reasons explain its rules:
 
 ## Update branch
 
-`tasker update-branch` brings the worktree of a task up to date with its copy on origin and with its base branch. The task goes through `updating_branch` and then to its origin state or to the target of the demotion table in [the state machine](../statemachine.md#update-branch).
+`tasker update-branch` brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base branch. The task goes through `updating_branch` and then to its origin state or to the target of the demotion table in [the state machine](../statemachine.md#update-branch).
 
 These reasons explain its rules:
 

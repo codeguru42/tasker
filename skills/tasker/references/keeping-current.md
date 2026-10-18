@@ -1,10 +1,10 @@
 # Keeping current
 
-This command brings the worktree of a task up to date with its copy on origin and with its base branch. [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share. [The Update branch section of docs/statemachine.md](../../../docs/statemachine.md#update-branch) gives the states.
+This command brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base branch. [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share. [The Update branch section of docs/statemachine.md](../../../docs/statemachine.md#update-branch) gives the states.
 
 ## `tasker update-branch`
 
-Brings the worktree of a task up to date with its copy on origin and with its base branch: `tasker update-branch <issue> [--strategy rebase|merge]`. The task goes through the state `updating_branch`. The command accepts a task in `workspace_ready`, `awaiting_plan_review`, `approved`, `executed`, `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`, `cleanup_failed` or `failed`.
+Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base branch: `tasker update-branch <issue> [--strategy rebase|merge]`. The task goes through the state `updating_branch`. The command accepts a task in `workspace_ready`, `awaiting_plan_review`, `approved`, `executed`, `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`, `cleanup_failed` or `failed`.
 
 The strategy is the value of `--strategy`. If the option is absent, the strategy is `updateBranchStrategy` of the repo, which is `rebase` by default. The option overrides `updateBranchStrategy` for one run.
 
