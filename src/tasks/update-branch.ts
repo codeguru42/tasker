@@ -19,8 +19,7 @@ import {
   uncommittedChangeText,
   vcsForRepo,
 } from "../vcs/provider.js";
-import { LOCAL_PREFIX } from "../vcs/local-branch.js";
-import { hasLanded, parentOf } from "./parent.js";
+import { hasLanded, isLocalBase, parentOf } from "./parent.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBaseRevision, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
@@ -102,7 +101,7 @@ async function requireParentBranch(vcs: VcsProvider, ctx: VcsContext, parent: Ta
 // must not be stacked too.
 function landedParentBase(store: TaskStore, task: Task, parent: Task): { base: string; revision: string } {
   const base = requireBase(parent);
-  if (base.startsWith(LOCAL_PREFIX)) {
+  if (isLocalBase(base)) {
     throw new Error(`the parent ${parent.issueKey} of ${task.issueKey} is stacked too; its base is ${base}`);
   }
   return { base, revision: requireBaseRevision(store, parent) };

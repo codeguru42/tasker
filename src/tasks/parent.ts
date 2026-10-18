@@ -10,11 +10,16 @@ export const LANDED_STATES: ReadonlySet<string> = new Set<TaskState>([
   "finished",
 ]);
 
+// True when the base has the form refs/heads/<x>: a local branch of the clone. The base of a stacked task has this form.
+export function isLocalBase(base: string): boolean {
+  return base.startsWith(LOCAL_PREFIX);
+}
+
 // The parent of a stacked task: the newest task of the repo whose branch is the local base of the task.
 // It gives undefined when the base is not a local branch or when no task has that branch. It reads tasks in every
 // state, because the task of a parent that finished keeps its branch name.
 export function parentOf(store: TaskStore, task: Task): Task | undefined {
-  if (!task.base?.startsWith(LOCAL_PREFIX)) return undefined;
+  if (task.base === null || !isLocalBase(task.base)) return undefined;
   const branch = task.base.slice(LOCAL_PREFIX.length);
   let parent: Task | undefined;
   for (const candidate of store.listTasks({ repoKey: task.repoKey, states: [...STATES] })) {

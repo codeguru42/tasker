@@ -5,8 +5,8 @@ import type { IssueRef } from "../issue-key/ref.js";
 import { transitionTask, transitionWithLanding } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
-import { LOCAL_PREFIX } from "../vcs/local-branch.js";
 import { vcsForRepo } from "../vcs/provider.js";
+import { isLocalBase } from "./parent.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
@@ -42,7 +42,7 @@ async function mergeLocked(store: TaskStore, request: MergeRequest): Promise<Mer
   const task = taskInState(store, request.taskId, "merge");
   const branch = requireBranch(task);
   const base = requireBase(task);
-  if (base.startsWith(LOCAL_PREFIX)) {
+  if (isLocalBase(base)) {
     throw new Error(
       `the base of ${task.issueKey} is a local branch of the clone: ${base}; tasker merge pushes only to a branch on origin`,
     );

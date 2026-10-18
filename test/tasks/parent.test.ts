@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { hasLanded, parentOf } from "../../src/tasks/parent.js";
+import { hasLanded, isLocalBase, parentOf } from "../../src/tasks/parent.js";
 import type { Task } from "../../src/store/store.js";
 import { dayAt, seedTasks, withDataRootStore, type SeedTask } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
@@ -21,6 +21,13 @@ const task = (number: number, state: string, extra: Partial<SeedTask> = {}) => (
   issueKey: `${REPO}#${number}`,
   state,
   ...extra,
+});
+
+describe("isLocalBase", () => {
+  it("is true for refs/heads/<x> and false for any other base", () => {
+    expect(isLocalBase("refs/heads/x")).toBe(true);
+    expect(isLocalBase("main")).toBe(false);
+  });
 });
 
 describe("parentOf", () => {
