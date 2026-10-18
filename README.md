@@ -10,14 +10,17 @@ tasker takes an issue from an issue tracker and drives an AI coding assistant th
 - An AI coding assistant: tasker runs Claude Code with the `claude` command. The [assistant configuration](docs/config.md#assistant) selects it.
 - An issue tracker: for a GitHub tracker, tasker runs the `gh` command, as the [tracker configuration](docs/config.md#issuetracker) says.
 
-## Install from source
+## Install
 
-1. Clone the repository: `git clone https://github.com/codeguru42/tasker.git`
-2. Go to the new directory: `cd tasker`
-3. Install the dependencies: `npm install`
-4. Build the project: `npm run build`
-5. Link the `tasker` command on your machine: `npm link`
-6. Make sure that the command works: `tasker --help`
+1. Clone the repository: `git clone https://github.com/codeguru42/tasker.git`. In an existing clone, run `git fetch --tags` instead.
+2. Go to the folder of the clone: `cd tasker`
+3. Check out the tag of the version: `git checkout v<version>`
+4. Install the dependencies: `npm ci`
+5. Make the package file: `npm pack`
+6. Install the package file: `npm install -g ./tasker-<version>.tgz`
+7. Make sure that `tasker --version` prints `<version>`.
+
+For an update, do the same steps with the tag of the new version.
 
 `tasker --help` lists the options and the commands. `tasker --version` prints the version. `tasker` with no command prints the same usage to stderr and exits with code 1. An unknown command or option prints an error and exits with a non-zero code.
 
