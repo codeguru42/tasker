@@ -101,13 +101,13 @@ async function backAtStart(
   }
 }
 
-// Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base. The task lock covers all the steps
-// and does not wait. The repo lock covers the fetch and the move of the branch. The sync step comes first. It moves the
-// task branch to the copy on origin only by a fast-forward, and it refuses tips that have diverged. With takeRemote, it
-// moves the task branch and the worktree to the copy on origin whenever the tips differ, and it fails when origin has no
-// such branch. Then the base step
-// runs on the new local tip. A failed base step also undoes the sync move. When the head moved in either step, the task
-// goes to the target of the demotion table. Otherwise it goes back to its origin state.
+// Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base.
+// The task lock covers all the steps and does not wait. The repo lock covers the fetch and the move of the branch. The
+// sync step comes first. It moves the task branch to the copy on origin only by a fast-forward, and it refuses tips
+// that have diverged. With takeRemote, it moves the task branch and the worktree to the copy on origin whenever the
+// tips differ, and it fails when origin has no such branch. Then the base step runs on the new local tip. A failed base
+// step also undoes the sync move. When the head moved in either step, the task goes to the target of the demotion
+// table. Otherwise it goes back to its origin state.
 export async function updateBranchTask(store: TaskStore, request: UpdateBranchRequest): Promise<UpdateBranchResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => updateBranchLocked(store, request));
 }
