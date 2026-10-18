@@ -176,7 +176,7 @@ describe("tasker update-branch", () => {
   describe("the sync step", () => {
     const divergedError = (work: WorkReviewTask) => {
       const branch = String(work.task.branch);
-      return `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${KEY} again\n`;
+      return `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${KEY} again, or run tasker update-branch ${KEY} --take-remote to take origin/${branch}\n`;
     };
     const lastEvent = (work: WorkReviewTask) => eventsOf(work.dataRoot, KEY).at(-1);
 
