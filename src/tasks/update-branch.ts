@@ -157,9 +157,11 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
           `${branch} and origin/${branch} have diverged; make one of them contain the other, then run tasker update-branch ${task.issueKey} again, or run tasker update-branch ${task.issueKey} --take-remote to take origin/${branch}`,
         );
       }
-      const resynced: Pick<ResyncResult, "how" | "head"> = contains
-        ? { how: "none", head: syncedHead }
-        : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
+      // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
+      const resynced: Pick<ResyncResult, "how" | "head"> =
+        contains && synced.sync !== "take-remote"
+          ? { how: "none", head: syncedHead }
+          : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
       const moved = "remoteTip" in synced || resynced.how !== "none";
       const state = moved ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
