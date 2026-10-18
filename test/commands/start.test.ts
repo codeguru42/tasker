@@ -8,7 +8,15 @@ import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
-import { ghTokenAnswer, githubWriteAnswer, trackerWriteCalls, writeFakeGh } from "../helpers/fake-gh.js";
+import {
+  blockerReadCalls,
+  blockersGraphqlArgs,
+  ghTokenAnswer,
+  githubBlockersAnswer,
+  githubWriteAnswer,
+  trackerWriteCalls,
+  writeFakeGh,
+} from "../helpers/fake-gh.js";
 import { taskNames } from "../helpers/git.js";
 import { spawnTasker, startLockHolder, waitUntil, waitUntilGone } from "../helpers/processes.js";
 import {
@@ -17,10 +25,11 @@ import {
   eventsOf,
   latestTaskOf,
   lockNames,
+  placeTask,
   seedTasks,
   withDataRootStore,
 } from "../helpers/store.js";
-import { trackerRepo, useStartFixture } from "../helpers/task-fixtures.js";
+import { expectCommandRefused, startIssueTask, trackerRepo, useStartFixture } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -611,6 +620,189 @@ describe("start", () => {
         expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("workspace_ready");
         expect(trackerWriteCalls(fixture.gh)).toEqual([]);
       });
+    });
+  });
+});
+
+describe("the blocker step", () => {
+  const BLOCKER = "codeguru42/tasker#3";
+  const stillOpen = (key: string) => `${key}: blocking issue is still open\n`;
+  const issues = [3, 4, 5].map((number) => ({ project: PROJECT, number }));
+  const blockersOf = (...blockers: { number: number; state: "OPEN" | "CLOSED" }[]) =>
+    githubBlockersAnswer({ project: PROJECT, number: 5, blockers });
+
+  // Seeds the tasks of the issues 3 and 4 as ready tasks with a branch, with no checkout.
+  function seedReady(dataRoot: string, numbers: number[]): void {
+    seedTasks(
+      dataRoot,
+      numbers.map((number, index) => ({
+        issueKey: `${PROJECT}#${number}`,
+        repoKey: PROJECT,
+        state: "awaiting_work_review",
+        at: dayAt(index + 1),
+        branch: `task-${number}`,
+      })),
+    );
+  }
+
+  it("keeps the normal base for blockers that are all closed", async () => {
+    const fixture = await useStartFixture({
+      issues,
+      ghAnswers: [blockersOf({ number: 3, state: "CLOSED" }, { number: 4, state: "CLOSED" })],
+    });
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("base: main\n");
+    expect(eventDataOf(fixture.dataRoot, KEY, "base")).toEqual([
+      expect.not.objectContaining({ blocker: expect.anything() }),
+    ]);
+  });
+
+  it("bases the task on the branch of a ready blocker", async () => {
+    const fixture = await useStartFixture({
+      issues,
+      ghAnswers: [blockersOf({ number: 3, state: "OPEN" })],
+    });
+    const parent = await startIssueTask(fixture, 3);
+    withDataRootStore(fixture.dataRoot, (store) => {
+      placeTask(store, store.findLatestTask(PROJECT, BLOCKER)!.id, "awaiting_work_review");
+    });
+    const base = `refs/heads/${parent.branch}`;
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`base: ${base}\n`);
+    expect(result.err).toContain("based on codeguru42/tasker#3's branch\n");
+    expect(eventDataOf(fixture.dataRoot, KEY, "base")).toEqual([
+      { base, revision: base, source: "blocker", blocker: BLOCKER },
+    ]);
+    withDataRootStore(fixture.dataRoot, (store) => {
+      expect(store.getDefaultBaseBranch(PROJECT)).toBe("main");
+    });
+  });
+
+  it("refuses more than one ready blocker and makes no task", async () => {
+    const fixture = await useStartFixture({
+      issues,
+      ghAnswers: [blockersOf({ number: 3, state: "OPEN" }, { number: 4, state: "OPEN" })],
+    });
+    seedReady(fixture.dataRoot, [3, 4]);
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err:
+        "codeguru42/tasker#5 has more than one blocker ready to stack: codeguru42/tasker#3, codeguru42/tasker#4; " +
+        "pass --base refs/heads/<branch> to pick one\n",
+    });
+    expect(hasTask(fixture.dataRoot)).toBe(false);
+    expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
+  it("refuses an open blocker with no task and makes no task", async () => {
+    const fixture = await useStartFixture({ issues, ghAnswers: [blockersOf({ number: 3, state: "OPEN" })] });
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result).toEqual({ code: 1, out: "", err: stillOpen(BLOCKER) });
+    expect(hasTask(fixture.dataRoot)).toBe(false);
+    expect(lockNames(fixture.dataRoot)).toEqual([]);
+  });
+
+  it("counts a blocker whose task landed as done", async () => {
+    const fixture = await useStartFixture({ issues, ghAnswers: [blockersOf({ number: 3, state: "OPEN" })] });
+    seedTasks(fixture.dataRoot, [
+      { issueKey: BLOCKER, repoKey: PROJECT, state: "landed", at: dayAt(1), branch: "task-3" },
+    ]);
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("base: main\n");
+  });
+
+  it("lets a base: label win and reads no blockers", async () => {
+    const fixture = await useStartFixture({
+      issues: [{ project: PROJECT, number: 5, labels: ["base: dev"] }],
+      ghAnswers: [blockersOf({ number: 3, state: "OPEN" })],
+    });
+    await fixture.origin.createBranch("dev");
+    seedReady(fixture.dataRoot, [3]);
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("base: dev\n");
+    expect(blockerReadCalls(fixture.gh)).toEqual([]);
+  });
+
+  it("lets --base win and reads no blockers", async () => {
+    const fixture = await useStartFixture({ issues, ghAnswers: [blockersOf({ number: 3, state: "OPEN" })] });
+    seedReady(fixture.dataRoot, [3]);
+
+    const result = await runCommand(start, "start", KEY, "--base", "main");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("base: main\n");
+    expect(blockerReadCalls(fixture.gh)).toEqual([]);
+  });
+
+  it("fails when the read of the blockers fails, and makes no task", async () => {
+    const fixture = await useStartFixture({
+      ghAnswers: [
+        {
+          args: blockersGraphqlArgs("codeguru42", "tasker", "5"),
+          stderr: "blockers read broke",
+          exitCode: 1,
+        },
+      ],
+    });
+
+    const result = await runCommand(start, "start", KEY);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("blockers read broke");
+    expect(hasTask(fixture.dataRoot)).toBe(false);
+  });
+
+  describe("on a second run with no stored base", () => {
+    it("refuses and leaves a task in provisioning as it was", async () => {
+      const fixture = await useStartFixture({ issues, ghAnswers: [blockersOf({ number: 3, state: "OPEN" })] });
+      seedTasks(fixture.dataRoot, [
+        { issueKey: KEY, repoKey: PROJECT, state: "provisioning", at: dayAt(1), title: "Issue 5" },
+      ]);
+
+      await expectCommandRefused(
+        { dataRoot: fixture.dataRoot, key: KEY },
+        () => runCommand(start, "start", KEY),
+        stillOpen(BLOCKER),
+      );
+    });
+
+    it("refuses and leaves a failed task as it was", async () => {
+      const fixture = await useStartFixture({ issues, ghAnswers: [blockersOf({ number: 3, state: "OPEN" })] });
+      seedTasks(fixture.dataRoot, [
+        {
+          issueKey: KEY,
+          repoKey: PROJECT,
+          state: "provisioning",
+          at: dayAt(1),
+          title: "Issue 5",
+          failWith: "boom",
+        },
+      ]);
+
+      await expectCommandRefused(
+        { dataRoot: fixture.dataRoot, key: KEY },
+        () => runCommand(start, "start", KEY),
+        stillOpen(BLOCKER),
+      );
+      expect(taskState(fixture.dataRoot)).toBe("failed");
     });
   });
 });
