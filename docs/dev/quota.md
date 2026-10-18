@@ -107,7 +107,7 @@ If a case says that the orchestrator schedules the next job, the orchestrator fi
 - If a tasker command of the agent stops in `quota_blocked` or `interrupted`, the agent ends its turn. The agent does not wait, sleep or schedule anything. The task stays in that state. This end of the turn is a wait point of [the answer-wait rule](limits.md#the-answer-wait-rule).
 - If the orchestrator tells the agent to resume, the agent runs `tasker status --issue <issue>`.
 - If the task is in `quota_blocked` or `interrupted`, the agent runs `tasker resume <issue>`. The task goes back to the state before the run that stopped, and tasker runs the same command again. After that command, the task reaches the state that ["Run one ticket"](run-one-ticket.md#run-one-ticket) gives for its step. Then the agent continues with the next step of "Run one ticket".
-- If the task is in `awaiting_quota_approval`, the agent does not run `tasker resume` or `tasker approve-credits`. The agent reports to the orchestrator. Then the agent waits as [the answer-wait rule](limits.md#the-answer-wait-rule) says.
+- If the task is in `awaiting_quota_approval`, the agent does not run `tasker resume` or `tasker approve-credits`. The agent [stops](limits.md#the-answer-wait-rule).
 - If the task is in a different state, the agent does not run `tasker resume`. The agent continues from that state.
 
 ### Delete the job
