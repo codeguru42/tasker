@@ -185,6 +185,10 @@ export interface VcsProvider {
   // be an ancestor, a descendant or on another line. It refuses a workspace with uncommitted changes,
   // a detached head and a task ref without the shape of a task ref. It does not fetch.
   moveWorkspace(ctx: VcsContext, o: { path: string; revision: string }): Promise<string>;
+  // Puts the task ref and the workspace back at revision. It ends a rebase or a merge in progress, and
+  // it removes the uncommitted changes and the untracked files. Ignored files stay. A failure rejects
+  // with an error that names the commands that put the workspace back.
+  restoreWorkspace(ctx: VcsContext, o: { path: string; taskRef: string; revision: string }): Promise<void>;
   // Moves the workspace onto baseRevision and gives its new head revision.
   // It does not fetch. Run resolveBase first, which fetches.
   // A conflict rejects with ReconcileConflictError (src/vcs/errors.ts).

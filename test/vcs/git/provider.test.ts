@@ -376,8 +376,9 @@ describe("createGitProvider", () => {
       const start = await git.workspaceState(fixture.context, { path });
       await commitInWorktree(path, fixture.context.env, { file: "a.txt" });
       writeFileSync(join(path, "untracked.txt"), "x\n");
-      const result = await git.restoreWorkspace(fixture.context, { path, taskRef, revision: start.head });
-      expect(result).toBeUndefined();
+      await expect(
+        git.restoreWorkspace(fixture.context, { path, taskRef, revision: start.head }),
+      ).resolves.toBeUndefined();
       expect(await git.workspaceState(fixture.context, { path })).toEqual({
         head: start.head,
         taskRef,
