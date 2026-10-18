@@ -177,6 +177,8 @@ describe("tasker update-branch", () => {
     };
     const takeLine = (branch: string, remote: string) =>
       `synced ${branch} from origin/${branch} at ${remote} by take-remote`;
+    const divergedNote = (branch: string) =>
+      `note: ${branch} and origin/${branch} have diverged; reconcile the two branches by hand\n`;
     const lastEvent = (work: WorkReviewTask) => eventsOf(work.dataRoot, KEY).at(-1);
 
     it("moves nothing and writes the note when origin has no such branch", async () => {
@@ -279,6 +281,27 @@ describe("tasker update-branch", () => {
           to: "awaiting_work_review",
         },
       });
+    });
+
+    it("writes the note and moves nothing when local work is at risk and no commit is only on origin", async () => {
+      const work = await useWorkReviewTask();
+      const branch = work.task.branch!;
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+      await amendWorktreeMessage(work.task.worktreePath!, work.env, "amended message");
+      const head = await commitInWorktree(work.task.worktreePath!, work.env, {
+        file: "local.txt",
+        message: "local work",
+      });
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe(divergedNote(branch));
+      expect(result.out).not.toContain("synced");
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
+      expect(existsSync(join(work.task.worktreePath!, "local.txt"))).toBe(true);
+      expect(lastEvent(work)).toMatchObject({ type: "branch_updated", data: { sync: "none", before: { head } } });
     });
 
     it("moves nothing when the local copy was rebased with the same patches", async () => {
@@ -515,6 +538,29 @@ describe("tasker update-branch", () => {
         expect(existsSync(join(work.task.worktreePath!, "local.txt"))).toBe(false);
         expect(await worktreeStatus(work)).toBe("");
         expect(latestTaskOf(work.dataRoot, KEY).state).toBe("executed");
+        expect(lastEvent(work)).toMatchObject({
+          type: "branch_updated",
+          data: { sync: "take-remote", before: { head } },
+        });
+      });
+
+      it("takes the remote tip when local work is at risk and no commit is only on origin", async () => {
+        const work = await useWorkReviewTask();
+        const branch = work.task.branch!;
+        await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+        const remote = await taskBranchTipOf(work);
+        await amendWorktreeMessage(work.task.worktreePath!, work.env, "amended message");
+        const head = await commitInWorktree(work.task.worktreePath!, work.env, {
+          file: "local.txt",
+          message: "local work",
+        });
+
+        const result = await runUpdateBranch("--take-remote");
+
+        expect(result.code).toBe(0);
+        expect(result.out.split("\n")[0]).toBe(takeLine(branch, remote));
+        expect(await taskBranchTipOf(work)).toBe(remote);
+        expect(existsSync(join(work.task.worktreePath!, "local.txt"))).toBe(false);
         expect(lastEvent(work)).toMatchObject({
           type: "branch_updated",
           data: { sync: "take-remote", before: { head } },
