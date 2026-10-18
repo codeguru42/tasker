@@ -4,7 +4,7 @@ A version of tasker is a commit of `main` with the tag `v<version>`. The `versio
 
 ## Why a version is a tag
 
-The installed `tasker` runs the tickets of this repo. It must not change while a ticket runs. Only an install of a new version changes it. The steps of an install are in the [Install section of README.md](../../README.md#install).
+The installed `tasker` runs the tickets of this repo. It must not change while a ticket runs. Only an install of a new version changes it. The steps of an install are in the [Install section of README.md](../../README.md#install). After an update, run `tasker install-skills` again, so that the skills match the version, because the skills describe the commands of one version.
 
 ## Make a new version
 
