@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { merge } from "../../src/commands/merge.js";
 import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
-import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { gitOutput } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -115,11 +115,13 @@ describe("tasker merge", () => {
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
     withDataRootStore(accepted.dataRoot, (store) => expect(failedFrom(store, accepted.task.id)).toBe("merging"));
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
-    const moved = await runGit(["rev-parse", "refs/heads/main"], {
-      gitDir: `${accepted.origin.path}-moved`,
-      env: accepted.env,
-    });
-    expect(moved.trim()).toBe(head);
+    const moved = await gitOutput(
+      { gitDir: `${accepted.origin.path}-moved` },
+      accepted.env,
+      "rev-parse",
+      "refs/heads/main",
+    );
+    expect(moved).toBe(head);
   });
 
   describe("refusals", () => {

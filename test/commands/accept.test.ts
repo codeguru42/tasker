@@ -4,7 +4,7 @@ import { accept } from "../../src/commands/accept.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
-import { addCloneCommit, commitInWorktree } from "../helpers/git.js";
+import { addCloneCommit, commitInWorktree, gitOutput } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { dayAt, databasePathOf, eventsOf, latestTaskOf, seedTasks } from "../helpers/store.js";
 import {
@@ -26,7 +26,7 @@ const runAccept = (key = KEY) => runCommand(accept, "accept", key, "--repo", REP
 
 // The revision that ref names in the git dir of the clone.
 const revisionOf = (work: Pick<WorkReviewTask, "clone" | "env">, ref: string) =>
-  runGit(["rev-parse", ref], { gitDir: work.clone, env: work.env }).then((out) => out.trim());
+  gitOutput({ gitDir: work.clone }, work.env, "rev-parse", ref);
 
 // Runs accept and expects a refusal that changes nothing.
 const expectRefused = (dataRoot: string, error: string | RegExp) =>

@@ -145,11 +145,14 @@ export async function makeGitOrigin(): Promise<GitOrigin> {
     async branchHead(branch) {
       assertBranchName(branch);
       try {
-        const out = await runGit(["rev-parse", "--verify", "--quiet", `refs/heads/${branch}^{commit}`], {
-          gitDir: path,
+        return await gitOutput(
+          { gitDir: path },
           env,
-        });
-        return out.trim();
+          "rev-parse",
+          "--verify",
+          "--quiet",
+          `refs/heads/${branch}^{commit}`,
+        );
       } catch (error) {
         if (error instanceof GitError && error.exitCode === 1 && error.stdout === "") {
           return undefined;

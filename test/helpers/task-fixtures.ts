@@ -23,7 +23,6 @@ import type {
   VerifyRun,
 } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { runGit } from "../../src/vcs/git/run.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "./cli.js";
 import { failureOf } from "./errors.js";
@@ -42,6 +41,7 @@ import {
   GIT_TEST_IDENTITY,
   type GitOrigin,
   commitInWorktree,
+  gitOutput,
   landBranchOnOriginMain,
   localBranches,
   makeProviderFixture,
@@ -264,11 +264,15 @@ export async function taskWorkspaceState(
 export async function taskBranchTipOf(fixture: Pick<WorkReviewTask, "clone" | "env" | "task">): Promise<string> {
   const { branch } = fixture.task;
   if (branch === null) throw new Error("the task has no branch");
-  const out = await runGit(["show-ref", "--verify", "--hash", "--", `refs/heads/${branch}`], {
-    gitDir: fixture.clone,
-    env: fixture.env,
-  });
-  return out.trim();
+  return gitOutput(
+    { gitDir: fixture.clone },
+    fixture.env,
+    "show-ref",
+    "--verify",
+    "--hash",
+    "--",
+    `refs/heads/${branch}`,
+  );
 }
 
 export interface AssistantRunFixture {

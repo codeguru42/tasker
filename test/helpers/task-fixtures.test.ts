@@ -14,7 +14,7 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { failureOf } from "./errors.js";
 import { githubBlockersAnswer, githubWriteAnswer, trackerWriteCalls } from "./fake-gh.js";
-import { GIT_TEST_IDENTITY, commitInWorktree, localBranches } from "./git.js";
+import { GIT_TEST_IDENTITY, commitInWorktree, gitOutput, localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { answerStream, planTodo, validPlanAnswer } from "./plan.js";
 import {
@@ -769,14 +769,16 @@ describe("useStackedTasks", () => {
 describe("landParent", () => {
   it("makes the tip of the parent branch the head of main on origin and moves the parent task", async () => {
     const fixture = await useStackedTasks();
-    const tip = await runGit(["rev-parse", `refs/heads/${fixture.parent.branch}`], {
-      gitDir: fixture.clone,
-      env: fixture.env,
-    });
+    const tip = await gitOutput(
+      { gitDir: fixture.clone },
+      fixture.env,
+      "rev-parse",
+      `refs/heads/${fixture.parent.branch}`,
+    );
 
     await landParent(fixture, ["accepted", "landed"]);
 
-    expect(await fixture.origin.branchHead("main")).toBe(tip.trim());
+    expect(await fixture.origin.branchHead("main")).toBe(tip);
     expect(latestTaskOf(fixture.dataRoot, fixture.parent.key).state).toBe("landed");
   });
 });
@@ -804,8 +806,7 @@ describe("useWorkReviewTask", () => {
   it("gives the clone the git identity of GIT_TEST_IDENTITY through vcs.config", async () => {
     const work = await useWorkReviewTask({ repo: { updateBranchStrategy: "merge" } });
 
-    const read = async (key: string) =>
-      (await runGit(["config", "--local", "--get", key], { gitDir: work.clone, env: work.env })).trim();
+    const read = async (key: string) => gitOutput({ gitDir: work.clone }, work.env, "config", "--local", "--get", key);
 
     expect(await read("user.name")).toBe(GIT_TEST_IDENTITY.name);
     expect(await read("user.email")).toBe(GIT_TEST_IDENTITY.email);
@@ -949,10 +950,14 @@ describe("useMovedBaseTask", () => {
     const work = await useMovedBaseTask({ files: [], baseChange: { file: "moved.txt", content: "moved\n" } });
 
     expect(await work.origin.branchHead("main")).toBe(work.baseTip);
-    const files = await runGit(["show", "--name-only", "--format=", work.baseTip], {
-      gitDir: work.origin.path,
-      env: work.env,
-    });
-    expect(files.trim()).toBe("moved.txt");
+    const files = await gitOutput(
+      { gitDir: work.origin.path },
+      work.env,
+      "show",
+      "--name-only",
+      "--format=",
+      work.baseTip,
+    );
+    expect(files).toBe("moved.txt");
   });
 });

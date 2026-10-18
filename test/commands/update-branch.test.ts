@@ -6,7 +6,7 @@ import type { TaskState } from "../../src/state/machine.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote } from "../helpers/command-output.js";
-import { commitInWorktree, copyCloneBranchToOrigin } from "../helpers/git.js";
+import { commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
 import { seedPinnedPlanRevision } from "../helpers/plan.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import {
@@ -37,7 +37,7 @@ const runUpdateBranch = (...args: string[]) => runCommand(updateBranch, "update-
 
 // The commit that HEAD of the worktree names, for example "HEAD^" for its first parent.
 const revisionOf = async (work: WorkReviewTask, name: string) =>
-  (await runGit(["rev-parse", name], { cwd: work.task.worktreePath!, env: work.env })).trim();
+  gitOutput({ cwd: work.task.worktreePath! }, work.env, "rev-parse", name);
 
 // The events of the task after the first count events.
 const eventsAfter = (work: WorkReviewTask, count: number) => eventsOf(work.dataRoot, KEY).slice(count);
