@@ -40,7 +40,7 @@ A skill is a folder under the `skills` folder of the installed tasker. For each 
 2. Remove `<folder>/<name>` when it exists.
 3. Copy the skill to `<folder>/<name>`.
 
-After the copy, the command prints `installed <name> to <folder>/<name>`. When a step fails, the command prints `error: cannot install <name> to <folder>/<name>: <reason>` on stderr. The next skill and the next folder still get their turn.
+After the copy, the command prints `installed <name> to <folder>/<name>`. When a step fails, the command prints `error: cannot install <name> to <folder>/<name>: <reason>` on stderr. Then the command goes on with the next folder.
 
 The command exits with these codes:
 

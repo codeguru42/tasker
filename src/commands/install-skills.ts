@@ -35,6 +35,7 @@ export function installSkillsFrom(sourceDir: string): RegisterCommand {
             } catch (error) {
               io.stderr(`error: cannot install ${name} to ${target}: ${errorMessage(error)}\n`);
               failed = true;
+              break;
             }
           }
         }
