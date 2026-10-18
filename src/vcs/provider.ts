@@ -29,10 +29,19 @@ export interface BaseBranchMemory {
   forgetDefaultBaseBranch(repoKey: string, branch: string): void;
 }
 
+// The base that the blocker step of start picks: the local branch of the task of a ready blocker.
+export interface BlockerBase {
+  // The key of the blocker issue.
+  key: string;
+  // refs/heads/<branch>
+  base: string;
+}
+
 export interface ResolveBaseRequest {
   memory: BaseBranchMemory;
   hint?: string;
   explicit?: string;
+  blocker?: BlockerBase;
   defaultBase?: string;
   ask: () => Promise<string>;
 }
@@ -42,7 +51,7 @@ export interface ResolvedBase {
   base: string;
   // baseRevision(base)
   revision: string;
-  source: "hint" | "explicit" | "learned" | "config" | "ask";
+  source: "hint" | "explicit" | "blocker" | "learned" | "config" | "ask";
   notes: string[];
 }
 

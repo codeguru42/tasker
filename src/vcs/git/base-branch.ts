@@ -1,5 +1,5 @@
 import { LOCAL_PREFIX } from "../local-branch.js";
-import type { BaseBranchMemory, ResolvedBase } from "../provider.js";
+import type { BaseBranchMemory, BlockerBase, ResolvedBase } from "../provider.js";
 import { fetchOrigin } from "./changes.js";
 import { originRef, refExists } from "./refs.js";
 
@@ -37,6 +37,8 @@ interface ResolveBaseOptions {
   hint?: string;
   // The raw --base text of this run.
   explicit?: string;
+  // The base from the blocker step of start.
+  blocker?: BlockerBase;
   // repo.defaultBaseBranch, used as it is.
   defaultBaseBranch?: string;
   ask: () => Promise<string>;
@@ -48,7 +50,7 @@ function exists(clone: string, env: NodeJS.ProcessEnv, base: string): Promise<bo
 }
 
 // Fetches origin, then picks the base branch of a task. The sources come in this order:
-// the hint, --base, the learned default, defaultBaseBranch and the answer of ask.
+// the hint, --base, the blocker, the learned default, defaultBaseBranch and the answer of ask.
 export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<ResolvedBase> {
   const { repoKey, clone, env, hint, memory } = options;
   const explicit = options.explicit === undefined ? undefined : parseBaseInput(options.explicit);
@@ -86,6 +88,15 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
       throw new Error(`the base branch does not exist: ${explicit} (from --base)`);
     }
     return found(explicit, "explicit");
+  }
+
+  const { blocker } = options;
+  if (blocker !== undefined) {
+    if (!(await exists(clone, env, blocker.base))) {
+      throw new Error(`the base branch does not exist: ${blocker.base} (from the blocker ${blocker.key})`);
+    }
+    notes.push(`based on ${blocker.key}'s branch`);
+    return found(blocker.base, "blocker");
   }
 
   const learned = memory.getDefaultBaseBranch(repoKey);

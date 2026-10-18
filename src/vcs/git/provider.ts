@@ -90,7 +90,7 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
       const { clone } = pathsOf(ctx);
       await discardWorktreeChanges({ clone, env: ctx.env, path });
     },
-    async resolveBase(ctx, { memory, hint, explicit, defaultBase, ask }) {
+    async resolveBase(ctx, { memory, hint, explicit, blocker, defaultBase, ask }) {
       const { clone } = pathsOf(ctx);
       return resolveBaseBranch({
         repoKey: ctx.repoKey,
@@ -100,6 +100,7 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
         memory,
         hint,
         explicit,
+        blocker,
         defaultBaseBranch: defaultBase,
         ask,
       });
