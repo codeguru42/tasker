@@ -31,4 +31,4 @@ The rules for the links are in [The blocked-by links](planning.md#the-blocked-by
 
 ## Milestones
 
-[The milestone of an issue](planning.md#the-milestone-of-an-issue) of planning.md gives the milestone of each issue. The planning session closes a milestone only when the operator says so. Then it runs `gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`. An orchestrator asks the operator to close a milestone only after each finding of its review rounds is handled, as [Pick the tickets](orchestration.md#pick-the-tickets) of orchestration.md says.
+[The milestone of an issue](planning.md#the-milestone-of-an-issue) of planning.md gives the milestone of each issue. The planning session closes a milestone only when the operator says so. Then it runs `gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`. An orchestrator asks the operator to close a milestone only after each finding of its review rounds is handled, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) of pick-the-tickets.md says.
