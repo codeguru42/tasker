@@ -31,8 +31,8 @@ export interface UpdateBranchRequest {
   taskId: number;
   // The raw value of --strategy, or undefined when the option is absent.
   strategy: string | undefined;
-  // True with --take-remote: for tips that have diverged, the sync step moves the branch and the worktree to the remote tip
-  // also when local work is at risk.
+  // True with --take-remote: the sync step moves the branch and the worktree to the remote tip for each divergence, also
+  // when local work is at risk or no commit is only on origin.
   takeRemote: boolean;
   env: NodeJS.ProcessEnv;
   io: Io;
@@ -154,9 +154,9 @@ function divergedTake(
 
 // Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base.
 // The task lock covers all the steps and does not wait. The repo lock covers the fetch and the move of the branch. The
-// sync step comes first. It fast-forwards the task branch to the copy on origin. For tips that have diverged, it compares
+// sync step comes first. It fast-forwards the task branch when the local tip is an ancestor of the copy on origin. For tips that have diverged, it compares
 // the patches of the two sides. It moves the task branch and the worktree to the copy on origin when origin has a commit
-// only on origin, or with takeRemote. It fails and lists the commits at risk only when local work is at risk, origin has
+// only on origin and no local work is at risk, or with takeRemote. It fails and lists the commits at risk only when local work is at risk, origin has
 // a commit only on origin, and takeRemote is off. With local work at risk and no commit only on origin, nothing moves and
 // a note goes to stderr. Then the base step runs on the new local tip. A failed base step also undoes the sync move. When
 // the head moved in either step, the task goes to the target of the demotion table. Otherwise it goes back to its origin
