@@ -13,6 +13,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [skills/tasker/SKILL.md](skills/tasker/SKILL.md): the index of the commands, with one reference file for each phase in skills/tasker/references/.
 - [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a rebase conflict.
 - [docs/dev/orchestration.md](docs/dev/orchestration.md): the rules for an orchestrator that runs tickets from the project board through the installed tasker.
+- [docs/dev/pick-the-tickets.md](docs/dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket rule, the parent-hold rule, the link offer, the defer rule and "The prompt of an agent".
 - [docs/dev/planning.md](docs/dev/planning.md): the rules for a planning session that plans a milestone and writes its issues: the order of the work, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the operator.
 - [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, and the steps of the planning session for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user: a decision of the user, a question of the user, core features first and the work that waits, simplify over special rules, and the tools of a session.
