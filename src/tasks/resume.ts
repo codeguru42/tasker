@@ -1,5 +1,6 @@
 import type { IssueRef } from "../issue-key/ref.js";
 import {
+  canTransition,
   originText,
   refineFeedbackOf,
   transitionFromEvents,
@@ -123,7 +124,8 @@ export function moveFromPause(
   const pause = task.state as TaskState;
   const origin = transitionFromEvents(events, pause);
   const row = origin === undefined ? undefined : originRow(events, origin, RESUME_TABLES);
-  if (origin === undefined || row === undefined) {
+  // The state machine has no edge from the origin into this pause, so no run stopped that way.
+  if (origin === undefined || row === undefined || !canTransition(origin, pause)) {
     throw new Error(
       `the task of ${task.issueKey} was paused from ${originText(events, pause)}; tasker ${command} has no step for it`,
     );
