@@ -29,13 +29,18 @@ The stored form of a base is one of these:
 
 Names such as `-x` and `a..b` pass the parse of the text that a user types. [The existence check](#revisions) then rejects them, and its error names them.
 
+### Stacked task
+
+A stacked task is a task whose base has the form `refs/heads/<x>`, where `<x>` is the branch of a task of the same repo. Its parent is the newest task of the repo with that branch.
+
 ### The resolve
 
-The checks that need no git run first, so a bad input causes no fetch and no write. The resolve has no step for the blocker of a stacked task.
+The checks that need no git run first, so a bad input causes no fetch and no write.
 
-The source order is: the issue hint, then `--base`, then the learned default, then `defaultBaseBranch`, then a question.
+The source order is: the issue hint, then `--base` or the stored base of the task, then the blocker step of start, then the learned default, then `defaultBaseBranch`, then a question.
 
-- Only `--base` can give a local branch (`refs/heads/<x>`). A hint and an answer must name a remote branch.
+- Only `--base` and the blocker step can give a local branch (`refs/heads/<x>`). A hint and an answer must name a remote branch.
+- The resolve checks the blocker base with the same existence check as `--base refs/heads/<x>`.
 - A missing `defaultBaseBranch` fails and does not ask.
 - The hint comes from the issue tracker, so it is untrusted text. It cannot reach `refs/heads/*`, because the check uses `refs/remotes/origin/<hint>`, and `git show-ref --verify` matches only the exact ref.
 
@@ -44,7 +49,7 @@ The source order is: the issue hint, then `--base`, then the learned default, th
 The learned default is the row of the repo in the `default_base_branches` table. [data-root.md](data-root.md#default_base_branches-table) holds the forget rule.
 
 - A value from the configuration default or from the answer is saved only after the branch exists in the clone.
-- A hint and `--base` store nothing.
+- A hint, `--base` and the blocker step store nothing.
 - tasker asks at most once for each repo, unless a learned value later stops existing.
 - A learned value that is missing is deleted before the question runs. If the question or its check then fails, the learned value stays deleted.
 
