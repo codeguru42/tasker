@@ -8,7 +8,7 @@ tasker takes an issue from an issue tracker and drives an AI coding assistant th
 - npm
 - git
 - An AI coding assistant: tasker runs Claude Code with the `claude` command. The [assistant configuration](docs/config.md#assistant) selects it.
-- An issue tracker: for a GitHub tracker, tasker runs the `gh` command, as the [tracker configuration](docs/config.md#issuetracker) says.
+- An issue tracker: for a GitHub tracker, tasker runs the `gh` command, as the [tracker configuration](docs/config.md#issuetracker) says. The `gh` login of the account of `issueTracker.account` needs the token scope `repo`, as the [token scopes](docs/config.md#token-scopes) say.
 
 ## Install
 

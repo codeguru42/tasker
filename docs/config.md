@@ -112,6 +112,12 @@ This table describes the object after tasker merges a named tracker into it.
 | `doneLabel`            | non-empty string       | optional | `tasker finish` adds this label, and the issue stays open. With no label, the finish closes the issue as completed. The `github` tracker rejects a comma, because `gh` splits this value on commas. The error is `repos.<key>.issueTracker.doneLabel: must not contain a comma for the github tracker`.                                   |
 | `doneStatus`           | non-empty string       | optional | The same as `doneLabel`, for `jira`, which is not available in this version.                                                                                                                                                                                                                                                              |
 
+### Token scopes
+
+The `github` tracker reads issues and their blocked-by links, assigns issues, adds and removes labels and closes issues. These calls need the scope `repo`. A scope is one permission of the token that `gh auth login` stores. GitHub refuses a call that needs a scope that the token does not have.
+
+To log in as the account of `account`, run `gh auth login --hostname github.com`, then log in as that account. By default, `gh auth login` asks for the scopes `repo`, `read:org` and `gist`. As a result, a default login has the scope that tasker needs. `gh auth status` shows the scopes of the token of each account in the line `Token scopes:`.
+
 ## `trackers`
 
 `trackers` maps a name to a tracker definition. A definition takes every `issueTracker` key except `project`, `tracker` and `match`. Its `provider` is required. A definition can leave `account` out, because each repo can set it.
