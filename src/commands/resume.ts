@@ -42,6 +42,11 @@ export async function runResumed(
 ): Promise<void> {
   const { key, origin, target, next, feedback } = moved;
   io.stdout(`resumed ${key}: paused in ${origin}, back in ${target}\n`);
+  // Nothing runs after a resume from updating_branch: the operator looks at the worktree first.
+  if (next === "update-branch") {
+    io.stdout(`run tasker update-branch ${key} again\n`);
+    return;
+  }
   // A move into refining for the feedback form of review always records its feedback.
   const run: NextRun =
     next === "refine"

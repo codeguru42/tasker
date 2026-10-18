@@ -4,8 +4,10 @@ import {
   refineFeedbackOf,
   transitionFromEvents,
   transitionWithResume,
+  STATES,
   type TaskState,
 } from "../state/machine.js";
+import { acceptsState } from "../state/commands.js";
 import { withTaskLock } from "../store/locks.js";
 import type { NewEvent, ResumeWrites, Task, TaskEvent, TaskStore } from "../store/store.js";
 import type { RetryNext } from "./retry.js";
@@ -14,7 +16,7 @@ import { taskInState } from "./task-state.js";
 
 // The command that runs after the move of a resume. A resume has no start and no refine of findings: retry prints a
 // hint for the refine values, and resume runs them. A resume also runs finish, which retry never does.
-export type ResumeNext = Exclude<RetryNext, "start" | "refine-findings"> | "finish";
+export type ResumeNext = Exclude<RetryNext, "start" | "refine-findings"> | "finish" | "update-branch";
 
 export interface ResumeRequest {
   ref: IssueRef;
@@ -68,13 +70,26 @@ const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   },
 };
 
-// The refining entry has no fallback, so resume refuses a refine origin with no row. The merging entry has none too:
-// the merge origin (the state that the task left when the last merge started) gives the row. Of the pauses, the state
-// machine allows only interrupted from merging and from finishing.
+// The rows of a task that stopped in updating_branch: the origin of the update (the state that the task left when
+// tasker update-branch started) gives the row, and the task goes back to it. Nothing runs after the move, because a
+// crash during tasker update-branch can leave the worktree in a rebase or with changes, so the operator looks at the
+// worktree first.
+const UPDATE_BRANCH_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = Object.fromEntries(
+  STATES.filter((state) => acceptsState("update-branch", state)).map((state) => [
+    state,
+    { target: state, next: "update-branch", clearReview: false },
+  ]),
+);
+
+// The refining entry has no fallback, so resume refuses a refine origin with no row. The merging and updating_branch
+// entries have none too: the merge origin (the state that the task left when the last merge started) and the update
+// origin give the row. Of the pauses, the state machine allows only interrupted from merging, finishing and
+// updating_branch.
 const RESUME_TABLES: OriginTables<ResumeRow> = {
   rows: RESUME_TABLE,
   byOriginOf: {
     refining: { rows: REFINE_RESUME_TABLE },
+    updating_branch: { rows: UPDATE_BRANCH_RESUME_TABLE },
     merging: {
       rows: { accepted: { target: "accepted", next: "merge", clearReview: false } },
     },
