@@ -23,7 +23,7 @@ import { gitDoctorChecks } from "./doctor.js";
 import { installPushHook } from "./push-guard.js";
 import { provisionClone } from "./provision.js";
 import { remoteTip } from "./remote-tip.js";
-import { moveWorktreeTo, reconcileWorktree, resyncWorktree, worktreeState } from "./reconcile.js";
+import { moveWorktreeTo, reconcileWorktree, replayOntoTip, resyncWorktree, worktreeState } from "./reconcile.js";
 import { repoPaths } from "./repo-paths.js";
 import {
   createTaskWorktree,
@@ -148,6 +148,10 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
     async resync(ctx, { path, baseRevision, strategy }) {
       const { clone } = pathsOf(ctx);
       return resyncWorktree({ clone, env: ctx.env, path, baseRevision, strategy });
+    },
+    async replayOnto(ctx, { path, onto }) {
+      const { clone } = pathsOf(ctx);
+      return replayOntoTip({ clone, env: ctx.env, path, onto });
     },
     async workspaceState(ctx, { path }) {
       const { clone } = pathsOf(ctx);

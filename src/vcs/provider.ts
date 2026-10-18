@@ -195,6 +195,9 @@ export interface VcsProvider {
     ctx: VcsContext,
     o: { path: string; baseRevision: string; strategy: ReconcileStrategy },
   ): Promise<ResyncResult>;
+  // Replays the commits of the workspace after the merge base of its head and onto, onto onto, and gives the new head.
+  // It does not fetch. A conflict rejects with ReconcileConflictError (src/vcs/errors.ts) and the workspace is restored.
+  replayOnto(ctx: VcsContext, o: { path: string; onto: string }): Promise<string>;
   // Reads the head, the task ref and the uncommitted changes of the workspace. It changes nothing.
   workspaceState(ctx: VcsContext, o: { path: string }): Promise<WorkspaceState>;
   // Pushes taskRef to the remote. published is the revision that the last publish gave.
