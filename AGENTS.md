@@ -17,6 +17,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/doc-reads.md](docs/dev/doc-reads.md): the re-read rule, the notice rule and the doc-read rule.
 - [docs/dev/run-one-ticket.md](docs/dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base rule, the add-work rule, the diff read and the measure rule.
 - [docs/dev/plan-review.md](docs/dev/plan-review.md): the repo-files rule, the fact test, the issue check, the stop rule, the design-gap rule and the quote check.
+- [docs/dev/tasker-commands.md](docs/dev/tasker-commands.md): the plain-form rule, the tool-block rule, the command rules, the facts of the installed tasker and the run times.
 - [docs/dev/planning.md](docs/dev/planning.md): the rules for a planning session that plans a milestone and writes its issues: the order of the work, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the operator.
 - [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, and the steps of the planning session for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user: a decision of the user, a question of the user, core features first and the work that waits, simplify over special rules, and the tools of a session.

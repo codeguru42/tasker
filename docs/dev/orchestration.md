@@ -18,6 +18,7 @@ The orchestration pages are `docs/dev/orchestration.md` and the pages of this li
 - [docs/dev/doc-reads.md](doc-reads.md): the re-read rule, the notice rule and the doc-read rule.
 - [docs/dev/run-one-ticket.md](run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base rule, the add-work rule, the diff read and the measure rule.
 - [docs/dev/plan-review.md](plan-review.md): the repo-files rule, the fact test, the issue check, the stop rule, the design-gap rule and the quote check.
+- [docs/dev/tasker-commands.md](tasker-commands.md): the plain-form rule, the tool-block rule, the command rules, the facts of the installed tasker and the run times.
 
 ### The CI wait
 
