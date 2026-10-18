@@ -333,16 +333,16 @@ describe("createGitProvider", () => {
       const { git, taskRef } = await workspace();
       const { clone } = paths();
       const env = fixture.context.env;
-      await containment(git, taskRef);
-      const absent = await git.fetchedRemoteTaskRef(fixture.context, { taskRef });
+      const { revision: absentLocal } = await containment(git, taskRef);
+      const absent = await git.fetchedRemoteTaskRef(fixture.context, { taskRef, revision: absentLocal });
       expect(absent).toEqual({ state: "absent" });
-      expect(absent).toEqual(await remoteTaskBranchState({ clone, env, branch: taskRef }));
+      expect(absent).toEqual(await remoteTaskBranchState({ clone, env, branch: taskRef, local: absentLocal }));
       await copyCloneBranchToOrigin({ origin: fixture.origin.path, clone, branch: taskRef, env });
       const tip = await fixture.origin.addCommit(taskRef);
-      await containment(git, taskRef);
-      const present = await git.fetchedRemoteTaskRef(fixture.context, { taskRef });
+      const { revision } = await containment(git, taskRef);
+      const present = await git.fetchedRemoteTaskRef(fixture.context, { taskRef, revision });
       expect(present).toEqual({ state: "present", revision: tip, relation: "local-ancestor" });
-      expect(present).toEqual(await remoteTaskBranchState({ clone, env, branch: taskRef }));
+      expect(present).toEqual(await remoteTaskBranchState({ clone, env, branch: taskRef, local: revision }));
     });
 
     it("moves the task ref and the head of the workspace to a revision and gives the head", async () => {

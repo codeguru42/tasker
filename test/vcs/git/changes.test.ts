@@ -326,8 +326,8 @@ describe("git changes", () => {
   });
 
   describe("remoteTaskBranchState", () => {
-    const state = (extra: Partial<Parameters<typeof remoteTaskBranchState>[0]> = {}) =>
-      remoteTaskBranchState({ clone, env, branch, ...extra });
+    const state = async (extra: Partial<Parameters<typeof remoteTaskBranchState>[0]> = {}) =>
+      remoteTaskBranchState({ clone, env, branch, local: await branchTip(), ...extra });
     const copyBranch = () => copyCloneBranchToOrigin({ origin: origin.path, clone, branch, env });
     const fetchAll = (...args: string[]) => runGit(["fetch", ...args, "origin"], { gitDir: clone, env });
 
@@ -395,6 +395,21 @@ describe("git changes", () => {
       const error = await failureOf(state({ branch: "-x", env: recorded.env }), Error);
       expect(error.message).toBe('not a task branch name: "-x"');
       expect(readArgLog(recorded.log)).toEqual([]);
+    });
+
+    it("rejects a local tip that is not a full revision before any git call", async () => {
+      const recorded = gitRecorderEnv(origin.dir, env);
+      const error = await failureOf(state({ local: "HEAD", env: recorded.env }), Error);
+      expect(error.message).toBe('the local tip is not a full revision: "HEAD"');
+      expect(readArgLog(recorded.log)).toEqual([]);
+    });
+
+    it("uses the passed local tip and does not read the task branch", async () => {
+      await copyBranch();
+      const remote = await origin.branchHead(branch);
+      await fetchAll();
+      await commitInWorktree(path, env, { file: "work.txt" });
+      expect(await state({ local: remote })).toEqual({ state: "present", revision: remote, relation: "equal" });
     });
   });
 
