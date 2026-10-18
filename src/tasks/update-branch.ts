@@ -127,15 +127,19 @@ async function backAtStart(
 // Decides the move of the sync step for tips that have diverged. A commit only on origin is a remote-side commit with
 // no same-patch commit on the local side. A remote merge commit always counts. Local work at risk is a local-side
 // commit that is not a merge commit, has no same-patch commit on the remote side, and that the base tip does not reach.
-// It throws the error that lists the commits at risk when there are some and takeRemote is false. Otherwise the step
-// moves to the remote tip when takeRemote is true or when origin has a commit that is only on origin.
+// With takeRemote, the result is "take". Without it, the step throws the error that lists the commits at risk when local
+// work is at risk and a commit is only on origin. With a commit only on origin and no work at risk, the result is "take".
+// With local work at risk and no commit only on origin, the result is "note": nothing moves, and the caller writes a note.
+// Otherwise the result is "none".
 function divergedTake(
   sides: RemoteTaskRefSides,
   o: { branch: string; issueKey: string; takeRemote: boolean },
-): boolean {
+): "take" | "none" | "note" {
   const { branch, issueKey, takeRemote } = o;
+  const onlyOnOrigin = sides.remote.some((c) => c.merge || !c.samePatch);
   const atRisk = sides.local.filter((c) => !c.merge && !c.samePatch && !c.onBase);
-  if (atRisk.length > 0 && !takeRemote) {
+  if (takeRemote) return "take";
+  if (atRisk.length > 0 && onlyOnOrigin) {
     throw new Error(
       [
         `${branch} and origin/${branch} have diverged, and origin/${branch} has no copy of these commits:`,
@@ -144,16 +148,19 @@ function divergedTake(
       ].join("\n"),
     );
   }
-  return takeRemote || sides.remote.some((c) => c.merge || !c.samePatch);
+  if (onlyOnOrigin) return "take";
+  return atRisk.length > 0 ? "note" : "none";
 }
 
 // Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base.
 // The task lock covers all the steps and does not wait. The repo lock covers the fetch and the move of the branch. The
 // sync step comes first. It fast-forwards the task branch to the copy on origin. For tips that have diverged, it compares
 // the patches of the two sides. It moves the task branch and the worktree to the copy on origin when origin has a commit
-// only on origin, or with takeRemote. It fails and lists the commits at risk when local work is at risk and takeRemote is
-// off. Then the base step runs on the new local tip. A failed base step also undoes the sync move. When the head moved in either step, the task goes to the target of the demotion
-// table. Otherwise it goes back to its origin state.
+// only on origin, or with takeRemote. It fails and lists the commits at risk only when local work is at risk, origin has
+// a commit only on origin, and takeRemote is off. With local work at risk and no commit only on origin, nothing moves and
+// a note goes to stderr. Then the base step runs on the new local tip. A failed base step also undoes the sync move. When
+// the head moved in either step, the task goes to the target of the demotion table. Otherwise it goes back to its origin
+// state.
 export async function updateBranchTask(store: TaskStore, request: UpdateBranchRequest): Promise<UpdateBranchResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => updateBranchLocked(store, request));
 }
@@ -208,9 +215,12 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
           remoteRevision: remote.revision,
           baseRevision: baseTip,
         });
-        if (divergedTake(sides, { branch, issueKey: task.issueKey, takeRemote: request.takeRemote })) {
+        const move = divergedTake(sides, { branch, issueKey: task.issueKey, takeRemote: request.takeRemote });
+        if (move === "take") {
           syncedHead = await vcs.moveWorkspace(ctx, { path, revision: remote.revision });
           synced = { sync: "take-remote", remoteTip: remote.revision };
+        } else if (move === "note") {
+          io.stderr(`note: ${branch} and origin/${branch} have diverged; reconcile the two branches by hand\n`);
         }
       }
       // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
