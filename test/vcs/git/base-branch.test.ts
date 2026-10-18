@@ -116,6 +116,14 @@ describe("resolveBaseBranch", () => {
     return (await runGit(["rev-parse", ref], { gitDir: clone, env })).trim();
   }
 
+  // Makes the local branch refs/heads/<name> of the clone at the tip of refs/remotes/origin/main.
+  async function localBranchAtMain(name: string): Promise<void> {
+    await runGit(["update-ref", `refs/heads/${name}`, "refs/remotes/origin/main"], {
+      gitDir: clone,
+      env,
+    });
+  }
+
   afterEach(() => {
     store.close();
     origin.remove();
@@ -249,20 +257,14 @@ describe("resolveBaseBranch", () => {
     });
 
     it("gives a local branch for an explicit refs/heads/<x>", async () => {
-      await runGit(["update-ref", "refs/heads/task-1", "refs/remotes/origin/main"], {
-        gitDir: clone,
-        env: origin.env,
-      });
+      await localBranchAtMain("task-1");
       const result = await resolve({ explicit: "refs/heads/task-1" });
       expect(result.base).toBe("refs/heads/task-1");
       expect(result.revision).toBe("refs/heads/task-1");
     });
 
     it("uses the branch of the blocker after the explicit base and before the learned default", async () => {
-      await runGit(["update-ref", "refs/heads/task-1", "refs/remotes/origin/main"], {
-        gitDir: clone,
-        env: origin.env,
-      });
+      await localBranchAtMain("task-1");
       store.setDefaultBaseBranch("tasker", "learned");
       const result = await resolve({
         blocker: { key: "codeguru42/tasker#3", base: "refs/heads/task-1" },
@@ -276,10 +278,7 @@ describe("resolveBaseBranch", () => {
     });
 
     it("uses the explicit base before the blocker", async () => {
-      await runGit(["update-ref", "refs/heads/task-1", "refs/remotes/origin/main"], {
-        gitDir: clone,
-        env: origin.env,
-      });
+      await localBranchAtMain("task-1");
       const result = await resolve({
         explicit: "explicit",
         blocker: { key: "codeguru42/tasker#3", base: "refs/heads/task-1" },
@@ -319,10 +318,7 @@ describe("resolveBaseBranch", () => {
     });
 
     it("gives the fetched commit and not a local branch with the same short name", async () => {
-      await runGit(["update-ref", "refs/heads/origin/main", "refs/remotes/origin/main"], {
-        gitDir: clone,
-        env,
-      });
+      await localBranchAtMain("origin/main");
       await origin.addCommit("main");
       const result = await resolve({ defaultBaseBranch: "main" });
       expect(result.revision).toBe("refs/remotes/origin/main");
@@ -379,10 +375,7 @@ describe("resolveBaseBranch", () => {
     });
 
     it("saves nothing for the branch of a blocker", async () => {
-      await runGit(["update-ref", "refs/heads/task-1", "refs/remotes/origin/main"], {
-        gitDir: clone,
-        env: origin.env,
-      });
+      await localBranchAtMain("task-1");
       await resolve({ blocker: { key: "codeguru42/tasker#3", base: "refs/heads/task-1" } });
       expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
     });
