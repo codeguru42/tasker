@@ -263,7 +263,7 @@ function prepareConfig(raw: unknown): Prepared {
 }
 
 export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
-  const dataRoot = z.string().transform((value, ctx) => {
+  const absolutePath = z.string().transform((value, ctx) => {
     let expanded: string;
     try {
       expanded = expandPath(value, env, homedir);
@@ -282,9 +282,10 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
   });
 
   const top = z.strictObject({
-    dataRoot,
+    dataRoot: absolutePath,
     retentionDays: z.number().default(30),
     dataRootMinFreeBytes: positive.default(1073741824),
+    skillsDirs: z.array(absolutePath).min(1).prefault(["~/.claude/skills"]),
     limits: LimitsSchema,
     trackers: z.record(z.string(), TrackerDefinitionSchema).default({}),
     repos: z.record(z.string(), RepoSchema),
