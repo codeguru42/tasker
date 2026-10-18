@@ -1469,6 +1469,22 @@ describe("task store", () => {
         ]);
       });
 
+      it("sets the base of the row and keeps the source of the event", () => {
+        const task = store.createTask({ ...newTask, state: "updating_branch", base: "refs/heads/parent" });
+        writeRunMarker(dbPath, task.id, "updating_branch", process.pid);
+        const parent = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
+        store.updateBranchTask(task.id, "executed", { base: parent }, branchUpdated);
+        expect(store.getTask(task.id)?.base).toBe("main");
+        expect(store.listEvents(task.id).find((e) => e.type === "base")?.data).toEqual(parent);
+      });
+
+      it("keeps the base of the row when writes has no base", () => {
+        const task = store.createTask({ ...newTask, state: "updating_branch", base: "refs/heads/parent" });
+        writeRunMarker(dbPath, task.id, "updating_branch", process.pid);
+        store.updateBranchTask(task.id, "executed", {}, branchUpdated);
+        expect(store.getTask(task.id)?.base).toBe("refs/heads/parent");
+      });
+
       it("writes only the event of check when writes is empty", () => {
         const task = runningTask("updating_branch");
         const events = eventCount();
