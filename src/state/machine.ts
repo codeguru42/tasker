@@ -305,15 +305,17 @@ export interface BranchSnapshot {
 }
 
 // How the sync step of tasker update-branch found the copy of the task branch on origin: "absent" when origin has no
-// such branch, "fast-forward" when the step moved the task branch to it, and "none" when nothing moved.
-export type BranchSync = "absent" | "none" | "fast-forward";
+// such branch, "fast-forward" when the step moved the task branch to it, "take-remote" when --take-remote moved the task
+// branch to it, and "none" when nothing moved.
+export type BranchSync = "absent" | "none" | "fast-forward" | "take-remote";
 
 // True when a branch_updated event records a move of the head. An event with an error moved nothing. Else a move of the
-// base step (how is not "none") or of the sync step (sync is "fast-forward") counts. An old event has no sync.
+// base step (how is not "none") or of the sync step (sync is "fast-forward" or "take-remote") counts. An old event has
+// no sync.
 export function branchUpdateMoved(data: unknown): boolean {
   const { how, sync, error } = data as { how?: unknown; sync?: unknown; error?: unknown };
   if (error !== undefined) return false;
-  return how !== "none" || sync === "fast-forward";
+  return how !== "none" || sync === "fast-forward" || sync === "take-remote";
 }
 
 // Moves the task out of updating_branch with one branch_updated event { before, after, how, sync, [error], from, to } in
