@@ -222,11 +222,11 @@ export interface ExecuteTodoProgress {
 export interface StoreOptions {
   now?: () => Date;
 }
-
+// The writes of tasker update-branch besides the move. base is the data of a base event.
 // The writes of tasker update-branch besides the move. base is the data of a base event with the source update.
 // clearPlanApproval is the pinned version whose approval is cleared.
 export interface BranchUpdateWrites {
-  base?: { base: string; revision: string };
+  base?: { base: string; revision: string; source: "update" | "parent" };
   clearPlanApproval?: number;
 }
 
@@ -1517,7 +1517,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       return writeTask(taskId, { state }, check, (at) => {
         endRunStep(taskId, state);
         if (writes.clearPlanApproval !== undefined) clearPinnedApprovalStep(taskId, writes.clearPlanApproval);
-        if (writes.base !== undefined) writeEvent(taskId, at, "base", { ...writes.base, source: "update" });
+        if (writes.base !== undefined) writeEvent(taskId, at, "base", writes.base);
       });
     },
 

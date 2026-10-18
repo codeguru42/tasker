@@ -1454,7 +1454,7 @@ describe("task store", () => {
 
     describe("updateBranchTask", () => {
       const branchUpdated = () => ({ type: "branch_updated", data: { how: "rebase" } });
-      const base = { base: "main", revision: "refs/remotes/origin/main" };
+      const base = { base: "main", revision: "refs/remotes/origin/main", source: "update" as const };
       const reviewTask = () => store.createTask({ ...newTask, state: "awaiting_plan_review" });
       const approve = (taskId: number, version: number) => store.approvePlanRevision(taskId, version, "approved");
 
@@ -1464,7 +1464,7 @@ describe("task store", () => {
         expect(moved).toMatchObject({ id: task.id, state: "executed" });
         expect(store.getTask(task.id)).toEqual(moved);
         expect(store.listEvents(task.id).slice(-2)).toMatchObject([
-          { type: "base", at: "2026-01-01T00:00:00.000Z", data: { ...base, source: "update" } },
+          { type: "base", at: "2026-01-01T00:00:00.000Z", data: base },
           { type: "branch_updated", data: { how: "rebase" } },
         ]);
       });

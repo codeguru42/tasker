@@ -166,7 +166,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const state = moved ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
       if (moved) {
-        writes.base = { base, revision: baseRevision };
+        writes.base = { base, revision: baseRevision, source: "update" };
         if (origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       }
       const after: BranchSnapshot = { ...before, head: resynced.head };

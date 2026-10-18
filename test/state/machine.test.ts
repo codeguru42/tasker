@@ -650,7 +650,7 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("planning"));
       seedPinnedPlanRevision(store, task.id);
       transitionTask(store, task.id, "updating_branch");
-      const base = { base: "main", revision: before.baseRevision };
+      const base = { base: "main", revision: before.baseRevision, source: "update" as const };
       transitionWithBranchUpdate(
         store,
         task.id,
@@ -673,7 +673,7 @@ describe("task transitions", () => {
           task.id,
           "executed",
           { before, after, how: "rebase", sync: "none" },
-          { base: { base: "main", revision: "r" } },
+          { base: { base: "main", revision: "r", source: "update" } },
         ),
       ).toThrow("illegal state transition: awaiting_work_review -> executed");
       expect(store.getTask(task.id)!.state).toBe("awaiting_work_review");
