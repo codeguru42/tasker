@@ -94,6 +94,7 @@ These facts hold for zod 4.6.5. `test/zod-facts.test.ts` guards these facts.
 - zod skips a default `.superRefine()` after a missing field, a wrong type or a bad enum value.
 - A `z.preprocess` that adds an issue skips its inner schema and a default `.superRefine()` of the parent object. The other fields of the object still get their checks.
 - With `{ when: () => true }`, a `.superRefine()` runs in every case. It gets the input with each unknown key removed. It must still check the shape of each field that it reads.
+- A `.default()` value skips the schema, so a transform does not change it. A `.prefault()` value goes through the schema. As a result, a default that must be expanded like `dataRoot` uses `.prefault()`.
 
 As a result, when a check must report all problems in one run, as [rules.md](rules.md#code) says, give it `{ when: () => true }`. When a check must stop after a schema failure, run it as plain code after a successful `safeParse`, not as a refinement.
 

@@ -100,3 +100,11 @@ describe("a .superRefine() with { when: () => true }", () => {
     expect(refineInputs, MEASURE_AGAIN).toEqual([expected]);
   });
 });
+
+describe("a default value", () => {
+  it("skips the schema for .default() and goes through it for .prefault()", () => {
+    const upper = z.string().transform((value) => value.toUpperCase());
+    expect(upper.default("a").parse(undefined), MEASURE_AGAIN).toBe("a");
+    expect(upper.prefault("a").parse(undefined), MEASURE_AGAIN).toBe("A");
+  });
+});
