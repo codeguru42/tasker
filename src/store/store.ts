@@ -222,8 +222,8 @@ export interface ExecuteTodoProgress {
 export interface StoreOptions {
   now?: () => Date;
 }
+
 // The writes of tasker update-branch besides the move. base is the data of a base event.
-// The writes of tasker update-branch besides the move. base is the data of a base event with the source update.
 // clearPlanApproval is the pinned version whose approval is cleared.
 export interface BranchUpdateWrites {
   base?: { base: string; revision: string; source: "update" | "parent" };
