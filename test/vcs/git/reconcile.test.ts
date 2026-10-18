@@ -6,6 +6,7 @@ import {
   moveWorktreeTo,
   rebaseOnto,
   reconcileWorktree,
+  replayOntoTip,
   restoreCommands,
   resyncWorktree,
   restoreWorktree,
@@ -311,6 +312,43 @@ describe("git reconcile", () => {
       const error = await failureOf(onto({ upstream, onto: tip }), ReconcileConflictError);
       expect(error.paths).toEqual(["shared.txt"]);
       expect(error.message).toBe(`the rebase onto ${tip} stopped on conflicts: ${target}: "shared.txt"`);
+      await expectAsBefore(start);
+    });
+  });
+
+  describe("replayOntoTip", () => {
+    const replay = (tip: string, extra: Partial<Parameters<typeof replayOntoTip>[0]> = {}) =>
+      replayOntoTip({ clone, env, path, onto: tip, ...extra });
+
+    it("replays only the commits after the merge base", async () => {
+      const p = await commitInWorktree(path, env, { file: "p.txt" });
+      await commitInWorktree(path, env, { file: "g.txt" });
+      const tree = await git("rev-parse", `${p}^{tree}`);
+      // A new commit on top of p, as a parent branch that gained a commit.
+      const tip = (await runGit(["commit-tree", tree, "-p", p, "-m", "parent next"], { gitDir: clone, env })).trim();
+      const result = await replay(tip);
+      expect(result).toBe(await git("rev-parse", "HEAD"));
+      expect(await git("rev-parse", "HEAD~1")).toBe(tip);
+      expect(await git("rev-list", `${tip}..HEAD`)).not.toContain(p);
+      expect(await git("ls-files")).toContain("g.txt");
+      expect((await state()).branch).toBe(branch);
+    });
+
+    it("drops an old commit whose patch the tip holds", async () => {
+      await commitInWorktree(path, env, { file: "p.txt", content: "same" });
+      await commitInWorktree(path, env, { file: "g.txt" });
+      const tip = await moveBase({ file: "p.txt", content: "same" });
+      await replay(tip);
+      expect((await git("rev-list", `${tip}..HEAD`)).split("\n")).toHaveLength(1);
+      expect(await git("rev-parse", "HEAD~1")).toBe(tip);
+      expect(await git("ls-files")).toContain("g.txt");
+    });
+
+    it("aborts and restores when a commit conflicts", async () => {
+      const tip = await conflictSetup();
+      const start = await state();
+      const error = await failureOf(replay(tip), ReconcileConflictError);
+      expect(error.paths).toEqual(["shared.txt"]);
       await expectAsBefore(start);
     });
   });

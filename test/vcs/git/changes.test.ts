@@ -8,6 +8,7 @@ import {
   fetchOrigin,
   hasCommitsNotIn,
   isAncestor,
+  mergeBase,
   NO_OWN_COMMITS,
   ownCommitsText,
   remoteTaskBranchState,
@@ -438,6 +439,37 @@ describe("git changes", () => {
 
     it("refuses a missing ref", async () => {
       const error = await failureOf(ancestor("refs/heads/missing", BASE), Error);
+      expect(error.message).toBe("cannot resolve the revision: refs/heads/missing");
+    });
+  });
+
+  describe("mergeBase", () => {
+    const base = (a: string, b: string) => mergeBase({ clone, env, a, b });
+    // Runs plain git merge-base in the clone, as a separate read of the same answer.
+    const plain = (a: string, b: string) =>
+      runGit(["merge-base", a, b], { gitDir: clone, env }).then((out) => out.trim());
+
+    it("gives the fork commit of a branch and its moved base", async () => {
+      const fork = await baseTip();
+      const sha = await commitInWorktree(path, env, { file: "feature.txt" });
+      await moveBase();
+      expect(await base(sha, BASE)).toBe(fork);
+      expect(await base(sha, BASE)).toBe(await plain(sha, BASE));
+    });
+
+    it("gives the same commit for the two inputs in either order", async () => {
+      const sha = await commitInWorktree(path, env, { file: "feature.txt" });
+      await moveBase();
+      expect(await base(BASE, sha)).toBe(await base(sha, BASE));
+    });
+
+    it("gives the older commit when one input holds the other", async () => {
+      const sha = await commitInWorktree(path, env, { file: "feature.txt" });
+      expect(await base(sha, BASE)).toBe(await baseTip());
+    });
+
+    it("refuses a missing ref", async () => {
+      const error = await failureOf(base("refs/heads/missing", BASE), Error);
       expect(error.message).toBe("cannot resolve the revision: refs/heads/missing");
     });
   });
