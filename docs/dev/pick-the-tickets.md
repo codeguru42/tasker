@@ -29,7 +29,9 @@ The orchestrator waits in these cases:
 - The blocker is in any other state.
 - Two or more blockers of the ticket are open. The ticket waits until at most one is open, because `tasker start` refuses two ready blockers.
 
-Before the orchestrator starts a stacked ticket, it makes sure that the branch of the parent contains the tip of the base of the parent. The orchestrator first runs `git fetch --multiple tasker origin` in its local clone. Then the orchestrator reads `<parent tip>` with `git rev-parse --verify tasker/<parent branch>` and `<base tip>` with `git rev-parse --verify origin/<base branch>`, as [the shared-clone rule](limits.md#the-shared-clone-rule) says. The orchestrator then runs the `git merge-base --is-ancestor` step of [the diff read](run-one-ticket.md#the-diff-read) as `git merge-base --is-ancestor <base tip> <parent tip>`. If the exit code is 1, the orchestrator first tests the exception below. If the exception does not apply, the orchestrator tells the agent of the parent to run `tasker update-branch`.
+Before the orchestrator starts a stacked ticket, it makes sure that the branch of the parent contains the tip of the base of the parent. The orchestrator first runs `git fetch --multiple tasker origin` in its local clone. Then the orchestrator reads `<parent tip>` with `git rev-parse --verify tasker/<parent branch>`, as [the shared-clone rule](limits.md#the-shared-clone-rule) says. The orchestrator reads `<base tip>` the same way with `git rev-parse --verify origin/<base branch>`, with the base of [the base rule](run-one-ticket.md#the-base-rule) for the parent. The orchestrator then runs the `git merge-base --is-ancestor` step of [the diff read](run-one-ticket.md#the-diff-read) as `git merge-base --is-ancestor <base tip> <parent tip>`.
+
+If the exit code is 1, the orchestrator first tests the exception below. If the exception does not apply, the orchestrator tells the agent of the parent to run `tasker update-branch`. For this one `tasker update-branch`, the order of the orchestrator wins over the hold of [the parent-hold rule](#the-parent-hold-rule). The hold stays for each later command.
 
 The commands of the check are the fetch, the two hash reads and `git merge-base --is-ancestor`. If a command of the check fails, or the exit code of `git merge-base --is-ancestor` is not 0 and not 1, [the failure rule](limits.md#the-failure-rule) applies to the orchestrator. Then the stacked ticket does not start at that moment.
 
@@ -37,7 +39,7 @@ If the review loop 1 of the parent has findings, or the diff read of the parent 
 
 On 2026-10-17, the user decided for #172: "do the `update-branch` before starting stacked children".
 
-One exception applies. If the new commits on the base change no file of the parent, the orchestrator starts the stacked ticket without another update of the parent. To find this out, the orchestrator reads two lists in its local clone, with the two hashes of the check. It uses the base of [the base rule](run-one-ticket.md#the-base-rule) for the parent.
+One exception applies. If the new commits on the base change no file of the parent, the orchestrator starts the stacked ticket without another update of the parent. To find this out, the orchestrator reads two lists in its local clone, with the two hashes of the check.
 
 - The files of the parent: `git diff --name-only <base tip>...<parent tip>`
 - The files of the new commits on the base: `git diff --name-only <parent tip>...<base tip>`
