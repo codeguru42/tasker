@@ -4,7 +4,7 @@ import type { TaskStore } from "../store/store.js";
 import { moveFromPause, type ResumeRequest, type ResumeResult } from "./resume.js";
 import { taskInState } from "./task-state.js";
 
-export type ApproveCreditsRequest = ResumeRequest;
+export type ApproveCreditsRequest = Pick<ResumeRequest, "ref" | "taskId">;
 
 export interface ApproveCreditsResult extends ResumeResult {
   // The reset time of the approved quota window. The pause record gives it, and a pause can have none.

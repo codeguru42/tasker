@@ -1,3 +1,4 @@
+import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import {
   canTransition,
@@ -5,15 +6,17 @@ import {
   refineFeedbackOf,
   transitionFromEvents,
   transitionWithResume,
+  updateStartHeadOf,
   STATES,
   type TaskState,
 } from "../state/machine.js";
 import { acceptsState } from "../state/commands.js";
-import { withTaskLock } from "../store/locks.js";
+import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { NewEvent, ResumeWrites, Task, TaskEvent, TaskStore } from "../store/store.js";
 import type { RetryNext } from "./retry.js";
 import { originRow, type OriginTables } from "./origin-row.js";
-import { taskInState } from "./task-state.js";
+import { vcsForRepo } from "../vcs/provider.js";
+import { requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
 // The command that runs after the move of a resume. A resume has no start and no refine of findings: retry prints a
 // hint for the refine values, and resume runs them. A resume also runs finish, which retry never does.
@@ -23,6 +26,10 @@ export interface ResumeRequest {
   ref: IssueRef;
   // The task that the lookup found. The resume reads it again under the task lock.
   taskId: number;
+  config: Config;
+  env: NodeJS.ProcessEnv;
+  // How long the resume of an update waits for the repo lock, in milliseconds.
+  repoLockWaitMs: number;
 }
 
 export interface ResumeResult {
@@ -31,6 +38,8 @@ export interface ResumeResult {
   next: ResumeNext;
   // The feedback that the move into refining recorded. Only a refine row gives it.
   feedback?: string;
+  // The head that the restore put the worktree back at. Only a resume from updating_branch gives it.
+  head?: string;
 }
 
 interface ResumeRow {
@@ -72,9 +81,8 @@ const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
 };
 
 // The rows of a task that stopped in updating_branch: the origin of the update (the state that the task left when
-// tasker update-branch started) gives the row, and the task goes back to it. Nothing runs after the move, because a
-// crash during tasker update-branch can leave the worktree in a rebase or with changes, so the operator looks at the
-// worktree first.
+// tasker update-branch started) gives the row, and the task goes back to it. The resume first puts the worktree back at
+// the head from before the update, and then nothing runs after the move. The operator runs tasker update-branch.
 const UPDATE_BRANCH_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = Object.fromEntries(
   STATES.filter((state) => acceptsState("update-branch", state)).map((state) => [
     state,
@@ -104,10 +112,67 @@ export async function resumeTask(store: TaskStore, request: ResumeRequest): Prom
   return withTaskLock(store, repoKey, key, () => resumeLocked(store, request));
 }
 
-function resumeLocked(store: TaskStore, request: ResumeRequest): ResumeResult {
-  const { taskId } = request;
-  const task = taskInState(store, taskId, "resume");
-  return moveFromPause(store, task, store.listEvents(taskId), "resume");
+async function resumeLocked(store: TaskStore, request: ResumeRequest): Promise<ResumeResult> {
+  const task = taskInState(store, request.taskId, "resume");
+  const events = store.listEvents(request.taskId);
+  // The guard comes first, so an update with no record needs no worktree.
+  const move = resumeMoveOf(task, events, "resume");
+  if (move.origin !== "updating_branch") return applyResumeMove(store, task, events, move);
+  const head = updateStartHeadOf(events);
+  if (head === undefined) {
+    throw new Error(`the update of ${task.issueKey} recorded no start head; tasker resume cannot restore the worktree`);
+  }
+  // The restore is a write, so it comes after all checks. The repo lock comes after the task lock, and it covers the
+  // restore because the move of the task branch changes the clone.
+  return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
+    const { vcs, ctx } = vcsForRepo(request.config, task.repoKey, request.env);
+    await vcs.restoreWorkspace(ctx, { path: requireWorktree(task), taskRef: requireBranch(task), revision: head });
+    return { ...applyResumeMove(store, task, events, move, [], { head }), head };
+  });
+}
+
+// What a resume of a task in a pause does: the state that the run left, and the row for it.
+export interface ResumeMove {
+  origin: TaskState;
+  row: ResumeRow;
+}
+
+// Finds the move of a task in a pause back to the state before the run that stopped. The caller holds the task lock and
+// made sure that the task is in a pause that command accepts. It refuses an origin with no row. It writes nothing.
+export function resumeMoveOf(
+  task: Task,
+  events: readonly TaskEvent[],
+  command: "resume" | "approve-credits",
+): ResumeMove {
+  // The state check made sure that the task is in a pause, so its state is a task state.
+  const pause = task.state as TaskState;
+  const origin = transitionFromEvents(events, pause);
+  const row = origin === undefined ? undefined : originRow(events, origin, RESUME_TABLES);
+  // The state machine has no edge from the origin into this pause, so no run stopped that way.
+  if (origin === undefined || row === undefined || !canTransition(origin, pause)) {
+    throw new Error(
+      `the task of ${task.issueKey} was paused from ${originText(events, pause)}; tasker ${command} has no step for it`,
+    );
+  }
+  return { origin, row };
+}
+
+// Moves the task back with the events of extra after the resume event, in one transaction. detail goes into the resume
+// event.
+export function applyResumeMove(
+  store: TaskStore,
+  task: Task,
+  events: readonly TaskEvent[],
+  { origin, row }: ResumeMove,
+  extra: readonly NewEvent[] = [],
+  detail: { head?: string } = {},
+): ResumeResult {
+  const writes: ResumeWrites = {};
+  if (row.clearReview) writes.clearReviewSession = store.nextReview(task.id);
+  transitionWithResume(store, task.id, row.target, origin, writes, extra, detail);
+  const result: ResumeResult = { origin, target: row.target, next: row.next };
+  const feedback = origin === "refining" ? refineFeedbackOf(events) : undefined;
+  return feedback === undefined ? result : { ...result, feedback };
 }
 
 // Moves a task in a pause back to the state before the run that stopped, with the events of extra after the resume
@@ -120,20 +185,5 @@ export function moveFromPause(
   command: "resume" | "approve-credits",
   extra: readonly NewEvent[] = [],
 ): ResumeResult {
-  // The state check made sure that the task is in a pause, so its state is a task state.
-  const pause = task.state as TaskState;
-  const origin = transitionFromEvents(events, pause);
-  const row = origin === undefined ? undefined : originRow(events, origin, RESUME_TABLES);
-  // The state machine has no edge from the origin into this pause, so no run stopped that way.
-  if (origin === undefined || row === undefined || !canTransition(origin, pause)) {
-    throw new Error(
-      `the task of ${task.issueKey} was paused from ${originText(events, pause)}; tasker ${command} has no step for it`,
-    );
-  }
-  const writes: ResumeWrites = {};
-  if (row.clearReview) writes.clearReviewSession = store.nextReview(task.id);
-  transitionWithResume(store, task.id, row.target, origin, writes, extra);
-  const result: ResumeResult = { origin, target: row.target, next: row.next };
-  const feedback = origin === "refining" ? refineFeedbackOf(events) : undefined;
-  return feedback === undefined ? result : { ...result, feedback };
+  return applyResumeMove(store, task, events, resumeMoveOf(task, events, command), extra);
 }

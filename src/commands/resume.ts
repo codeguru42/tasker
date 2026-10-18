@@ -6,6 +6,7 @@ import {
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
   orFailAsync,
+  REPO_LOCK_WAIT_MS,
   REPO_OPTION_DESCRIPTION,
   withIssueTaskAsync,
 } from "./shared.js";
@@ -24,7 +25,13 @@ export const resume: RegisterCommand = (program, io) => {
       const moved = await orFailAsync(io, () =>
         withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
           key: found.issueKey,
-          ...(await resumeTask(store, { ref, taskId: found.id })),
+          ...(await resumeTask(store, {
+            ref,
+            taskId: found.id,
+            config,
+            env: process.env,
+            repoLockWaitMs: REPO_LOCK_WAIT_MS,
+          })),
         })),
       );
       await runResumed(io, config, issue, { repo: options.repo }, moved);
@@ -40,10 +47,13 @@ export async function runResumed(
   options: { repo?: string },
   moved: ResumeResult & { key: string },
 ): Promise<void> {
-  const { key, origin, target, next, feedback } = moved;
+  const { key, origin, target, next, feedback, head } = moved;
   io.stdout(`resumed ${key}: paused in ${origin}, back in ${target}\n`);
-  // Nothing runs after a resume from updating_branch. The comment of UPDATE_BRANCH_RESUME_TABLE in src/tasks/resume.ts gives the reason.
+  // The resume from updating_branch restored the worktree before the move, and nothing runs after it. The comment of
+  // UPDATE_BRANCH_RESUME_TABLE in src/tasks/resume.ts says more. The restore and the move are done, so these lines
+  // come last.
   if (next === "update-branch") {
+    io.stdout(`restored the worktree of ${key} to ${String(head)}\n`);
     io.stdout(`run tasker update-branch ${key} again\n`);
     return;
   }

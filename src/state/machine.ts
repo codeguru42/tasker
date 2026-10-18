@@ -270,8 +270,8 @@ export function transitionWithRetry(
 }
 
 // Moves the task to to with one transition event { from, to }, writes writes and then appends one resume event
-// { origin, target } and then each event of extra in order, in one transaction. An illegal edge or a failing write
-// writes nothing.
+// { origin, target, ...detail } and then each event of extra in order, in one transaction. detail is the head that a
+// resume from updating_branch restored. An illegal edge or a failing write writes nothing.
 export function transitionWithResume(
   store: TaskStore,
   id: number,
@@ -279,9 +279,10 @@ export function transitionWithResume(
   origin: TaskState,
   writes: ResumeWrites,
   extra: readonly NewEvent[] = [],
+  detail: { head?: string } = {},
 ): Task {
   return store.resumeTask(id, to, writes, transitionCheck("transition", to), [
-    { type: "resume", data: { origin, target: to } },
+    { type: "resume", data: { origin, target: to, ...detail } },
     ...extra,
   ]);
 }
@@ -443,6 +444,14 @@ export function refineFeedbackOf(events: readonly TaskEvent[]): string | undefin
   if (index < 0) return undefined;
   const feedback = (events[index].data as { feedback?: unknown }).feedback;
   return typeof feedback === "string" ? feedback : undefined;
+}
+
+// The head that the last move into updating_branch recorded, or undefined when it recorded none.
+export function updateStartHeadOf(events: readonly TaskEvent[]): string | undefined {
+  const index = lastTransitionIndex(events, "updating_branch");
+  if (index < 0) return undefined;
+  const head = (events[index].data as { head?: unknown }).head;
+  return typeof head === "string" ? head : undefined;
 }
 
 // The origin of the last move into the state as text for an error, or "unknown".

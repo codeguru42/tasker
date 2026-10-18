@@ -228,7 +228,7 @@ describe("tasker resume", () => {
       expect(result).toEqual({
         code: 0,
         out: resumedOut(tip),
-        err: deadRunNote(KEY, "updating_branch"),
+        err: `${deadRunNote(KEY, "updating_branch")}\n`,
       });
       expect(await taskBranchTipOf(work)).toBe(tip);
       expect(existsSync(join(path, "untracked.txt"))).toBe(false);
