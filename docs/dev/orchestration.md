@@ -763,10 +763,11 @@ tasker changes the task branch in its own clone, for example with `tasker execut
 
 1. Run `git fetch tasker`.
 2. Read `<hash>` with `git rev-parse --verify tasker/<task branch>`. The hash lives only for this update.
-3. Run `git status --porcelain`. If it prints a line, stop and report. Nothing changes. Test the output, because the command exits with 0 also when it prints lines. Ignored files such as `node_modules/` do not print.
-4. Run `git reset --keep <hash>`.
+3. Run `git rev-parse --git-path rebase-merge`. If the command fails, or the folder that it names exists, stop and report. Nothing changes. For example, the worktree stays in a rebase when `git rebase --abort` fails in step 7 of [the commit check](#the-commit-check).
+4. Run `git status --porcelain`. If it prints a line, stop and report. Nothing changes. Test the output, because the command exits with 0 also when it prints lines. Ignored files such as `node_modules/` do not print.
+5. Run `git reset --keep <hash>`.
 
-`git reset --keep` moves the branch for a fast-forward. It also moves a branch that a rebase of tasker rewrote, where `git merge --ff-only` fails with exit 128. For a change in a file that the update changes, `--keep` refuses with exit 128 (`error: Entry '<file>' not uptodate. Cannot merge.`), and the branch and the change stay. Step 3 already stops for each uncommitted change. As a result, no update runs over one. Do not use `--hard`, because it deletes changes that are not committed. If a step fails, the step that uses the worktree gives the failure path. The commands of the update rule change no task.
+`git reset --keep` moves the branch for a fast-forward. It also moves a branch that a rebase of tasker rewrote, where `git merge --ff-only` fails with exit 128. For a change in a file that the update changes, `--keep` refuses with exit 128 (`error: Entry '<file>' not uptodate. Cannot merge.`), and the branch and the change stay. Step 4 already stops for each uncommitted change. As a result, no update runs over one. Do not use `--hard`, because it deletes changes that are not committed. If a step fails, the step that uses the worktree gives the failure path. The commands of the update rule change no task.
 
 ### The local-commit rule
 
