@@ -828,6 +828,17 @@ describe("pauseTaskVia", () => {
       expect(transitionFromEvents(store.listEvents(task.id), "merging")).toBe("accepted");
     });
   });
+
+  it("gives the detail to the move into the origin", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseTaskVia(store, task.id, "executed", "updating_branch", { head: "abc" });
+
+      const moves = store.listEvents(task.id).filter((event) => event.type === "transition");
+      expect(moves.at(-2)?.data).toEqual({ head: "abc", from: "executed", to: "updating_branch" });
+    });
+  });
 });
 
 describe("failRefineFrom", () => {

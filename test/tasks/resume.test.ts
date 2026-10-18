@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import type { TaskState } from "../../src/state/machine.js";
+import type { Config } from "../../src/config/schema.js";
 import type { Task } from "../../src/store/store.js";
 import { resumeTask } from "../../src/tasks/resume.js";
+import { configWithTrackers } from "../helpers/config.js";
 import { seedApprovedTaskWithSessions, sessionsOf } from "../helpers/plan.js";
 import { wrongStateError } from "../helpers/state-commands.js";
-import { expectRefusedWithoutChange } from "../helpers/task-fixtures.js";
+import { expectRefusedWithoutChange, taskBranchTipOf, useWorkReviewTask } from "../helpers/task-fixtures.js";
 import {
   eventDataOf,
   eventsOf,
@@ -25,10 +27,13 @@ const NEEDS = "quota_blocked or interrupted";
 type Pause = "quota_blocked" | "interrupted";
 const BOTH: readonly Pause[] = ["quota_blocked", "interrupted"];
 
-// Calls resumeTask for the task in the data root, in a store that closes after the call.
-function resume(dataRoot: string, task: Task) {
+// Calls resumeTask for the task in the data root, in a store that closes after the call. The rows with no git do not
+// read the configuration, so config defaults to a parsed one.
+function resume(dataRoot: string, task: Task, config: Config = configWithTrackers({ [REPO]: {} })) {
   const ref = { key: KEY, repoKey: REPO, shortRef: githubShortRef("5") };
-  return withDataRootStore(dataRoot, (store) => resumeTask(store, { ref, taskId: task.id }));
+  return withDataRootStore(dataRoot, (store) =>
+    resumeTask(store, { ref, taskId: task.id, config, env: process.env, repoLockWaitMs: 1000 }),
+  );
 }
 
 const UPDATE_ORIGINS: readonly TaskState[] = [
@@ -108,14 +113,6 @@ describe("resumeTask origins", () => {
       pauses: BOTH,
       sessions: kept,
     },
-    ...UPDATE_ORIGINS.map((origin) => ({
-      origin: "updating_branch" as const,
-      before: origin,
-      target: origin,
-      next: "update-branch",
-      pauses: ["interrupted"] as readonly Pause[],
-      sessions: kept,
-    })),
   ];
 
   function rowLabel(row: { origin: TaskState; refineOrigin?: TaskState; before?: TaskState }): string {
@@ -152,6 +149,25 @@ describe("resumeTask origins", () => {
     expect(transition?.data).toEqual({ from: pause, to: target });
     expect(sessionsOf(dataRoot, task)).toEqual(sessions);
   });
+
+  it.each(UPDATE_ORIGINS)(
+    "restores the worktree and moves a task paused in interrupted from updating_branch after a move from %s",
+    async (origin) => {
+      const work = await useWorkReviewTask();
+      const tip = await taskBranchTipOf(work);
+      withDataRootStore(work.dataRoot, (store) =>
+        pauseTaskVia(store, work.task.id, origin, "updating_branch", { head: tip }),
+      );
+
+      const result = await resume(work.dataRoot, work.task, work.config);
+
+      expect(result).toEqual({ origin: "updating_branch", target: origin, next: "update-branch", head: tip });
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe(origin);
+      expect(eventDataOf(work.dataRoot, KEY, "resume")).toEqual([
+        { origin: "updating_branch", target: origin, head: tip },
+      ]);
+    },
+  );
 
   it("moves a task paused in interrupted from finishing after a move from cleanup_failed to landed", async () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();

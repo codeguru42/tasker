@@ -419,8 +419,15 @@ export function pauseTaskFrom(
 
 // Moves the task to before with no edge check, then into origin with a real move, then into interrupted. After it,
 // transitionFromEvents(events, origin) gives before, and transitionFromEvents(events, "interrupted") gives origin.
-export function pauseTaskVia(store: TaskStore, taskId: number, before: TaskState, origin: TaskState): Task {
-  enterVia(store, taskId, before, origin);
+// detail is the detail of the move into origin, for example { head } for the move into updating_branch.
+export function pauseTaskVia(
+  store: TaskStore,
+  taskId: number,
+  before: TaskState,
+  origin: TaskState,
+  detail?: TransitionDetail,
+): Task {
+  enterVia(store, taskId, before, origin, detail);
   return transitionTask(store, taskId, "interrupted", PAUSE_DATA.interrupted);
 }
 

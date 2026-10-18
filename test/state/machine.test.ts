@@ -30,6 +30,7 @@ import {
   transitionWithResume,
   transitionWithReviewDismissal,
   transitionWithVerifyRun,
+  updateStartHeadOf,
   type TaskState,
   type TransitionDetail,
 } from "../../src/state/machine.js";
@@ -970,6 +971,28 @@ describe("task transitions", () => {
     });
   });
 
+  describe("transitionWithResume with a head", () => {
+    it("writes the head in the resume event", () => {
+      const task = store.createTask(newTask("interrupted"));
+
+      transitionWithResume(store, task.id, "awaiting_work_review", "updating_branch", {}, [], { head: "abc" });
+
+      expect(store.listEvents(task.id)[2].data).toEqual({
+        origin: "updating_branch",
+        target: "awaiting_work_review",
+        head: "abc",
+      });
+    });
+
+    it("writes no head key when no detail is given", () => {
+      const task = store.createTask(newTask("interrupted"));
+
+      transitionWithResume(store, task.id, "approved", "executing", {});
+
+      expect(store.listEvents(task.id)[2].data).toEqual({ origin: "executing", target: "approved" });
+    });
+  });
+
   describe("transitionWithVerifyRun", () => {
     it("inserts the row, appends verify_run, then one transition with the detail", () => {
       const task = store.createTask(newTask("executed"));
@@ -1285,6 +1308,32 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("awaiting_plan_review"));
       store.appendEvent(task.id, "transition", { feedback: 7, from: "awaiting_plan_review", to: "refining" });
       expect(refineFeedbackOf(store.listEvents(task.id))).toBeUndefined();
+    });
+  });
+
+  describe("updateStartHeadOf", () => {
+    it.each([
+      {
+        label: "the head of the last move into updating_branch",
+        data: [
+          { head: "old", from: "executed", to: "updating_branch" },
+          { head: "new", from: "failed", to: "updating_branch" },
+        ],
+        head: "new",
+      },
+      {
+        label: "undefined when the last move has no head",
+        data: [
+          { head: "old", from: "executed", to: "updating_branch" },
+          { from: "failed", to: "updating_branch" },
+        ],
+        head: undefined,
+      },
+      { label: "undefined when no move into updating_branch exists", data: [], head: undefined },
+    ])("gives $label", ({ data, head }) => {
+      const task = store.createTask(newTask("executed"));
+      for (const entry of data) store.appendEvent(task.id, "transition", entry);
+      expect(updateStartHeadOf(store.listEvents(task.id))).toBe(head);
     });
   });
 

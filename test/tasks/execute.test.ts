@@ -455,7 +455,13 @@ describe("executeTask with a signal of tasker", () => {
     await runExecute(fixture);
 
     const resumed = await withDataRootStore(fixture.config.dataRoot, (store) =>
-      resumeTask(store, { ref: taskRefOf(fixture.started), taskId: fixture.task.id }),
+      resumeTask(store, {
+        ref: taskRefOf(fixture.started),
+        taskId: fixture.task.id,
+        config: fixture.config,
+        env: fixture.env,
+        repoLockWaitMs: 1000,
+      }),
     );
     await runExecute(fixture);
 

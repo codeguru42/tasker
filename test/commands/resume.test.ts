@@ -1,8 +1,14 @@
+import { existsSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resume } from "../../src/commands/resume.js";
 import { canonicalPath } from "../../src/real-path.js";
+import { type TransitionDetail } from "../../src/state/machine.js";
+import { GitError } from "../../src/vcs/git/run.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { failureOf } from "../helpers/errors.js";
+import { commitInWorktree, gitOutput } from "../helpers/git.js";
 import {
   executedLine,
   plannedLine,
@@ -25,6 +31,7 @@ import { validReviewAnswer } from "../helpers/review.js";
 import { deadRunNote, wrongStateError } from "../helpers/state-commands.js";
 import {
   eventDataOf,
+  eventsOf,
   latestTaskOf,
   pauseRefineFrom,
   pauseTaskFrom,
@@ -36,14 +43,18 @@ import {
 import {
   expectCommandRefused,
   pausePlanFixtureTask,
+  taskBranchTipOf,
   useAcceptedTask,
   useExecuteFixture,
   useLandedTask,
+  useMovedBaseTask,
   usePlanFixture,
   useRefineFixture,
   useReviewedRefineFixture,
   useReviewFixture,
   useVerifyFixture,
+  useWorkReviewTask,
+  type WorkReviewTask,
 } from "../helpers/task-fixtures.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -181,20 +192,121 @@ describe("tasker resume", () => {
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_work_review");
   });
 
-  it("prints the update-branch hint and runs nothing for a task paused in interrupted from updating_branch", async () => {
-    const fixture = await useVerifyFixture({ commands: ["true"] });
-    const { dataRoot } = fixture.started;
-    withDataRootStore(dataRoot, (store) => pauseTaskVia(store, fixture.task.id, "executed", "updating_branch"));
+  describe("a task paused in interrupted from updating_branch", () => {
+    const restoredLine = (tip: string) => `restored the worktree of ${KEY} to ${tip}\n`;
+    const hint = `run tasker update-branch ${KEY} again\n`;
+    const resumedOut = (tip: string) =>
+      resumedLine(KEY, "updating_branch", "awaiting_work_review") + restoredLine(tip) + hint;
 
-    const result = await runResume();
+    // Writes the move into updating_branch with the head tip, as tasker update-branch does. It writes the event only.
+    // seedDeadRun then leaves the state and the dead run marker of the crash.
+    const recordUpdate = (work: WorkReviewTask, tip: string) =>
+      withDataRootStore(work.dataRoot, (store) =>
+        store.appendEvent(work.task.id, "transition", {
+          head: tip,
+          from: "awaiting_work_review",
+          to: "updating_branch",
+        }),
+      );
 
-    expect(result.code).toBe(0);
-    expect(result.out).toBe(
-      resumedLine(KEY, "updating_branch", "executed") + `run tasker update-branch ${KEY} again\n`,
-    );
-    expect(latestTaskOf(dataRoot, KEY).state).toBe("executed");
-    expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "updating_branch", target: "executed" }]);
-    expect(withDataRootStore(dataRoot, (store) => store.latestVerifyRun(fixture.task.id))).toBeUndefined();
+    const pauseUpdate = (work: WorkReviewTask, detail?: TransitionDetail) =>
+      withDataRootStore(work.dataRoot, (store) =>
+        pauseTaskVia(store, work.task.id, "awaiting_work_review", "updating_branch", detail),
+      );
+
+    it("puts back a moved head and an untracked file after a crash", async () => {
+      const work = await useWorkReviewTask();
+      const path = String(work.task.worktreePath);
+      const tip = await taskBranchTipOf(work);
+      recordUpdate(work, tip);
+      seedDeadRun(work.dataRoot, work.task.id, "updating_branch");
+      await commitInWorktree(path, work.env, { file: "moved.txt" });
+      writeFileSync(join(path, "untracked.txt"), "x\n");
+
+      const result = await runResume();
+
+      expect(result).toEqual({
+        code: 0,
+        out: resumedOut(tip),
+        err: deadRunNote(KEY, "updating_branch"),
+      });
+      expect(await taskBranchTipOf(work)).toBe(tip);
+      expect(existsSync(join(path, "untracked.txt"))).toBe(false);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
+      expect(eventDataOf(work.dataRoot, KEY, "resume").at(-1)).toEqual({
+        origin: "updating_branch",
+        target: "awaiting_work_review",
+        head: tip,
+      });
+    });
+
+    it("puts back a worktree that a rebase stopped on a conflict", async () => {
+      const work = await useMovedBaseTask({ baseChange: { file: "shared.txt", content: "base\n" } });
+      const path = String(work.task.worktreePath);
+      await commitInWorktree(path, work.env, { file: "shared.txt", content: "task\n" });
+      const tip = await taskBranchTipOf(work);
+      await gitOutput({ cwd: path }, work.env, "fetch", "origin");
+      await failureOf(gitOutput({ cwd: path }, work.env, "rebase", work.baseTip), GitError);
+      pauseUpdate(work, { head: tip });
+
+      const result = await runResume();
+
+      expect(result).toEqual({ code: 0, out: resumedOut(tip), err: "" });
+      const rebaseDir = await gitOutput({ cwd: path }, work.env, "rev-parse", "--git-path", "rebase-merge");
+      expect(existsSync(resolve(path, rebaseDir))).toBe(false);
+      expect(await gitOutput({ cwd: path }, work.env, "symbolic-ref", "HEAD")).toBe(
+        `refs/heads/${String(work.task.branch)}`,
+      );
+      expect(await gitOutput({ cwd: path }, work.env, "rev-parse", "HEAD")).toBe(tip);
+      expect(await gitOutput({ cwd: path }, work.env, "status", "--porcelain")).toBe("");
+    });
+
+    it("keeps a worktree that is already at the head", async () => {
+      const work = await useWorkReviewTask();
+      const tip = await taskBranchTipOf(work);
+      pauseUpdate(work, { head: tip });
+
+      const result = await runResume();
+
+      expect(result).toEqual({ code: 0, out: resumedOut(tip), err: "" });
+      expect(await taskBranchTipOf(work)).toBe(tip);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
+    });
+
+    it("refuses an update that recorded no start head", async () => {
+      const work = await useWorkReviewTask();
+      pauseUpdate(work);
+      const count = eventsOf(work.dataRoot, KEY).length;
+
+      const result = await runResume();
+
+      expect(result).toEqual({
+        code: 1,
+        out: "",
+        err: `the update of ${KEY} recorded no start head; tasker resume cannot restore the worktree\n`,
+      });
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("interrupted");
+      expect(eventsOf(work.dataRoot, KEY)).toHaveLength(count);
+    });
+
+    it("writes nothing when the restore fails", async () => {
+      const work = await useWorkReviewTask();
+      const path = String(work.task.worktreePath);
+      const tip = await taskBranchTipOf(work);
+      pauseUpdate(work, { head: tip });
+      await commitInWorktree(path, work.env, { file: "moved.txt" });
+      writeFileSync(join(work.clone, "refs", "heads", `${String(work.task.branch)}.lock`), "");
+      const count = eventsOf(work.dataRoot, KEY).length;
+
+      const result = await runResume();
+
+      expect(result.code).toBe(1);
+      expect(result.out).toBe("");
+      expect(result.err.startsWith("cannot restore the worktree:")).toBe(true);
+      expect(result.err).toContain("Run these git commands");
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("interrupted");
+      expect(eventsOf(work.dataRoot, KEY)).toHaveLength(count);
+    });
   });
 
   it.each(PAUSES)("runs the review in a new session for a task paused in %s from reviewing", async (pause) => {
