@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { verify } from "../../src/commands/verify.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { verifyRunDir } from "../../src/store/layout.js";
+import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { landBranchOnOriginMain } from "../helpers/git.js";
 import { latestTaskOf, withDataRootStore } from "../helpers/store.js";
-import { useVerifyFixture } from "../helpers/task-fixtures.js";
+import { expectCommandRefused, moveTaskThrough, useStackedTasks, useVerifyFixture } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -42,6 +44,30 @@ describe("tasker verify", () => {
       err: `${wrongStateError("updating_branch", KEY, "verify", "executed")}\n`,
     });
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("updating_branch");
+  });
+
+  it("refuses a stacked task whose parent landed until update-branch moves it", async () => {
+    const fixture = await useStackedTasks({ repo: { verify: { commands: ["true"], env: [] } } });
+    await landBranchOnOriginMain({
+      origin: fixture.origin.path,
+      clone: fixture.clone,
+      branch: fixture.parent.branch,
+      env: fixture.env,
+    });
+    withDataRootStore(fixture.dataRoot, (store) =>
+      moveTaskThrough(store, fixture.parent.task.id, ["accepted", "landed"]),
+    );
+    const key = fixture.stacked.key;
+
+    await expectCommandRefused(
+      { dataRoot: fixture.dataRoot, key },
+      () => runVerify(key),
+      `the parent ${fixture.parent.key} of ${key} has landed; run tasker update-branch ${key} to move the task onto main first\n`,
+    );
+
+    expect((await runCommand(updateBranch, "update-branch", key)).code).toBe(0);
+    expect((await runVerify(key)).code).toBe(0);
+    expect(latestTaskOf(fixture.dataRoot, key).state).toBe("awaiting_work_review");
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
