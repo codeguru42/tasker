@@ -370,6 +370,20 @@ describe("createGitProvider", () => {
       expect(await git.moveWorkspace(fixture.context, { path, revision: tip })).toBe(tip);
       expect(await taskBranchRevision({ clone: paths().clone, env, branch: taskRef })).toBe(tip);
     });
+
+    it("puts the task ref and the workspace back at a revision and removes untracked files", async () => {
+      const { git, path, taskRef } = await workspace();
+      const start = await git.workspaceState(fixture.context, { path });
+      await commitInWorktree(path, fixture.context.env, { file: "a.txt" });
+      writeFileSync(join(path, "untracked.txt"), "x\n");
+      const result = await git.restoreWorkspace(fixture.context, { path, taskRef, revision: start.head });
+      expect(result).toBeUndefined();
+      expect(await git.workspaceState(fixture.context, { path })).toEqual({
+        head: start.head,
+        taskRef,
+        changes: [],
+      });
+    });
   });
 
   describe("publish, land and delete", () => {
