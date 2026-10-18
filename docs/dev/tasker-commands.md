@@ -17,7 +17,7 @@ The plain-form rule does not cover these:
 
 ## The tool-block rule
 
-A tool block is a denial of a tool call. The permission rules, the classifier of auto mode or the user can deny a call. The user denies a call when the user declines it at a permission prompt. In past sessions, the classifier of auto mode denied `gh auth token` and a `claude -p` run.
+A tool block is a denial of a tool call. The permission rules, the classifier of auto mode or the user can deny a call. The user denies a call when the user declines it at a permission prompt. In past sessions, the classifier of auto mode denied `gh auth token` and a `claude -p` run. The classifier also denied a Bash call with a loop of `gh issue edit <number> --add-blocked-by <issue>` over the open issues two times. Both denials gave the reason "External System Writes". The second call had an explicit list of 46 numbers.
 
 A denial covers the whole action of the call, not only its form. After a tool block, the agent runs the denied action in no other form, and no part of it, until the orchestrator sends the answer. Other forms include a script file with the same commands, a split of the action into several calls, and the same commands with other paths or names. On 2026-10-17, the user declined a fact test with `rm -rf`, and the agent of #231 ran it from two script files before the answer came.
 
