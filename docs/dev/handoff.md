@@ -45,6 +45,6 @@ The new orchestrator then does the case of this list that applies:
 - If the newest file of the role is newer than the file of the first message, the new orchestrator tells the user. Then it works from the newest file.
 - If the list holds no file of the role, no newer file exists. The new orchestrator works from its first message.
 - If the list holds a file of the role and the first message names no path of a file of the role, the new orchestrator tells the user the newest file of its role. Then it works from that file.
-- If the list fails, for example because the folder is missing, the new orchestrator tells the user the command and the error. Then it works from the file of its first message. If the first message names no path of a file of the role, the new orchestrator works from its first message.
+- If the list fails, for example because the folder is missing, [the failure rule](limits.md#the-failure-rule) applies. Then the new orchestrator works from the file of its first message. If the first message names no path of a file of the role, the new orchestrator works from its first message.
 
 The reason: on 2026-10-16, the new Docs orchestrator got the handoff file of 01:12 in its first message. A newer handoff file of 09:09 for the same role existed. Most issues of the table of the old file had closed.
