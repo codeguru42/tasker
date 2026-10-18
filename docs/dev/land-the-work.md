@@ -1,6 +1,6 @@
 # Landing order
 
-The readers of this page are the orchestrator and the agents.
+The readers of this page are the orchestrator and the agents. [The base rule](run-one-ticket.md#the-base-rule) covers each command of this page that uses `origin/<base branch>`.
 
 ## Land the work
 
