@@ -327,6 +327,50 @@ describe("parseConfig issueTracker", () => {
     expectIssueAt(issues, "repos.tasker.verify.commands");
     expect(issues).toContain("repos.tasker.bogus: unrecognized key");
   });
+
+  const commaKeys = ["assignee", "inProgressLabel", "doneLabel"] as const;
+  const commaCases = commaKeys.flatMap((name) =>
+    [",team-a", "in progress, team-a", "team-a,"].map((value) => [name, value] as const),
+  );
+
+  it.each(commaCases)("rejects a comma in %s of the github tracker: %j", (name, value) => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker[name] = value;
+    expect(issuesOf(raw)).toEqual([
+      `repos.tasker.issueTracker.${name}: must not contain a comma for the github tracker`,
+    ]);
+  });
+
+  it.each([
+    ["assignee", "octocat"],
+    ["inProgressLabel", "in progress"],
+    ["doneLabel", "in progress"],
+  ] as const)("accepts %s with no comma: %j", (name, value) => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker[name] = value;
+    expect(parsedRepo(raw).issueTracker[name]).toBe(value);
+  });
+
+  it("accepts a comma in a label of a jira tracker", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", inProgressLabel: "a,b" };
+    expect(parsedRepo(raw).issueTracker.inProgressLabel).toBe("a,b");
+  });
+
+  it("reports the commas with other errors", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker.inProgressLabel = "a,b";
+    raw.repos.tasker.issueTracker.doneLabel = "c,d";
+    raw.repos.tasker.verify.commands = [];
+    raw.bogus = 1;
+    const issues = issuesOf(raw);
+    expect(issues).toContain(
+      "repos.tasker.issueTracker.inProgressLabel: must not contain a comma for the github tracker",
+    );
+    expect(issues).toContain("repos.tasker.issueTracker.doneLabel: must not contain a comma for the github tracker");
+    expectIssueAt(issues, "repos.tasker.verify.commands");
+    expect(issues).toContain("bogus: unrecognized key");
+  });
 });
 
 describe("parseConfig assistant", () => {
@@ -702,6 +746,26 @@ describe("parseConfig named trackers", () => {
     expect(issuesOf(raw).sort()).toEqual([
       "repos.other.issueTracker.account: is required for the github tracker",
       "repos.tasker.issueTracker.account: is required for the github tracker",
+    ]);
+  });
+
+  it("rejects a comma in a github definition", () => {
+    const raw = withTracker(
+      { tracker: "hub", account: "codeguru42" },
+      { hub: { provider: "github", inProgressLabel: "a,b" } },
+    );
+    expect(issuesOf(raw)).toEqual([
+      "repos.tasker.issueTracker.inProgressLabel: must not contain a comma for the github tracker",
+    ]);
+  });
+
+  it("rejects a comma that the repo sets next to a github tracker name", () => {
+    const raw = withTracker(
+      { tracker: "hub", account: "codeguru42", doneLabel: "a,b" },
+      { hub: { provider: "github" } },
+    );
+    expect(issuesOf(raw)).toEqual([
+      "repos.tasker.issueTracker.doneLabel: must not contain a comma for the github tracker",
     ]);
   });
 
