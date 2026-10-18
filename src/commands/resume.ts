@@ -42,7 +42,7 @@ export async function runResumed(
 ): Promise<void> {
   const { key, origin, target, next, feedback } = moved;
   io.stdout(`resumed ${key}: paused in ${origin}, back in ${target}\n`);
-  // Nothing runs after a resume from updating_branch: the operator looks at the worktree first.
+  // Nothing runs after a resume from updating_branch. The comment of UPDATE_BRANCH_RESUME_TABLE in src/tasks/resume.ts gives the reason.
   if (next === "update-branch") {
     io.stdout(`run tasker update-branch ${key} again\n`);
     return;
