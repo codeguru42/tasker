@@ -314,6 +314,19 @@ describe("createGitProvider", () => {
       expect((await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim()).toBe(head);
     });
 
+    it("replays the commits of the workspace onto a moved base and gives the new head", async () => {
+      const { git, path, taskRef } = await workspace();
+      const env = fixture.context.env;
+      await commitInWorktree(path, env, { file: "a.txt" });
+      await fixture.origin.addCommit("main", { file: "other.txt" });
+      const { baseTip } = await containment(git, taskRef);
+      const result = await git.replayOnto(fixture.context, { path, onto: baseTip });
+      const head = (await runGit(["rev-parse", "HEAD"], { cwd: path, env })).trim();
+      expect(result).toBe(head);
+      expect((await runGit(["rev-parse", "HEAD^"], { cwd: path, env })).trim()).toBe(baseTip);
+      expect(existsSync(join(path, "a.txt"))).toBe(true);
+    });
+
     it("rejects with ReconcileConflictError and keeps the head at the start on a conflict", async () => {
       const { git, path, taskRef } = await workspace();
       const env = fixture.context.env;
