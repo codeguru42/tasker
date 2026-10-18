@@ -1,6 +1,7 @@
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
+import { BaseHintError } from "../issues/issue.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { bootstrapLogPath, runBootstrap } from "../phases/bootstrap.js";
 import { commandFailureMessage, readCommandLog } from "../phases/command-step.js";
@@ -11,6 +12,7 @@ import { failedFrom, failTask, transitionTask } from "../state/machine.js";
 import { taskLogsDir } from "../store/layout.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
+import { blockerBase } from "./blocker-base.js";
 import { runTrackerWrite, trackerTargets } from "./tracker-write.js";
 import { vcsForRepo } from "../vcs/provider.js";
 
@@ -78,6 +80,20 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
       );
     }
   }
+  // The blocker step comes before the task exists, so a refusal leaves no new task. A source that comes earlier
+  // in the order of the resolve skips it. A bad base: label counts as a label, and the resolve throws it later.
+  const hasLabel = (): boolean => {
+    try {
+      return issueProvider.baseBranchHint(issue) !== undefined;
+    } catch (error) {
+      if (error instanceof BaseHintError) return true;
+      throw error;
+    }
+  };
+  const earlierSourceGivesBase = request.base !== undefined || (active?.base ?? null) !== null || hasLabel();
+  const blocker = earlierSourceGivesBase
+    ? undefined
+    : blockerBase(store, ref, await issueProvider.blockingIssues(ref, env));
   const task =
     active === undefined
       ? store.createTask({
@@ -110,12 +126,19 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
         memory: store,
         hint,
         explicit: request.base ?? (hint === undefined ? (task.base ?? undefined) : undefined),
+        blocker,
         defaultBase: repo.defaultBaseBranch,
         ask: request.ask,
       });
       store.updateTask(task.id, { base: resolved.base }, () => ({
         type: "base",
-        data: { base: resolved.base, revision: resolved.revision, source: resolved.source },
+        data: {
+          base: resolved.base,
+          revision: resolved.revision,
+          source: resolved.source,
+          // The blocker is set only when no earlier source gives a base, so the resolve then gives the source "blocker" or throws.
+          ...(blocker === undefined ? {} : { blocker: blocker.key }),
+        },
       }));
       resolved.notes.forEach(request.note);
       const created = await vcs.createWorkspace(ctx, {

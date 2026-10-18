@@ -80,7 +80,7 @@ describe("blockerBase", () => {
   });
 
   it("uses the newest task of the blocker when none is active", () => {
-    const older = task(3, "reviewed");
+    const older = task(3, "finished");
     const newer = task(3, "cancelled", "b3-new");
     expect(() => call([older, newer], [open(3)])).toThrow(`${REPO}#3: blocking issue is still open`);
   });
