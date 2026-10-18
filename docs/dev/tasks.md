@@ -63,7 +63,7 @@ The start follows the check-before-write rule in the [intro](#the-task-commands)
 
 - A failed write is a warning. The reason: the task and the clone are correct, and a person can mark the issue on the tracker.
 - The marker check runs before the task exists. The reason: a refused start leaves no task, as [The order of the steps](#the-order-of-the-steps) says. The check protects against two machines that work on the same issue.
-- The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked, because a failed start does not abort. The abort removes the marker only. The assignee stays, so tasker does not undo the assign.
+- The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked. tasker cannot undo the assign, and only an abort removes the marker.
 - The write of finish comes before the move to `finished`. The reason: a second run after a crash runs it again, and the writes are safe to repeat. [Writes](issue-trackers.md#writes) gives the facts.
 
 ## Abort

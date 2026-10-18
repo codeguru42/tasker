@@ -98,9 +98,8 @@ The remove of the in-progress label uses `gh issue edit --remove-label`. The fac
 - The issue has no such label, and the repo has it. `gh` exits 0, prints the issue URL and sends the `IssueByNumber` query, the `RepositoryLabelList` query and the `removeLabelsFromLabelable` mutation.
 - The issue has the label. `gh` exits 0 and sends the same calls. So `gh` does not read the labels of the issue before the remove, and it has no separate path for a label that the issue does not have.
 - The repo does not have the label. `gh` sends no mutation, prints `failed to update <issue url>: '<label>' not found` and `failed to update 1 issue`, and exits 1.
-- `--remove-label "a,b"` sends one mutation with two label ids. So `gh` splits the value on commas.
 
-Limit: the fake server answered the mutation, so nobody measured how GitHub itself answers a remove of a label that the issue does not have. The code has no special case. Exit 0 is success, and a failed write only warns.
+Limit: the fake server answered the mutation, so nobody measured how GitHub itself answers a remove of a label that the issue does not have.
 
 The assignee `@me` passes to `gh` as it is. `gh` resolves it to the user of the token, which is the account of the tracker.
 
