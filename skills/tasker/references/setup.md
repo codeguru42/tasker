@@ -16,7 +16,7 @@ The command runs these checks one at a time, in this order:
 
 - `data root`: makes the missing folders of `dataRoot`, then writes one temporary file there and deletes it.
 - `free space`: warns when the free space of the file system of `dataRoot` is below `dataRootMinFreeBytes`.
-- For each repo, in the order of the configuration: the git checks.
+- Once for each version control provider that the configuration uses, in the order of first use: the checks of the provider. For `git`, `git version` runs once, and the identity, connection and lock-file checks then run for each repo, in the order of the configuration.
 - Once for each issue tracker that the configuration uses, in the order of first use: the checks of the tracker. For `github`, `gh version` runs once, `gh auth` runs once for each account, and the project and label checks run for each repo.
 - Once for each assistant provider that the configuration uses, in the order of first use: the checks of the provider. For `claude-code`, this is `claude version`, and on Linux also `sandbox: bwrap` and `sandbox: socat`.
 
