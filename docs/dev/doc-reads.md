@@ -11,7 +11,7 @@ At the start of its session, the orchestrator does the fetch and the fast-forwar
 Each time a ticket lands, the orchestrator does these steps in its local clone, at the place that the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) gives. The steps change no task.
 
 1. Run `git fetch origin`, as [the doc-read rule](#the-doc-read-rule) says.
-2. Read the tip of `main` one time: `git rev-parse --verify origin/main`. This rule calls the hash `<tip>`. Use `<tip>`, not `origin/main`, in the next steps, as [the shared-clone rule](limits.md#the-shared-clone-rule) says.
+2. Read the tip of `main` one time: `git rev-parse --verify origin/main`. This rule calls the hash `<tip>`.
 3. Run `git diff --name-only <last read>..<tip> -- AGENTS.md docs/ skills/`. The output lists each file that changed since the last read. If the output is empty, no doc changed, and the steps are complete. The last read stays.
 4. If the output lists a file, do the branch check and the merge of [the doc-read rule](#the-doc-read-rule). Use `<tip>` in place of `origin/main` in the merge.
 5. Before the next step of your work, read again each file of the list that is a doc of the orchestrator. A file of the list outside the docs of the orchestrator needs no read. If `AGENTS.md` or `docs/dev/orchestration.md` is on the list, also read, for the first time, each new doc that it names for the work of the orchestrator. Then `<tip>` is the new last read.
