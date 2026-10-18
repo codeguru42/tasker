@@ -159,8 +159,9 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       "--strategy does not apply to a stacked task; tasker update-branch replays its commits with a rebase",
     );
   }
+  // A stacked task has no strategy: the base step replays its commits with a rebase.
   const strategy =
-    parent === undefined ? strategyOf(request.strategy, config.repos[task.repoKey].updateBranchStrategy) : "rebase";
+    parent === undefined ? strategyOf(request.strategy, config.repos[task.repoKey].updateBranchStrategy) : undefined;
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   const start = await vcs.workspaceState(ctx, { path });
   if (start.changes.length > 0) {
@@ -207,7 +208,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
       const upToDate = contains && synced.sync !== "take-remote";
       const resynced: Pick<ResyncResult, "how" | "head"> =
-        parent !== undefined
+        strategy === undefined
           ? await stackedBaseStep(vcs, ctx, { path, baseTip, contains: upToDate, syncedHead })
           : upToDate
             ? { how: "none", head: syncedHead }
