@@ -369,7 +369,7 @@ These rules apply to each `tasker` command that the agent runs, also to a read-o
 - `tasker start` refuses a ticket whose parent is not [ready to stack](#the-stacking-rule). It exits with 1 and prints `<parent issue key>: blocking issue is still open`. No task exists after the refusal.
 - `tasker verify` refuses a stacked task whose parent has landed. It prints `task <id>'s parent <parent issue key> has landed on origin/main; run tasker update-branch <issue key> to move this task onto it first`. The task stays in `executed`. `tasker update-branch` rebases only the commits of the task onto the base of the parent.
 - A stacked task in `awaiting_plan_review` loses its base when `tasker finish` of the parent deletes the branch of the parent. `tasker refine` then fails with exit code 1 and an `unknown revision` error of `git diff`, and it changes nothing. `tasker update-branch` moves the task onto the base of the parent, and the task stays in `awaiting_plan_review`. tasker marks the plan as stale, so a refine comes before `tasker approve`, also when the new base changes no fact of the plan.
-- `tasker update-branch <issue> --take-remote` prints the command that undoes the take. That command is `tasker update-branch` with the flag `--undo`.
+- `tasker update-branch` prints the command that undoes the update after each update that moves the task branch, also with `--take-remote`. The output gives `previous HEAD was <hash>`, and the command is `tasker update-branch <issue> --undo`. On #252, each plain `tasker update-branch` printed this hint.
 - When the rebase of `tasker update-branch` stops with a conflict, the output names each conflicting path.
 
 ### The run times
