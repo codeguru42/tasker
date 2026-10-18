@@ -68,6 +68,8 @@ A missing repo stays a gh error here, because `gh issue view` gives only stderr.
 
 The hint reads only the issue, so there is no second `gh` call. The read does not check the hint as a branch name. The base branch resolve checks it (see [workspaces.md](workspaces.md#base-branch)).
 
+The `base:` prefix matches without regard to case, because GitHub label names are unique without regard to case. Only the ASCII letters `A` to `Z` fold. The text after the prefix keeps its case, because branch names use case.
+
 ## Blocking issues
 
 The read gives every issue that blocks one GitHub issue.
