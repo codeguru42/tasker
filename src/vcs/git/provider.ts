@@ -132,9 +132,9 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
       const { clone } = pathsOf(ctx);
       return fetchOnBase({ clone, env: ctx.env, sshKey: config.sshKey, branch: taskRef, baseRevision });
     },
-    async fetchedRemoteTaskRef(ctx, { taskRef }) {
+    async fetchedRemoteTaskRef(ctx, { taskRef, revision }) {
       const { clone } = pathsOf(ctx);
-      return remoteTaskBranchState({ clone, env: ctx.env, branch: taskRef });
+      return remoteTaskBranchState({ clone, env: ctx.env, branch: taskRef, local: revision });
     },
     async moveWorkspace(ctx, { path, revision }) {
       const { clone } = pathsOf(ctx);

@@ -1,5 +1,5 @@
 import type { BaseContainment, FetchedRemoteTaskRef, TaskRefOnBase, UncommittedChange } from "../provider.js";
-import { assertRevisionInput, originRef, refRevision, resolveRevision } from "./refs.js";
+import { assertRevision, assertRevisionInput, originRef, refRevision, resolveRevision } from "./refs.js";
 import { isGitExit, runGit } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
 import { assertTaskBranch, assertTaskWorktree, taskBranchRevision } from "./worktree.js";
@@ -173,18 +173,19 @@ export async function isAncestor(o: {
   }
 }
 
-// Compares the local task branch with its copy on origin. It reads the exact refs
-// refs/heads/<branch> and refs/remotes/origin/<branch> of the clone, never the short name
-// origin/<branch>. It does not fetch, so run fetchOrigin() first. The fetch prunes the ref of a
+// Compares the local task branch with its copy on origin. The caller passes the local tip, which
+// must be the tip of refs/heads/<branch>. The function reads only the exact ref
+// refs/remotes/origin/<branch> of the clone, never the short name origin/<branch>. It does not fetch, so run fetchOrigin() first. The fetch prunes the ref of a
 // branch that origin deleted, so a missing ref means that origin has no such branch.
 export async function remoteTaskBranchState(o: {
   clone: string;
   env: NodeJS.ProcessEnv;
   branch: string;
+  local: string;
 }): Promise<FetchedRemoteTaskRef> {
-  const { clone, env, branch } = o;
+  const { clone, env, branch, local } = o;
   assertTaskBranch(branch);
-  const local = await taskBranchRevision({ clone, env, branch });
+  assertRevision("the local tip", local);
   const remote = await refRevision({ clone, env, ref: originRef(branch) });
   if (remote === undefined) return { state: "absent" };
   if (remote === local) return { state: "present", revision: remote, relation: "equal" };

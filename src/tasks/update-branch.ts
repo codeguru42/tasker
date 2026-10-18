@@ -139,8 +139,8 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
     let syncedHead = before.head;
     let remoteTip: string | undefined;
     try {
-      const { baseTip, contains } = await vcs.baseContainment(ctx, { taskRef: branch, baseRevision });
-      const remote = await vcs.fetchedRemoteTaskRef(ctx, { taskRef: branch });
+      const { revision, baseTip, contains } = await vcs.baseContainment(ctx, { taskRef: branch, baseRevision });
+      const remote = await vcs.fetchedRemoteTaskRef(ctx, { taskRef: branch, revision });
       if (remote.state === "absent") {
         sync = "absent";
         io.stderr(`note: origin/${branch} does not exist; nothing to sync from\n`);

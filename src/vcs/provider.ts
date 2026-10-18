@@ -169,8 +169,9 @@ export interface VcsProvider {
   // contains the task ref. It reads the local copy and needs no workspace.
   taskRefOnBase(ctx: VcsContext, o: { taskRef: string; baseRevision: string }): Promise<TaskRefOnBase>;
   // Compares the local task ref with its copy on the remote, as the last fetch left it. It does not
-  // fetch. Run baseContainment first, which fetches.
-  fetchedRemoteTaskRef(ctx: VcsContext, o: { taskRef: string }): Promise<FetchedRemoteTaskRef>;
+  // fetch. Run baseContainment first, which fetches. The revision is the local tip of the task ref,
+  // as baseContainment gives it.
+  fetchedRemoteTaskRef(ctx: VcsContext, o: { taskRef: string; revision: string }): Promise<FetchedRemoteTaskRef>;
   // Moves the task ref and the workspace to revision and gives the new head revision. The revision can
   // be an ancestor, a descendant or on another line. It refuses a workspace with uncommitted changes,
   // a detached head and a task ref without the shape of a task ref. It does not fetch.
