@@ -16,7 +16,7 @@ Each time a ticket lands, the orchestrator does these steps in its local clone, 
 4. If the output lists a file, do the branch check and the merge of [the doc-read rule](#the-doc-read-rule). Use `<tip>` in place of `origin/main` in the merge.
 5. Before the next step of your work, read again each file of the list that is `AGENTS.md` or a doc that `AGENTS.md` names. If `AGENTS.md` is on the list, also read each doc that `AGENTS.md` names for the first time. Then `<tip>` is the new last read.
 
-If a command of [the doc-read rule](#the-doc-read-rule) fails before a doc read of the orchestrator, the orchestrator tells the user the command and the error. This applies to the first read at the start of the session and to each later doc read. If a command of the steps above fails, the orchestrator also tells the user the command and the error. A branch name other than `main` in the branch check also counts as a failure. If the orchestrator must read a doc, it then reads the doc as its local clone holds it, and it continues its work. The last read stays. At the start of the session, the orchestrator then runs `git rev-parse --verify HEAD` before it reads the docs, and that hash is the first last read. The orchestrator does the steps above again at the next landing.
+If a command of [the doc-read rule](#the-doc-read-rule) fails before a doc read of the orchestrator, [the failure rule](limits.md#the-failure-rule) applies. This applies to the first read at the start of the session and to each later doc read. If a command of the steps above fails, the failure rule also applies. A branch name other than `main` in the branch check also counts as a failure. If the orchestrator must read a doc, it then reads the doc as its local clone holds it, and it continues its work. The last read stays. At the start of the session, the orchestrator then runs `git rev-parse --verify HEAD` before it reads the docs, and that hash is the first last read. The orchestrator does the steps above again at the next landing.
 
 ## The notice rule
 
@@ -31,7 +31,7 @@ The orchestrator of the ticket does these steps:
 
    For example: Landed `<commit>` on `main`. `docs/dev/run-one-ticket.md` changed in "Run one ticket", and `docs/dev/land-the-work.md` changed in "Land the work".
 
-The notice does not depend on the re-read rule. If the re-read rule fails at this landing, the orchestrator of the ticket still sends the notice, and it tells the user the failed command and the error, as the re-read rule says. If the session list or a message fails, the orchestrator of the ticket tells the user the tool and the error, and it continues its work. A session that does not answer gets no second notice. The re-read rule covers that session at its next landing.
+The notice does not depend on the re-read rule. If the re-read rule fails at this landing, the orchestrator of the ticket still sends the notice, and [the failure rule](limits.md#the-failure-rule) applies, as the re-read rule says. If the session list or a message fails, the failure rule applies, and the orchestrator of the ticket continues its work. A session that does not answer gets no second notice. The re-read rule covers that session at its next landing.
 
 The notice is information. When the other orchestrator gets a notice, it does the steps of the re-read rule before its next step. It takes the rule from the doc, not from the notice.
 
