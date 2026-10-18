@@ -26,7 +26,7 @@ The work on this repo must continue on any machine, as [What goes in a ticket](p
 ## Core features first
 
 - The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge case. Decide it as "later", and keep the ticket in its scope. The goal of the numbered milestones is parity with [the installed tasker](orchestration.md): each command of the installed tasker, with its core features. A feature that the installed tasker does not have also waits until later, as an edge case does.
-- Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at once. [Review findings](orchestration.md#review-findings) of orchestration.md defines both terms and gives the steps for a finding of a review.
+- Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at once. [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the steps for a finding of a review.
 - Each piece of work that waits becomes an issue in its later milestone, as [The milestone of an issue](planning.md#the-milestone-of-an-issue) of planning.md says. [issues.md](issues.md) gives the steps to file the issue.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is a process that has the same pid at each start, so that the lock row of a crashed run looks like the lock row of the process itself.
 - tasker writes and reads UTF-8 text only. The output code does not write raw bytes.
@@ -35,7 +35,7 @@ The work on this repo must continue on any machine, as [What goes in a ticket](p
 ## Simplify over special rules
 
 - When a review keeps finding edge cases in a rule, and each fix opens the next case, stop the patches. After two loops in a row where the fix of a rule draws a new edge case, give the user a simpler rule as the first choice and the patch as the second choice.
-- In one case, an exception for one more loop drew a new edge case in each of 4 loops. The user replaced all the special loop rules with one rule: "up to 5 loops, then report". [Review findings](orchestration.md#review-findings) of orchestration.md holds that rule.
+- In one case, an exception for one more loop drew a new edge case in each of 4 loops. The user replaced all the special loop rules with one rule: "up to 5 loops, then report". [Review findings](review-findings.md#review-findings) of review-findings.md holds that rule.
 
 ## The tools of a session
 

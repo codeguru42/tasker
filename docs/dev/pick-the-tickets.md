@@ -86,7 +86,7 @@ While the hold runs, the agent of the parent waits in place of the command at ea
 - The refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket)
 - `tasker review <issue> "<feedback>"` of the add-work rule, also when [the diff read](run-one-ticket.md#the-diff-read) finds work
 - `tasker update-branch` of step 9 and of the diff read
-- The early update of [Review findings](orchestration.md#review-findings)
+- The early update of [Review findings](review-findings.md#review-findings)
 - `tasker update-branch` of the bullet of [Land the work](orchestration.md#land-the-work) that starts "If a refine, or the `tasker review <issue> "<feedback>"` of the add-work rule, must change a file"
 - `tasker update-branch` of the bullet "When the issue of the earlier ticket is closed" of Land the work
 - `tasker update-branch` of [the comeback rule](run-one-ticket.md#the-comeback-rule)
