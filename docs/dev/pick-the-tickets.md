@@ -125,7 +125,7 @@ The offer comes only when the ticket can start except for the shared file. As a 
 
 To defer a ticket means that the user moves its issue to a later milestone, for example "Future". This rule covers a deferred ticket that has a task in flight. A parked task is the task of such a ticket. On 2026-10-14, the user moved #34 from M5 to "Future" while its task was in `awaiting_plan_review`. The user did not want the task aborted, because `tasker abort` deletes the work of the agent. When the user defers a ticket that has a task in flight, the orchestrator does these steps:
 
-1. Tell the agent of the ticket to stop. A message to an agent that has ended starts it again (see ["Terms" in "Quota"](quota.md#terms)). The agent stops after its current `tasker` command ends. It runs no other `tasker` command. Before its final report, it removes the task worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says. The remove changes no task, and the task keeps its state. Then it gives its final report.
+1. Tell the agent of the ticket to end its work. A message to an agent that has ended starts it again (see ["Terms" in "Quota"](quota.md#terms)). The agent ends its work after its current `tasker` command ends. It runs no other `tasker` command. Before its final report, it removes the task worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says. The remove changes no task, and the task keeps its state. Then it gives its final report.
 2. Leave the task in its state. Do not run `tasker abort`, unless the user tells you to.
 3. Delete the jobs of the agent, as ["Delete the job" in "Quota"](quota.md#delete-the-job) says.
 4. Move the issue to the milestone that the user names: `gh issue edit <number> --milestone "<milestone>"`.
