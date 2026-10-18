@@ -49,7 +49,8 @@ export function markGithubInProgress(
   return editLabel("--add-label", ref, label, "issueTracker.inProgressLabel", account, env);
 }
 
-// Removes the in-progress label from the issue of ref. gh exits 0 for an issue that does not have it.
+// Removes the in-progress label from the issue of ref. gh does not read the labels of the issue first, so it has no
+// separate path for an issue that does not have the label.
 export function clearGithubInProgress(
   ref: IssueRef,
   label: string,
