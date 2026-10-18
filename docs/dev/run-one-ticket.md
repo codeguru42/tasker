@@ -24,7 +24,7 @@ At the end of its work on the ticket, the agent gives a final report to the orch
 
 - The result: the landed commit, the number of review loops, the files that landed and, for each doc that landed, the sections that changed. If the work of the agent ended before `tasker finish`, for example after the orchestrator told the agent to stop, the result gives the state of the task and the reason for the stop.
 - Each finding that the agent dismissed, with its reason.
-- The edge cases that the agent left out (see "Review findings").
+- The edge cases that the agent left out (see ["Review findings"](review-findings.md#review-findings)).
 - Each claim of the issue that was no longer true and each conflict (see [the issue check](plan-review.md#the-issue-check)). For a false claim, the bullet gives the current fact and the command that shows it. For a conflict, it gives the requirement, the conflicting rule or decision, the command or the doc that shows it, and the resolution: the change in the feedback text of the refine of step 4, the text of the plan that already resolves the conflict, or the answer of the user. If the task branch already held commits at the issue check, also the files that the agent read from the base commit and how. The bullet also gives each claim that the agent cannot test, because the issue names no ticket and no date for an output of the installed tasker.
 - Each task worktree or local task branch that stays, with its path. [The own-worktree rule](orchestration.md#the-own-worktree-rule) says when one stays.
 - The lessons.
