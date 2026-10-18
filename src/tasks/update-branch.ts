@@ -109,8 +109,8 @@ function landedParentBase(store: TaskStore, task: Task, parent: Task): { base: s
 }
 
 // The base step of a stacked task. The new tip is the tip of the branch of the parent while the parent is in flight,
-// and the tip of the base of the parent after the parent landed. Nothing moves when the task branch already contains it. Otherwise the step replays the commits after the merge base
-// onto it, with a rebase.
+// and the tip of the base of the parent after the parent landed. Nothing moves when the task branch already contains
+// it. Otherwise the step replays the commits after the merge base onto it, with a rebase.
 async function stackedBaseStep(
   vcs: VcsProvider,
   ctx: VcsContext,
