@@ -13,6 +13,7 @@ import {
   pauseRefineFrom,
   pauseTaskFrom,
   pauseTaskVia,
+  placeTask,
   withDataRootStore,
 } from "../helpers/store.js";
 
@@ -234,6 +235,17 @@ describe("resumeTask checks", () => {
   it("refuses an update whose origin has no record", async () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => pauseTaskFrom(store, task.id, "updating_branch", "interrupted"));
+
+    await expectResumeRefused(dataRoot, task, noStep("updating_branch"));
+  });
+
+  it("refuses a task paused in quota_blocked from updating_branch", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    withDataRootStore(dataRoot, (store) => {
+      pauseTaskVia(store, task.id, "awaiting_plan_review", "updating_branch");
+      placeTask(store, task.id, "quota_blocked");
+      store.appendEvent(task.id, "transition", { from: "updating_branch", to: "quota_blocked" });
+    });
 
     await expectResumeRefused(dataRoot, task, noStep("updating_branch"));
   });
