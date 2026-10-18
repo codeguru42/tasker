@@ -8,7 +8,7 @@ This rule applies to each `tasker` command that the agent runs and that changes 
 
 The reason: the repo file `.claude/settings.json` allows `Bash(tasker *)`. A Bash call matches this permission rule only when the call is one `tasker` command. Claude Code sends a call that does not match to the classifier of its auto mode (the check that allows or denies a tool call). The classifier can deny the call. For example, the classifier denied `tasker accept 'codeguru42/tasker#81' 2>&1 | tail -5`, but it allowed `tasker accept codeguru42/tasker#81`. On 2026-10-17, the agent of #229 ran `tasker refine` with feedback text from a file in the allowed form, in auto mode, and the call ran.
 
-If the classifier denies a `tasker` command in the plain form, the agent does not try another form. The agent [stops](limits.md#the-answer-wait-rule) and reports the exact text of the denial. The orchestrator tells the user. The command did not run.
+If the classifier denies a `tasker` command in the plain form, the agent does not try another form. The agent follows [the tool-block rule](#the-tool-block-rule). The command did not run.
 
 The plain-form rule does not cover these:
 
@@ -17,7 +17,11 @@ The plain-form rule does not cover these:
 
 ## The tool-block rule
 
-A tool block is a denial of a tool call by the permission rules or by the classifier of auto mode. In past sessions, the classifier of auto mode denied `gh auth token` and a `claude -p` run. [The plain-form rule](#the-plain-form-rule) covers a denied `tasker` command in the plain form. If any other tool block stops the agent, the agent [stops](limits.md#the-answer-wait-rule) and reports the exact text of the denial. The orchestrator tells the user. The orchestrator does not run the blocked action for the agent, unless the user tells it to.
+A tool block is a denial of a tool call. The permission rules, the classifier of auto mode or the user can deny a call. The user denies a call when the user declines it at a permission prompt. In past sessions, the classifier of auto mode denied `gh auth token` and a `claude -p` run.
+
+A denial covers the whole action of the call, not only its form. After a tool block, the agent runs the denied action in no other form, and no part of it, until the orchestrator sends the answer. Other forms include a script file with the same commands, a split of the action into several calls, and the same commands with other paths or names. On 2026-10-17, the user declined a fact test with `rm -rf`, and the agent of #231 ran it from two script files before the answer came.
+
+After a tool block, the agent [stops](limits.md#the-answer-wait-rule). It reports the exact text of the denial, the exact command, the step of the work that the command belongs to, and the purpose of the command. The orchestrator tells the user these facts. The orchestrator does not run the blocked action for the agent, unless the user tells it to.
 
 ## The command rules
 
