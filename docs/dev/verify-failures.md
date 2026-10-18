@@ -67,7 +67,7 @@ The session does these steps in its worktree, on the task branch, with the base 
 
 The agent does the manual fix only when the orchestrator tells it to, after the stop for a manual fix in the verify-failure rule. The agent never changes the tasker clone (the clone of this repo that tasker keeps, see [docs/dev/rebase-conflicts.md](rebase-conflicts.md)) or its worktrees by hand (see [the own-worktree rule](limits.md#the-own-worktree-rule)). The agent does these steps:
 
-1. Do steps 1 to 6 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent works in the task worktree. Step 6 of that page uses it. [The local-commit rule](limits.md#the-local-commit-rule) holds from step 2 of this list. If a step fails, [stop](limits.md#the-answer-wait-rule).
+1. Do [the remote setup](run-one-ticket.md#the-diff-read). Then do step 6 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent works in the task worktree. Step 6 of that page uses it. [The local-commit rule](limits.md#the-local-commit-rule) holds from step 2 of this list. If a step fails, [stop](limits.md#the-answer-wait-rule).
 2. Do the commit check on the local `<task branch>` to find the broken commits and the base commit. If the check finds no broken commit, stop and report this. If the check stops with an error, stop. In both cases, the worktree and the local task branch stay.
 3. In the worktree, do the session steps of [the broken-commit steps](#the-broken-commit-steps) on the local `<task branch>`, with the base commit of the last commit check. If the session steps stop, stop. The worktree and the local task branch stay.
 4. Do the commit check on the local `<task branch>` again. This check also covers step 8 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md), because it checks the tip. If the check lists a broken commit, fix the cause commits of the listed commits one time with step 3, with the base commit of this check. Then do the commit check one more time. If that check still lists a broken commit, stop and report the list. If a check stops with an error, stop. In each of these cases, the worktree and the local task branch stay. Nothing reached tasker yet.
@@ -77,7 +77,7 @@ The agent does the manual fix only when the orchestrator tells it to, after the 
 
 The commit check makes sure that each implementation commit and the tip of the task branch pass `npm run check`. It gives the list of broken commits and the base commit. The agent does it in the task worktree, on the local task branch:
 
-1. Do steps 1 to 4 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The clone gets the read-only `tasker` remote, and the agent reads the base branch. If a step fails, [stop](limits.md#the-answer-wait-rule). Nothing changes.
+1. Do steps 1 to 4 of [the remote setup](run-one-ticket.md#the-diff-read). If a step fails, [stop](limits.md#the-answer-wait-rule). Nothing changes.
 2. Run `git fetch --multiple tasker origin`. If the fetch fails, stop. Nothing changes.
 3. Work in the task worktree, on the local task branch. This step makes no worktree. Outside the manual fix, do [the update rule](limits.md#the-update-rule). In the manual fix, [the local-commit rule](limits.md#the-local-commit-rule) holds, so run no update. If a step fails, stop. Nothing changes.
 4. In the task worktree, find the base commit: `git merge-base HEAD origin/<base branch>` with the base of [the base rule](run-one-ticket.md#the-base-rule). If the command fails, stop.
