@@ -46,6 +46,16 @@ async function setUp(answers: readonly FakeGhAnswer[], change: (raw: RawConfig) 
   return { fixture, fake };
 }
 
+const OTHER_PROJECT = { ...PROJECT, args: ["repo", "view", "codeguru42/other", "--json", "nameWithOwner"] };
+
+const setUpTwoRepos = () =>
+  setUp([...GOOD_GH, OTHER_PROJECT], (raw) => {
+    raw.repos.other = {
+      ...raw.repos.tasker,
+      issueTracker: { ...raw.repos.tasker.issueTracker, project: "codeguru42/other" },
+    };
+  });
+
 const statusLines = (out: string) => out.split("\n").filter((line) => line !== "" && !line.startsWith(" "));
 
 describe("doctor", () => {
@@ -76,13 +86,7 @@ describe("doctor", () => {
   });
 
   it("runs gh version and gh auth once for two repos of the github tracker", async () => {
-    const otherProject = { ...PROJECT, args: ["repo", "view", "codeguru42/other", "--json", "nameWithOwner"] };
-    const { fake } = await setUp([...GOOD_GH, otherProject], (raw) => {
-      raw.repos.other = {
-        ...raw.repos.tasker,
-        issueTracker: { ...raw.repos.tasker.issueTracker, project: "codeguru42/other" },
-      };
-    });
+    const { fake } = await setUpTwoRepos();
 
     const { out } = await runCommand(doctor, "doctor");
 
