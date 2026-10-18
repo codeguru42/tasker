@@ -486,6 +486,29 @@ describe("tasker update-branch", () => {
         });
       });
 
+      it("rebases onto the base after a take of a remote tip that lacks the base", async () => {
+        const work = await useMovedBaseTask();
+        const branch = work.task.branch!;
+        const remote = await taskBranchTipOf(work);
+        await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+        expect((await runUpdateBranch()).code).toBe(0);
+
+        const result = await runUpdateBranch("--take-remote");
+
+        const newHead = await taskBranchTipOf(work);
+        expect(result.code).toBe(0);
+        expect(result.out).toBe(
+          `${takeLine(branch, remote)}\n` +
+            `moved ${KEY} onto main at ${work.baseTip} by rebase: ${remote} to ${newHead}\n` +
+            `state: executed\n`,
+        );
+        expect(await revisionOf(work, "HEAD^")).toBe(work.baseTip);
+        expect(lastEvent(work)).toMatchObject({
+          type: "branch_updated",
+          data: { how: "rebase", sync: "take-remote", after: { head: newHead } },
+        });
+      });
+
       it("moves back to the local tip when the base step fails after the take", async () => {
         const work = await useMovedBaseTask({ baseChange: { file: "work.txt", content: "from the base\n" } });
         const branch = work.task.branch!;
