@@ -234,15 +234,18 @@ describe("a plan older than the last move of the worktree", () => {
     expect(latestTaskOf(dataRoot, KEY).state).toBe("approved");
   });
 
-  it("refuses the approval when only the sync step moved the head", async () => {
-    const { dataRoot, task } = seedPlanReviewTask();
-    appendMove(dataRoot, task.id, { how: "none", sync: "fast-forward" });
-    const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
+  it.each(["fast-forward", "take-remote"])(
+    "refuses the approval when the sync step moved the head by %s",
+    async (sync) => {
+      const { dataRoot, task } = seedPlanReviewTask();
+      appendMove(dataRoot, task.id, { how: "none", sync });
+      const before = planStateSnapshot(dataRoot, KEY, task.id, [1]);
 
-    await expectCommandRefused({ dataRoot, key: KEY }, runApprove, STALE_ERROR(1));
+      await expectCommandRefused({ dataRoot, key: KEY }, runApprove, STALE_ERROR(1));
 
-    expectNoWrite(dataRoot, task.id, before);
-  });
+      expectNoWrite(dataRoot, task.id, before);
+    },
+  );
 
   it.each([
     { how: "none", sync: "absent" },
