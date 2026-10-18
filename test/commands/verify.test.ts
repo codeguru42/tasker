@@ -4,9 +4,8 @@ import { transitionTask } from "../../src/state/machine.js";
 import { verifyRunDir } from "../../src/store/layout.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
-import { landBranchOnOriginMain } from "../helpers/git.js";
 import { latestTaskOf, withDataRootStore } from "../helpers/store.js";
-import { expectCommandRefused, moveTaskThrough, useStackedTasks, useVerifyFixture } from "../helpers/task-fixtures.js";
+import { expectCommandRefused, landParent, useStackedTasks, useVerifyFixture } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -48,15 +47,7 @@ describe("tasker verify", () => {
 
   it("refuses a stacked task whose parent landed until update-branch moves it", async () => {
     const fixture = await useStackedTasks({ repo: { verify: { commands: ["true"], env: [] } } });
-    await landBranchOnOriginMain({
-      origin: fixture.origin.path,
-      clone: fixture.clone,
-      branch: fixture.parent.branch,
-      env: fixture.env,
-    });
-    withDataRootStore(fixture.dataRoot, (store) =>
-      moveTaskThrough(store, fixture.parent.task.id, ["accepted", "landed"]),
-    );
+    await landParent(fixture, ["accepted", "landed"]);
     const key = fixture.stacked.key;
 
     await expectCommandRefused(

@@ -580,6 +580,18 @@ export async function useStackedTasks(options: Parameters<typeof useStartFixture
   };
 }
 
+// Makes the head of the branch of the parent the head of main on origin, as a landing outside tasker does, then moves
+// the task of the parent through states.
+export async function landParent(fixture: StackedTasks, states: readonly TaskState[]): Promise<void> {
+  await landBranchOnOriginMain({
+    origin: fixture.origin.path,
+    clone: fixture.clone,
+    branch: fixture.parent.branch,
+    env: fixture.env,
+  });
+  withDataRootStore(fixture.dataRoot, (store) => moveTaskThrough(store, fixture.parent.task.id, states));
+}
+
 export interface MovedBaseTask extends WorkReviewTask {
   // The tip of main on origin after the move. The task branch does not contain it.
   baseTip: string;

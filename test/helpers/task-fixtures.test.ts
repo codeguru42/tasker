@@ -31,6 +31,7 @@ import { useTempDir } from "./temp.js";
 import {
   useStackedTasks,
   appendBaseEvent,
+  landParent,
   expectCommandRefused,
   expectNoAssistantRun,
   expectRefusedWithoutChange,
@@ -762,6 +763,21 @@ describe("useStackedTasks", () => {
     expect(files).toContain("parent.txt");
     expect(files).toContain("stacked.txt");
     expect(existsSync(join(fixture.parent.worktree, "stacked.txt"))).toBe(false);
+  });
+});
+
+describe("landParent", () => {
+  it("makes the tip of the parent branch the head of main on origin and moves the parent task", async () => {
+    const fixture = await useStackedTasks();
+    const tip = await runGit(["rev-parse", `refs/heads/${fixture.parent.branch}`], {
+      gitDir: fixture.clone,
+      env: fixture.env,
+    });
+
+    await landParent(fixture, ["accepted", "landed"]);
+
+    expect(await fixture.origin.branchHead("main")).toBe(tip.trim());
+    expect(latestTaskOf(fixture.dataRoot, fixture.parent.key).state).toBe("landed");
   });
 });
 

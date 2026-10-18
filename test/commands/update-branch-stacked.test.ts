@@ -3,9 +3,9 @@ import { removeTaskWorktree, deleteTaskBranch } from "../../src/vcs/git/worktree
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote } from "../helpers/command-output.js";
-import { commitInWorktree, gitOutput, landBranchOnOriginMain } from "../helpers/git.js";
-import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
-import { expectCommandRefused, moveTaskThrough, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
+import { commitInWorktree, gitOutput } from "../helpers/git.js";
+import { databasePathOf, eventsOf, latestTaskOf, withRawDatabase } from "../helpers/store.js";
+import { expectCommandRefused, landParent, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
 
 const REPO = "codeguru42/tasker";
 
@@ -30,18 +30,6 @@ const parentRef = (fixture: StackedTasks) => `refs/heads/${fixture.parent.branch
 
 const eventsOfType = (fixture: StackedTasks, type: string) =>
   eventsOf(fixture.dataRoot, fixture.stacked.key).filter((event) => event.type === type);
-
-// Makes the head of the branch of the parent the head of main on origin, as a landing outside tasker does, then moves
-// the task of the parent through states.
-async function landParent(fixture: StackedTasks, states: Parameters<typeof moveTaskThrough>[2]) {
-  await landBranchOnOriginMain({
-    origin: fixture.origin.path,
-    clone: fixture.clone,
-    branch: fixture.parent.branch,
-    env: fixture.env,
-  });
-  withDataRootStore(fixture.dataRoot, (store) => moveTaskThrough(store, fixture.parent.task.id, states));
-}
 
 const noLongerStacked = (fixture: StackedTasks) =>
   `${fixture.stacked.key} is no longer stacked on ${fixture.parent.key}`;
