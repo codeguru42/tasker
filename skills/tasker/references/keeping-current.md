@@ -12,7 +12,7 @@ The command fetches `origin`. Then it runs the sync step. After that it runs the
 
 ### The sync step
 
-The sync step compares two tips. The local tip is the head of the task branch in the clone. The remote tip is the copy of the task branch on `origin` that the fetch wrote. The step moves the task branch to the remote tip by a fast-forward. For tips that have diverged, the step compares the patches of the two sides, because a rebase rewrites each commit. As a result, a branch that someone pushed and then rebased does not count as local work at risk.
+The sync step compares two tips. The local tip is the head of the task branch in the clone. The remote tip is the copy of the task branch on `origin` that the fetch wrote. When the local tip is an ancestor of the remote tip, the step moves the task branch to the remote tip by a fast-forward. For tips that have diverged, the step compares the patches of the two sides, because a rebase rewrites each commit. As a result, a branch that someone pushed and then rebased does not count as local work at risk.
 
 Neither tip contains the other when the tips have diverged. These terms apply to a divergence:
 

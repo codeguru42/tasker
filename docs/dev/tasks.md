@@ -416,10 +416,10 @@ These reasons explain its rules:
 - The base change after the parent landed: the command switches the base to the base of the parent, also when the head does not move. Without the switch, the task stays stacked, and the guard of `tasker verify` refuses it each time.
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base` event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local tip.
-- The compare by patch for diverged tips: the command compares the patches of the two sides, because a rebase rewrites each commit. As a result, a branch that someone pushed and then rebased does not count as diverged work.
+- The compare by patch for diverged tips: the command compares the patches of the two sides, because a rebase rewrites each commit. As a result, a branch that someone pushed and then rebased does not count as local work at risk.
 - A merge commit on the remote side always counts as a commit only on origin: it has no one patch, and it can carry a conflict resolution that someone pushed.
 - A merge commit on the local side never counts as local work at risk: it is a merge of the base under `merge`, and the base step makes it again.
-- The move by itself: when no local work is at risk, the command moves the branch to the remote tip without `--take-remote`, because the move drops no local work.
+- The move by itself: when origin has a commit only on origin and no local work is at risk, the command moves the branch to the remote tip without `--take-remote`, because the move drops no local work.
 - `--take-remote` acts only on a divergence: in each other case, a fast-forward or no move is already right, so the flag has nothing to take and cannot drop local work there.
 - The clean worktree for `--take-remote`: the take drops the local commits that the remote tip does not hold. The refusal of a dirty worktree before `updating_branch` makes sure that the take drops no uncommitted change.
 - The undo of the sync move: a failed base step also moves the branch and the worktree back to the local tip from before the sync step, so that a failed update changes nothing.
