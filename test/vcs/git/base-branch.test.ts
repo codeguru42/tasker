@@ -258,6 +258,42 @@ describe("resolveBaseBranch", () => {
       expect(result.revision).toBe("refs/heads/task-1");
     });
 
+    it("uses the branch of the blocker after the explicit base and before the learned default", async () => {
+      await runGit(["update-ref", "refs/heads/task-1", "refs/remotes/origin/main"], {
+        gitDir: clone,
+        env: origin.env,
+      });
+      store.setDefaultBaseBranch("tasker", "learned");
+      const result = await resolve({
+        blocker: { key: "codeguru42/tasker#3", base: "refs/heads/task-1" },
+        defaultBaseBranch: "configured",
+      });
+      expect(result.source).toBe("blocker");
+      expect(result.base).toBe("refs/heads/task-1");
+      expect(result.revision).toBe("refs/heads/task-1");
+      expect(result.notes).toContain("based on codeguru42/tasker#3's branch");
+      expect(askCalls).toBe(0);
+    });
+
+    it("uses the explicit base before the blocker", async () => {
+      await runGit(["update-ref", "refs/heads/task-1", "refs/remotes/origin/main"], {
+        gitDir: clone,
+        env: origin.env,
+      });
+      const result = await resolve({
+        explicit: "explicit",
+        blocker: { key: "codeguru42/tasker#3", base: "refs/heads/task-1" },
+      });
+      expect(result.source).toBe("explicit");
+      expect(result.base).toBe("explicit");
+    });
+
+    it("fails for a blocker branch that does not exist", async () => {
+      await expect(resolve({ blocker: { key: "codeguru42/tasker#3", base: "refs/heads/gone" } })).rejects.toThrow(
+        "the base branch does not exist: refs/heads/gone (from the blocker codeguru42/tasker#3)",
+      );
+    });
+
     it("strips origin/ from an explicit base", async () => {
       const result = await resolve({ explicit: "origin/explicit" });
       expect(result.base).toBe("explicit");
@@ -339,6 +375,15 @@ describe("resolveBaseBranch", () => {
     it("saves nothing for a hint or an explicit base", async () => {
       await resolve({ hint: "hinted" });
       await resolve({ explicit: "explicit" });
+      expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
+    });
+
+    it("saves nothing for the branch of a blocker", async () => {
+      await runGit(["update-ref", "refs/heads/task-1", "refs/remotes/origin/main"], {
+        gitDir: clone,
+        env: origin.env,
+      });
+      await resolve({ blocker: { key: "codeguru42/tasker#3", base: "refs/heads/task-1" } });
       expect(store.getDefaultBaseBranch("tasker")).toBeUndefined();
     });
 
