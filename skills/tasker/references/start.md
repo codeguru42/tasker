@@ -23,7 +23,7 @@ If a run stops before `workspace_ready`, run the same command again. The second 
 
 The command picks the base branch from the first source that has one:
 
-1. The `base:` label of the issue, for example `base: dev`.
+1. The `base:` label of the issue, for example `base: dev`. The prefix matches without regard to case, for example `Base: dev`. The branch name after the prefix keeps its case.
 2. The `--base` option, or the stored base of the task on a second run.
 3. The blocker step: the branch of the task of an open blocker, in the form `refs/heads/<branch>`, when that task is ready to stack. A task is ready to stack in the states `awaiting_work_review`, `reviewing`, `reviewed`, `accepted`, `pushing`, `pushed`, `opening_pr` and `in_peer_review`. A blocker is done when its issue is closed, or when its task is in the state `landed`, `finishing`, `cleanup_failed` or `finished`.
 4. The default that tasker learned for the repo.
