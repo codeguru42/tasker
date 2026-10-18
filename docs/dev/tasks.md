@@ -411,7 +411,8 @@ These reasons explain its rules:
 - The `base` event is `{ base, revision, source: "update" }`. The command writes it only when the head moved. The `revision` is the stored base revision.
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base` event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local tip.
-- The diverged tips: the command refuses them, because tasker pulls in an external change only by a fast-forward, and in each other case the user fixes the branch.
+- The diverged tips: without `--take-remote`, the command refuses them, because tasker pulls in an external change only by a fast-forward unless the user asks for the take, and in each other case the user fixes the branch.
+- The clean worktree for `--take-remote`: the take discards the local commits that the remote tip does not hold. The refusal of a dirty worktree before `updating_branch` makes sure that the take discards no uncommitted change.
 - The undo of the sync move: a failed base step also moves the branch and the worktree back to the local tip from before the sync step, so that a failed update changes nothing.
 - The demotion: when the head moved, the old approval or the old verify result no longer describes the tree.
 - The restore rule: the task goes back to its origin state when three facts hold. The head is the head of the start, the worktree is on the task branch, and the worktree is clean. Otherwise the task goes to `failed`.
