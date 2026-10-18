@@ -327,7 +327,7 @@ These reasons explain its rules:
 
 A guard in the shared move refuses a pause that the state machine cannot reach from the origin. The state machine has no edge from the origin into that pause, so no run stopped that way. As a result, `verifying`, `merging` or `finishing` in `quota_blocked` get the no-step error, and so does `updating_branch` in `quota_blocked`. `tasker approve-credits` calls the same move, so it gets the same guard.
 
-The command makes all its checks before its first write, as [the intro](#the-task-commands) says. The move, the delete of the review session and the events share one transaction. The move writes a `transition` event `{ from, to }` with the pause as `from`. Then it writes a `resume` event `{ origin, target }`.
+The command makes all its checks before its first write, as [the intro](#the-task-commands) says. The move, the delete of the review session and the events share one transaction. The move writes a `transition` event `{ from, to }` with the pause as `from`. Then it writes a `resume` event `{ origin, target }`. A resume from `updating_branch` writes `{ origin, target, head }`, with the head that the restore put the worktree back at.
 
 These reasons explain its rules:
 
@@ -337,7 +337,7 @@ These reasons explain its rules:
 - A verify run has no session, so the verify runs again from the first command.
 - A merge that stopped can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on the base, so a second run lands the task with no second push.
 - Each cleanup step of `tasker finish` skips what is done, so a second run finishes the rest. The target of `finishing` is `landed`, also when the task came from `cleanup_failed`, because `tasker finish` runs from `landed` with the same steps.
-- A resume from `updating_branch` puts the worktree back at the head from before the update, and then runs nothing. The restore comes before the move. If the restore fails, the command stops, the task stays in `interrupted` and nothing is written, so `tasker resume` can run again. The restore loses no work: `tasker update-branch` refuses a dirty worktree before it starts, and no other command runs while the task is in `updating_branch`. The repo lock covers the restore, because the move of the branch changes the clone. The `resume` event gets `head`, the same commit id.
+- A resume from `updating_branch` puts the worktree back at the head from before the update, and then runs nothing. The restore comes before the move. If the restore fails, the command stops, the task stays in `interrupted` and nothing is written, so `tasker resume` can run again. The restore loses no work: `tasker update-branch` refuses a dirty worktree before it starts, and no other command runs while the task is in `updating_branch`. The repo lock covers the restore, because the move of the branch changes the clone.
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and does not wait (see [The locks](#the-locks)), so resume must release the lock first.
 
 The command has these limits:
