@@ -4,7 +4,15 @@ import { detailSuffix } from "../../detail-suffix.js";
 import { ReconcileConflictError } from "../errors.js";
 import { LOCAL_PREFIX } from "../local-branch.js";
 import type { ReconcileStrategy, ResyncResult, UncommittedChange } from "../provider.js";
-import { isAncestor, jsonPathList, nulFields, uncommittedRefusal, worktreeChanges, worktreeHead } from "./changes.js";
+import {
+  isAncestor,
+  jsonPathList,
+  mergeBase,
+  nulFields,
+  uncommittedRefusal,
+  worktreeChanges,
+  worktreeHead,
+} from "./changes.js";
 import { assertRevision, assertRevisionInput, resolveRevision } from "./refs.js";
 import { GitError, isGitExit, runGit } from "./run.js";
 import { assertTaskBranchNameAndShape, assertTaskWorktree } from "./worktree.js";
@@ -292,6 +300,21 @@ export async function rebaseOnto(o: {
   const args = ["rebase", ...REBASE_OPTIONS, "--onto", onto, upstream];
   await runStep({ target, env, start, args, kind: "rebase", base: onto });
   return worktreeHead(target, env);
+}
+
+// Replays the commits after the merge base of the head and onto, onto onto. Onto is a full revision or a full ref.
+// It reads the merge base right before the rebase, so a commit that onto already holds by its patch is dropped.
+// It gives the new head.
+export async function replayOntoTip(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  path: string;
+  onto: string;
+}): Promise<string> {
+  const { clone, env, path, onto } = o;
+  const { head } = await worktreeState({ clone, env, path });
+  const upstream = await mergeBase({ clone, env, a: head, b: onto });
+  return rebaseOnto({ clone, env, path, upstream, onto });
 }
 
 // The one rule for the result: moved is true for every case except "none".

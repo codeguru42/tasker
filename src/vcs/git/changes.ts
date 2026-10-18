@@ -173,6 +173,17 @@ export async function isAncestor(o: {
   }
 }
 
+// The best common ancestor of a and b, as a full revision. Both are full revisions or full refs.
+// Every failure of git passes through, also when the two have no common commit.
+export async function mergeBase(o: { clone: string; env: NodeJS.ProcessEnv; a: string; b: string }): Promise<string> {
+  const { clone, env } = o;
+  assertRevisionInput(o.a);
+  assertRevisionInput(o.b);
+  const a = await resolveRevision({ clone, env, value: o.a });
+  const b = await resolveRevision({ clone, env, value: o.b });
+  return (await runGit(["merge-base", a, b], { gitDir: clone, env })).trim();
+}
+
 // Compares the local task branch with its copy on origin. The caller passes the local tip, which
 // must be the tip of refs/heads/<branch>. The function reads only the exact ref
 // refs/remotes/origin/<branch> of the clone, never the short name origin/<branch>. It does not fetch, so run fetchOrigin() first. The fetch prunes the ref of a
