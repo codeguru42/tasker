@@ -11,6 +11,7 @@ import {
   mergeBase,
   NO_OWN_COMMITS,
   ownCommitsText,
+  remoteTaskBranchSides,
   remoteTaskBranchState,
   uncommittedChanges,
   uncommittedRefusal,
@@ -25,6 +26,7 @@ import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
 import {
   addCloneCommit,
+  amendWorktreeMessage,
   commitInWorktree,
   copyCloneBranchToOrigin,
   gitOutput,
@@ -412,6 +414,98 @@ describe("git changes", () => {
       await commitInWorktree(path, env, { file: "work.txt" });
       expect(await state({ local: remote })).toEqual({ state: "present", revision: remote, relation: "equal" });
     });
+  });
+
+  describe("remoteTaskBranchSides", () => {
+    const remoteTip = () => gitOutput({ gitDir: clone }, env, "rev-parse", `refs/remotes/origin/${branch}`);
+    const sides = async (extra: Partial<Parameters<typeof remoteTaskBranchSides>[0]> = {}) =>
+      remoteTaskBranchSides({
+        clone,
+        env,
+        branch,
+        local: await branchTip(),
+        remote: await remoteTip(),
+        baseTip: await baseTip(),
+        ...extra,
+      });
+    const copyBranch = () => copyCloneBranchToOrigin({ origin: origin.path, clone, branch, env });
+    const fetchAll = () => runGit(["fetch", "origin"], { gitDir: clone, env });
+
+    it("counts a commit that differs only in its message as the same patch", async () => {
+      await commitInWorktree(path, env, { file: "work.txt", message: "old message" });
+      const before = await branchTip();
+      await copyBranch();
+      await fetchAll();
+      const after = await amendWorktreeMessage(path, env, "new message");
+      expect(await sides()).toEqual({
+        local: [{ revision: after, subject: "new message", merge: false, samePatch: true, onBase: false }],
+        remote: [{ revision: before, subject: "old message", merge: false, samePatch: true }],
+      });
+    });
+
+    it("lists a commit that has no copy on the other side", async () => {
+      await copyBranch();
+      const remote = await origin.addCommit(branch, { file: "remote.txt", message: "remote work" });
+      await fetchAll();
+      const local = await commitInWorktree(path, env, { file: "local.txt", message: "local work" });
+      expect(await sides()).toEqual({
+        local: [{ revision: local, subject: "local work", merge: false, samePatch: false, onBase: false }],
+        remote: [{ revision: remote, subject: "remote work", merge: false, samePatch: false }],
+      });
+    });
+
+    it("marks a merge commit on the remote side", async () => {
+      await copyBranch();
+      await origin.addCommit("main", { file: "main-only.txt" });
+      const merge = await origin.addMerge(branch);
+      await fetchAll();
+      await commitInWorktree(path, env, { file: "local.txt" });
+      const result = await sides();
+      expect(result.remote.map((c) => c.merge)).toEqual([false, true]);
+      expect(result.remote.at(-1)).toMatchObject({ revision: merge, merge: true, samePatch: false });
+    });
+
+    it("marks a local commit that the base tip reaches, and a local merge of the base", async () => {
+      await copyBranch();
+      await origin.addCommit(branch, { file: "remote.txt" });
+      const main = await origin.addCommit("main", { file: "main-only.txt" });
+      await fetchAll();
+      await runGit(["merge", "--no-edit", "refs/remotes/origin/main"], { cwd: path, env });
+      const merge = await branchTip();
+      const result = await sides({ baseTip: main });
+      expect(result.local).toMatchObject([
+        { revision: main, merge: false, samePatch: false, onBase: true },
+        { revision: merge, merge: true, samePatch: false, onBase: false },
+      ]);
+    });
+
+    it("gives a non-ASCII subject as UTF-8 when the clone re-encodes the log output", async () => {
+      await runGit(["config", "i18n.logOutputEncoding", "ISO-8859-1"], { gitDir: clone, env });
+      await copyBranch();
+      await origin.addCommit(branch, { file: "remote.txt" });
+      await fetchAll();
+      await commitInWorktree(path, env, { file: "local.txt", message: "Ünïcode" });
+      const result = await sides();
+      expect(result.local.map((c) => c.subject)).toEqual(["Ünïcode"]);
+    });
+
+    it("rejects a bad branch name before any git call", async () => {
+      const recorded = gitRecorderEnv(origin.dir, env);
+      const error = await failureOf(sides({ branch: "-x", env: recorded.env }), Error);
+      expect(error.message).toBe('not a task branch name: "-x"');
+      expect(readArgLog(recorded.log)).toEqual([]);
+    });
+
+    it.each(["local", "remote", "baseTip"] as const)(
+      "rejects a %s that is not a full revision before any git call",
+      async (name) => {
+        await copyBranch();
+        await fetchAll();
+        const recorded = gitRecorderEnv(origin.dir, env);
+        await failureOf(sides({ [name]: "HEAD", env: recorded.env }), Error);
+        expect(readArgLog(recorded.log)).toEqual([]);
+      },
+    );
   });
 
   describe("isAncestor", () => {

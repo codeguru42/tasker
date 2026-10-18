@@ -15,6 +15,7 @@ import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
 import {
   changedPaths,
   ownCommitsText,
+  remoteTaskBranchSides,
   remoteTaskBranchState,
   uncommittedChanges,
   worktreeDiff,
@@ -359,6 +360,36 @@ describe("createGitProvider", () => {
       const present = await git.fetchedRemoteTaskRef(fixture.context, { taskRef, revision });
       expect(present).toEqual({ state: "present", revision: tip, relation: "local-ancestor" });
       expect(present).toEqual(await remoteTaskBranchState({ clone, env, branch: taskRef, local: revision }));
+    });
+
+    it("reads the two sides of a divergence like remoteTaskBranchSides", async () => {
+      const { git, path, taskRef } = await workspace();
+      const { clone } = paths();
+      const env = fixture.context.env;
+      await copyCloneBranchToOrigin({ origin: fixture.origin.path, clone, branch: taskRef, env });
+      await fixture.origin.addCommit(taskRef, { file: "remote.txt" });
+      await commitInWorktree(path, env, { file: "local.txt" });
+      const { revision, baseTip } = await containment(git, taskRef);
+      const remote = await git.fetchedRemoteTaskRef(fixture.context, { taskRef, revision });
+      if (remote.state !== "present") throw new Error("the remote ref must be present");
+      const result = await git.remoteTaskRefSides(fixture.context, {
+        taskRef,
+        revision,
+        remoteRevision: remote.revision,
+        baseRevision: baseTip,
+      });
+      expect(result.local).toHaveLength(1);
+      expect(result.remote).toHaveLength(1);
+      expect(result).toEqual(
+        await remoteTaskBranchSides({
+          clone,
+          env,
+          branch: taskRef,
+          local: revision,
+          remote: remote.revision,
+          baseTip,
+        }),
+      );
     });
 
     it("moves the task ref and the head of the workspace to a revision and gives the head", async () => {
