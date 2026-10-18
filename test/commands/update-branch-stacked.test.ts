@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { removeTaskWorktree, deleteTaskBranch } from "../../src/vcs/git/worktree.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
-import { commitInWorktree } from "../helpers/git.js";
-import { eventsOf, latestTaskOf } from "../helpers/store.js";
-import { expectCommandRefused, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
+import { commitInWorktree, landBranchOnOriginMain } from "../helpers/git.js";
+import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
+import { expectCommandRefused, moveTaskThrough, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
 
 const REPO = "codeguru42/tasker";
 
@@ -33,6 +34,21 @@ const absentNote = (fixture: StackedTasks) =>
 
 const eventsOfType = (fixture: StackedTasks, type: string) =>
   eventsOf(fixture.dataRoot, fixture.stacked.key).filter((event) => event.type === type);
+
+// Makes the head of the branch of the parent the head of main on origin, as a landing outside tasker does, then moves
+// the task of the parent through states.
+async function landParent(fixture: StackedTasks, states: Parameters<typeof moveTaskThrough>[2]) {
+  await landBranchOnOriginMain({
+    origin: fixture.origin.path,
+    clone: fixture.clone,
+    branch: fixture.parent.branch,
+    env: fixture.env,
+  });
+  withDataRootStore(fixture.dataRoot, (store) => moveTaskThrough(store, fixture.parent.task.id, states));
+}
+
+const noLongerStacked = (fixture: StackedTasks) =>
+  `${fixture.stacked.key} is no longer stacked on ${fixture.parent.key}`;
 
 describe("tasker update-branch for a stacked task", () => {
   it("rebases the commits of the task onto new commits of the parent", async () => {
@@ -140,5 +156,93 @@ describe("tasker update-branch for a stacked task", () => {
     expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(head);
     expect(await inStacked(fixture, "status", "--porcelain")).toBe("");
     expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+  });
+  describe("after the parent landed", () => {
+    // The checks that a move onto the new main shares.
+    const expectMovedOntoMain = async (fixture: StackedTasks, head: string, tip: string) => {
+      const result = await update(fixture);
+      const moved = await inStacked(fixture, "rev-parse", "HEAD");
+      expect(result).toEqual({
+        code: 0,
+        out: `moved ${fixture.stacked.key} onto main at ${tip} by rebase: ${head} to ${moved}\n${noLongerStacked(fixture)}\nstate: executed\n`,
+        err: absentNote(fixture),
+      });
+      expect(await inStacked(fixture, "rev-parse", "HEAD^")).toBe(tip);
+      expect(eventsOfType(fixture, "base").map((event) => event.data)).toContainEqual({
+        base: "main",
+        revision: "refs/remotes/origin/main",
+        source: "parent",
+      });
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe("main");
+      expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
+        after: { head: moved, base: "main", baseRevision: "refs/remotes/origin/main" },
+      });
+    };
+
+    it("moves the task onto main and switches its base", async () => {
+      const fixture = await useStackedTasks();
+      const head = await inStacked(fixture, "rev-parse", "HEAD");
+      await landParent(fixture, ["accepted", "landed"]);
+      const tip = await fixture.origin.addCommit("main");
+
+      await expectMovedOntoMain(fixture, head, tip);
+
+      const second = await update(fixture);
+      expect(second.code).toBe(0);
+      expect(second.out).toContain("nothing moved");
+      expect(second.out).not.toContain("no longer stacked");
+    });
+
+    it("moves the task when the parent finished and its branch and worktree are gone", async () => {
+      const fixture = await useStackedTasks();
+      const head = await inStacked(fixture, "rev-parse", "HEAD");
+      await landParent(fixture, ["accepted", "landed", "finishing", "finished"]);
+      await removeTaskWorktree({ clone: fixture.clone, env: fixture.env, path: fixture.parent.worktree });
+      await deleteTaskBranch({ clone: fixture.clone, env: fixture.env, branch: fixture.parent.branch });
+      const tip = await fixture.origin.addCommit("main");
+
+      await expectMovedOntoMain(fixture, head, tip);
+    });
+
+    it("switches the base with no move when the parent landed at the tip that the task holds", async () => {
+      const fixture = await useStackedTasks();
+      const head = await inStacked(fixture, "rev-parse", "HEAD");
+      await landParent(fixture, ["accepted", "landed"]);
+      const tip = (await fixture.origin.branchHead("main"))!;
+
+      const result = await update(fixture);
+
+      expect(result).toEqual({
+        code: 0,
+        out: `${fixture.stacked.key} is current with main at ${tip}; nothing moved\n${noLongerStacked(fixture)}\nstate: executed\n`,
+        err: absentNote(fixture),
+      });
+      expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(head);
+      expect(eventsOfType(fixture, "base").map((event) => event.data)).toContainEqual({
+        base: "main",
+        revision: "refs/remotes/origin/main",
+        source: "parent",
+      });
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe("main");
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+    });
+
+    it("refuses a parent that is stacked too", async () => {
+      const fixture = await useStackedTasks();
+      await landParent(fixture, ["accepted", "landed"]);
+      withRawDatabase(databasePathOf(fixture.dataRoot), (db) =>
+        db.prepare("UPDATE tasks SET base = ? WHERE id = ?").run("refs/heads/other", fixture.parent.task.id),
+      );
+
+      const result = await update(fixture);
+
+      expect(result.code).toBe(1);
+      expect(
+        result.err.endsWith(
+          `the parent ${fixture.parent.key} of ${fixture.stacked.key} is stacked too; its base is refs/heads/other\n`,
+        ),
+      ).toBe(true);
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+    });
   });
 });
