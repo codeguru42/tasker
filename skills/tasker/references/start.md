@@ -19,15 +19,18 @@ On success, the command prints one line for each field, as `<field>: <value>`, i
 
 The state is `workspace_ready`. If the issue already has an active task that is past this step, the command changes nothing. It prints `task already started` first, then the same six lines.
 
-If a run stops before `workspace_ready`, run the same command again. The second run continues the same task. This holds for a task that failed in the steps of `tasker start`. The second run keeps the stored base. A `--base` option or a `base:` label on the issue sets a new base, and the task keeps the new one. A new base does not move a task branch that already exists.
+If a run stops before `workspace_ready`, run the same command again. The second run continues the same task. This holds for a task that failed in the steps of `tasker start`. The second run keeps the stored base. A `--base` option or a `base:` label on the issue sets a new base, and the task keeps the new one. A second run with no stored base runs the blocker step. If the blocker step refuses, the task stays as the run found it. A new base does not move a task branch that already exists.
 
 The command picks the base branch from the first source that has one:
 
 1. The `base:` label of the issue, for example `base: dev`.
 2. The `--base` option, or the stored base of the task on a second run.
-3. The default that tasker learned for the repo.
-4. The `defaultBaseBranch` of the repo in the configuration.
-5. A question to you. The command asks only when stdin is a terminal.
+3. The blocker step: the branch of the task of an open blocker, in the form `refs/heads/<branch>`, when that task is ready to stack. A task is ready to stack in the states `awaiting_work_review`, `reviewing`, `reviewed`, `accepted`, `pushing`, `pushed`, `opening_pr` and `in_peer_review`. A blocker is done when its issue is closed, or when its task is in the state `landed`, `finishing`, `cleanup_failed` or `finished`.
+4. The default that tasker learned for the repo.
+5. The `defaultBaseBranch` of the repo in the configuration.
+6. A question to you. The command asks only when stdin is a terminal.
+
+The blocker step prints the note `based on <blocker key>'s branch` on stderr. The `base` line then shows the stored form, for example `base: refs/heads/<parent branch>`.
 
 If you press Ctrl-C at the question, the command stops. The task goes to the state `failed` with the error `no answer: the question was cancelled`. Run the command again to continue it.
 
@@ -52,6 +55,9 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The configuration or the issue key is not valid. Fix it, then run the command again.
 - The issue does not exist, or it is closed and has no task. The error names the issue. Open the issue again or use another one.
 - The issue has no task, `issueTracker.updateOnStart` is `true`, you did not pass `--reclaim`, and the issue already has the in-progress label. The error is `the issue <issue key> already has the in-progress marker <label>. Pass --reclaim to start it anyway, or remove the marker on the tracker.` The command makes no task and no write. Pass `--reclaim`, or remove the label on the tracker.
+- A blocker of the issue is open and its task is not ready to stack, or it has no task. The error is `<blocker key>: blocking issue is still open`, one line for each such blocker. The command makes no task. Wait until the blocker closes or its task is ready to stack, or pass `--base`.
+- More than one blocker is ready to stack. The error is `<issue key> has more than one blocker ready to stack: <key>, <key>; pass --base refs/heads/<branch> to pick one`. The command makes no task. Pass `--base refs/heads/<branch>` for the branch that you want.
+- The read of the blockers fails. The error is the error of the tracker. The command makes no task. Run the command again.
 - Another start of the same issue is running. The error says that the lock is busy. Wait until it ends.
 - The base branch is not known and stdin is not a terminal. The error is `no base branch for <repo>: pass --base <branch> to tasker start, or set repos.<repo>.defaultBaseBranch`. Pass `--base <branch>` or set `defaultBaseBranch` for the repo.
 - A step fails. The task goes to the state `failed` with the error. Fix the cause, then run the command again.
