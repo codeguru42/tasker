@@ -10,7 +10,7 @@ tasker also starts its own sessions for plan, execute and review. They run in a 
 
 The orchestrator and its agents run tasker from the local clone of the orchestrator. For one ticket, the agent of that ticket is the operator that [docs/dev/rebase-conflicts.md](rebase-conflicts.md) names.
 
-Every `tasker` command on [the orchestration pages](orchestration.md) is the installed `tasker`: the `tasker` command on the PATH from a global install. It is not the tasker that this repo builds. For this reason, `skills/tasker/SKILL.md` does not list its commands. See the `npm link` bullet under Limits.
+Every `tasker` command on [the orchestration pages](orchestration.md) is the installed `tasker`: the `tasker` command on the PATH from a global install. It is not the tasker that this repo builds. For this reason, `skills/tasker/SKILL.md` does not list its commands. See the `npm link` bullet under [Limits](limits.md#limits).
 
 The orchestration pages are `docs/dev/orchestration.md` and the pages of this list, "The pages":
 
