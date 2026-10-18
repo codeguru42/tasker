@@ -65,7 +65,7 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 - What goes together in one ticket depends on logic, never on size. Two pieces of work never go together only because they are small. If they are not logically related, they go in two separate tickets. One large piece of work can be split into smaller, coherent tickets. Each smaller ticket must still hold work that is logically connected.
 - [Core features first](working-with-the-user.md#core-features-first) gives the rules for the core features, an edge case, a security gap, containers, UTF-8 and a collision of derived names.
 - If the operator states a design fact or a rule, the planning session puts it in a doc of the repo through a ticket: in the plan of a ticket in progress (before `tasker approve` when possible), in the body of a ticket that has not started, or in a new issue.
-- The work on this repo must continue on any machine. For this reason, the notes of an assistant hold nothing that a session on another machine needs. This includes the preferences of the operator about how to work. Each new rule, fact or preference goes to a doc of the repo, as the bullet before this one says.
+- The work on this repo must continue on any machine. For this reason, the notes of an assistant hold nothing that a session on another machine needs. This includes the preferences of the operator about how to work. Each new rule, fact or preference goes to a doc of the repo, as the bullet before this one says. A note that holds a rule until an issue lands names the number of that issue, so that the orchestrator finds the note when the issue lands.
 
 ## Working with the operator
 
