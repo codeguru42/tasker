@@ -12,7 +12,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/doctor.md](docs/dev/doctor.md): the code that all doctor checks share: the timeout rules and the signal rule.
 - [skills/tasker/SKILL.md](skills/tasker/SKILL.md): the index of the commands, with one reference file for each phase in skills/tasker/references/.
 - [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a rebase conflict.
-- [docs/dev/orchestration.md](docs/dev/orchestration.md): the rules for an orchestrator that runs tickets from the project board through the installed tasker.
+- [docs/dev/orchestration.md](docs/dev/orchestration.md): the terms of the orchestration and the index of the orchestration pages.
 - [docs/dev/pick-the-tickets.md](docs/dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket rule, the parent-hold rule, the link offer, the defer rule and "The prompt of an agent".
 - [docs/dev/doc-reads.md](docs/dev/doc-reads.md): the re-read rule, the notice rule and the doc-read rule.
 - [docs/dev/run-one-ticket.md](docs/dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base rule, the add-work rule, the diff read and the measure rule.
@@ -24,6 +24,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold rule and the stuck-task rule.
 - [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each agent", "Schedule a job when an agent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "What the agent does", "Delete the job" and "Do not use these".
 - [docs/dev/handoff.md](docs/dev/handoff.md): "The handoff".
+- [docs/dev/limits.md](docs/dev/limits.md): "Limits", the issue-link rule, the own-worktree rule, the update rule, the local-commit rule, the shared-clone rule, the address rule and the answer-wait rule.
 - [docs/dev/planning.md](docs/dev/planning.md): the rules for a planning session that plans a milestone and writes its issues: the order of the work, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the operator.
 - [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, and the steps of the planning session for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user: a decision of the user, a question of the user, core features first and the work that waits, simplify over special rules, and the tools of a session.
