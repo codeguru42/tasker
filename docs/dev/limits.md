@@ -76,33 +76,21 @@ The agent sends each message to the orchestrator with `SendMessage` and `to: "ma
 
 ### The answer-wait rule
 
-When the agent must wait for an answer or a next step from the orchestrator, the agent sends its report or its question with `SendMessage`, as [the address rule](#the-address-rule) says. Then the agent gives its final answer, which ends its turn. This final answer is an interim report (see [the final report](run-one-ticket.md#the-final-report)). The agent does not wait in a loop. The message of the orchestrator with the answer or the next step starts the agent again. The reason: a message to an agent that has ended starts the agent again, and the agent keeps its context (see ["Terms"](quota.md#terms) in ["Quota"](quota.md#quota)). On #153, the agent waited about 25 minutes in a loop for an answer, then ended its turn with a stop report. The message with the answer started the agent again, and the agent went on with its work. The rule also covers each stop after which the agent runs no other `tasker` command until the orchestrator tells it the next step. While the agent waits, the task keeps its state. For a resume message during the wait, see [the resume rule](quota.md#when-the-job-fires) in ["When the job fires"](quota.md#when-the-job-fires). The rule does not cover a wait that reads a state, for example the "To wait" bullet of ["Land the work"](land-the-work.md#land-the-work) or the wait bullet of [the command rules](tasker-commands.md#the-command-rules).
+When the agent must wait for an answer or a next step from the orchestrator, the agent sends its report or its question with `SendMessage`, as [the address rule](#the-address-rule) says. Then the agent gives its final answer, which ends its turn. This final answer is an interim report (see [the final report](run-one-ticket.md#the-final-report)). The agent does not wait in a loop. The message of the orchestrator with the answer or the next step starts the agent again. The reason: a message to an agent that has ended starts the agent again, and the agent keeps its context (see ["Terms"](quota.md#terms) in ["Quota"](quota.md#quota)). On #153, the agent waited about 25 minutes in a loop for an answer, then ended its turn with a stop report. The message with the answer started the agent again, and the agent went on with its work.
 
-A wait point is a place where the agent waits for an answer or a next step from the orchestrator. At each wait point, the orchestrator expects an interim report from the agent. The harness is the tool that runs the agent. The harness can deliver the final answer of the agent to the orchestrator in the same way as the final report. At a wait point, the agent starts its interim report with a line that says that the report is not the final report. That line also names what the agent waits for.
+A stop of an agent has these parts:
 
-On [the orchestration pages](orchestration.md), the agent waits for the orchestrator at these wait points:
+- The agent runs no other `tasker` command until the orchestrator tells it the next step.
+- The agent sends its report with `SendMessage`, as [the address rule](#the-address-rule) says.
+- The agent gives its final answer, which ends its turn.
+- The task keeps its state.
+- The message of the orchestrator with the answer or the next step starts the agent again.
+- The step that stops names what stays behind, for example a worktree or a branch.
 
-- [The parent-hold rule](pick-the-tickets.md#the-parent-hold-rule): before a command that moves the task out of a ready state, and when the hold message comes during a wait
-- Step 2 of [Run one ticket](run-one-ticket.md#run-one-ticket): each stop at `tasker start` and after a failed make of the task worktree
-- [The comeback rule](run-one-ticket.md#the-comeback-rule): each stop of the agent
-- [The diff read](run-one-ticket.md#the-diff-read): each stop of the agent
-- Step 11 of [the CI wait](ci-wait.md#the-ci-wait), and each stop of the CI wait
-- [The stop rule](plan-review.md#the-stop-rule): each stop case
-- [The quote check](plan-review.md#the-quote-check): before `tasker approve` or `tasker accept`
-- [The verify-failure rule](verify-failures.md#the-verify-failure-rule): each stop of the agent
-- [The plain-form rule](tasker-commands.md#the-plain-form-rule) and [the tool-block rule](tasker-commands.md#the-tool-block-rule): a denied tool call
-- [The broken-commit steps](verify-failures.md#the-broken-commit-steps): the stop at the new base commit, the stop after a failed [commit check](verify-failures.md#the-commit-check) and each stop of the pushed-branch rule
-- [The manual fix](verify-failures.md#the-manual-fix): each stop of the agent
-- [The commit check](verify-failures.md#the-commit-check): each stop
-- The security report of [Review findings](review-findings.md#review-findings)
-- The no-loop-left rule and the bullet "After the 5th loop" of [Review findings](review-findings.md#review-findings)
-- [Land the work](land-the-work.md#land-the-work): after the later agent stops waiting
-- [docs/dev/rebase-conflicts.md](rebase-conflicts.md): each stop of its procedure, when a step of [the orchestration pages](orchestration.md) sends the agent there
-- [The hold rule](land-the-work.md#the-hold-rule): before `tasker accept`
-- [What the agent does](quota.md#what-the-agent-does) in "Quota": the end of the turn after a stop in `quota_blocked` or `interrupted`, and the report for `awaiting_quota_approval`
-- A question of the agent, in the sources bullet of [Limits](#limits)
-- The read bullet of [Limits](#limits): a failed command
-- [The own-worktree rule](#the-own-worktree-rule): each stop of the make and of the branch-exists case
-- [The doc-read rule](doc-reads.md#the-doc-read-rule): each stop of an agent
+A step that stops gives only the facts that differ from this list, for example a state of the task that changes, what stays behind, or a report to someone other than the orchestrator. When a step of [the orchestration pages](orchestration.md) sends the agent to [docs/dev/rebase-conflicts.md](rebase-conflicts.md), each stop of its procedure is a stop.
+
+For a resume message during the wait, see [the resume rule](quota.md#when-the-job-fires) in ["When the job fires"](quota.md#when-the-job-fires). The rule does not cover a wait that reads a state, for example the "To wait" bullet of ["Land the work"](land-the-work.md#land-the-work) or the wait bullet of [the command rules](tasker-commands.md#the-command-rules).
+
+A wait point is a place where the agent waits for an answer or a next step from the orchestrator. Each stop is a wait point. At each wait point, the orchestrator expects an interim report from the agent. The harness is the tool that runs the agent. The harness can deliver the final answer of the agent to the orchestrator in the same way as the final report. At a wait point, the agent starts its interim report with a line that says that the report is not the final report. That line also names what the agent waits for.
 
 The orchestrator does not treat an interim report as the end of the ticket. For an interim report alone, the orchestrator does not free the slot, delete a quota job or read the board for the ticket. The orchestrator still follows the bullets of [Delete the job](quota.md#delete-the-job). The orchestrator still does each read that a rule gives after a report of an agent, for example in [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule). On #160, #161 and #221, the agents ended their turns at a wait point, and a message of the orchestrator resumed each one.
