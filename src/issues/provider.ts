@@ -56,6 +56,10 @@ export interface IssueProvider {
   // Whether the issue has the in-progress marker. target is issueTracker.inProgressLabel.
   // No tracker call.
   inProgressMarker: (issue: Issue, target: string | undefined) => boolean;
+  // Removes the in-progress marker of the issue. target is issueTracker.inProgressLabel. A marker
+  // that the issue does not have counts as success. The caller reads issueTracker.updateOnStart to
+  // decide if it calls this write at all.
+  clearInProgress(ref: IssueRef, target: string, env: NodeJS.ProcessEnv): Promise<void>;
   // Marks the issue done. target is issueTracker.doneLabel. With a label, the label is added and
   // the issue stays open. With undefined, the issue closes as completed. The caller reads
   // issueTracker.updateOnFinish to decide if it calls this write at all.
