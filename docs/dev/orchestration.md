@@ -22,6 +22,7 @@ The orchestration pages are `docs/dev/orchestration.md` and the pages of this li
 - [docs/dev/verify-failures.md](verify-failures.md): the verify-failure rule, the broken-commit steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](ci-wait.md): the CI wait and "A failed CI run".
 - [docs/dev/review-findings.md](review-findings.md): "Review findings".
+- [docs/dev/land-the-work.md](land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold rule and the stuck-task rule.
 
 ## Quota
 
