@@ -410,8 +410,8 @@ These reasons explain its rules:
 - The order of the steps: the command makes all its checks before any write, so a refused command changes nothing. The command takes the repo lock before the move to `updating_branch`, so a busy lock changes no state.
 - The locks: the task lock does not wait, as [The locks](#the-locks) says. The repo lock waits, because the fetch and the move of the branch change the clone. [The locks table](data-root.md#locks-table) requires it.
 - The `base` event is `{ base, revision, source: "update" }`. The command writes it only when the head moved. The `revision` is the stored base revision, a ref. The base change after the parent landed writes the event with the source `parent`.
-- The merge base of a stacked task: the base step of a stacked task replays the commits after the merge base of the task branch and the new tip. No new record is needed. Git skips each old commit of the parent whose patch the new tip already holds.
-- The strategy of a stacked task: the command refuses `--strategy` for a stacked task, because it replays the commits of a stacked task with a rebase.
+- The merge base of a stacked task: the replay is the `rebase` form of the move of a stacked task. It replays the commits after the merge base of the task branch and the new tip. No new record is needed. Git skips each old commit of the parent whose patch the new tip already holds.
+- The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task.
 - The base change after the parent landed: the command switches the base to the base of the parent, also when the head does not move. Without the switch, the task stays stacked, and the guard of `tasker verify` refuses it each time.
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base` event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local tip.

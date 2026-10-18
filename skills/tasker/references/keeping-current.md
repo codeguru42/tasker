@@ -53,7 +53,13 @@ The new tip depends on the parent:
 - While the parent is in flight, the new tip is the tip of `refs/heads/<parent branch>`.
 - After the parent landed, the new tip is the tip of the base of the parent on `origin`, read after the fetch. The task is then no longer stacked.
 
-The command replays the commits of the task branch after the merge base of the task branch and the new tip onto the new tip, with a rebase. Git skips each old commit of the parent whose patch the new tip already holds. A commit that git cannot replay is an ordinary rebase conflict, and the rule of a failure after the move applies as it is. If the task branch already contains the new tip, nothing moves: the head and the worktree stay as they are.
+The strategy picks the move.
+
+Under `rebase`, the command replays the commits of the task branch after the merge base of the task branch and the new tip onto the new tip, with a rebase. The `how` is `rebase`. Git skips each old commit of the parent whose patch the new tip already holds. A commit that git cannot replay is an ordinary rebase conflict, and the rule of a failure after the move applies as it is.
+
+Under `merge`, the command makes a fast-forward when the head is an ancestor of the new tip, and the `how` is `fast-forward`. Otherwise it merges the new tip into the task branch, and the `how` is `merge`.
+
+If the task branch already contains the new tip, nothing moves: the head and the worktree stay as they are.
 
 The `revision` of each `base` event is a ref, never a commit id:
 
@@ -83,7 +89,6 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 
 - The task has no branch, no worktree, no base or no base revision.
 - The value of `--strategy` is not `rebase` or `merge`. The error is `--strategy must be rebase or merge: <value>`.
-- The task is stacked and the command has `--strategy`. The error is `--strategy does not apply to a stacked task; tasker update-branch replays its commits with a rebase`.
 - The worktree has uncommitted changes. The error has the line `the worktree has uncommitted changes: <path>`, then one line for each change, and the last line `tasker update-branch needs a clean worktree`.
 
 When a step fails after the move to `updating_branch`, the command prints the error on stderr and stops with exit code 1. The step can be the fetch, the sync step, the move of the branch, a conflict, a failed restore or a failed write. Diverged tips are one such failure. The absent remote tip with `--take-remote` is another. A conflict message names each path in conflict. A failed restore names the git commands that put the worktree back. The state after the failure depends on the worktree:
