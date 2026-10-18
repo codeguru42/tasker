@@ -88,18 +88,18 @@ Write the `.js` extension in each relative import, for example `import { run } f
 
 ## zod
 
-These facts hold for zod 4.6.5.
+These facts hold for zod 4.6.5. `test/zod-facts.test.ts` guards these facts.
 
 - A default `.superRefine()` still runs after an issue that does not stop the parse, for example an unknown key, a failed pattern or a failed `.min()`.
 - zod skips a default `.superRefine()` after a missing field, a wrong type or a bad enum value.
 - A `z.preprocess` that adds an issue skips its inner schema and a default `.superRefine()` of the parent object. The other fields of the object still get their checks.
-- With `{ when: () => true }`, a `.superRefine()` runs in every case. It then gets the raw input, so it must check the shape of each field that it reads.
+- With `{ when: () => true }`, a `.superRefine()` runs in every case. It gets the input with each unknown key removed. It must still check the shape of each field that it reads.
 
 As a result, when a check must report all problems in one run, as [rules.md](rules.md#code) says, give it `{ when: () => true }`. When a check must stop after a schema failure, run it as plain code after a successful `safeParse`, not as a refinement.
 
 ## Tests
 
-- Tests use Vitest. Each test file matches `test/**/*.test.ts`. Its name mirrors the file in `src/` that it tests, except for a test that reads a doc, scans the whole source tree, or tests the shared helpers.
+- Tests use Vitest. Each test file matches `test/**/*.test.ts`. Its name mirrors the file in `src/` that it tests, except for a test that reads a doc, a test that scans the whole source tree, a test of the shared helpers, or a test that guards a fact about an outside tool.
 - Unit tests call `run()` with a capturing `Io` and with fixture commands. The test reads stdout and stderr from the `Io` and the exit code from the result of `run()`. The capturing `Io` and the fixture commands come from `test/helpers/`. [rules.md](rules.md#tests) gives the rules for the shared helpers.
 - End-to-end tests spawn `src/main.ts` through `tsx`. Write few of them, because they are slow.
 - Write the test first. Run it and watch it fail (red). Then write the code that makes it pass (green).
