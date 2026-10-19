@@ -79,7 +79,7 @@ A stop of an agent has these parts:
 
 A step that stops gives only the facts that differ from this list, for example a state of the task that changes, what stays behind, or a report to someone other than the orchestrator. When a step of [the orchestration pages](orchestration.md) sends the agent to [docs/dev/rebase-conflicts.md](rebase-conflicts.md), each stop of its procedure is a stop.
 
-For a resume message during the wait, see [the resume rule](quota.md#when-the-job-fires) in ["When the job fires"](quota.md#when-the-job-fires). The rule does not cover a wait that reads a state, for example the "To wait" bullet of ["Land the work"](land-the-work.md#land-the-work) or the wait bullet of [the command rules](tasker-commands.md#the-command-rules).
+For a resume message during the wait, see [the resume rule](quota.md#the-next-job) in ["When the job fires"](quota.md#when-the-job-fires). The rule does not cover a wait that reads a state, for example the "To wait" bullet of ["Land the work"](land-the-work.md#land-the-work) or the wait bullet of [the command rules](tasker-commands.md#the-command-rules).
 
 A wait point is a place where the agent waits for an answer or a next step from the orchestrator. Each stop is a wait point. At each wait point, the orchestrator expects an interim report from the agent. The harness is the tool that runs the agent. The harness can deliver the final answer of the agent to the orchestrator in the same way as the final report. At a wait point, the agent starts its interim report with a line that says that the report is not the final report. That line also names what the agent waits for.
 

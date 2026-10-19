@@ -21,7 +21,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the CI wait and "A failed CI run".
 - [docs/dev/review-findings.md](docs/dev/review-findings.md): "Review findings".
 - [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold rule and the stuck-task rule.
-- [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each agent", "Schedule a job when an agent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "What the agent does", "Delete the job" and "Do not use these".
+- [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each agent", "Schedule a job when an agent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What the agent does", "Delete the job" and "Do not use these".
 - [docs/dev/handoff.md](docs/dev/handoff.md): "The handoff".
 - [docs/dev/limits.md](docs/dev/limits.md): "Limits", the own-worktree rule, the update rule, the local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
 - [docs/dev/planning.md](docs/dev/planning.md): the rules for a planning session that plans a milestone and writes its issues: the order of the work, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the operator.
