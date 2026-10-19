@@ -152,6 +152,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Name the import rule of `test/fixtures/` ([code-conventions.md](code-conventions.md#layout)).
 - The agent can record fixture data on the local machine and put it in the refine with "write them exactly as given". About 45 KB worked. Then the agent compares each file with `cmp` against `tasker/<task branch>`.
 - If an issue asks that each test of a file gets a value from a fixture, ask the plan to name the fixture that each test of the file calls. Ask the plan to put the value in the inner fixture. Then the value reaches the tests that call the inner fixture and the tests that call an outer fixture that calls it. On #287, plan v1 put the git identity in `useMovedBaseTask`. Some tests of `test/commands/update-branch.test.ts` call `useWorkReviewTask` directly, so refine 1 moved the identity into `useWorkReviewTask`.
+- A command test makes a commit on the task branch with `commitInWorktree`, not with `addCloneCommit`. `addCloneCommit` moves the branch ref in the clone and not the worktree that has the branch checked out. On #274, the issue named `addCloneCommit`, and the tests used `commitInWorktree` and `origin.addCommit()` instead.
+- If a ticket makes `tasker start` read a new source through `gh`, ask the plan to give `useStartFixture` a default answer for that source. Without it, each test built on that fixture fails with an unanswered `gh` call. The default answer comes after the answers of `ghAnswers`, because the first answer of the fake `gh` that matches wins. On #275, the plan found this for the read of the blockers.
 
 ## A ticket that changes a procedure doc
 
