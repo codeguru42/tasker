@@ -34,7 +34,7 @@ The docs that the prompt names are docs of the orchestrator of [the re-read rule
 
 The old orchestrator puts no rule in the handoff file. The rules stay in the docs, and the prompt points to them.
 
-The user pastes the prompt as the first message of the new session. The user names the session `orchestrator-<milestone>`, for example `orchestrator-docs`, as [the notice rule](doc-reads.md#the-notice-rule) says. The new orchestrator then starts with the re-read rule. Right after the first doc read, the new orchestrator does the check of the handoff folder that follows.
+The user pastes the prompt as the first message of the new session. The first message always names the path of the handoff file. The user names the session `orchestrator-<milestone>`, for example `orchestrator-docs`, as [the notice rule](doc-reads.md#the-notice-rule) says. The new orchestrator then starts with the re-read rule. Right after the first doc read, the new orchestrator does the check of the handoff folder that follows.
 
 The new orchestrator does this check before any other step of the prompt. It lists the folder `$HOME/Documents/tasker/handoff/` with `ls`.
 
@@ -46,8 +46,6 @@ The new orchestrator then does the case of this list that applies:
 
 - If the file of the first message is the newest file of the role, the new orchestrator works from that file.
 - If the newest file of the role is newer than the file of the first message, the new orchestrator tells the user. Then it works from the newest file.
-- If the list holds no file of the role, no newer file exists. The new orchestrator works from its first message.
-- If the list holds a file of the role and the first message names no path of a file of the role, the new orchestrator tells the user the newest file of its role. Then it works from that file.
-- If the list fails, for example because the folder is missing, [the failure rule](limits.md#the-failure-rule) applies. Then the new orchestrator works from the file of its first message. If the first message names no path of a file of the role, the new orchestrator works from its first message.
+- If the list fails, for example because the folder is missing, [the failure rule](limits.md#the-failure-rule) applies. Then the new orchestrator works from the file of its first message.
 
 The reason: on 2026-10-16, the new Docs orchestrator got the handoff file of 01:12 in its first message. A newer handoff file of 09:09 for the same role existed. Most issues of the table of the old file had closed.
