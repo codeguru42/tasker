@@ -8,6 +8,10 @@ function readSkill(): string {
   return readFileSync(new URL("../skills/tasker/SKILL.md", import.meta.url), "utf8");
 }
 
+function skillFrontmatter(): string {
+  return /^---\n([\s\S]*?)\n---\n/.exec(readSkill())?.[1] ?? "";
+}
+
 function readReferenceFile(file: string): string | undefined {
   const url = new URL(`../skills/tasker/${file}`, import.meta.url);
   return existsSync(url) ? readFileSync(url, "utf8") : undefined;
@@ -23,9 +27,25 @@ async function missingReferences(
 
 describe("skills/tasker/SKILL.md", () => {
   it("has the name tasker and a description in its frontmatter", () => {
-    const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(readSkill())?.[1] ?? "";
+    const frontmatter = skillFrontmatter();
     expect(frontmatter).toMatch(/^name: tasker$/m);
     expect(frontmatter).toMatch(/^description: \S.*$/m);
+  });
+
+  it("has the argument-hint of a command line in its frontmatter", () => {
+    expect(skillFrontmatter()).toMatch(/^argument-hint: <command> \[arguments\]$/m);
+  });
+
+  it("holds the command line of the operator once, in the section Run a command", () => {
+    const skill = readSkill();
+    const line = "`tasker $ARGUMENTS`";
+    expect(skill.split(line).length - 1).toBe(1);
+    const start = skill.indexOf("\n## Run a command\n");
+    expect(start).not.toBe(-1);
+    const end = skill.indexOf("\n## ", start + 1);
+    const section = skill.slice(start + 1, end === -1 ? undefined : end);
+    expect(section).toContain(line);
+    expect(start).toBeLessThan(skill.indexOf("\n## Rules\n"));
   });
 
   it("reports a command in --help that the skill does not list", async () => {
