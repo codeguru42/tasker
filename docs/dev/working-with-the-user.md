@@ -47,6 +47,7 @@ The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but i
 
 - When a review keeps finding edge cases in a rule, and each fix opens the next case, stop the patches. After two loops in a row where the fix of a rule draws a new edge case, give the user a simpler rule as the first choice and the patch as the second choice.
 - In one case, an exception for one more loop drew a new edge case in each of 4 loops. The user replaced all the special loop rules with one rule: "up to 5 loops, then report". [Review findings](review-findings.md#review-findings) of review-findings.md holds that rule.
+- When the orchestrator gives the user the simpler rule as a choice, the orchestrator also tells the agent of the ticket to wait. The agent does not run its next `tasker approve` or `tasker accept` until the user decides. The agent waits as [the answer-wait rule](limits.md#the-answer-wait-rule) says. Then the orchestrator sends the agent the decision of the user. The reason: if the user then picks the simpler rule, a landing with the patch costs a second ticket. On 2026-10-17, the agent of #250 went on, #250 landed with the patch before the user chose the simpler rule, and #306 undoes the patch.
 
 ## The tools of a session
 
