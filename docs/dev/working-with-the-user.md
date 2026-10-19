@@ -23,6 +23,17 @@ The work on this repo must continue on any machine, as [What goes in a ticket](p
 - This rule covers a question of the user. When the user must decide something, the session still gives a recommendation, as [A decision of the user](#a-decision-of-the-user) says.
 - In one case (2026-10-17), the user asked the Docs orchestrator questions about its handoff. The orchestrator answered and also offered next steps. After one message of the user, the orchestrator left the handoff and started a ticket without the word of the user. The user wrote: "When I ask questions, just answer. Do not anticipate what I want."
 
+## The issue-link rule
+
+In each reply to the user, the session writes each mention of an issue as a markdown link. The link target is the page of the issue in its tracker. The link text is the issue key, in this form:
+
+- For an issue of this repo, the text is the short form `#<N>`, for example `[#159](https://github.com/codeguru42/tasker/issues/159)`.
+- For an issue of another repo, the text is the full key, for example `[owner/repo#12](https://github.com/owner/repo/issues/12)`.
+
+The rule covers the replies of the session to the user only. The text on GitHub keeps the plain key, because GitHub links it. The messages to a session keep the plain key, because a session reads them as text. A key inside a code span or a code block stays as it is, for example a command line with an issue key.
+
+The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but in the terminal it is plain text. In one case (2026-10-18), the planning session of the Docs milestone wrote plain keys such as `#303` in each reply, and the user had no link to open an issue from a reply.
+
 ## Core features first
 
 - The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge case. Decide it as "later", and keep the ticket in its scope. The goal of the numbered milestones is parity with [the installed tasker](orchestration.md): each command of the installed tasker, with its core features. A feature that the installed tasker does not have also waits until later, as an edge case does.
