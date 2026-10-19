@@ -66,6 +66,15 @@ A case is one kind of input that a function serves. Examples are a role of an as
 - Each session writes all its text with the simple-english skill. A session is an assistant session, for example the orchestrator, an agent or the planning session. The skill holds the rules of the text, for example the banned words and the sentence limits. The text includes the docs and the text on GitHub: the titles, bodies, comments, milestone descriptions and the text of project fields. The text on GitHub also includes the title and the description of a pull request. Examples of the text on GitHub are the comment of step 11 of [Run one ticket](run-one-ticket.md#run-one-ticket) and the body of an issue. The text also includes the replies to the user, the reports and messages between sessions, and the feedback texts of `tasker refine` and of `tasker review <issue> "<feedback>"`. Examples of the reports and messages are the final report of an agent to the orchestrator and the messages of the orchestrator to an agent. This rule does not apply to the sessions that tasker starts for plan, execute and review, except for the docs that they write.
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path such as `/home/<user>/...`.
 
+## The installed skill
+
+- Each assistant session never reads the files of `skills/tasker/` as instructions. Examples of a session are the orchestrator, an agent, a planning session, and the sessions that tasker starts for plan, execute and review.
+- The instructions for tasker come from the installed skill. The installed skill is the copy that `tasker install-skills` of the installed tasker put in a folder of `skillsDirs`. The assistant loads it by itself.
+- A session reads the files of `skills/tasker/` only for a task that changes them.
+- This rule wins over "the files of the repo" in the bullet of the sources of the agent in the Limits list of [docs/dev/limits.md](limits.md#limits).
+
+The reasons: the skill of the repo describes the tasker that this repo builds, and it can differ from the installed tasker. A raw read of the skill also shows the placeholder line instead of the command line of the operator.
+
 ## AGENTS.md
 
 - `AGENTS.md` is an index. Each line is a one-line description plus a link to the file that has the details.

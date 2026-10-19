@@ -2,7 +2,7 @@
 
 Each assistant session reads this index first and follows the link for each topic.
 
-- [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo (the check, test first, the commits, the docs, the test helpers, the code rules, the simple-english skill and `AGENTS.md`).
+- [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo (the check, test first, the commits, the docs, the test helpers, the code rules, the simple-english skill, the installed skill and `AGENTS.md`).
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to start work as a contributor to tasker.
 - [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the layout, the steps to add a command, the imports, the zod facts and the tests.
 - [docs/config.md](docs/config.md): the configuration.
@@ -10,7 +10,6 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/data-root.md](docs/dev/data-root.md): the folders and the database.
 - [docs/dev/version-control.md](docs/dev/version-control.md): the git code: the git boundary, how tasker uses git, the git environment, provision, the ssh key, the push guard, publish and land, the doctor checks and the repo slug.
 - [docs/dev/doctor.md](docs/dev/doctor.md): the code that all doctor checks share: the timeout rules and the signal rule.
-- [skills/tasker/SKILL.md](skills/tasker/SKILL.md): the index of the commands, with one reference file for each phase in skills/tasker/references/.
 - [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a rebase conflict.
 - [docs/dev/orchestration.md](docs/dev/orchestration.md): the terms of the orchestration and the index of the orchestration pages.
 - [docs/dev/pick-the-tickets.md](docs/dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket rule, the parent-hold rule, the link offer, the defer rule and "The prompt of an agent".
