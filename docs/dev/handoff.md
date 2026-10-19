@@ -26,7 +26,7 @@ The old orchestrator puts these items in the handoff file:
 - The prompt for the new session, in a code block. The prompt names the milestone, the session name and the first step: the start of the re-read rule. The prompt also names the docs to read and the state at the handoff. Its last step is to watch the board for new issues.
 - The state at the handoff: the tasks in flight of other milestones that share a file with an open issue of the milestone, the parked tasks and the other sessions.
 - The number of each open broken-test issue that the old orchestrator knows of (see the broken-test rule in [A failed CI run](ci-wait.md#a-failed-ci-run)).
-- What the old orchestrator did, and each decision of the user from its session.
+- What the old orchestrator did, and each decision of the user from its session. The handoff file also keeps each decision of the user from the earlier handoff file of the role that still applies. As a result, a decision survives more than one handoff. The bullet of a relayed decision in [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses these decisions.
 - A table of the open issues of the milestone, with the columns issue, topic, blockers and files.
 - Each finding of the review rounds, with its state, handled or open.
 
