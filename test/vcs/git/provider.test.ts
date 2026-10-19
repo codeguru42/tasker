@@ -99,7 +99,6 @@ describe("createGitProvider", () => {
 
   describe("localCopyPath", () => {
     it("gives the clone path like repoPaths", () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(provider().localCopyPath(fixture.context)).toBe(paths().clone);
     });
   });

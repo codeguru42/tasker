@@ -10,6 +10,7 @@ import {
 } from "../state/machine.js";
 import type { ExecuteTodoProgress, Task, TaskEvent, TaskStore } from "../store/store.js";
 import { resetIsoTime } from "../tasks/run-outcome.js";
+import { vcsForRepo } from "../vcs/provider.js";
 import {
   formatColumns,
   formatFields,
@@ -82,7 +83,7 @@ function pauseFields(events: readonly TaskEvent[], state: string): Field[] {
   return fieldsOf(transitionFromEvents(events, pause), pauseRecordOf(events, pause));
 }
 
-function formatTask(store: TaskStore, task: Task): string {
+function formatTask(store: TaskStore, task: Task, clone: string): string {
   const events = store.listEvents(task.id);
   const last = events.at(-1);
   const fields: [string, string | number | null | undefined][] = [
@@ -94,6 +95,7 @@ function formatTask(store: TaskStore, task: Task): string {
     ["base", task.base],
     ["branch", task.branch],
     ["worktree", task.worktreePath],
+    ["clone", clone],
     ["created", task.createdAt],
     ["updated", task.updatedAt],
     ["last event", last && `${last.at} ${last.type} ${JSON.stringify(last.data)}`],
@@ -119,6 +121,11 @@ export const show: RegisterCommand = (program, io) => {
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .action(async (issue: string, options: { repo?: string }) => {
       const config = loadConfigOrFail(io);
-      io.stdout(await withIssueTask(io, config, issue, { repo: options.repo }, formatTask));
+      io.stdout(
+        await withIssueTask(io, config, issue, { repo: options.repo }, (store, task) => {
+          const { vcs, ctx } = vcsForRepo(config, task.repoKey, process.env);
+          return formatTask(store, task, vcs.localCopyPath(ctx));
+        }),
+      );
     });
 };

@@ -194,6 +194,9 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
     async remoteTaskRefTip(ctx, { taskRef }) {
       return remoteTip({ remote, branch: taskRef, sshKey: config.sshKey, env: ctx.env });
     },
+    localCopyPath(ctx) {
+      return pathsOf(ctx).clone;
+    },
     assistantSurface(ctx) {
       const { clone, publishTokens } = pathsOf(ctx);
       return {

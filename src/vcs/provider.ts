@@ -247,6 +247,8 @@ export interface VcsProvider {
   remoteTaskRefTip(ctx: VcsContext, o: { taskRef: string }): Promise<RemoteTip>;
   // The text and the paths that the provider adds to the assistant of a task.
   assistantSurface(ctx: VcsContext): AssistantSurface;
+  // The absolute path of the local copy of the remote. It only computes the path and reads nothing.
+  localCopyPath(ctx: VcsContext): string;
   // The doctor checks of the repos. vcsDoctorChecks() calls it one time with all the repos of the
   // provider. Each repo of the list names its own remote and configuration. The provider that gets
   // the call comes from the first repo of the list, and the operation does not use the remote and
