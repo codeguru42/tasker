@@ -24,6 +24,7 @@ import {
   seedTasks,
   withDataRootStore,
 } from "../helpers/store.js";
+import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import {
   transitionTask,
@@ -38,8 +39,11 @@ const OTHER = "codeguru42/other";
 
 const runShow = (...args: string[]) => runCommand(show, "show", ...args);
 
+// The clone: line of tasker show for the repo repoKey under dataRoot.
+const cloneLine = (dataRoot: string, repoKey: string) => `clone: ${repoPaths(dataRoot, repoKey).clone}\n`;
+
 // The fields of the task that seedPinnedTask seeds in the state executed, with the fixed clock of the seed.
-const EXECUTED_FIELDS =
+const executedFields = (dataRoot: string): string =>
   "issue: codeguru42/tasker#5\n" +
   "repo: codeguru42/tasker\n" +
   "title: -\n" +
@@ -48,6 +52,7 @@ const EXECUTED_FIELDS =
   "base: -\n" +
   "branch: -\n" +
   "worktree: -\n" +
+  cloneLine(dataRoot, TASKER) +
   "created: 2026-01-04T00:00:00.000Z\n" +
   "updated: 2026-01-04T00:00:00.000Z\n" +
   'last event: 2026-01-04T00:00:00.000Z plan_revision {"version":1,"prompt":"plan@000000000000"}\n';
@@ -142,6 +147,7 @@ describe("show", () => {
         "base: main\n" +
         `branch: ${names.branch}\n` +
         `worktree: ${names.worktree}\n` +
+        cloneLine(dataRoot, TASKER) +
         "created: 2026-01-02T00:00:00.000Z\n" +
         "updated: 2026-01-02T00:00:00.000Z\n" +
         'last event: 2026-01-02T00:00:00.000Z created {"state":"workspace_ready"}\n' +
@@ -182,11 +188,22 @@ describe("show", () => {
         "base: -\n" +
         "branch: -\n" +
         "worktree: -\n" +
+        cloneLine(dataRoot, OTHER) +
         "created: 2026-01-03T00:00:00.000Z\n" +
         "updated: 2026-01-03T00:00:00.000Z\n" +
         'last event: 2026-01-03T00:00:00.000Z created {"state":"executing"}\n' +
         expectedShowLines("executing", `${OTHER}#7`),
     });
+  });
+
+  it("prints the clone of the repo of the task for a finished task", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedTasks(dataRoot, [{ issueKey: `${OTHER}#7`, repoKey: OTHER, state: "finished", at: dayAt(2) }]);
+
+    const { code, out } = await runShow(`${OTHER}#7`, "--repo", OTHER);
+
+    expect(code).toBe(0);
+    expect(out).toContain("worktree: -\n" + cloneLine(dataRoot, OTHER));
   });
 
   it("prints the commands of a task in awaiting_work_review", async () => {
@@ -256,6 +273,7 @@ describe("show", () => {
         "base: -\n" +
         "branch: -\n" +
         "worktree: -\n" +
+        cloneLine(dataRoot, "fork") +
         "created: 2026-01-03T00:00:00.000Z\n" +
         "updated: 2026-01-03T00:00:00.000Z\n" +
         'last event: 2026-01-03T00:00:00.000Z created {"state":"planning"}\n' +
@@ -289,6 +307,7 @@ describe("show", () => {
         "base: -\n" +
         "branch: -\n" +
         "worktree: -\n" +
+        cloneLine(dataRoot, TASKER) +
         "created: 2026-01-04T00:00:00.000Z\n" +
         "updated: 2026-01-04T00:00:00.000Z\n" +
         'last event: 2026-01-04T00:00:00.000Z transition {"error":"git push failed","from":"executing","to":"failed"}\n' +
@@ -348,6 +367,7 @@ describe("show", () => {
         "base: -\n" +
         "branch: -\n" +
         "worktree: -\n" +
+        cloneLine(dataRoot, TASKER) +
         "created: 2026-01-04T00:00:00.000Z\n" +
         "updated: 2026-01-04T00:00:00.000Z\n" +
         'last event: 2026-01-04T00:00:00.000Z transition {"error":"git push failed\\r\\nexit 128\\rdone\\nend","from":"executing","to":"failed"}\n' +
@@ -372,7 +392,7 @@ describe("show", () => {
     expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
-      out: EXECUTED_FIELDS + EXECUTED_COMMANDS,
+      out: executedFields(dataRoot) + EXECUTED_COMMANDS,
     });
   });
 
@@ -383,7 +403,7 @@ describe("show", () => {
     expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
-      out: EXECUTED_FIELDS + EXECUTED_COMMANDS,
+      out: executedFields(dataRoot) + EXECUTED_COMMANDS,
     });
   });
 
@@ -394,7 +414,7 @@ describe("show", () => {
     expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
-      out: EXECUTED_FIELDS + EXECUTED_COMMANDS + PADDED_BLOCK,
+      out: executedFields(dataRoot) + EXECUTED_COMMANDS + PADDED_BLOCK,
     });
   });
 
@@ -406,7 +426,7 @@ describe("show", () => {
       code: 0,
       err: "",
       out:
-        EXECUTED_FIELDS +
+        executedFields(dataRoot) +
         EXECUTED_COMMANDS +
         "todos (approved v1):\n" +
         "  not started  write-test    Add the a module\n" +
@@ -424,7 +444,7 @@ describe("show", () => {
     expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
-      out: EXECUTED_FIELDS + EXECUTED_COMMANDS + "todos (approved v1):\n  done  a  First line\\nsecond line\n",
+      out: executedFields(dataRoot) + EXECUTED_COMMANDS + "todos (approved v1):\n  done  a  First line\\nsecond line\n",
     });
   });
 
@@ -436,7 +456,7 @@ describe("show", () => {
       code: 0,
       err: "",
       out:
-        EXECUTED_FIELDS.replace("state: executed", "state: failed") +
+        executedFields(dataRoot).replace("state: executed", "state: failed") +
         "failed in: executing\n" +
         "error: git push failed\n" +
         expectedShowLines("failed", `${TASKER}#5`) +
@@ -451,7 +471,7 @@ describe("show", () => {
     expect(await runShow(`${TASKER}#5`, "--repo", TASKER)).toEqual({
       code: 0,
       err: "",
-      out: EXECUTED_FIELDS + EXECUTED_COMMANDS + PADDED_BLOCK + `fix turn: ${fixTurn}\n`,
+      out: executedFields(dataRoot) + EXECUTED_COMMANDS + PADDED_BLOCK + `fix turn: ${fixTurn}\n`,
     });
   });
 

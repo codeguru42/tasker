@@ -97,6 +97,13 @@ describe("createGitProvider", () => {
     });
   });
 
+  describe("localCopyPath", () => {
+    it("gives the clone path like repoPaths", () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(provider().localCopyPath(fixture.context)).toBe(paths().clone);
+    });
+  });
+
   describe("installPushGuard", () => {
     it("writes the hook again with the folder of the publish tokens", async () => {
       const git = provider();
