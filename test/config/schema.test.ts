@@ -243,6 +243,7 @@ describe("parseConfig repos", () => {
 interface Repo {
   issueTracker: Record<string, unknown>;
   assistant: Record<string, unknown>;
+  sessions: { kind: string; models: Record<string, unknown> };
 }
 
 function parsedRepo(raw: unknown): Repo {
@@ -507,6 +508,141 @@ describe("parseConfig assistant", () => {
         'repos.tasker.assistant.provider: Invalid option: expected one of "claude-code"|"copilot"|"pi"',
       ]);
     });
+  });
+});
+
+describe("parseConfig sessions", () => {
+  const sessionRoles = ["operator", "planner", "orchestrator"];
+
+  it("fills in the defaults when sessions is missing", () => {
+    expect(parsedRepo(validConfig()).sessions).toEqual({ kind: "claude", models: {} });
+  });
+
+  it("fills in kind and models when sessions is empty", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = {};
+    expect(parsedRepo(raw).sessions).toEqual({ kind: "claude", models: {} });
+  });
+
+  it("keeps the model and the effort of each role", () => {
+    const raw = validConfig();
+    const models = {
+      operator: { model: "opus", effort: "max" },
+      planner: { model: "claude-opus-5-5", effort: "xhigh" },
+      orchestrator: { model: "sonnet[1m]", effort: "low" },
+    };
+    raw.repos.tasker.sessions = { models };
+    expect(parsedRepo(raw).sessions.models).toEqual(models);
+  });
+
+  it("gives no entry to a role that the file leaves out", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { planner: { model: "opus", effort: "high" } } };
+    expect(Object.keys(parsedRepo(raw).sessions.models)).toEqual(["planner"]);
+  });
+
+  it("rejects a kind other than claude", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { kind: "codex" };
+    expectIssueAt(issuesOf(raw), "repos.tasker.sessions.kind");
+  });
+
+  it("rejects an unknown key", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = {
+      bogus: 1,
+      models: {
+        reviewer: { model: "opus", effort: "high" },
+        operator: { model: "opus", effort: "high", extra: 1 },
+      },
+    };
+    const issues = issuesOf(raw);
+    expect(issues).toContain("repos.tasker.sessions.bogus: unrecognized key");
+    expect(issues).toContain("repos.tasker.sessions.models.reviewer: unrecognized key");
+    expect(issues).toContain("repos.tasker.sessions.models.operator.extra: unrecognized key");
+  });
+
+  it("rejects a missing model and a missing effort", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { operator: {} } };
+    const issues = issuesOf(raw);
+    expectIssueAt(issues, "repos.tasker.sessions.models.operator.model");
+    expectIssueAt(issues, "repos.tasker.sessions.models.operator.effort");
+  });
+
+  it("rejects an empty model", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { operator: { model: "", effort: "high" } } };
+    expect(issuesOf(raw)).toEqual([
+      "repos.tasker.sessions.models.operator.model: Too small: expected string to have >=1 characters",
+    ]);
+  });
+
+  it("rejects an unknown effort", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "extreme" } } };
+    expectIssueAt(issuesOf(raw), "repos.tasker.sessions.models.operator.effort");
+  });
+
+  it("rejects a role given as a bare string", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { planner: "opus" } };
+    expect(issuesOf(raw)).toEqual([
+      "repos.tasker.sessions.models.planner: Invalid input: expected object, received string",
+    ]);
+  });
+
+  it("rejects sessions given as a bare string", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = "claude";
+    expect(issuesOf(raw)).toEqual(["repos.tasker.sessions: Invalid input: expected object, received string"]);
+  });
+
+  it.each(sessionRoles)("rejects a claude model of an unknown form in %s", (role) => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { [role]: { model: "gpt-5", effort: "high" } } };
+    expect(issuesOf(raw)).toEqual([`repos.tasker.sessions.models.${role}.model: is not a claude-code model: gpt-5`]);
+  });
+
+  it("adds no model issue when the kind is bad", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { kind: "codex", models: { planner: { model: "gpt-5", effort: "high" } } };
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(1);
+    expectIssueAt(issues, "repos.tasker.sessions.kind");
+  });
+
+  it("reports a bad session model together with the other errors of the file", () => {
+    const raw = validConfig();
+    delete raw.repos.tasker.verify;
+    raw.repos.tasker.sessions = {
+      models: {
+        operator: { model: "opus", effort: "huge" },
+        planner: { model: "gpt-5", effort: "high" },
+      },
+    };
+    raw.bogus = 1;
+    const issues = issuesOf(raw);
+    expectIssueAt(issues, "repos.tasker.verify");
+    expectIssueAt(issues, "repos.tasker.sessions.models.operator.effort");
+    expect(issues).toContain("repos.tasker.sessions.models.planner.model: is not a claude-code model: gpt-5");
+    expect(issues).toContain("bogus: unrecognized key");
+  });
+
+  it("reports a bad session model in a second repo under its own key", () => {
+    const raw = validConfig();
+    raw.repos.other = structuredClone(raw.repos.tasker);
+    raw.repos.other.sessions = { models: { planner: { model: "gpt-5", effort: "high" } } };
+    expect(issuesOf(raw)).toEqual(["repos.other.sessions.models.planner.model: is not a claude-code model: gpt-5"]);
+  });
+
+  it("reports a bad assistant model and a bad session model together", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.models.plan.model = "gpt-5";
+    raw.repos.tasker.sessions = { models: { operator: { model: "gpt-5", effort: "high" } } };
+    const issues = issuesOf(raw);
+    expect(issues).toContain("repos.tasker.assistant.models.plan.model: is not a claude-code model: gpt-5");
+    expect(issues).toContain("repos.tasker.sessions.models.operator.model: is not a claude-code model: gpt-5");
   });
 });
 

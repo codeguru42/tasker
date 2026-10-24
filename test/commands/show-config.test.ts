@@ -23,6 +23,22 @@ describe("show-config", () => {
     expect(printed.limits.planTimeoutMin).toBe(30);
     expect(printed.repos.tasker.vcs).toEqual({ provider: "git", config: {} });
     expect(printed.repos.tasker.issueTracker.assignee).toBe("@me");
+    expect(printed.repos.tasker.sessions).toEqual({ kind: "claude", models: {} });
+  });
+
+  it("prints the sessions of the repo that --repo names with the defaults filled in", async () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { planner: { model: "opus", effort: "high" } } };
+    useConfigFile(() => JSON.stringify(raw));
+    const io = captureIo();
+
+    const code = await run(["show-config", "--repo", "tasker"], { commands: [showConfig], io });
+
+    expect(code).toBe(0);
+    expect(JSON.parse(io.out.join("")).sessions).toEqual({
+      kind: "claude",
+      models: { planner: { model: "opus", effort: "high" } },
+    });
   });
 
   it("prints only the repo that --repo names", async () => {
