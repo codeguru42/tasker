@@ -4,19 +4,18 @@ The readers of this page are the orchestrator and the agents.
 
 ## The re-read rule
 
-The orchestrator works from the current docs of the orchestrator. The docs of the orchestrator are `AGENTS.md`, `docs/dev/orchestration.md`, the pages of the list "The pages" of [docs/dev/orchestration.md](orchestration.md), and the docs that the prompt of the orchestrator names. For example, a prompt can name `docs/dev/rules.md`, `docs/dev/planner.md`, `docs/dev/issues.md`, `docs/dev/working-with-the-user.md`, `docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `main` from which the orchestrator last read the docs of the orchestrator.
+The orchestrator works from the current docs of the orchestrator. The docs of the orchestrator are `AGENTS.md`, `docs/dev/orchestration.md`, the pages of the list "The pages" of [docs/dev/orchestration.md](orchestration.md), and the docs that the prompt of the orchestrator names. For example, a prompt can name `docs/dev/rules.md`, `docs/dev/planner.md`, `docs/dev/issues.md`, `docs/dev/working-with-the-user.md`, `docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `origin/main` from which the orchestrator last read the docs of the orchestrator.
 
-At the start of its session, the orchestrator does the fetch and the fast-forward of [the doc-read rule](#the-doc-read-rule). Then it runs `git rev-parse --verify HEAD` in its local clone. The hash that this command prints is the first last read. Then the orchestrator reads the docs of the orchestrator.
+At the start of its session, the orchestrator runs `git -C <local clone> fetch origin`, as [the doc-read rule](#the-doc-read-rule) says. Then it runs `git -C <local clone> rev-parse --verify origin/main`. The hash that this command prints is the first last read. Then the orchestrator reads the docs of the orchestrator, as the doc-read rule says.
 
-Each time a ticket lands, the orchestrator does these steps in its local clone, at the place that the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) gives. The steps change no task.
+Each time a ticket lands, the orchestrator does these steps, at the place that the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) gives. The steps change no task.
 
-1. Run `git fetch origin`, as [the doc-read rule](#the-doc-read-rule) says.
-2. Read the tip of `main` one time: `git rev-parse --verify origin/main`. This rule calls the hash `<tip>`.
-3. Run `git diff --name-only <last read>..<tip> -- AGENTS.md docs/ skills/`. The output lists each file that changed since the last read. If the output is empty, no doc changed, and the steps are complete. The last read stays.
-4. If the output lists a file, do the branch check and the merge of [the doc-read rule](#the-doc-read-rule). Use `<tip>` in place of `origin/main` in the merge.
-5. Before the next step of your work, read again each file of the list that is a doc of the orchestrator. A file of the list outside the docs of the orchestrator needs no read. If `AGENTS.md` or `docs/dev/orchestration.md` is on the list, also read, for the first time, each new doc that it names for the work of the orchestrator. Then `<tip>` is the new last read.
+1. Run `git -C <local clone> fetch origin`, as [the doc-read rule](#the-doc-read-rule) says.
+2. Read the tip of `main` one time: `git -C <local clone> rev-parse --verify origin/main`. This rule calls the hash `<tip>`.
+3. Run `git -C <local clone> diff --name-only <last read>..<tip> -- AGENTS.md docs/ skills/`. The output lists each file that changed since the last read. If the output is empty, no doc changed, and the steps are complete. The last read stays.
+4. Before the next step of your work, read again each file of the list that is a doc of the orchestrator, with `git -C <local clone> show <tip>:<path>`. A file of the list outside the docs of the orchestrator needs no read. If `AGENTS.md` or `docs/dev/orchestration.md` is on the list, also read, for the first time, each new doc that it names for the work of the orchestrator, with the same command. Then `<tip>` is the new last read.
 
-If a command of [the doc-read rule](#the-doc-read-rule) fails before a doc read of the orchestrator, [the failure rule](limits.md#the-failure-rule) applies. This applies to the first read at the start of the session and to each later doc read. If a command of the steps above fails, the failure rule also applies. A branch name other than `main` in the branch check also counts as a failure. If the orchestrator must read a doc, it then reads the doc as its local clone holds it, and it continues its work. The last read stays. At the start of the session, the orchestrator then runs `git rev-parse --verify HEAD` before it reads the docs of the orchestrator, and that hash is the first last read. The orchestrator does the steps above again at the next landing.
+If a command of [the doc-read rule](#the-doc-read-rule) fails before a doc read of the orchestrator, [the failure rule](limits.md#the-failure-rule) applies. This applies to the first read at the start of the session and to each later doc read. If a command of the steps above fails, the failure rule also applies. If the orchestrator must read a doc, it then reads the doc with `git -C <local clone> show origin/main:<path>`, from the `origin/main` of the last fetch that worked. Then the orchestrator continues its work. The last read stays. At the start of the session, the orchestrator then runs `git -C <local clone> rev-parse --verify origin/main` before it reads the docs of the orchestrator, and that hash is the first last read. The orchestrator does the steps above again at the next landing.
 
 ## The notice rule
 
@@ -41,4 +40,21 @@ The re-read rule and the notice rule do not cover the agents. Each new agent rea
 
 ## The doc-read rule
 
-The local `main` can be older than `origin/main`. The local clone of the orchestrator stays on `main`, because each other branch is checked out in a worktree. `git merge --ff-only origin/main` fast-forwards the branch that is checked out, not `main`. Before the orchestrator or an agent reads a doc, it runs `git fetch origin` in the local clone. Then it runs `git symbolic-ref --short HEAD` in the local clone. If the output is not `main`, it does not run the merge. An agent then [stops](limits.md#the-answer-wait-rule) and reports the branch name that it found. Otherwise, it runs `git merge --ff-only origin/main`. If a command fails, an agent stops and reports the error. For the orchestrator, [the re-read rule](#the-re-read-rule) gives the failure path and the hash for the merge.
+The local clone holds the checkout of the user, for example a commit of a pre-release. The docs of the orchestration come from `origin/main`, not from that checkout.
+
+1. Before the orchestrator or an agent reads a doc, it runs `git -C <local clone> fetch origin`.
+2. Then it reads each doc with `git -C <local clone> show origin/main:<path>`, in a Bash call. `<path>` is the path of the doc from the root of the repo, for example `docs/dev/limits.md`.
+
+This read is an exception to the Read-tool bullet of [The tools of a session](working-with-the-user.md#the-tools-of-a-session).
+
+The rule has no branch check and no merge. The checkout of the local clone does not matter. `git show` needs no checkout, so no branch check and no merge can fail.
+
+A link in a doc that the reader follows is also a doc read. The reader resolves the relative path of the link against the folder of the doc, and drops the part from `#` (the anchor). For example, the link `limits.md#the-failure-rule` in `docs/dev/doc-reads.md` gives `docs/dev/limits.md`, and the link `../../README.md#install` in `docs/dev/setup.md` gives `README.md`. Then the reader reads that path with the command of step 2. The Read tool and relative links work only on files on disk. `git show` does not resolve `..`: `git show origin/main:docs/dev/../config.md` fails with `fatal: path 'docs/dev/../config.md' exists on disk, but not in 'origin/main'`.
+
+A read with the Read tool of a file in the local clone is not a doc read. That file can be of another commit.
+
+If `git show` prints `fatal: path '<path>' does not exist in '<commit>'`, the doc does not exist on that commit, and the reader has nothing to read. That is an answer, not a failure.
+
+Each doc read uses `origin/main` in one command, so [the shared-clone rule](limits.md#the-shared-clone-rule) needs no hash read for it. A fetch of another session between two reads can give a newer doc of `origin/main`.
+
+If the fetch fails, an agent [stops](limits.md#the-answer-wait-rule) and reports the error. For the orchestrator, [the re-read rule](#the-re-read-rule) gives the failure path.
