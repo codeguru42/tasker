@@ -1,6 +1,6 @@
 # Plan review
 
-The readers of this page are the agent of a ticket, and the orchestrator for the design-gap rule. [The base rule](run-one-ticket.md#the-base-rule) covers each command of this page that uses `origin/<base branch>`.
+The readers of this page are the agent of a ticket, the orchestrator for the fact test and the design-gap rule, and the planner for the fact test. [The base rule](run-one-ticket.md#the-base-rule) covers each command of this page that uses `origin/<base branch>`.
 
 ## The repo-files rule
 
@@ -9,6 +9,12 @@ The agent adds this rule to the feedback text where a step, [the add-work rule](
 ## The fact test
 
 Before the first refine of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket), the agent tests on the local machine each fact about an outside tool that the plan depends on. Examples are a behavior of git, Node, zod or the operating system. The agent does not rely on the plan session to test these facts. Before each refine, the agent also tests each fact that a plan question asks about, and it answers the question in the feedback text. The agent puts the commands and their results in the feedback text. A fact test that runs the code of the repo runs in the task worktree, after [the update rule](limits.md#the-update-rule).
+
+Each session that runs a fact test follows this rule: an agent, the orchestrator and the planner. In a fact test, the session starts each shell command that works in a scratch folder with `cd <folder> || exit 1`. If the command also makes the folder, the session starts it with `mkdir -p <folder> && cd <folder> || exit 1`.
+
+A scratch folder can be gone, for example after a pause of several days. In `bash`, a failed `cd` does not stop the rest of the command after the `;`. The rest then runs in the working folder of the shell, which is often the local clone.
+
+On 2026-10-24, in the session of #377, the scratch folder was gone. The command `cd <scratch>/facttest/pub; for v in ...; do npm pkg set version=$v; npm publish --dry-run; done` went on after the failed `cd`, in the local clone. `npm pkg set` changed `version` in `package.json` of the local clone. `npm publish --dry-run` ran the `prepack` script there, which cleans and builds `dist/`. Nothing was published. The session restored `package.json` with `git checkout package.json`.
 
 ## The issue check
 
