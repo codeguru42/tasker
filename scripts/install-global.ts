@@ -16,10 +16,6 @@ function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function run(command: string, args: string[]): void {
   const result = spawnSync(command, args, { stdio: "inherit" });
   if (result.error || result.status !== 0) {
@@ -66,31 +62,24 @@ function main(): void {
 
   const version = tags[0] ?? `${utcDate(new Date())}-${capture("git", ["rev-parse", "--short", "HEAD"])}`;
   const packageFile = `tasker-${version}.tgz`;
-  let installError: Error | undefined;
+  const errors: Error[] = [];
   try {
     run("npm", ["ci"]);
     run("npm", ["pkg", "set", `version=${version}`]);
     run("npm", ["pack"]);
     run("npm", ["install", "-g", `./${packageFile}`]);
   } catch (error) {
-    installError = asError(error);
+    errors.push(asError(error));
   }
-  let restoreError: Error | undefined;
   try {
     // This removes all changes to package.json. This is why the script needs a clean working tree.
     run("git", ["checkout", "package.json"]);
   } catch (error) {
-    restoreError = asError(error);
+    errors.push(asError(error));
   }
   rmSync(packageFile, { force: true });
-  if (installError !== undefined && restoreError !== undefined) {
-    throw new AggregateError([installError, restoreError]);
-  }
-  if (installError !== undefined) {
-    throw installError;
-  }
-  if (restoreError !== undefined) {
-    throw restoreError;
+  if (errors.length > 0) {
+    throw errors.length === 1 ? errors[0] : new AggregateError(errors);
   }
 
   const printed = capture("tasker", ["--version"]);
@@ -105,7 +94,7 @@ try {
 } catch (error) {
   const errors = error instanceof AggregateError ? (error.errors as unknown[]) : [error];
   for (const each of errors) {
-    process.stderr.write(`install:global: ${messageOf(each)}\n`);
+    process.stderr.write(`install:global: ${asError(each).message}\n`);
   }
   process.exitCode = 1;
 }
