@@ -43,12 +43,13 @@ On 2026-10-17, the user decided for #172: "do the `update-branch` before startin
 
 If the orchestrator plans to start a ticket on a blocker that is not ready to stack yet, [the parent-hold rule](#the-parent-hold-rule) applies.
 
-The orchestrator reads the states at four moments:
+The orchestrator reads the states at these moments:
 
 - Each time it reads the board
 - Before each start
 - After a report of a ready state
 - After a new link of [the link offer](#the-link-offer)
+- When it frees a slot for a reason other than a landing, as [Delete the job](quota.md#delete-the-job) says
 
 A report of a ready state says that a task is in a ready state of [the stacking rule](#the-stacking-rule). The report can come from an agent or from another orchestrator. A report from another orchestrator comes through the messages of [the hold rule](land-the-work.md#the-hold-rule) or of [the stacked-ticket rule](#the-stacked-ticket-rule). The sender sends only the reports that those rules already give, and a refused message or a missing answer is out of scope (#164).
 
@@ -86,6 +87,10 @@ These rules apply to a stacked ticket and its parent. The user decided them on 2
 This rule covers the parent of a stacked ticket before the stacked ticket starts. [The stacking rule](#the-stacking-rule) gives the ready states. The agent of the parent moves its task out of a ready state with the refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket), `tasker review <issue> "<feedback>"` of [the add-work rule](run-one-ticket.md#the-add-work-rule), `tasker update-branch` or `tasker merge`. `tasker merge` moves the task from `accepted` to `merging` and `landed`. On #215, a refine of step 8 moved the parent out of a ready state before the agents of two stacked tickets ran `tasker start`. `tasker start` refused both of them (see [the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)).
 
 When the orchestrator plans to start a stacked ticket on a parent that is not ready yet, the orchestrator tells the agent of the parent to hold. The hold of a parent that belongs to another orchestrator is out of scope. The hold lasts until the orchestrator tells the agent of the parent that the hold ended. A message to an agent that has ended starts the agent again (see ["Terms" in "Quota"](quota.md#terms)). If the agent of the parent gets the message while a command runs, the agent lets the command end and keeps the hold. If the agent of the parent gets the message while it waits for an answer or a next step, it keeps the hold. Then the agent of the parent ends its turn again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says.
+
+The orchestrator sends the hold only when a [slot](quota.md#the-delay-of-each-agent) is free for the stacked ticket. If no slot is free, the orchestrator sends no hold (see the bullet "Run at most 3 agents at the same time" of [Pick the tickets](#pick-the-tickets)). The reason: a hold with no free slot stalls a fix round of the parent and starts nothing. On 2026-10-18, orchestrator-docs held #279 for #282 while all 3 slots were in use, and it ended the hold at once.
+
+The orchestrator keeps no record of the planned start. After the orchestrator frees a slot, as [Delete the job](quota.md#delete-the-job) says, it applies the stacking rule and this rule again. It does this at its next read of the states of [the stacking rule](#the-stacking-rule). If the parent is still not ready to stack then, the orchestrator sends the hold at that moment.
 
 While the hold runs, the agent of the parent continues ["Run one ticket"](run-one-ticket.md#run-one-ticket). After `tasker verify` passes, the agent of the parent continues with `tasker review`, because `reviewing` and `reviewed` are ready states. The agent of the parent also runs `tasker dismiss-review` and `tasker accept`, because the task stays in a ready state.
 
