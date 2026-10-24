@@ -43,6 +43,7 @@ The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but i
 - Each piece of work that waits becomes an issue in its later milestone, as [The milestone of an issue](planning.md#the-milestone-of-an-issue) of planning.md says. [issues.md](issues.md) gives the steps to file the issue.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is a process that has the same pid at each start, so that the lock row of a crashed run looks like the lock row of the process itself.
 - tasker writes and reads UTF-8 text only. The output code does not write raw bytes.
+- A compare of names folds ASCII letters only, with `asciiFold()` in [`src/ascii-fold.ts`](../../src/ascii-fold.ts). A fold of letters outside ASCII waits, as the first bullet of [Core features first](#core-features-first) says for an edge case. On #61 (2026-10-18), the user said: "I am currently the only tasker user and I will use the English alphabet. We can introduce i10n concerns later."
 - A collision of derived names is not an issue. Examples are two repo keys or two [issue keys](issue-keys.md) that give the same slug, the same folder or the same task branch. Do not raise such a collision, and do not file an issue for it. When an agent reports one, dismiss it with this reason.
 
 ## Simplify over special rules
