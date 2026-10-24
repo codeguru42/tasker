@@ -6,6 +6,8 @@ A hint states what to ask the plan for, and why. When the plan gets the hints in
 
 The agent gives each hint that fits its ticket in the first refine. The drafter of an issue can put a hint in the issue body ([planner.md](planner.md#the-body-of-an-issue)).
 
+Before the agent gives a hint, it compares the hint with the Out of scope section of the issue. If the Out of scope section excludes what the hint asks for, the agent does not give the hint, also when the hint fits its ticket. The bullet "A hint of the orchestrator can resolve a conflict" of ["The prompt of an agent"](pick-the-tickets.md#the-prompt-of-an-agent) gives the same compare for the orchestrator.
+
 ## All tickets
 
 - Name the shared test helpers of `test/helpers/` that the tests must use, and ask the plan to make each test call them. A local helper in a test file can call a shared helper, for example to fix the arguments of one `describe` block. It must not repeat the steps of the shared helper, for example a call of the same store function with its own default values. The review counts such a local helper as a copy (#127). A key of a change object that names the case of the test is not a repeated default, for example `failingCommand: null` for a failed run. On #220, a first refine read the ban on a repeat of the steps of the shared helper too widely. The fix cost an extra refine. Before a ticket adds a second test file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
