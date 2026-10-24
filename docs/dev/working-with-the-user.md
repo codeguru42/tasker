@@ -2,7 +2,7 @@
 
 This page gives the rules for an assistant session that works with the user of this repo. It also says which kinds of work wait until later. The user is the person who works with the session. [planner.md](planner.md) calls this person the operator.
 
-The rules apply to each session that works with the user, for example the orchestrator of [orchestration.md](orchestration.md) and the planning session of [planner.md](planner.md). They do not apply to the sessions that tasker starts for plan, execute and review.
+The rules apply to each session that works with the user, for example the orchestrator of [orchestration.md](orchestration.md) and the planner of [planner.md](planner.md). They do not apply to the sessions that tasker starts for plan, execute and review.
 
 The work on this repo must continue on any machine, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) of planner.md says. For this reason, these rules are in the repo and not in the notes of an assistant.
 
@@ -24,7 +24,7 @@ The work on this repo must continue on any machine, as [What goes in a ticket](p
 - When the user asks a question, answer only that question. Take no action and make no offer that the user did not ask for.
 - This rule covers a question of the user. When the user must decide something, the session still gives a recommendation, as [A decision of the user](#a-decision-of-the-user) says.
 - In one case (2026-10-17), the user asked the Docs orchestrator questions about its handoff. The orchestrator answered and also offered next steps. After one message of the user, the orchestrator left the handoff and started a ticket without the word of the user. The user wrote: "When I ask questions, just answer. Do not anticipate what I want."
-- Before the session answers a question about the code or the docs of the repo, it runs `git fetch origin` in its local clone. Then it reads each file on `origin/main` that the answer depends on, with `git show origin/main:<path>` in a Bash call. This read is an exception to the Read-tool bullet of [The tools of a session](#the-tools-of-a-session). The session does not answer from the files as it read them earlier in the session. The fetch and the read are part of the answer, not an extra action. The reason: tickets land while the session runs, so an answer from an earlier read can be false. In one case (2026-10-18), the planning session of M13 said that `tasker update-branch` did not exist in the rebuild. The session answered after all the M13 tickets landed. It answered from the code as it read it at its start, one day earlier. The user corrected it.
+- Before the session answers a question about the code or the docs of the repo, it runs `git fetch origin` in its local clone. Then it reads each file on `origin/main` that the answer depends on, with `git show origin/main:<path>` in a Bash call. This read is an exception to the Read-tool bullet of [The tools of a session](#the-tools-of-a-session). The session does not answer from the files as it read them earlier in the session. The fetch and the read are part of the answer, not an extra action. The reason: tickets land while the session runs, so an answer from an earlier read can be false. In one case (2026-10-18), the planner of M13 said that `tasker update-branch` did not exist in the rebuild. The session answered after all the M13 tickets landed. It answered from the code as it read it at its start, one day earlier. The user corrected it.
 
 ## The issue-link rule
 
@@ -35,7 +35,7 @@ In each reply to the user, the session writes each mention of an issue as a mark
 
 The rule covers the replies of the session to the user only. The text on GitHub keeps the plain key, because GitHub links it. The messages to a session keep the plain key, because a session reads them as text. A key inside a code span or a code block stays as it is, for example a command line with an issue key.
 
-The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but in the terminal it is plain text. In one case (2026-10-18), the planning session of the Docs milestone wrote plain keys such as `#303` in each reply, and the user had no link to open an issue from a reply.
+The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but in the terminal it is plain text. In one case (2026-10-18), the planner of the Docs milestone wrote plain keys such as `#303` in each reply, and the user had no link to open an issue from a reply.
 
 ## Core features first
 
