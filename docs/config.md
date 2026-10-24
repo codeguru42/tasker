@@ -59,6 +59,7 @@ The key names the repo. It can contain `/`, for example `codeguru42/tasker`. An 
 | `remote`                 | non-empty string             | required                              | The remote address of the repo. Provision writes it as `remote.origin.url` of the bare clone on each run. For a relative local path, it writes the root of the file system followed by the path.                                                                                                                                                                                                                                                                                      |
 | `issueTracker`           | object                       | required                              | See [`issueTracker`](#issuetracker).                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `assistant`              | object                       | required                              | See [`assistant`](#assistant).                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `sessions`               | object                       | `{ "kind": "claude", "models": {} }`  | See [`sessions`](#sessions).                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `verify`                 | object                       | required                              | `commands`: list of non-empty strings with at least one item (required). The deadline is `limits.verifyTimeoutMin`. Each command has its own log. See [Phase commands](#phase-commands). `env`: list of names (default `[]`).                                                                                                                                                                                                                                                         |
 | `bootstrap`              | object                       | `{ "commands": [], "env": [] }`       | `commands`: list of strings (default `[]`). The deadline is `limits.bootstrapTimeoutMin`. See [Phase commands](#phase-commands). `env`: list of names (default `[]`).                                                                                                                                                                                                                                                                                                                 |
 | `defaultBaseBranch`      | non-empty string             | optional                              | The name of a branch on `origin` that tasks start from. tasker uses the value as it is and does not strip `origin/`. The form `refs/heads/<x>` fails with `repos.<key>.defaultBaseBranch: must name a remote branch, not a local branch in the form refs/heads/<x>`. tasker uses the value only when no default is learned for the repo. If the branch exists, tasker saves it as the learned default. If not, the resolve fails. See [workspaces.md](dev/workspaces.md#base-branch). |
@@ -156,6 +157,33 @@ The command `tasker model` changes the model and the effort of one role in the f
 
 - Integer-like keys move to the front of their object, in number order.
 - If a key appears twice in one object, the command keeps only the last copy.
+
+## `sessions`
+
+The user starts the operator. The operator starts the planner and the orchestrator of a milestone. The key `sessions` gives the agent kind of these sessions and the model and the effort of each role. It is separate from `assistant`, because `assistant` configures the runs that tasker starts.
+
+A session role is one of `operator`, `planner` and `orchestrator`. The agent kind is the program of a session, in the form that herdr names it in `herdr agent start --kind`.
+
+| Key      | Type       | Default    | Notes                                                           |
+| -------- | ---------- | ---------- | --------------------------------------------------------------- |
+| `kind`   | `"claude"` | `"claude"` | The agent kind of each session role.                            |
+| `models` | object     | `{}`       | Has the optional keys `operator`, `planner` and `orchestrator`. |
+
+Each entry of `models` is an object with the required keys `model` (non-empty string) and `effort` (`"low"`, `"medium"`, `"high"`, `"xhigh"` or `"max"`).
+
+A role with no entry in `models` gets no model and no effort. The session then uses the defaults of the agent.
+
+For the kind `claude`, `model` must have one of the forms that [`assistant`](#assistant) gives for the `claude-code` provider. Any other model gives the error `repos.<key>.sessions.models.<role>.model: is not a claude-code model: <value>`.
+
+### The seam of an agent kind
+
+The table has one row for each agent kind. Name gives the flags of the session name. Messages names the tools that send and list messages between sessions.
+
+| Kind     | Name        | Model             | Effort              | First prompt      | Messages                       |
+| -------- | ----------- | ----------------- | ------------------- | ----------------- | ------------------------------ |
+| `claude` | `-n <name>` | `--model <model>` | `--effort <effort>` | The last argument | `SendMessage` and `ListAgents` |
+
+A new kind needs its own row and its own ticket, because each kind has its own flags and its own message tools.
 
 ## `forge`
 
