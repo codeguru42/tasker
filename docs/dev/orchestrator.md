@@ -8,7 +8,7 @@ Memory is the files where an assistant keeps notes between sessions. Memory is n
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are not agents and they do not run the steps on [the orchestration pages](orchestrator.md).
 
-The orchestrator and its agents run tasker from the local clone of the orchestrator. For one ticket, the agent of that ticket is the operator that [docs/dev/rebase-conflicts.md](rebase-conflicts.md) names.
+The orchestrator and its agents run tasker from the local clone of the orchestrator. For one ticket, the agent of that ticket is the driver that [docs/dev/rebase-conflicts.md](rebase-conflicts.md) names.
 
 Every `tasker` command on [the orchestration pages](orchestrator.md) is the installed `tasker`: the `tasker` command on the PATH from a global install. It is not the tasker that this repo builds. For this reason, `skills/tasker/SKILL.md` does not list its commands (see [The installed skill](rules.md#the-installed-skill)). See the install bullet of [Limits](limits.md#limits) in `docs/dev/limits.md`.
 
