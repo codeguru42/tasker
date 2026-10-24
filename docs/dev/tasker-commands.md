@@ -23,7 +23,7 @@ An agent runs a git command in the local clone of the orchestrator with `git -C 
 
 A denial covers the whole action of the call, not only its form. After a tool block, the agent runs the denied action in no other form, and no part of it, until the orchestrator sends the answer. Other forms include a script file with the same commands, a split of the action into several calls, and the same commands with other paths or names. On 2026-10-17, the user declined a fact test with `rm -rf`, and the agent of #231 ran it from two script files before the answer came.
 
-After a tool block, the agent [stops](limits.md#the-answer-wait-rule). It reports the exact text of the denial, the exact command, the step of the work that the command belongs to, and the purpose of the command. The orchestrator tells the user these facts. The orchestrator does not run the blocked action for the agent, unless the user tells it to.
+After a tool block, the agent [stops](limits.md#the-answer-wait-rule). It reports the exact text of the denial, the exact command, the step of the work that the command belongs to, and the purpose of the command. The orchestrator tells the user these facts. The orchestrator does not run the blocked action for the agent, unless the user tells it to. The recommendation mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) does not cover a tool block: the orchestrator always waits for the user.
 
 ## The command rules
 
