@@ -2,13 +2,13 @@
 
 tasker has two kinds of version: a stable release and a pre-release.
 
-A stable release is a commit of `main` with a tag. The tag is the version itself, with no prefix. The `version` in `package.json` at that commit is the same text as the tag. The form is `yyyymmdd.hhmm`, the date and the time in UTC. Each part keeps its leading zeros. Examples: `20261018.1752` and `20261019.0022`.
+A stable release is a commit of `main` with a tag. The tag is the version itself, with no prefix. The `version` in `package.json` at that commit is the same text as the tag. The form is `yyyy.m.d`, the date in UTC, with no leading zeros. Examples: `2026.10.24` and `2026.1.5`. A stable release is at most one release on each day.
 
-A pre-release is a local build of any commit. It has no tag and no commit, and nothing goes to GitHub. The form is `yyyymmdd.hhmmss-<commit>`, in UTC. `<commit>` is the output of `git rev-parse --short HEAD`. Example: `20261018.175257-c0c0d1a5`. With the commit in the version, `tasker --version` names the exact code that runs.
+A pre-release is a local build of any commit. It has no tag and no commit, and nothing goes to GitHub. The form is `yyyy.m.d-<commit>`, the date in UTC, with no leading zeros. `<commit>` is the output of `git rev-parse --short HEAD`. Example: `2026.10.23-c0c0d1a5`. With the commit in the version, `tasker --version` names the exact code that runs.
 
 Both forms use UTC, so a version does not depend on the time zone of the operator.
 
-tasker uses date versions on purpose and does not use semver (semantic versioning, a version number that shows which changes break the code of a user). Semver has no meaning for an application that a user runs. Semver is for a library, where the number tells the user of the library which changes break their code.
+tasker uses date versions on purpose and does not use semver (semantic versioning, a version number that shows which changes break the code of a user). Semver has no meaning for an application that a user runs. Semver is for a library, where the number tells the user of the library which changes break their code. The stable form has the shape of a semver version only because the npm registry needs that shape. The numbers are a date and give no semver meaning.
 
 ## Why a version is a tag
 
