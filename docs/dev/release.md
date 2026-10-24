@@ -16,12 +16,12 @@ The installed `tasker` runs the tickets of this repo. It must not change while a
 
 ## Make a stable release
 
-1. Set the version: `npm pkg set version=$(date -u +%Y%m%d.%H%M)`.
-2. Commit the change of `package.json` on `main`.
-3. Add the tag `<version>` to that commit.
-4. Push the tag.
+Do these steps on `main`.
 
-No step uses `npm version`, because it refuses these forms (see [The npm facts](#the-npm-facts)).
+1. Make the release commit and its tag: `npm version $(date -u +%Y.%-m.%-d) --tag-version-prefix= -m "chore: Release %s"`.
+2. Push `main` and the tag: `git push origin main <version>`.
+
+The pre-release steps do not use `npm version`, because it makes a commit and a tag.
 
 ## Install a pre-release
 
