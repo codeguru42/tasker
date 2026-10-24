@@ -14,16 +14,14 @@ tasker takes an issue from an issue tracker and drives an AI coding assistant th
 
 1. Clone the repository: `git clone https://github.com/codeguru42/tasker.git`. In an existing clone, run `git fetch --tags` instead.
 2. Go to the folder of the clone: `cd tasker`
-3. Check out the tag of the version: `git checkout <version>`, for example `git checkout 2026.10.24`.
-4. Install the dependencies: `npm ci`
-5. Make the package file: `npm pack`
-6. Install the package file: `npm install -g ./tasker-<version>.tgz`
-7. Make sure that `tasker --version` prints `<version>`.
-8. Run `tasker install-skills`, so that an assistant finds the `tasker` skill.
+3. Optional: to install a stable release, check out its tag, for example `git checkout 2026.10.24`. To give the install a version of your own, add a local tag on HEAD: `git tag <version>`.
+4. Run `npm run install:global`. On the newest commit of `main`, it installs a development version.
+
+The script stops before the install when HEAD has two or more tags. It also stops when the working tree has changes, also untracked files. The script runs `tasker install-skills`, so that an assistant finds the `tasker` skill.
 
 For an update, do the same steps with the tag of the new version.
 
-To install a pre-release of any commit, do the steps of [Install a pre-release](docs/dev/release.md#install-a-pre-release).
+[docs/dev/release.md](docs/dev/release.md) gives the steps of a stable release and of a pre-release. For the pre-release steps, see [Install a pre-release](docs/dev/release.md#install-a-pre-release).
 
 `tasker --help` lists the options and the commands. `tasker --version` prints the version. `tasker` with no command prints the same usage to stderr and exits with code 1. An unknown command or option prints an error and exits with a non-zero code.
 
