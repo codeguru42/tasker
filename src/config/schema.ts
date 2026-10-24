@@ -7,6 +7,7 @@ import { expandPath } from "./expand.js";
 import { isObject } from "../object.js";
 import { errorMessage } from "../error-message.js";
 import { modelIssue } from "../assistant/models.js";
+import type { AssistantProviderId } from "../assistant/provider.js";
 import { formatIssues } from "../zod-issues.js";
 
 const positive = z.number().positive();
@@ -122,6 +123,26 @@ const AssistantSchema = z.strictObject({
   correctiveTurns: z.number().int().min(0).default(1),
 });
 
+// Adds an issue for each role whose model is not a model of the provider. models is raw input,
+// so each read goes through a guard. at is the path of models from the object that zod refines.
+function addModelIssues(
+  models: unknown,
+  roles: readonly string[],
+  provider: AssistantProviderId,
+  at: readonly string[],
+  ctx: z.RefinementCtx,
+): void {
+  if (!isObject(models)) return;
+  for (const role of roles) {
+    const entry = models[role];
+    if (!isObject(entry) || typeof entry.model !== "string" || entry.model === "") continue;
+    const message = modelIssue(provider, entry.model);
+    if (message !== undefined) {
+      ctx.addIssue({ code: "custom", path: [...at, role, "model"], message });
+    }
+  }
+}
+
 // The model of each role must be a model of the provider. Without when, zod skips this check
 // when another key of the repo fails with a wrong type, a missing key or a bad enum value, so
 // the loader does not report every error in one run. With when, the check runs in all cases.
@@ -131,22 +152,56 @@ function checkModels(repo: unknown, ctx: z.RefinementCtx): void {
   if (!isObject(repo) || !isObject(repo.assistant)) return;
   const { assistant } = repo;
   const provider = AssistantProviderSchema.safeParse(assistant.provider);
-  if (!provider.success || !isObject(assistant.models)) return;
-  for (const role of ASSISTANT_ROLES) {
-    const entry = assistant.models[role];
-    if (!isObject(entry) || typeof entry.model !== "string" || entry.model === "") continue;
-    const message = modelIssue(provider.data, entry.model);
-    if (message !== undefined) {
-      ctx.addIssue({ code: "custom", path: ["assistant", "models", role, "model"], message });
-    }
-  }
+  if (!provider.success) return;
+  addModelIssues(assistant.models, ASSISTANT_ROLES, provider.data, ["assistant", "models"], ctx);
 }
+
+// The kind is the name that herdr gives in herdr agent start --kind.
+const SessionKindSchema = z.literal("claude").default("claude");
+
+const SessionRoleSchema = z.strictObject({
+  model: nonEmpty,
+  effort: z.enum(["low", "medium", "high", "xhigh", "max"]),
+});
+
+const SessionModelsSchema = z.strictObject({
+  operator: SessionRoleSchema.optional(),
+  planner: SessionRoleSchema.optional(),
+  orchestrator: SessionRoleSchema.optional(),
+});
+
+// The provider whose model forms an agent kind uses.
+const SESSION_KIND_PROVIDERS: Record<z.output<typeof SessionKindSchema>, AssistantProviderId> = {
+  claude: "claude-code",
+};
+
+// Same rule as checkModels: this check runs with when, so sessions is raw input.
+function checkSessionModels(sessions: unknown, ctx: z.RefinementCtx): void {
+  if (!isObject(sessions)) return;
+  const kind = SessionKindSchema.safeParse(sessions.kind);
+  if (!kind.success) return;
+  addModelIssues(
+    sessions.models,
+    SessionModelsSchema.keyof().options,
+    SESSION_KIND_PROVIDERS[kind.data],
+    ["models"],
+    ctx,
+  );
+}
+
+const SessionsSchema = z
+  .strictObject({
+    kind: SessionKindSchema,
+    models: SessionModelsSchema.default({}),
+  })
+  .superRefine(checkSessionModels, { when: () => true });
 
 const RepoSchema = z
   .strictObject({
     remote: nonEmpty,
     issueTracker: IssueTrackerSchema,
     assistant: AssistantSchema,
+    sessions: SessionsSchema.default({ kind: "claude", models: {} }),
     verify: VerifySchema,
     bootstrap: BootstrapSchema.default({ commands: [], env: [] }),
     defaultBaseBranch: nonEmpty
