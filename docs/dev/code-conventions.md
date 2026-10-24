@@ -27,6 +27,7 @@ This page describes how the code of tasker is laid out and how to test it. [rule
 - `test/` holds the tests.
 - `test/fixtures/` holds scripts that tests spawn as child processes. It also holds the recorded streams that the tests play back, and small modules that a fixture script imports. Such a module imports only `node:` modules, because a fixture that loads a file under `test/helpers/` at run time starts 2 to 3 times slower, too slowly for the deadline tests.
 - `test/helpers/` holds the shared test helpers, one file for each kind of helper, and the tests of each file.
+- `scripts/` holds the scripts that `package.json` runs with `node`. Each script imports only `node:` modules. The reason: `scripts/install-global.ts` runs `npm ci` itself, so Node runs it when `node_modules` can be missing.
 - `dist/` holds the build output. Git ignores it.
 
 ## Add a command
