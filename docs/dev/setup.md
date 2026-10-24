@@ -1,6 +1,6 @@
 # Set up a new machine
 
-This page gives the steps to set up a new machine, so that an orchestrator session can run the tickets of codeguru42/tasker there. The operator is the person who sets up the machine. The operator does each step of this page. The local clone is `$HOME/src/mine/tasker`. The configuration file is the file of tasker that [docs/config.md](../config.md) describes.
+This page gives the steps to set up a new machine, so that an orchestrator session can run the tickets of codeguru42/tasker there. The user is the person who sets up the machine. The user does each step of this page. The local clone is `$HOME/src/mine/tasker`. The configuration file is the file of tasker that [docs/config.md](../config.md) describes.
 
 ## The tools
 
