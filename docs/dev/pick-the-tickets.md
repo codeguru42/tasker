@@ -75,7 +75,7 @@ When a stacked ticket starts, the stacked orchestrator does these steps:
 
 These rules apply to a stacked ticket and its parent. The user decided them on 2026-10-16.
 
-- This rule wins over [the Docs rule](land-the-work.md#the-docs-rule) and over the sentence "A ticket of an earlier milestone lands first" of [the overlap rule](land-the-work.md#the-overlap-rule). The stacked orchestrator sets the landing order with the parent first, and the wait rules apply. The Docs rule still covers each other shared file.
+- This rule wins over [the Docs rule](land-the-work.md#the-docs-rule) and over the sentence "A ticket of an earlier milestone lands first" of [the overlap rule](land-the-work.md#the-overlap-rule). The stacked orchestrator sets the landing order with the parent first, and the wait rules of [Land the work](land-the-work.md#land-the-work) apply. The Docs rule still covers each other shared file.
 - The pair has no swap, because `tasker merge` refuses a stacked task. The bullet "If the orchestrator changes the landing order" and the bullet "Only the user changes a landing order of the overlap rule" do not apply to the pair.
 - If the user postpones the parent (see [the defer rule](#the-defer-rule)), the stacked task cannot land. The stacked orchestrator then asks the user to choose: wait, or run `tasker abort` on the stacked task.
 - At the start of a stacked ticket, the parent is in `awaiting_work_review` or a later state, so [the hold rule](land-the-work.md#the-hold-rule) does not apply at once. If a refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket) moves the parent back to `awaiting_plan_review`, the hold rule applies as written.
