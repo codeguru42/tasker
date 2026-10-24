@@ -24,4 +24,4 @@ The missed-finding rule: a review or the diff read can miss a refactor or duplic
 
 1. The ticket that adds the code, inside the 5 review loops of this section. While that ticket is open, the orchestrator does not move the fix into another ticket. On #71, on 2026-10-13, the user replaced the extra loop after the last loop with "up to 5 loops, then report".
 2. If that ticket already landed, a ticket that changes the same code. For a ticket in progress, the orchestrator tells its agent to add the fix to its next refine. For a ticket that has not started, the orchestrator edits its issue body.
-3. If no such ticket exists, the orchestrator files a new issue to fix it.
+3. If no such ticket exists, the orchestrator sends the finding to the planner, as the planner bullet of [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) says.
