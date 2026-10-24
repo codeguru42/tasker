@@ -16,7 +16,9 @@ The old orchestrator can suggest a handoff to the user. The old orchestrator cou
 - A new issue that the user asks the old orchestrator to send for drafting
 - A decision of the user that takes several question rounds
 
-At a count of 12, the old orchestrator suggests a handoff to the user in its report of that landing. The report of a landing (a landing report) is the reply in which the old orchestrator tells the user that a ticket landed. If a counted event that is not a landing brings the count to 12, the old orchestrator suggests a handoff in its next reply. The suggestion does not start the handoff. The work continues until the user answers. If the user does not answer, the old orchestrator suggests the handoff again in the report of each later landing.
+At a count of 12, the old orchestrator suggests a handoff to the user in its report of that landing. The report of a landing (a landing report) is the reply in which the old orchestrator tells the user that a ticket landed. If a counted event that is not a landing brings the count to 12, the old orchestrator suggests a handoff in a later reply. That reply is its next reply to the user that does not answer a question of the user, for example the next landing report.
+
+The suggestion does not start the handoff. The work continues until the user answers. If the user does not answer, the old orchestrator suggests the handoff again in the report of each later landing.
 
 The count starts at 0 at the start of the session. The count lives until the session ends. In a new session after a handoff, the count starts again at 0. During the session, the count starts again at 0 only when the user says no to a suggestion. When the count reaches 12 again, the old orchestrator suggests a handoff again.
 
