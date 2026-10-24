@@ -4,7 +4,7 @@ tasker has two kinds of version: a stable release and a pre-release.
 
 A stable release is a commit of `main` with a tag. The tag is the version itself, with no prefix. The `version` in `package.json` at that commit is the same text as the tag. The form is `yyyy.m.d`, the date in UTC, with no leading zeros. Examples: `2026.10.24` and `2026.1.5`. A stable release is at most one release on each day.
 
-A pre-release is a local build of any commit. It has no tag and no commit, and nothing goes to GitHub. The form is `yyyy.m.d-<commit>`, the date in UTC, with no leading zeros. `<commit>` is the output of `git rev-parse --short HEAD`. Example: `2026.10.23-c0c0d1a5`. With the commit in the version, `tasker --version` names the exact code that runs.
+A pre-release is a local build of any commit. It has no commit. It has a local tag only when the developer adds one, and that tag never goes to GitHub. The form is `yyyy.m.d-<commit>`, the date in UTC, with no leading zeros. `<commit>` is the output of `git rev-parse --short HEAD`. Example: `2026.10.23-c0c0d1a5`. With the commit in the version, `tasker --version` names the exact code that runs.
 
 Both forms use UTC, so a version does not depend on the time zone of the operator.
 
@@ -12,29 +12,36 @@ tasker uses date versions on purpose and does not use semver (semantic versionin
 
 ## Why the installed tasker does not change
 
-The installed `tasker` runs the tickets of this repo. It must not change while a ticket runs. Only an install of a stable release or of a pre-release changes it. The steps of an install are in the [Install section of README.md](../../README.md#install). After an update, run `tasker install-skills` again, so that the skills match the version, because the skills describe the commands of one version.
+The installed `tasker` runs the tickets of this repo. It must not change while a ticket runs. Only an install of a stable release or of a pre-release changes it. The steps of an install are in the [Install section of README.md](../../README.md#install). `npm run install:global` also runs `tasker install-skills`, because the skills describe the commands of one version.
 
 ## Make a stable release
 
-Do these steps on `main`.
+Do these steps in the local clone, on `main`.
 
-1. Make the release commit and its tag: `npm version $(date -u +%Y.%-m.%-d) --tag-version-prefix= -m "chore: Release %s"`.
-2. Push `main` and the tag: `git push origin main <version>`.
+1. Fast-forward `main`: `git pull --ff-only origin main`.
+2. Make the release commit and its tag: `npm version $(date -u +%Y.%-m.%-d) --tag-version-prefix= -m "chore: Release %s"`.
+3. Push `main` and the tag: `git push origin main <version>`.
+4. Install the release: `npm run install:global`.
 
-The pre-release steps do not use `npm version`, because it makes a commit and a tag.
+The pre-release steps do not use `npm version`, because it makes a commit.
 
 ## Install a pre-release
 
-A pre-release installs the commit that is checked out. First check out that commit, most of the time `main`. Do these steps in any clone that holds the commit, but not in a task worktree. The install replaces the installed `tasker` (see [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
+A pre-release installs the commit that is checked out. Do these steps in the current clone, on the commit that is checked out, but never in a task worktree. The install replaces the installed `tasker` (see [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
 
-1. Make sure that the working tree of the clone has no changes. Step 6 runs `git checkout package.json`, and that command removes all changes to the file, not only the version.
-2. Install the dependencies: `npm ci`.
-3. Set the version: `npm pkg set version=$(date -u +%Y.%-m.%-d)-$(git rev-parse --short HEAD)`.
-4. Make the package file: `npm pack`.
-5. Install the package file: `npm install -g ./tasker-<version>.tgz`.
-6. Restore `package.json`: `git checkout package.json`.
-7. Make sure that `tasker --version` prints `<version>`.
-8. Run `tasker install-skills`.
+For the HEAD of `main`:
+
+1. Fast-forward `main`: `git pull --ff-only origin main`.
+2. Optional: to give the install a version of your own, add a local tag on HEAD: `git tag <version>`. Without a tag, the script sets the version `yyyy.m.d-<commit>`.
+3. Install the commit: `npm run install:global`.
+
+For a commit that is not on `main`:
+
+1. Check out the commit in the current clone.
+2. Optional: to give the install a version of your own, add a local tag on HEAD: `git tag <version>`. Without a tag, the script sets the version `yyyy.m.d-<commit>`.
+3. Install the commit: `npm run install:global`.
+
+The pre-release tag stays local and never goes to GitHub.
 
 ## The npm facts
 
