@@ -30,7 +30,7 @@ Do these steps in a clone of the operator, outside the task worktrees. The insta
 1. Make sure that the working tree of the clone has no changes. Step 7 runs `git checkout package.json`, and that command removes all changes to the file, not only the version.
 2. Check out the commit: `git checkout <commit>`. It can be a commit of `main` or of another branch.
 3. Install the dependencies: `npm ci`.
-4. Set the version: `npm pkg set version=$(date -u +%Y%m%d.%H%M%S)-$(git rev-parse --short HEAD)`.
+4. Set the version: `npm pkg set version=$(date -u +%Y.%-m.%-d)-$(git rev-parse --short HEAD)`.
 5. Make the package file: `npm pack`.
 6. Install the package file: `npm install -g ./tasker-<version>.tgz`.
 7. Restore `package.json`: `git checkout package.json`.
