@@ -53,7 +53,7 @@ A link in a doc that the reader follows is also a doc read. The reader resolves 
 
 A read with the Read tool of a file in the local clone is not a doc read. That file can be of another commit.
 
-If `git show` prints `fatal: path '<path>' does not exist in '<commit>'`, the doc does not exist on that commit, and the reader has nothing to read. That is an answer, not a failure.
+If `git show` prints `fatal: path '<path>' does not exist in '<commit>'` or `fatal: path '<path>' exists on disk, but not in '<commit>'`, the doc does not exist on that commit, and the reader has nothing to read. That is an answer, not a failure.
 
 Each doc read uses `origin/main` in one command, so [the shared-clone rule](limits.md#the-shared-clone-rule) needs no hash read for it. A fetch of another session between two reads can give a newer doc of `origin/main`.
 
