@@ -14,7 +14,7 @@ tasker takes an issue from an issue tracker and drives an AI coding assistant th
 
 1. Clone the repository: `git clone https://github.com/codeguru42/tasker.git`. In an existing clone, run `git fetch --tags` instead.
 2. Go to the folder of the clone: `cd tasker`
-3. Check out the tag of the version: `git checkout <version>`, for example `git checkout 20261018.1752`.
+3. Check out the tag of the version: `git checkout <version>`, for example `git checkout 2026.10.24`.
 4. Install the dependencies: `npm ci`
 5. Make the package file: `npm pack`
 6. Install the package file: `npm install -g ./tasker-<version>.tgz`
