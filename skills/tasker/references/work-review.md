@@ -8,9 +8,9 @@ Reviews the committed work of a task in the state `awaiting_work_review` in a ne
 
 Each review runs in a new session with the model of the review role. The review is an independent pass, and the conversation of the plan does not bias it. The assistant runs in plan mode in the worktree of the task. The time limit is the value of `planTimeoutMin`.
 
-The prompt holds the commits of the task branch and the text of the earlier reviews. Each earlier review shows its findings with their status, and the operator feedback of each plan revision that followed it.
+The prompt holds the commits of the task branch and the text of the earlier reviews. Each earlier review shows its findings with their status, and the user feedback of each plan revision that followed it.
 
-The findings wait in `reviewed`, because the operator reads them first. The command records the tip of the task branch as the revision of the review, because the findings describe one tree. An uncommitted change or a commit that is not on the task branch does not count, as for [`tasker accept`](#tasker-accept).
+The findings wait in `reviewed`, because the user reads them first. The command records the tip of the task branch as the revision of the review, because the findings describe one tree. An uncommitted change or a commit that is not on the task branch does not count, as for [`tasker accept`](#tasker-accept).
 
 Each review gets a number. The first review of a task is review 1, and a later review gets the next number. tasker records the session of each review. No command continues it yet.
 

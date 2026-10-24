@@ -10,19 +10,19 @@ tasker takes an issue from an issue tracker and drives an AI coding assistant th
 
 ## Run a command
 
-The command line of the operator: `tasker $ARGUMENTS`
+The command line of the user: `tasker $ARGUMENTS`
 
-If the command line of the operator is not empty, follow these rules:
+If the command line of the user is not empty, follow these rules:
 
-1. Run `tasker` with the command line exactly as the operator typed it, in one shell call. Do not add, remove, quote or change a word.
-2. Run no other command and read no file before the run. Examples: no `tasker status`, no `tasker doctor`, no `tasker <command> --help`, no `git` command. The reason: the operator gives the exact command, and a read before the run can change what the assistant runs.
+1. Run `tasker` with the command line exactly as the user typed it, in one shell call. Do not add, remove, quote or change a word.
+2. Run no other command and read no file before the run. Examples: no `tasker status`, no `tasker doctor`, no `tasker <command> --help`, no `git` command. The reason: the user gives the exact command, and a read before the run can change what the assistant runs.
 3. A command can run longer than the time limit of the shell tool. If so, run it in the background. Then wait for its end. Do not poll its output.
-4. After the run, give the operator the exit code, and stdout and stderr as tasker printed them. Do not shorten an error.
-5. Do not run a next command. The output can name one, for example in a `next:` line. Give that command to the operator.
+4. After the run, give the user the exit code, and stdout and stderr as tasker printed them. Do not shorten an error.
+5. Do not run a next command. The output can name one, for example in a `next:` line. Give that command to the user.
 
-For the command line of the operator, these rules win over the rule "Use only the commands that this skill lists" of [Rules](#rules). tasker itself reports an unknown command.
+For the command line of the user, these rules win over the rule "Use only the commands that this skill lists" of [Rules](#rules). tasker itself reports an unknown command.
 
-If the command line of the operator is empty, the skill is a reference only. Then the rest of the skill applies.
+If the command line of the user is empty, the skill is a reference only. Then the rest of the skill applies.
 
 ## Rules
 
