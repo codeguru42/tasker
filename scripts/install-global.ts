@@ -1,21 +1,36 @@
-import { spawnSync } from "node:child_process";
+import { type SpawnSyncReturns, spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 
-function failure(command: string, args: string[], status: number | null): Error {
-  return new Error(`${command} ${args.join(" ")} failed with exit code ${String(status)}`);
+function failure(command: string, args: string[], result: SpawnSyncReturns<string | Buffer>): Error {
+  const name = `${command} ${args.join(" ")}`;
+  if (result.error) {
+    return new Error(`${name} did not start: ${result.error.message}`);
+  }
+  if (result.signal) {
+    return new Error(`${name} stopped with the signal ${result.signal}`);
+  }
+  return new Error(`${name} failed with exit code ${String(result.status)}`);
+}
+
+function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function run(command: string, args: string[]): void {
   const result = spawnSync(command, args, { stdio: "inherit" });
-  if (result.status !== 0) {
-    throw failure(command, args, result.status);
+  if (result.error || result.status !== 0) {
+    throw failure(command, args, result);
   }
 }
 
 function capture(command: string, args: string[]): string {
   const result = spawnSync(command, args, { encoding: "utf8", stdio: ["inherit", "pipe", "inherit"] });
-  if (result.status !== 0) {
-    throw failure(command, args, result.status);
+  if (result.error || result.status !== 0) {
+    throw failure(command, args, result);
   }
   return result.stdout.trim();
 }
@@ -51,15 +66,31 @@ function main(): void {
 
   const version = tags[0] ?? `${utcDate(new Date())}-${capture("git", ["rev-parse", "--short", "HEAD"])}`;
   const packageFile = `tasker-${version}.tgz`;
+  let installError: Error | undefined;
   try {
     run("npm", ["ci"]);
     run("npm", ["pkg", "set", `version=${version}`]);
     run("npm", ["pack"]);
     run("npm", ["install", "-g", `./${packageFile}`]);
-  } finally {
+  } catch (error) {
+    installError = asError(error);
+  }
+  let restoreError: Error | undefined;
+  try {
     // This removes all changes to package.json. This is why the script needs a clean working tree.
     run("git", ["checkout", "package.json"]);
-    rmSync(packageFile, { force: true });
+  } catch (error) {
+    restoreError = asError(error);
+  }
+  rmSync(packageFile, { force: true });
+  if (installError !== undefined && restoreError !== undefined) {
+    throw new AggregateError([installError, restoreError]);
+  }
+  if (installError !== undefined) {
+    throw installError;
+  }
+  if (restoreError !== undefined) {
+    throw restoreError;
   }
 
   const printed = capture("tasker", ["--version"]);
@@ -72,6 +103,9 @@ function main(): void {
 try {
   main();
 } catch (error) {
-  process.stderr.write(`install:global: ${error instanceof Error ? error.message : String(error)}\n`);
+  const errors = error instanceof AggregateError ? (error.errors as unknown[]) : [error];
+  for (const each of errors) {
+    process.stderr.write(`install:global: ${messageOf(each)}\n`);
+  }
   process.exitCode = 1;
 }
