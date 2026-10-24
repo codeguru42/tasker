@@ -21,7 +21,7 @@ The orchestrator does all the steps of this section.
 
 A blocker is an issue that blocks the ticket. The orchestrator can start a ticket when each blocker is closed or is ready to stack. A blocker of another milestone counts the same way.
 
-A blocker is ready to stack when its issue is open, its task is in the same repo, and `tasker show <blocker issue>` prints one of these states: `awaiting_work_review`, `reviewing`, `reviewed` or `accepted`. `tasker start` then bases the new task on the branch of the blocker.
+A ready state is one of these states: `awaiting_work_review`, `reviewing`, `reviewed` or `accepted`. A blocker is ready to stack when its issue is open, its task is in the same repo, and `tasker show <blocker issue>` prints a ready state. `tasker start` then bases the new task on the branch of the blocker.
 
 The orchestrator waits in these cases:
 
@@ -50,7 +50,7 @@ The orchestrator reads the states at four moments:
 - After a report of a ready state
 - After a new link of [the link offer](#the-link-offer)
 
-A report of a ready state says that a task is in `awaiting_work_review`, `reviewing`, `reviewed` or `accepted`. The report can come from an agent or from another orchestrator. A report from another orchestrator comes through the messages of [the hold rule](land-the-work.md#the-hold-rule) or of [the stacked-ticket rule](#the-stacked-ticket-rule). The sender sends only the reports that those rules already give, and a refused message or a missing answer is out of scope (#164).
+A report of a ready state says that a task is in a ready state of [the stacking rule](#the-stacking-rule). The report can come from an agent or from another orchestrator. A report from another orchestrator comes through the messages of [the hold rule](land-the-work.md#the-hold-rule) or of [the stacked-ticket rule](#the-stacked-ticket-rule). The sender sends only the reports that those rules already give, and a refused message or a missing answer is out of scope (#164).
 
 After a report of a ready state, the orchestrator lists the open issues that the task blocks: `gh issue view <issue> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. If the output is empty, no ticket waits on the task, and the step is complete. For each issue of the list, the orchestrator reads the milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The orchestrator keeps the tickets of its own milestone. If such a ticket can start by this rule and by the other rules of [Pick the tickets](#pick-the-tickets), the orchestrator starts it. If a command fails, [the failure rule](limits.md#the-failure-rule) applies. Then no ticket starts at that moment. The tickets wait until the next read of the board or the next start.
 
