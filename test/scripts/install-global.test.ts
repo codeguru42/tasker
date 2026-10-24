@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { type ChildResult, runChild } from "../../src/process/run-child.js";
 import { logLine, pathWithFirst, readArgLog, writeFakeCommand } from "../helpers/fake-commands.js";
-import { gitOutput, gitTestEnv } from "../helpers/git.js";
+import { gitOutput, gitTestEnv, writeGitFailAfter } from "../helpers/git.js";
 import { repoRoot } from "../helpers/processes.js";
 import { useTempDir, useTempHome, writeFileWithParents } from "../helpers/temp.js";
 
@@ -62,6 +62,7 @@ exit 0`,
     "tasker",
     `${logLine(taskerLog)}
 if [ "$1" = "--version" ]; then
+  if [ "$TASKER_KILL" = 1 ]; then kill -TERM $$; fi
   if [ -n "$TASKER_VERSION" ]; then printf '%s\\n' "$TASKER_VERSION"; else cat '${state}'; echo; fi
 fi
 exit 0`,
@@ -79,6 +80,13 @@ function runInstallGlobal(repo: string, env: NodeJS.ProcessEnv): Promise<ChildRe
 // The expected date, with the UTC getters and no leading zeros.
 function utcDate(now: Date): string {
   return `${now.getUTCFullYear()}.${now.getUTCMonth() + 1}.${now.getUTCDate()}`;
+}
+
+// An env where `git checkout` fails after it runs. The fake git comes first on PATH.
+function failCheckout(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const gitBin = join(useTempDir("tasker-install-git-"), "gitbin");
+  writeGitFailAfter(gitBin, "checkout");
+  return { ...env, PATH: pathWithFirst(gitBin, env) };
 }
 
 describe("install:global", () => {
@@ -163,6 +171,37 @@ describe("install:global", () => {
     expect(await gitOutput({ cwd: repo }, env, "status", "--porcelain")).toBe("");
     expect(existsSync(join(repo, "tasker-2026.10.24.tgz"))).toBe(false);
     expect(readArgLog(npmLog).at(-1)).toEqual(["install", "-g", "./tasker-2026.10.24.tgz"]);
+    expect(readArgLog(taskerLog)).toEqual([]);
+  });
+
+  it("names the signal when a signal stops a step", async () => {
+    const { repo, env, taskerLog } = await useInstallRepo({ tags: ["2026.10.24"] });
+    const result = await runInstallGlobal(repo, { ...env, TASKER_KILL: "1" });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("SIGTERM");
+    expect(result.stderr).not.toContain("exit code null");
+    expect(readArgLog(taskerLog)).toEqual([["--version"]]);
+  });
+
+  it("reports the install error and the restore error and deletes the package file", async () => {
+    const { repo, env, taskerLog } = await useInstallRepo({ tags: ["2026.10.24"] });
+    const result = await runInstallGlobal(repo, { ...failCheckout(env), FAIL_INSTALL: "1" });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("npm install -g ./tasker-2026.10.24.tgz failed with exit code 1");
+    expect(result.stderr).toContain("git checkout package.json failed with exit code 1");
+    expect(existsSync(join(repo, "tasker-2026.10.24.tgz"))).toBe(false);
+    expect(readArgLog(taskerLog)).toEqual([]);
+  });
+
+  it("reports the restore error and deletes the package file when only the restore fails", async () => {
+    const { repo, env, taskerLog } = await useInstallRepo({ tags: ["2026.10.24"] });
+    const result = await runInstallGlobal(repo, failCheckout(env));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("git checkout package.json failed with exit code 1");
+    expect(existsSync(join(repo, "tasker-2026.10.24.tgz"))).toBe(false);
     expect(readArgLog(taskerLog)).toEqual([]);
   });
 
