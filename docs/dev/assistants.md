@@ -4,7 +4,7 @@ An assistant is a coding-agent program. Tasker starts it in the worktree of a ta
 
 ## Refuse, never drop
 
-A provider that cannot enforce a limit that tasker asks for must refuse the run before it starts the program. A run with less confinement than tasker asked for can write or read outside the limits that the operator relies on. The doc comment of the interface holds the rule for the code.
+A provider that cannot enforce a limit that tasker asks for must refuse the run before it starts the program. A run with less confinement than tasker asked for can write or read outside the limits that the user relies on. The doc comment of the interface holds the rule for the code.
 
 ## The session id
 
@@ -55,7 +55,7 @@ The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and
 The sandbox follows the rules in [Sandbox](#sandbox). Its write paths and its shared folder come from the version control. Its read deny list holds these paths:
 
 - The ssh key of every configured repo. The version control gives it.
-- The `.ssh` folder of the operator.
+- The `.ssh` folder of the user.
 - The folder of the `gh` configuration.
 - The git credentials file and the `.netrc` file.
 - The credentials file of Claude Code.
@@ -68,7 +68,7 @@ Each entry goes in only when the variables that name it are set. A path that doe
 
 ### The environment of the shell
 
-The filter of the phases drops the GitHub token and the ssh agent of the operator (see [phases.md](phases.md)). As a result, the shell of the assistant has no GitHub token and no ssh agent of the operator. The shell also cannot read the paths of the [read deny list](#the-execute-role).
+The filter of the phases drops the GitHub token and the ssh agent of the user (see [phases.md](phases.md)). As a result, the shell of the assistant has no GitHub token and no ssh agent of the user. The shell also cannot read the paths of the [read deny list](#the-execute-role).
 
 ### The limits of the roles
 
@@ -116,7 +116,7 @@ A skill points the model at reference files in the skills folder and the plugins
 
 The child gets the environment that [phases.md](phases.md) describes. This doc does not repeat the filter rules.
 
-`CLAUDE_CONFIG_DIR` passes the filter on purpose. It locates the configuration of the child: its credentials, its trust of folders and its settings. Without it, the child falls back to `$HOME/.claude.json`, not the folder that the operator set.
+`CLAUDE_CONFIG_DIR` passes the filter on purpose. It locates the configuration of the child: its credentials, its trust of folders and its settings. Without it, the child falls back to `$HOME/.claude.json`, not the folder that the user set.
 
 A stray Anthropic key is a risk. With such a key, `claude` bills the API and not the subscription, and it gives no error. The filter drops these keys for this reason.
 
@@ -177,7 +177,7 @@ A quota outcome wins over a failure, because the next step is a resume, not a fi
 
 The provider says which events are quota events, because only the provider can read its own stream. During each run, tasker records the last quota event of the repo. The record comes after the transcript write, so a failed record write cannot drop a transcript line. [The `quota_events` table](data-root.md#quota_events-table) holds the record.
 
-Paid usage (overage) is usage past the subscription quota, and it costs money. The caller must pass the overage stop only under `overagePolicy: "decline"`. The caller must pass the reset time of the window that the operator approved. An event in that window does not stop the run. An overage stop ends the child at once. Its outcome wins over the timeout, because it rests on the parsed event, not on whether the stop beat the exit of the child.
+Paid usage (overage) is usage past the subscription quota, and it costs money. The caller must pass the overage stop only under `overagePolicy: "decline"`. The caller must pass the reset time of the window that the user approved. An event in that window does not stop the run. An overage stop ends the child at once. Its outcome wins over the timeout, because it rests on the parsed event, not on whether the stop beat the exit of the child.
 
 The approved window of the task is the reset time of the last approval of the task. The caller passes it to each run under each policy. Each policy has one kind of pause and one compare with the approved window:
 
@@ -256,7 +256,7 @@ The todos run in the order of their dependencies. The plan check refuses a depen
 
 Tasker reads the plan back from its plan file. As a result, the revision does not depend on how much of a long session the assistant still remembers.
 
-The context block says why the operator asks for a revision and what tasker knows about the work. One template serves each state, because each refine fills both blocks. The context holds one plain line, the open findings of a review, the line of the feedback of the operator on the committed work, or the origin and the error of a failure. The feedback holds the words of the operator or `None.`.
+The context block says why the user asks for a revision and what tasker knows about the work. One template serves each state, because each refine fills both blocks. The context holds one plain line, the open findings of a review, the line of the feedback of the user on the committed work, or the origin and the error of a failure. The feedback holds the words of the user or `None.`.
 
 The branch commits go in the prompt. An execute run is a separate session, so the refine session has not seen them. Their work is done, and the revision plans only the work that is still needed.
 
@@ -268,12 +268,12 @@ The prompts share their common rules in one place in the code, for example the d
 
 ### The review prompt and the findings answer
 
-The review run is read-only, because the operator decides each change.
+The review run is read-only, because the user decides each change.
 
 The reasons for the design:
 
 - The answer has no `questions` key, because nobody answers during the run. An open point becomes a finding.
-- The earlier reviews go in the prompt. As a result, the review does not report a finding again that the operator declined, and the operator does not dismiss the same finding twice.
+- The earlier reviews go in the prompt. As a result, the review does not report a finding again that the user declined, and the user does not dismiss the same finding twice.
 - The branch commits go in the prompt, because a read-only run needs no git command, and the diff is the thing under review.
 - The prompt spells out the four simplify checks, so that they run the same under every assistant.
 

@@ -212,7 +212,7 @@ flowchart LR
 - `run died: detected` means that a command found a dead run and moved the task to `interrupted`. [The `run_markers` table](dev/data-root.md#run_markers-table) says which commands find a dead run.
 - Here is what each part of the label of the edge from the states that run an assistant means. `run died: detected` has the meaning of the bullet before this one. `tasker interrupted` names the command `tasker interrupted`. A later milestone adds this command, and it marks a dead run that the dead-run step cannot see. `a signal that tasker passed` means that tasker passed SIGINT or SIGTERM to the assistant run, and the run ended as an interruption (see [The result of an assistant run](dev/tasks.md#the-result-of-an-assistant-run)).
 - `verifying`, `pushing`, `opening_pr`, `merging`, `finishing` and `updating_branch` spawn no assistant. Of the pauses, the state machine allows only `interrupted` from these states.
-- `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there when the stop named a window. Under `ask`, a run whose use of the quota window reaches `quotaApprovalThreshold` pauses into `awaiting_quota_approval` when the run ends, unless the operator approved that window with `approve-credits`.
+- `overagePolicy` picks the quota pause. Under `decline` (the default), a run stops at the overage boundary into `quota_blocked`, and `approve-credits` can continue it there when the stop named a window. Under `ask`, a run whose use of the quota window reaches `quotaApprovalThreshold` pauses into `awaiting_quota_approval` when the run ends, unless the user approved that window with `approve-credits`.
 - A resume moves the task to the state before the spawn, then runs the same command again, except for `updating_branch`, which runs nothing. So the task goes straight back into a spawning state, except after `updating_branch`.
 
 | Paused from                                 | Resumes to                             | Then runs                                                            |
@@ -295,7 +295,7 @@ flowchart LR
 | any other                                                                  | its origin             | Nothing to demote.                                                                                                 |
 
 - A failure after the move to `updating_branch` restores the worktree. If the head is the head of the start, the worktree is on the task branch and the worktree is clean, the task goes back to its origin state. Otherwise the task goes to `failed`.
-- `tasker approve` refuses a plan that is older than the last move of the worktree. The plan was written against the old tree, so the operator runs `tasker refine` first.
+- `tasker approve` refuses a plan that is older than the last move of the worktree. The plan was written against the old tree, so the user runs `tasker refine` first.
 
 ## The commands of each state
 

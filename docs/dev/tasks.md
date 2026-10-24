@@ -118,7 +118,7 @@ One shared step maps the outcome of an assistant run to the next state of the ta
 The step records the usage of the run first, for every outcome. Then it acts on the outcome. It moves the task only when the outcome says so below:
 
 - A success with no quota warning causes no move. The command that ran the assistant makes its own checks and its own move.
-- A success with a quota warning causes no move. This happens only under `overagePolicy: "ask"`, when the use of the quota window reaches `quotaApprovalThreshold` in a window that the operator did not approve. The step gives the warning to the command.
+- A success with a quota warning causes no move. This happens only under `overagePolicy: "ask"`, when the use of the quota window reaches `quotaApprovalThreshold` in a window that the user did not approve. The step gives the warning to the command.
 - A failure and a timeout move the task to `failed`. The error goes to the event and to stderr, and the exit code is 1.
 - A quota stop moves the task to `quota_blocked`. The event holds the cause and the reset time when it is known. The command prints the reset time on stdout, or says that it is unknown, and the exit code is 1.
 - An interrupted run moves the task to `interrupted`. This happens when tasker passed SIGINT or SIGTERM to the run, and no quota stop shows in the events. The event holds `{ from, to, cause: "signal", signal }`. The command prints `<phase> interrupted by <signal>; run tasker resume <issue key> to continue` on stdout, and the exit code is 1.
@@ -156,7 +156,7 @@ An error after the start of the run also moves the task to `failed`, with the pr
 
 The plan reads the title and the body of the issue. It does not read the comments. A second `tasker plan` works only on a task in `workspace_ready`.
 
-After a successful plan, the command warns when the plan changes files that another active task of the same repo also changes. [What the plan prompt asks for](assistants.md#what-the-plan-prompt-asks-for) says that tasker compares `files_changed` with the other tasks in flight. The purpose of the warning is to let an operator order the landings before the approve, because the task that lands second can get merge conflicts and redo its work.
+After a successful plan, the command warns when the plan changes files that another active task of the same repo also changes. [What the plan prompt asks for](assistants.md#what-the-plan-prompt-asks-for) says that tasker compares `files_changed` with the other tasks in flight. The purpose of the warning is to let a user order the landings before the approve, because the task that lands second can get merge conflicts and redo its work.
 
 The warning reads the files of the newest plan of the other task and the files that its task branch changes. A task that already executed has files that its plan did not list, so the plan alone is not enough.
 
@@ -168,7 +168,7 @@ The read takes no repo lock. It changes nothing in the clone, and a wait for the
 
 ## Refine
 
-`tasker refine` continues the plan session of a task in `awaiting_plan_review` with the feedback of the operator, and records the next plan revision. The task goes to `refining`, then back to `awaiting_plan_review`.
+`tasker refine` continues the plan session of a task in `awaiting_plan_review` with the feedback of the user, and records the next plan revision. The task goes to `refining`, then back to `awaiting_plan_review`.
 
 `tasker refine` also runs on a task in `reviewed`. This is a promotion: the open findings of the latest review go to the plan session, and the next revision has the source `review`. The feedback is optional in `reviewed`, and it is required in `awaiting_plan_review`.
 
@@ -176,7 +176,7 @@ The read takes no repo lock. It changes nothing in the clone, and a wait for the
 
 The steps run in this order.
 
-1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it reads a file. In `reviewed`, it also checks that the latest review has an open finding. In `failed`, the error for a missing plan revision names the origin and `tasker retry`. A refused refine changes nothing, as the intro says, so the operator can fix the cause and run the same command again.
+1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it reads a file. In `reviewed`, it also checks that the latest review has an open finding. In `failed`, the error for a missing plan revision names the origin and `tasker retry`. A refused refine changes nothing, as the intro says, so the user can fix the cause and run the same command again.
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base revision and the commits of the task branch.
 3. The command fills the prompt, with the open findings in the context block for a promotion, archives the template and continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for the recorded model. The session is already recorded, so refine records no session.
 4. The command moves the task to `refining` and runs the assistant. The move records the feedback in its `transition` event, as `{ feedback, from, to }`, so that `tasker resume` can run the same refine again (see [Resume](#resume)). A promotion with no feedback records no `feedback` key. The run step is the one that `tasker plan` uses, with the prefix `refining failed:` for an error.
@@ -185,7 +185,7 @@ The steps run in this order.
 
 A promotion keeps the findings out of the feedback and leaves them open:
 
-- The findings go in the context block, because the stored feedback holds only the words of the operator. The feedback of a revision is the answer of a question ([the `plan_revisions` table](data-root.md#plan_revisions-table)), and `tasker show-questions` prints that answer.
+- The findings go in the context block, because the stored feedback holds only the words of the user. The feedback of a revision is the answer of a question ([the `plan_revisions` table](data-root.md#plan_revisions-table)), and `tasker show-questions` prints that answer.
 - The promoted findings stay open, because the next review decides if the work fixed them. [The review prompt and the findings answer](assistants.md#the-review-prompt-and-the-findings-answer) says how the next review reads them.
 
 ## Approve
@@ -196,7 +196,7 @@ Its checks cover the task, the state, the pinned revision and the newest plan re
 
 The write is one transaction. It sets the approval time of the revision, appends one `approved` event with the data `{ version, openQuestions, from, to }`, and moves the task to `approved`. The `approved` event takes the place of the `transition` event for this move.
 
-Open questions do not stop an approval. The operator decides, and the count in the event and in the output makes the choice visible.
+Open questions do not stop an approval. The user decides, and the count in the event and in the output makes the choice visible.
 
 A plan that is older than the last move of the worktree cannot be approved. `tasker approve` finds the newest `branch_updated` event with a `how` other than `none` and the newest `plan_revision` event. If the move is newer, the command stops. The plan was written against the old tree.
 
@@ -236,7 +236,7 @@ The reasons:
 - A new session gets the prefix with the plan in its first turn. A continued session gets only the turn prompt, because the session already holds the prefix.
 - The command reads the remote tip before the run and after each turn. This is layer 3 of [the push guard](version-control.md#push-guard). A push from the session moves the tip, and the command fails the task. The command reads the tip after each turn, not only at the end of the run. As a result, the run stops at the first turn that pushed. No later turn spends tokens or builds on work that already left the machine. A push wins over the outcome of the turn. A quota stop with a push ends in `failed`, because a push breaks a rule of tasker and a quota stop does not. An interrupted turn with a push also ends in `failed`. Execute prints the line of an interrupted turn only after the push guard. After a push, it prints no resume hint.
 - A task that is already `failed` is not moved again, because a move from `failed` to `failed` is illegal. In this case the command only prints the message on stderr.
-- A turn that reports `blocked` or gives no result fails the task. Nobody is present to answer the turn. The operator reads the error and decides with the next command. The todo stays `in_progress`.
+- A turn that reports `blocked` or gives no result fails the task. Nobody is present to answer the turn. The user reads the error and decides with the next command. The todo stays `in_progress`.
 - All turns share one deadline: the value of `executeTimeoutMin`. The command reads the clock once before the first turn, and each turn gets the time that is left. It starts no turn when no time is left. `executeTimeoutMin` is the limit of one execute run. A limit for each turn multiplies with the count of todos, so a plan with many todos can run for many times the configured limit.
 - A run with no turn records no execute session and archives no prompt. The rule of [the sessions table](data-root.md#sessions-table) says that an id that no conversation holds must not be continued. If the run recorded one, a later fix turn from `tasker retry` continues an empty id and fails.
 
@@ -268,7 +268,7 @@ These reasons explain its rules:
 
 - Each review runs in a new session. The review is then an independent pass that the plan conversation does not bias.
 - The review runs in plan mode with the limits of the plan role. [assistants.md](assistants.md#the-plan-and-review-roles) and [assistants.md](assistants.md#the-review-prompt-and-the-findings-answer) give the rules.
-- The findings rest in `reviewed`, because the operator reads them first. A review with no findings moves the task back to `awaiting_work_review`.
+- The findings rest in `reviewed`, because the user reads them first. A review with no findings moves the task back to `awaiting_work_review`.
 - The review records the tip of the task branch, because the findings describe one tree. [data-root.md](data-root.md#reviews-table) gives the reason. The review reads the commits of the task branch, so the tip of that branch names the tree that the review read. An uncommitted change or a commit that is not on the task branch does not count, as for `tasker accept`.
 - tasker records the review session although no command continues it yet. [assistants.md](assistants.md#the-session-id) gives the rule of the session id.
 
@@ -276,7 +276,7 @@ These reasons explain its rules:
 
 ### The feedback form of review
 
-`tasker review <issue> <feedback>` continues the plan session of a task in `awaiting_work_review` with the feedback of the operator on the committed work. The plan session knows the plan and its decisions. The new revision plans only the work that is still needed: [assistants.md](assistants.md#the-refine-prompt) gives that rule. The task goes through `refining` to `awaiting_plan_review`.
+`tasker review <issue> <feedback>` continues the plan session of a task in `awaiting_work_review` with the feedback of the user on the committed work. The plan session knows the plan and its decisions. The new revision plans only the work that is still needed: [assistants.md](assistants.md#the-refine-prompt) gives that rule. The task goes through `refining` to `awaiting_plan_review`.
 
 The command uses the run step of `tasker refine`, so [the steps of refine](#refine) apply from the plan revision on. It runs in this order:
 

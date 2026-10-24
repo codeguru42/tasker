@@ -73,7 +73,7 @@ A case is one kind of input that a function serves. Examples are a role of an as
 - A session reads the files of `skills/tasker/` only for a task that changes them.
 - This rule wins over "the files of the repo" in the bullet of the sources of the agent in the Limits list of [docs/dev/limits.md](limits.md#limits).
 
-The reasons: the skill of the repo describes the tasker that this repo builds, and it can differ from the installed tasker. A raw read of the skill also shows the placeholder line instead of the command line of the operator.
+The reasons: the skill of the repo describes the tasker that this repo builds, and it can differ from the installed tasker. A raw read of the skill also shows the placeholder line instead of the command line of the user.
 
 ## AGENTS.md
 

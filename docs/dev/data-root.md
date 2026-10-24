@@ -52,7 +52,7 @@ Two triggers make the table append-only. An `UPDATE` or a `DELETE` on `events` f
 
 ## `plan_revisions` table
 
-The table has one row for each plan that the assistant returned for a task. A revision is one such plan. A later revision comes from the feedback of the operator on an earlier one, or, with the source `review`, from the open findings of a review, with the feedback of the operator or none. With the source `review-feedback`, a revision comes from the feedback of the operator on the committed work of a task in `awaiting_work_review`.
+The table has one row for each plan that the assistant returned for a task. A revision is one such plan. A later revision comes from the feedback of the user on an earlier one, or, with the source `review`, from the open findings of a review, with the feedback of the user or none. With the source `review-feedback`, a revision comes from the feedback of the user on the committed work of a task in `awaiting_work_review`.
 
 These rules hold:
 
@@ -85,7 +85,7 @@ These rules hold:
 - A task has one plan session at most.
 - A task has one execute session at most for each version of its plan. The execute runs of the pinned revision work in that session.
 - The version is the key of an execute session. A refine after an approval gives a new version, so a new plan never continues the session of an old plan.
-- The limit of this key: when the operator runs `tasker unapprove` and then approves the same version again, the execute runs continue the session of that version.
+- The limit of this key: when the user runs `tasker unapprove` and then approves the same version again, the execute runs continue the session of that version.
 - A task has one review session for each review number. A review session is never continued.
 - A review session is recorded for the rule of [assistants.md](assistants.md#the-session-id) that each session is recorded before its run. So the record can exist before the review row.
 - Only `tasker retry` deletes a session row. A run that failed before its first turn recorded an id that no conversation holds. The next run must not continue that id, so the retry deletes the row, and the next run records a new id. For the same reason, a run of `tasker execute` with no turn records no session.
@@ -148,12 +148,12 @@ The table has one row for each finding of a review.
 
 These rules hold:
 
-- The position of a finding, from 1, is the id that the operator types in `tasker dismiss-review`.
+- The position of a finding, from 1, is the id that the user types in `tasker dismiss-review`.
 - A finding is open until its dismissal.
 - A dismissal is written once and needs a reason, because the next review reads it. After that the row does not change, and no store write deletes a row.
 - A dismissal that names a missing finding or a dismissed finding writes nothing. The same holds when the dismissal names other findings that are open.
 - A dismissal that names no finding is an error, and it writes nothing.
-- An open finding still needs a decision of the operator: a dismissal or a fix in a later plan. So the task stays in `reviewed` until no finding of the review is open, or until a refine promotes the findings to a plan.
+- An open finding still needs a decision of the user: a dismissal or a fix in a later plan. So the task stays in `reviewed` until no finding of the review is open, or until a refine promotes the findings to a plan.
 
 ## `default_base_branches` table
 
