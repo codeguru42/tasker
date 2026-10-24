@@ -8,9 +8,21 @@ A long-running orchestrator is the orchestrator of a milestone that stays open w
 
 The rules of this section cover only a long-running orchestrator. An orchestrator of a numbered milestone stops when the Todo column of its milestone is empty, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The rules of this section do not cover it.
 
-Only the user starts a handoff. The user can ask the old orchestrator for a handoff at any time. The reason: the old orchestrator has no tool that shows its context use. On 2026-10-16, the Docs orchestrator guessed that about 20% of its context was used and started a handoff. The session used 6%.
+Only the user starts a handoff. The user can ask the old orchestrator for a handoff at any time. The reason: the old orchestrator has no tool that shows its context use. The landing count that follows stands in for a read of the context use. On 2026-10-16, the Docs orchestrator guessed that about 20% of its context was used and started a handoff. The session used 6%.
 
-The old orchestrator can suggest a handoff to the user. The suggestion does not start the handoff. The handoff starts only when the user agrees to the suggestion or asks for a handoff. In an answer to [a question of the user](working-with-the-user.md#a-question-of-the-user), the old orchestrator suggests a handoff only when the suggestion is relevant to that question.
+The old orchestrator can suggest a handoff to the user. The old orchestrator counts the landings of its session. Each of these also counts as one landing:
+
+- A quota resume
+- A new issue that the user asks the old orchestrator to send for drafting
+- A decision of the user that takes several question rounds
+
+At a count of 12, the old orchestrator suggests a handoff to the user in its report of that landing. The suggestion does not start the handoff. The work continues until the user answers. If the user does not answer, the old orchestrator suggests the handoff again in the report of each later landing.
+
+The count starts at 0 at the start of the session. The count lives until the session ends. In a new session after a handoff, the count starts again at 0. During the session, the count starts again at 0 only when the user says no to a suggestion. When the count reaches 12 again, the old orchestrator suggests a handoff again.
+
+The reason for the count: it leaves room for the session review and the handoff file before an automatic compaction. An automatic compaction loses context. On 2026-10-24, the context size of orchestrator-docs was about 175k tokens after the doc reads at the start, and about 400k after 15 landings (about 15k for a quiet landing). Three more landings, a quota resume, the filing of one issue and several question rounds brought it to about 507k (about 30k for a busy landing). An automatic compaction ran right after, and the session review and the handoff file then used about 30k to 50k tokens.
+
+The handoff starts only when the user agrees to the suggestion or asks for a handoff. In an answer to [a question of the user](working-with-the-user.md#a-question-of-the-user), the old orchestrator suggests a handoff only when the suggestion is relevant to that question. A landing report is not such an answer.
 
 After the start, the old orchestrator does these steps:
 
