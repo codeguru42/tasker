@@ -177,6 +177,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Give each command step a failure case for any error, and name what stays behind.
 - For a read-only command, a missing match is an answer, not a failure. For example, `git grep` with no match exits with 1, and `git show <commit>:<missing path>` exits with 128. Say so in the first refine. Otherwise the plan asks for a failure case for each such command (#114).
 - Do not write "go to step N" without a condition. Define each term, for example "loop". Do not list a step two times.
+- A ticket can define a common word. Then ask the plan to find each use of the word in another sense on the same pages. On #334, "stop" also meant the end of the work, and a link on "stops" narrowed a condition. This cost two review loops.
 - A rule that names `tasker review` covers each outcome: findings, no findings, all findings dismissed, and new findings after `tasker update-branch`. Start a rule with the state ("If the task is in X ..."), not with the steps that lead to it.
 - A rule that names an earlier and a later ticket covers the swap of the roles when the order changes.
 - For the side-effects hint of [All tickets](#all-tickets), ask for the side effects of each edit on the whole page.
