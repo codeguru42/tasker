@@ -43,9 +43,10 @@ Do these steps in a clone of the operator, outside the task worktrees. The insta
 - `npm pack` first deletes `dist/` and then runs `npm run build`, through the `prepack` script. As a result, `dist/` holds only the build of the commit that is checked out.
 - `npm install -g` of a package file copies the files into the global folder of npm. A later change of the clone does not change the installed `tasker`.
 
-Measured on 2026-10-18 and 2026-10-19 with npm 11.19.0:
+Measured on 2026-10-24 with npm 11.19.0 and GNU date:
 
-- `npm version 20261019.0022` fails with `npm error Invalid version: 20261019.0022`. It fails the same way with `--no-git-tag-version`, and for the pre-release form.
-- `npm pkg set version=<value>` accepts `20261019.0022` and `20261019.002216-00fed99`. It changes only `version`. It makes no commit and no tag.
-- `npm pack` accepts these versions and makes `<name>-<version>.tgz`.
-- `npm install -g` of that package file installs it. The installed `package.json` keeps the version text exactly as written.
+- `npm publish --dry-run` refuses `20261019.0100` and `20261019.010000-c0c0d1a5` with `npm error Invalid version`. It accepts `2026.1.5`.
+- `date -u +%Y.%-m.%-d` prints the date with no leading zeros, for example `2026.10.24`.
+- On a clone of tasker, `npm version 2026.10.24 --tag-version-prefix= -m "chore: Release %s"` changes only the three `version` fields in `package.json` and `package-lock.json`. It makes one commit with the subject `chore: Release 2026.10.24` and an annotated tag `2026.10.24`. The working tree stays clean.
+- `npm pkg set version=<value>`, `npm pack` and `npm install -g` keep `2026.10.23-c0c0d1a5` and `2026.10.23-0123456` exactly as written. Only `npm publish` changes a leading zero in a number part of a pre-release (`2026.10.19-0123456` becomes `2026.10.19-123456`), and a pre-release never goes to the registry.
+- semver sorts a pre-release before the stable release of the same day: `2026.10.23-c0c0d1a5 < 2026.10.23`.
