@@ -4,7 +4,7 @@ The reader of this page is a long-running orchestrator.
 
 ## The handoff
 
-A long-running orchestrator is the orchestrator of a milestone that stays open while other sessions add issues to it, for example "Docs" (see [docs/dev/planning.md](planning.md)). In a handoff, the old orchestrator gives its work to a new orchestrator in a new session.
+A long-running orchestrator is the orchestrator of a milestone that stays open while other sessions add issues to it, for example "Docs" (see [docs/dev/planner.md](planner.md)). In a handoff, the old orchestrator gives its work to a new orchestrator in a new session.
 
 The rules of this section cover only a long-running orchestrator. An orchestrator of a numbered milestone stops when the Todo column of its milestone is empty, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The rules of this section do not cover it.
 

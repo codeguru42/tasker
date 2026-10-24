@@ -1,18 +1,18 @@
 # Filing issues
 
-This page gives the steps and the GitHub facts to file issues, blocked-by links and milestones on GitHub. [Before a post](#before-a-post) covers each session that posts an issue, except where a sentence names the planning session. The rest of the page is for the planning session. [planning.md](planning.md) defines the terms "planning session", "operator" and "blocked-by link". planning.md also holds the rules for what an issue says and where it goes. This page holds only how to do it on GitHub.
+This page gives the steps and the GitHub facts to file issues, blocked-by links and milestones on GitHub. [Before a post](#before-a-post) covers each session that posts an issue, except where a sentence names the planning session. The rest of the page is for the planning session. [planner.md](planner.md) defines the terms "planning session", "operator" and "blocked-by link". planner.md also holds the rules for what an issue says and where it goes. This page holds only how to do it on GitHub.
 
 ## Before a post
 
-- Each session that posts an issue, or changes the title or the body of an open issue, drafts the text first. The session shows the draft to the operator, the person who works with that session (see [working-with-the-user.md](working-with-the-user.md)). A request of the operator such as "file an issue" or "draft a ticket" gets a draft first. For a change to an open issue, the draft shows the changed text. The session posts only after the operator approves that draft, for example with "file it" or "post it". The planning session also makes sure of the kinds of GitHub objects to make, as [The order of the work](planning.md#the-order-of-the-work) of planning.md says.
+- Each session that posts an issue, or changes the title or the body of an open issue, drafts the text first. The session shows the draft to the operator, the person who works with that session (see [working-with-the-user.md](working-with-the-user.md)). A request of the operator such as "file an issue" or "draft a ticket" gets a draft first. For a change to an open issue, the draft shows the changed text. The session posts only after the operator approves that draft, for example with "file it" or "post it". The planning session also makes sure of the kinds of GitHub objects to make, as [The order of the work](planner.md#the-order-of-the-work) of planner.md says.
 - Right before each post, the session that posts the issue searches all the issues of the repo, open and closed, by title and by body, for the same change. Other sessions file issues at the same time, so the list changes between two turns. An example search is `gh issue list --state all --search "<words> in:title,body" --limit 1000`. The session runs the search in its own command and reads the result. Then the session posts the issue in a later command. A search and a post in one command post the issue before the session sees a match. For example, on 2026-10-18, orchestrator-m13 ran the search and `gh issue create` in one command and posted #307. The search had found #285, which already covered one item of #307. A later edit of both issues moved the item.
 - If an issue already covers the change, the session that posts the issue offers the operator an extension of that issue (its body or its links) instead of a new issue. That session tells the operator what each draft has that the other one does not have.
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md. Before a session shows a draft to the operator, the session runs the self-check of the simple-english skill over the file of the draft. The check counts the words of each sentence. It also searches the draft for the banned words and for an `if` or a `when` inside a sentence. The session fixes each hit before it shows the draft. For example, on 2026-10-15, a draft had four sentences over the limit, and one search and one word count over the draft file found them.
-- For a priority label on an issue, see [The body of an issue](planning.md#the-body-of-an-issue) of planning.md.
+- For a priority label on an issue, see [The body of an issue](planner.md#the-body-of-an-issue) of planner.md.
 
 ## The blocked-by links
 
-The rules for the links are in [The blocked-by links](planning.md#the-blocked-by-links) of planning.md. The commands below work with gh 2.101.0:
+The rules for the links are in [The blocked-by links](planner.md#the-blocked-by-links) of planner.md. The commands below work with gh 2.101.0:
 
 - To add a link: `gh issue edit <blocked number> --add-blocked-by <blocker number>`.
 - To remove a link: `gh issue edit <blocked number> --remove-blocked-by <blocker number>`.
@@ -31,4 +31,4 @@ The rules for the links are in [The blocked-by links](planning.md#the-blocked-by
 
 ## Milestones
 
-[The milestone of an issue](planning.md#the-milestone-of-an-issue) of planning.md gives the milestone of each issue. The planning session closes a milestone only when the operator says so. Then it runs `gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`. An orchestrator asks the operator to close a milestone only after each finding of its review rounds is handled, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) of pick-the-tickets.md says.
+[The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md gives the milestone of each issue. The planning session closes a milestone only when the operator says so. Then it runs `gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`. An orchestrator asks the operator to close a milestone only after each finding of its review rounds is handled, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) of pick-the-tickets.md says.

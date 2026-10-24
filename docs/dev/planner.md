@@ -1,4 +1,4 @@
-# Planning
+# Planner
 
 This page gives the rules for a planning session. A planning session is the assistant session that plans a milestone and writes its issues on GitHub. The operator is the person who runs the planning session. The readers of this page are the planning session and its operator.
 

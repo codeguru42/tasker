@@ -4,7 +4,7 @@ The readers of this page are the orchestrator and the agents.
 
 ## The re-read rule
 
-The orchestrator works from the current docs of the orchestrator. The docs of the orchestrator are `AGENTS.md`, `docs/dev/orchestration.md`, the pages of the list "The pages" of [docs/dev/orchestration.md](orchestration.md), and the docs that the prompt of the orchestrator names. For example, a prompt can name `docs/dev/rules.md`, `docs/dev/planning.md`, `docs/dev/issues.md`, `docs/dev/working-with-the-user.md`, `docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `main` from which the orchestrator last read the docs of the orchestrator.
+The orchestrator works from the current docs of the orchestrator. The docs of the orchestrator are `AGENTS.md`, `docs/dev/orchestration.md`, the pages of the list "The pages" of [docs/dev/orchestration.md](orchestration.md), and the docs that the prompt of the orchestrator names. For example, a prompt can name `docs/dev/rules.md`, `docs/dev/planner.md`, `docs/dev/issues.md`, `docs/dev/working-with-the-user.md`, `docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `main` from which the orchestrator last read the docs of the orchestrator.
 
 At the start of its session, the orchestrator does the fetch and the fast-forward of [the doc-read rule](#the-doc-read-rule). Then it runs `git rev-parse --verify HEAD` in its local clone. The hash that this command prints is the first last read. Then the orchestrator reads the docs of the orchestrator.
 
@@ -20,7 +20,7 @@ If a command of [the doc-read rule](#the-doc-read-rule) fails before a doc read 
 
 ## The notice rule
 
-This rule covers a ticket of the milestone "Docs" (see [docs/dev/planning.md](planning.md)). It applies when the landing of the ticket changes a doc of the orchestrator of the ticket (see [the re-read rule](#the-re-read-rule)), for example `docs/dev/orchestration.md`. A notice is a message about such a landing from the orchestrator of the ticket to the other orchestrators. The user gives the session of each orchestrator a name of the form `orchestrator-<milestone>`, for example `orchestrator-m6`, `orchestrator-m7` or `orchestrator-docs`. The part after `orchestrator-` is the first word of the milestone title in lowercase, for example `orchestrator-m9` for "M9 — Pauses and recovery" and `orchestrator-docs` for "Docs". The other orchestrators are all the sessions with such a name except the session of the orchestrator of the ticket.
+This rule covers a ticket of the milestone "Docs" (see [docs/dev/planner.md](planner.md)). It applies when the landing of the ticket changes a doc of the orchestrator of the ticket (see [the re-read rule](#the-re-read-rule)), for example `docs/dev/orchestration.md`. A notice is a message about such a landing from the orchestrator of the ticket to the other orchestrators. The user gives the session of each orchestrator a name of the form `orchestrator-<milestone>`, for example `orchestrator-m6`, `orchestrator-m7` or `orchestrator-docs`. The part after `orchestrator-` is the first word of the milestone title in lowercase, for example `orchestrator-m9` for "M9 — Pauses and recovery" and `orchestrator-docs` for "Docs". The other orchestrators are all the sessions with such a name except the session of the orchestrator of the ticket.
 
 The orchestrator of the ticket does these steps:
 
