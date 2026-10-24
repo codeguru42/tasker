@@ -25,7 +25,7 @@ The pre-release steps do not use `npm version`, because it makes a commit and a 
 
 ## Install a pre-release
 
-Do these steps in a clone of the operator, outside the task worktrees. The install replaces the installed `tasker` (see [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
+Do these steps in the same clone as the [Install section of README.md](../../README.md#install), not in the local clone and not in a task worktree. The install replaces the installed `tasker` (see [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
 
 1. Make sure that the working tree of the clone has no changes. Step 7 runs `git checkout package.json`, and that command removes all changes to the file, not only the version.
 2. Check out the commit: `git checkout <commit>`. It can be a commit of `main` or of another branch.
