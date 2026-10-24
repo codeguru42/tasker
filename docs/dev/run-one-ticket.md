@@ -37,7 +37,7 @@ This rule covers a ticket that already has a task in flight when its agent start
 
 ### The base rule
 
-This rule covers each command of [the orchestration pages](orchestration.md) that uses `origin/<base branch>`. A stacked task is a task that `tasker start` based on the branch of its parent (see [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule)).
+This rule covers each command of [the orchestration pages](orchestrator.md) that uses `origin/<base branch>`. A stacked task is a task that `tasker start` based on the branch of its parent (see [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule)).
 
 Before each such command, the agent reads the `base branch:` line of `tasker show <issue>`. The agent does these steps:
 

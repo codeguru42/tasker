@@ -2,7 +2,7 @@
 
 This page gives the rules for a planner. A planner is the assistant session that plans a milestone and writes its issues on GitHub. The operator is the person who runs the planner. The readers of this page are the planner and its operator.
 
-The page does not cover the work of the orchestrator and of the agents of the tickets. [The orchestration pages](orchestration.md) hold that work, and [orchestration.md](orchestration.md) defines the terms "orchestrator", "ticket" and "agent".
+The page does not cover the work of the orchestrator and of the agents of the tickets. [The orchestration pages](orchestrator.md) hold that work, and [orchestrator.md](orchestrator.md) defines the terms "orchestrator", "ticket" and "agent".
 
 [issues.md](issues.md) gives the steps and the GitHub facts to file issues, blocked-by links and milestones, and the facts of the project board.
 

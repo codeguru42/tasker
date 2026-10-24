@@ -2,7 +2,7 @@
 
 This page gives the rules for an assistant session that works with the user of this repo. It also says which kinds of work wait until later. The user is the person who works with the session. [planner.md](planner.md) calls this person the operator.
 
-The rules apply to each session that works with the user, for example the orchestrator of [orchestration.md](orchestration.md) and the planner of [planner.md](planner.md). They do not apply to the sessions that tasker starts for plan, execute and review.
+The rules apply to each session that works with the user, for example the orchestrator of [orchestrator.md](orchestrator.md) and the planner of [planner.md](planner.md). They do not apply to the sessions that tasker starts for plan, execute and review.
 
 The work on this repo must continue on any machine, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) of planner.md says. For this reason, these rules are in the repo and not in the notes of an assistant.
 
@@ -39,7 +39,7 @@ The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but i
 
 ## Core features first
 
-- The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge case. Decide it as "later", and keep the ticket in its scope. The goal of the numbered milestones is parity with [the installed tasker](orchestration.md): each command of the installed tasker, with its core features. A feature that the installed tasker does not have also waits until later, as an edge case does.
+- The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge case. Decide it as "later", and keep the ticket in its scope. The goal of the numbered milestones is parity with [the installed tasker](orchestrator.md): each command of the installed tasker, with its core features. A feature that the installed tasker does not have also waits until later, as an edge case does.
 - Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at once. [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the steps for a finding of a review.
 - Each piece of work that waits becomes an issue in its later milestone, as [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md says. [issues.md](issues.md) gives the steps to file the issue.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is a process that has the same pid at each start, so that the lock row of a crashed run looks like the lock row of the process itself.

@@ -1,6 +1,6 @@
 # First refine
 
-This page lists the hints for the first refine of a ticket, sorted by the kind of ticket. [orchestration.md](orchestration.md) defines the terms "ticket" and "agent", and [Review findings](review-findings.md#review-findings) defines a loop. The first refine is the first `tasker refine` of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket).
+This page lists the hints for the first refine of a ticket, sorted by the kind of ticket. [orchestrator.md](orchestrator.md) defines the terms "ticket" and "agent", and [Review findings](review-findings.md#review-findings) defines a loop. The first refine is the first `tasker refine` of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket).
 
 A hint states what to ask the plan for, and why. When the plan gets the hints in the first refine, the review does not have to find them one loop at a time.
 
@@ -93,7 +93,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - If a shared step prints a next command, for example "run tasker resume", ask the plan to print it after the last check of the caller that can still change the state of the task. On #173, the shared result step printed "run tasker resume <issue key> to continue", and then the push guard of `tasker execute` moved the task to `failed`, where resume refuses.
 - If a refine removes the first sentence of a paragraph, the feedback gives the new lead-in of that paragraph. On #173, a doc fix removed the first sentence of a paragraph in `docs/dev/tasks.md`, and the paragraph lost its subject.
 - A test with one case is a plain `it`, not an `it.each`. On #262, a review flagged an `it.each` with only one case.
-- [The orchestration pages](orchestration.md) describe the installed tasker. A plan for a change of the tasker that this repo builds does not edit them. On #278, plan v2 added a todo for `docs/dev/orchestration.md`, and the agent took it out.
+- [The orchestration pages](orchestrator.md) describe the installed tasker. A plan for a change of the tasker that this repo builds does not edit them. On #278, plan v2 added a todo for `docs/dev/orchestration.md`, and the agent took it out.
 
 ## A ticket that only adds a layer, for example a schema
 
