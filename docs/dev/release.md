@@ -25,17 +25,16 @@ The pre-release steps do not use `npm version`, because it makes a commit and a 
 
 ## Install a pre-release
 
-Do these steps in the same clone as the [Install section of README.md](../../README.md#install), not in the local clone and not in a task worktree. The install replaces the installed `tasker` (see [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
+A pre-release installs the commit that is checked out. First check out that commit, most of the time `main`. Do these steps in any clone that holds the commit, but not in a task worktree. The install replaces the installed `tasker` (see [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
 
-1. Make sure that the working tree of the clone has no changes. Step 7 runs `git checkout package.json`, and that command removes all changes to the file, not only the version.
-2. Check out the commit: `git checkout <commit>`. It can be a commit of `main` or of another branch.
-3. Install the dependencies: `npm ci`.
-4. Set the version: `npm pkg set version=$(date -u +%Y.%-m.%-d)-$(git rev-parse --short HEAD)`.
-5. Make the package file: `npm pack`.
-6. Install the package file: `npm install -g ./tasker-<version>.tgz`.
-7. Restore `package.json`: `git checkout package.json`.
-8. Make sure that `tasker --version` prints `<version>`.
-9. Run `tasker install-skills`.
+1. Make sure that the working tree of the clone has no changes. Step 6 runs `git checkout package.json`, and that command removes all changes to the file, not only the version.
+2. Install the dependencies: `npm ci`.
+3. Set the version: `npm pkg set version=$(date -u +%Y.%-m.%-d)-$(git rev-parse --short HEAD)`.
+4. Make the package file: `npm pack`.
+5. Install the package file: `npm install -g ./tasker-<version>.tgz`.
+6. Restore `package.json`: `git checkout package.json`.
+7. Make sure that `tasker --version` prints `<version>`.
+8. Run `tasker install-skills`.
 
 ## The npm facts
 
