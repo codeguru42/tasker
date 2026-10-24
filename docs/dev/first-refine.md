@@ -92,6 +92,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - If a shared step prints a next command, for example "run tasker resume", ask the plan to print it after the last check of the caller that can still change the state of the task. On #173, the shared result step printed "run tasker resume <issue key> to continue", and then the push guard of `tasker execute` moved the task to `failed`, where resume refuses.
 - If a refine removes the first sentence of a paragraph, the feedback gives the new lead-in of that paragraph. On #173, a doc fix removed the first sentence of a paragraph in `docs/dev/tasks.md`, and the paragraph lost its subject.
 - A test with one case is a plain `it`, not an `it.each`. On #262, a review flagged an `it.each` with only one case.
+- [The orchestration pages](orchestration.md) describe the installed tasker. A plan for a change of the tasker that this repo builds does not edit them. On #278, plan v2 added a todo for `docs/dev/orchestration.md`, and the agent took it out.
 
 ## A ticket that only adds a layer, for example a schema
 
@@ -109,6 +110,7 @@ The agent gives each hint that fits its ticket in the first refine. The drafter 
 - A test that must move a ref of origin between a tip read and a push cannot use a pre-receive hook. With git 2.47.3, a ref update inside the hook fails with `ref updates forbidden inside quarantine environment`. Use a git wrapper first on PATH that runs a command before each push. `test/helpers/git.ts` holds such a wrapper since #43. Each command inside the wrapper calls the real git by its path. A plain `git` inside the wrapper runs the wrapper again.
 - Before the landing, the agent runs each test file of a command that makes git commits, for example with a rebase or a merge, with the global git configuration hidden: `GIT_CONFIG_GLOBAL=/dev/null npm test -- <test file>`. Then the tests run with no global git identity, as on the GitHub runner ([Tests](code-conventions.md#tests)). On #273, 21 tests of `test/commands/update-branch.test.ts` passed on the local machine and failed on CI. #287 fixed them.
 - To find each test that needs [a git identity](code-conventions.md#tests), run the whole test suite with no global and no system git configuration: `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm test`. On #287, this run took about 30 seconds. It showed that only the tests of `test/commands/update-branch.test.ts` had the gap.
+- After a move of the head that is not a fast-forward, the code reads again each value that it read for the old head. An example of such a move is a take of the remote tip. An example of such a value is the containment of the base. On #294, review 1 found a base step that used the containment of the old local tip. That step can skip the rebase.
 
 ## A ticket that adds a check of `tasker doctor`
 
@@ -154,6 +156,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If an issue asks that each test of a file gets a value from a fixture, ask the plan to name the fixture that each test of the file calls. Ask the plan to put the value in the inner fixture. Then the value reaches the tests that call the inner fixture and the tests that call an outer fixture that calls it. On #287, plan v1 put the git identity in `useMovedBaseTask`. Some tests of `test/commands/update-branch.test.ts` call `useWorkReviewTask` directly, so refine 1 moved the identity into `useWorkReviewTask`.
 - A command test makes a commit on the task branch with `commitInWorktree`, not with `addCloneCommit`. `addCloneCommit` moves the branch ref in the clone and not the worktree that has the branch checked out. On #274, the issue named `addCloneCommit`, and the tests used `commitInWorktree` and `origin.addCommit()` instead.
 - If a ticket makes `tasker start` read a new source through `gh`, ask the plan to give `useStartFixture` a default answer for that source. Without it, each test built on that fixture fails with an unanswered `gh` call. The default answer comes after the answers of `ghAnswers`, because the first answer of the fake `gh` that matches wins. On #275, the plan found this for the read of the blockers.
+- A test of a pause that the state machine cannot reach from the origin, for example `quota_blocked` from `updating_branch`, cannot use `pauseTaskFrom`, because that helper throws. The test uses `placeTask` and writes the `transition` event itself, because `placeTask` writes no event. On #278, the test setup needed both. If a second test needs this setup, it becomes a shared helper.
 
 ## A ticket that changes a procedure doc
 
