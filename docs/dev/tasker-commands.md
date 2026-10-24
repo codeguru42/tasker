@@ -51,6 +51,7 @@ These rules apply to each `tasker` command that the agent runs, also to a read-o
 - If a task is stacked on the same parent as another task, the shared-file warning of `tasker refine` and `tasker approve` for that task lists the files of the parent too. The warning reads the files that the branch of the other task changes against the base, and that branch holds the commits of the parent.
 - `tasker update-branch` prints the command that undoes the update after each update that moves the task branch, also with `--take-remote`. The output gives `previous HEAD was <hash>`, and the command is `tasker update-branch <issue> --undo`. On #252, each plain `tasker update-branch` printed this hint.
 - When the rebase of `tasker update-branch` stops with a conflict, the output names each conflicting path.
+- After `tasker update-branch`, the bootstrap of the task does not run again. If the new base changes `package-lock.json`, `tasker verify` fails on the old `node_modules` of the worktree of tasker. The fix is a refine that tells the execute session to run `npm ci`. On #119, on 2026-10-18, a parked task moved from b90d814 to 5e4be61, and `tasker verify` failed with `ERR_MODULE_NOT_FOUND` for `eslint-config-prettier`. For [the verify-failure rule](verify-failures.md#the-verify-failure-rule), this failure comes from the code. The agent sends one refine whose feedback tells the execute session to run `npm ci`, and it runs no `tasker retry`. A commit check that finds no broken commit does not change this case.
 
 ## The run times
 
