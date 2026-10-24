@@ -43,7 +43,7 @@ The orchestrator runs the tickets with the installed `tasker`, as [docs/dev/orch
    }
    ```
 
-2. Do the steps of [the Install section of README.md](../../README.md#install) in a clone of the operator, in a folder outside the local clone and outside `$HOME/src/mine/tasker-worktrees/`. The local clone must stay on `main`, because [the doc-read rule](doc-reads.md#the-doc-read-rule) fast-forwards `main` there. The rule does not run the merge when another branch is checked out in the local clone, and an agent then stops. Step 8 of that section runs `tasker install-skills`. That command copies the skills of the installed tasker into each folder of `skillsDirs`. These skills come from the folder `skills/` of the repo. That command needs the configuration file.
+2. Do the steps of [the Install section of README.md](../../README.md#install) in a clone of the operator, in a folder outside the local clone and outside `$HOME/src/mine/tasker-worktrees/`. Step 8 of that section runs `tasker install-skills`. That command copies the skills of the installed tasker into each folder of `skillsDirs`. These skills come from the folder `skills/` of the repo. That command needs the configuration file.
 3. Run `tasker doctor`. It must pass. If a check fails, fix the cause that the check names. Then run `tasker doctor` again.
 4. If the tasker clone does not exist yet, run `tasker start` for one issue first. Then, in the local clone, add the read-only `tasker` remote, as steps 1 and 2 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) say.
 

@@ -161,7 +161,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 ## A ticket that changes a procedure doc
 
-- Say who runs each step, with which binary, in which repo and path, and the state of the task after each command. Each git command of a step names the checkout or worktree where it runs, for example the local clone on `main` or the worktree of the task. The agent of #144 learned this in its review loops.
+- Say who runs each step, with which binary, in which repo and path, and the state of the task after each command. Each git command of a step names the checkout or worktree where it runs, for example the local clone or the worktree of the task. The agent of #144 learned this in its review loops.
 - Give each command step a failure case for any error, and name what stays behind.
 - For a read-only command, a missing match is an answer, not a failure. For example, `git grep` with no match exits with 1, and `git show <commit>:<missing path>` exits with 128. Say so in the first refine. Otherwise the plan asks for a failure case for each such command (#114).
 - Do not write "go to step N" without a condition. Define each term, for example "loop". Do not list a step two times.
