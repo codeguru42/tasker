@@ -10,7 +10,7 @@ Both forms use UTC, so a version does not depend on the time zone of the operato
 
 tasker uses date versions on purpose and does not use semver (semantic versioning, a version number that shows which changes break the code of a user). Semver has no meaning for an application that a user runs. Semver is for a library, where the number tells the user of the library which changes break their code. The stable form has the shape of a semver version only because the npm registry needs that shape. The numbers are a date and give no semver meaning.
 
-## Why a version is a tag
+## Why the installed tasker does not change
 
 The installed `tasker` runs the tickets of this repo. It must not change while a ticket runs. Only an install of a stable release or of a pre-release changes it. The steps of an install are in the [Install section of README.md](../../README.md#install). After an update, run `tasker install-skills` again, so that the skills match the version, because the skills describe the commands of one version.
 
@@ -25,7 +25,7 @@ The pre-release steps do not use `npm version`, because it makes a commit and a 
 
 ## Install a pre-release
 
-Do these steps in a clone of the operator, outside the task worktrees. The install replaces the installed `tasker` (see [Why a version is a tag](#why-a-version-is-a-tag)).
+Do these steps in a clone of the operator, outside the task worktrees. The install replaces the installed `tasker` (see [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
 
 1. Make sure that the working tree of the clone has no changes. Step 7 runs `git checkout package.json`, and that command removes all changes to the file, not only the version.
 2. Check out the commit: `git checkout <commit>`. It can be a commit of `main` or of another branch.
