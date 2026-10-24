@@ -62,6 +62,10 @@ describe("the names", () => {
 });
 
 describe.each(PROMPTS)("$name", ({ name, template, values, tags }) => {
+  it("names no operator", () => {
+    expect(template).not.toMatch(/\boperator\b/i);
+  });
+
   it("fills each tagged block with its value", () => {
     const filled = fillTemplate(name, template, values);
 

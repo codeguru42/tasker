@@ -47,6 +47,10 @@ describe("REFINE_PROMPT_NAME", () => {
 });
 
 describe("REFINE_PROMPT", () => {
+  it("names no operator", () => {
+    expect(REFINE_PROMPT).not.toMatch(/\boperator\b/i);
+  });
+
   it.each([
     "<current-plan>## Summary\nThe plan.</current-plan>",
     "<branch-commits>abc1234 feat: Add a thing\n+line</branch-commits>",
@@ -64,7 +68,7 @@ describe("REFINE_PROMPT", () => {
   it("gives the context in rule 9 and the feedback in rule 10", () => {
     const rules = rulesOf(REFINE_PROMPT);
     expect(rules[8]).toMatch(/^9\. The context of this refine stands in this block:/);
-    expect(rules[9]).toMatch(/^10\. The feedback of the operator/);
+    expect(rules[9]).toMatch(/^10\. The feedback of the user/);
   });
 
   it("marks an error in the context as untrusted", () => {
@@ -80,7 +84,7 @@ describe("REFINE_PROMPT", () => {
 
 describe("PLAIN_REFINE_CONTEXT", () => {
   it("is the line of a plain refine", () => {
-    expect(PLAIN_REFINE_CONTEXT).toBe("The operator read the plan and asks for a revision.");
+    expect(PLAIN_REFINE_CONTEXT).toBe("The user read the plan and asks for a revision.");
   });
 });
 

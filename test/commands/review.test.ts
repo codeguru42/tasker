@@ -172,9 +172,7 @@ describe("review", () => {
     const stdin = work.claude.calls()[0].stdin;
     expect(stdin).toContain("Review 1, at 4b825dc642cb:");
     expect(stdin).toContain("status: dismissed: Not a bug.");
-    expect(stdin).toContain(
-      "Plan revision v2 (refine) followed this review with this operator feedback: Keep the loop.",
-    );
+    expect(stdin).toContain("Plan revision v2 (refine) followed this review with this user feedback: Keep the loop.");
     expect(stdin).not.toContain("Plan revision v1");
     expect(reviewsOf(dataRoot, id).map((item) => item.number)).toEqual([1, 2]);
     expect(existsSync(reviewTranscriptPath(dataRoot, latestTaskOf(dataRoot, KEY), 2))).toBe(true);

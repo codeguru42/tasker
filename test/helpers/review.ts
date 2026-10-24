@@ -56,7 +56,7 @@ export function verifySentenceExpected(verifyRun: number | null): string {
 // or null for none.
 export function reviewFeedbackContextExpected(revision: string, verifyRun: number | null = 1): string {
   return (
-    `The operator read the committed work at ${revision} and asks for a revision of the plan. ` +
+    `The user read the committed work at ${revision} and asks for a revision of the plan. ` +
     `${verifySentenceExpected(verifyRun)} The work that is done stays. ` +
     "Plan only the work that is still needed on top of it."
   );
@@ -79,5 +79,5 @@ export function promotionContextExpected(
 
 // The expected text of failureContextText, as literal text, so that a test does not call the code under test.
 export function failureContextExpected(origin: string, error: string): string {
-  return `The task failed in ${origin}: ${error}\nThe operator gives an instruction for the fix.`;
+  return `The task failed in ${origin}: ${error}\nThe user gives an instruction for the fix.`;
 }

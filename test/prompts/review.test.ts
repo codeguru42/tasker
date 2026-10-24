@@ -24,6 +24,10 @@ describe("REVIEW_PROMPT_NAME", () => {
 });
 
 describe("REVIEW_PROMPT", () => {
+  it("names no operator", () => {
+    expect(REVIEW_PROMPT).not.toMatch(/\boperator\b/i);
+  });
+
   it.each([
     ["EARLIER_REVIEWS", "earlier-reviews"],
     ["BRANCH_COMMITS", "branch-commits"],
@@ -132,21 +136,21 @@ describe("earlierReviewsText", () => {
   it("lists a revision with its feedback after the review", () => {
     expect(earlierText([reviewOf(1, 2)], [revisionAt(2, 3, "Keep the loop.")])).toBe(
       `Review 1, at 4b825dc642cb:\n${FINDING}` +
-        "Plan revision v2 (refine) followed this review with this operator feedback: Keep the loop.\n",
+        "Plan revision v2 (refine) followed this review with this user feedback: Keep the loop.\n",
     );
   });
 
   it("keeps a line end of the feedback", () => {
     expect(earlierText([reviewOf(1, 2)], [revisionAt(2, 3, "First.\nSecond.")])).toBe(
       `Review 1, at 4b825dc642cb:\n${FINDING}` +
-        "Plan revision v2 (refine) followed this review with this operator feedback: First.\nSecond.\n",
+        "Plan revision v2 (refine) followed this review with this user feedback: First.\nSecond.\n",
     );
   });
 
   it("says that a revision had no feedback", () => {
     expect(earlierText([reviewOf(1, 2)], [revisionAt(2, 3, null, "plan")])).toBe(
       `Review 1, at 4b825dc642cb:\n${FINDING}` +
-        "Plan revision v2 (plan) followed this review with no operator feedback.\n",
+        "Plan revision v2 (plan) followed this review with no user feedback.\n",
     );
   });
 
@@ -163,8 +167,8 @@ describe("earlierReviewsText", () => {
     );
     expect(text).toBe(
       `Review 1, at 4b825dc642cb:\n${FINDING}` +
-        "Plan revision v2 (refine) followed this review with this operator feedback: Between.\n" +
-        "Plan revision v3 (refine) followed this review with this operator feedback: At the start.\n" +
+        "Plan revision v2 (refine) followed this review with this user feedback: Between.\n" +
+        "Plan revision v3 (refine) followed this review with this user feedback: At the start.\n" +
         "\n" +
         `Review 2, at 4b825dc642cb:\n${FINDING}No plan revision followed this review.\n`,
     );
@@ -174,7 +178,7 @@ describe("earlierReviewsText", () => {
     expect(earlierText([reviewOf(1, 2), reviewOf(2, 4)], [revisionAt(2, 6, "Late.")])).toBe(
       `Review 1, at 4b825dc642cb:\n${FINDING}No plan revision followed this review.\n\n` +
         `Review 2, at 4b825dc642cb:\n${FINDING}` +
-        "Plan revision v2 (refine) followed this review with this operator feedback: Late.\n",
+        "Plan revision v2 (refine) followed this review with this user feedback: Late.\n",
     );
   });
 
