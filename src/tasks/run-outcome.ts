@@ -28,13 +28,13 @@ export interface RunOutcomeRequest {
   omitInterruptedLine?: boolean;
 }
 
-// The line that tells the operator how to continue after a signal stopped the run.
+// The line that tells the user how to continue after a signal stopped the run.
 export function interruptedLine(phase: TaskState, signal: NodeJS.Signals, issueKey: string): string {
   return `${phase} interrupted by ${signal}; run tasker resume ${issueKey} to continue\n`;
 }
 
 // success: the caller makes its checks and its move. A success has a warning when the run reached the quota approval
-// threshold in a window that the operator did not approve. Any other outcome: the task moved, and the command stops
+// threshold in a window that the user did not approve. Any other outcome: the task moved, and the command stops
 // with exitCode.
 export type RunOutcomeResult = { outcome: SuccessOutcome; warning?: QuotaApprovalWarning } | { exitCode: number };
 

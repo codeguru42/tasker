@@ -19,7 +19,7 @@ export interface ReviewFeedbackRequest {
   io: Io;
 }
 
-// Continues the plan session of a task in awaiting_work_review with the feedback of the operator on the committed
+// Continues the plan session of a task in awaiting_work_review with the feedback of the user on the committed
 // work, and records the next plan revision. The task lock covers all the steps. It does not wait.
 export async function reviewFeedbackTask(store: TaskStore, request: ReviewFeedbackRequest): Promise<PlanResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, async () => {

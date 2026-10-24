@@ -15,7 +15,7 @@ import type { RetryWrites, TaskEvent, TaskStore, VerifyRun } from "../store/stor
 import { originRow, type OriginTables } from "./origin-row.js";
 import { taskInState } from "./task-state.js";
 
-// The command that runs after the move of a retry. The three refine values run nothing: the operator gives the
+// The command that runs after the move of a retry. The three refine values run nothing: the user gives the
 // feedback again, or acts on the findings again.
 export type RetryNext =
   "start" | "plan" | "refine" | "refine-findings" | "review-feedback" | "execute" | "verify" | "review" | "merge";

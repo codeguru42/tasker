@@ -82,7 +82,7 @@ const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
 
 // The rows of a task that stopped in updating_branch: the origin of the update (the state that the task left when
 // tasker update-branch started) gives the row, and the task goes back to it. The resume first puts the worktree back at
-// the head from before the update, and then nothing runs after the move. The operator runs tasker update-branch.
+// the head from before the update, and then nothing runs after the move. The user runs tasker update-branch.
 const UPDATE_BRANCH_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = Object.fromEntries(
   STATES.filter((state) => acceptsState("update-branch", state)).map((state) => [
     state,

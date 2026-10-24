@@ -438,7 +438,7 @@ export function pauseRecordOf(events: readonly TaskEvent[], pause: TaskState): P
   };
 }
 
-// The operator feedback that the last move into refining recorded, or undefined when it recorded none.
+// The user feedback that the last move into refining recorded, or undefined when it recorded none.
 export function refineFeedbackOf(events: readonly TaskEvent[]): string | undefined {
   const index = lastTransitionIndex(events, "refining");
   if (index < 0) return undefined;

@@ -26,7 +26,7 @@ export interface RefineRequest {
   ref: IssueRef;
   // The task that the lookup found. The refine reads it again under the task lock.
   taskId: number;
-  // The feedback of the operator, as given, or none.
+  // The feedback of the user, as given, or none.
   feedback?: string;
   env: NodeJS.ProcessEnv;
   io: Io;
@@ -91,7 +91,7 @@ export interface RefineRun {
   source: PlanRevisionSource;
   // The text of the context block.
   context: string;
-  // The feedback of the operator to store, or none. None gives "None." in the prompt.
+  // The feedback of the user to store, or none. None gives "None." in the prompt.
   feedback?: string;
 }
 

@@ -115,7 +115,7 @@ export type PlanQuestionState =
 type ResolvedPlanQuestion = Extract<PlanQuestionState, { state: "resolved" }>;
 
 // A review revision comes from the open findings of a review. A review-feedback revision comes from the feedback of
-// the operator on the committed work. The table has no check on the values.
+// the user on the committed work. The table has no check on the values.
 export type PlanRevisionSource = "plan" | "refine" | "review" | "review-feedback";
 
 export interface NewPlanRevision {
@@ -306,7 +306,7 @@ export interface TaskStore extends LockStore {
   listReviews(taskId: number): Review[];
   // Dismisses the named findings of the review with one reason and appends the review_dismissed event
   // { number, positions, reason }, in one transaction. It gives back the positions that are still open,
-  // in ascending order. An open finding still needs a decision of the operator: a dismissal or a fix in
+  // in ascending order. An open finding still needs a decision of the user: a dismissal or a fix in
   // a later plan. So the task stays in its state until no finding of the review is open. When none is
   // open, the task moves to the state, which must not be spawning, its run marker is deleted, and the
   // event that check returns is appended. Check runs only then. An empty list, a missing task, review or

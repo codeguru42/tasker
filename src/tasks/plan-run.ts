@@ -45,7 +45,7 @@ export interface PlanModeAnswerRequest<A, R> {
   // The spawning state of the run. The messages name it.
   phase: "planning" | "refining" | "reviewing";
   prompt: string;
-  // The operator feedback of a refine. The move into the phase records it.
+  // The user feedback of a refine. The move into the phase records it.
   feedback?: string;
   prepared: PreparedPlanModeRun;
   transcriptPath: string;

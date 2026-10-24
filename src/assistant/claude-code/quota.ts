@@ -59,7 +59,7 @@ function spentResetsAt(info: Record<string, unknown>): number | undefined {
   return best?.resetsAt;
 }
 
-// The facts of an overage stop when the event shows the start of paid usage in a window that the operator did not approve.
+// The facts of an overage stop when the event shows the start of paid usage in a window that the user did not approve.
 export function overageStopOf(event: AssistantEvent, overageStop: OverageStop): { resetsAt?: number } | undefined {
   const info = rateLimitInfoOf(event);
   if (info === undefined) return undefined;

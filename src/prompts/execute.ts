@@ -23,7 +23,7 @@ export const EXECUTE_TURN_RULES = {
   fileAccess:
     "Never create or touch anything outside your working folder, with any tool, the shell included. That covers the configuration of tasker.",
   workingFolder:
-    "Your working folder is already the worktree of the task, and each command starts there. Run commands from it with relative paths. Never `cd` to the absolute path of the worktree, and never pass that path to `git -C`. The settings of the assistant of the operator can deny those forms, also when the same command without them runs.",
+    "Your working folder is already the worktree of the task, and each command starts there. Run commands from it with relative paths. Never `cd` to the absolute path of the worktree, and never pass that path to `git -C`. The settings of the assistant of the user can deny those forms, also when the same command without them runs.",
   resultLead: "End the turn with the structured result:",
   blocked: "`blocked` with a `reason` when you cannot finish it.",
   noQuestionEnd:
