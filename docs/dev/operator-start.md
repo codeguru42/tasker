@@ -139,9 +139,16 @@ The operator finds the pane id and the tab id in the row of the session. The row
 `.result.agents` of the output of `herdr agent list` whose `terminal_title_stripped` is the name of the session. The row
 gives `pane_id` and `tab_id`. Before step 1, the operator runs `herdr agent list` in its shell. If the command fails,
 the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says, and closes nothing. If no row has
-the name of the session, the operator tells the user and closes nothing. Outside a handoff, if the tab id of the row is
-not a tab id of the tab list, the operator tells the user and closes nothing. Steps 2 and 3 use the pane id and the tab
-id of the row.
+the name of the session, the operator tells the user and closes nothing.
+
+Each time that the operator reads the row of a session, in a handoff or in each other stop, it counts the rows with the
+name of the session. If more than one row has the name, the operator does not do steps 1 to 3, sends no "stop" and
+closes no pane and no tab. It tells the user one time. The message names the session, and the pane id and the tab id of
+each row with that name, and it gives no other items. This stop did not close the pane of the session, and the operator
+sends no second message for the failed close. A close of the wrong pane stops the other session.
+
+Outside a handoff, if the tab id of the row is not a tab id of the tab list, the operator tells the user and closes
+nothing. Steps 2 and 3 use the pane id and the tab id of the row.
 
 1. The operator sends "stop" to the session with the tool `SendMessage`, as a word of the user (see
    [The word of the user](operator-conversations.md#the-word-of-the-user)). If `SendMessage` fails, the operator tells
