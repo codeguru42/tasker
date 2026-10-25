@@ -44,7 +44,8 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
 
    The operator keeps `.sessions.kind` and the entry of `.sessions.models.<role>` of the output. `<role>` is the role of
    the new session: `planner` or `orchestrator`. If the command fails, the operator tells the user the command and the
-   error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do steps 2 and 3. No tab exists.
+   error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do steps 2 and 3. No tab exists,
+   so no entry goes into [the tab list](operator.md).
 
 2. The operator runs `herdr tab create` in its shell. The folder of `--cwd` is the local clone.
 
@@ -52,9 +53,10 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
    herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd <local clone> --label <name> --no-focus
    ```
 
-   The operator keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. If the command fails, the
-   operator tells the user the command and the error, as [the failure rule](limits.md#the-failure-rule) says. The
-   operator does not do step 3. No tab exists.
+   The operator keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. If the command works, the
+   operator puts the tab id and the session name into the tab list. If the command fails, the operator tells the user
+   the command and the error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do step 3.
+   No tab exists, so no entry goes into the tab list.
 
 3. Before the command, the operator joins the lines of the prompt into one line, with one space between two lines. herdr
    0.9.3 refuses a prompt with a newline, with the error "agent arguments cannot be encoded safely for the target
@@ -83,8 +85,8 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
    at the start of the new orchestrator-docs, and the session ran.
 
    If the command fails in another way, or the new session does not run, the operator tells the user the command and the
-   error. The new tab stays open, and the operator keeps its tab id. The operator does not close the tab without the
-   user.
+   error. The new tab stays open, and its entry stays in the tab list. The operator does not close the tab without the
+   user. If the user closes that tab, or tells the operator to close it, the entry leaves the tab list.
 
 The facts that follow were measured on 2026-10-24 with herdr 0.9.3 and Claude Code 2.1.310:
 
@@ -129,18 +131,17 @@ rule of the user of 2026-10-25 in [The end of a handoff](handoff.md#the-end-of-a
 operator of its slug opened. In a handoff, the operator also stops a session in a tab that it did not open, for example
 a tab that the user opened.
 
-For its own tab, the tab id is the `.result.tab.tab_id` that step 2 of "Start a session" kept. Outside a handoff, for a
-session of an earlier operator, the tab id comes from the handoff file of the operator
-([The handoff file of the operator](handoff-operator.md#the-handoff-file-of-the-operator)). If that handoff file gives
-no tab id for the session, the operator tells the user and closes nothing.
+Outside a handoff, the operator takes the tab id of each session from [the tab list](operator.md), also of its own
+sessions. If the tab list gives no tab id for the session, the operator tells the user and closes nothing. In a handoff,
+the operator takes the tab id from the row of the session.
 
 The operator finds the pane id and the tab id in the row of the session. The row of a session is the object in
 `.result.agents` of the output of `herdr agent list` whose `terminal_title_stripped` is the name of the session. The row
 gives `pane_id` and `tab_id`. Before step 1, the operator runs `herdr agent list` in its shell. If the command fails,
 the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says, and closes nothing. If no row has
 the name of the session, the operator tells the user and closes nothing. Outside a handoff, if the tab id of the row is
-not the tab id of its own tab or a tab id of the handoff file of the operator, the operator tells the user and closes
-nothing. Steps 2 and 3 use the pane id and the tab id of the row.
+not a tab id of the tab list, the operator tells the user and closes nothing. Steps 2 and 3 use the pane id and the tab
+id of the row.
 
 1. The operator sends "stop" to the session with the tool `SendMessage`, as a word of the user (see
    [The word of the user](operator-conversations.md#the-word-of-the-user)). If `SendMessage` fails, the operator tells
@@ -151,9 +152,14 @@ nothing. Steps 2 and 3 use the pane id and the tab id of the row.
    `.result.tab.pane_count` is 1, the operator runs `herdr tab close <tab id>`. If `.result.tab.pane_count` is more than
    1, the operator runs `herdr pane close <pane id>`. A tab that the user opened can hold other panes of the user. If
    `herdr tab get`, `herdr tab close` or `herdr pane close` fails, the operator tells the user, and the pane stays open.
+   If the close works and the tab has an entry in the tab list, the operator takes that entry out. After
+   `herdr pane close`, the tab stays open.
 
 If the wait fails or times out, the operator tells the user and closes nothing. If the wait ends in `blocked`, the
 operator follows "A blocked session" and closes nothing. Without `--until`, the wait also ends in `blocked`.
+
+After each other end of this section, the entry stays in the tab list. Examples are a failed `SendMessage`, a failed
+wait, a `blocked` session and a failed `herdr tab close`.
 
 ## A handoff
 
