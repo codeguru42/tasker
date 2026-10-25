@@ -22,8 +22,8 @@ current tasks. Then the stop and the start of [The stop and the start](#the-stop
 The old session can suggest a handoff to the user. The old session counts the events that its role page names:
 [the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count),
 [the post count of the planner](handoff-planner.md#the-post-count) and
-[the close count of the operator](handoff-operator.md#the-close-count). At a count of 12, the old session suggests a
-handoff. The role page says in which reply.
+[the close count of the operator](handoff-operator.md#the-close-count). Each role page gives the count at which the old
+session suggests a handoff, the count of a suggestion. The role page says in which reply.
 
 The reason: the old session has no tool that shows its context use. The count of the role page stands in for a read of
 the context use.
@@ -36,13 +36,13 @@ The count starts at 0 at the start of the session. The count lives until the ses
 In each list of open questions or open items that the old session gives the user, the old session also gives a handoff
 recommendation. [A decision of the user](working-with-the-user.md#a-decision-of-the-user) and
 [The open items](operator-items.md#the-open-items) give the form of these lists. The recommendation says "hand off now"
-or "not yet", with its reason. The reason gives the count of the session and the count of a suggestion, 12. The count of
-the session is [the landing count](handoff-orchestrator.md#the-landing-count) of the orchestrator,
-[the post count](handoff-planner.md#the-post-count) of the planner or
+or "not yet", with its reason. The reason gives the count of the session and the count of a suggestion of the role page
+of the session. The count of the session is [the landing count](handoff-orchestrator.md#the-landing-count) of the
+orchestrator, [the post count](handoff-planner.md#the-post-count) of the planner or
 [the close count](handoff-operator.md#the-close-count) of the operator.
 
-When the count reaches 12, the recommendation is "hand off now", also in an answer to
-[a question of the user](working-with-the-user.md#a-question-of-the-user). A recommendation "hand off now" is a
+When the count of the session reaches the count of a suggestion, the recommendation is "hand off now", also in an answer
+to [a question of the user](working-with-the-user.md#a-question-of-the-user). A recommendation "hand off now" is a
 suggestion of a handoff, and the handoff then starts as [The suggestion of a handoff](#the-suggestion-of-a-handoff)
 says.
 

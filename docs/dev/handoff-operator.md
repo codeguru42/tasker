@@ -13,8 +13,10 @@ operator knows the step of the milestone, the kind of each planner and its open 
 The old operator counts the items that it closes. An item closes as [The answer](operator-items.md#the-answer) says. A
 report closes as [The open items](operator-items.md#the-open-items) says, and each report that the operator closes
 counts as one close. The reason: the count stands in for a read of the context use, and each report that the operator
-shows also fills its context. At a count of 12, the old operator suggests a handoff in the reply in which it closes the
+shows also fills its context. At a count of 15, the old operator suggests a handoff in the reply in which it closes the
 item. The suggestion starts the handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
+On 2026-10-25, the user said: "I think we are handing off too often. Bump the required operator count to 15 before
+making a handoff recommendation."
 
 ## The steps of the old operator
 
