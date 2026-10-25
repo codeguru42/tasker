@@ -95,6 +95,17 @@ export function fakeAnswerScript(
   return body.join("\n");
 }
 
+const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+// The log item of each name for fakeAnswerScript(): "${NAME+set:$NAME}". readFakeCalls() reads it.
+// It throws `bad env name for the fake ${tool}: ${name}` for a name that is not a shell variable name.
+export function logEnvItems(tool: string, names: readonly string[]): string[] {
+  return names.map((name) => {
+    if (!envNamePattern.test(name)) throw new Error(`bad env name for the fake ${tool}: ${name}`);
+    return `"\${${name}+set:$${name}}"`;
+  });
+}
+
 // Reads a log of fakeAnswerScript(). The first leading items of a call and then one item for each name of
 // logEnv are logged values: an empty item gives undefined, and "set:<value>" gives <value>.
 export function readFakeCalls(
