@@ -236,13 +236,11 @@ describe("runAcli", () => {
   });
 
   it.each([
-    [AcliError, "AcliError"],
-    [AcliNotInstalledError, "AcliNotInstalledError"],
-    [AcliBinError, "AcliBinError"],
-    [AcliRefusedError, "AcliRefusedError"],
-  ])("gives the error class %o the name %s", (ErrorClass, name) => {
-    const error = ErrorClass === AcliError ? new AcliError("m", "s", "", "", 1) : new ErrorClass("m");
-
+    [new AcliError("m", "s", "", "", 1), "AcliError"],
+    [new AcliNotInstalledError("m"), "AcliNotInstalledError"],
+    [new AcliBinError("m"), "AcliBinError"],
+    [new AcliRefusedError("m"), "AcliRefusedError"],
+  ])("gives %o its name %s", (error, name) => {
     expect(error).toBeInstanceOf(Error);
     expect(error.name).toBe(name);
   });
