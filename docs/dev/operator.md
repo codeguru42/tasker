@@ -2,6 +2,8 @@
 
 [The operator pages](operator.md) give the rules for the operator. The operator is the assistant session where the user works.
 
+At its start, the operator reads [docs/dev/working-with-the-user.md](working-with-the-user.md).
+
 Messages of the other sessions break into the conversation of the user, and open questions scroll out of view. A planner or an orchestrator sends each item that needs the user to the operator. Then the user reads and answers the items in one place.
 
 The user is the person who works with the sessions. The operator is named `operator-<slug>`.
