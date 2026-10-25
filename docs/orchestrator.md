@@ -25,8 +25,9 @@ finding of a session review and each proposed issue only to `planner-<slug>` of 
 [The prompt of an agent](dev/pick-the-tickets.md#the-prompt-of-an-agent) says. The messages between orchestrators do not
 change. They are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the broken-test notice of
 [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the messages of [the hold rule](dev/land-the-work.md#the-hold-rule),
-a landing order of [the overlap rule](dev/land-the-work.md#the-overlap-rule) and a change to an issue in flight
-([Land the work](dev/land-the-work.md#land-the-work)).
+a landing order of [the overlap rule](dev/land-the-work.md#the-overlap-rule), a change to an issue in flight
+([Land the work](dev/land-the-work.md#land-the-work)) and the messages of
+[the hold before an install](dev/release.md#the-hold-before-an-install).
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
 not agents and they do not run the steps on [the orchestration pages](orchestrator.md).

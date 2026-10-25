@@ -92,7 +92,7 @@ session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-re
 - [docs/dev/assistants.md](docs/dev/assistants.md): the assistant provider interface: its purpose, the rule "refuse,
   never drop", the session id, the prompt on stdin and the provider of a new and a continued session.
 - [docs/dev/release.md](docs/dev/release.md): the releases: the version forms, the steps to make a stable release, the
-  steps to install a pre-release, the reason that the installed tasker does not change and the npm facts of the package
-  file.
+  steps to install a pre-release, the step for an untracked path, the reason that the installed tasker does not change,
+  the hold before an install and the npm facts of the package file.
 - [docs/dev/setup.md](docs/dev/setup.md): the steps to set up a new machine for an orchestrator: the tools, the local
   clone, the installed tasker and its configuration, and the Claude Code settings, skills and plugin.
