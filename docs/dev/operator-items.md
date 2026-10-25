@@ -5,12 +5,12 @@ The sender sends each [item](operator.md) to the operator with `SendMessage`.
 ## The form of an item
 
 - The first line is one sentence that names the sender and the topic.
-- A report is an item that gives the user a fact and needs no answer.
-- Each sender of an item, a planner or an orchestrator, marks each report with the word "Report:" at the start of the first line. The sentence that names the sender and the topic follows the word.
-- An item with no mark is an item that needs an answer.
 - Then the id follows, in the form `<sender name>-<n>`. The number `<n>` counts from 1 in the session of the sender. After a handoff, the number starts at the first free item id of the handoff file, as [The last item id](handoff.md#the-last-item-id) says.
 - Then the text follows the rules of [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
 - An item about a draft gives a summary of the draft and the path of the draft file, not the draft. The path is `/tmp/tasker/<slug>/drafts/<file>.md`.
+- A report is an item that gives the user a fact and needs no answer.
+- Each sender of an item, a planner or an orchestrator, marks each report with the word "Report:" at the start of the first line. The sentence that names the sender and the topic follows the word.
+- An item with no mark is an item that needs an answer.
 
 ## The open items
 
