@@ -10,6 +10,21 @@ A planner is not the orchestrator. It is also not one of the sessions that taske
 
 A blocked-by link is the GitHub link that says that one issue waits for another issue.
 
+## The initial planner and the follow-up planner
+
+The planner is one role in two sessions in a row. The operator starts both sessions, as [Start a session](operator-start.md#start-a-session) of operator-start.md says.
+
+The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab. The follow-up planner is the planner that the operator starts after the initial planning. The follow-up planner files the follow-ups of the milestone while the orchestrator runs the milestone.
+
+- The initial planner works with the user directly, as [The operator](working-with-the-user.md#the-operator) of working-with-the-user.md says. It sends no item to the operator.
+- When the user says that the initial planning is done, the initial planner posts each approved draft. Then it runs `/session-review`. Then it tells `operator-<slug>` with `SendMessage` that the initial planning is done. Then it ends its work.
+- The follow-up planner takes lessons, session review findings and proposed issues from `orchestrator-<slug>` and from `operator-<slug>`.
+- The follow-up planner sends each question and each draft to `operator-<slug>` as an item, in the form of [The form of an item](operator-items.md#the-form-of-an-item).
+- The follow-up planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. It puts the path in the item, not the draft.
+- The answer of the item is the approval of the draft.
+
+The reason for the folder: the drafts go in `/tmp`, so they do not fill the `Documents` folder of the user, and the system deletes them. The limit: a reboot deletes the open drafts, and the follow-up planner then writes them again.
+
 ## The order of the work
 
 - The user decides when a milestone starts. The planner plans one milestone at a time. If the user asks, the planner writes the issues of the next milestone before the current milestone ends.
