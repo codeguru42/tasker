@@ -137,6 +137,12 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   first refine gave this hint. On #432 (2026-10-25), refine 1 removed the link to the home of "fact test", because the
   first refine gave this hint. Review 1 asked for the link again, refine 4 added it again, and this cost one review
   loop.
+- Before `tasker approve`, the agent reads the todos and the risks of the plan, and it looks for each claim about the
+  source of a text. Examples of such a claim are "the user dictated this text" and "the user decided that X". The agent
+  tests each such claim against the issue and the feedback of each refine. If neither gives that source, the agent asks
+  the plan in a refine to remove the claim. On #475 (2026-10-25), plan v2 called a text of the feedback "text that the
+  user dictated", to keep a sentence over the word limit. On #439 (2026-10-25), a todo of plans v2 and v3 gave a false
+  decision of the user about [the Check rule](rules.md#check) that no feedback gave.
 - If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
   [The body of an issue](planner.md#the-body-of-an-issue) asks the planner for the same compare before the post. If no
   doc supports the reason, ask the plan to drop it from the example. On #265, the Summary of the issue gave the reason
@@ -166,7 +172,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - Ask the plan to count the sentences again after each split of a sentence for the word limit of the simple-english
   skill. The plan compares the count with each requirement of the issue that sets a count, for example "in one
   sentence". On #432 (2026-10-25), the split of a sentence of 29 words made an example three sentences, but the issue
-  asked for one or two. This cost one more refine before `tasker approve`.
+  asked for one or two. This cost one more refine before `tasker approve`. An issue can ask for an example with a ticket
+  story "in one sentence". Such a sentence can fit the word limit of the simple-english skill only in a short form. Ask
+  the plan in the first refine for the word count of each such example sentence. A split of that sentence breaks the
+  requirement. On #450 (2026-10-25), plan v1 had an example sentence of 31 words, and its fallback split the sentence.
 - In a doc step, ask the plan to write a function name without its arguments, for example `doctorChecks()`, not
   `doctorChecks(repos)`. [rules.md](rules.md#docs) counts the arguments of a function as a repeat of the code. On #266,
   the trim of the sentences that repeat the code found such a step.
@@ -252,7 +261,13 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - In a feedback text, name a file [outside the worktree](plan-review.md#the-repo-files-rule) only as "a file outside the
   worktree". On #252, refine 1 named the location of such a file, the plan copied the name, and refine 2 had to remove
   it. The hint also covers a [web page](plan-review.md#the-repo-files-rule). A feedback text names such a page only as
-  "a web page", with no URL.
+  "a web page", with no URL. [The repo-files rule](plan-review.md#the-repo-files-rule) also bans a command that reads
+  something outside the worktree, for example `gh issue view`. If the issue names another issue as its example, ask the
+  plan session in the first refine to read no other issue. The first refine comes after plan v1, so the ask covers plan
+  v2 and the later plans. If a refine bans such a command, also ask the plan to name the command nowhere. The plan names
+  it in no note of an earlier plan and in no ban for the execute session. On #499 (2026-10-25), the plan session of plan
+  v1 ran `gh issue view 440` and quoted the body of #440, the example of #499. Plan v2 still named the command after
+  refine 1 banned it, and this cost refine 2.
 - If the issue gives the exact form of an entry, for example an index entry of `AGENTS.md`, say "no other words after
   the colon" in the first refine. Otherwise the plan adds a lead-in, as other entries have. On #151, this cost one
   refine. The hint covers two more cases. In the first case, the issue gives the exact words of a change. The hint
@@ -262,7 +277,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   final text adds no fact or case that the issue does not give. It still keeps each link and each form that another hint
   of this page asks for. For a reason clause that no requirement asks for, the hint that starts "Ask the plan to add no
   reason that the issue does not give" applies. On #455 (2026-10-25), plan v1 gave a "suggested text" for one change and
-  "a shorter form is also good" for another. One refine with the exact final text fixed it.
+  "a shorter form is also good" for another. One refine with the exact final text fixed it. Before a refine gives an
+  exact final text, the agent counts the sentences of each of its paragraphs. A descriptive paragraph has at most six
+  sentences, by Rule 6.6 of the simple-english skill. If a descriptive paragraph has more than six sentences, the exact
+  final text keeps it at six sentences or fewer. Examples are a split of the paragraph and a join of two sentences. On
+  #436 (2026-10-25), two paragraphs of an exact final text had seven sentences, and one of them cost one more refine.
 - Before the agent dismisses a finding about the text of a message, it makes sure that the text is true for that case. A
   false message is a bug, not an edge case that [Review findings](review-findings.md#review-findings) lets the agent
   dismiss. On #132, the agent first dismissed such a finding as an edge case. The error named a log file that does not
@@ -284,6 +303,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   a reason with a condition" still apply. On #425, review 1 had no findings, but the plan changed a reason into a
   sentence with the banned modal "would" in `docs/dev/release.md`. [The diff read](run-one-ticket.md#the-diff-read)
   found it, and the fix cost one loop of [the add-work rule](run-one-ticket.md#the-add-work-rule).
+- If the issue gives a table that a doc gets, ask the plan to copy the table word for word. If a cell holds a word that
+  the simple-english skill bans, the hint that starts "If the plan copies issue text" still applies.
+  [The diff read](run-one-ticket.md#the-diff-read) compares that table with the issue cell by cell. On #473
+  (2026-10-25), the plan asked for a word-for-word copy, but the execute session changed most cells, and review 1 found
+  the false state "Keeps running".
 - The red `test:` commit ([rules.md](rules.md#commits)) of a new store method changes only test files and fails the type
   check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
 - In a ticket that adds a method to an interface, tell the plan that the red `test:` commit
@@ -375,12 +399,23 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - A list can hold bullets that point to "the bullet before this one", for example in
   [The body of an issue](planner.md#the-body-of-an-issue). Before a ticket inserts a bullet into such a list, the first
   refine names each such pointer and asks the plan to keep each one true. On #357, the new bullet went into such a list.
+  A bullet can also hold a pointer inside it, for example "both cases". If an extension must keep such a pointer true,
+  ask the plan for the new text at the end of the bullet. Also ask the plan to give the reason: the end keeps the
+  pointer true. Expect a review finding that asks to move the text next to the sentence that it changes. The reason of
+  the dismissal says that the move breaks the pointer. On #488 (2026-10-25), the end of the hint that starts "The agent
+  of a stacked task runs" kept the pointer "both cases" true. Review 1 asked to move the text, and the agent dismissed
+  the finding.
 - If a refine puts a new sentence in the middle of a paragraph, ask the plan to read the sentences around it again. On
   #238, the agent learned this. A new sentence in the middle of a short section can also change what an "it" in the next
   sentence points to. On #244, review 1 found this in "Milestones" of `docs/dev/issues.md`: after the new sentence,
   "Then it runs `gh api`" pointed to the orchestrator. If a refine moves the sentences of a paragraph, ask the plan to
   read again each sentence that starts with a word that points back. Examples are "Otherwise" and "Without that". After
-  the move, such a sentence can attach to the wrong condition. On #431, review 3 found this.
+  the move, such a sentence can attach to the wrong condition. On #431, review 3 found this. A new last sentence of a
+  bullet can point back with words such as "such a" or "this". If the sentence before it names a similar item, the
+  pointer can point to that item. Then ask the plan to name the item, not to point back. See the hint of
+  [A ticket that moves or trims a doc](#a-ticket-that-moves-or-trims-a-doc) that starts "If a refine replaces repeated
+  text with a pointer". On #533 (2026-10-25), "such a skip" in a new last sentence also read as the open-file skip
+  before it.
 - If a refine removes a name from a list inside a sentence, ask the plan to fix the "and" of that sentence. Also ask it
   to search each doc for the same list. The search follows [the doc-search rule](rules.md#docs). On #20, a refine
   removed a name from a list, and the other docs with the same list kept the old "and".
@@ -420,6 +455,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   example "X says that Y". The target must say Y. On #159, a link sentence claimed more than its target doc says.
   [The diff read](run-one-ticket.md#the-diff-read) found it after execute. On #212, the compare found a real gap before
   execute, because [docs/config.md](../config.md#assistant) names the provider `claude-code`, not the `claude` command.
+  The target of a link can cover only a part of the sentence. Then ask the plan for a link in the form "See [the
+  target]". This form makes no claim about the target. The form "as [the target] says" claims that the target says the
+  whole sentence. On #494 (2026-10-25), plan v1 linked to a hint with "as [the hint ...] says", but the hint covers only
+  a case of a condition. Refine 1 used "See [the hint ...]".
 - If a plan rewrites "the test X fails when ..." into "X enforces these rules", ask the plan for one sentence for each
   test, with only the rule that the test enforces. On #266, plan v1 said that two tests enforce a rule that no test
   enforces.
@@ -639,7 +678,10 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   failure case for each such command (#114). A missing path of `git show <commit>:<path>` has two error texts, and both
   exit with 128. Also, `git show` does not resolve `..` in a path, so a rule that reads a link target resolves the path
   first. [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the two error texts and the `..` fact. On #411,
-  review 1 found that a sentence named only the text "does not exist in".
+  review 1 found that a sentence named only the text "does not exist in". A new rule can name a git command only as an
+  example. Such an example is not a command step. The issue can give only some exit codes of the example. Then ask the
+  plan to keep only the exit codes that the issue gives. On #483 (2026-10-25), plan v1 added a sentence for the exit
+  code 128 of `git grep`, and refine 1 removed it.
 - Do not write "go to step N" without a condition. Define each term, for example "loop". Do not list a step two times.
 - A ticket can define a common word. Then ask the plan to find each use of the word in another sense on the same pages.
   On #334, "stop" also meant the end of the work, and a link on "stops" narrowed a condition. This cost two review
@@ -681,7 +723,12 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   of `git cherry` (#163). The outer step owns the stops and the "continue" sentences. Each check owns its own cases, and
   a link keeps only the condition. On #206, a full copy next to each link drew duplication findings in loop 1.
 - If one rule has two actors of the same kind, for example an earlier and a later task, name the actor in each sentence
-  (#125).
+  (#125). The same holds for two issues. A section can use "the issue" for the issue of the ticket. If a new rule in
+  that section is about another issue, ask the plan to name that other issue in each sentence of the rule. Also ask the
+  plan to read each later sentence of the section that says "the issue". The plan makes sure that each one still means
+  the issue of the ticket. On #450 (2026-10-25), a place after the first paragraph of
+  [the design-gap rule](plan-review.md#the-design-gap-rule) made the next sentence read as a sentence about the other
+  issue. The place needed a design-gap answer.
 - If one rule has two kinds of actor, for example the orchestrator and an agent, ask the plan to list each sentence with
   its actor. Otherwise the review finds each failure path that names only one actor (#135). If a rule lets an agent get
   something through the orchestrator, ask the plan to say who does the action. On #271, review loop 2 found that the
@@ -706,7 +753,13 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   again.
 - If a rule keeps a resource for a later start, ask the plan for the moment when the rule no longer keeps it. On #429
   (2026-10-25), review 2 found that the hold of the parent continued after the start of the stacked agent. As a result,
-  the rule counted the kept slot twice.
+  the rule counted the kept slot twice. Ask the plan for an end case for each way that the later start can fail to come,
+  not only for one such way. See the hint that starts "If a rule waits for a report from another orchestrator", which
+  asks for an end case when the waited object leaves the flow. If two reviews in a row each find a new way that the
+  later start fails to come, offer the simpler rule, as
+  [Simplify over special rules](working-with-the-user.md#simplify-over-special-rules) says. On #443 (2026-10-25), each
+  new trigger of the hold of [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule) drew a new case where the
+  hold never ends. After three such reviews, the user chose the simpler rule.
 - If a new rule deletes a thing that a check reads, for example the tip on origin, ask the plan to
   [name the hash one time](limits.md#the-shared-clone-rule). Ask it to use that name in each sentence of the check, also
   in its pass sentence. On #231, review 2 found the pass sentence with the old name.
@@ -739,7 +792,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   sentence such as "each step that uses X stops, as that step says". If one such step does not stop, the sentence claims
   too much. Ask the plan for "each step does what it says for that case", with the steps that stop as examples, not a
   full list. On #419 (2026-10-25), review 4 found that [the same-patch rule](review-findings.md#review-findings) counts
-  the review after the update as a loop and does not stop.
+  the review after the update as a loop and does not stop. A new sentence can put a read of another rule inside a step
+  of a procedure. Then ask the plan to say whether the failure sentence of the step covers that read. On #444
+  (2026-10-25), a new sentence put the reads of the same-patch rule inside
+  [the diff read](run-one-ticket.md#the-diff-read), which stops on each failed command. The plan said that these reads
+  are not commands of the diff read, and that the same-patch rule gives the result of a failed read.
 - If a rule lets an agent skip a step, it names each later bullet that no longer applies. On #147, the early update had
   to switch off the update of the bullet "When the issue of the earlier ticket is closed". If the step that the agent
   skips depends on a fact that the rule takes away, the rule also tells the actor that skips the step. On #187, the rule
@@ -779,7 +836,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   review 1 found both cases.
 - If an issue adds a second trigger to a bullet, ask the plan how the two triggers fit together. A trigger is the event
   or state that starts the action of the bullet. On #244, review 1 found two moments to tell the user: "When the Todo
-  column is empty" and "when the last ticket closes".
+  column is empty" and "when the last ticket closes". The Out of scope section of the issue can keep the old trigger
+  sentence. Then, before `tasker approve`, the agent reports a possible conflict under the fifth case of
+  [the stop rule](plan-review.md#the-stop-rule). On #439 (2026-10-25), refine 1 gave this hint, but the plan kept both
+  trigger sentences, because the Out of scope section kept "the list of the findings". Review 1 found the conflict, and
+  the user changed the scope.
 - If an issue limits a rule to one session, for example "the session that got it", the first refine compares that limit
   with [the items of a handoff file](handoff.md#the-items-of-a-handoff-file) before the plan. The handoff file carries
   each decision of the user to the new session. On #375, the issue limited
@@ -793,6 +854,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   definition by condition, for example "a rule that applies only when a landing order exists", does not. On #338, review
   1 found this. On #371, "each fetch" in a list of reads also caught a fetch that the issue does not name. Name each
   fetch by the read that it comes before.
+- An issue or a hint can ask a step to name one item of a group that a rule defines. Then ask the plan for the group,
+  with the item as an example. An example form is "each read of the same-patch rule that belongs to that update, for
+  example the first patch id". The group form links to the rule, here
+  [the same-patch rule](review-findings.md#review-findings), and copies none of its items. On #444 (2026-10-25), a hint
+  asked for the first patch id alone. Review 1 found that this skipped the first text id.
 - If a rule puts an action in a report or a reply, ask the plan to name the doc that defines that report. Also ask the
   plan to say which rule of the replies wins for it. On #399, the rule put the handoff suggestion "in its report of that
   landing". Review 1 found that no doc defines a landing report, and that a counted event that is not a landing has no
@@ -816,7 +882,12 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   plan to also add an item to the closed list that points to the new bullet. Otherwise the two bullets disagree. On
   #417, review 1 found this.
 - If a rule adds a reader to a section, ask the plan to keep the readers sentence at the top of the page true. On #415,
-  refine 1 added the new reader to the readers sentence of `docs/dev/plan-review.md`, which the issue did not name.
+  refine 1 added the new reader to the readers sentence of `docs/dev/plan-review.md`, which the issue did not name. The
+  hint also covers a new duty of a reader in an existing rule. The readers sentence can name the reader, but not that
+  rule for that reader. For such a duty, ask the plan to name that rule for that reader in the readers sentence. An
+  example of such a duty is a new case of [the stop rule](plan-review.md#the-stop-rule) that the orchestrator answers.
+  On #474 (2026-10-25), the agent added the stop rule for the orchestrator to the readers sentence, which the issue did
+  not name.
 - If a requirement adds a case to an existing condition, ask the plan to name the gaps of the old case that stay outside
   the issue. Then the agent dismisses a finding on such a gap at once. On #420, review 1 found such an older gap in the
   bullet on a change to an issue in flight.
@@ -841,7 +912,25 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   [the fact test](plan-review.md#the-fact-test) for each exit that the procedure uses. A fact test can measure both
   exits with read-only commands. `herdr agent wait <pane id> --until <the current state of that pane>` exits with 0. For
   a pane that is not in `unknown`, `--until unknown --timeout 300` (300 milliseconds) times out and exits with 1. The
-  agent of #452 measured both with herdr 0.9.3 on 2026-10-25.
+  agent of #452 measured both with herdr 0.9.3 on 2026-10-25. To test a wait with no real assistant session, the agent
+  uses a pane that it made itself. On a plain shell pane, `herdr agent wait <pane id>` exits with 1 and prints the error
+  code `agent_not_found`. After `herdr pane report-agent --source <id> --agent <label> --state idle <own pane id>`, the
+  wait ends and exits with 0. `<id>` and `<label>` are values that the agent picks. The agent of #473 measured this with
+  herdr 0.9.3 on 2026-10-25. A test of a rule that reads the row of a session can use the same pane, with no real
+  assistant session. The agent runs `herdr pane report-agent` as above, and
+  `herdr pane run <own pane id> "printf '\033]0;<title>\007'"`. Then the row of that pane in `herdr agent list` has
+  `<title>` as its `terminal_title_stripped`. The agent of #503 measured this with herdr 0.9.3 on 2026-10-25. To make a
+  test pane with `herdr pane split <pane id>`, the agent gives `--direction`, for example `--direction right`. With no
+  `--direction`, the command printed output that was not JSON and made no pane. The agent of #516 measured this with
+  herdr 0.9.3 on 2026-10-25. A `herdr agent start` of a test session in a new folder stops at the trust prompt of Claude
+  Code. Then the start fails with `agent_not_ready`. Ask the plan to start a test session in a folder that Claude Code
+  already trusts. On #519, this folder was the local clone of the orchestrator. That clone is only the example of #519,
+  not a required folder. After a failed start, the agent closes the prompt with
+  `herdr agent send-keys <pane id of the test session> esc`. The agent of #519 measured this with herdr 0.9.3 and Claude
+  Code 2.1.310 on 2026-10-25. In a fact test of the stop of a session, ask the plan for a log. The log holds
+  `herdr agent get` and `herdr pane read` of the test session every 0.2 seconds. One read after the wait does not show
+  the order of the events. On #519, the wait ended in `done` about 0.5 seconds before the message "stop" started a new
+  turn, and only the log showed this order.
 - A Claude Code session that starts with `--effort <level>` cannot see its own effort level, so its answer does not show
   it. The session can report its model. A [fact test](plan-review.md#the-fact-test) of the effort reads the screen of
   the session with `herdr agent read`. The start banner shows the effort, for example "Sonnet 5.5 with low effort". The
@@ -859,11 +948,19 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   conflicts.
 - If a rule limits a count of running agents, ask the plan in the first refine for a list. The list names each bullet
   that sets a count that a kept item must join. On #429, review 1 found that the bullet "Run at most 3 agents at the
-  same time" counted only running agents.
+  same time" counted only running agents. A requirement can add a free-slot condition to a start. Then ask the plan
+  whether the slot that [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule) keeps for that ticket counts as
+  free for it. A kept slot is not free for another start. On #443 (2026-10-25), the plan said that the free-slot
+  condition also accepts the slot that the parent-hold rule keeps for the ticket.
 - A new rule can search `origin/main` and only link to a bullet that fetches before a later read. The link does not
   cover the search. Ask the plan to put a `git fetch origin` in the new rule itself, right before the search. On #442
   (2026-10-25), the bullet of plan v1 linked to the `git show` bullet, which fetches before its read, not before the
-  search. Review 1 found the search before the fetch.
+  search. Review 1 found the search before the fetch. If a new rule gives an example search of the docs, ask the plan
+  for the `origin/main` form at once. The fetch of the sentence before still applies. An example is
+  `git grep -n '<words>' origin/main -- docs`. The search follows [the doc-search rule](rules.md#docs). A search of the
+  files on disk can read another commit, as [the doc-read rule](doc-reads.md#the-doc-read-rule) says. On #483
+  (2026-10-25), plan v1 searched the files on disk, and the fix cost a design-gap answer in a stop before
+  `tasker approve`. The hint gives no exit codes of the example commands. They are out of scope.
 - If a ticket adds a new kind of handoff, for example [a topic handoff](handoff.md#a-topic-handoff), ask the plan in the
   first refine for four things. First, the plan gives the session name of the new session. Second, it names the operator
   that the new session works with. Third, it names the session that starts the new session. Fourth, it covers the case
