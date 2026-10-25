@@ -42,7 +42,8 @@ The orchestrator does all the steps of this section.
   The rule covers the tickets of the milestone of the orchestrator. It changes no other rule of this section: a ticket
   with a label still waits as [the stacking rule](#the-stacking-rule) says, and it still waits for the shared-file rule
   and the move rule. A rule that stops a start still wins, for example the ban of
-  [A failed CI run](ci-wait.md#a-failed-ci-run), step 1 of
+  [A failed CI run](ci-wait.md#a-failed-ci-run), the ban on a new ticket after the suggestion of a handoff in
+  [The landing count](handoff-orchestrator.md#the-landing-count), step 1 of
   [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) or a hold of the user.
   The ticket of a parked task that comes back to Todo of the current milestone takes its place by its label (see
   [the defer rule](#the-defer-rule)). When the orchestrator reads the board again after a landing, it applies the rule

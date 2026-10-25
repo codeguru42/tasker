@@ -26,6 +26,17 @@ landing (a landing report) is the reply in which the old orchestrator tells the 
 event that is not a landing brings the count to 12, the old orchestrator suggests a handoff in a later reply. That reply
 is its next reply to the user that does not answer a question of the user, for example the next landing report.
 
+After the suggestion of a handoff, the old orchestrator starts no new ticket. A new ticket is a ticket with no task yet.
+The start of a stacked ticket is also the start of a new ticket. The tasks in flight continue. A quota resume and a
+retry of a task in flight are not a new ticket.
+
+The ban on a new ticket starts with the reply or the item that holds the suggestion. It holds until the start of the
+handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. From the start, step 1 of
+[The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) and the paragraph after the steps hold. The
+reason for this ban: each task in flight must land before the handoff file, as step 2 of "The steps of the old
+orchestrator" says. So a new ticket delays the handoff. On 2026-10-25, orchestrator-docs sent the suggestion at the
+landing count of 12 and started no new ticket until the go.
+
 In a new session after a handoff, the count starts again at 0.
 
 The reason for the count: it leaves room for the session review and the handoff file before an automatic compaction. An
