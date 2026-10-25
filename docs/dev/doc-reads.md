@@ -43,13 +43,13 @@ orchestrator, and that hash is the first last read. The orchestrator does the st
 
 This rule covers a ticket of the milestone "Docs" (see [docs/dev/planner.md](planner.md)). It applies when the landing
 of the ticket changes a doc of the orchestrator of the ticket (see [the re-read rule](#the-re-read-rule)), for example
-`docs/orchestrator.md`, or a page of the operator. A page of the operator is `docs/dev/operator.md` or a page of its
-list "The pages". A notice is a message about such a landing from the orchestrator of the ticket. For a change of a doc
-of the orchestrator, the notice goes to the other orchestrators. For a change of a page of the operator, the notice goes
-to each session whose name starts with `operator-`. The operator gives the session of each orchestrator a name of the
-form `orchestrator-<milestone>`, as [Start a session](operator-start.md#start-a-session) says. For example,
-`orchestrator-m6`, `orchestrator-m7` and `orchestrator-docs` are such names. The part after `orchestrator-` is the first
-word of the milestone title in lowercase, for example `orchestrator-m9` for "M9 — Pauses and recovery" and
+`docs/orchestrator.md`, or a page of the operator. A page of the operator is `docs/operator.md`, a page of its list "The
+pages", or `docs/sessions.md`. A notice is a message about such a landing from the orchestrator of the ticket. For a
+change of a doc of the orchestrator, the notice goes to the other orchestrators. For a change of a page of the operator,
+the notice goes to each session whose name starts with `operator-`. The operator gives the session of each orchestrator
+a name of the form `orchestrator-<milestone>`, as [Start a session](operator-start.md#start-a-session) says. For
+example, `orchestrator-m6`, `orchestrator-m7` and `orchestrator-docs` are such names. The part after `orchestrator-` is
+the first word of the milestone title in lowercase, for example `orchestrator-m9` for "M9 — Pauses and recovery" and
 `orchestrator-docs` for "Docs". The other orchestrators are all the sessions with such a name except the session of the
 orchestrator of the ticket.
 

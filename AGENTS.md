@@ -56,7 +56,7 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user:
   the operator, a decision of the user, a question of the user, the issue-link rule, core features first and the work
   that waits, simplify over special rules, and the tools of a session.
-- [docs/dev/operator.md](docs/dev/operator.md): the terms of the operator and the index of the operator pages.
+- [docs/operator.md](docs/operator.md): the terms of the operator and the index of the operator pages.
 - [docs/dev/operator-start.md](docs/dev/operator-start.md): the order of a milestone, the start of a session, the start
   prompts, the stop of a session, a handoff and a blocked session.
 - [docs/dev/operator-items.md](docs/dev/operator-items.md): the form of an item, the open items, the answer and the

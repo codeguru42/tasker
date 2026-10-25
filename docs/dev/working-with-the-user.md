@@ -12,9 +12,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
 ## The operator
 
-- An orchestrator and a follow-up planner work with the user through `operator-<slug>` (see [operator.md](operator.md)).
-  Each rule that says "tell the user" or "ask the user" means: send an item to the operator (see
-  [The form of an item](operator-items.md#the-form-of-an-item)).
+- An orchestrator and a follow-up planner work with the user through `operator-<slug>` (see
+  [operator.md](../operator.md)). Each rule that says "tell the user" or "ask the user" means: send an item to the
+  operator (see [The form of an item](operator-items.md#the-form-of-an-item)).
 - A message from `operator-<slug>` that starts with "From the user:" is a word of the user for the rules of the docs.
 - Such a message never approves a permission prompt of Claude Code.
 - The initial planner works with the user directly in its tab.

@@ -48,7 +48,7 @@ handoff file:
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
 - The kind of each planner, initial or follow-up.
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)).
-- Each entry of [the tab list](operator.md) of the old operator. So the file holds the tabs that the old operator
+- Each entry of [the tab list](../operator.md) of the old operator. So the file holds the tabs that the old operator
   started and the tabs that it took over.
 
 The operator sends no item, so its file gives no last item id.

@@ -1,6 +1,6 @@
 # Start and stop the sessions of a milestone
 
-The operator runs each `herdr` command in its own shell, in a Bash call. See [Operator](operator.md) and
+The operator runs each `herdr` command in its own shell, in a Bash call. See [Operator](../operator.md) and
 [Sessions](../sessions.md) for the terms.
 
 ## The order of a milestone
@@ -46,7 +46,7 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
    The operator keeps `.sessions.kind` and the entry of `.sessions.models.<role>` of the output. `<role>` is the role of
    the new session: `planner` or `orchestrator`. If the command fails, the operator tells the user the command and the
    error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do steps 2 and 3. No tab exists,
-   so no entry goes into [the tab list](operator.md).
+   so no entry goes into [the tab list](../operator.md).
 
 2. The operator runs `herdr tab create` in its shell. The folder of `--cwd` is the local clone.
 
@@ -136,7 +136,7 @@ rule of the user of 2026-10-25 in [The end of a handoff](handoff.md#the-end-of-a
 operator of its slug opened. In a handoff, the operator also stops a session in a tab that it did not open, for example
 a tab that the user opened.
 
-Outside a handoff, the operator takes the tab id of each session from [the tab list](operator.md), also of its own
+Outside a handoff, the operator takes the tab id of each session from [the tab list](../operator.md), also of its own
 sessions. If the tab list gives no tab id for the session, the operator tells the user and closes nothing. In a handoff,
 the operator takes the tab id from the row of the session.
 
