@@ -199,6 +199,10 @@ that it dismissed. The initial planner posts only after the approval of the user
   that no two rows match the same case. If two rows still match one case, the issue names the row that wins. On #346
   (2026-10-18), the rows "Diverged, no commit only on origin" and "Diverged, local work at risk" of the sync table both
   matched one case: a pushed and rebased branch with a new local commit.
+- An issue can give a rule with a time condition, for example "while X runs" or "after X ends". Before the post, the
+  planner names at least these states of X in the issue: not started, running and ended. The issue says what the rule
+  does in each state. On #440 (2026-10-25), the issue gave the states "still runs" and "has ended" of the orchestrator
+  of a milestone, but it missed the state not started.
 - An issue that records an output of the installed tasker names the ticket and the date of the run that showed the
   output. When the agent cannot measure the output itself with [the fact test](plan-review.md#the-fact-test), the ticket
   and the date are its evidence for [the issue check](plan-review.md#the-issue-check). On #240, the agent was unable to
