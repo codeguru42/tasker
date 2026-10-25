@@ -18,6 +18,9 @@ The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator
 
 An item is a message from a planner or an orchestrator to the operator about something that needs the user.
 
+The tab list is the list of the tabs that an operator can close. Each entry gives the tab id and the session name of one
+tab.
+
 The own name of a session is in the first line of the output of `ListAgents`, in the form "This session is <name>". The
 role is the part of the name before the first `-`. The slug is the part after it.
 
