@@ -1,15 +1,27 @@
 import { Option } from "commander";
 import type { Io, RegisterCommand } from "../cli.js";
-import type { AssistantRole, ModelChoice } from "../assistant/provider.js";
-import { setRoleModel } from "../config/edit.js";
+import type { AssistantRole } from "../assistant/provider.js";
+import { setRoleModel, setSessionRoleModel } from "../config/edit.js";
 import { loadConfigFile, parseConfigText } from "../config/load.js";
-import { ASSISTANT_ROLES, EFFORTS, type Config } from "../config/schema.js";
+import {
+  ASSISTANT_ROLES,
+  EFFORTS,
+  SESSION_ROLES,
+  type Config,
+  type RepoConfig,
+  type SessionRole,
+} from "../config/schema.js";
 import { replaceFile } from "../replace-file.js";
 import { issueKeyMatches } from "../issue-key/resolve.js";
 import { fail, issueKeyOrFail, orFail, REPO_OPTION_DESCRIPTION, resolveIssueKeyOrFail, withStore } from "./shared.js";
 
+type Role = AssistantRole | SessionRole;
+
+// The roles in the order of the report: the assistant roles, then the session roles.
+const ROLES: readonly Role[] = [...ASSISTANT_ROLES, ...SESSION_ROLES];
+
 interface ModelOptions {
-  role?: AssistantRole;
+  role?: Role;
   repo?: string;
   effort?: (typeof EFFORTS)[number];
 }
@@ -18,8 +30,19 @@ const NEW_SESSIONS_NOTE =
   "note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.\n";
 
 // The report line of a role.
-function roleLine(role: AssistantRole, choice: ModelChoice): string {
+function roleLine(role: string, choice: { model: string; effort: string }): string {
   return `${role}: ${choice.model} (effort ${choice.effort})\n`;
+}
+
+function isSessionRole(role: Role): role is SessionRole {
+  return (SESSION_ROLES as readonly string[]).includes(role);
+}
+
+// The report line of a role of the repo. A session role with no entry prints none.
+function lineOf(repo: RepoConfig, role: Role): string {
+  if (!isSessionRole(role)) return roleLine(role, repo.assistant.models[role]);
+  const entry = repo.sessions.models[role];
+  return entry === undefined ? `${role}: none\n` : roleLine(role, entry);
 }
 
 // The key of the repo of the issue. When the key matches more than one repo and repo is not given, the repo
@@ -40,10 +63,17 @@ function pickRepo(io: Io, issue: string, config: Config, repo: string | undefine
 export const model: RegisterCommand = (program, io) => {
   program
     .command("model")
-    .description("Print or set the model and the effort of each assistant role for the repo of an issue")
+    .description(
+      "Print or set the model and the effort of each assistant role and each session role for the repo of an issue",
+    )
     .argument("<issue>", "The issue key: the command uses the repo of the issue")
     .argument("[model]", "The new model of the role. It must pass the model check of the provider")
-    .addOption(new Option("--role <role>", "The role to print or to set").choices(ASSISTANT_ROLES))
+    .addOption(
+      new Option(
+        "--role <role>",
+        "The role to print or to set: an assistant role (plan, execute, review) or a session role (operator, planner, orchestrator)",
+      ).choices(ROLES),
+    )
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .addOption(new Option("--effort <effort>", "The new effort of the role").choices(EFFORTS))
     .action((issue: string, newModel: string | undefined, options: ModelOptions) => {
@@ -53,16 +83,18 @@ export const model: RegisterCommand = (program, io) => {
       const { path, text, config } = orFail(io, () => loadConfigFile());
       const repoKey = pickRepo(io, issue, config, options.repo);
       if (role === undefined || !set) {
-        const { models } = config.repos[repoKey].assistant;
-        for (const each of role === undefined ? ASSISTANT_ROLES : [role]) {
-          io.stdout(roleLine(each, models[each]));
+        for (const each of role === undefined ? ROLES : [role]) {
+          io.stdout(lineOf(config.repos[repoKey], each));
         }
         return;
       }
-      const next = setRoleModel(text, repoKey, role, { model: newModel, effort });
+      const change = { model: newModel, effort };
+      const next = isSessionRole(role)
+        ? setSessionRoleModel(text, repoKey, role, change)
+        : setRoleModel(text, repoKey, role, change);
       const updated = orFail(io, () => parseConfigText(next, path));
       orFail(io, () => replaceFile(path, next));
-      io.stdout(roleLine(role, updated.repos[repoKey].assistant.models[role]));
+      io.stdout(lineOf(updated.repos[repoKey], role));
       io.stderr(NEW_SESSIONS_NOTE);
     });
 };
