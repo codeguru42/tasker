@@ -187,7 +187,8 @@ its work. The new session takes the work, with the same name as the old session.
 5. The operator starts the new session, as [Start a session](#start-a-session) says. The prompt is the prompt of step 3.
 
 If step 4 does not close the pane of the old session, the operator does not do step 5. It tells the user, as
-[the failure rule](limits.md#the-failure-rule) says. Two sessions with one name break each `SendMessage` to that name.
+[the failure rule](limits.md#the-failure-rule) says. In the case of more than one row, the message of
+[Stop a session](#stop-a-session) is the one message. Two sessions with one name break each `SendMessage` to that name.
 
 In a handoff, these rules stay with the user:
 
@@ -195,16 +196,18 @@ In a handoff, these rules stay with the user:
 - After a failed `herdr agent start`, the operator does not close the new tab without the user, as
   [Start a session](#start-a-session) says.
 
-The table gives each change of a handoff. An empty cell means that the page gives no state for that actor.
+The table gives each change of a handoff. An empty cell means that the page gives no state for that actor. For the case
+of more than one row, the row "More than one row has the name" wins over the row "A close or a start fails".
 
-| Change                     | Old session                                 | Operator                                 | New session           | Who tells whom                                   |
-| -------------------------- | ------------------------------------------- | ---------------------------------------- | --------------------- | ------------------------------------------------ |
-| The recommendation arrives | Waits for the go                            | Sends the go                             |                       | The old session tells the operator               |
-| The go arrives             | Finishes its tasks, writes the handoff file |                                          |                       | The operator tells the old session               |
-| The path arrives           | Waits                                       | Reads the handoff file                   |                       | The old session tells the operator, with an item |
-| The stop                   | Stops, its pane closes                      | Waits for the stop, then closes the pane |                       | The operator tells the old session "stop"        |
-| The start                  |                                             | Starts the new session                   | Runs, from the prompt | The operator starts it with `herdr agent start`  |
-| A close or a start fails   |                                             | Tells the user                           |                       | The operator tells the user                      |
+| Change                         | Old session                                 | Operator                                 | New session           | Who tells whom                                   |
+| ------------------------------ | ------------------------------------------- | ---------------------------------------- | --------------------- | ------------------------------------------------ |
+| The recommendation arrives     | Waits for the go                            | Sends the go                             |                       | The old session tells the operator               |
+| The go arrives                 | Finishes its tasks, writes the handoff file |                                          |                       | The operator tells the old session               |
+| The path arrives               | Waits                                       | Reads the handoff file                   |                       | The old session tells the operator, with an item |
+| The stop                       | Stops, its pane closes                      | Waits for the stop, then closes the pane |                       | The operator tells the old session "stop"        |
+| The start                      |                                             | Starts the new session                   | Runs, from the prompt | The operator starts it with `herdr agent start`  |
+| A close or a start fails       |                                             | Tells the user                           |                       | The operator tells the user                      |
+| More than one row has the name | Runs                                        | Closes nothing, tells the user           | Not started           | The operator tells the user                      |
 
 ## A blocked session
 
