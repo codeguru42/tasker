@@ -16,7 +16,9 @@ both files.
 
 ## Short refs
 
-The short ref comes from the issue key. It names the worktree folder of the task, and it starts the branch name.
+The short ref comes from the issue key. It names the worktree folder of the task, and it starts the branch name. A short
+ref has one of two forms: `issue-<N>` for a GitHub key, and `<PROJ>-<N>` for a Jira key, with a `-` for each `_` of the
+project.
 
 ## The repo of a key
 

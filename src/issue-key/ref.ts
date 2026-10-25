@@ -1,5 +1,5 @@
 export interface IssueRef {
-  // The native key of the issue. A Jira site form keeps its site in lower case.
+  // The native key of the issue.
   key: string;
   // The key of the configured repo, exactly as the caller passed it.
   repoKey: string;

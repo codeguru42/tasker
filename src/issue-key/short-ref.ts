@@ -18,9 +18,8 @@ export const LOWER_SLUG = slugPattern("[a-z0-9]");
 // The project of a Jira short ref. pathSlug() turns each "_" into "-". It starts with A-Z.
 const SHORT_REF_PROJECT = `(?=[A-Z])${slugPattern("[A-Z0-9]")}`;
 
-// The short ref forms, as a pattern source: issue-<N>, <PROJ>-<N> and <site>-browse-<PROJ>-<N>.
-// jiraShortRef() gets the site in lower case, and pathSlug() turns each "." of it into "-".
-export const SHORT_REF = `(?:issue-${ISSUE_NUMBER}|(?:${LOWER_SLUG}-browse-)?${SHORT_REF_PROJECT}-${ISSUE_NUMBER})`;
+// The short ref forms, as a pattern source: issue-<N> and <PROJ>-<N>.
+export const SHORT_REF = `(?:issue-${ISSUE_NUMBER}|${SHORT_REF_PROJECT}-${ISSUE_NUMBER})`;
 
 const SHORT_REF_PATTERN = new RegExp(`^${SHORT_REF}$`);
 
@@ -34,7 +33,7 @@ export function githubShortRef(number: string): string {
   return `issue-${number}`;
 }
 
-// The short ref of a Jira key. The parser passes the key with the site in lower case.
+// The short ref of a Jira key.
 export function jiraShortRef(key: string): string {
   return pathSlug(key);
 }
