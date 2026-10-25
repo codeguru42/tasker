@@ -761,6 +761,15 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule changes how an agent ends its turn, ask the plan to list each place on the page where the agent ends its
   turn or gives a report. Also ask for each place where the orchestrator reads the last report. On #166, each fix drew a
   new case, and the work took 4 loops.
+- If a ticket changes how a session numbers the questions of an [item](operator.md), ask the plan in the first refine
+  for a list. The list names each place that reads those numbers or an answer to them. Examples of such a place are the
+  send and the close of an item in [The answer](operator-items.md#the-answer) of `docs/dev/operator-items.md`. The plan
+  searches the changed pages, and each page that links to a changed section, with `git grep`. The search follows
+  [the doc-search rule](rules.md#docs). For each place, the plan says whether it changes or why it stays. If a place
+  stays, the plan names each old gap of that place that stays outside the issue. See
+  [the hint that starts "If a requirement adds a case to an existing condition"](#a-ticket-that-changes-a-procedure-doc).
+  On #472 (2026-10-25), the operator numbers the questions of each item again for its one list. Review 3 found the send
+  of the answer, and review 4 found the close of an item after a partial answer.
 - A summary line that points to a rule promises no more than the rule gives. On #138, line 20 of
   `docs/dev/orchestration.md`, in "Pick the tickets", said "no orchestrator", but the rule covers only an orchestrator
   that knows of the issue.
