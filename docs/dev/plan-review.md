@@ -10,11 +10,27 @@ The agent adds this rule to the feedback text where a step, [the add-work rule](
 [the verify-failure rule](verify-failures.md#the-verify-failure-rule) says so. The rule tells the plan session (the
 session that tasker starts to make the plan) to read only the files in the worktree of the task. A file is outside the
 worktree when its path is not under the path on the `worktree:` line of `tasker show <issue>`. The plan session must not
-read or quote a file outside the worktree. If the plan session needs a detail that the issue, the feedback text and the
-files in the worktree do not give, it asks a plan question. It does not take the detail from another place. If the plan
-of step 2 of [Run one ticket](run-one-ticket.md#run-one-ticket) needs no changes, the agent does not run a refine only
-to send this rule. The quote check covers that plan. The repo-files rule and the quote check cover only the plan
-session, the plans and the review findings. They do not cover the execute session or the diff.
+read or quote a file outside the worktree.
+
+The plan session also does not read a web page or a web search result. Examples of the tools are WebFetch and WebSearch.
+A web page counts like a file outside the worktree. On #430 (2026-10-25), the plan session read web pages on permission
+modes, sandboxing and hooks with WebFetch, and plan v1 quoted them.
+
+The plan session also runs no command that reads or changes something outside the worktree. The reason: a command on
+another session acts on a real session, and the output of such a command is a detail from another place. An example is a
+command on another session, its pane or its tab, such as `herdr agent wait`. On #473, the plan session of plan v1 ran
+`herdr agent wait wB:p4 --timeout 1000` on the pane of another session and `herdr tab get wB:t4` on the tab of
+operator-docs. Another example is a command that asks a program of the local machine for a fact about its behavior, for
+example `claude --help`. A command of the repo that runs in the worktree is not such a command, for example `git`, `ls`,
+`grep` and an `npm` script of the repo.
+
+If the plan needs a fact about the behavior of a program, the plan session asks a plan question, as this rule says for a
+detail. If the plan session needs a detail that the issue, the feedback text and the files in the worktree do not give,
+it asks a plan question. It does not take the detail from another place.
+
+If the plan of step 2 of [Run one ticket](run-one-ticket.md#run-one-ticket) needs no changes, the agent does not run a
+refine only to send this rule. The quote check covers that plan. The repo-files rule and the quote check cover only the
+plan session, the plans and the review findings. They do not cover the execute session or the diff.
 
 ## The fact test
 
@@ -239,10 +255,14 @@ removed the link for one case but still fixed the body, so the body named a path
 ## The quote check
 
 A plan or a finding quotes a file outside the worktree when it gives text from that file, or when it says that it read
-that file. "Outside the worktree" has the meaning of the repo-files rule. If a plan or a finding quotes a file outside
-the worktree, the agent tells the orchestrator. Then the orchestrator tells the user. After this report, the agent can
-still do the steps that come before `tasker approve` or `tasker accept`. For example, it can run a refine of step 4 or
-step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket), or dismiss a finding in step 7. If the next command of the
-agent is `tasker approve` or `tasker accept`, the agent [stops](limits.md#the-answer-wait-rule). After the orchestrator
-answers, the agent does the step that the answer gives. If the answer gives no step, the agent continues "Run one
-ticket" from the step where it stopped.
+that file. "Outside the worktree" has the meaning of the repo-files rule. A plan or a finding can give text from a web
+page, or say that it read a web page. Such a plan or finding counts like a quote of a file outside the worktree. A plan
+or a finding can also give the output of a command that the repo-files rule forbids, for example a row of
+`herdr agent list`. Such a plan or finding also counts like a quote of a file outside the worktree.
+
+If a plan or a finding quotes a file outside the worktree, the agent tells the orchestrator. Then the orchestrator tells
+the user. After this report, the agent can still do the steps that come before `tasker approve` or `tasker accept`. For
+example, it can run a refine of step 4 or step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket), or dismiss a
+finding in step 7. If the next command of the agent is `tasker approve` or `tasker accept`, the agent
+[stops](limits.md#the-answer-wait-rule). After the orchestrator answers, the agent does the step that the answer gives.
+If the answer gives no step, the agent continues "Run one ticket" from the step where it stopped.
