@@ -70,7 +70,7 @@ In a handoff of a planner, the old planner gives its work to a new planner in a 
 
 The rules of this section cover only the follow-up planner. They do not cover the initial planner.
 
-An open draft is a draft that waits for the approval of the user. It can be a draft of an issue, of a change to an issue or of a comment.
+An open draft is a draft that the follow-up planner did not post or drop yet. It can be a draft in its review loops, a draft that waits for a decision of the user, or a draft of a comment that waits for the approval of the user. [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md gives these cases.
 
 [The handoff](#the-handoff) says that its rules cover only a long-running orchestrator. As an exception, the parts of "The handoff" that follow also cover the follow-up planner, with "planner" in place of "orchestrator":
 
@@ -97,7 +97,7 @@ After the start, the old planner does these steps:
 The old planner puts these items in the handoff file:
 
 - The prompt for the new session, in a code block. The prompt names the milestone and the session name `planner-<slug>`. The first step of the prompt is a read of `AGENTS.md`, `docs/dev/planner.md`, `docs/dev/issues.md` and `docs/dev/working-with-the-user.md`. The second step of the prompt is the check of the handoff folder.
-- The path of each open draft, not its text, and what the user asked for with it.
+- The path of each open draft, not its text, its source, and the decision of the user that it waits for, if any.
 - Each lesson or proposed issue that another session sent and that has no draft yet. Each item names its sender, its facts and its sources.
 - Each question to the user that has no answer yet, with its full text and its choices, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
 - The number of each issue that the old planner posted in its session.
