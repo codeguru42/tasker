@@ -75,13 +75,15 @@ You are the orchestrator of <milestone>. Read AGENTS.md and docs/dev/orchestrato
 
 ## Stop a session
 
-The operator stops a session only on a request of the user, or at the end of a handoff, as [The stop and the start](handoff.md#the-stop-and-the-start) says. The operator closes only a tab that it opened in its own session, or a tab that an earlier operator of its slug opened.
+The operator stops a session only on a request of the user. In a handoff of an orchestrator or a follow-up planner, the rule of the user of 2026-10-25 in [The end of a handoff](handoff.md#the-end-of-a-handoff) is that request, for step 4 of [A handoff](#a-handoff). The operator closes only a tab that it opened in its own session, or a tab that an earlier operator of its slug opened. In a handoff, the operator also stops a session in a tab that it did not open, for example a tab that the user opened.
 
-For its own tab, the tab id is the `.result.tab.tab_id` that step 2 of "Start a session" kept. For a session of an earlier operator, the tab id and the name for `herdr agent wait <name>` come from the handoff file of the operator ([The handoff file of the operator](handoff-operator.md#the-handoff-file-of-the-operator)). If the handoff file gives no tab id for the session, the operator tells the user and closes nothing.
+For its own tab, the tab id is the `.result.tab.tab_id` that step 2 of "Start a session" kept. For a session of an earlier operator, the tab id comes from the handoff file of the operator ([The handoff file of the operator](handoff-operator.md#the-handoff-file-of-the-operator)). If the handoff file gives no tab id for the session, the operator tells the user and closes nothing.
+
+The operator finds the pane id and the tab id in the row of the session. The row of a session is the object in `.result.agents` of the output of `herdr agent list` whose `terminal_title_stripped` is the name of the session. The row gives `pane_id` and `tab_id`. Before step 1, the operator runs `herdr agent list` in its shell. If the command fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says, and closes nothing. If no row has the name of the session, the operator tells the user and closes nothing. Outside a handoff, if the tab id of the row is not the tab id of its own tab or a tab id of the handoff file of the operator, the operator tells the user and closes nothing. Steps 2 and 3 use the pane id and the tab id of the row.
 
 1. The operator sends "stop" to the session with the tool `SendMessage`, as a word of the user (see [The word of the user](operator-conversations.md#the-word-of-the-user)). If `SendMessage` fails, the operator tells the user and does not do steps 2 and 3. The tab stays open.
-2. The operator runs `herdr agent wait <name> --timeout 600000` in its shell.
-3. If the wait ends in `idle` or `done`, the operator runs `herdr tab close <tab id>` in its shell. If `herdr tab close` fails, the operator tells the user, and the tab stays open.
+2. The operator runs `herdr agent wait <pane id> --timeout 600000` in its shell. `herdr agent wait <session name>` exits with 1 and the code `agent_not_found` for each listed session (herdr 0.9.3, measured on 2026-10-24).
+3. If the wait ends in `idle` or `done`, the operator runs `herdr tab get <tab id>` in its shell. If `.result.tab.pane_count` is 1, the operator runs `herdr tab close <tab id>`. If `.result.tab.pane_count` is more than 1, the operator runs `herdr pane close <pane id>`. A tab that the user opened can hold other panes of the user. If `herdr tab get`, `herdr tab close` or `herdr pane close` fails, the operator tells the user, and the pane stays open.
 
 If the wait fails or times out, the operator tells the user and closes nothing. If the wait ends in `blocked`, the operator follows "A blocked session" and closes nothing. Without `--until`, the wait also ends in `blocked`.
 
