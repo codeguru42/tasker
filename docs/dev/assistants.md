@@ -50,7 +50,7 @@ The allow list holds these rules, in this order:
 
 `Read`, `Glob` and `Grep` need a path rule. A plain `Glob` or `Grep` lists and searches files outside the worktree. A host test showed this. With a path rule, a call outside the worktree is denied. Without any `Glob` or `Grep` rule, the tools are not available at all.
 
-The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and for the shared git folder of the clone. A deny wins over an allow. As a result, git data changes only through `git` commands in the sandboxed shell.
+The deny list names only `Edit` for the `.git` entry of the worktree and for the shared git folder of the clone. The `Edit` rules cover each tool that edits a file, also `Write`. `claude` 2.1.310 warns that a `Write` deny rule does not match in the file permission checks. A deny wins over an allow. As a result, git data changes only through `git` commands in the sandboxed shell.
 
 The sandbox follows the rules in [Sandbox](#sandbox). Its write paths and its shared folder come from the version control. Its read deny list holds these paths:
 
