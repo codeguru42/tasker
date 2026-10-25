@@ -1,8 +1,12 @@
 import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { canonicalPath, isInside } from "../src/real-path.js";
+import { canonicalPath, deepestRealPath, isInside } from "../src/real-path.js";
 import { useTempDir } from "./helpers/temp.js";
+
+function deepest(path: string): string {
+  return deepestRealPath(path);
+}
 
 describe("canonicalPath", () => {
   it("gives the real path of a real folder", () => {
@@ -52,5 +56,46 @@ describe("isInside", () => {
   it("works for a folder that ends in the separator", () => {
     expect(isInside("/a", "/")).toBe(true);
     expect(isInside("/a/b", "/a/")).toBe(true);
+  });
+});
+
+describe("deepestRealPath", () => {
+  it("gives the real path of a folder that exists", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+
+    expect(deepest(dir)).toBe(dir);
+  });
+
+  it("adds a missing tail to the folder that exists", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+
+    expect(deepest(`${dir}/a/b/c.md`)).toBe(join(dir, "a/b/c.md"));
+  });
+
+  it("adds a missing tail to the target of a symlinked folder", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    const other = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync(other, join(dir, "link"));
+
+    expect(deepest(`${dir}/link/a/b.md`)).toBe(join(other, "a/b.md"));
+  });
+
+  it("resolves a symlink before a .. that follows it", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    const other = realpathSync(useTempDir("tasker-real-path-"));
+    mkdirSync(join(other, "sub"));
+    symlinkSync(join(other, "sub"), join(dir, "link"));
+
+    expect(deepest(`${dir}/link/../x`)).toBe(join(other, "x"));
+  });
+
+  it("resolves a .. in the missing tail as text", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+
+    expect(deepest(`${dir}/missing/../../x`)).toBe(join(dirname(dir), "x"));
+  });
+
+  it("throws for a relative path", () => {
+    expect(() => deepest("a/b")).toThrow("the path is not absolute");
   });
 });
