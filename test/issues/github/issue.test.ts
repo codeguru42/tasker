@@ -55,6 +55,7 @@ describe("readGithubIssue", () => {
       url: "https://github.com/octo/repo/issues/7",
       labels: ["bug"],
       state: "open",
+      comments: [],
     });
   });
 
