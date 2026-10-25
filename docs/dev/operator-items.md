@@ -13,13 +13,9 @@ An [item](operator.md) is a message from a planner or an orchestrator to the ope
 
 - The operator keeps a list of the open items. An item is open from its arrival until the operator sends the answer.
 - When an item arrives during a conversation with the user, the operator does not break into it. At the end of its reply, the operator adds one line: "New item `<id>` from `<sender>`:", then the first line of the item.
-- For each new item, the operator runs the command that follows in its shell. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the item stays open.
+- For each new item, the operator runs `herdr notification show "<operator name>: new item <id>" --sound request` in its shell. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the item stays open.
 - When the user asks for the open items, the operator gives each open item with its full text, not only its id or a label.
 - When the user asks for a draft, the operator reads the draft file and shows its text. If the file does not exist, the operator tells the user that the file does not exist.
-
-```sh
-herdr notification show "<operator name>: new item <id>" --sound request
-```
 
 ## The answer
 
