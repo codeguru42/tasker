@@ -271,6 +271,15 @@ that it dismissed. The initial planner posts only after the approval of the user
   that doc. Examples are the entry of the doc in `AGENTS.md` and the list "The pages" of `docs/dev/orchestrator.md` for
   an orchestration page. On #336 (2026-10-18), plan v1 found only the entry of `AGENTS.md` and missed the list "The
   pages".
+- An issue can add a case to a numbered list whose steps a handoff file records by number. An example of a case is a new
+  condition and its action. Then the issue says that the case goes inside an existing step, and it names that step. An
+  example of such a list is [The order of a milestone](operator-start.md#the-order-of-a-milestone).
+  [The handoff file of the operator](handoff-operator.md#the-handoff-file-of-the-operator) records the step of the
+  milestone in that list. The reason: a paragraph after the list has no step number, so a handoff file cannot record it.
+  The hint that starts "Another ticket can change a later step" in
+  [A ticket that changes a procedure doc](first-refine.md#a-ticket-that-changes-a-procedure-doc) of first-refine.md
+  covers the numbers of the steps for the plan. On #454 (2026-10-25), plan v1 put a new case of "The order of a
+  milestone" in a paragraph after the list, and refine 1 moved it into step 3.
 - An issue can add a rule that limits what a session reads. Before the post, the planner searches the docs for each link
   to the files that the rule limits, and for each path of these files. The search follows
   [the doc-search rule](rules.md#docs). For each hit, the issue says how the hit changes, or why the hit stays. A hit
