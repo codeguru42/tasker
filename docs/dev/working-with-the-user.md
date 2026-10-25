@@ -40,12 +40,12 @@ The work on this repo must continue on any machine, as [What goes in a ticket](p
 
 ## The issue-link rule
 
-In each reply to the user, the session writes each mention of an issue as a markdown link. The link target is the page of the issue in its tracker. The link text is the issue key, in this form:
+In each text that the user reads, the session writes each mention of an issue as a markdown link. The link target is the page of the issue in its tracker. The link text is the issue key, in this form:
 
 - For an issue of this repo, the text is the short form `#<N>`, for example `[#159](https://github.com/codeguru42/tasker/issues/159)`.
 - For an issue of another repo, the text is the full key, for example `[owner/repo#12](https://github.com/owner/repo/issues/12)`.
 
-The rule covers the replies of the session to the user only. The text on GitHub keeps the plain key, because GitHub links it. The messages to a session keep the plain key, because a session reads them as text. A key inside a code span or a code block stays as it is, for example a command line with an issue key.
+The rule covers each text that the user reads in a session. This includes each reply to the user and each item that the operator shows to the user. The text on GitHub keeps the plain key, because GitHub links it. The text of a draft also keeps the plain key, because it goes to GitHub. A message between two sessions keeps the plain key, because a session reads it as text. An item from a planner or an orchestrator to the operator is such a message. The operator writes the links when it shows the item, as [The open items](operator-items.md#the-open-items) says. A key inside a code span or a code block stays as it is, for example a command line with an issue key.
 
 The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but in the terminal it is plain text. In one case (2026-10-18), the planner of the Docs milestone wrote plain keys such as `#303` in each reply, and the user had no link to open an issue from a reply.
 
