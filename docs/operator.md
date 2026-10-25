@@ -9,20 +9,11 @@ Messages of the other sessions break into the conversation of the user, and open
 or an orchestrator sends each item that needs the user to the operator. Then the user reads and answers the items in one
 place.
 
-The user is the person who works with the sessions. The operator is named `operator-<slug>`.
-
-The slug is the first word of the milestone title in lowercase, as [the notice rule](doc-reads.md#the-notice-rule) says.
-For example, the slug of "M9 — Pauses and recovery" is `m9`.
-
-The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator-<slug>`.
-
-An item is a message from a planner or an orchestrator to the operator about something that needs the user.
+[docs/sessions.md](sessions.md) defines the user, the slug, the sessions of a slug, an item and the own name of a
+session. The operator is named `operator-<slug>`.
 
 The tab list is the list of the tabs that an operator can close. Each entry gives the tab id and the session name of one
 tab.
-
-The own name of a session is in the first line of the output of `ListAgents`, in the form "This session is <name>". The
-role is the part of the name before the first `-`. The slug is the part after it.
 
 The operator runs only these `tasker` commands: `show-config`, `show-quota`, `show`, `show-bootstrap`, `show-plan`,
 `show-questions`, `show-verify`, `show-review`, `status` and `doctor`. It runs no other `tasker` command and starts no

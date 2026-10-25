@@ -1,6 +1,7 @@
 # Start and stop the sessions of a milestone
 
-The operator runs each `herdr` command in its own shell, in a Bash call. See [Operator](operator.md) for the terms.
+The operator runs each `herdr` command in its own shell, in a Bash call. See [Operator](operator.md) and
+[Sessions](../sessions.md) for the terms.
 
 ## The order of a milestone
 

@@ -1,7 +1,7 @@
 # Planner
 
 This page gives the rules for a planner. A planner is the assistant session that plans a milestone and writes its issues
-on GitHub. The user is the person who works with the planner. The readers of this page are the planner and its user.
+on GitHub. The [user](../sessions.md) works with the planner. The readers of this page are the planner and its user.
 
 The page does not cover the work of the orchestrator and of the agents of the tickets.
 [The orchestration pages](orchestrator.md) hold that work, and [orchestrator.md](orchestrator.md) defines the terms
@@ -420,7 +420,7 @@ that it dismissed. The initial planner posts only after the approval of the user
   one row for each milestone, and "Future" last. The description in each row is the description of the milestone on
   GitHub. Notes go below the table.
 - The operator names each planner `planner-<slug>` with the flag `-n` of `claude`, for example `planner-m7`.
-  [operator.md](operator.md) defines the slug. The name of a session is a noun for its role, not a verb. Examples are
+  [sessions.md](../sessions.md) defines the slug. The name of a session is a noun for its role, not a verb. Examples are
   `orchestrator-<slug>` and `planner-<slug>`. The name tells the user which session is the planner and which session is
   an orchestrator. For example, on 2026-10-15, the user confused a planner with the orchestrator.
   [The notice rule](doc-reads.md#the-notice-rule) says which sessions get a notice.

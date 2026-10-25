@@ -1,6 +1,6 @@
 # The items of the operator
 
-The sender sends each [item](operator.md) to the operator with `SendMessage`.
+The sender sends each [item](../sessions.md) to the operator with `SendMessage`.
 
 ## The form of an item
 

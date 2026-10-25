@@ -5,11 +5,11 @@ that picks tickets, starts one agent for each ticket, moves the cards, sets the 
 
 A ticket is an issue on the project board. An agent is an assistant session that the orchestrator starts for one ticket.
 The agent runs the steps of ["Run one ticket"](run-one-ticket.md#run-one-ticket) for that ticket. The user is the person
-who works with the sessions, as [operator.md](operator.md) says. The operator starts the orchestrator, as
+who works with the sessions, as [sessions.md](sessions.md) says. The operator starts the orchestrator, as
 [Start a session](operator-start.md#start-a-session) of operator-start.md says. The user does not type in the session of
 the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
 [A blocked session](operator-start.md#a-blocked-session) says. The orchestrator reads its own name and its slug from the
-first line of the output of `ListAgents`, as [operator.md](operator.md) says. A task is the record that tasker keeps for
+first line of the output of `ListAgents`, as [sessions.md](sessions.md) says. A task is the record that tasker keeps for
 one ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
 
 Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo.

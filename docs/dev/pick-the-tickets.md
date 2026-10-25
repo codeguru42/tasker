@@ -502,8 +502,8 @@ The orchestrator writes the prompt of each agent.
 - The planner bullet: the orchestrator sends each lesson of a final report, each finding of a session review and each
   proposed issue only to `planner-<slug>` of its own slug, with `SendMessage`.
   [Working with the user](planner.md#working-with-the-user) of planner.md names that session, and
-  [operator.md](operator.md) defines the slug. The message gives the lesson, the ticket, the date, and the doc and the
-  section that the lesson fits. The planner drafts and posts the issue, as
+  [sessions.md](../sessions.md) defines the slug. The message gives the lesson, the ticket, the date, and the doc and
+  the section that the lesson fits. The planner drafts and posts the issue, as
   [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
   files no issue itself. The one exception is the issue of step 1 of [A failed CI run](ci-wait.md#a-failed-ci-run),
   which the orchestrator files itself. If `SendMessage` fails, for example because no planner runs, the orchestrator

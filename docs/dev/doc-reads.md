@@ -57,8 +57,8 @@ The orchestrator of the ticket does these steps:
 
 1. When the final report of the agent of the ticket arrives, read the files that landed in that report.
 2. If no file of the report is a doc of the orchestrator of the ticket or a page of the operator, send no notice.
-3. Read your own name from the first line of the output of `ListAgents`, as [operator.md](operator.md) says. If a doc of
-   the orchestrator changed, each session whose name starts with `orchestrator-`, except your own session, is another
+3. Read your own name from the first line of the output of `ListAgents`, as [sessions.md](../sessions.md) says. If a doc
+   of the orchestrator changed, each session whose name starts with `orchestrator-`, except your own session, is another
    orchestrator. If a page of the operator changed, each session whose name starts with `operator-` also gets the
    notice. A session with another name, for example `planner-m7`, gets no notice.
 4. Send one notice to each session of step 3 with `SendMessage`. Take the landed commit and the sections that changed

@@ -160,10 +160,10 @@ The file goes in the folder of [The handoff file](#the-handoff-file), with the n
 is the role of the new session with the topic as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session
 does [The check of the handoff folder](#the-check-of-the-handoff-folder).
 
-The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. The
-intro of [docs/dev/operator.md](operator.md) gives the form of the own name of a session. The old session puts this name
-in the item and in the prompt of the handoff file. The prompt also names `operator-<slug>` of the old session as the
-operator that the new session works with.
+The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name.
+[docs/sessions.md](../sessions.md) gives the form of the own name of a session. The old session puts this name in the
+item and in the prompt of the handoff file. The prompt also names `operator-<slug>` of the old session as the operator
+that the new session works with.
 
 The old session sends the path of the file to `operator-<slug>` as an item, as
 [The form of an item](operator-items.md#the-form-of-an-item) says. The operator starts the new session with the prompt

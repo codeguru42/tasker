@@ -1,7 +1,7 @@
 # Working with the user
 
 This page gives the rules for an assistant session that works with the user of this repo. It also says which kinds of
-work wait until later. The user is the person who works with the session.
+work wait until later. The [user](../sessions.md) works with the session.
 
 The rules apply to each session that works with the user, for example the orchestrator of
 [orchestrator.md](orchestrator.md) and the planner of [planner.md](planner.md). They do not apply to the sessions that

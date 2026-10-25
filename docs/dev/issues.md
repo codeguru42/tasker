@@ -2,21 +2,22 @@
 
 This page gives the steps and the GitHub facts to file issues, blocked-by links and milestones on GitHub.
 [Before a post](#before-a-post) covers each session that posts an issue, except where a sentence names the planner. The
-rest of the page is for the planner. [planner.md](planner.md) defines the terms "planner", "user" and "blocked-by link".
-planner.md also holds the rules for what an issue says and where it goes. This page holds only how to do it on GitHub.
+rest of the page is for the planner. [planner.md](planner.md) defines the terms "planner" and "blocked-by link", and
+[docs/sessions.md](../sessions.md) defines the term "user". planner.md also holds the rules for what an issue says and
+where it goes. This page holds only how to do it on GitHub.
 
 ## Before a post
 
 - Each session that posts an issue, or changes the title or the body of an open issue, drafts the text first. The
-  session shows the draft to the user, the person who works with that session (see
-  [working-with-the-user.md](working-with-the-user.md)). A request of the user such as "file an issue" or "draft a
-  ticket" gets a draft first. For a change to an open issue, the draft shows the changed text. The session posts only
-  after the user approves that draft, for example with "file it" or "post it". The follow-up planner posts a reviewed
-  draft with no approval of the user, as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of
-  planner.md says. The approval of the user still covers a draft of the initial planner and a comment. For a draft of
-  the follow-up planner that waits for a decision of the user, [The escape hatch](planner.md#the-escape-hatch) of
-  planner.md says what the answer of the item does. The planner also makes sure of the kinds of GitHub objects to make,
-  as [The order of the work](planner.md#the-order-of-the-work) of planner.md says.
+  session shows the draft to the [user](../sessions.md) who works with that session. A request of the user such as "file
+  an issue" or "draft a ticket" gets a draft first. For a change to an open issue, the draft shows the changed text. The
+  session posts only after the user approves that draft, for example with "file it" or "post it". The follow-up planner
+  posts a reviewed draft with no approval of the user, as
+  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The approval of the user still
+  covers a draft of the initial planner and a comment. For a draft of the follow-up planner that waits for a decision of
+  the user, [The escape hatch](planner.md#the-escape-hatch) of planner.md says what the answer of the item does. The
+  planner also makes sure of the kinds of GitHub objects to make, as
+  [The order of the work](planner.md#the-order-of-the-work) of planner.md says.
 - Right before each post, the session that posts the issue searches all the issues of the repo, open and closed, by
   title and by body, for the same change. Other sessions file issues at the same time, so the list changes between two
   turns. An example search is `gh issue list --state all --search "<words> in:title,body" --limit 1000`. The session

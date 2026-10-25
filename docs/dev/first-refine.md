@@ -762,7 +762,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule changes how an agent ends its turn, ask the plan to list each place on the page where the agent ends its
   turn or gives a report. Also ask for each place where the orchestrator reads the last report. On #166, each fix drew a
   new case, and the work took 4 loops.
-- If a ticket changes how a session numbers the questions of an [item](operator.md), ask the plan in the first refine
+- If a ticket changes how a session numbers the questions of an [item](../sessions.md), ask the plan in the first refine
   for a list. The list names each place that reads those numbers or an answer to them. Examples of such a place are the
   send and the close of an item in [The answer](operator-items.md#the-answer) of `docs/dev/operator-items.md`. The plan
   searches the changed pages, and each page that links to a changed section, with `git grep`. The search follows
