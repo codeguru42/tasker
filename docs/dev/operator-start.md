@@ -5,7 +5,7 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 ## The order of a milestone
 
 1. The user picks the slug.
-2. The user opens the operator in `claude` and names it `operator-<slug>`, for example with `claude -n operator-m9`.
+2. The user runs `tasker show-config --repo <key>` and reads `sessions.models.operator`. If the command fails, the user does not open the operator. Then the user opens the operator in `claude` and names it `operator-<slug>`. The user passes the model and the effort of `sessions.models.operator` with the flags of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), for example `claude -n operator-m9 --model opus --effort high`. If `sessions.models.operator` has no entry, the user passes neither flag.
 3. When the user asks, the operator starts the initial planner, as "Start a session" says.
 4. The user works with the initial planner in its tab. [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) of planner.md gives the rules of the initial planner.
 5. When the initial planning ends, the user tells the operator.
@@ -16,19 +16,29 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
 
 ## Start a session
 
-1. The operator runs `herdr tab create` in its shell. The folder of `--cwd` is the local clone.
+1. The operator runs `tasker show-config --repo <key>` in its shell. `<key>` is the repo key of the repo of the local clone, for example `codeguru42/tasker`.
+
+   ```sh
+   tasker show-config --repo <key>
+   ```
+
+   The operator keeps `.sessions.kind` and the entry of `.sessions.models.<role>` of the output. `<role>` is the role of the new session: `planner` or `orchestrator`. If the command fails, the operator tells the user the command and the error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do steps 2 and 3. No tab exists.
+
+2. The operator runs `herdr tab create` in its shell. The folder of `--cwd` is the local clone.
 
    ```sh
    herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd <local clone> --label <name> --no-focus
    ```
 
-   The operator keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. If the command fails, the operator tells the user the command and the error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do step 2. No tab exists.
+   The operator keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. If the command fails, the operator tells the user the command and the error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do step 3. No tab exists.
 
-2. The operator runs `herdr agent start` in its shell. The command starts `claude` in the new pane.
+3. The operator runs `herdr agent start` in its shell. The command starts the agent of the kind in the new pane.
 
    ```sh
-   herdr agent start <name> --kind claude --pane <pane id> -- -n <name> "<prompt>"
+   herdr agent start <name> --kind <kind> --pane <pane id> -- -n <name> <model flags> "<prompt>"
    ```
+
+   `<kind>` is `sessions.kind`. `<model flags>` is the model flag and the effort flag of the kind in [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), with the model and the effort of the entry of the role. If `sessions.models` has no entry for the role, the operator leaves out `<model flags>`.
 
    If the command fails, the operator tells the user the command and the error. The new tab stays open, and the operator keeps its tab id. The operator does not close the tab without the user.
 
@@ -39,8 +49,6 @@ The facts that follow were measured on 2026-10-24 with herdr 0.9.3 and Claude Co
 - The herdr agent name, the session name and the name in `ListAgents` are the same.
 - The new session is a top-level session, not a subagent of the operator.
 - The tool `SendMessage` works in both directions, and `ListAgents` lists the session.
-
-`--kind claude` is fixed for now.
 
 ## The start prompts
 
@@ -66,7 +74,7 @@ You are the orchestrator of <milestone>. Read AGENTS.md and docs/dev/orchestrato
 
 ## Stop a session
 
-The operator stops a session only on a request of the user. The operator closes only a tab that it opened in its own session. The tab id is the `.result.tab.tab_id` that step 1 of "Start a session" kept.
+The operator stops a session only on a request of the user. The operator closes only a tab that it opened in its own session. The tab id is the `.result.tab.tab_id` that step 2 of "Start a session" kept.
 
 1. The operator sends "stop" to the session with the tool `SendMessage`, as a word of the user (see [The word of the user](operator-conversations.md#the-word-of-the-user)). If `SendMessage` fails, the operator tells the user and does not do steps 2 and 3. The tab stays open.
 2. The operator runs `herdr agent wait <name> --timeout 600000` in its shell.

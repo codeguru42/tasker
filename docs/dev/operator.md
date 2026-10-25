@@ -14,7 +14,7 @@ An item is a message from a planner or an orchestrator to the operator about som
 
 The own name of a session is in the first line of the output of `ListAgents`, in the form "This session is <name>". The role is the part of the name before the first `-`. The slug is the part after it.
 
-The operator runs no `tasker` command and starts no agent of a ticket.
+The operator runs only these `tasker` commands: `show-config`, `show-quota`, `show`, `show-bootstrap`, `show-plan`, `show-questions`, `show-verify`, `show-review`, `status` and `doctor`. It runs no other `tasker` command and starts no agent of a ticket.
 
 When a step of the operator pages applies [the failure rule](limits.md#the-failure-rule), the rule covers the operator in the place of the orchestrator.
 
