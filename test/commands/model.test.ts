@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { model } from "../../src/commands/model.js";
 import { loadConfig } from "../../src/config/load.js";
 import { ConfigError, parseConfig } from "../../src/config/schema.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { issueKeyErrorMessage, threeRepoConfig, useConfigFile, validConfig } from "../helpers/config.js";
 import { configIssuesOf } from "../helpers/errors.js";
 import { dayAt, seedTasks } from "../helpers/store.js";
@@ -224,6 +224,68 @@ describe("model", () => {
       expect(result.code).toBe(0);
       expectNothingChanged(file, pretty(expected).trimEnd());
     });
+
+    it.each(["operator", "planner", "orchestrator"] as const)(
+      "sets a new entry of the session role %s in a file with no sessions key",
+      async (role) => {
+        const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+        const expected = rawFile(file.dataRoot);
+        expected.repos.tasker.sessions = { models: { [role]: { model: "claude-opus-5-5", effort: "high" } } };
+
+        const result = await runCommand(model, "model", KEY, "--role", role, "claude-opus-5-5", "--effort", "high");
+
+        expect(result).toEqual({ code: 0, out: `${role}: claude-opus-5-5 (effort high)\n`, err: NOTE });
+        expectNothingChanged(file, pretty(expected));
+      },
+    );
+
+    it("adds the key models when sessions has no models key", async () => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { kind: "claude" };
+        return pretty(raw);
+      });
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = {
+        kind: "claude",
+        models: { planner: { model: "claude-opus-5-5", effort: "xhigh" } },
+      };
+
+      const result = await runCommand(model, "model", KEY, "--role", "planner", "claude-opus-5-5", "--effort", "xhigh");
+
+      expect(result).toEqual({ code: 0, out: "planner: claude-opus-5-5 (effort xhigh)\n", err: NOTE });
+      expectNothingChanged(file, pretty(expected));
+    });
+
+    it("keeps the model of a session role with an entry when only the effort is given", async () => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "low" } } };
+        return pretty(raw);
+      });
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "max" } } };
+
+      const result = await runCommand(model, "model", KEY, "--role", "operator", "--effort", "max");
+
+      expect(result).toEqual({ code: 0, out: "operator: opus (effort max)\n", err: NOTE });
+      expectNothingChanged(file, pretty(expected));
+    });
+
+    it("keeps the effort of a session role with an entry when only the model is given", async () => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "xhigh" } } };
+        return pretty(raw);
+      });
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = { models: { operator: { model: "sonnet", effort: "xhigh" } } };
+
+      const result = await runCommand(model, "model", KEY, "--role", "operator", "sonnet");
+
+      expect(result).toEqual({ code: 0, out: "operator: sonnet (effort xhigh)\n", err: NOTE });
+      expectNothingChanged(file, pretty(expected));
+    });
   });
 
   describe("refusals", () => {
@@ -261,6 +323,57 @@ describe("model", () => {
       expect(result.code).not.toBe(0);
       expect(result.out).toBe("");
       expectNothingChanged(file, before);
+    });
+
+    it.each([
+      ["only the model is given", ["opus"]],
+      ["only --effort is given", ["--effort", "high"]],
+    ])("fails for a session role with no entry when %s", async (_name, args) => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "--role", "operator", ...args);
+
+      expect(result).toEqual({
+        code: 1,
+        out: "",
+        err: "the role operator has no entry: give the model and --effort\n",
+      });
+      expectNothingChanged(file, before);
+    });
+
+    it("prints the loader errors and changes nothing for xhigh on an assistant role", async () => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+      const badRaw = rawFile(file.dataRoot);
+      badRaw.repos.tasker.assistant.models.plan.effort = "xhigh";
+      const message = new ConfigError(configIssuesOf(() => parseConfig(badRaw, {}, "/home/test"))).message;
+
+      const result = await runCommand(model, "model", KEY, "--role", "plan", "--effort", "xhigh");
+
+      expect(result).toEqual({ code: 1, out: "", err: `${message}\n` });
+      expect(result.err).toContain("repos.tasker.assistant.models.plan.effort");
+      expectNothingChanged(file, before);
+    });
+
+    it("prints the loader errors for a session model that the provider refuses", async () => {
+      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "--role", "operator", "gpt-5", "--effort", "high");
+
+      expect(result.code).toBe(1);
+      expect(result.out).toBe("");
+      expect(result.err).toContain("repos.tasker.sessions.models.operator.model: is not a claude-code model: gpt-5");
+      expectNothingChanged(file, before);
+    });
+
+    it("names the session roles in the help of --role", async () => {
+      const { code, help } = await runHelp(model, "model");
+
+      expect(code).toBe(0);
+      expect(help).toContain("a session role (operator, planner, orchestrator)");
+      expect(help).toContain("xhigh and max are for a session role only");
     });
   });
 });
