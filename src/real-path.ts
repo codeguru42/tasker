@@ -34,32 +34,27 @@ export function deepestRealPath(path: string): string {
       return join(realpathSync.native(head), ...rest);
     } catch (error) {
       if (errnoCode(error) !== "ENOENT") throw error;
-      if (isDanglingSymlink(head)) {
+      const stats = lstatIfPresent(head);
+      // realpath gave ENOENT, so a link here is dangling: follow its target.
+      if (stats?.isSymbolicLink()) {
         const target = readlinkSync(head);
         // Text, not join(): .. in the target must resolve against the real folder of the link.
         head = isAbsolute(target) ? target : `${realpathSync.native(dirname(head))}/${target}`;
         continue;
       }
-      if (existsAsEntry(head) || dirname(head) === head) throw error;
+      if (stats !== undefined || dirname(head) === head) throw error;
       rest.unshift(basename(head));
       head = dirname(head);
     }
   }
 }
 
-function entryStats(path: string): Stats | undefined {
+// The lstat of path, or undefined when no entry has that name. Each other error throws.
+function lstatIfPresent(path: string): Stats | undefined {
   try {
     return lstatSync(path);
   } catch (error) {
     if (errnoCode(error) === "ENOENT") return undefined;
     throw error;
   }
-}
-
-function isDanglingSymlink(path: string): boolean {
-  return entryStats(path)?.isSymbolicLink() ?? false;
-}
-
-function existsAsEntry(path: string): boolean {
-  return entryStats(path) !== undefined;
 }
