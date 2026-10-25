@@ -376,11 +376,9 @@ describe("prepareTaskExecuteRun", () => {
     ]);
     expect(flagValues(argv, "--disallowedTools")).toEqual([
       "Bash(git push:*)",
-      ...["Edit", "Write"].flatMap((tool) => [
-        expectedRule(tool, `${wt}/.git`),
-        expectedRule(tool, `${wt}/.git/**`),
-        expectedRule(tool, `${started.clone}/**`),
-      ]),
+      expectedRule("Edit", `${wt}/.git`),
+      expectedRule("Edit", `${wt}/.git/**`),
+      expectedRule("Edit", `${started.clone}/**`),
     ]);
   });
 
