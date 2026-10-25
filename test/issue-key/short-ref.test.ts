@@ -21,10 +21,6 @@ describe("isShortRef", () => {
     ["a project", "PROJ-12"],
     ["a project with a former _", "A-B9-3"],
     ["a project with a part after a former _", "PROJ-X-12"],
-    ["a one-label site", "jira-browse-AB-1"],
-    ["a site with a - in a label", "x-y-example-com-browse-Q-1"],
-    ["a site with a former --", "xn-d-example-com-browse-Q-1"],
-    ["a site and a project with a part", "jira-example-com-browse-PROJ-X-12"],
   ])("accepts the form %s: %s", (_name, value) => {
     expect(isShortRef(value)).toBe(true);
   });
@@ -46,6 +42,10 @@ describe("isShortRef", () => {
     "PROJ--1",
     "a--b-browse-PROJ-1",
     "Acme-net-browse-PROJ-1",
+    "jira-browse-AB-1",
+    "x-y-example-com-browse-Q-1",
+    "xn-d-example-com-browse-Q-1",
+    "jira-example-com-browse-PROJ-X-12",
   ])("refuses %s", (value) => {
     expect(isShortRef(value)).toBe(false);
   });

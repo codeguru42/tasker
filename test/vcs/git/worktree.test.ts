@@ -42,8 +42,6 @@ describe("taskBranchName", () => {
     ["PROJ-12", "Fix it", "PROJ-12-fix-it"],
     ["A-B9-3", "Fix it", "A-B9-3-fix-it"],
     ["PROJ-X-12", "Fix it", "PROJ-X-12-fix-it"],
-    ["acme-atlassian-net-browse-PROJ-12", "Fix it", "acme-atlassian-net-browse-PROJ-12-fix-it"],
-    ["x-y-example-com-browse-Q-1", "Fix it", "x-y-example-com-browse-Q-1-fix-it"],
   ])("joins %s and the title %j into %s", (shortRef, title, expected) => {
     expect(taskBranchName(shortRef, title)).toBe(expected);
   });
@@ -66,24 +64,23 @@ describe("taskBranchName with a bad short ref", () => {
     "A_B9-3",
     "PROJ_X-12",
     "acme.atlassian.net-browse-PROJ-12",
+    "acme-atlassian-net-browse-PROJ-12",
+    "x-y-example-com-browse-Q-1",
   ])("refuses the short ref %j", (shortRef) => {
     expect(() => taskBranchName(shortRef, "Fix it")).toThrow(`not a safe short ref: ${JSON.stringify(shortRef)}`);
   });
 
   it("gives a short ref of exactly 100 characters alone", () => {
-    const shortRef = `${"a".repeat(86)}-browse-PROJ-1`;
+    const shortRef = `${"A".repeat(98)}-1`;
     expect(shortRef).toHaveLength(100);
     expect(taskBranchName(shortRef, "Fix it")).toBe(shortRef);
   });
 });
 
 describe("assertTaskBranchShape", () => {
-  it.each(["issue-7", "issue-7-fix-it", "PROJ-X-12-fix-it", "jira-example-com-browse-PROJ-X-12-fix-it"])(
-    "accepts %s",
-    (branch) => {
-      expect(() => assertTaskBranchShape(branch)).not.toThrow();
-    },
-  );
+  it.each(["issue-7", "issue-7-fix-it", "PROJ-X-12-fix-it"])("accepts %s", (branch) => {
+    expect(() => assertTaskBranchShape(branch)).not.toThrow();
+  });
 
   it.each([
     "issue-7-fix_it",
@@ -91,6 +88,7 @@ describe("assertTaskBranchShape", () => {
     "A_B9-3-fix-it",
     "acme.atlassian.net-browse-PROJ-12-fix-it",
     "issue-7--x",
+    "jira-example-com-browse-PROJ-X-12-fix-it",
   ])("refuses %s", (branch) => {
     expect(() => assertTaskBranchShape(branch)).toThrow(`not a task branch: ${JSON.stringify(branch)}`);
   });
@@ -500,7 +498,7 @@ describe("git fixture", () => {
       },
     );
 
-    describe.each(["issue-17", "PROJ-12", jiraShortRef("acme.atlassian.net/browse/PROJ-12"), jiraShortRef("A_B9-3")])(
+    describe.each(["issue-17", "PROJ-12", jiraShortRef("PROJ_X-12"), jiraShortRef("A_B9-3")])(
       "the result of taskBranchName() for %s",
       (shortRef) => {
         it.each(["Fix it", "", "word ".repeat(100)])("has the shape for the title %j", (title) => {
