@@ -25,7 +25,7 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 ## Rules
 
 - Never edit a tracked doc, for example `AGENTS.md`, `CLAUDE.md` or a file under `docs/`. The reason: a tracked doc is shared with each contributor as soon as a commit holds it. A memory write is personal.
-- Name no target for a proposal. The reason: the docs of the repo are the one home of that rule, and the rule changes.
+- This skill names no target for a proposal. The docs of the repo give the target for each role, as step 5 says. The reason: the docs of the repo are the one home of that rule, and the rule changes.
 
 ## Common mistakes
 
