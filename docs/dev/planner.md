@@ -12,9 +12,9 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 
 ## The initial planner and the follow-up planner
 
-The planner is one role in two sessions in a row. The operator starts both sessions, as [Start a session](operator-start.md#start-a-session) of operator-start.md says.
+The planner is one role. The operator starts each session of the planner, as [Start a session](operator-start.md#start-a-session) of operator-start.md says.
 
-The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab. The follow-up planner is the planner that the operator starts after the initial planning. The follow-up planner files the follow-ups of the milestone while the orchestrator runs the milestone.
+The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab. The follow-up planner is the planner that files the follow-ups of the milestone while the orchestrator runs the milestone. The operator starts the follow-up planner after the initial planning. For a milestone with no initial planning, the operator starts the follow-up planner at once, as [The order of a milestone](operator-start.md#the-order-of-a-milestone) says.
 
 - The initial planner works with the user directly, as [The operator](working-with-the-user.md#the-operator) of working-with-the-user.md says. It sends no item to the operator.
 - When the user says that the initial planning is done, the initial planner posts each approved draft. Then it runs `/session-review`. Then it tells `operator-<slug>` with `SendMessage` that the initial planning is done. Then it ends its work.
