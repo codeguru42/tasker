@@ -66,6 +66,6 @@ work with gh 2.101.0:
 
 [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md gives the milestone of each issue. The
 planner closes a milestone only when the user says so. Then it runs
-`gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`. An orchestrator asks the user to close a
-milestone only after each finding of its review rounds is handled, as
-[Pick the tickets](pick-the-tickets.md#pick-the-tickets) of pick-the-tickets.md says.
+`gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`.
+[Pick the tickets](pick-the-tickets.md#pick-the-tickets) of pick-the-tickets.md gives the report of an orchestrator when
+its milestone is done.

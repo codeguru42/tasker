@@ -93,13 +93,15 @@ The orchestrator does all the steps of this section.
   the orchestrator sent it to the planner, as the planner bullet of [The prompt of an agent](#the-prompt-of-an-agent)
   says. A finding is also handled when the planner filed it as an issue or added it to an open issue. A finding is also
   handled when the orchestrator wrote it to memory, for a fact that the rules keep out of the tracked docs. A finding is
-  also handled when the user decided to drop it. A finding that is not handled is open. When the orchestrator tells the
-  user that the milestone is done, it lists each finding with its state, handled or open. The orchestrator asks the user
-  to close the milestone only after each finding is handled. The milestone closes only when the user says so, as
+  also handled when the user decided to drop it. A finding that is not handled is open. When each finding is handled,
+  the orchestrator tells the user one time that the milestone is done, and it lists each finding with its state. The
+  orchestrator does not ask the user to close the milestone, and it does not bring the milestone up again in later
+  replies. On 2026-10-25, orchestrator-m21 asked the user several times whether to ask the planner to close M21, and the
+  user said: "I will decide when to close M21". The milestone closes only when the user says so, as
   [Milestones](issues.md#milestones) of issues.md says. The stop of this bullet does not cover a long-running
   orchestrator (see [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review
-  rounds of this bullet, the list of the findings and the ask to close the milestone cover a long-running orchestrator,
-  before it moves to the next milestone.
+  rounds of this bullet, the list of the findings and the report that the milestone is done cover a long-running
+  orchestrator, before it moves to the next milestone.
 
 ### The stacking rule
 
