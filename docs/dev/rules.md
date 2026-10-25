@@ -67,6 +67,11 @@ These rules apply to the code in `src/` and in `test/`. The one-home rule also a
   false when a later ticket adds or removes a member. For example, the constant `BOTH_PAUSES` in `src/tasks/resume.ts`
   had the members `quota_blocked` and `interrupted`, and #98 renamed it to `PAUSES` when it added
   `awaiting_quota_approval`.
+- A check can skip a thing because a process works under the folder that the check scans, for example the clone. Then
+  the check makes two tests. The first test makes sure that the working folder of the process is inside that folder or
+  the same as it. The second test makes sure that the thing is inside the working folder of the process or the same as
+  it. A process with its working folder above the folder that the check scans causes no skip. An example is the skip for
+  a git process of the stale-lock check, in [Stale lock files](version-control.md#stale-lock-files).
 
 A case is one kind of input that a function serves. Examples are a role of an assistant run (plan, execute or review), a
 provider id and a kind of task.

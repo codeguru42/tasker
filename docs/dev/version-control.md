@@ -394,7 +394,8 @@ of the repo. It returns only the account name and never returns ssh text.
 
 - A lock that a process holds open is skipped, because git holds a lock file open while it writes it.
 - A git process in the clone causes a skip only when the lock is inside its cwd. A git in a task worktree has its cwd
-  outside the clone, so only the open-file skip covers its lock files.
+  outside the clone, so only the open-file skip covers its lock files. [Code](rules.md#code) of rules.md gives the
+  general rule for the skip for a git process.
 - Limit: on a platform that is not Linux, or when `/proc` cannot be read, tasker cannot tell if a process uses the file.
 - `/proc` is read at most once for each call, and only when a stale lock exists.
 - Doctor deletes nothing.
