@@ -197,10 +197,8 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
   // The path is absolute. The // prefix marks an absolute path in the rule syntax of claude.
   const rule = (tool: string, absolutePath: string) => `${tool}(/${absolutePath})`;
   const limits: RoleLimits = {
-    // claude 2.1.310 denies each write under .claude/ in dontAsk, also with an allow rule. In the default
-    // mode, claude asks before such a write, and the PermissionRequest hook of tasker answers each question.
-    // The hook allows only a Write or an Edit under .claude/skills/ and denies each other question, so a tool
-    // call that no allow rule covers is still denied.
+    // The default mode lets the PermissionRequest hook of tasker answer each question that no rule decides.
+    // permissionHookSettings gives the reason.
     permissionMode: "default",
     allowSkillWrites: true,
     timeoutMs: req.config.limits.executeTimeoutMin * 60_000,
@@ -212,8 +210,7 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
       rule("Edit", `${wt}/**`),
       rule("Write", `${wt}/**`),
       "Bash",
-      // claude answers --json-schema through this tool. A real capture showed a denial under dontAsk without
-      // this rule, and the hook denies such a call the same way. claude 2.1.300 did not deny it. The rule covers both.
+      // claude answers --json-schema through this tool. Without this rule, the hook denies the call (see permissionHookSettings).
       "StructuredOutput",
       "Skill",
       "TodoWrite",
@@ -221,7 +218,7 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
       // The model calls Agent. The init event of claude 2.1.300 lists Task.
       "Agent",
       "Task",
-      // A skill points the model at reference files in these folders, and a read without a rule is denied (measured under dontAsk, and the hook denies it the same way).
+      // A skill points the model at reference files in these folders. Without these rules, the hook denies the read (see permissionHookSettings).
       // Never allow the whole folder: it holds the credentials and the settings.
       ...(claudeDir === undefined
         ? []
