@@ -16,7 +16,7 @@ The own name of a session is in the first line of the output of `ListAgents`, in
 
 The operator runs only these `tasker` commands: `show-config`, `show-quota`, `show`, `show-bootstrap`, `show-plan`, `show-questions`, `show-verify`, `show-review`, `status` and `doctor`. It runs no other `tasker` command and starts no agent of a ticket.
 
-When a step of the operator pages applies [the failure rule](limits.md#the-failure-rule), the rule covers the operator in the place of the orchestrator.
+When a step of the operator pages applies [the failure rule](limits.md#the-failure-rule), the rule covers the operator in the place of the orchestrator. When the operator gets a notice, the operator follows [the notice rule](doc-reads.md#the-notice-rule).
 
 The operator pages are `docs/dev/operator.md` and the pages of this list, "The pages":
 
