@@ -37,6 +37,27 @@ planner.md also holds the rules for what an issue says and where it goes. This p
   one search and one word count over the draft file found them.
 - For a priority label on an issue, see [The body of an issue](planner.md#the-body-of-an-issue) of planner.md.
 
+### The read in the write call
+
+This rule covers each session that adds a blocked-by link to an issue, or changes the title or the body of an issue. The
+session runs one Bash call with these steps, in this order:
+
+1. Run `tasker status`.
+2. Read the state of the issue, for example with `gh issue view <number> --json state -q .state`.
+3. If `tasker status` lists no task for the full key of the issue and the state is `OPEN`, do the write.
+
+If the issue is in flight or closed, the call skips the write, and the session tells the user. The issue is in flight
+when `tasker status` lists a task for the full key of the issue.
+
+A read in an earlier call can be old, because a task can start or the issue can close between the read and the write. On
+2026-10-18, a new link of the relinked Docs chains landed on #302, which started after the planning session read the
+tasks in flight. The same day, a script changed the body of #288 after #288 closed, because its check covered only the
+tasks in flight.
+
+A link can still land on a task that started between the read and the write. Then the session removes the link with the
+command of [The blocked-by links](#the-blocked-by-links). The session tells the user that the link was a race. In that
+case, the orchestrator did not skip a blocker.
+
 ## The blocked-by links
 
 The rules for the links are in [The blocked-by links](planner.md#the-blocked-by-links) of planner.md. The commands below
