@@ -95,9 +95,15 @@ The facts that follow were measured on 2026-10-24 with herdr 0.9.3 and Claude Co
   operator.
 - The flag `-n` sets the session name, and the last argument is the first prompt of the session.
   [The seam of an agent kind](../config.md#the-seam-of-an-agent-kind) is the home of these flags.
-- In the output of `herdr agent list`, the row for a session that `herdr agent start` started has the field `name`, with
-  the herdr agent name. The row for a pane that `herdr pane report-agent` reported, with no `herdr agent start` in that
-  pane, has no `name` field. The agent of #503 measured this with herdr 0.9.3 on 2026-10-25.
+- In the fact tests of #503 and #516, the row of a test session had the field `name`, with the herdr agent name. Each
+  agent read the row soon after a `herdr agent start` that exited with 0. The row for a pane that
+  `herdr pane report-agent` reported, with no `herdr agent start` in that pane, has no `name` field. The agent of #503
+  measured this with herdr 0.9.3 on 2026-10-25.
+- On 2026-10-25 at about 15:40 MDT, none of the 17 rows of `herdr agent list` had a `name` field. This includes the rows
+  of planner-m14 and orchestrator-m14, which `herdr agent start` started. The cause of the missing field is not known.
+  The start of planner-m14 and the start of orchestrator-m14 each exited with 1 and the error code `timeout`. For the
+  other rows, the result of the start is not known. operator-m14 and planner-m14 measured this with herdr 0.9.3 on
+  2026-10-25.
 - `herdr agent start` refuses a herdr agent name that already runs. It exits with code 1 and prints the error code
   `agent_name_taken`. The agent of #503 measured this with herdr 0.9.3 on 2026-10-25.
 - The new session is a top-level session, not a subagent of the operator.
