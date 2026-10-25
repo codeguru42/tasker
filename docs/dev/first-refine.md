@@ -153,7 +153,14 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   refine before `tasker approve`. Step 4 of the self-check replaces the words "config", "settings" and "options" with
   "configuration". As a result, a hit of step 4 counts only in the meaning of the configuration. The word "option" in
   the meaning of a choice is not such a hit. On #435 (2026-10-25), the plan changed the word "option" of the issue to
-  "choice". The change fit there, because the section already used "choice" for the same meaning.
+  "choice". The change fit there, because the section already used "choice" for the same meaning. The skill also bans
+  the present perfect and the past perfect, for example "has ended" and "had ended". Of the perfect forms, the search of
+  step 2 of the self-check finds only "has been" and "have been". As a result, ask the plan to read each "has", "have"
+  and "had" of the copied text. If the issue uses a perfect form, ask the plan for one plain term in its place. Ask the
+  plan to use that term in each place of the form. A term that a doc defines stays as it is, for example "An agent has
+  ended" of "Terms" in `docs/dev/quota.md`. Ask the plan to make sure that the plain term keeps the meaning of the
+  issue. On #440 (2026-10-25), the first plain term "no longer runs" also covered "not started yet", and that changed
+  the rule. Review 1 found the gap as [a design gap](plan-review.md#the-design-gap-rule).
 - Ask the plan to start each item of a vertical list with an uppercase letter, as the simple-english skill says
   ([rules.md](rules.md#docs)). On #227, plan v4 had list items with a lowercase start, and one more refine fixed them.
 - Ask the plan to count the sentences again after each split of a sentence for the word limit of the simple-english
@@ -191,6 +198,32 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   fact test is the work of the agent, in [the folder of the agent](limits.md#limits) or in the task worktree, before the
   refine, and never a todo of the plan. On #425, plan v1 added the guard test `test/package-version.test.ts`, and it
   gave the execute session the fact test `npm pack` in the worktree of tasker. Refine 1 removed both.
+- If a ticket adds a security check of a path for an outside tool, the real path can disagree with the tool. An example
+  is a hook of `claude`. In each [diff read](run-one-ticket.md#the-diff-read), the agent also runs the real tool end to
+  end with the built code of the task. The agent runs it in the task worktree, in the same way as
+  [the measure rule](run-one-ticket.md#the-measure-rule). If the run finds a gap, the agent adds the work with
+  [the add-work rule](run-one-ticket.md#the-add-work-rule). Also ask the plan for a check on the text of the path, not
+  on the real path. The check on the text denies each symbolic link and each `.` or `..` part. The reason: such a check
+  needs no real path, so the text of the path and the path that the kernel writes cannot disagree. On #430 (2026-10-25),
+  an end-to-end run of the real tool with the built hook found more than the unit tests. The first hook of #430 used a
+  check on the real path. In review loop 1, the rule had a gap with a symbolic link to a path that does not exist.
+  Review loop 3 found that the text `..` and the kernel read of a symbolic link disagree. The user then changed the rule
+  to a check on the text.
+- If a ticket depends on the loaded copy of a skill that the agent must not run, the agent measures which copy loads. An
+  example is a skill that writes memory, which [Limits](limits.md#limits) bans for an agent. The agent uses a scratch
+  run of `claude -p` in a scratch repo that starts no skill. The hint that starts "For
+  [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder. The prompt asks the session to list
+  the descriptions of its skills and to run no skill. The run uses
+  `--model haiku --max-turns 1 --disallowedTools Bash Write Edit`. A control skill that only the scratch repo holds
+  shows that the run reads the skills of the scratch repo. On #413 (2026-10-25), with Claude Code 2.1.310, a copy was in
+  the scratch repo and a copy was in `$HOME/.claude/skills/`. Claude Code loaded the copy in `$HOME/.claude/skills/`.
+- If a ticket depends on a `SessionEnd` hook, the agent measures the hook with `claude -p` in a scratch repo. The hint
+  that starts "For [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder. A project hook for
+  `SessionEnd` in the scratch repo logs its input. The agent first runs
+  `claude -p "<prompt>" --model haiku --max-turns 1`. Then `claude -p --continue "/clear" --model haiku --max-turns 1`
+  runs the hook `SessionEnd` with `"reason":"clear"`. The transcript file still exists when the hook runs. The agent of
+  #413 measured this on 2026-10-25, with Claude Code 2.1.310. On #413, this fact test showed that a reason of the issue
+  was false. The issue said that Claude Code has no hook that runs before `/clear` with the transcript still there.
 - If [a fact test](plan-review.md#the-fact-test) takes more than 30 minutes, the agent starts it in the first tool call
   of the work. The agent gives its result in the comment of step 11 of
   [Run one ticket](run-one-ticket.md#run-one-ticket). On #252, the result of a 40-minute test came after the landing.
@@ -257,6 +290,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   [the doc-search rule](rules.md#docs). On #133, a new shared read helper changed an error text, and the diff read found
   two doc sentences that it made false. On #132, the helper-name search of
   [the diff read](run-one-ticket.md#the-diff-read) found a copied test helper after a review with no findings.
+- In [the diff read](run-one-ticket.md#the-diff-read), read each sentence that starts with "The reason:" together with
+  the sentence before it. Make sure that the reason argues for that sentence, not against it. On #422 (2026-10-25), the
+  diff read found a reason that the diff of #422 itself put in [the overlap rule](land-the-work.md#the-overlap-rule) of
+  `docs/dev/land-the-work.md`. The reason stood right after the fallback sentence, which takes the files of a task from
+  its plan when the branch diff is empty. The reason argued against that fallback. No review reported it.
 - To find a copied test helper, search the exact form of a mapping step, for example `({ name, required, timeoutMs })`.
   On #47, this search found a copy after a review with no findings.
 - Read the doc diff right after `tasker execute`, before the first review. Then a fix of a copied rule, or of a reason
