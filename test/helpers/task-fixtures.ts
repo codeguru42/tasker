@@ -491,9 +491,10 @@ export interface ExecuteFixture extends PlanFixture {
   env: NodeJS.ProcessEnv;
 }
 
-// The setup of the tests of tasker execute: usePlanFixture(control, { repo, limits }), then the task moves to planning, gets revision v1 with its plan file (the answer of options.answer on top
-// of validPlanAnswer) and v1 is approved, so the task is in approved with v1 pinned. config is the configuration of
-// the started task and env is process.env after the stubs. Call it inside a test.
+// The setup of the tests of tasker execute: usePlanFixture(control, { repo, limits }), then the task moves to
+// planning, gets revision v1 with its plan file (the answer of options.answer on top of validPlanAnswer) and v1 is
+// approved, so the task is in approved with v1 pinned. config is the configuration of the started task and env is
+// process.env after the stubs. Call it inside a test.
 export async function useExecuteFixture(
   control: FakeClaudeControl,
   options: {

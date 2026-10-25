@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { isOnPath } from "../../src/assistant/claude-code/sandbox.js";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -293,7 +294,7 @@ describe("usePlanFixture", () => {
     await usePlanFixture({});
 
     for (const name of ["bwrap", "socat"]) {
-      expect(process.env.PATH!.split(delimiter).some((dir) => existsSync(join(dir, name)))).toBe(true);
+      expect(isOnPath(name, process.env)).toBe(true);
     }
   });
 });
@@ -504,7 +505,7 @@ describe("useExecuteFixture", () => {
 
     expect(fixture.config).toBe(fixture.started.config);
     expect(fixture.env.PATH).toBe(process.env.PATH);
-    const found = process.env.PATH!.split(delimiter).some((dir) => existsSync(join(dir, "bwrap")));
+    const found = isOnPath("bwrap", process.env);
     expect(found).toBe(true);
     expect(process.env.PATH!.includes(fixture.claude.binDir)).toBe(true);
   });

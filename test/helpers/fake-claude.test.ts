@@ -3,6 +3,7 @@ import { existsSync, lstatSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
+import { isOnPath } from "../../src/assistant/claude-code/sandbox.js";
 import { createClaudeCodeProvider } from "../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import {
@@ -499,10 +500,9 @@ describe("useFakeClaudeOnPath", () => {
   it("puts the fake bwrap and socat on PATH after the fake claude", () => {
     const fake = useFakeClaudeOnPath({});
 
-    const dirs = process.env.PATH!.split(delimiter);
-    expect(dirs[0]).toBe(fake.binDir);
+    expect(process.env.PATH!.split(delimiter)[0]).toBe(fake.binDir);
     for (const name of ["bwrap", "socat"]) {
-      expect(dirs.some((dir) => existsSync(join(dir, name)))).toBe(true);
+      expect(isOnPath(name, process.env)).toBe(true);
     }
   });
 });
