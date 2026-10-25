@@ -73,7 +73,7 @@ If the user started the old session, [the start of the new operator](handoff-ope
 
 ## A topic handoff
 
-A topic handoff moves one topic of a session to a new session, for example the planning of an npm publish to a new planner. The old session keeps its other work.
+A topic handoff moves one topic of a session to a new session, for example the planning of an npm publish to a new planner. The old session keeps its other work. A request of the user for a handoff of one topic to a new session is a topic handoff.
 
 Only the user starts a topic handoff. The old session does not suggest one, and the counts of [The suggestion of a handoff](#the-suggestion-of-a-handoff) do not start one.
 
@@ -88,6 +88,10 @@ The file does not hold the state of the milestone, the other sessions, the revie
 
 The file goes in the folder of [The handoff file](#the-handoff-file), with the name form of that section. The role part is the role of the new session with the topic as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session does [The check of the handoff folder](#the-check-of-the-handoff-folder).
 
+The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. [The name of a session](operator.md) has its form. The old session puts this name in the item and in the prompt of the handoff file. The prompt also names `operator-<slug>` of the old session as the operator that the new session works with.
+
 The old session sends the path of the file to `operator-<slug>` as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says. The operator starts the new session with the prompt of the file as its first message, as [Start a session](operator-start.md#start-a-session) says. The operator does not stop the old session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and the stop of [The stop and the start](#the-stop-and-the-start) do not apply.
+
+When the old session is the operator, it starts the new session itself, as [Start a session](operator-start.md#start-a-session) says, and it sends no item.
 
 On 2026-10-25, the user asked orchestrator-m21 for "a handoff for a new session to plan publishing to NPM". The session first wrote the full orchestrator handoff. The user said: "we don't need to handoff this entire session. Just include what is necessary to continue a session for planning NPM publish."
