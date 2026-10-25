@@ -1,6 +1,6 @@
 # Handoff
 
-The readers of this page are a long-running orchestrator, the follow-up planner and the operator. Each role has its own page:
+The readers of this page are a long-running orchestrator, the follow-up planner, the operator and the session of [a topic handoff](#a-topic-handoff), which can be a session of any role. Each role has its own page:
 
 - [The orchestrator](handoff-orchestrator.md)
 - [The planner](handoff-planner.md)
@@ -70,3 +70,24 @@ If the operator started the old session, the operator stops the old session, as 
 The item with the path of the handoff file starts the stop and the start by the operator, with no answer of the user.
 
 If the user started the old session, [the start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives the end of the handoff.
+
+## A topic handoff
+
+A topic handoff moves one topic of a session to a new session, for example the planning of an npm publish to a new planner. The old session keeps its other work.
+
+Only the user starts a topic handoff. The old session does not suggest one, and the counts of [The suggestion of a handoff](#the-suggestion-of-a-handoff) do not start one.
+
+The handoff file holds only these parts of the topic:
+
+- The prompt of the new session, as [The items of a handoff file](#the-items-of-a-handoff-file) gives it, with the first message that names the path of the file
+- The decisions of the user on the topic
+- The facts of the topic
+- The open questions of the topic, in the form of [The items of a handoff file](#the-items-of-a-handoff-file)
+
+The file does not hold the state of the milestone, the other sessions, the review findings or the table of open issues, unless the topic needs them. The other items of [The items of a handoff file](#the-items-of-a-handoff-file) and [The last item id](#the-last-item-id) do not apply. The rule of [The items of a handoff file](#the-items-of-a-handoff-file) that the file holds no rule does apply.
+
+The file goes in the folder of [The handoff file](#the-handoff-file), with the name form of that section. The role part is the role of the new session with the topic as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session does [The check of the handoff folder](#the-check-of-the-handoff-folder).
+
+The old session sends the path of the file to `operator-<slug>` as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says. The operator starts the new session with the prompt of the file as its first message, as [Start a session](operator-start.md#start-a-session) says. The operator does not stop the old session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and the stop of [The stop and the start](#the-stop-and-the-start) do not apply.
+
+On 2026-10-25, the user asked orchestrator-m21 for "a handoff for a new session to plan publishing to NPM". The session first wrote the full orchestrator handoff. The user said: "we don't need to handoff this entire session. Just include what is necessary to continue a session for planning NPM publish."
