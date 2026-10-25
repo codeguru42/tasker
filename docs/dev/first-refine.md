@@ -217,8 +217,9 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - In a feedback text, name a file [outside the worktree](plan-review.md#the-repo-files-rule) only as "a file outside the
   worktree". On #252, refine 1 named the location of such a file, the plan copied the name, and refine 2 had to remove
   it.
-- If the issue gives the exact form of a line, for example an index line of `AGENTS.md`, say "no other words after the
-  colon" in the first refine. Otherwise the plan adds a lead-in, as other lines have. On #151, this cost one refine.
+- If the issue gives the exact form of an entry, for example an index entry of `AGENTS.md`, say "no other words after
+  the colon" in the first refine. Otherwise the plan adds a lead-in, as other entries have. On #151, this cost one
+  refine.
 - Before the agent dismisses a finding about the text of a message, it makes sure that the text is true for that case. A
   false message is a bug, not an edge case that [Review findings](review-findings.md#review-findings) lets the agent
   dismiss. On #132, the agent first dismissed such a finding as an edge case. The error named a log file that does not

@@ -58,8 +58,8 @@ The orchestrator does all the steps of this section.
   or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. This bullet and
   [the link offer](#the-link-offer) count two kinds of files of a ticket before its start: the files that the issue
   names, and each file that a hint of the orchestrator for the first refine asks the ticket to change. Examples are
-  `AGENTS.md` for the index line of a page and `docs/dev/orchestrator.md` for the list "The pages". On 2026-10-19, the
-  orchestrator gave #339 and #314 a hint to change their index lines in `AGENTS.md` and in the list "The pages", and
+  `AGENTS.md` for the index entry of a page and `docs/dev/orchestrator.md` for the list "The pages". On 2026-10-19, the
+  orchestrator gave #339 and #314 a hint to change their index entries in `AGENTS.md` and in the list "The pages", and
   #382 already changed `AGENTS.md`. As a result, the three tickets shared files, and the orchestrator had to set the
   landing order #382, #314, #339. If a ticket can start except for this bullet, because it shares a file with a task in
   flight of the same milestone, [the link offer](#the-link-offer) applies. This bullet covers two tickets of the

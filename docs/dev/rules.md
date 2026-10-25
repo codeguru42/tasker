@@ -164,9 +164,9 @@ skill is about the work on the repo, not about tasker, so tasker does not ship i
 
 ## AGENTS.md
 
-- `AGENTS.md` is an index. Each line is a one-line description plus a link to the file that has the details.
+- `AGENTS.md` is an index. Each entry is a short description plus a link to the file that has the details.
 - `AGENTS.md` is the index of the docs for the development of tasker. It does not explain how to use tasker, so an index
-  line need not list each command or each section of its file.
+  entry need not list each command or each section of its file.
 - Do not put rule text in `AGENTS.md`.
-- To add a topic, put its details in its own file under `docs/`. Then add one line to `AGENTS.md`.
+- To add a topic, put its details in its own file under `docs/`. Then add one entry to `AGENTS.md`.
 - `CLAUDE.md` has one line, `@AGENTS.md`, and nothing else.

@@ -250,8 +250,8 @@ that it dismissed. The initial planner posts only after the approval of the user
   each one whether the ticket covers it. On #387, the issue named only the shared-file bullet and the link offer. Plan
   v1 also widened the overlap rule, refine 1 took that out, and review 1 still found the gap.
 - An issue can add a section to a doc. Then the Docs section of the issue names each index that lists the sections of
-  that doc. Examples are the line of the doc in `AGENTS.md` and the list "The pages" of `docs/dev/orchestrator.md` for
-  an orchestration page. On #336 (2026-10-18), plan v1 found only the line of `AGENTS.md` and missed the list "The
+  that doc. Examples are the entry of the doc in `AGENTS.md` and the list "The pages" of `docs/dev/orchestrator.md` for
+  an orchestration page. On #336 (2026-10-18), plan v1 found only the entry of `AGENTS.md` and missed the list "The
   pages".
 - An issue can add a rule that limits what a session reads. Before the post, the planner searches the docs for each link
   to the files that the rule limits, and for each path of these files. The search follows
