@@ -10,6 +10,9 @@ import { dayAt, seedTasks } from "../helpers/store.js";
 
 const KEY = "codeguru42/tasker#5";
 
+// The report lines of the session roles in a file with no entry for them.
+const NONE_SESSIONS = "operator: none\nplanner: none\norchestrator: none\n";
+
 // The text of raw as a file with the indent and the final line end that tasker model writes.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function pretty(raw: Record<string, any>): string {
@@ -45,7 +48,7 @@ describe("model", () => {
 
       expect(result).toEqual({
         code: 0,
-        out: "plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n",
+        out: `plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n${NONE_SESSIONS}`,
         err: "",
       });
       expectNothingChanged(file, before);
@@ -57,6 +60,43 @@ describe("model", () => {
       const result = await runCommand(model, "model", KEY, "--role", "execute");
 
       expect(result).toEqual({ code: 0, out: "execute: sonnet (effort medium)\n", err: "" });
+    });
+
+    it("prints the entries of the session roles after the assistant roles", async () => {
+      useConfigFile((dataRoot) => {
+        const raw = rawWithProject(dataRoot);
+        raw.repos.tasker.sessions = {
+          models: {
+            operator: { model: "opus", effort: "xhigh" },
+            orchestrator: { model: "sonnet", effort: "max" },
+          },
+        };
+        return pretty(raw);
+      });
+
+      const result = await runCommand(model, "model", KEY);
+
+      expect(result).toEqual({
+        code: 0,
+        out:
+          "plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n" +
+          "operator: opus (effort xhigh)\nplanner: none\norchestrator: sonnet (effort max)\n",
+        err: "",
+      });
+    });
+
+    it("prints only the session role that --role names", async () => {
+      useConfigFile((dataRoot) => {
+        const raw = rawWithProject(dataRoot);
+        raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "xhigh" } } };
+        return pretty(raw);
+      });
+
+      const none = await runCommand(model, "model", KEY, "--role", "planner");
+      const entry = await runCommand(model, "model", KEY, "--role", "operator");
+
+      expect(none).toEqual({ code: 0, out: "planner: none\n", err: "" });
+      expect(entry).toEqual({ code: 0, out: "operator: opus (effort xhigh)\n", err: "" });
     });
 
     it("fails for an issue key of an unknown project", async () => {
@@ -101,8 +141,8 @@ describe("model", () => {
   });
 
   describe("repo pick", () => {
-    const FORK_REPORT = "plan: haiku (effort low)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n";
-    const TASKER_REPORT = "plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n";
+    const FORK_REPORT = `plan: haiku (effort low)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n${NONE_SESSIONS}`;
+    const TASKER_REPORT = `plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n${NONE_SESSIONS}`;
 
     // The config of two repos with the project of KEY: codeguru42/tasker and fork. Fork has another plan model.
     function useForkConfig(): { path: string; dataRoot: string } {
