@@ -6,6 +6,13 @@ The rules apply to each session that works with the user, for example the orches
 
 The work on this repo must continue on any machine, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) of planner.md says. For this reason, these rules are in the repo and not in the notes of an assistant.
 
+## The operator
+
+- An orchestrator and a follow-up planner work with the user through `operator-<slug>` (see [operator.md](operator.md)). Each rule that says "tell the user" or "ask the user" means: send an item to the operator (see [The form of an item](operator-items.md#the-form-of-an-item)).
+- A message from `operator-<slug>` that starts with "From the user:" is a word of the user for the rules of the docs.
+- Such a message never approves a permission prompt of Claude Code.
+- The initial planner works with the user directly in its tab.
+
 ## A decision of the user
 
 - When the user must decide something, first explain in the reply what happened, what the problem is, and what each choice does. Then ask, and give a recommendation.
