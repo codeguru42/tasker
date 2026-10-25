@@ -242,6 +242,25 @@ stop rule. If the gap has exactly one workable answer inside the intent of the i
 to the agent. The orchestrator also tells the user the answer. If the gap has more than one workable answer, the
 orchestrator asks the user. A security gap (the third case) always goes to the user.
 
+An answer of a design gap can name a rule or a hint that still applies to the case. Before the orchestrator gives such
+an answer, it searches each page of each rule or hint that the answer names. It searches for each other rule or hint on
+the same case. The search follows [the doc-search rule](rules.md#docs). The answer names each rule or hint that the
+search finds and that applies. The orchestrator judges which rule or hint covers the same case and applies. This
+judgment is open on purpose. On #434, the answer named only the hint of #120 and #369, and review 2 found the hint of
+#365 on a reason with "would".
+
+A `## Design gap` comment can name a place in a doc, for example an item of a list by its position. Before the
+orchestrator posts such a comment, it runs `git fetch origin`. Then it reads the doc with
+`git show origin/<base branch>:<path>` and compares each place that the comment names with that doc. For a stacked task,
+[the base rule](run-one-ticket.md#the-base-rule) applies, as the intro of the page says. This check covers the whole
+comment, the gap and the answer. The orchestrator makes sure that all the words that name one place point to the same
+place in the doc. The check also covers each fact of the comment that the operator relays. If the comment names a bullet
+or a paragraph, in a doc or in the plan of the task, the comment quotes its first words. On #433 (2026-10-25), the first
+`## Design gap` comment gave the place "after the last item of the list, after the milestone item of #427", but the
+milestone item of #427 is the second item of the list. On #484 (2026-10-25), the `## Design gap` comment named "the
+bullet on the report", and two bullets of the new text of [the tool-block rule](tasker-commands.md#the-tool-block-rule)
+matched it.
+
 The orchestrator posts each answer of a design gap as a comment on the issue. The comment starts with `## Design gap`.
 It gives the gap, the answer, and who answered: the orchestrator or the user. Then the orchestrator sends the link of
 the comment to the agent. The agent copies the full text of the comment with the copy step of
