@@ -223,13 +223,13 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
         : [rule("Read", `${resolve(claudeDir)}/skills/**`), rule("Read", `${resolve(claudeDir)}/plugins/**`)]),
     ],
     // A deny wins over an allow, so git data changes only through git in the sandboxed shell.
+    // The Edit rules cover each tool that edits a file, also Write. claude 2.1.310 warns that a Write deny rule
+    // does not match in the file permission checks, and that only Edit rules match.
     disallowedTools: [
       ...surface.denyRules,
-      ...["Edit", "Write"].flatMap((tool) => [
-        rule(tool, `${wt}/.git`),
-        rule(tool, `${wt}/.git/**`),
-        rule(tool, `${clone}/**`),
-      ]),
+      rule("Edit", `${wt}/.git`),
+      rule("Edit", `${wt}/.git/**`),
+      rule("Edit", `${clone}/**`),
     ],
     sandbox: {
       allowWrite: await surface.sandboxWritePaths(wt),
