@@ -251,7 +251,8 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   call needs. The output holds no token. The agent of #317 used this.
 - In a feedback text, name a file [outside the worktree](plan-review.md#the-repo-files-rule) only as "a file outside the
   worktree". On #252, refine 1 named the location of such a file, the plan copied the name, and refine 2 had to remove
-  it.
+  it. The hint also covers a [web page](plan-review.md#the-repo-files-rule). A feedback text names such a page only as
+  "a web page", with no URL.
 - If the issue gives the exact form of an entry, for example an index entry of `AGENTS.md`, say "no other words after
   the colon" in the first refine. Otherwise the plan adds a lead-in, as other entries have. On #151, this cost one
   refine. The hint covers two more cases. In the first case, the issue gives the exact words of a change. The hint
