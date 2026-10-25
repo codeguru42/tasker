@@ -22,7 +22,7 @@ In a new session after a handoff, the count starts again at 0.
 
 The reason for the count: it leaves room for the session review and the handoff file before an automatic compaction. An automatic compaction loses context. On 2026-10-24, the context size of orchestrator-docs was about 175k tokens after the doc reads at the start, and about 400k after 15 landings (about 15k for a quiet landing). Three more landings, a quota resume, the filing of one issue and several question rounds brought it to about 507k (about 30k for a busy landing). An automatic compaction ran right after, and the session review and the handoff file then used about 30k to 50k tokens.
 
-In an answer to [a question of the user](working-with-the-user.md#a-question-of-the-user), the old orchestrator suggests a handoff only when the suggestion is relevant to that question. A landing report is not such an answer.
+In an answer to [a question of the user](working-with-the-user.md#a-question-of-the-user), the old orchestrator suggests a handoff only when the suggestion is relevant to that question. In a list of open questions or open items, the rule of [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) wins. A landing report is not such an answer.
 
 ## The steps of the old orchestrator
 
