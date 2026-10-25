@@ -885,7 +885,13 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   still finds each link, as [the doc-search rule](rules.md#docs) says. But a changed link can move the line breaks of
   its paragraph. So compare the two outputs of the pass with `git diff --no-index --word-diff=porcelain`. Apart from the
   two header lines, a moved line break gives no line that starts with `-` or `+` in this diff. As a result, these lines
-  show only the real differences. The agents of #322, #323 and #324 used this proof.
+  show only the real differences. The agents of #322, #323 and #324 used this proof. The word diff
+  `git diff --no-index --word-diff=porcelain` gives these exit codes. If it exits with 0 and prints nothing, the two
+  outputs are the same, and the proof succeeds. A moved line break alone gives the exit code 1. If it exits with 1 and
+  prints a `diff --git` line, the lines that start with `-` or `+` decide, as the hint says. If no such line exists, the
+  proof also succeeds. If it exits with 1 and prints no `diff --git` line, a path is wrong. Then the agent fixes the
+  path and runs the diff again. Other exit codes are out of scope. The final report of #506 named the exit code 1 of a
+  moved line break. planner-docs measured the three results with git 2.47.3 on 2026-10-25.
 - If a hint keeps an old list item as its own sentence, first make sure that no kept rule of the page already says the
   same thing. Otherwise the kept sentence repeats that rule. On #338, a hint kept the fourth case of
   [the stop rule](plan-review.md#the-stop-rule) as its own sentence, and the sentence repeated the message bullet of
