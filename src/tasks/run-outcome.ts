@@ -38,6 +38,14 @@ export function interruptedLine(phase: TaskState, signal: NodeJS.Signals, issueK
 // with exitCode.
 export type RunOutcomeResult = { outcome: SuccessOutcome; warning?: QuotaApprovalWarning } | { exitCode: number };
 
+// The one home of the sandbox_cleanup event: writes it when the outcome of a run holds the cleanup of the
+// sandbox. A refused run and a run with no sandbox have no cleanup, so they write no event.
+export function recordSandboxCleanup(store: TaskStore, task: Task, outcome: RunOutcome): void {
+  if (outcome.sandboxCleanup !== undefined) {
+    store.appendEvent(task.id, "sandbox_cleanup", outcome.sandboxCleanup);
+  }
+}
+
 // Records the usage of the run, then moves the task for an outcome that is not success.
 export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
   const { store, task, phase, io, outcome } = request;

@@ -9,7 +9,7 @@ import { planRevisionPath, planTranscriptPath } from "../store/layout.js";
 import { PlanFileWriteError, recordPlanRevision } from "../store/plan-file.js";
 import type { PlanRevisionSource, Task, TaskStore } from "../store/store.js";
 import type { PreparedPlanModeRun } from "./assistant-run.js";
-import { applyRunOutcome, failRun, pauseForQuotaApproval } from "./run-outcome.js";
+import { applyRunOutcome, failRun, pauseForQuotaApproval, recordSandboxCleanup } from "./run-outcome.js";
 
 export interface PlannedRevision {
   version: number;
@@ -90,6 +90,7 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
     } finally {
       closeSync(fd);
     }
+    recordSandboxCleanup(store, task, outcome);
     const endedAt = new Date().toISOString();
     const result = applyRunOutcome({
       store,

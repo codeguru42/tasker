@@ -30,7 +30,13 @@ import { type ExecuteFixTurn, type TaskStore } from "../store/store.js";
 import { type RemoteTip, vcsForRepo } from "../vcs/provider.js";
 import { tipMoved } from "../vcs/remote-tip.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
-import { applyRunOutcome, failRun, interruptedLine, pauseForQuotaApproval } from "./run-outcome.js";
+import {
+  applyRunOutcome,
+  failRun,
+  interruptedLine,
+  pauseForQuotaApproval,
+  recordSandboxCleanup,
+} from "./run-outcome.js";
 import { assertSessionModel } from "./session-model.js";
 import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
@@ -214,9 +220,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
             fixTurnDone = true;
           }
         }
-        if (outcome.sandboxCleanup !== undefined) {
-          store.appendEvent(task.id, "sandbox_cleanup", outcome.sandboxCleanup);
-        }
+        recordSandboxCleanup(store, task, outcome);
         // Layer 3 of the push guard: the tip of the task branch on the remote must not move. A push wins over
         // every outcome, a quota stop included.
         let pushed: string | undefined;
