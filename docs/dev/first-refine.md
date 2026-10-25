@@ -254,7 +254,14 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   it.
 - If the issue gives the exact form of an entry, for example an index entry of `AGENTS.md`, say "no other words after
   the colon" in the first refine. Otherwise the plan adds a lead-in, as other entries have. On #151, this cost one
-  refine.
+  refine. The hint covers two more cases. In the first case, the issue gives the exact words of a change. The hint
+  covers each such change. In the second case, plan v1 gives a choice of words. It labels a text as suggested, offers
+  two or more texts for one change, or lets execute add a reason, a case or a sentence. In both cases, the first refine
+  gives the exact final text of each change. It asks the plan for no second form of the words of a change. The exact
+  final text adds no fact or case that the issue does not give. It still keeps each link and each form that another hint
+  of this page asks for. For a reason clause that no requirement asks for, the hint that starts "Ask the plan to add no
+  reason that the issue does not give" applies. On #455 (2026-10-25), plan v1 gave a "suggested text" for one change and
+  "a shorter form is also good" for another. One refine with the exact final text fixed it.
 - Before the agent dismisses a finding about the text of a message, it makes sure that the text is true for that case. A
   false message is a bug, not an edge case that [Review findings](review-findings.md#review-findings) lets the agent
   dismiss. On #132, the agent first dismissed such a finding as an edge case. The error named a log file that does not
