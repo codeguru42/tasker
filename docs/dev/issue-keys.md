@@ -9,7 +9,7 @@ the rules that resolve a key to one repo.
 - Jira: `PROJ-N`.
 - Jira with a site: `<site>/browse/PROJ-N`.
 
-`N` is a number with no leading zero. `PROJ` is in upper case.
+`N` is a number with no leading zero. `PROJ` is in upper case, and it can hold `_`. The site of a key can have any case.
 
 `skills/tasker/SKILL.md` gives the same forms to users in its "Issue keys" section. A change to the forms must change
 both files.
