@@ -2,7 +2,7 @@
 
 This page gives the procedure for a rebase conflict that `tasker update-branch` reports.
 
-The page is for [the installed `tasker`](orchestrator.md) that drives the work on this repo. To see the flags of a
+The page is for [the installed `tasker`](../orchestrator.md) that drives the work on this repo. To see the flags of a
 command, run `tasker <command> --help`.
 
 ## Who runs the procedure

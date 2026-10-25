@@ -5,11 +5,11 @@ The readers of this page are the orchestrator, the agents, and the operator for 
 ## The re-read rule
 
 The orchestrator works from the current docs of the orchestrator. The docs of the orchestrator are `AGENTS.md`,
-`docs/dev/orchestrator.md`, the pages of the list "The pages" of [docs/dev/orchestrator.md](orchestrator.md), and the
-docs that the prompt of the orchestrator names. For example, a prompt can name `docs/dev/rules.md`,
-`docs/dev/planner.md`, `docs/dev/issues.md`, `docs/dev/working-with-the-user.md`, `docs/dev/first-refine.md` and
-`docs/dev/rebase-conflicts.md`. The last read is the commit of `origin/main` from which the orchestrator last read the
-docs of the orchestrator.
+`docs/orchestrator.md`, the pages of the list "The pages" of [docs/orchestrator.md](../orchestrator.md),
+`docs/sessions.md`, and the docs that the prompt of the orchestrator names. For example, a prompt can name
+`docs/dev/rules.md`, `docs/dev/planner.md`, `docs/dev/issues.md`, `docs/dev/working-with-the-user.md`,
+`docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `origin/main` from which
+the orchestrator last read the docs of the orchestrator.
 
 At the start of its session, the orchestrator runs `git -C <local clone> fetch origin`, as
 [the doc-read rule](#the-doc-read-rule) says. Then it runs `git -C <local clone> rev-parse --verify origin/main`. The
@@ -28,8 +28,8 @@ change no task.
    stays.
 4. Before the next step of your work, read again each file of the list that is a doc of the orchestrator, with
    `git -C <local clone> show <tip>:<path>`. A file of the list outside the docs of the orchestrator needs no read. If
-   `AGENTS.md` or `docs/dev/orchestrator.md` is on the list, also read, for the first time, each new doc that it names
-   for the work of the orchestrator, with the same command. Then `<tip>` is the new last read.
+   `AGENTS.md` or `docs/orchestrator.md` is on the list, also read, for the first time, each new doc that it names for
+   the work of the orchestrator, with the same command. Then `<tip>` is the new last read.
 
 If a command of [the doc-read rule](#the-doc-read-rule) fails before a doc read of the orchestrator,
 [the failure rule](limits.md#the-failure-rule) applies. This applies to the first read at the start of the session and
@@ -43,7 +43,7 @@ orchestrator, and that hash is the first last read. The orchestrator does the st
 
 This rule covers a ticket of the milestone "Docs" (see [docs/dev/planner.md](planner.md)). It applies when the landing
 of the ticket changes a doc of the orchestrator of the ticket (see [the re-read rule](#the-re-read-rule)), for example
-`docs/dev/orchestrator.md`, or a page of the operator. A page of the operator is `docs/dev/operator.md` or a page of its
+`docs/orchestrator.md`, or a page of the operator. A page of the operator is `docs/dev/operator.md` or a page of its
 list "The pages". A notice is a message about such a landing from the orchestrator of the ticket. For a change of a doc
 of the orchestrator, the notice goes to the other orchestrators. For a change of a page of the operator, the notice goes
 to each session whose name starts with `operator-`. The operator gives the session of each orchestrator a name of the
@@ -78,7 +78,7 @@ operator gets a notice, the operator does [the doc-read rule](#the-doc-read-rule
 the operator again.
 
 Each orchestrator has its own docs of the orchestrator, because each prompt names its own docs. `AGENTS.md`,
-`docs/dev/orchestrator.md` and the pages of its list "The pages" are docs of each orchestrator.
+`docs/orchestrator.md`, the pages of its list "The pages" and `docs/sessions.md` are docs of each orchestrator.
 
 The re-read rule and the notice rule do not cover the agents. Each new agent reads the docs when it starts.
 

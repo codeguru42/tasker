@@ -13,11 +13,11 @@ job.
 
 - The reset time is the time when the quota of the account becomes available again. The quota resets at the exact reset
   time.
-- A cron job (a job, on [the orchestration pages](orchestrator.md)) is a prompt that the orchestrator schedules for a
+- A cron job (a job, on [the orchestration pages](../orchestrator.md)) is a prompt that the orchestrator schedules for a
   time. A one-shot job fires one time and then deletes itself. A job fires only while the orchestrator is idle. A job
   lives only in the session of the orchestrator.
 - The five-hour job is the job for the five-hour reset time. The seven-day job is the job for the seven-day reset time.
-  On [the orchestration pages](orchestrator.md), "an agent has a job", "has no job" and "an agent without a job" mean
+  On [the orchestration pages](../orchestrator.md), "an agent has a job", "has no job" and "an agent without a job" mean
   the five-hour job. A seven-day job alone does not count.
 - An agent is running while it works on its turn. An agent has ended when its turn is over, for example after a tasker
   command stops in `quota_blocked` or `interrupted`. A message to an agent that has ended starts the agent again, and

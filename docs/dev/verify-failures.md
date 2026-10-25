@@ -5,7 +5,7 @@ of this page that uses `origin/<base branch>`.
 
 ## The verify-failure rule
 
-This rule applies to each `tasker verify` on [the orchestration pages](orchestrator.md), in step 5 of
+This rule applies to each `tasker verify` on [the orchestration pages](../orchestrator.md), in step 5 of
 [Run one ticket](run-one-ticket.md#run-one-ticket), in step 9 and after `tasker update-branch` in
 ["Land the work"](land-the-work.md#land-the-work). If `tasker verify` fails, the task goes to `failed`. In `failed`,
 `tasker show <issue>` lists `refine`, `update-branch`, `retry` and `abort`. A fix of a failed `tasker verify` does not
@@ -36,7 +36,7 @@ the failure. Then the agent does the first case of this list that applies:
   one time for a reason outside the code. `tasker retry` accepts a task in `failed`. By default, `tasker retry` runs
   `tasker verify` again on the same code. If that verify passes, the agent runs `tasker show <issue>`, and the task is
   in the state that it prints. Then the agent runs the command that comes after `tasker verify` in the place that ran
-  it. In each place on [the orchestration pages](orchestrator.md), that command is `tasker review`.
+  it. In each place on [the orchestration pages](../orchestrator.md), that command is `tasker review`.
 
 If a command fails or the task is in another state, run `tasker show <issue>` and follow the commands that it prints.
 

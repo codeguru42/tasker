@@ -4,8 +4,8 @@ This page gives the rules for an assistant session that works with the user of t
 work wait until later. The [user](../sessions.md) works with the session.
 
 The rules apply to each session that works with the user, for example the orchestrator of
-[orchestrator.md](orchestrator.md) and the planner of [planner.md](planner.md). They do not apply to the sessions that
-tasker starts for plan, execute and review.
+[orchestrator.md](../orchestrator.md) and the planner of [planner.md](planner.md). They do not apply to the sessions
+that tasker starts for plan, execute and review.
 
 The work on this repo must continue on any machine, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) of
 planner.md says. For this reason, these rules are in the repo and not in the notes of an assistant.
@@ -159,8 +159,8 @@ link to open an issue from a reply.
 
 - The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge
   case. Decide it as "later", and keep the ticket in its scope. The goal of the numbered milestones is parity with
-  [the installed tasker](orchestrator.md): each command of the installed tasker, with its core features. A feature that
-  the installed tasker does not have also waits until later, as an edge case does.
+  [the installed tasker](../orchestrator.md): each command of the installed tasker, with its core features. A feature
+  that the installed tasker does not have also waits until later, as an edge case does.
 - Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at
   once. [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the
   steps for a finding of a review.

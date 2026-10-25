@@ -30,7 +30,7 @@ On 2026-10-18, the machine used Node 26.7.0, git 2.47.3, gh 2.101.0 and Claude C
 
 ## The installed tasker
 
-The orchestrator runs the tickets with the installed `tasker`, as [docs/dev/orchestrator.md](orchestrator.md) says.
+The orchestrator runs the tickets with the installed `tasker`, as [docs/orchestrator.md](../orchestrator.md) says.
 
 1. Set up the configuration file:
    - Open the configuration file. [Where the file is](../config.md#where-the-file-is) gives its place.

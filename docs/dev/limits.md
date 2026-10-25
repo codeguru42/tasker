@@ -31,7 +31,7 @@ These limits apply to the orchestrator and to the agents, except where a bullet 
 - The agent changes only its own issue. On GitHub issues, labels and the project board, the comment of step 11 of
   ["Run one ticket"](run-one-ticket.md#run-one-ticket) is the only write of the agent. The agent does not edit an issue
   body, a label or the project board. This rule does not cover the git commands and the `tasker` commands of the steps
-  on [the orchestration pages](orchestrator.md), for example `tasker merge` and the delete of the task branch in
+  on [the orchestration pages](../orchestrator.md), for example `tasker merge` and the delete of the task branch in
   step 10. On GitHub Actions, the rerun of step 9 of [the CI wait](ci-wait.md#the-ci-wait)
   (`gh run rerun <run id> --failed`) is the only write of the agent.
 - If tasker stops for a quota, follow ["Quota"](quota.md#quota). Never run `tasker approve-credits`.
@@ -212,8 +212,8 @@ A stop of an agent has these parts:
 
 A step that stops gives only the facts that differ from this list, for example a state of the task that changes, what
 stays behind, or a report to someone other than the orchestrator. When a step of
-[the orchestration pages](orchestrator.md) sends the agent to [docs/dev/rebase-conflicts.md](rebase-conflicts.md), each
-stop of its procedure is a stop.
+[the orchestration pages](../orchestrator.md) sends the agent to [docs/dev/rebase-conflicts.md](rebase-conflicts.md),
+each stop of its procedure is a stop.
 
 For a resume message during the wait, see [the resume rule](quota.md#the-next-job) in
 ["When the job fires"](quota.md#when-the-job-fires). The rule does not cover a wait that reads a state, for example the

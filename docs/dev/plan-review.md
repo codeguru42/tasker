@@ -182,11 +182,11 @@ with the landed code. A sentence of the comment can state a fact of the code, fo
 command. On #274, the comment said that diverged tips refuse "before the move to `updating_branch`". The fetch of the
 command runs after that move, so the agent stopped, and a second comment corrected the row.
 
-Before such a comment fixes an order of steps, the orchestrator also searches [the orchestration pages](orchestrator.md)
-for each other sentence that gives an order of the same steps. The comment fixes each of them. The search follows
-[the doc-search rule](rules.md#docs). On #272, the first comment fixed the order of the landing steps.
-[The issue check](#the-issue-check) of the agent then found two sentences with the opposite order, in
-[Pick the tickets](pick-the-tickets.md#pick-the-tickets) and in [the re-read rule](doc-reads.md#the-re-read-rule). A
+Before such a comment fixes an order of steps, the orchestrator also searches
+[the orchestration pages](../orchestrator.md) for each other sentence that gives an order of the same steps. The comment
+fixes each of them. The search follows [the doc-search rule](rules.md#docs). On #272, the first comment fixed the order
+of the landing steps. [The issue check](#the-issue-check) of the agent then found two sentences with the opposite order,
+in [Pick the tickets](pick-the-tickets.md#pick-the-tickets) and in [the re-read rule](doc-reads.md#the-re-read-rule). A
 second comment fixed them.
 
 The orchestrator sends the link of the comment to the agent before the next refine of the agent, as the bullet "When the

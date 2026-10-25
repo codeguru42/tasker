@@ -180,8 +180,8 @@ prints.
 
 ### The base rule
 
-This rule covers each command of [the orchestration pages](orchestrator.md) that uses `origin/<base branch>`. A stacked
-task is a task that `tasker start` based on the branch of its parent (see
+This rule covers each command of [the orchestration pages](../orchestrator.md) that uses `origin/<base branch>`. A
+stacked task is a task that `tasker start` based on the branch of its parent (see
 [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule)).
 
 Before each such command, the agent reads the `base:` line of `tasker show <issue>`. The agent does these steps:

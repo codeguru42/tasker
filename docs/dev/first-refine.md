@@ -1,7 +1,7 @@
 # First refine
 
 This page lists the hints for the first refine of a ticket, sorted by the kind of ticket.
-[orchestrator.md](orchestrator.md) defines the terms "ticket" and "agent", and
+[orchestrator.md](../orchestrator.md) defines the terms "ticket" and "agent", and
 [Review findings](review-findings.md#review-findings) defines a loop. The first refine is the first `tasker refine` of
 step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket).
 
@@ -454,9 +454,9 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - If a refine removes the first sentence of a paragraph, the feedback gives the new lead-in of that paragraph. On #173,
   a doc fix removed the first sentence of a paragraph in `docs/dev/tasks.md`, and the paragraph lost its subject.
 - A test with one case is a plain `it`, not an `it.each`. On #262, a review flagged an `it.each` with only one case.
-- [The orchestration pages](orchestrator.md) describe the installed tasker. A plan for a change of the tasker that this
-  repo builds does not edit them. On #278, plan v2 added a todo for `docs/dev/orchestration.md`, and the agent took it
-  out.
+- [The orchestration pages](../orchestrator.md) describe the installed tasker. A plan for a change of the tasker that
+  this repo builds does not edit them. On #278, plan v2 added a todo for `docs/dev/orchestration.md`, and the agent took
+  it out.
 - If a label does not exist, `gh issue list --label <name> --limit 1000 --json number` prints `[]` and exits with 0.
   Without `--json`, the command prints nothing and exits with 0 (gh 2.102.1, measured on 2026-10-24). So an empty list
   does not show that the label exists. Before a plan rests on a label, the agent runs `gh label list --limit 1000` and

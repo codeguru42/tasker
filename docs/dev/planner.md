@@ -4,8 +4,8 @@ This page gives the rules for a planner. A planner is the assistant session that
 on GitHub. The [user](../sessions.md) works with the planner. The readers of this page are the planner and its user.
 
 The page does not cover the work of the orchestrator and of the agents of the tickets.
-[The orchestration pages](orchestrator.md) hold that work, and [orchestrator.md](orchestrator.md) defines the terms
-"orchestrator", "ticket" and "agent".
+[The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines the
+terms "orchestrator", "ticket" and "agent".
 
 [issues.md](issues.md) gives the steps and the GitHub facts to file issues, blocked-by links and milestones, and the
 facts of the project board.
@@ -268,9 +268,8 @@ that it dismissed. The initial planner posts only after the approval of the user
   each one whether the ticket covers it. On #387, the issue named only the shared-file bullet and the link offer. Plan
   v1 also widened the overlap rule, refine 1 took that out, and review 1 still found the gap.
 - An issue can add a section to a doc. Then the Docs section of the issue names each index that lists the sections of
-  that doc. Examples are the entry of the doc in `AGENTS.md` and the list "The pages" of `docs/dev/orchestrator.md` for
-  an orchestration page. On #336 (2026-10-18), plan v1 found only the entry of `AGENTS.md` and missed the list "The
-  pages".
+  that doc. Examples are the entry of the doc in `AGENTS.md` and the list "The pages" of `docs/orchestrator.md` for an
+  orchestration page. On #336 (2026-10-18), plan v1 found only the entry of `AGENTS.md` and missed the list "The pages".
 - An issue can add a case to a numbered list whose steps a handoff file records by number. An example of a case is a new
   condition and its action. Then the issue says that the case goes inside an existing step, and it names that step. An
   example of such a list is [The order of a milestone](operator-start.md#the-order-of-a-milestone).

@@ -58,7 +58,7 @@ The orchestrator does all the steps of this section.
   or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. This bullet and
   [the link offer](#the-link-offer) count two kinds of files of a ticket before its start: the files that the issue
   names, and each file that a hint of the orchestrator for the first refine asks the ticket to change. Examples are
-  `AGENTS.md` for the index entry of a page and `docs/dev/orchestrator.md` for the list "The pages". On 2026-10-19, the
+  `AGENTS.md` for the index entry of a page and `docs/orchestrator.md` for the list "The pages". On 2026-10-19, the
   orchestrator gave #339 and #314 a hint to change their index entries in `AGENTS.md` and in the list "The pages", and
   #382 already changed `AGENTS.md`. As a result, the three tickets shared files, and the orchestrator had to set the
   landing order #382, #314, #339. If a ticket can start except for this bullet, because it shares a file with a task in
@@ -494,7 +494,7 @@ The orchestrator writes the prompt of each agent.
   project board (see ["Limits"](limits.md#limits)). In one case, a strong "never run a gh write" line in the prompt of
   an agent made the classifier of auto mode block the comment of step 11 (see
   [the tool-block rule](tasker-commands.md#the-tool-block-rule)).
-- For all the rules, the prompt points to [the orchestration pages](orchestrator.md) and to the docs that `AGENTS.md`
+- For all the rules, the prompt points to [the orchestration pages](../orchestrator.md) and to the docs that `AGENTS.md`
   names. No other base prompt exists.
 - When the orchestrator learns a new rule for agents, it does not put the rule only in a prompt. It sends the rule to
   the planner, as the planner bullet of this section says. A rule that only one ticket needs can also go in the prompt
