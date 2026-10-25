@@ -31,9 +31,9 @@ After the start, the old orchestrator does these steps:
 1. Start no new ticket.
 2. Wait until each task in flight lands. For each landing, do the usual steps: delete the jobs (see [Delete the job](quota.md#delete-the-job)), do [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step of the bullet "When the final report of the agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) and do [the notice rule](doc-reads.md#the-notice-rule). The reason: a job lives only in the session of the orchestrator (see [Terms](quota.md#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
 3. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round finds nothing new. The user asked for this rule on 2026-10-17. Then write the handoff file, as [The handoff file](handoff.md#the-handoff-file) says.
-4. If the operator started the old orchestrator, send the path of the handoff file to `operator-<slug>` as an item, as [The form of an item](operator-items.md#the-form-of-an-item) of operator-items.md says. If the user started the old orchestrator, give the path of the file in the reply to the user.
+4. Send the path of the handoff file to `operator-<slug>` as an item, as [The form of an item](operator-items.md#the-form-of-an-item) of operator-items.md says.
 
-If the user started the old orchestrator, the handoff ends when the user clears the old session and starts the new session with the prompt of the handoff file. If the operator started the old orchestrator, [The end of a handoff](handoff.md#the-end-of-a-handoff) says how the handoff ends. Until then, the old orchestrator starts no new ticket, also after step 4. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new ticket without the word of the user.
+The handoff ends in the operator, as [The end of a handoff](handoff.md#the-end-of-a-handoff) and [The stop and the start](handoff.md#the-stop-and-the-start) of handoff.md say. Until the end, the old orchestrator starts no new ticket, also after step 4. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new ticket without the word of the user.
 
 ## The handoff file of the orchestrator
 
@@ -50,4 +50,4 @@ The docs that the prompt names are docs of the orchestrator of [the re-read rule
 
 ## The start of the new orchestrator
 
-If the user started the old orchestrator, the user pastes the prompt as the first message of the new session. The user names the session `orchestrator-<milestone>`, for example `orchestrator-docs`, as [the notice rule](doc-reads.md#the-notice-rule) says. The new orchestrator then starts with the re-read rule. Right after the first doc read, the new orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).
+The new orchestrator is `orchestrator-<slug>`. [The stop and the start](handoff.md#the-stop-and-the-start) applies. The new orchestrator then starts with the re-read rule. Right after the first doc read, the new orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).

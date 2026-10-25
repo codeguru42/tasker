@@ -69,4 +69,4 @@ If the operator started the old session, the operator stops the old session, as 
 
 The item with the path of the handoff file starts the stop and the start by the operator, with no answer of the user.
 
-If the user started the old session, the role page gives the end of the handoff: [the orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) and [the operator](handoff-operator.md#the-start-of-the-new-operator).
+If the user started the old session, [the start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives the end of the handoff.
