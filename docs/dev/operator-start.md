@@ -6,7 +6,7 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 
 1. The user picks the slug.
 2. The user runs `tasker show-config --repo <key>` and reads `sessions.models.operator`. `<key>` is the repo key of the repo of the local clone, for example `codeguru42/tasker`. If the command fails, the user does not open the operator. Then the user opens the operator in `claude` and names it `operator-<slug>`. The user passes the model and the effort of `sessions.models.operator` with the flags of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), for example `claude -n operator-m9 --model opus --effort high`. If `sessions.models.operator` has no entry, the user passes neither flag.
-3. When the user asks, the operator starts the initial planner, as "Start a session" says.
+3. If the user tells the operator that the milestone has no initial planning, the operator does not start the initial planner. The operator skips steps 4 to 6 and does step 7 at once. Otherwise, when the user asks, the operator starts the initial planner, as "Start a session" says. An example of a milestone with no initial planning is a milestone that stays open and gets its issues from the follow-ups of other tickets.
 4. The user works with the initial planner in its tab. [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) of planner.md gives the rules of the initial planner.
 5. When the initial planning ends, the user tells the initial planner that the initial planning ends. If the user tells the operator first, the operator tells `planner-<slug>` with `SendMessage`, as [The word of the user](operator-conversations.md#the-word-of-the-user) says. The message of the operator starts with "From the user:" and says that the initial planning ends. Then the operator waits for the message of the initial planner that the initial planning is done. This message ends the wait. While it waits, the operator continues its other work and does not wait in a loop, as [the answer-wait rule](limits.md#the-answer-wait-rule) says for an agent. If the send fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says. The tab of the initial planner stays open, and the operator still waits for the message of the initial planner.
 6. The message of the initial planner is the one signal that ends the initial planning. The operator does this step only after this message. The word of the user to the initial planner in step 5 is the request of the user for this stop. Then the operator closes the tab of the initial planner, as "Stop a session" says.
@@ -64,7 +64,7 @@ You are the planner of <milestone>. Read AGENTS.md and docs/dev/planner.md. This
 The follow-up planner:
 
 ```text
-You are the planner of <milestone>. The initial planning is done. Read AGENTS.md and docs/dev/planner.md.
+You are the planner of <milestone>. This is not the initial planning. Read AGENTS.md and docs/dev/planner.md.
 ```
 
 The orchestrator:
