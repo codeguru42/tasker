@@ -8,7 +8,7 @@ import { gitOutput, gitTestEnv, writeGitFailAfter } from "../helpers/git.js";
 import { repoRoot } from "../helpers/processes.js";
 import { useTempDir, useTempHome, writeFileWithParents } from "../helpers/temp.js";
 
-const committedPackageJson = '{"name":"tasker","version":"0.1.0"}\n';
+const committedPackageJson = '{"name":"tasker","version":"0.0.0"}\n';
 
 interface InstallRepo {
   repo: string;
