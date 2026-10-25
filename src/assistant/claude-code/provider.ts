@@ -1,4 +1,3 @@
-import { permissionHookSettings } from "./permission-hook.js";
 import { tmpdir } from "node:os";
 import { detailSuffix } from "../../detail-suffix.js";
 import { errorMessage } from "../../error-message.js";
@@ -7,6 +6,7 @@ import { type AssistantResult, runAssistant } from "../../process/run-assistant.
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
 import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
+import { permissionHookSettings } from "./permission-hook.js";
 import { removePlaceholders } from "./placeholders.js";
 import {
   detectQuotaApprovalWarning,

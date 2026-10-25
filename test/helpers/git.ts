@@ -1,10 +1,10 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
+import { shellQuote } from "../../src/shell-quote.js";
 import { provisionClone } from "../../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../../src/vcs/git/run.js";
-import { shellQuote } from "../../src/shell-quote.js";
 import { taskBranchName, taskWorktreePath } from "../../src/vcs/git/worktree.js";
 import type { VcsContext } from "../../src/vcs/provider.js";
 import { logLine, pathWithFirst, realCommandPath, writeFakeCommand } from "./fake-commands.js";

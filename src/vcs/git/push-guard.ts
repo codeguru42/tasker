@@ -2,8 +2,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join, resolve } from "node:path";
 import { replaceFile } from "../../replace-file.js";
-import type { GitLocation } from "./run.js";
 import { shellQuote } from "../../shell-quote.js";
+import type { GitLocation } from "./run.js";
 import { runRemoteGit } from "./ssh.js";
 
 // The pre-push hook. It accepts a push that has a valid token and deletes the token file.
