@@ -16,7 +16,7 @@ The work on this repo must continue on any machine, as [What goes in a ticket](p
 ## A decision of the user
 
 - When the user must decide something, first explain in the reply what happened, what the problem is, and what each choice does. Then ask, and give a recommendation.
-- Before a decision of the user, each fact about an outside tool that the decision rests on comes from a fact test. The session gives the command and the result. If the session did not test a fact, it says so next to the fact. On 2026-10-24, before a fact test, the Docs orchestrator told the user that Claude Code blocks each write to `.claude/`. The test showed that in `dontAsk`, Claude Code denies the Write tool under `.claude/`, and the sandbox blocks a shell write only under `.claude/skills/`.
+- Before a decision of the user, each fact about an outside tool that the decision rests on comes from [a fact test](plan-review.md#the-fact-test). The session gives the command and the result. If the session did not test a fact, it says so next to the fact. On 2026-10-24, before a fact test, the Docs orchestrator told the user that Claude Code blocks each write to `.claude/`. The test showed that in `dontAsk`, Claude Code denies the Write tool under `.claude/`, and the sandbox blocks a shell write only under `.claude/skills/`.
 - Do not ask with a popup that holds only a short summary. In one case, the user rejected such a popup and wrote "I need more context. What is happening?".
 - When you list open items or proposed issues, give each item what happened, why it matters and a recommendation.
 - Define each term that the user did not see before, at its first use. An example is a label convention.
