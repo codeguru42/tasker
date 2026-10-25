@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { useTempDir } from "./temp.js";
 import {
   fakeAnswerScript,
+  logEnvItems,
   pathWithFirst,
   readFakeCalls,
   usePathWithout,
@@ -140,6 +141,41 @@ describe("fakeAnswerScript", () => {
     expect(() => fakeAnswerScript("tool", "/x.log", [{ args: [], delaySeconds: -1 }], [])).toThrow(
       "bad delay for the fake tool: -1",
     );
+  });
+});
+
+describe("logEnvItems", () => {
+  it("gives the log item of each name", () => {
+    expect(logEnvItems("tool", ["A", "B_1"])).toEqual(['"${A+set:$A}"', '"${B_1+set:$B_1}"']);
+  });
+
+  it("gives an empty list for no names", () => {
+    expect(logEnvItems("tool", [])).toEqual([]);
+  });
+
+  it("throws for a name that starts with a digit", () => {
+    expect(() => logEnvItems("tool", ["1A"])).toThrow("bad env name for the fake tool: 1A");
+  });
+
+  it("throws for a name with a hyphen", () => {
+    expect(() => logEnvItems("tool", ["A-B"])).toThrow("bad env name for the fake tool: A-B");
+  });
+
+  it("round-trips with readFakeCalls", () => {
+    const dir = useTempDir("tasker-env-items-");
+    const logPath = join(dir, "tool.log");
+    const bin = join(dir, "bin");
+    writeFakeCommand(
+      bin,
+      "tool",
+      fakeAnswerScript("tool", logPath, [{ args: ["go"] }], logEnvItems("tool", ["A", "B"])),
+    );
+
+    spawnSync(join(bin, "tool"), ["go"], { env: { PATH: bin, B: "x" } });
+
+    expect(readFakeCalls(logPath, 0, ["A", "B"])).toEqual([
+      { leading: [], args: ["go"], env: { A: undefined, B: "x" } },
+    ]);
   });
 });
 
