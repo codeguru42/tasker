@@ -332,26 +332,25 @@ that it dismissed. The initial planner posts only after the approval of the user
   is blocked by it, also a ticket of a later milestone, so that each of them writes the new form. This bullet gives the
   direction of the link of the bullet "The planner also links two issues that will likely edit the same file". The
   bullet "An issue of an earlier milestone never waits ..." wins for a ticket of an earlier milestone. A ticket of a
-  later milestone gets this link also when it waits for the last issue of a chain. Before the planner adds a blocked-by
-  link to an open issue, it runs `tasker status`. The issue is in flight when the output lists a task for it. The
-  planner adds no link to an issue in flight, because the task already builds on the old form. The planner tells the
-  user, and the orchestrator of the task decides what the ticket does with the change.
+  later milestone gets this link also when it waits for the last issue of a chain. The planner adds each blocked-by link
+  as [The read in the write call](issues.md#the-read-in-the-write-call) of issues.md says. An issue in flight gets no
+  link, because its task already builds on the old form. The orchestrator of the task decides what the ticket does with
+  the change.
 - A ticket that renames a doc blocks each open issue whose body names that doc, not only each open issue that edits the
   doc. After the rename, such a body names a file that does not exist. Before the post of the rename ticket, the planner
-  finds each open issue whose body names the old path. Before a link or a body edit, the planner runs `tasker status`,
-  as the bullet "A ticket that changes the form or the layout of a file goes early in its chain" says for a link. For an
-  issue in flight, the planner adds no link and edits no body, because the agent of the task already read the body. The
-  planner tells the user, and the orchestrator of the task decides. The bullet "An issue of an earlier milestone never
-  waits ..." wins for an issue of an earlier milestone. For such an issue, the planner adds no link and edits no body.
-  It tells the user, as for an issue in flight. For each other issue, the planner drafts the changed lines and handles
-  the draft as the first bullet of [Before a post](issues.md#before-a-post) of issues.md says. When that bullet permits
-  the post, the planner edits the body and links the issue to the rename ticket. The planner changes each line that
-  describes the doc as it is today to the new path. It keeps each line that records a past event with the path of that
-  time. An example is "#270 added the start base ... to the same-patch rule of `docs/dev/orchestration.md`". A body can
-  name a rule that an earlier split moved to another page. Then the planner changes the path to the page that holds the
-  rule today. On 2026-10-24, #400 renamed `planning.md` and #409 renamed `orchestration.md`. Fourteen open bodies named
-  the old paths. Five of them named rules that the split of 2026-10-18 had moved to other pages, and three lines
-  recorded history.
+  finds each open issue whose body names the old path. The planner adds each link and makes each body edit as
+  [The read in the write call](issues.md#the-read-in-the-write-call) of issues.md says. An issue in flight gets no link
+  and no body edit, because the agent of the task already read the body. The orchestrator of the task decides. The
+  bullet "An issue of an earlier milestone never waits ..." wins for an issue of an earlier milestone. For such an
+  issue, the planner adds no link and edits no body. It tells the user, as for an issue in flight. For each other issue,
+  the planner drafts the changed lines and handles the draft as the first bullet of
+  [Before a post](issues.md#before-a-post) of issues.md says. When that bullet permits the post, the planner edits the
+  body and links the issue to the rename ticket. The planner changes each line that describes the doc as it is today to
+  the new path. It keeps each line that records a past event with the path of that time. An example is "#270 added the
+  start base ... to the same-patch rule of `docs/dev/orchestration.md`". A body can name a rule that an earlier split
+  moved to another page. Then the planner changes the path to the page that holds the rule today. On 2026-10-24, #400
+  renamed `planning.md` and #409 renamed `orchestration.md`. Fourteen open bodies named the old paths. Five of them
+  named rules that the split of 2026-10-18 had moved to other pages, and three lines recorded history.
 - Inside a chain of issues that edit one file, the order is by issue number, oldest first. A new issue goes to the end
   of the chain of its file. The bullet "A ticket that changes the form or the layout of a file goes early in its chain"
   wins for a ticket that changes the form of a file. The bullet "A ticket that renames a doc ..." wins for a ticket that
