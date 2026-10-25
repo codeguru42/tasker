@@ -43,12 +43,16 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   [tool block](tasker-commands.md#the-tool-block-rule). After a denial, the agent follows the tool-block rule. The
   update of a denial is the `tasker update-branch` that the denied read belongs to. A read of the first patch id or the
   first text id belongs to the update right after it. A read of the second patch id or the second text id belongs to the
-  update right before it. The fetch before a read belongs to the same update as that read. The review after the update
-  of a denial counts as a loop, as the bullet "The review after `tasker update-branch` counts as a loop" says for a
-  failed command. This holds also when the agent runs that update after the answer of the orchestrator. A denial covers
-  only the update of the denial. At each later `tasker update-branch`, the agent runs all the reads again, also the
-  denied read. If the answer of the orchestrator says otherwise, the answer wins. On #290, the classifier denied the
-  second patch-id read once, the agent skipped the reads at the next update, and two reviews counted as loops.
+  update right before it. The fetch before a read belongs to the same update as that read. The agent never sends a read
+  and a `tasker update-branch` as parallel calls of one message. A read that belongs to the update right after it ends
+  before that update starts. A read that belongs to the update right before it starts after that update ends. The review
+  after the update of a denial counts as a loop, as the bullet "The review after `tasker update-branch` counts as a
+  loop" says for a failed command. This holds also when the agent runs that update after the answer of the orchestrator.
+  A denial covers only the update of the denial. At each later `tasker update-branch`, the agent runs all the reads
+  again, also the denied read. If the answer of the orchestrator says otherwise, the answer wins. On #290, the
+  classifier denied the second patch-id read once, the agent skipped the reads at the next update, and two reviews
+  counted as loops. On #374, the diff read ran its first `tasker update-branch` with no first patch id, and the agent
+  sent a read and an update in parallel.
 - The same-text compare: the patch id depends on more than the text of the changed lines, for example on the context
   lines of the hunks. On #229 and #231, the patch ids differed after the move onto `main` (7a499ce5 and 327f92ce on
   #231), although the changed lines kept their text. A text id is the output of
