@@ -1,4 +1,4 @@
-import { type Stats, lstatSync, readlinkSync, realpathSync } from "node:fs";
+import { realpathSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { errnoCode } from "./errno.js";
 
@@ -18,43 +18,4 @@ export function canonicalPath(path: string): string {
 export function isInside(path: string, folder: string): boolean {
   const rel = relative(folder, path);
   return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
-}
-
-// The real path of the deepest part of an absolute path that exists, plus the rest of the path. A
-// symlink in the path is followed, also a dangling one, so the result is the path that a write
-// through the path creates. Only a part that does not exist moves to the rest, and .. in the rest is
-// resolved as text. It uses the native realpath, because the JS one resolves .. as text before it
-// follows a symlink.
-export function deepestRealPath(path: string): string {
-  if (!isAbsolute(path)) throw new Error("the path is not absolute");
-  let head = path;
-  const rest: string[] = [];
-  for (;;) {
-    try {
-      return join(realpathSync.native(head), ...rest);
-    } catch (error) {
-      if (errnoCode(error) !== "ENOENT") throw error;
-      const stats = lstatIfPresent(head);
-      // realpath gave ENOENT, so a link here is dangling: follow its target.
-      if (stats?.isSymbolicLink()) {
-        const target = readlinkSync(head);
-        // Text, not join(): .. in the target must resolve against the real folder of the link.
-        head = isAbsolute(target) ? target : `${realpathSync.native(dirname(head))}/${target}`;
-        continue;
-      }
-      if (stats !== undefined || dirname(head) === head) throw error;
-      rest.unshift(basename(head));
-      head = dirname(head);
-    }
-  }
-}
-
-// The lstat of path, or undefined when no entry has that name. Each other error throws.
-function lstatIfPresent(path: string): Stats | undefined {
-  try {
-    return lstatSync(path);
-  } catch (error) {
-    if (errnoCode(error) === "ENOENT") return undefined;
-    throw error;
-  }
 }
