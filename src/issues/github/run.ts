@@ -4,6 +4,7 @@ import {
   childFailureMessage,
   CommandNotFoundError,
   runChild,
+  subcommandOf,
 } from "../../process/run-child.js";
 
 export interface RunGhOptions {
@@ -45,17 +46,6 @@ export class GhLoginError extends Error {
 
 const GITHUB_HOST = "github.com";
 const REDACTED = "***";
-
-// The subcommand of a gh call: args[0], plus args[1] when args[1] exists and does not start
-// with "-", joined with one space. Examples:
-// - issue view 7 gives "issue view".
-// - api graphql -f query=... gives "api graphql".
-// - api -X PATCH repos/a/b gives "api".
-// - api user gives "api user".
-function subcommandOf(args: readonly string[]): string {
-  const second = args[1];
-  return second !== undefined && !second.startsWith("-") ? `${args[0]} ${second}` : args[0];
-}
 
 // See the doc comment of runGh().
 const REMOVED_GH_VARS: readonly string[] = [

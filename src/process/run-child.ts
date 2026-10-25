@@ -117,3 +117,14 @@ export function childFailureMessage(
   if (code === null) return `${tool} ${subcommand} was stopped by signal ${String(signal)}`;
   return `${tool} ${subcommand} failed with exit code ${code}${detailSuffix(stderr.trim())}`;
 }
+
+// The subcommand of a child call: args[0], plus args[1] when args[1] exists and does not start
+// with "-", joined with one space. Examples:
+// - issue view 7 gives "issue view".
+// - api graphql -f query=... gives "api graphql".
+// - api -X PATCH repos/a/b gives "api".
+// - api user gives "api user".
+export function subcommandOf(args: readonly string[]): string {
+  const second = args[1];
+  return second !== undefined && !second.startsWith("-") ? `${args[0]} ${second}` : args[0];
+}

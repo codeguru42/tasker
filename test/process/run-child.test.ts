@@ -1,7 +1,13 @@
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { ChildCommandError, childFailureMessage, CommandNotFoundError, runChild } from "../../src/process/run-child.js";
+import {
+  ChildCommandError,
+  childFailureMessage,
+  CommandNotFoundError,
+  runChild,
+  subcommandOf,
+} from "../../src/process/run-child.js";
 import { failureOf } from "../helpers/errors.js";
 import { writeFakeCommand } from "../helpers/fake-commands.js";
 import { useTempDir } from "../helpers/temp.js";
@@ -128,5 +134,16 @@ describe("ChildCommandError", () => {
     expect(error.stdout).toBe("out");
     expect(error.stderr).toBe("err");
     expect(error.exitCode).toBe(2);
+  });
+});
+
+describe("subcommandOf", () => {
+  it.each([
+    [["issue", "view", "7"], "issue view"],
+    [["api", "-X", "PATCH"], "api"],
+    [["api"], "api"],
+    [["jira", "workitem", "view", "TEST-1"], "jira workitem"],
+  ])("gives the subcommand of %j", (args, expected) => {
+    expect(subcommandOf(args)).toBe(expected);
   });
 });
