@@ -113,19 +113,19 @@ The operator puts the milestone title in place of `<milestone>`. Each prompt is 
 The initial planner:
 
 ```text
-You are the planner of <milestone>. Read AGENTS.md, docs/dev/planner.md and docs/dev/working-with-the-user.md. This is the initial planning: the user works with you in this tab.
+You are the planner of <milestone>. Read AGENTS.md and docs/planner.md. This is the initial planning: the user works with you in this tab.
 ```
 
 The follow-up planner:
 
 ```text
-You are the planner of <milestone>. This is not the initial planning. Read AGENTS.md, docs/dev/planner.md and docs/dev/working-with-the-user.md.
+You are the planner of <milestone>. This is not the initial planning. Read AGENTS.md and docs/planner.md.
 ```
 
 The orchestrator:
 
 ```text
-You are the orchestrator of <milestone>. Read AGENTS.md and docs/dev/orchestrator.md, then start.
+You are the orchestrator of <milestone>. Read AGENTS.md and docs/orchestrator.md, then start.
 ```
 
 ## Stop a session

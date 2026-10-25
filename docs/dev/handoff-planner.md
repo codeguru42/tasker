@@ -45,8 +45,7 @@ The handoff file of the planner holds the items of
 handoff file:
 
 - The prompt names the milestone and the session name `planner-<slug>`. The first step of the prompt is a read of
-  `AGENTS.md`, `docs/dev/planner.md`, `docs/dev/issues.md`, `docs/dev/working-with-the-user.md`, `docs/dev/handoff.md`
-  and `docs/dev/handoff-planner.md`. The second step of the prompt is
+  `AGENTS.md` and `docs/planner.md`. The prompt names no other doc for the start reads. The second step of the prompt is
   [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).
 - The path of each open draft, not its text, its source, and the decision of the user that it waits for, if any.
 - Each lesson or proposed issue that another session sent and that has no draft yet. Each item names its sender, its

@@ -42,9 +42,8 @@ The handoff file of the operator holds the items of
 handoff file:
 
 - The prompt names the slug and the session name `operator-<slug>`. The first step of the prompt is a read of
-  `AGENTS.md`, `docs/dev/operator.md`, the pages of its list "The pages", `docs/dev/handoff.md` and
-  `docs/dev/handoff-operator.md`. The second step of the prompt is
-  [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).
+  `AGENTS.md` and `docs/operator.md`. The prompt names no other doc for the start reads. The second step of the prompt
+  is [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
 - The kind of each planner, initial or follow-up.
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)).
