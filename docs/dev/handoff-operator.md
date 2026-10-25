@@ -43,7 +43,8 @@ handoff file:
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
 - The kind of each planner, initial or follow-up.
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)).
-- The tab id of each session that the old operator started, with the name of the session.
+- Each entry of [the tab list](operator.md) of the old operator. So the file holds the tabs that the old operator
+  started and the tabs that it took over.
 
 The operator sends no item, so its file gives no last item id.
 
@@ -57,5 +58,7 @@ The new operator starts in these steps:
 3. The new operator does [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). That section
    holds its cases and its failure case.
 4. The new operator keeps the open items of the file as its list of [the open items](operator-items.md#the-open-items).
+   It also keeps each entry of the tab list of the file. These entries start the tab list of the new operator.
 
-The new operator closes a tab of the old operator only as [Stop a session](operator-start.md#stop-a-session) says.
+The new operator closes a tab of an earlier operator only as [Stop a session](operator-start.md#stop-a-session) says.
+The tab list gives the tab id of that tab.
