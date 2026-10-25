@@ -1,9 +1,8 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { permissionHookSettings } from "../../src/assistant/claude-code/permission-hook.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
-import { shellQuote } from "../../src/shell-quote.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
 import type { Task } from "../../src/store/store.js";
@@ -387,11 +386,7 @@ describe("prepareTaskExecuteRun", () => {
   it("lets the hook approve a write under .claude/skills of the worktree", async () => {
     const { claude, started } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
 
-    const script = fileURLToPath(new URL("../../src/assistant/claude-code/permission-hook-main.js", import.meta.url));
-    const command = [process.execPath, script, started.worktree].map(shellQuote).join(" ");
-    expect(claude.calls()[0].settings).toMatchObject({
-      hooks: { PermissionRequest: [{ matcher: "*", hooks: [{ type: "command", command }] }] },
-    });
+    expect(claude.calls()[0].settings).toMatchObject(permissionHookSettings(started.worktree));
   });
 
   it("runs the shell in the sandbox with the write paths and the read deny list", async () => {
