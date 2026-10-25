@@ -26,7 +26,11 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/limits.md](docs/dev/limits.md): "Limits", the own-worktree rule, the update rule, the local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
 - [docs/dev/planner.md](docs/dev/planner.md): the rules for a planner that plans a milestone and writes its issues: the order of the work, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the user.
 - [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, and the steps of the planner for the blocked-by links, the project board and the milestones.
-- [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user: a decision of the user, a question of the user, the issue-link rule, core features first and the work that waits, simplify over special rules, and the tools of a session.
+- [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user: the operator, a decision of the user, a question of the user, the issue-link rule, core features first and the work that waits, simplify over special rules, and the tools of a session.
+- [docs/dev/operator.md](docs/dev/operator.md): the terms of the operator and the index of the operator pages.
+- [docs/dev/operator-start.md](docs/dev/operator-start.md): the order of a milestone, the start of a session, the start prompts, the stop of a session and a blocked session.
+- [docs/dev/operator-items.md](docs/dev/operator-items.md): the form of an item, the open items, the answer and the states of an item.
+- [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): a side conversation and the word of the user.
 - [docs/dev/first-refine.md](docs/dev/first-refine.md): the hints that an agent gives in the first refine of a ticket, sorted by the kind of ticket.
 - [docs/dev/workspaces.md](docs/dev/workspaces.md): the base branch and the workspace of a task: the forms, the source order of the resolve, the learned default, the guard, the branch name, and the reasons for the git flags of the diff and the reconcile.
 - [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code: the gh boundary, the gh token and environment, the gh and GitHub facts that the code guards against, and the doctor checks.
