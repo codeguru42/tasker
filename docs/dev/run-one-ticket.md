@@ -247,11 +247,14 @@ the agent read the diff, the agent fetches again, as [the base rule](#the-base-r
 `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. This command uses `origin/<base branch>` one
 time, so it needs no hash read. If the exit code is 0, the task branch contains the tip of the base branch, and the
 agent runs `tasker accept`. If the exit code is 1, the base branch moved, for example `origin/main`. The agent does not
-run `tasker accept`. It runs `tasker update-branch` and continues step 9 as it says after `tasker update-branch`. The
-last fetch and `git merge-base` are commands of the diff read. An exit code of `git merge-base` that is not 0 and not 1
-is a failure. A failed step of the update rule is a failed command of the diff read. If a step or a command of the diff
-read fails or stops, the agent [stops](limits.md#the-answer-wait-rule). Nothing changes in the repo or the worktrees of
-tasker. The report of the stop takes the place of the person who decides on that page.
+run `tasker accept`. Before `tasker update-branch`, the agent does each read of
+[the same-patch rule](review-findings.md#review-findings) that belongs to that update, for example the first patch id.
+Then it runs `tasker update-branch` and continues step 9 as it says after `tasker update-branch`. The reads of the
+same-patch rule are not commands of the diff read, and that rule gives the result of a failed read. The last fetch and
+`git merge-base` are commands of the diff read. An exit code of `git merge-base` that is not 0 and not 1 is a failure. A
+failed step of the update rule is a failed command of the diff read. If a step or a command of the diff read fails or
+stops, the agent [stops](limits.md#the-answer-wait-rule). Nothing changes in the repo or the worktrees of tasker. The
+report of the stop takes the place of the person who decides on that page.
 
 ### The measure rule
 
