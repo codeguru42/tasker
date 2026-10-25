@@ -6,12 +6,12 @@ import { isShortRef } from "../../src/issue-key/short-ref.js";
 describe("isShortRef", () => {
   it.each([
     ["GitHub", parseGithubKey("codeguru42/tasker#17", "r").shortRef],
-    ["Jira PROJ-12", parseJiraKey("PROJ-12", "r").shortRef],
-    ["Jira A_B9-3", parseJiraKey("A_B9-3", "r").shortRef],
-    ["Jira with a site", parseJiraKey("Acme.Atlassian.net/browse/PROJ-12", "r").shortRef],
-    ["Jira with a hyphen in the site", parseJiraKey("x-y.example.com/browse/Q-1", "r").shortRef],
-    ["Jira with _ in the project and a site", parseJiraKey("jira.example.com/browse/PROJ_X-12", "r").shortRef],
-    ["Jira with -- in the site", parseJiraKey("xn--d.example.com/browse/Q-1", "r").shortRef],
+    ["Jira PROJ-12", parseJiraKey("PROJ-12", "r").ref.shortRef],
+    ["Jira A_B9-3", parseJiraKey("A_B9-3", "r").ref.shortRef],
+    ["Jira with a site", parseJiraKey("Acme.Atlassian.net/browse/PROJ-12", "r").ref.shortRef],
+    ["Jira with a hyphen in the site", parseJiraKey("x-y.example.com/browse/Q-1", "r").ref.shortRef],
+    ["Jira with _ in the project and a site", parseJiraKey("jira.example.com/browse/PROJ_X-12", "r").ref.shortRef],
+    ["Jira with -- in the site", parseJiraKey("xn--d.example.com/browse/Q-1", "r").ref.shortRef],
   ])("accepts the short ref of a parser result: %s", (_name, shortRef) => {
     expect(isShortRef(shortRef)).toBe(true);
   });

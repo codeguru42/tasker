@@ -5,17 +5,21 @@ import { IssueKeyError } from "../../src/issue-key/ref.js";
 describe("parseJiraKey", () => {
   it("parses a PROJ-N key", () => {
     expect(parseJiraKey("PROJ-123", "jira-repo")).toStrictEqual({
-      key: "PROJ-123",
-      repoKey: "jira-repo",
-      shortRef: "PROJ-123",
+      ref: {
+        key: "PROJ-123",
+        repoKey: "jira-repo",
+        shortRef: "PROJ-123",
+      },
     });
   });
 
   it("accepts digits and _ in the project, and gives - in the short ref", () => {
     expect(parseJiraKey("AB_2-1", "r")).toStrictEqual({
-      key: "AB_2-1",
-      repoKey: "r",
-      shortRef: "AB-2-1",
+      ref: {
+        key: "AB_2-1",
+        repoKey: "r",
+        shortRef: "AB-2-1",
+      },
     });
   });
 
@@ -47,41 +51,56 @@ describe("parseJiraKey", () => {
 
   it("parses a <site>/browse/PROJ-N key", () => {
     expect(parseJiraKey("example.atlassian.net/browse/PROJ-7", "r")).toStrictEqual({
-      key: "example.atlassian.net/browse/PROJ-7",
-      repoKey: "r",
-      shortRef: "example-atlassian-net-browse-PROJ-7",
+      ref: {
+        key: "example.atlassian.net/browse/PROJ-7",
+        repoKey: "r",
+        shortRef: "example-atlassian-net-browse-PROJ-7",
+      },
+      site: "example.atlassian.net",
     });
   });
 
   it("stores the site in lower case", () => {
     expect(parseJiraKey("Example.Atlassian.NET/browse/PROJ-7", "r")).toStrictEqual({
-      key: "example.atlassian.net/browse/PROJ-7",
-      repoKey: "r",
-      shortRef: "example-atlassian-net-browse-PROJ-7",
+      ref: {
+        key: "example.atlassian.net/browse/PROJ-7",
+        repoKey: "r",
+        shortRef: "example-atlassian-net-browse-PROJ-7",
+      },
+      site: "example.atlassian.net",
     });
   });
 
   it("gives - for each _ in the project of a site key", () => {
     expect(parseJiraKey("jira.example.com/browse/PROJ_X-12", "r")).toStrictEqual({
-      key: "jira.example.com/browse/PROJ_X-12",
-      repoKey: "r",
-      shortRef: "jira-example-com-browse-PROJ-X-12",
+      ref: {
+        key: "jira.example.com/browse/PROJ_X-12",
+        repoKey: "r",
+        shortRef: "jira-example-com-browse-PROJ-X-12",
+      },
+      site: "jira.example.com",
     });
   });
 
   it("gives one - for a -- in the site", () => {
     expect(parseJiraKey("xn--d.example.com/browse/Q-1", "r")).toStrictEqual({
-      key: "xn--d.example.com/browse/Q-1",
-      repoKey: "r",
-      shortRef: "xn-d-example-com-browse-Q-1",
+      ref: {
+        key: "xn--d.example.com/browse/Q-1",
+        repoKey: "r",
+        shortRef: "xn-d-example-com-browse-Q-1",
+      },
+      site: "xn--d.example.com",
     });
   });
 
   it("accepts a site with one label", () => {
     expect(parseJiraKey("jira/browse/AB-1", "r")).toStrictEqual({
-      key: "jira/browse/AB-1",
-      repoKey: "r",
-      shortRef: "jira-browse-AB-1",
+      ref: {
+        key: "jira/browse/AB-1",
+        repoKey: "r",
+        shortRef: "jira-browse-AB-1",
+      },
+      site: "jira",
     });
   });
 

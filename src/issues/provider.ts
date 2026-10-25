@@ -37,9 +37,10 @@ export interface IssueProvider {
   readonly account: string | undefined;
   // The IssueRef of rawKey in a repo with this project, with the stored spelling <project>#<N>,
   // or undefined for a key of another project. It throws the IssueKeyError of the parser for a
-  // key of the wrong form. It takes the project because one provider serves many repos. It is the
-  // entry of KEY_PARSERS in src/issue-key/resolve.ts.
-  parse: (rawKey: string, repoKey: string, project: string) => IssueRef | undefined;
+  // key of the wrong form. It takes the project and the site because one provider serves many repos.
+  // The site is the issueTracker.site of the repo. It is the entry of KEY_PARSERS in
+  // src/issue-key/resolve.ts.
+  parse: (rawKey: string, repoKey: string, project: string, site: string | undefined) => IssueRef | undefined;
   // Reads the issue.
   fetchIssue(ref: IssueRef, env: NodeJS.ProcessEnv): Promise<Issue>;
   // Whether the credentials work, and as which account. signal stops the call.
