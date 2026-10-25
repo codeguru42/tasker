@@ -10,7 +10,7 @@ import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { vcsForRepo } from "../../src/vcs/provider.js";
 import {
   type AssistantSessionRequest,
-  executeReadDenyPaths,
+  sandboxReadDenyPaths,
   prepareTaskExecuteRun,
   prepareTaskPlanModeRun,
   type RepoReadDenyPaths,
@@ -41,9 +41,9 @@ function flagValues(argv: string[], flag: string): string[] | undefined {
 // The one fake repo of most deny-list tests. None of its paths exists on disk, and each still goes in the list.
 const ONE_REPO: readonly RepoReadDenyPaths[] = [{ denyReadPaths: ["/k/id"], publishTokensPath: "/p" }];
 
-// The call helper of executeReadDenyPaths().
+// The call helper of sandboxReadDenyPaths().
 const denyPaths = (env: NodeJS.ProcessEnv, repos: readonly RepoReadDenyPaths[] = ONE_REPO) =>
-  executeReadDenyPaths({ env, repos });
+  sandboxReadDenyPaths({ env, repos });
 
 // The models of the task repo in the configuration of a fixture.
 const modelsOf = (fixture: AssistantRunFixture) => fixture.config.repos[fixture.started.repoKey].assistant.models;
@@ -116,7 +116,7 @@ const prepareAndStartExecute = async (
   return { ...fixture, env, ...result, surface: vcs.assistantSurface(ctx), models: modelsOf(fixture) };
 };
 
-describe("executeReadDenyPaths", () => {
+describe("sandboxReadDenyPaths", () => {
   it("gives the keys of every repo first and the publish tokens of every repo after the env paths", () => {
     expect(
       denyPaths({ HOME: "/h", TASKER_CONFIG: "/t/config.json" }, [

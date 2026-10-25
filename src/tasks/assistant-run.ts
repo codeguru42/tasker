@@ -235,7 +235,7 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
     ],
     sandbox: {
       allowWrite: await surface.sandboxWritePaths(wt),
-      denyRead: executeReadDenyPaths({
+      denyRead: sandboxReadDenyPaths({
         env: req.env,
         // The shared steps already built the surface of the task repo, so only the other repos get a new one.
         repos: Object.keys(req.config.repos).map((key) =>
@@ -272,11 +272,11 @@ export interface RepoReadDenyPaths {
   publishTokensPath: string;
 }
 
-// The one home of the read deny list of the shell of the execute role. No other code builds a part of it.
+// The one home of the read deny list of the sandboxed shell of each role. No other code builds a part of it.
 // The list covers every configured repo, because with the key of any repo the shell can push to that repo.
 // Each entry goes in only when the variables that it needs are set. Every value comes from env, never from
 // the home folder of the host. A path that does not exist still goes in the list.
-export function executeReadDenyPaths(o: { env: NodeJS.ProcessEnv; repos: readonly RepoReadDenyPaths[] }): string[] {
+export function sandboxReadDenyPaths(o: { env: NodeJS.ProcessEnv; repos: readonly RepoReadDenyPaths[] }): string[] {
   const { env, repos } = o;
   const home = isSet(env.HOME) ? env.HOME : undefined;
   const fromEnv: string[] = [];
