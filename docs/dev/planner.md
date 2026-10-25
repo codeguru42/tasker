@@ -171,7 +171,7 @@ The initial planner runs the same review loops. Then the initial planner shows t
 
 - Each provider gets its own milestone. That milestone holds the interface and the whole provider. A command milestone only connects commands to the providers.
 - A doc change goes in the ticket of the code that needs it, as [rules.md](rules.md#docs) says for the docs and the code.
-- A docs-only issue goes in the milestone that it is about while that milestone is open. If that milestone is closed, or the issue is about no milestone, the issue goes in the milestone "Docs" (number 21). The tickets of "Docs" have no order with the numbered milestones.
+- A docs-only issue goes in the milestone that it is about while that milestone is open and its orchestrator still runs. If the milestone that the issue is about is closed, or its orchestrator no longer runs, the issue goes in the milestone "Docs" (number 21). If the issue is about no milestone, it also goes in "Docs". For example, on 2026-10-25, the user moved #436 from the open milestone "M21 — Release" to "Docs", because orchestrator-m21 no longer ran. The tickets of "Docs" have no order with the numbered milestones.
 - GitHub holds the state of each issue and each piece of pending work. If the planner defers a fix, it writes the fix as an issue in its later milestone at once.
 
 ## What goes in a ticket
