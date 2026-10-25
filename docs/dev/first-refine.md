@@ -54,6 +54,8 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - In a docs ticket, ask the plan to run `npm run format:check`, not `npx prettier` ([the Check rule](rules.md#check)).
   The plans of #245 and #254 used `npx prettier`. A plan that runs `npm run format` and then `npm run format:check` is
   fine. On #266, plan v1 already used `npm run format`.
+- In a ticket that changes code, ask the plan to run a test file with `npm test -- <file>`, not with `npx vitest run`
+  ([the Check rule](rules.md#check)). On #428 (2026-10-25), plan v1 used `npx vitest run`.
 - If a refine asks the plan to fix commits in place (a fixup commit and an autosquash rebase), give the base commit in
   the feedback. For a plain base, get it with `git merge-base HEAD origin/<base branch>` in a worktree of the task
   branch, as [the commit check](verify-failures.md#the-commit-check) does.
