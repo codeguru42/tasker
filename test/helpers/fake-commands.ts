@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
+import { expect, onTestFinished } from "vitest";
 import { isRunnableFile } from "../../src/process/resolve-program.js";
 import { shellQuote } from "../../src/shell-quote.js";
 import { useTempDir } from "./temp.js";
@@ -93,6 +94,18 @@ export function fakeAnswerScript(
   }
   body.push(logLine(`${logPath}.unanswered`), `printf 'fake ${tool}: no answer for: %s\\n' "$*" >&2`, "exit 99");
   return body.join("\n");
+}
+
+// The unanswered log of a fake from fakeAnswerScript(): <logPath>.unanswered. assertAnswered() fails the test
+// with `${tool} calls with no answer` when the log holds a call. answerChecks() registers it with onTestFinished.
+export function answerChecks(tool: string, logPath: string): { unanswered(): string[][]; assertAnswered(): void } {
+  const unanswered = () => readArgLog(`${logPath}.unanswered`);
+  const checks = {
+    unanswered,
+    assertAnswered: () => expect(unanswered(), `${tool} calls with no answer`).toEqual([]),
+  };
+  onTestFinished(() => checks.assertAnswered());
+  return checks;
 }
 
 const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
