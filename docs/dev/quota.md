@@ -284,6 +284,19 @@ orchestrator tells the agent that it has no job. Then "When there is no reset ti
   the orchestrator must delete each job of that agent whose id still lives with CronDelete.
 - In each of these cases, the orchestrator frees the slot of the agent. This also applies when the agent has no job.
   [The schedule-all rule](#when-there-is-no-reset-time-yet) also leaves out this agent.
+- The bullet that starts "One agent runs one ticket" of
+  [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) can start a second session for a ticket. Then the
+  orchestrator deletes each job of the ticket whose id still lives with CronDelete. The new session takes the slot of
+  the old session, in place of the free slot with the lowest number of
+  [The delay of each agent](#the-delay-of-each-agent). This case does not free the slot. For the old session, this case
+  is also a case of the bullet that starts "If an agent stops for another reason". For this case, this bullet wins over
+  the sentence "In each of these cases, the orchestrator frees the slot of the agent." of the bullet before this one.
+  [The schedule-all rule](#when-there-is-no-reset-time-yet) still leaves out the old session, as the bullet before this
+  one says. The old session keeps its slot from the failed SendMessage until the orchestrator starts the new session. At
+  that start, the slot passes to the new session. Then the orchestrator schedules the jobs for the new session name, as
+  [Schedule a job when an agent starts](#schedule-a-job-when-an-agent-starts) says. The reason: a job lives in the
+  session of the orchestrator, and its prompt names the old agent. On 2026-10-24, the jobs survived a restart of that
+  session.
 - If CronDelete fails, [the failure rule](limits.md#the-failure-rule) applies. The job stays. When the job fires, the
   case of "When the job fires" for its state applies. An example is the case of a finished task, which schedules
   nothing.

@@ -483,7 +483,14 @@ The orchestrator writes the prompt of each agent.
     task.
   - One agent runs one ticket, so one name belongs to one task. If the orchestrator starts a second session for the same
     ticket, the orchestrator adds a suffix, for example `codeguru42-tasker-108-2`, and says so in the prompt of the new
-    agent.
+    agent. A SendMessage to an agent can fail with "No transcript found for agent ID". Then the orchestrator cannot
+    resume that agent. In that case, the orchestrator starts a second session for the ticket, with the suffix of this
+    bullet. The new agent follows [the comeback rule](run-one-ticket.md#the-comeback-rule). The prompt of the new agent
+    gives the state of the task from `tasker show <issue>`. The prompt gives the task worktree of the new name, as the
+    first bullet of this section says. The comeback rule then finds the old task worktree through the branch-exists case
+    of [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves the quota jobs of the ticket, as
+    [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage failed in this way after a
+    restart of the session of the orchestrator at a `/rename`.
   - If an agent already runs with no name, the orchestrator does not restart the agent only to give it a name. The
     reason: a new agent does not have the context of the old agent, for example the plans that it read and its review
     loops. For an agent with no name, the orchestrator puts the full issue key in the text of each message, each resume
