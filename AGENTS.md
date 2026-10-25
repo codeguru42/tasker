@@ -81,6 +81,8 @@ session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-re
   and the reconcile.
 - [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code: the gh boundary, the gh token and
   environment, the gh and GitHub facts that the code guards against, and the doctor checks.
+- [docs/dev/jira.md](docs/dev/jira.md): the Jira tracker code: the Jira folder, `runAcli()`, the commands that tasker
+  never runs, `TASKER_ACLI_BIN`, the errors and the measure of a failed `acli` call.
 - [docs/dev/issue-keys.md](docs/dev/issue-keys.md): the issue key forms, the short refs, the resolve of a key to its
   repo and the stored spelling.
 - [docs/dev/tasks.md](docs/dev/tasks.md): the task commands start, abort, plan, refine, approve, unapprove, execute,

@@ -6,7 +6,8 @@
 
 All code that starts `gh` is in `src/issues/github/`. No file outside `src/issues/` imports from it, and a command gets
 a provider from the registry (see [The issue provider](#the-issue-provider)). A
-[boundary test](code-conventions.md#tests) enforces both rules.
+[boundary test](code-conventions.md#tests) enforces both rules. The Jira tracker has its own folder, as
+[The Jira folder](jira.md#the-jira-folder) of jira.md says.
 
 ## The issue provider
 
