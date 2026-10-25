@@ -1,9 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { useTempDir } from "./temp.js";
 import {
+  answerChecks,
   fakeAnswerScript,
   logEnvItems,
   pathWithFirst,
@@ -176,6 +177,31 @@ describe("logEnvItems", () => {
     expect(readFakeCalls(logPath, 0, ["A", "B"])).toEqual([
       { leading: [], args: ["go"], env: { A: undefined, B: "x" } },
     ]);
+  });
+});
+
+describe("answerChecks", () => {
+  it("gives no unanswered call and does not throw when there is no unanswered log", () => {
+    const logPath = join(useTempDir("tasker-checks-"), "tool.log");
+
+    const checks = answerChecks("tool", logPath);
+
+    expect(checks.unanswered()).toEqual([]);
+    expect(() => checks.assertAnswered()).not.toThrow();
+  });
+
+  it("reports an unanswered call and throws", () => {
+    const dir = useTempDir("tasker-checks-");
+    const logPath = join(dir, "tool.log");
+    const bin = join(dir, "bin");
+    writeFakeCommand(bin, "tool", fakeAnswerScript("tool", logPath, [], []));
+    const checks = answerChecks("tool", logPath);
+
+    spawnSync(join(bin, "tool"), ["x", "y"], { env: { PATH: bin } });
+
+    expect(checks.unanswered()).toEqual([["x", "y"]]);
+    expect(() => checks.assertAnswered()).toThrow("tool calls with no answer");
+    rmSync(`${logPath}.unanswered`);
   });
 });
 
