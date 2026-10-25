@@ -25,8 +25,11 @@ The old session can suggest a handoff to the user. The old session counts the ev
 [the close count of the operator](handoff-operator.md#the-close-count). Each role page gives the count at which the old
 session suggests a handoff, the count of a suggestion. The role page says in which reply.
 
-The reason: the old session has no tool that shows its context use. The count of the role page stands in for a read of
-the context use.
+The reason: the old session does not see its own status line, and no rule tells it to read its context use. The count of
+the role page stands in for that read.
+
+In the setup of the user, the status line of each session shows its context use, for example `ctx:32%`. Another session
+can read the status line with `herdr pane read <pane id>` (herdr 0.9.3, Claude Code 2.1.310, 2026-10-25).
 
 On 2026-10-16, the Docs orchestrator guessed that about 20% of its context was used and started a handoff. The session
 used 6%.
