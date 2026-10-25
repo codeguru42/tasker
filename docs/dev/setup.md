@@ -57,7 +57,7 @@ The repo file `.claude/settings.json` needs no change, as [the plain-form rule](
    - `Bash(tasker abort)` and `Bash(tasker abort *)`
    - `Bash(tasker update-branch *--undo*)`
    - `Bash(git push --force*)`, `Bash(git push * --force*)`, `Bash(git push -f *)`, `Bash(git push * -f *)` and `Bash(git push * +*)`
-   - Each git command that names the data root of the installed tasker, for example `Bash(git -C $HOME/.local/share/tasker/*)`, `Bash(git --git-dir $HOME/.local/share/tasker/*)`, `Bash(git --git-dir=$HOME/.local/share/tasker/*)`, `Bash(git --work-tree $HOME/.local/share/tasker/*)`, `Bash(git --work-tree=$HOME/.local/share/tasker/*)` and `Bash(cd $HOME/.local/share/tasker/*)`
+   - Each git command and each `cd` command that names the data root of the installed tasker, for example `Bash(git -C $HOME/.local/share/tasker/*)`, `Bash(git --git-dir $HOME/.local/share/tasker/*)`, `Bash(git --git-dir=$HOME/.local/share/tasker/*)`, `Bash(git --work-tree $HOME/.local/share/tasker/*)`, `Bash(git --work-tree=$HOME/.local/share/tasker/*)` and `Bash(cd $HOME/.local/share/tasker/*)`
 3. In each rule, write the absolute path of the home folder in place of `$HOME`.
 4. Install the skill `simple-english` in `$HOME/.claude/skills/`.
 5. Install the Claude Code plugin `superpowers`: `claude plugin install superpowers@claude-plugins-official`.
