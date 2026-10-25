@@ -93,6 +93,34 @@ The operator finds the pane id and the tab id in the row of the session. The row
 
 If the wait fails or times out, the operator tells the user and closes nothing. If the wait ends in `blocked`, the operator follows "A blocked session" and closes nothing. Without `--until`, the wait also ends in `blocked`.
 
+## A handoff
+
+The operator does these steps for each handoff of an orchestrator or a follow-up planner. This also covers a session that the user started in a tab of the user. The old session is the orchestrator or the follow-up planner that hands off its work. The new session takes the work, with the same name as the old session.
+
+1. A handoff recommendation of the session arrives. The operator sends the go to the session at once with `SendMessage`, with no question to the user. The go is a word of the operator, not a word of the user, so it does not start with "From the user:". [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) gives the rule of the start. The session finishes its current tasks and then does the steps of its handoff. If `SendMessage` fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says.
+2. The old session sends the operator the path of its handoff file as an item. The item can also give the prompt for the new session.
+3. The operator reads the handoff file. It takes the prompt for the new session from the code block of the file. If the read fails, the operator tells the user, as the failure rule says, and does not do steps 4 and 5.
+4. The operator stops the old session, as [Stop a session](#stop-a-session) says.
+5. The operator starts the new session, as [Start a session](#start-a-session) says. The prompt is the prompt of step 3.
+
+If step 4 does not close the pane of the old session, the operator does not do step 5. It tells the user, as [the failure rule](limits.md#the-failure-rule) says. Two sessions with one name break each `SendMessage` to that name.
+
+In a handoff, these rules stay with the user:
+
+- Only the user answers a prompt of a session in `blocked`, as [A blocked session](#a-blocked-session) says.
+- After a failed `herdr agent start`, the operator does not close the new tab without the user, as [Start a session](#start-a-session) says.
+
+The table gives each change of a handoff. An empty cell means that the page gives no state for that actor.
+
+| Change                     | Old session                                            | Operator                  | New session            | Who tells whom                                             |
+| -------------------------- | ------------------------------------------------------ | ------------------------- | ---------------------- | ---------------------------------------------------------- |
+| The recommendation arrives | Waits for the go                                       | Sends the go              |                        | The old session tells the operator, with `SendMessage`     |
+| The go arrives             | Finishes its current tasks and writes the handoff file |                           |                        | The operator tells the old session, with `SendMessage`     |
+| The path arrives           | Waits for the stop                                     | Reads the handoff file    |                        | The old session tells the operator, with an item           |
+| The stop                   | Stops                                                  | Stops the old session     |                        | The operator tells the old session, with `SendMessage`     |
+| The start                  |                                                        | Starts the new session    | Starts with the prompt | The operator tells the new session, with the first message |
+| A close or a start fails   | Keeps running                                          | Does not do the next step |                        | The operator tells the user, as the failure rule says      |
+
 ## A blocked session
 
 - When an item arrives, and when the user asks, the operator runs `herdr agent list` in its shell. If the command fails, [the failure rule](limits.md#the-failure-rule) applies.

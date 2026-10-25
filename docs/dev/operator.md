@@ -22,7 +22,7 @@ When a step of the operator pages applies [the failure rule](limits.md#the-failu
 
 The operator pages are `docs/dev/operator.md` and the pages of this list, "The pages":
 
-- [docs/dev/operator-start.md](operator-start.md): "The order of a milestone", "Start a session", "The start prompts", "Stop a session" and "A blocked session".
+- [docs/dev/operator-start.md](operator-start.md): "The order of a milestone", "Start a session", "The start prompts", "Stop a session", "A handoff" and "A blocked session".
 - [docs/dev/operator-items.md](operator-items.md): "The form of an item", "The open items", "The answer" and "The states of an item".
 - [docs/dev/operator-conversations.md](operator-conversations.md): "A side conversation" and "The word of the user".
 - [docs/dev/handoff.md](handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff file", "The last item id", "The check of the handoff folder", "The end of a handoff" and "The stop and the start".
