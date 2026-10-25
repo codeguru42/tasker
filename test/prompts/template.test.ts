@@ -53,6 +53,7 @@ describe("fillTemplate", () => {
   });
 
   describe.each([
+    ["ISSUE_COMMENTS", "issue-comments"],
     ["CURRENT_PLAN", "current-plan"],
     ["BRANCH_COMMITS", "branch-commits"],
     ["EARLIER_REVIEWS", "earlier-reviews"],
