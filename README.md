@@ -12,14 +12,16 @@ tasker takes an issue from an issue tracker and drives an AI coding assistant th
 
 ## Install
 
-1. Clone the repository: `git clone https://github.com/codeguru42/tasker.git`. In an existing clone, run `git fetch --tags` instead.
+1. Clone the repository: `git clone https://github.com/codeguru42/tasker.git`. In an existing clone, run the commands for the kind of install instead:
+   - For a stable release, run `git fetch --tags`. Step 3 then checks out the tag.
+   - For a development version, run `git checkout main`, then `git pull --ff-only origin main`. `git fetch --tags` changes only the remote branches and the tags, not the local `main`.
 2. Go to the folder of the clone: `cd tasker`
 3. Optional: to install a stable release, check out its tag, for example `git checkout 2026.10.24`. To give the install a version of your own, add a local tag on HEAD: `git tag <version>`.
 4. Run `npm run install:global`. On the newest commit of `main`, it installs a development version.
 
 The script stops before the install when HEAD has two or more tags. It also stops when the working tree has changes, also untracked files. The script runs `tasker install-skills`, so that an assistant finds the `tasker` skill.
 
-For an update, do the same steps with the tag of the new version.
+For an update of a stable release, run `git fetch --tags`, then check out the tag of the new version, then do step 4. For an update of a development version, run `git checkout main`, then `git pull --ff-only origin main`, then do step 4.
 
 [docs/dev/release.md](docs/dev/release.md) gives the steps of a stable release and of a pre-release. For the pre-release steps, see [Install a pre-release](docs/dev/release.md#install-a-pre-release).
 
