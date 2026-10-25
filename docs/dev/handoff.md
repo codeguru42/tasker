@@ -1,6 +1,6 @@
 # Handoff
 
-The readers of this page are a long-running orchestrator and a long-running planner.
+The readers of this page are a long-running orchestrator and the follow-up planner.
 
 ## The handoff
 
@@ -66,43 +66,43 @@ The reason: on 2026-10-16, the new Docs orchestrator got the handoff file of 01:
 
 ## The handoff of a planner
 
-A long-running planner is the planner of a milestone that stays open while other sessions add issues to it. An example is `planner-docs` for the milestone "Docs". In a handoff of a planner, the old planner gives its work to a new planner in a new session.
+In a handoff of a planner, the old planner gives its work to a new planner in a new session. Both are follow-up planners, as [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) of planner.md defines.
 
-The rules of this section cover only a long-running planner. They do not cover a planner of a numbered milestone.
+The rules of this section cover only the follow-up planner. They do not cover the initial planner.
 
 An open draft is a draft that waits for the approval of the user. It can be a draft of an issue, of a change to an issue or of a comment.
 
-[The handoff](#the-handoff) says that its rules cover only a long-running orchestrator. As an exception, the parts of "The handoff" that follow also cover a long-running planner, with "planner" in place of "orchestrator":
+[The handoff](#the-handoff) says that its rules cover only a long-running orchestrator. As an exception, the parts of "The handoff" that follow also cover the follow-up planner, with "planner" in place of "orchestrator":
 
 - The paragraph "Only the user starts a handoff." For the planner, the post count of this section stands in for the landing count.
 - The paragraph "The old orchestrator can suggest a handoff to the user.", except its count of landings. The exception also covers the list of the events that also count as one landing. The landing count and that list stay for the orchestrator only.
 - Only the first two sentences of the paragraph "The count starts at 0 at the start of the session." The other sentences of that paragraph do not cover the planner.
 - Only the first sentence of the paragraph "The handoff starts only when the user agrees to the suggestion or asks for a handoff." The other sentences of that paragraph do not cover the planner.
-- The paragraph "Only the user ends a handoff that started." For the old planner, "starts no new ticket, also after step 4" means step 1 of the steps of this section, also after step 3.
+- The paragraph "Only the user ends a handoff that started." For the old planner, "starts no new ticket, also after step 4" means step 1 of the steps of this section, also after step 3. For the planner, the handoff ends when the operator stops the old planner and starts the new planner, on the request of the user. The last paragraph of this section gives the steps of the operator.
 - The paragraph "The old orchestrator puts no rule in the handoff file."
 - The check of the handoff folder by the new session, with its cases. For the new planner, the files of its role are the files whose names step 2 of the steps of this section gives.
 
-The planner counts the issues that it posts in its session. Each change of the body of an open issue also counts as one post. At a count of 12, the planner suggests a handoff to the user in its reply after that post. The suggestion does not start the handoff. The planner continues its work until the user answers. If the user does not answer, the planner suggests the handoff again in its reply after each later post.
+The planner counts the issues that it posts in its session. Each change of the body of an open issue also counts as one post. At a count of 12, the planner suggests a handoff to the user after that post. The suggestion does not start the handoff. The planner continues its work until the user answers. If the user does not answer, the planner suggests the handoff again after each later post. The follow-up planner tells the user each suggestion as [The operator](working-with-the-user.md#the-operator) of working-with-the-user.md says.
 
-After the first suggestion, the suggestion of the planner stays. If the user says no, the planner still suggests the handoff again in its reply after each later post. The count of the planner does not start again at 0. The planner also gives the suggestion again in each reply that lists the open questions to the user. The planner stops the suggestion only when the user starts the handoff.
+After the first suggestion, the suggestion of the planner stays. If the user says no, the planner still suggests the handoff again after each later post. The count of the planner does not start again at 0. The planner also gives the suggestion again in each item that lists the open questions to the user. The planner stops the suggestion only when the user starts the handoff.
 
-The reason for the count: most of the context of a planner comes from the drafts of each issue, their rewrites and each full draft that the planner shows again.
+The reason for the count: most of the context of a planner comes from the drafts of each issue, their rewrites.
 
 After the start, the old planner does these steps:
 
 1. Post nothing new and start no new draft.
 2. Write the handoff file `$HOME/Documents/tasker/handoff/<date>-<time>-<role>.md`, as step 3 of [The handoff](#the-handoff) says. An example is `2026-10-24-1530-docs-planner.md`.
-3. Give the path of the file in the reply to the user.
+3. Send the path of the handoff file to `operator-<slug>` as an item, as [The form of an item](operator-items.md#the-form-of-an-item) of operator-items.md says.
 
 The old planner puts these items in the handoff file:
 
-- The prompt for the new session, in a code block. The prompt names the milestone and the session name `planner-<milestone>`. The first step of the prompt is a read of `AGENTS.md`, `docs/dev/planner.md`, `docs/dev/issues.md` and `docs/dev/working-with-the-user.md`. The second step of the prompt is the check of the handoff folder.
-- The full text of each open draft, and what the user asked for with it.
+- The prompt for the new session, in a code block. The prompt names the milestone and the session name `planner-<slug>`. The first step of the prompt is a read of `AGENTS.md`, `docs/dev/planner.md`, `docs/dev/issues.md` and `docs/dev/working-with-the-user.md`. The second step of the prompt is the check of the handoff folder.
+- The path of each open draft, not its text, and what the user asked for with it.
 - Each lesson or proposed issue that another session sent and that has no draft yet. Each item names its sender, its facts and its sources.
 - Each question to the user that has no answer yet, with its full text and its choices, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
 - The number of each issue that the old planner posted in its session.
 - Each decision of the user from the session of the old planner. The old planner also keeps in the file each decision of the user from the earlier handoff file of the role that still applies.
 
-The reason: the old planner puts the full text of each open draft and each open question in the file, because the new planner has no other source for them.
+The reason: the old planner puts the full text of each open question in the file, because the new planner has no other source for it.
 
-The user pastes the prompt as the first message of the new session. The first message names the path of the handoff file. The user names the new session `planner-<milestone>`, for example `planner-docs`, as [Working with the user](planner.md#working-with-the-user) of planner.md says.
+The operator stops the old planner, as [Stop a session](operator-start.md#stop-a-session) of operator-start.md says. Then the operator starts the new planner `planner-<slug>` with the prompt of the handoff file as its first message, as [Start a session](operator-start.md#start-a-session) says. The first message names the path of the handoff file.
