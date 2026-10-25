@@ -114,7 +114,7 @@ The orchestrator reads `tasker show <stacked issue>` of each stacked ticket afte
 
 The orchestrator ends the hold in these cases:
 
-- `tasker show <stacked issue>` of each stacked ticket prints the branch of the parent on its `base branch:` line, in the form `refs/heads/<parent branch>` of [the base rule](run-one-ticket.md#the-base-rule).
+- `tasker show <stacked issue>` of each stacked ticket prints the branch of the parent on its `base:` line, in the form `refs/heads/<parent branch>` of [the base rule](run-one-ticket.md#the-base-rule).
 - The start of a stacked ticket fails. A stop report of step 2 from the agent of a stacked ticket counts as a failed start. The orchestrator then ends the hold at once, with no read of `tasker show <stacked issue>`. Examples are the refusal `blocking issue is still open`, after which no task exists, and a missing `based on <key>'s branch` note, after which the stacked task stays in `workspace_ready`.
 - The issue of the parent closes.
 
