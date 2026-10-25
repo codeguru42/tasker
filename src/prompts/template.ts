@@ -26,6 +26,13 @@ function countOf(text: string, part: string): number {
   return text.split(part).length - 1;
 }
 
+// Makes each closing tag in value harmless: it puts &lt; in place of the < of each closing tag whose name matches
+// namePattern, the source of a regular expression. The match has no regard to case, and white space can stand after
+// < and after /. docs/dev/assistants.md gives the reason for the tags.
+export function harmlessClosingTags(value: string, namePattern: string): string {
+  return value.replace(new RegExp(`<(\\s*\\/\\s*${namePattern})`, "gi"), "&lt;$1");
+}
+
 export function fillTemplate(name: string, template: string, values: Readonly<Record<string, string>>): string {
   const tokens = new Set([...template.matchAll(TOKEN)].map((match) => match[1]));
   for (const token of tokens) {
@@ -46,6 +53,6 @@ export function fillTemplate(name: string, template: string, values: Readonly<Re
     const value = values[token];
     const tag = UNTRUSTED_TOKENS[token];
     if (tag === undefined) return value;
-    return value.replace(new RegExp(`<(\\s*\\/\\s*${escapeRegExp(tag)}\\b)`, "gi"), "&lt;$1");
+    return harmlessClosingTags(value, `${escapeRegExp(tag)}\\b`);
   });
 }
