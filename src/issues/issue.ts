@@ -1,6 +1,13 @@
 import { asciiFold } from "../ascii-fold.js";
 import type { IssueRef } from "../issue-key/ref.js";
 
+// One comment of an issue.
+export interface IssueComment {
+  author: string; // the name of the author, as the tracker gives it
+  created: string; // the time of the comment, as the string that the tracker gives
+  body: string; // the text of the comment, in the form that the tracker gives
+}
+
 // One issue of a tracker.
 export interface Issue {
   ref: IssueRef;
@@ -9,6 +16,7 @@ export interface Issue {
   url: string;
   labels: string[]; // the label names, as the tracker gives them
   state: "open" | "closed";
+  comments: IssueComment[]; // from the oldest to the newest, from each author
 }
 
 // One issue that blocks another issue.

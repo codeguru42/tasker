@@ -10,6 +10,7 @@ function issueWith(labels: string[]): Issue {
     url: "https://github.com/octo/repo/issues/7",
     labels,
     state: "open",
+    comments: [],
   };
 }
 
