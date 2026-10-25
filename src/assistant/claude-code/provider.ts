@@ -1,3 +1,4 @@
+import { permissionHookSettings } from "./permission-hook.js";
 import { tmpdir } from "node:os";
 import { detailSuffix } from "../../detail-suffix.js";
 import { errorMessage } from "../../error-message.js";
@@ -123,6 +124,7 @@ export function createClaudeCodeProvider(
           return failureWithNoExit(input, errorMessage(error), []);
         }
       }
+      if (input.allowSkillWrites === true) settings = { ...settings, ...permissionHookSettings(input.cwd) };
       // After a sandboxed run, the leftover placeholders go. The cleanup never changes the kind.
       const finish = async (outcome: RunOutcome): Promise<RunOutcome> =>
         sandbox === undefined

@@ -7,7 +7,7 @@ import { createClaudeCodeProvider } from "./claude-code/provider.js";
 export type AssistantProviderId = RepoConfig["assistant"]["provider"];
 export type AssistantRole = keyof RepoConfig["assistant"]["models"];
 export type Effort = RepoConfig["assistant"]["models"]["plan"]["effort"];
-export type PermissionMode = "plan" | "dontAsk" | "auto";
+export type PermissionMode = "plan" | "default" | "dontAsk" | "auto";
 
 export interface SandboxLimits {
   allowWrite: string[];
