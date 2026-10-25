@@ -1,20 +1,9 @@
 import { join } from "node:path";
 import { expect, onTestFinished } from "vitest";
-import { shellQuote } from "../../src/shell-quote.js";
-import { logLine, readArgLog, realCommandPath, writeFakeCommand } from "./fake-commands.js";
+import { type FakeAnswer, fakeAnswerScript, readArgLog, readFakeCalls, writeFakeCommand } from "./fake-commands.js";
 
-// One canned answer of the fake gh. args is the whole argument list. It must match exactly, in order.
-// When two answers have the same args, the first one wins.
-export interface FakeGhAnswer {
-  args: readonly string[];
-  stdout?: string; // default ""
-  stderr?: string; // default ""
-  exitCode?: number; // default 0
-  // A signal name such as "TERM": the fake prints its output, then stops itself with this signal.
-  killWith?: string;
-  // The fake runs the real sleep for this many seconds before it prints its output.
-  delaySeconds?: number;
-}
+// One canned answer of the fake gh. See FakeAnswer.
+export type FakeGhAnswer = FakeAnswer;
 
 // One call that the fake gh logged.
 export interface FakeGhCall {
@@ -96,7 +85,6 @@ export function githubLabelsAfter(
 }
 
 const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const signalNamePattern = /^[A-Z0-9]+$/;
 
 // Writes an executable gh into binDir. It uses shell builtins, so it works with binDir as the
 // only PATH folder. Only for a delay, it runs the real sleep by its absolute path. As a result, the
@@ -114,34 +102,7 @@ export function writeFakeGh(
     if (!envNamePattern.test(name)) throw new Error(`bad env name for the fake gh: ${name}`);
   }
   const extra = ["GH_TOKEN", ...logEnv].map((name) => `"\${${name}+set:$${name}}"`);
-  const body = [logLine(logPath, extra)];
-  for (const answer of answers) {
-    const conditions = [
-      `[ $# -eq ${answer.args.length} ]`,
-      ...answer.args.map((arg, index) => `[ "\${${index + 1}}" = ${shellQuote(arg)} ]`),
-    ];
-    const lines = [`if ${conditions.join(" && ")}; then`];
-    if (answer.delaySeconds !== undefined) {
-      if (!/^\d+(\.\d+)?$/.test(String(answer.delaySeconds))) {
-        throw new Error(`bad delay for the fake gh: ${answer.delaySeconds}`);
-      }
-      lines.push(`  ${shellQuote(realCommandPath("sleep"))} ${answer.delaySeconds}`);
-    }
-    lines.push(
-      `  printf '%s' ${shellQuote(answer.stdout ?? "")}`,
-      `  printf '%s' ${shellQuote(answer.stderr ?? "")} >&2`,
-    );
-    if (answer.killWith !== undefined) {
-      if (!signalNamePattern.test(answer.killWith)) {
-        throw new Error(`bad signal name for the fake gh: ${answer.killWith}`);
-      }
-      lines.push(`  kill -${answer.killWith} $$`);
-    }
-    lines.push(`  exit ${answer.exitCode ?? 0}`, "fi");
-    body.push(...lines);
-  }
-  body.push(logLine(`${logPath}.unanswered`), "printf 'fake gh: no answer for: %s\\n' \"$*\" >&2", "exit 99");
-  writeFakeCommand(binDir, "gh", body.join("\n"));
+  writeFakeCommand(binDir, "gh", fakeAnswerScript("gh", logPath, answers, extra));
 }
 
 export interface FakeGh {
@@ -174,14 +135,7 @@ export function fakeGh(
     env: { ...baseEnv, PATH: binDir },
     logPath,
     calls: () =>
-      readArgLog(logPath).map((items) => {
-        const fromLog = (item: string) => (item === "" ? undefined : item.slice("set:".length));
-        return {
-          args: items.slice(1 + logEnv.length),
-          ghToken: fromLog(items[0]),
-          env: Object.fromEntries(logEnv.map((name, index) => [name, fromLog(items[1 + index])])),
-        };
-      }),
+      readFakeCalls(logPath, 1, logEnv).map((call) => ({ args: call.args, ghToken: call.leading[0], env: call.env })),
     unanswered,
     assertAnswered: () => expect(unanswered(), "gh calls with no answer").toEqual([]),
   };

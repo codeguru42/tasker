@@ -1,10 +1,12 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { useTempDir } from "./temp.js";
 import {
+  fakeAnswerScript,
   pathWithFirst,
+  readFakeCalls,
   usePathWithout,
   useFakeSandboxBin,
   writeFakeCommand,
@@ -100,5 +102,57 @@ describe("pathWithFirst", () => {
 
   it("gives the folder alone when the PATH of the base env is empty", () => {
     expect(pathWithFirst("/first", { PATH: "" })).toBe("/first");
+  });
+});
+
+describe("fakeAnswerScript", () => {
+  const setup = () => {
+    const dir = useTempDir("tasker-answer-");
+    const logPath = join(dir, "tool.log");
+    const bin = join(dir, "bin");
+    const answers = [{ args: ["ask"], stdout: "out", stderr: "err", exitCode: 3 }];
+    writeFakeCommand(bin, "tool", fakeAnswerScript("tool", logPath, answers, []));
+    return { bin, logPath };
+  };
+
+  it("answers a listed call", () => {
+    const { bin, logPath } = setup();
+
+    const result = spawnSync(join(bin, "tool"), ["ask"], { env: { PATH: bin }, encoding: "utf8" });
+
+    expect(result.stdout).toBe("out");
+    expect(result.stderr).toBe("err");
+    expect(result.status).toBe(3);
+    expect(readFileSync(logPath, "utf8")).toContain("ask");
+  });
+
+  it("exits 99 for an unlisted call and logs it as unanswered", () => {
+    const { bin, logPath } = setup();
+
+    const result = spawnSync(join(bin, "tool"), ["other"], { env: { PATH: bin }, encoding: "utf8" });
+
+    expect(result.status).toBe(99);
+    expect(result.stderr).toBe("fake tool: no answer for: other\n");
+    expect(readFileSync(`${logPath}.unanswered`, "utf8")).toContain("other");
+  });
+
+  it("throws for a bad delay", () => {
+    expect(() => fakeAnswerScript("tool", "/x.log", [{ args: [], delaySeconds: -1 }], [])).toThrow(
+      "bad delay for the fake tool: -1",
+    );
+  });
+});
+
+describe("readFakeCalls", () => {
+  it("gives undefined for an unset item and the value for set:<value>", () => {
+    const dir = useTempDir("tasker-calls-");
+    const logPath = join(dir, "tool.log");
+    const bin = join(dir, "bin");
+    const extra = ['"${A+set:$A}"', '"${B+set:$B}"'];
+    writeFakeCommand(bin, "tool", fakeAnswerScript("tool", logPath, [{ args: ["go"] }], extra));
+
+    spawnSync(join(bin, "tool"), ["go"], { env: { PATH: bin, B: "x" } });
+
+    expect(readFakeCalls(logPath, 1, ["B"])).toEqual([{ leading: [undefined], args: ["go"], env: { B: "x" } }]);
   });
 });

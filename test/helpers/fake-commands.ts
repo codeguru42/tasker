@@ -49,6 +49,76 @@ export function readArgLog(logPath: string): string[][] {
   return calls;
 }
 
+// One canned answer of a fake command. args is the whole argument list. It must match exactly, in order.
+// When two answers have the same args, the first one wins.
+export interface FakeAnswer {
+  args: readonly string[];
+  stdout?: string; // default ""
+  stderr?: string; // default ""
+  exitCode?: number; // default 0
+  // A signal name such as "TERM": the fake prints its output, then stops itself with this signal.
+  killWith?: string;
+  // The fake runs the real sleep for this many seconds before it prints its output.
+  delaySeconds?: number;
+}
+
+const signalNamePattern = /^[A-Z0-9]+$/;
+
+// The script body of a fake command named tool. It logs each call at logPath (see logLine() for extra), then
+// prints the first answer that matches. A call that no answer matches goes in the log <logPath>.unanswered,
+// prints an error and exits with 99. It uses shell builtins. Only for a delay, it runs the real sleep by its
+// absolute path.
+export function fakeAnswerScript(
+  tool: string,
+  logPath: string,
+  answers: readonly FakeAnswer[],
+  extra: readonly string[],
+): string {
+  const body = [logLine(logPath, extra)];
+  for (const answer of answers) {
+    const conditions = [
+      `[ $# -eq ${answer.args.length} ]`,
+      ...answer.args.map((arg, index) => `[ "\${${index + 1}}" = ${shellQuote(arg)} ]`),
+    ];
+    const lines = [`if ${conditions.join(" && ")}; then`];
+    if (answer.delaySeconds !== undefined) {
+      if (!/^\d+(\.\d+)?$/.test(String(answer.delaySeconds))) {
+        throw new Error(`bad delay for the fake ${tool}: ${answer.delaySeconds}`);
+      }
+      lines.push(`  ${shellQuote(realCommandPath("sleep"))} ${answer.delaySeconds}`);
+    }
+    lines.push(
+      `  printf '%s' ${shellQuote(answer.stdout ?? "")}`,
+      `  printf '%s' ${shellQuote(answer.stderr ?? "")} >&2`,
+    );
+    if (answer.killWith !== undefined) {
+      if (!signalNamePattern.test(answer.killWith)) {
+        throw new Error(`bad signal name for the fake ${tool}: ${answer.killWith}`);
+      }
+      lines.push(`  kill -${answer.killWith} $$`);
+    }
+    lines.push(`  exit ${answer.exitCode ?? 0}`, "fi");
+    body.push(...lines);
+  }
+  body.push(logLine(`${logPath}.unanswered`), `printf 'fake ${tool}: no answer for: %s\\n' "$*" >&2`, "exit 99");
+  return body.join("\n");
+}
+
+// Reads a log of fakeAnswerScript(). The first leading items of a call and then one item for each name of
+// logEnv are logged values: an empty item gives undefined, and "set:<value>" gives <value>.
+export function readFakeCalls(
+  logPath: string,
+  leading: number,
+  logEnv: readonly string[],
+): { leading: (string | undefined)[]; args: string[]; env: Record<string, string | undefined> }[] {
+  const fromLog = (item: string) => (item === "" ? undefined : item.slice("set:".length));
+  return readArgLog(logPath).map((items) => ({
+    leading: items.slice(0, leading).map(fromLog),
+    args: items.slice(leading + logEnv.length),
+    env: Object.fromEntries(logEnv.map((name, index) => [name, fromLog(items[leading + index])])),
+  }));
+}
+
 // The first file with this name on process.env.PATH.
 export function realCommandPath(name: string): string {
   for (const folder of (process.env.PATH ?? "").split(delimiter)) {
