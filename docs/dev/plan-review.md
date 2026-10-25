@@ -231,6 +231,11 @@ security report of ["Review findings"](review-findings.md#review-findings) and t
 [the change-of-scope comment](#the-change-of-scope-comment) do not apply to it. On #257, the user answered three design
 gaps before `tasker approve`, and review 1 still found that the rule "only the user ends a handoff" has no cancel.
 
+Before the orchestrator gives an answer that removes a [blocked-by link](planner.md) for a case, it asks two questions.
+Can an issue of that case start before its blocker lands? If it starts first, is the body of that issue still true? If
+the body is then false, the answer keeps the link, or it changes the body so that the body stays true. On #410, answer 4
+removed the link for one case but still fixed the body, so the body named a path not yet on `main`.
+
 ## The quote check
 
 A plan or a finding quotes a file outside the worktree when it gives text from that file, or when it says that it read
