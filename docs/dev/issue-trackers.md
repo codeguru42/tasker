@@ -17,6 +17,9 @@ Each member of the provider maps to one GitHub function and adds no behavior.
 - `parse` takes the project, because one provider object serves many repos. It is the key parser itself, not a wrapper.
   [Issue keys](issue-keys.md) gives the rules.
 
+The field `comments` of `Issue` gives each comment of the issue with its author, its time and its body, from the oldest
+to the newest.
+
 ### The registry
 
 The registry is the only place that reads `issueTracker.provider`. One configuration object gives one provider for each

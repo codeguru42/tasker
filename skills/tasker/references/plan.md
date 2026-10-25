@@ -20,7 +20,7 @@ On success, the command prints these lines:
 
 After these lines, the command can print [the overlap warning](#the-overlap-warning).
 
-The assistant reads only the issue title and body. It does not read the issue comments.
+The assistant reads the title, the body and the comments of the issue.
 
 The command stops with exit code 1 and prints the error on stderr in these cases.
 

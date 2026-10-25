@@ -240,8 +240,8 @@ An error after the start of the run also moves the task to `failed`, with the pr
 of the plan file moves it to `failed` too, with its own message. After a crash of tasker, the next command that reads
 the task moves it to `interrupted`. See [A dead run](#a-dead-run).
 
-The plan reads the title and the body of the issue. It does not read the comments. A second `tasker plan` works only on
-a task in `workspace_ready`.
+The plan prompt holds the title, the body and each comment of the issue that the tracker gives. A second `tasker plan`
+works only on a task in `workspace_ready`.
 
 After a successful plan, the command warns when the plan changes files that another active task of the same repo also
 changes. [What the plan prompt asks for](assistants.md#what-the-plan-prompt-asks-for) says that tasker compares

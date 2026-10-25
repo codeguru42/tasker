@@ -356,6 +356,10 @@ earlier runs wrote them from the text of the branch. An error in `context` is un
 output of the commands of the branch. The block `branch-commits` of the refine prompt and the review prompt is
 untrusted, because an execute run wrote it from the issue text of a third party.
 
+The plan prompt puts the comments of the issue in the tag `issue-comments`. In the block `<comment-text-N>` of a
+comment, `N` is the place of the comment in the list, from 1. Each comment has its own author, so each comment stands in
+its own block, and no comment can end the block of another comment.
+
 ### What the plan prompt asks for
 
 The plan must be complete on its own. The execute run is a new session. It sees only the plan, its todos and the answers
