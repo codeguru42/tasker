@@ -8,7 +8,7 @@ The readers of this page are a long-running orchestrator, the follow-up planner,
 
 ## The suggestion of a handoff
 
-When the old session suggests a handoff, the handoff starts with no further word of the user. The user can also ask the old session for a handoff at any time. After the start, the old session does the steps of its role page: [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator), [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its current tasks. Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
+When the old session suggests a handoff, the handoff starts with no further word of the user. An orchestrator or a follow-up planner sends its suggestion to the operator as an item. For such a session, the handoff starts when the go of the operator arrives, as [A handoff](operator-start.md#a-handoff) says. The user can also ask the old session for a handoff at any time. A request of the user for a handoff needs no go. The start of a handoff is the go of the operator, the suggestion of the old operator or the request of the user. After the start, the old session does the steps of its role page: [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator), [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its current tasks. Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
 
 The old session can suggest a handoff to the user. The old session counts the events that its role page names: [the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count), [the post count of the planner](handoff-planner.md#the-post-count) and [the close count of the operator](handoff-operator.md#the-close-count). At a count of 12, the old session suggests a handoff. The role page says in which reply.
 
@@ -65,17 +65,21 @@ The reason: on 2026-10-16, the new Docs orchestrator got the handoff file of 01:
 
 ## The end of a handoff
 
-If the operator started the old session, the handoff ends when the operator stops the old session and starts the new session. If the user started the old session, only the user ends the handoff.
+In a handoff of an orchestrator or a follow-up planner, the handoff ends when the operator stops the old session and starts the new session, as steps 4 and 5 of [A handoff](operator-start.md#a-handoff) say. This also covers an old session that the user started.
+
+The rule of the user of 2026-10-25 is the request of the user for these steps: "Then stop the orchestrator and start a new one."
+
+In a handoff of the operator, the user ends the handoff, as [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator) says.
 
 Until the end, the old session starts no new work. The role page names that work: [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator), [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator).
 
 ## The stop and the start
 
-If the operator started the old session, the operator stops the old session, as [Stop a session](operator-start.md#stop-a-session) says. Then the operator starts the new session with the prompt of the handoff file as its first message, as [Start a session](operator-start.md#start-a-session) says. The first message names the path of the handoff file.
+In a handoff of an orchestrator or a follow-up planner, the operator stops the old session and starts the new session, as [A handoff](operator-start.md#a-handoff) says. This step covers each old orchestrator and each old follow-up planner, also one that the user started. The first message of the new session is the prompt of the handoff file. The first message names the path of the handoff file.
 
 The item with the path of the handoff file starts the stop and the start by the operator, with no answer of the user.
 
-If the user started the old session, [the start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives the end of the handoff.
+In a handoff of the operator, [the start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives the end of the handoff.
 
 ## A topic handoff
 
