@@ -288,6 +288,14 @@ describe("usePlanFixture", () => {
     );
     expect(state).toBe("workspace_ready");
   });
+
+  it("puts the fake bwrap and socat on PATH", async () => {
+    await usePlanFixture({});
+
+    for (const name of ["bwrap", "socat"]) {
+      expect(process.env.PATH!.split(delimiter).some((dir) => existsSync(join(dir, name)))).toBe(true);
+    }
+  });
 });
 
 describe("pausePlanFixtureTask", () => {

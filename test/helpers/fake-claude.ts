@@ -3,7 +3,7 @@ import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AssistantEvent, RunInput } from "../../src/assistant/provider.js";
 import { shellQuote } from "../../src/shell-quote.js";
-import { writeFakeCommand } from "./fake-commands.js";
+import { useFakeSandboxBin, writeFakeCommand } from "./fake-commands.js";
 import { useProcessEnv, useTempDir, useTempHome } from "./temp.js";
 
 // What the fake claude does (see useFakeClaude()).
@@ -193,9 +193,13 @@ export function argAfter(argv: string[], flag: string): string | undefined {
 }
 
 // useFakeClaude(control), then process.env gets the fake first on PATH and a temp HOME and XDG_CONFIG_HOME for this test.
+// It also puts the fake bwrap and socat on PATH, after the fake claude, because the sandbox of a run needs them.
 // Call it inside a test.
 export function useFakeClaudeOnPath(control: FakeClaudeControl): FakeClaude {
   const claude = useFakeClaude(control);
-  useProcessEnv({ ...useTempHome(), PATH: `${claude.binDir}${delimiter}${String(process.env.PATH)}` });
+  useProcessEnv({
+    ...useTempHome(),
+    PATH: [claude.binDir, useFakeSandboxBin(), String(process.env.PATH)].join(delimiter),
+  });
   return claude;
 }

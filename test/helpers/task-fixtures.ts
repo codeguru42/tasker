@@ -381,7 +381,8 @@ export interface PlanFixture {
 
 // The setup of the tests of tasker plan: a started task (see useStartedTask()) that stays in workspace_ready,
 // and a fake claude with the control, first on PATH. HOME and XDG_CONFIG_HOME are temp folders.
-// It does not start a run and it makes no fake sandbox programs. Call it inside a test.
+// It does not start a run. The fake bwrap and socat come with the fake claude (see useFakeClaudeOnPath()).
+// Call it inside a test.
 export async function usePlanFixture(
   control: FakeClaudeControl,
   options?: Parameters<typeof useStartFixture>[0],
@@ -490,8 +491,7 @@ export interface ExecuteFixture extends PlanFixture {
   env: NodeJS.ProcessEnv;
 }
 
-// The setup of the tests of tasker execute: usePlanFixture(control, { repo, limits }), the fake bwrap and socat first
-// on PATH, then the task moves to planning, gets revision v1 with its plan file (the answer of options.answer on top
+// The setup of the tests of tasker execute: usePlanFixture(control, { repo, limits }), then the task moves to planning, gets revision v1 with its plan file (the answer of options.answer on top
 // of validPlanAnswer) and v1 is approved, so the task is in approved with v1 pinned. config is the configuration of
 // the started task and env is process.env after the stubs. Call it inside a test.
 export async function useExecuteFixture(
@@ -503,7 +503,6 @@ export async function useExecuteFixture(
   } = {},
 ): Promise<ExecuteFixture> {
   const fixture = await usePlanFixture(control, { repo: options.repo, limits: options.limits });
-  useProcessEnv({ PATH: `${useFakeSandboxBin()}${delimiter}${String(process.env.PATH)}` });
   const { dataRoot, repoKey, key } = fixture.started;
   return withDataRootStore(dataRoot, (store) => {
     const found = store.findLatestTask(repoKey, key)!;
