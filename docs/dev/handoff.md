@@ -8,7 +8,7 @@ The readers of this page are a long-running orchestrator, the follow-up planner 
 
 ## The suggestion of a handoff
 
-When the old session suggests a handoff, the handoff starts with no further word of the user. The user can also ask the old session for a handoff at any time. After the start, the old session finishes its current tasks. Then it does the steps of its role page. Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
+When the old session suggests a handoff, the handoff starts with no further word of the user. The user can also ask the old session for a handoff at any time. After the start, the old session does the steps of its role page: [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator), [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its current tasks. Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
 
 The old session can suggest a handoff to the user. The old session counts the events that its role page names: [the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count), [the post count of the planner](handoff-planner.md#the-post-count) and [the close count of the operator](handoff-operator.md#the-close-count). At a count of 12, the old session suggests a handoff. The role page says in which reply.
 
