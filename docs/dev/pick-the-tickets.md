@@ -106,7 +106,26 @@ The orchestrator does all the steps of this section.
 ### The stacking rule
 
 A blocker is an issue that blocks the ticket. The orchestrator can start a ticket when each blocker is closed or is
-ready to stack. A blocker of another milestone counts the same way.
+ready to stack. A blocker of another milestone counts the same way. A chain is a row of tickets in which each ticket
+blocks the next one.
+
+The stack is the default. The orchestrator starts a ticket at the first moment that this rule allows. That moment comes
+when these facts are true:
+
+- Each blocker of the ticket is closed or is ready to stack.
+- The checks of this rule pass: the wait cases, the check of the tip of the base of the parent and the wait for a fix
+  round of the parent.
+- A [slot](quota.md#the-delay-of-each-agent) is free, or the orchestrator keeps a slot for the ticket, as
+  [the parent-hold rule](#the-parent-hold-rule) says.
+
+The other rules of [Pick the tickets](#pick-the-tickets) still apply. The orchestrator does not wait for the landing of
+the parent. The reason: on 2026-10-17, the Docs orchestrator waited for each parent to land through most of the day. The
+chain ran slower than the user wanted. The user said: "Stack one as soon as you can". On 2026-10-18, #322 to #336 ran
+stacked with no rebase conflict.
+
+The user can tell the orchestrator to wait for each landing, for example to test a new version of tasker on a few
+tickets. Then the word of the user wins over the default stack until the user ends it. On 2026-10-24, the user said: "we
+are going slow right now to dogfood a couple of issues to test the new version".
 
 A ready state is one of these states: `awaiting_work_review`, `reviewing`, `reviewed` or `accepted`. A blocker is ready
 to stack when its issue is open, its task is in the same repo, and `tasker show <blocker issue>` prints a ready state.
