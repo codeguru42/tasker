@@ -1,10 +1,9 @@
 import { join } from "node:path";
-import { expect, onTestFinished } from "vitest";
 import {
+  answerChecks,
   type FakeAnswer,
   fakeAnswerScript,
   logEnvItems,
-  readArgLog,
   readFakeCalls,
   writeFakeCommand,
 } from "./fake-commands.js";
@@ -115,7 +114,7 @@ export interface FakeGh {
   calls(): FakeGhCall[];
   // The argument lists that had no answer.
   unanswered(): string[][];
-  // Throws when unanswered() is not empty. fakeGh() registers it with onTestFinished.
+  // Throws when unanswered() is not empty. fakeGh() registers it with answerChecks().
   assertAnswered(): void;
 }
 
@@ -132,16 +131,15 @@ export function fakeGh(
   const logPath = join(dir, "gh.log");
   const logEnv = options.logEnv ?? [];
   writeFakeGh(binDir, logPath, answers, logEnv);
-  const unanswered = () => readArgLog(`${logPath}.unanswered`);
+  const checks = answerChecks("gh", logPath);
   const fake: FakeGh = {
     env: { ...baseEnv, PATH: binDir },
     logPath,
     calls: () =>
       readFakeCalls(logPath, 1, logEnv).map((call) => ({ args: call.args, ghToken: call.leading[0], env: call.env })),
-    unanswered,
-    assertAnswered: () => expect(unanswered(), "gh calls with no answer").toEqual([]),
+    unanswered: checks.unanswered,
+    assertAnswered: checks.assertAnswered,
   };
-  onTestFinished(() => fake.assertAnswered());
   return fake;
 }
 

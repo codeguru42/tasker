@@ -98,7 +98,10 @@ export function fakeAnswerScript(
 
 // The unanswered log of a fake from fakeAnswerScript(): <logPath>.unanswered. assertAnswered() fails the test
 // with `${tool} calls with no answer` when the log holds a call. answerChecks() registers it with onTestFinished.
-export function answerChecks(tool: string, logPath: string): { unanswered(): string[][]; assertAnswered(): void } {
+export function answerChecks(
+  tool: string,
+  logPath: string,
+): { unanswered: () => string[][]; assertAnswered: () => void } {
   const unanswered = () => readArgLog(`${logPath}.unanswered`);
   const checks = {
     unanswered,

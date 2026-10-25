@@ -1,10 +1,9 @@
 import { join } from "node:path";
-import { expect, onTestFinished } from "vitest";
 import {
+  answerChecks,
   type FakeAnswer,
   fakeAnswerScript,
   logEnvItems,
-  readArgLog,
   readFakeCalls,
   writeFakeCommand,
 } from "./fake-commands.js";
@@ -44,7 +43,7 @@ export interface FakeAcli {
   calls(): FakeAcliCall[];
   // The argument lists that had no answer.
   unanswered(): string[][];
-  // Throws when unanswered() is not empty. fakeAcli() registers it with onTestFinished.
+  // Throws when unanswered() is not empty. fakeAcli() registers it with answerChecks().
   assertAnswered(): void;
 }
 
@@ -61,14 +60,13 @@ export function fakeAcli(
   const logPath = join(dir, "acli.log");
   const logEnv = options.logEnv ?? [];
   writeFakeAcli(binDir, logPath, answers, logEnv);
-  const unanswered = () => readArgLog(`${logPath}.unanswered`);
+  const checks = answerChecks("acli", logPath);
   const fake: FakeAcli = {
     env: { ...baseEnv, PATH: binDir, TASKER_ACLI_BIN: join(binDir, "acli") },
     logPath,
     calls: () => readFakeCalls(logPath, 0, logEnv).map((call) => ({ args: call.args, env: call.env })),
-    unanswered,
-    assertAnswered: () => expect(unanswered(), "acli calls with no answer").toEqual([]),
+    unanswered: checks.unanswered,
+    assertAnswered: checks.assertAnswered,
   };
-  onTestFinished(() => fake.assertAnswered());
   return fake;
 }
