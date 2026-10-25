@@ -27,7 +27,7 @@ The old session puts these items in the handoff file:
 - The prompt for the new session, in a code block. The first message of the new session always names the path of the handoff file.
 - Each open item with its id, as [The form of an item](operator-items.md#the-form-of-an-item) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
-- Each decision of the user from the session of the old session. The handoff file also keeps each decision of the user from the earlier handoff file of the role that still applies. As a result, a decision survives more than one handoff. The bullet of a relayed decision in [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses these decisions.
+- Each decision of the user from the old session. The handoff file also keeps each decision of the user from the earlier handoff file of the role that still applies. As a result, a decision survives more than one handoff. The bullet of a relayed decision in [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses these decisions.
 
 The reason: the old session puts the full text of each open question in the file, because the new session has no other source for it.
 
