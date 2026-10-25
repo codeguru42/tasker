@@ -1,7 +1,19 @@
 # Index of the docs
 
-Each assistant session reads this index first and follows the link for each topic.
+Each assistant session reads this index first. It does not follow each link of the index at its start. At its start, a
+session of a role reads the role index of its role and the start docs that the index names. The agent of a ticket reads
+the docs that its prompt names. Each other session, for example a session that tasker starts, reads the docs that its
+task needs. After its start, a session reads another doc only for a step of its work that needs the doc. A link that the
+session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 
+- [docs/orchestrator.md](docs/orchestrator.md): the role index of the orchestrator, with the terms of the orchestration,
+  the start docs of the orchestrator and the index of the orchestration pages.
+- [docs/planner.md](docs/planner.md): the role index of the planner, with the start docs of the planner and the index of
+  the planner pages.
+- [docs/operator.md](docs/operator.md): the role index of the operator, with the terms of the operator, the start docs
+  of the operator and the index of the operator pages.
+- [docs/sessions.md](docs/sessions.md): the terms that each role uses: the user, the slug, the sessions of a slug, an
+  item and the own name of a session.
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo (the check, test first, the commits, the docs, the test
   helpers, the code rules, the simple-english skill, the installed skill and `AGENTS.md`).
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to start work as a contributor to tasker.
@@ -18,7 +30,6 @@ Each assistant session reads this index first and follows the link for each topi
   rule.
 - [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a
   rebase conflict.
-- [docs/orchestrator.md](docs/orchestrator.md): the terms of the orchestration and the index of the orchestration pages.
 - [docs/dev/pick-the-tickets.md](docs/dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the
   stacked-ticket rule, the parent-hold rule, the link offer, the defer rule and "The prompt of an agent".
 - [docs/dev/doc-reads.md](docs/dev/doc-reads.md): the re-read rule, the notice rule and the doc-read rule.
@@ -56,7 +67,6 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user:
   the operator, a decision of the user, a question of the user, the issue-link rule, core features first and the work
   that waits, simplify over special rules, and the tools of a session.
-- [docs/operator.md](docs/operator.md): the terms of the operator and the index of the operator pages.
 - [docs/dev/operator-start.md](docs/dev/operator-start.md): the order of a milestone, the start of a session, the start
   prompts, the stop of a session, a handoff and a blocked session.
 - [docs/dev/operator-items.md](docs/dev/operator-items.md): the form of an item, the open items, the answer and the

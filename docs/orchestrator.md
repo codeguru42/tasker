@@ -41,6 +41,9 @@ the PATH from a global install. The installed `tasker` is a build of this repo, 
 `docs/dev/limits.md`. For the facts of the earlier implementation of tasker, see
 [the facts of the installed tasker](dev/tasker-commands.md#the-facts-of-the-installed-tasker).
 
+The start docs of the orchestrator are `docs/orchestrator.md`, the pages of the list "The pages" below and
+[docs/sessions.md](sessions.md). The orchestrator reads them at its start.
+
 The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages":
 
 - [docs/dev/pick-the-tickets.md](dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket
