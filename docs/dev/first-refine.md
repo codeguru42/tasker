@@ -327,7 +327,24 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   `awaiting_plan_review`, the agent runs `tasker update-branch` before the refine, because the update marks the plan as
   stale ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). If the check exits
   with another code, for example 128 for a pruned parent ref, the agent [stops](limits.md#the-answer-wait-rule) and
-  reports the error. On #356, review 2 asked for both cases.
+  reports the error. On #356, review 2 asked for both cases. The sentence that starts "If the check exits with 1 in
+  `awaiting_plan_review`" has an exception. A parent can move again and again in its own review loops before it lands.
+  Right after the check before `tasker approve` exits with 1, the agent runs `tasker show <full key of the parent>`. If
+  the `state:` line is not `merging`, `landed`, `finishing` or `finished`, the exception applies. Then the agent lists
+  each file that the parent changed since the merge base, with
+  `git diff --name-only tasker/<task branch>...tasker/<parent branch>`. A rewrite of the parent adds more files to this
+  list. The plan files are the files that the last `tasker show-plan` changes, links to or quotes. If no listed file is
+  a plan file, the agent runs `tasker approve` and `tasker execute`, after the plan review of
+  [step 3 of "Run one ticket"](run-one-ticket.md#run-one-ticket). In this case, an exit 1 of the check before
+  `tasker execute` does not stop the execute. Then the agent runs `tasker update-branch` from `executed`. On #460
+  (2026-10-25), the task stayed in `executed` after this update. If a listed file is a plan file, the agent still runs
+  `tasker update-branch` before the refine, as that sentence says. If the update from `executed` reports a rebase
+  conflict, the agent follows [the rebase-conflict procedure](rebase-conflicts.md#procedure). If another command of this
+  exception fails, the agent [stops](limits.md#the-answer-wait-rule) and reports the error. The update from `executed`
+  does not take the place of the update after the parent lands, which [Land the work](land-the-work.md#land-the-work)
+  gives. This order has a cost: the parent can move again after the update. Then each later update of the task can cost
+  a review loop, as [Review findings](review-findings.md#review-findings) says. On #460 (2026-10-25), this order saved
+  the refines.
 - A docs ticket with a stacked parent can need one spare review loop. After the parent lands, `tasker update-branch`
   moves the task onto `main`. If the changed lines change in the move, for example in a rebase conflict, the review
   after the move counts as a loop ([Review findings](review-findings.md#review-findings)).
