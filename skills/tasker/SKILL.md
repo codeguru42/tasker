@@ -150,8 +150,8 @@ Copies the skills of the installed tasker into each folder of `skillsDirs`, and 
 
 ### `tasker model`
 
-Prints or sets the model and the effort of each assistant role for the repo of an issue. It needs no task and changes no
-task. See [the reference](references/setup.md#tasker-model).
+Prints or sets the model and the effort of each assistant role and each session role for the repo of an issue. It needs
+no task and changes no task. See [the reference](references/setup.md#tasker-model).
 
 ### `tasker start`
 

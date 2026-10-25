@@ -167,9 +167,9 @@ For the `claude-code` provider, `model` must have one of these forms:
 Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`. The
 providers `copilot` and `pi` have no model check.
 
-The command `tasker model` changes the model and the effort of one role in the file that "Where the file is" names. It
-keeps the other keys and their order. It writes an indent of two spaces and keeps the line end at the end of the file.
-It does not write the defaults. The command has two limits:
+The command `tasker model` changes the model and the effort of one assistant role or one session role in the file that
+"Where the file is" names. It keeps the other keys and their order. It writes an indent of two spaces and keeps the line
+end at the end of the file. It does not write the defaults. The command has two limits:
 
 - Integer-like keys move to the front of their object, in number order.
 - If a key appears twice in one object, the command keeps only the last copy.
@@ -190,6 +190,10 @@ form that herdr names it in `herdr agent start --kind`.
 
 Each entry of `models` is an object with the required keys `model` (non-empty string) and `effort` (`"low"`, `"medium"`,
 `"high"`, `"xhigh"` or `"max"`).
+
+The command `tasker model` also changes `sessions.models.<role>` in the file, with the same rules as the paragraph in
+[`assistant`](#assistant). It adds the keys `sessions` and `models` when the file has none. A role with no entry needs
+both the model and the effort.
 
 A role with no entry in `models` gets no model and no effort. The session then uses the defaults of the agent.
 

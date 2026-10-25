@@ -67,28 +67,35 @@ The command exits with these codes:
 
 ## `tasker model`
 
-Prints or sets the model and the effort of each assistant role for the repo of an issue:
+Prints or sets the model and the effort of each assistant role and each session role for the repo of an issue:
 `tasker model <issue> [<model>] [--role <role>] [--repo <key>] [--effort <effort>]`. The command needs no task and
 changes no task. For the configuration file, see [the Configuration section](../SKILL.md#configuration).
 
-`<model>` and `--effort` need `--role`. The roles are `plan`, `execute` and `review`.
+`<model>` and `--effort` need `--role`. The assistant roles are `plan`, `execute` and `review`. The session roles are
+`operator`, `planner` and `orchestrator`. The efforts are `low`, `medium`, `high`, `xhigh` and `max`. The efforts
+`xhigh` and `max` are for a session role only.
 
 If the issue key fits more than one repo and you do not give `--repo`, the active task of the issue picks the repo. If
 no repo, or more than one repo, has an active task for the issue, the command prints an error.
 
-Without `<model>` and `--effort`, the command prints one line for each role, in the order plan, execute, review, as
-`<role>: <model> (effort <effort>)`, for example `plan: opus (effort high)`. With `--role`, it prints only that role.
+Without `<model>` and `--effort`, the command prints one line for each role, in the order plan, execute, review,
+operator, planner, orchestrator, as `<role>: <model> (effort <effort>)`, for example `plan: opus (effort high)`. A
+session role with no entry prints `<role>: none`, for example `operator: none`. With `--role`, it prints only that role.
 
 With `<model>`, `--effort` or both, the command changes the model, the effort or both of the role that `--role` names.
-The command makes sure that the new configuration is valid, with the model check of the provider, before it writes. If
-the new configuration is not valid, the command prints the errors and changes nothing. Then the command writes the new
-file in one step: a temporary file and a rename. It prints the new line of the role on stdout. It prints this note on
-stderr:
+For an assistant role, it changes `repos.<key>.assistant.models.<role>`. For a session role, it changes
+`repos.<key>.sessions.models.<role>`, and it adds the keys `sessions`, `models` and the role when the file has no such
+key. A session role with no entry needs both `<model>` and `--effort`. The command makes sure that the new configuration
+is valid, with the model check of the provider, before it writes. If the new configuration is not valid, the command
+prints the errors and changes nothing. Then the command writes the new file in one step: a temporary file and a rename.
+It prints the new line of the role on stdout. It prints this note on stderr:
 `note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.`
 
 The command prints an error and exits with code 1 in these cases:
 
 - You give `<model>` or `--effort` without `--role`. The error is `name the role with --role`. The command stops before
   it reads the configuration.
-- The new configuration is not valid, for example when the model fails the model check of the provider. The error lists
-  the problems, and the file does not change.
+- You give `<model>` or `--effort` for a session role that has no entry, and you do not give both. The error is
+  `the role <role> has no entry: give the model and --effort`. The file does not change.
+- The new configuration is not valid, for example when the model fails the model check of the provider, or when you give
+  `xhigh` or `max` for an assistant role. The error lists the problems, and the file does not change.
