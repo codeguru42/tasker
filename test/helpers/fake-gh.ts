@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { expect, onTestFinished } from "vitest";
-import { shellQuote } from "../../src/vcs/git/ssh.js";
+import { shellQuote } from "../../src/shell-quote.js";
 import { logLine, readArgLog, realCommandPath, writeFakeCommand } from "./fake-commands.js";
 
 // One canned answer of the fake gh. args is the whole argument list. It must match exactly, in order.

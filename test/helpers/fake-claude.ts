@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AssistantEvent, RunInput } from "../../src/assistant/provider.js";
-import { shellQuote } from "../../src/vcs/git/ssh.js";
+import { shellQuote } from "../../src/shell-quote.js";
 import { writeFakeCommand } from "./fake-commands.js";
 import { useProcessEnv, useTempDir, useTempHome } from "./temp.js";
 

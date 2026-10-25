@@ -1,6 +1,6 @@
 import { userInfo } from "node:os";
 import { delimiter, join } from "node:path";
-import { shellQuote } from "../../src/vcs/git/ssh.js";
+import { shellQuote } from "../../src/shell-quote.js";
 import { logLine, writeFakeCommand } from "./fake-commands.js";
 
 // How a fake ssh behaves (see writeFakeSsh()).

@@ -1,14 +1,10 @@
 import { userInfo } from "node:os";
 import { isAbsolute, parse } from "node:path";
 import { detailSuffix } from "../../detail-suffix.js";
+import { shellQuote } from "../../shell-quote.js";
 import { GitError, runGit, type RunGitOptions } from "./run.js";
 
 const HIDDEN = "<sshKey>";
-
-// A text in single quotes for a shell script. Each ' in the text becomes '\''.
-export function shellQuote(text: string): string {
-  return `'${text.replaceAll("'", "'\\''")}'`;
-}
 
 // The ssh command for a key: the path in single quotes, each ' written as '\''.
 export function sshCommand(sshKey: string): string {

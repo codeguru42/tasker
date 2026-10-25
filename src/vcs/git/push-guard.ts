@@ -3,7 +3,8 @@ import { randomBytes } from "node:crypto";
 import { join, resolve } from "node:path";
 import { replaceFile } from "../../replace-file.js";
 import type { GitLocation } from "./run.js";
-import { runRemoteGit, shellQuote } from "./ssh.js";
+import { shellQuote } from "../../shell-quote.js";
+import { runRemoteGit } from "./ssh.js";
 
 // The pre-push hook. It accepts a push that has a valid token and deletes the token file.
 function hookScript(publishTokens: string): string {

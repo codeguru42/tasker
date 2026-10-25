@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { delimiter, join } from "node:path";
-import { shellQuote } from "../../src/vcs/git/ssh.js";
+import { shellQuote } from "../../src/shell-quote.js";
 import { useTempDir } from "./temp.js";
 
 // Writes an executable shell script named name into binDir. body is the script after "#!/bin/sh".

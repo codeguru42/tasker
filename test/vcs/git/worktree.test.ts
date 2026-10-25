@@ -5,7 +5,7 @@ import { jiraShortRef } from "../../../src/issue-key/short-ref.js";
 import { sandboxWritePaths } from "../../../src/vcs/git/assistant-surface.js";
 import { uncommittedChanges, worktreeDiff } from "../../../src/vcs/git/changes.js";
 import { GitError, runGit } from "../../../src/vcs/git/run.js";
-import { shellQuote } from "../../../src/vcs/git/ssh.js";
+import { shellQuote } from "../../../src/shell-quote.js";
 import {
   assertTaskBranchNameAndShape,
   assertTaskBranchShape,
