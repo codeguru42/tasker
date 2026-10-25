@@ -7,7 +7,7 @@ task needs. After its start, a session reads another doc only for a step of its 
 session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 
 - [docs/orchestrator.md](docs/orchestrator.md): the role index of the orchestrator, with the terms of the orchestration,
-  the start docs of the orchestrator and the index of the orchestration pages.
+  the request rule, the start docs of the orchestrator and the index of the orchestration pages.
 - [docs/planner.md](docs/planner.md): the role index of the planner, with the start docs of the planner and the index of
   the planner pages.
 - [docs/operator.md](docs/operator.md): the role index of the operator, with the terms of the operator, the start docs
