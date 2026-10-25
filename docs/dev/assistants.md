@@ -38,6 +38,15 @@ The execute role runs under the `default` permission mode, with a `PermissionReq
 
 These facts of `claude` 2.1.310 give the reason for the mode. Under `dontAsk`, `claude` denies each write under `.claude/`, also with an allow rule, a sandbox write path or a `PreToolUse` hook, and a `PermissionRequest` hook does not run. Under `default`, the hook can answer. The hook allows only the one folder `.claude/skills/`, because a write to `.claude/settings.json` can change the permissions of a later session. The shell still cannot write under `.claude/skills/`, because the sandbox blocks it.
 
+The hook makes four checks on `tool_input.file_path`, in this order. It denies the question at the first check that fails, and the deny message gives the reason:
+
+1. The path is absolute.
+2. No part of the path is `.` or `..`.
+3. As text, the path starts with `<worktree>/.claude/skills/` and has a part after that prefix.
+4. No part of the path, from `<worktree>/.claude` down, is a symbolic link. The hook reads each part with `lstat`. It stops at the first part that does not exist.
+
+The Write tool of `claude` 2.1.310 resolves `..` as text before it writes, and the kernel follows a link first. A real path would have to follow both rules, and the two can disagree. A check on the text, with no link and no `.` or `..` part, needs no real path. As a result, the text of the path and the path that the kernel writes cannot disagree.
+
 The deadline is the execute deadline of the configuration. One deadline covers every turn of a run. A start can replace it with the time that is left (see "The rules for the caller").
 
 The allow list holds these rules, in this order:
