@@ -1,8 +1,8 @@
 # Plan review
 
-The readers of this page are the agent of a ticket, the orchestrator for the fact test and the design-gap rule, and the
-planner for the fact test. [The base rule](run-one-ticket.md#the-base-rule) covers each command of this page that uses
-`origin/<base branch>`.
+The readers of this page are the agent of a ticket, the orchestrator for the fact test, the stop rule and the design-gap
+rule, and the planner for the fact test. [The base rule](run-one-ticket.md#the-base-rule) covers each command of this
+page that uses `origin/<base branch>`.
 
 ## The repo-files rule
 
@@ -152,17 +152,27 @@ agent [stops](limits.md#the-answer-wait-rule) in each of these cases:
 - A claim of the issue is no longer true, or a requirement of the issue is a conflict, and this changes what the ticket
   must do (see [the issue check](#the-issue-check)). This case does not apply when the orchestrator already answered for
   that claim or that conflict.
+- Two reviews in a row each find a new edge case that the fix of the loop before drew. After the second such review, the
+  agent stops before its next `tasker approve`. The agent reports the two reviews and their edge cases to the
+  orchestrator. The words "a new edge case" are a judgment, open on purpose. The agent makes the judgment. The reason:
+  step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket) runs the refine, then steps 3 and 4, then
+  `tasker approve`. No step waits for the orchestrator, so a message of the orchestrator can come after the approve. On
+  #431 (2026-10-25), the stop of the orchestrator came after the agent approved and executed the next plan, so the patch
+  cost one more review loop.
 
 In each case, the agent reports the case. The design-gap rule says who answers the first three cases. For the fourth
 case (a shared file), "Land the work" gives the steps. For the fifth case (a false claim or a conflict), the
 orchestrator asks the user, because only the user changes the scope of a ticket. If the user changes the scope, the
 orchestrator posts [a change-of-scope comment](#the-change-of-scope-comment) and sends its link to the agent in the
 answer. The bullet of [Land the work](land-the-work.md#land-the-work) about the state read covers that answer. The agent
-follows the steps of the section "The change-of-scope comment". After the answer, the agent puts the answer in the
-feedback text of the refine of step 4. Then the agent continues with step 4 and runs `tasker approve` in step 5. An
-answer before `tasker approve` costs no review loop, but a later answer costs one or more review loops. The quote check
-and the security report of ["Review findings"](review-findings.md#review-findings) give more cases that stop before
-`tasker approve`.
+follows the steps of the section "The change-of-scope comment". For the sixth case (two reviews with a new edge case
+each), the orchestrator does one of two things. It gives the user the simpler rule as the first choice, as
+[Simplify over special rules](working-with-the-user.md#simplify-over-special-rules) says, and it sends the decision of
+the user to the agent. Or it finds that the two reviews are no such case, and it tells the agent to go on. After the
+answer, the agent puts the answer in the feedback text of the refine of step 4. Then the agent continues with step 4 and
+runs `tasker approve` in step 5. An answer before `tasker approve` costs no review loop, but a later answer costs one or
+more review loops. The quote check and the security report of ["Review findings"](review-findings.md#review-findings)
+give more cases that stop before `tasker approve`.
 
 ## The change-of-scope comment
 
