@@ -35,7 +35,7 @@ export interface IssueProvider {
   readonly id: IssueTrackerId;
   // The pinned identity of the tracker, if it has one. For github, issueTracker.account.
   readonly account: string | undefined;
-  // The IssueRef of rawKey in a repo with this project, with the stored spelling <project>#<N>,
+  // The IssueRef of rawKey in a repo with this project, with the stored spelling of the provider of the repo,
   // or undefined for a key of another project. It throws the IssueKeyError of the parser for a
   // key of the wrong form. It takes the project and the site because one provider serves many repos.
   // The site is the issueTracker.site of the repo. It is the entry of KEY_PARSERS in

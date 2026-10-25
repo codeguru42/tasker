@@ -9,7 +9,7 @@ the rules that resolve a key to one repo.
 - Jira: `PROJ-N`.
 - Jira with a site: `<site>/browse/PROJ-N`.
 
-`N` is a number with no leading zero. `PROJ` is in upper case. tasker stores the site in lower case.
+`N` is a number with no leading zero. `PROJ` is in upper case.
 
 `skills/tasker/SKILL.md` gives the same forms to users in its "Issue keys" section. A change to the forms must change
 both files.
@@ -31,11 +31,12 @@ key parsers directly, not the provider registry.
 
 A github repo matches when the `owner/repo` part of the key equals the project. The compare folds only the ASCII letters
 `A` to `Z` to lower case. `toLowerCase()` is not safe, because the Kelvin sign U+212A lowers to `k`. With the ASCII
-fold, a match means that the project has the same ASCII characters as the key. As a result, the stored key is always a
-GitHub key.
+fold, a match means that the project has the same ASCII characters as the key. As a result, the stored key of a github
+repo is always a GitHub key.
 
-A jira repo never matches, because the Jira project match does not exist yet. Its parser runs only to give the parser
-error, and the resolve gives that error and not the error of the registry.
+A jira repo matches when the project of the key equals the project of the repo, with the same case. The project of the
+key is the text before the last `-`. A key with a site also needs the site. It matches only a repo with the same
+`issueTracker.site`, with no regard to case. A repo with no site does not match a key with a site.
 
 No file in `src/issue-key/` imports from `src/issues/`, because that import pulls in the registry and the gh code. A
 [boundary test](code-conventions.md#tests) enforces this rule.
@@ -45,5 +46,8 @@ unknown repo keys.
 
 ## Stored spelling
 
-The stored key is `<project>#<N>`, with the spelling of the configuration. For example, `CodeGuru42/Tasker#5` and
+The stored GitHub key is `<project>#<N>`, with the spelling of the configuration. For example, `CodeGuru42/Tasker#5` and
 `codeguru42/tasker#5` give one task. The short ref comes from the same number.
+
+The stored Jira key is the bare key `PROJ-N`, also for a key with a site. tasker stores each key with its repo, and each
+repo names at most one site, so the bare key names one issue.

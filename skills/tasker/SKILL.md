@@ -61,7 +61,7 @@ the key. tasker does not guess the provider from the shape of a key.
 - Jira with a site: `<site>/browse/PROJ-N`, for example `example.atlassian.net/browse/PROJ-123`.
 
 N is a positive whole number. The Jira project key (`PROJ`) is in upper case. The site is a bare host name, with no
-`https://` in front. tasker stores the site in lower case.
+`https://` in front. tasker stores the bare key `PROJ-N`, also for a key with a site.
 
 A key that does not match the form of its provider is an error. The error names the key.
 

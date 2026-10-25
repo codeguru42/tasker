@@ -13,8 +13,6 @@ export function parseJiraKey(rawKey: string, repoKey: string): { ref: IssueRef; 
     );
   }
   const [, site, issue] = match;
-  if (site === undefined) return { ref: { key: rawKey, repoKey, shortRef: jiraShortRef(rawKey) } };
-  const foldedSite = asciiFold(site);
-  const key = `${foldedSite}/browse/${issue}`;
-  return { ref: { key, repoKey, shortRef: jiraShortRef(key) }, site: foldedSite };
+  const ref = { key: issue, repoKey, shortRef: jiraShortRef(issue) };
+  return site === undefined ? { ref } : { ref, site: asciiFold(site) };
 }

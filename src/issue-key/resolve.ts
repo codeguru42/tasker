@@ -30,11 +30,13 @@ export const KEY_PARSERS: Record<Provider, KeyParser> = {
     if (asciiFold(parts.project) !== asciiFold(project)) return undefined;
     return { key: `${project}#${parts.number}`, repoKey, shortRef: githubShortRef(parts.number) };
   },
-  jira: (rawKey, repoKey) => {
-    // A jira repo never matches until M14 adds the Jira project match. The parser runs
-    // so that a key that no parser accepts gives the parser error.
-    parseJiraKey(rawKey, repoKey);
-    return undefined;
+  jira: (rawKey, repoKey, project, site) => {
+    const parsed = parseJiraKey(rawKey, repoKey);
+    // The project of the key is the text before the last "-". The compare keeps the case.
+    if (parsed.ref.key.slice(0, parsed.ref.key.lastIndexOf("-")) !== project) return undefined;
+    // A key with a site matches only a repo with the same site, with no regard to case.
+    if (parsed.site !== undefined && (site === undefined || asciiFold(site) !== parsed.site)) return undefined;
+    return parsed.ref;
   },
 };
 
