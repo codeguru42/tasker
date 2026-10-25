@@ -7,7 +7,7 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 1. The user picks the slug.
 2. The user opens the operator in `claude` and names it `operator-<slug>`, for example with `claude -n operator-m9`.
 3. When the user asks, the operator starts the initial planner, as "Start a session" says.
-4. The user works with the initial planner in its tab. A later ticket gives the rules of the initial planner.
+4. The user works with the initial planner in its tab. [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) of planner.md gives the rules of the initial planner.
 5. When the initial planning ends, the user tells the operator.
 6. The operator closes the tab of the initial planner, as "Stop a session" says.
 7. The operator starts the follow-up planner and the orchestrator, as "Start a session" says.
