@@ -166,6 +166,19 @@ nothing. Steps 2 and 3 use the pane id and the tab id of the row.
    If the close works and the tab has an entry in the tab list, the operator takes that entry out. After
    `herdr pane close`, the tab stays open.
 
+A session at its input prompt runs no turn and is ready for the next input at its prompt, in the state `idle` or `done`.
+A session in `blocked` is not such a session, and [A blocked session](#a-blocked-session) covers it. For a session at
+its input prompt, the wait of step 2 ends at once, before the session reads "stop". Then the session can read "stop" in
+a new turn right after the wait, or it reads nothing before the close. In both cases, the operator still does the close
+of step 3 at once. It does not wait for a read of "stop", and it sends no message to the user for this case. The reason:
+the turn that "stop" starts only answers the stop, so a close that cuts it loses no work. On 2026-10-25, with herdr
+0.9.3 and Claude Code 2.1.310, the agent of #519 sent "stop" to a test session of its own in the state `done`.
+`herdr agent wait <pane id> --timeout 600000` returned `done` at once. About 0.5 seconds later, the message started a
+new turn, and the session answered the stop. On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, operator-docs sent
+"From the user: stop" to planner-messages, which waited for the input of the user.
+`herdr agent wait wB:p9 --timeout 600000` returned `idle` at once. `herdr pane read` showed "1 new message (ctrl+End)",
+so the stop was still unread. Then `herdr tab close` closed the session before it read the stop.
+
 If the wait fails or times out, the operator tells the user and closes nothing. If the wait ends in `blocked`, the
 operator follows "A blocked session" and closes nothing. Without `--until`, the wait also ends in `blocked`.
 
@@ -203,15 +216,15 @@ In a handoff, these rules stay with the user:
 The table gives each change of a handoff. An empty cell means that the page gives no state for that actor. For the case
 of more than one row, the row "More than one row has the name" wins over the row "A close or a start fails".
 
-| Change                         | Old session                                 | Operator                                 | New session           | Who tells whom                                   |
-| ------------------------------ | ------------------------------------------- | ---------------------------------------- | --------------------- | ------------------------------------------------ |
-| The recommendation arrives     | Waits for the go                            | Sends the go                             |                       | The old session tells the operator               |
-| The go arrives                 | Finishes its tasks, writes the handoff file |                                          |                       | The operator tells the old session               |
-| The path arrives               | Waits                                       | Reads the handoff file                   |                       | The old session tells the operator, with an item |
-| The stop                       | Stops, its pane closes                      | Waits for the stop, then closes the pane |                       | The operator tells the old session "stop"        |
-| The start                      |                                             | Starts the new session                   | Runs, from the prompt | The operator starts it with `herdr agent start`  |
-| A close or a start fails       |                                             | Tells the user                           |                       | The operator tells the user                      |
-| More than one row has the name | Runs                                        | Closes nothing, tells the user           | Not started           | The operator tells the user                      |
+| Change                         | Old session                                                                                                                                  | Operator                                         | New session           | Who tells whom                                   |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------------------- | ------------------------------------------------ |
+| The recommendation arrives     | Waits for the go                                                                                                                             | Sends the go                                     |                       | The old session tells the operator               |
+| The go arrives                 | Finishes its tasks, writes the handoff file                                                                                                  |                                                  |                       | The operator tells the old session               |
+| The path arrives               | Waits                                                                                                                                        | Reads the handoff file                           |                       | The old session tells the operator, with an item |
+| The stop                       | If it runs a turn, it reads "stop" and ends the turn. At its input prompt, it can read "stop" in a new turn or read nothing. Its pane closes | Waits for `idle` or `done`, then closes the pane |                       | The operator tells the old session "stop"        |
+| The start                      |                                                                                                                                              | Starts the new session                           | Runs, from the prompt | The operator starts it with `herdr agent start`  |
+| A close or a start fails       |                                                                                                                                              | Tells the user                                   |                       | The operator tells the user                      |
+| More than one row has the name | Runs                                                                                                                                         | Closes nothing, tells the user                   | Not started           | The operator tells the user                      |
 
 ## A blocked session
 
