@@ -49,6 +49,7 @@ The facts that follow were measured on 2026-10-24 with herdr 0.9.3 and Claude Co
 - The herdr agent name, the session name and the name in `ListAgents` are the same.
 - The new session is a top-level session, not a subagent of the operator.
 - The tool `SendMessage` works in both directions, and `ListAgents` lists the session.
+- The model flag and the effort flag of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind) reach the new session. The new session runs with the model and the effort of these flags.
 
 ## The start prompts
 
