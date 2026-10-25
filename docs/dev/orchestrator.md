@@ -24,5 +24,6 @@ The orchestration pages are `docs/dev/orchestrator.md` and the pages of this lis
 - [docs/dev/review-findings.md](review-findings.md): "Review findings".
 - [docs/dev/land-the-work.md](land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold rule and the stuck-task rule.
 - [docs/dev/quota.md](quota.md): "Quota", "Terms", "The delay of each agent", "Schedule a job when an agent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What the agent does", "Delete the job" and "Do not use these".
-- [docs/dev/handoff.md](handoff.md): "The handoff" and "The handoff of a planner".
+- [docs/dev/handoff.md](handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff file", "The last item id", "The check of the handoff folder", "The end of a handoff" and "The stop and the start".
+- [docs/dev/handoff-orchestrator.md](handoff-orchestrator.md): "The long-running orchestrator", "The landing count", "The steps of the old orchestrator", "The handoff file of the orchestrator" and "The start of the new orchestrator".
 - [docs/dev/limits.md](limits.md): "Limits", the own-worktree rule, the update rule, the local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.

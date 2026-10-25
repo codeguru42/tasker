@@ -22,7 +22,10 @@ Each assistant session reads this index first and follows the link for each topi
 - [docs/dev/review-findings.md](docs/dev/review-findings.md): "Review findings".
 - [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold rule and the stuck-task rule.
 - [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each agent", "Schedule a job when an agent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What the agent does", "Delete the job" and "Do not use these".
-- [docs/dev/handoff.md](docs/dev/handoff.md): "The handoff" and "The handoff of a planner".
+- [docs/dev/handoff.md](docs/dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff file", "The last item id", "The check of the handoff folder", "The end of a handoff" and "The stop and the start".
+- [docs/dev/handoff-orchestrator.md](docs/dev/handoff-orchestrator.md): "The long-running orchestrator", "The landing count", "The steps of the old orchestrator", "The handoff file of the orchestrator" and "The start of the new orchestrator".
+- [docs/dev/handoff-planner.md](docs/dev/handoff-planner.md): "The follow-up planner", "An open draft", "The post count", "The steps of the old planner", "The handoff file of the planner" and "The start of the new planner".
+- [docs/dev/handoff-operator.md](docs/dev/handoff-operator.md): "The handoff of the operator", "The close count", "The steps of the old operator", "The handoff file of the operator" and "The start of the new operator".
 - [docs/dev/limits.md](docs/dev/limits.md): "Limits", the own-worktree rule, the update rule, the local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
 - [docs/dev/planner.md](docs/dev/planner.md): the rules for a planner that plans a milestone and writes its issues: the initial planner and the follow-up planner, the order of the work, the review loop of a draft, the body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the user.
 - [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, and the steps of the planner for the blocked-by links, the project board and the milestones.

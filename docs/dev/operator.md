@@ -23,3 +23,5 @@ The operator pages are `docs/dev/operator.md` and the pages of this list, "The p
 - [docs/dev/operator-start.md](operator-start.md): "The order of a milestone", "Start a session", "The start prompts", "Stop a session" and "A blocked session".
 - [docs/dev/operator-items.md](operator-items.md): "The form of an item", "The open items", "The answer" and "The states of an item".
 - [docs/dev/operator-conversations.md](operator-conversations.md): "A side conversation" and "The word of the user".
+- [docs/dev/handoff.md](handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff file", "The last item id", "The check of the handoff folder", "The end of a handoff" and "The stop and the start".
+- [docs/dev/handoff-operator.md](handoff-operator.md): "The handoff of the operator", "The close count", "The steps of the old operator", "The handoff file of the operator" and "The start of the new operator".
