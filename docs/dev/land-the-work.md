@@ -147,23 +147,24 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   the changed fact.
 - This bullet covers a change to an issue in flight by an orchestrator. The requester is the orchestrator that wants the
   change. The requester does not edit the body. The orchestrator of the task is the orchestrator of the milestone of the
-  issue, except for a task that the requester runs (see below). Before it changes an issue, the requester first runs
-  `tasker status` and looks for the full issue key in the output. The requester counts the issue as in flight when the
-  output lists a task for it. If the output lists no task for the issue, the requester does not follow this bullet. If
-  `tasker status` fails, the failure rule applies. The requester posts no comment, sends nothing to the planner and
-  leaves the body as it is. If the issue is in flight, the requester chooses by the kind of change: it puts a correction
-  of what the ticket builds in a comment on the issue, and it sends a new requirement to the planner. For a correction,
-  the requester first asks its user, as [the stop rule](plan-review.md#the-stop-rule) says. Then the requester posts
+  issue, except in the cases below. Before it changes an issue, the requester first runs `tasker status` and looks for
+  the full issue key in the output. The requester counts the issue as in flight when the output lists a task for it. If
+  the output lists no task for the issue, the requester does not follow this bullet. If `tasker status` fails, the
+  failure rule applies. The requester posts no comment, sends nothing to the planner and leaves the body as it is. If
+  the issue is in flight, the requester chooses by the kind of change: it puts a correction of what the ticket builds in
+  a comment on the issue, and it sends a new requirement to the planner. For a correction, the requester first asks its
+  user, as [the stop rule](plan-review.md#the-stop-rule) says. Then the requester posts
   [a change-of-scope comment](plan-review.md#the-change-of-scope-comment). Then the requester reads the milestone of the
   issue with `gh issue view <number> --json milestone -q '.milestone.title'`. If `gh issue view` fails, the failure rule
   applies, and the requester leaves the comment on the issue and the body as it is. If the command prints an empty line
   (the issue has no milestone), the requester leaves the comment on the issue and the body as it is, and it tells the
-  user. If the issue is of the own milestone of the requester, or if the requester runs the task, the requester is the
-  orchestrator of the task. The requester runs the task when the agent of the task is an agent of the requester. This
-  case also covers a blocker that the requester runs under
+  user. The requester runs the task when the agent of the task is an agent of the requester. If the requester runs the
+  task, the requester is the orchestrator of the task. This case also covers a blocker that the requester runs under
   [the earlier-blocker offer](pick-the-tickets.md#pick-the-tickets). In that case, the orchestrator of the task sends no
-  message. Otherwise, the requester sends the orchestrator of the task one message with `SendMessage` that gives the
-  link of the comment. The requester sends the message to the session name of the form `orchestrator-<milestone>` of
+  message. If the issue is of the own milestone of the requester and the requester does not run the task, the requester
+  tells the user. Another orchestrator runs the task, and no rule finds which one. In each other case, the requester
+  sends the orchestrator of the task one message with `SendMessage` that gives the link of the comment. The requester
+  sends the message to the session name of the form `orchestrator-<milestone>` of
   [the notice rule](doc-reads.md#the-notice-rule). The requester counts a missing session with the name of the milestone
   as a failed message. If `SendMessage` fails, the failure rule applies, and the requester leaves the comment on the
   issue and the body as it is. Before the orchestrator of the task sends the link of the comment, the orchestrator of
