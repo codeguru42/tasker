@@ -32,7 +32,7 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
 
    The operator keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. If the command fails, the operator tells the user the command and the error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do step 3. No tab exists.
 
-3. The operator runs `herdr agent start` in its shell. The command starts the agent of the kind in the new pane.
+3. Before the command, the operator joins the lines of the prompt into one line, with one space between two lines. herdr 0.9.3 refuses a prompt with a newline, with the error "agent arguments cannot be encoded safely for the target shell". operator-docs measured this on 2026-10-24, in the handoff of planner-docs. Then the operator runs `herdr agent start` in its shell. The command starts the agent of the kind in the new pane.
 
    ```sh
    herdr agent start <name> --kind <kind> --pane <pane id> -- -n <name> <model flags> "<prompt>"
@@ -40,13 +40,19 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
 
    `<kind>` is `sessions.kind`. `<model flags>` is the model flag and the effort flag of the kind in [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), with the model and the effort of the entry of the role. If `sessions.models` has no entry for the role, the operator leaves out `<model flags>`.
 
-   If the command fails, the operator tells the user the command and the error. The new tab stays open, and the operator keeps its tab id. The operator does not close the tab without the user.
+   `herdr agent start` can fail while the new session still starts. The known errors are "timed out waiting for agent startup", and "named agent `<name>` no longer owns the target terminal" with the code `agent_name_not_found`. `<name>` is the name of the session.
+
+   After one of these errors, the operator first looks for the new session in `ListAgents`, or it runs `herdr pane read <pane id>` in its shell. The pane id is the one that step 2 kept. If the session runs, the start worked. If `ListAgents` does not list the new session, or `herdr pane read` fails or shows no running session, the failure case that follows applies.
+
+   operator-docs saw the timeout on 2026-10-24, in the handoff of planner-docs, and the session ran. operator-docs saw the error "named agent orchestrator-docs no longer owns the target terminal" (`agent_name_not_found`) on 2026-10-24, at the start of the new orchestrator-docs, and the session ran.
+
+   If the command fails in another way, or the new session does not run, the operator tells the user the command and the error. The new tab stays open, and the operator keeps its tab id. The operator does not close the tab without the user.
 
 The facts that follow were measured on 2026-10-24 with herdr 0.9.3 and Claude Code 2.1.310:
 
 - Herdr sets `HERDR_WORKSPACE_ID` in each pane that it manages. As a result, the new tab opens in the workspace of the operator.
 - The flag `-n` sets the session name, and the last argument is the first prompt of the session. [The seam of an agent kind](../config.md#the-seam-of-an-agent-kind) is the home of these flags.
-- The herdr agent name, the session name and the name in `ListAgents` are the same.
+- No row of `herdr agent list` has a field for a herdr agent name.
 - The new session is a top-level session, not a subagent of the operator.
 - The tool `SendMessage` works in both directions, and `ListAgents` lists the session.
 - The model flag and the effort flag of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind) reach the new session. The new session runs with the model and the effort of these flags.
