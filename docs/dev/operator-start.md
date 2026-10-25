@@ -5,7 +5,7 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 ## The order of a milestone
 
 1. The user picks the slug.
-2. The user runs `tasker show-config --repo <key>` and reads `sessions.models.operator`. If the command fails, the user does not open the operator. Then the user opens the operator in `claude` and names it `operator-<slug>`. The user passes the model and the effort of `sessions.models.operator` with the flags of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), for example `claude -n operator-m9 --model opus --effort high`. If `sessions.models.operator` has no entry, the user passes neither flag.
+2. The user runs `tasker show-config --repo <key>` and reads `sessions.models.operator`. `<key>` is the repo key of the repo of the local clone, for example `codeguru42/tasker`. If the command fails, the user does not open the operator. Then the user opens the operator in `claude` and names it `operator-<slug>`. The user passes the model and the effort of `sessions.models.operator` with the flags of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), for example `claude -n operator-m9 --model opus --effort high`. If `sessions.models.operator` has no entry, the user passes neither flag.
 3. When the user asks, the operator starts the initial planner, as "Start a session" says.
 4. The user works with the initial planner in its tab. [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) of planner.md gives the rules of the initial planner.
 5. When the initial planning ends, the user tells the operator.
