@@ -86,7 +86,7 @@ The planner counts the issues that it posts in its session. Each change of the b
 
 After the first suggestion, the suggestion of the planner stays. If the user says no, the planner still suggests the handoff again after each later post. The count of the planner does not start again at 0. The planner also gives the suggestion again in each item that lists the open questions to the user. The planner stops the suggestion only when the user starts the handoff.
 
-The reason for the count: most of the context of a planner comes from the drafts of each issue, their rewrites.
+The reason for the count: most of the context of a planner comes from the drafts of each issue and their rewrites.
 
 After the start, the old planner does these steps:
 
