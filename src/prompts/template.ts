@@ -3,6 +3,7 @@ const TOKEN = /\{\{([A-Z][A-Z0-9_]*)\}\}/g;
 // docs/dev/assistants.md gives the reason for the tags.
 const UNTRUSTED_TOKENS: Readonly<Record<string, string>> = {
   ISSUE_TEXT: "issue-text",
+  ISSUE_COMMENTS: "issue-comments",
   CURRENT_PLAN: "current-plan",
   BRANCH_COMMITS: "branch-commits",
   EARLIER_REVIEWS: "earlier-reviews",

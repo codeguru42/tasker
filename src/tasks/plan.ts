@@ -3,7 +3,7 @@ import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
 import { archivePrompt } from "../prompts/archive.js";
-import { PLAN_PROMPT, PLAN_PROMPT_NAME, planIssueText } from "../prompts/plan.js";
+import { PLAN_PROMPT, PLAN_PROMPT_NAME, planIssueComments, planIssueText } from "../prompts/plan.js";
 import { fillTemplate } from "../prompts/template.js";
 import { approvedResetsAtOf } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
@@ -32,6 +32,7 @@ async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanR
   const issue = await issueProviderFor(config, ref.repoKey).fetchIssue(ref, env);
   const prompt = fillTemplate(PLAN_PROMPT_NAME, PLAN_PROMPT, {
     ISSUE_TEXT: planIssueText({ key: task.issueKey, title: issue.title, body: issue.body }),
+    ISSUE_COMMENTS: planIssueComments(issue.comments),
   });
   const archived = archivePrompt(config.dataRoot, PLAN_PROMPT_NAME, PLAN_PROMPT);
   const version = store.nextPlanVersion(task.id);
