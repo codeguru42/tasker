@@ -16,6 +16,8 @@ The own name of a session is in the first line of the output of `ListAgents`, in
 
 The operator runs no `tasker` command and starts no agent of a ticket.
 
+When a step of the operator pages applies [the failure rule](limits.md#the-failure-rule), the rule covers the operator in the place of the orchestrator.
+
 The operator pages are `docs/dev/operator.md` and the pages of this list, "The pages":
 
 - [docs/dev/operator-start.md](operator-start.md): "The order of a milestone", "Start a session", "The start prompts", "Stop a session" and "A blocked session".
