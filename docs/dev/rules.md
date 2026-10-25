@@ -75,6 +75,8 @@ A case is one kind of input that a function serves. Examples are a role of an as
 
 The reasons: the skill of the repo describes the tasker that this repo builds, and it can differ from the installed tasker. A raw read of the skill also shows the placeholder line instead of the command line of the user.
 
+A skill in `.claude/skills/` is a skill for the work on this repo. A session runs it as instructions. The reason: the skill is about the work on the repo, not about tasker, so tasker does not ship it.
+
 ## AGENTS.md
 
 - `AGENTS.md` is an index. Each line is a one-line description plus a link to the file that has the details.
