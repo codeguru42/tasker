@@ -192,7 +192,8 @@ link to open an issue from a reply.
   as [the answer-wait rule](limits.md#the-answer-wait-rule) says. Then the orchestrator sends the agent the decision of
   the user. The reason: if the user then picks the simpler rule, a landing with the patch costs a second ticket. On
   2026-10-17, the agent of #250 went on, #250 landed with the patch before the user chose the simpler rule, and #306
-  undoes the patch.
+  undoes the patch. The agent also stops by itself under the case "Two reviews in a row" of
+  [the stop rule](plan-review.md#the-stop-rule).
 
 ## The tools of a session
 
