@@ -49,7 +49,8 @@ session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-re
   starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What the agent
   does", "Delete the job" and "Do not use these".
 - [docs/dev/handoff.md](docs/dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
-  file", "The last item id", "The check of the handoff folder", "The end of a handoff" and "The stop and the start".
+  file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start" and "A
+  topic handoff".
 - [docs/dev/handoff-orchestrator.md](docs/dev/handoff-orchestrator.md): "The long-running orchestrator", "The landing
   count", "The steps of the old orchestrator", "The handoff file of the orchestrator" and "The start of the new
   orchestrator".

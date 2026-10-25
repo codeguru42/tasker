@@ -34,6 +34,7 @@ The operator pages are `docs/operator.md` and the pages of this list, "The pages
   states of an item".
 - [docs/dev/operator-conversations.md](dev/operator-conversations.md): "A side conversation" and "The word of the user".
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
-  file", "The last item id", "The check of the handoff folder", "The end of a handoff" and "The stop and the start".
+  file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start" and "A
+  topic handoff".
 - [docs/dev/handoff-operator.md](dev/handoff-operator.md): "The handoff of the operator", "The close count", "The steps
   of the old operator", "The handoff file of the operator" and "The start of the new operator".
