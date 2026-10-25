@@ -34,7 +34,11 @@ The plan mode blocks `Edit` and `Write`, but it does not block a shell command t
 
 ### The execute role
 
-The execute role runs under the `dontAsk` permission mode. Under this mode, a tool call that no allow rule covers is denied. The deadline is the execute deadline of the configuration. One deadline covers every turn of a run. A start can replace it with the time that is left (see "The rules for the caller").
+The execute role runs under the `default` permission mode, with a `PermissionRequest` hook of tasker. The hook answers each question that no allow rule or deny rule decides. It allows only a Write or an Edit under `<worktree>/.claude/skills/`. It denies each other question, so a tool call that no allow rule covers is still denied. The hook writes no file. The deny rules run before the hook.
+
+These facts of `claude` 2.1.310 give the reason for the mode. Under `dontAsk`, `claude` denies each write under `.claude/`, also with an allow rule, a sandbox write path or a `PreToolUse` hook, and a `PermissionRequest` hook does not run. Under `default`, the hook can answer. The hook allows only the one folder `.claude/skills/`, because a write to `.claude/settings.json` can change the permissions of a later session. The shell still cannot write under `.claude/skills/`, because the sandbox blocks it.
+
+The deadline is the execute deadline of the configuration. One deadline covers every turn of a run. A start can replace it with the time that is left (see "The rules for the caller").
 
 The allow list holds these rules, in this order:
 
@@ -106,11 +110,11 @@ One prepared run serves every turn of a session. The first start of a new sessio
 
 These facts of `claude` give the reasons for some rules of the allow list of [the execute role](#the-execute-role).
 
-The program `claude` answers `--json-schema` through a tool named `StructuredOutput`. A real capture showed a denial of this tool under `dontAsk` without a rule. A measure on `claude` 2.1.300 showed no denial. The rule stays, so that both cases work.
+The program `claude` answers `--json-schema` through a tool named `StructuredOutput`. A real capture showed a denial of this tool under `dontAsk` without a rule. A measure on `claude` 2.1.300 showed no denial. The rule stays, so that both cases work. The hook denies such a call in the `default` mode in the same way, so the rule is still needed.
 
 The model calls the subagent tool `Agent`, and the `init` event of `claude` 2.1.300 lists it as `Task`. A measure on 2.1.300 showed that neither is denied without a rule. The list names both, because a later `claude` can use either name.
 
-A skill points the model at reference files in the skills folder and the plugins folder of the configuration folder of `claude`. The configuration folder is `CLAUDE_CONFIG_DIR`, or `.claude` under `HOME`. A measure on `claude` 2.1.300 showed that `dontAsk` denies the read of a skill file without a rule. With the two rules, the read of a skill file and of a plugin skill file passes, and the read of `settings.json` stays denied. The two rules name exactly the patterns `<configuration folder>/skills/**` and `<configuration folder>/plugins/**`. Never allow the whole configuration folder, because it holds the credentials and the settings. When neither variable is set, the list has no skill rule.
+A skill points the model at reference files in the skills folder and the plugins folder of the configuration folder of `claude`. The configuration folder is `CLAUDE_CONFIG_DIR`, or `.claude` under `HOME`. A measure on `claude` 2.1.300 showed that `dontAsk` denies the read of a skill file without a rule. In the `default` mode, the hook denies the same call, so the rules stay. With the two rules, the read of a skill file and of a plugin skill file passes, and the read of `settings.json` stays denied. The two rules name exactly the patterns `<configuration folder>/skills/**` and `<configuration folder>/plugins/**`. Never allow the whole configuration folder, because it holds the credentials and the settings. When neither variable is set, the list has no skill rule.
 
 ### The environment
 
