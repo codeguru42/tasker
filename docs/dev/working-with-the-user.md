@@ -100,11 +100,12 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [the design-gap rule](plan-review.md#the-design-gap-rule). The mode does not cover a rule that says that only the user
   does an action, for example "Only the user changes a landing order of the overlap rule" (see
   [Land the work](land-the-work.md#land-the-work)). Some kinds of choice still go to the user first: a security gap, a
-  change of scope, a landing order across milestones, an extra review loop, and a
-  [tool block](tasker-commands.md#the-tool-block-rule). The mode holds for the session that got it, until the user ends
-  it. The mode also passes through a handoff. The old session lists the mode as a decision of the user in its
-  [handoff file](handoff.md#the-items-of-a-handoff-file). The new session then holds the mode until the user ends it. On
-  2026-10-18, the user told orchestrator-docs: "Default to your evaluation and recommendation from here on."
+  change of scope, a landing order across milestones, an extra review loop, a request of
+  [the request rule](../orchestrator.md#the-request-rule) and a [tool block](tasker-commands.md#the-tool-block-rule).
+  The mode holds for the session that got it, until the user ends it. The mode also passes through a handoff. The old
+  session lists the mode as a decision of the user in its [handoff file](handoff.md#the-items-of-a-handoff-file). The
+  new session then holds the mode until the user ends it. On 2026-10-18, the user told orchestrator-docs: "Default to
+  your evaluation and recommendation from here on."
 
 ## A question of the user
 

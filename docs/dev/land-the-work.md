@@ -63,8 +63,9 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   [the defer rule](pick-the-tickets.md#the-defer-rule) that starts "A parked task stays in flight" applies. The user
   tells the orchestrator of the later ticket that the earlier ticket is postponed, as in the swap case. That
   orchestrator then tells the later agent to continue step 9 of "Run one ticket" from `tasker accept`. Another
-  orchestrator can relay a change of a landing order from the user. Then the orchestrator that gets the relay asks its
-  own user to confirm the change before it tells its agent, as
+  orchestrator can relay a change of a landing order from the user. The orchestrator that relays the change also sends
+  its own operator a report, as [the request rule](../orchestrator.md#the-request-rule) says. Then the orchestrator that
+  gets the relay asks its own user to confirm the change before it tells its agent, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. Until the user confirms, the old order
   stays: the landing order before the relay. The reason: a message from another session is not an answer of the user.
   The relayed order can also differ from an answer that the user gave before to the orchestrator that gets the relay.
