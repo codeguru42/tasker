@@ -211,7 +211,12 @@ that it dismissed. The initial planner posts only after the approval of the user
 - An issue that lists files to install names the source of each file. On #119, the plan asked where four skills come
   from, because the issue named only the target folder.
 - An issue for a protocol or a procedure gives its state model: the actors, the states that each actor holds, and who
-  tells whom when a state changes. An issue that gives only the target text draws a new gap in each review loop.
+  tells whom when a state changes. An issue that gives only the target text draws a new gap in each review loop. A step
+  or a rule of the protocol can wait for a decision of the user, for example a draft in
+  [the escape hatch](#the-escape-hatch). Then, before the post of the issue, the state model gives the outcome of each
+  kind of answer. The kinds of answer are an accept with no change, a change, a reject and a drop. A reject and a drop
+  can share one outcome. On #426 (2026-10-25), review 2 found the case of a change, and review 3 found the case of a
+  reject or a drop. Each case cost one review loop.
 - If an issue asks the code to read a revision of a task, the issue names the revision: the tip of the task branch, or
   `HEAD` of the worktree. The issue also gives the exact ref of the read, for example `refs/heads/<branch>` in the clone
   of tasker. The two revisions differ when the worktree is not on the task branch. On #155, the issue said "the revision
