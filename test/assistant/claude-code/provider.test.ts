@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { permissionHookSettings } from "../../../src/assistant/claude-code/permission-hook.js";
 import { createClaudeCodeProvider } from "../../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
 import {
@@ -550,6 +551,25 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
     expect(call.argv).toContain("--settings");
   });
 
+  it("adds the permission hook to the settings of a sandboxed run that allows skill writes", async () => {
+    const { outcome, fake, tmpRoot, cwd } = await sandboxed(
+      { stream: claudeSample("plain") },
+      { overrides: { allowSkillWrites: true } },
+    );
+
+    expect(outcome.kind).toBe("success");
+    expect(fake.calls()[0].settings).toEqual({
+      sandbox: {
+        enabled: true,
+        failIfUnavailable: true,
+        allowUnsandboxedCommands: false,
+        filesystem: { allowWrite: ["/work/wt"], denyRead: ["/home/test/key"] },
+        network: { allowedDomains: ["*"], allowUnixSockets: [join(tmpRoot, `claude-${process.getuid!()}`)] },
+      },
+      ...permissionHookSettings(cwd),
+    });
+  });
+
   it("keeps the cleanup for an overage stop", { timeout: 15_000 }, async () => {
     const { outcome } = await sandboxed(stopped(), { overrides: { timeoutMs: 10_000, overageStop: {} } });
 
@@ -568,6 +588,13 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
     expect(fake.calls()[0].argv).not.toContain("--settings");
     expect(fake.calls()[0]).not.toHaveProperty("settings");
     expect(outcome).not.toHaveProperty("sandboxCleanup");
+  });
+
+  it("gives only the permission hook as settings for a run with no sandbox that allows skill writes", async () => {
+    const cwd = useTempDir("tasker-claude-cwd-");
+    const { fake } = await run({ stream: claudeSample("plain") }, { cwd, allowSkillWrites: true });
+
+    expect(fake.calls()[0].settings).toEqual(permissionHookSettings(cwd));
   });
 
   it("removes the placeholders of a killed claude and reports them sorted", async () => {

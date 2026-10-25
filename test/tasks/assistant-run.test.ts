@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { shellQuote } from "../../src/shell-quote.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
@@ -207,7 +209,7 @@ describe("prepareTaskPlanModeRun", () => {
     expect(flagValues(call.argv, "--json-schema")).toEqual([JSON.stringify(schema)]);
     expect(flagValues(call.argv, "--disallowedTools")).toEqual(["Bash(git push:*)"]);
     expect(call.argv).not.toContain("--allowedTools");
-    expect(call.argv).not.toContain("--settings");
+    expect(call).not.toHaveProperty("settings");
     expect(call.envNames).not.toContain("GH_TOKEN");
     expect(call.envNames).not.toContain("SSH_AUTH_SOCK");
     expect(existsSync(taskSessionsDir(config.dataRoot, task))).toBe(true);
@@ -235,7 +237,7 @@ describe("prepareTaskPlanModeRun", () => {
     expect(flagValues(call.argv, "--permission-mode")).toEqual(["plan"]);
     expect(flagValues(call.argv, "--disallowedTools")).toEqual(["Bash(git push:*)"]);
     expect(call.argv).not.toContain("--allowedTools");
-    expect(call.argv).not.toContain("--settings");
+    expect(call).not.toHaveProperty("settings");
   });
 
   it("refuses a task that has no worktree, and starts no child", async () => {
@@ -347,14 +349,14 @@ describe("prepareTaskExecuteRun", () => {
     expect(prepared.approvedResetsAt).toBeUndefined();
   });
 
-  it("runs the assistant under dontAsk with the execute model and the file tools of the worktree", async () => {
+  it("runs the assistant in the default mode with the execute model and the file tools of the worktree", async () => {
     const { claude, env, models, started } = await prepareAndStartExecute({
       claude: { stream: claudeSample("plain") },
     });
 
     const { argv } = claude.calls()[0];
     const wt = started.worktree;
-    expect(flagValues(argv, "--permission-mode")).toEqual(["dontAsk"]);
+    expect(flagValues(argv, "--permission-mode")).toEqual(["default"]);
     expect(flagValues(argv, "--model")).toEqual([models.execute.model]);
     expect(flagValues(argv, "--effort")).toEqual([models.execute.effort]);
     expect(argv).not.toContain("--json-schema");
@@ -380,6 +382,16 @@ describe("prepareTaskExecuteRun", () => {
       expectedRule("Edit", `${wt}/.git/**`),
       expectedRule("Edit", `${started.clone}/**`),
     ]);
+  });
+
+  it("lets the hook approve a write under .claude/skills of the worktree", async () => {
+    const { claude, started } = await prepareAndStartExecute({ claude: { stream: claudeSample("plain") } });
+
+    const script = fileURLToPath(new URL("../../src/assistant/claude-code/permission-hook-main.js", import.meta.url));
+    const command = [process.execPath, script, started.worktree].map(shellQuote).join(" ");
+    expect(claude.calls()[0].settings).toMatchObject({
+      hooks: { PermissionRequest: [{ matcher: "*", hooks: [{ type: "command", command }] }] },
+    });
   });
 
   it("runs the shell in the sandbox with the write paths and the read deny list", async () => {

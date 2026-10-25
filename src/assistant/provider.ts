@@ -53,6 +53,8 @@ export interface RunInput {
   allowedTools?: readonly string[];
   // A deny wins over an allow.
   disallowedTools?: readonly string[];
+  // Approves a Write or an Edit under .claude/skills/ of cwd, and denies each other question of the assistant. The deny rules still win.
+  allowSkillWrites?: boolean;
   // No fallback to a shell with no sandbox. The network stays open.
   sandbox?: SandboxLimits;
   model: string;
