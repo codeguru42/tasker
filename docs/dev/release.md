@@ -4,7 +4,7 @@ tasker has two kinds of version: a stable release and a pre-release.
 
 A stable release is a commit of `main` with a tag. The tag is the version itself, with no prefix. The release makes no commit. `package.json` and `package-lock.json` hold the placeholder version `0.0.0`, and no release and no install commits a change to this version. The form is `yyyy.m.d`, the date in UTC, with no leading zeros. Examples: `2026.10.24` and `2026.1.5`. A stable release is at most one release on each day.
 
-A release commit would make `package.json` hold the version of the last release on each later commit. That text is false for a development build. With a tag only, the version comes from the tag and nothing else.
+With a release commit, `package.json` holds the version of the last release on each later commit. That text is false for a development build. With a tag only, the version comes from the tag and nothing else.
 
 A pre-release is a local build of any commit. It has no commit. It has a local tag only when the developer adds one, and that tag never goes to GitHub. The form is `yyyy.m.d-<commit>`, the date in UTC, with no leading zeros. `<commit>` is the output of `git rev-parse --short HEAD`. Example: `2026.10.23-c0c0d1a5`. With the commit in the version, `tasker --version` names the exact code that runs.
 
