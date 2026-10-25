@@ -223,6 +223,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - A summary line that points to a rule promises no more than the rule gives. On #138, line 20 of `docs/dev/orchestration.md`, in "Pick the tickets", said "no orchestrator", but the rule covers only an orchestrator that knows of the issue.
 - If a rule covers a message from one orchestrator to another, say in the first refine what the rule does for the sender. Also say what it does for a reject and for no answer, or say that these cases are out of scope. On #164, review 1 found both cases.
 - If an issue adds a second trigger to a bullet, ask the plan how the two triggers fit together. A trigger is the event or state that starts the action of the bullet. On #244, review 1 found two moments to tell the user: "When the Todo column is empty" and "when the last ticket closes".
+- If an issue limits a rule to one session, for example "the session that got it", the first refine compares that limit with [the handoff](handoff.md#the-handoff) before the plan. The handoff file carries each decision of the user to the new session. On #375, the issue limited [the recommendation mode](working-with-the-user.md#a-decision-of-the-user) to the session that got it. Review 1 found the conflict with the handoff, and the fix cost a change of scope.
 
 ## A ticket that moves or trims a doc
 
