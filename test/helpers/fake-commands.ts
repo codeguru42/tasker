@@ -1,15 +1,6 @@
-import {
-  accessSync,
-  constants,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  statSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
+import { isRunnableFile } from "../../src/process/resolve-program.js";
 import { shellQuote } from "../../src/shell-quote.js";
 import { useTempDir } from "./temp.js";
 
@@ -124,14 +115,7 @@ export function realCommandPath(name: string): string {
   for (const folder of (process.env.PATH ?? "").split(delimiter)) {
     if (folder === "") continue;
     const candidate = join(folder, name);
-    try {
-      if (statSync(candidate).isFile()) {
-        accessSync(candidate, constants.X_OK);
-        return candidate;
-      }
-    } catch {
-      // Not here. Try the next folder.
-    }
+    if (isRunnableFile(candidate)) return candidate;
   }
   throw new Error(`no ${name} found on PATH`);
 }

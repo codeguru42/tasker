@@ -1,6 +1,7 @@
-import { accessSync, constants, realpathSync, statSync } from "node:fs";
+import { realpathSync } from "node:fs";
 import { basename, delimiter, join } from "node:path";
 import { errnoCode } from "../../errno.js";
+import { isRunnableFile } from "../../process/resolve-program.js";
 import { canonicalPath, isInside } from "../../real-path.js";
 import type { SandboxLimits } from "../provider.js";
 
@@ -63,14 +64,7 @@ export function sandboxSocketFolder(o: {
 export function isOnPath(program: string, env: NodeJS.ProcessEnv): boolean {
   for (const folder of (env.PATH ?? "").split(delimiter)) {
     if (folder === "") continue;
-    const path = join(folder, program);
-    try {
-      if (!statSync(path).isFile()) continue;
-      accessSync(path, constants.X_OK);
-      return true;
-    } catch {
-      continue;
-    }
+    if (isRunnableFile(join(folder, program))) return true;
   }
   return false;
 }
