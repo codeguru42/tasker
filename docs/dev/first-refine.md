@@ -804,7 +804,10 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   Without `--until`, the wait also ends in `blocked` (herdr 0.9.3, `herdr agent wait --help`). A wait that ends exits
   with 0, and the state is at `.result.agent.agent_status`. A timeout exits with 1 and prints
   `{"error":{"code":"timeout",...}}`. The agent of #403 measured both exits on 2026-10-24. Ask the plan to run
-  [the fact test](plan-review.md#the-fact-test) for each exit that the procedure uses.
+  [the fact test](plan-review.md#the-fact-test) for each exit that the procedure uses. A fact test can measure both
+  exits with read-only commands. `herdr agent wait <pane id> --until <the current state of that pane>` exits with 0. For
+  a pane that is not in `unknown`, `--until unknown --timeout 300` (300 milliseconds) times out and exits with 1. The
+  agent of #452 measured both with herdr 0.9.3 on 2026-10-25.
 - A Claude Code session that starts with `--effort <level>` cannot see its own effort level, so its answer does not show
   it. The session can report its model. A [fact test](plan-review.md#the-fact-test) of the effort reads the screen of
   the session with `herdr agent read`. The start banner shows the effort, for example "Sonnet 5.5 with low effort". The
@@ -823,6 +826,15 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule limits a count of running agents, ask the plan in the first refine for a list. The list names each bullet
   that sets a count that a kept item must join. On #429, review 1 found that the bullet "Run at most 3 agents at the
   same time" counted only running agents.
+- A new rule can search `origin/main` and only link to a bullet that fetches before a later read. The link does not
+  cover the search. Ask the plan to put a `git fetch origin` in the new rule itself, right before the search. On #442
+  (2026-10-25), the bullet of plan v1 linked to the `git show` bullet, which fetches before its read, not before the
+  search. Review 1 found the search before the fetch.
+- If a ticket adds a new kind of handoff, for example [a topic handoff](handoff.md#a-topic-handoff), ask the plan in the
+  first refine for four things. First, the plan gives the session name of the new session. Second, it names the operator
+  that the new session works with. Third, it names the session that starts the new session. Fourth, it covers the case
+  where the old session is the operator. On #438 (2026-10-25), plan v1 left open who starts the new session, and review
+  1 found the other three gaps.
 
 ## A ticket that moves or trims a doc
 
