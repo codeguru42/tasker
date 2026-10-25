@@ -107,7 +107,6 @@ The follow-up planner goes on with the other drafts.
 
 The post with no approval of the user does not cover these rules:
 
-- "Only the user starts a handoff" and "Only the user ends a handoff that started" of [The handoff](handoff.md#the-handoff). The escape hatch does not cover them. They stay with the user.
 - The close of a milestone, in [Milestones](issues.md#milestones). The escape hatch does not cover it. It stays with the user.
 - The start of a milestone and the question about the kinds of GitHub objects, in [The order of the work](#the-order-of-the-work). The escape hatch does not cover them. They stay with the user.
 - A comment on an issue. It is not a draft of this section, so it still needs the approval of the user.
@@ -145,7 +144,7 @@ The initial planner runs the same review loops. Then the initial planner shows t
 - An issue that adds hints to a page says, for each hint, which bullet of the page it extends, or that it goes in as a new bullet. The issue does not use the sentence "If a hint of the page already gives part of a hint above, extend that hint" without the name of the bullet. On #321, #355 and #356 (2026-10-24), each plan picked a bullet to extend, and each agent stopped before `tasker approve` for a design gap. Each answer was a new bullet.
 - An issue that names a git check gives the meaning and the action of each exit code, or it says that the other exit codes are out of scope. On #356, review 2 asked about the exit codes that the hint did not name.
 - A fact that an issue copies from a ticket can be true in only one case. Before the post, the planner measures the fact, or it writes the fact with its case. On #369, the issue said that the format check fails after a fenced block. The agent measured that the check fails only when indented text of the same step follows the block. A design gap then changed the words to "can fail".
-- An issue can let a session decide choices that other rules send to the user. Then the issue also names the rules that keep an action for the user alone, for example "Only the user starts a handoff". The issue says that the new rule does not cover them. On #375, review 1 found this gap in [the recommendation mode](working-with-the-user.md#a-decision-of-the-user) as a [design gap](plan-review.md#the-design-gap-rule).
+- An issue can let a session decide choices that other rules send to the user. Then the issue also names the rules that keep an action for the user alone, for example "Only the user changes a landing order of the overlap rule" (see [Land the work](land-the-work.md#land-the-work)). The issue says that the new rule does not cover them. On #375, review 1 found this gap in [the recommendation mode](working-with-the-user.md#a-decision-of-the-user) as a [design gap](plan-review.md#the-design-gap-rule).
 - Each issue gives the scope hints that past tickets needed. [first-refine.md](first-refine.md) lists the hints by the kind of ticket. Examples:
   - The report of every configuration error in one run, as [rules.md](rules.md#code) says.
   - [The fact test](plan-review.md#the-fact-test) for each fact about an outside tool.
@@ -187,4 +186,4 @@ The initial planner runs the same review loops. Then the initial planner shows t
 - Before the user decides something, the planner follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user) of working-with-the-user.md.
 - If the planner shows the list of milestones, it uses one table with the columns `#`, `Milestone` and `Description`, one row for each milestone, and "Future" last. The description in each row is the description of the milestone on GitHub. Notes go below the table.
 - The operator names each planner `planner-<slug>` with the flag `-n` of `claude`, for example `planner-m7`. [operator.md](operator.md) defines the slug. The name of a session is a noun for its role, not a verb. Examples are `orchestrator-<slug>` and `planner-<slug>`. The name tells the user which session is the planner and which session is an orchestrator. For example, on 2026-10-15, the user confused a planner with the orchestrator. [The notice rule](doc-reads.md#the-notice-rule) says which sessions get a notice.
-- The follow-up planner suggests a handoff to the user and does the steps of the handoff, as [The handoff of a planner](handoff.md#the-handoff-of-a-planner) of handoff.md says.
+- The follow-up planner suggests a handoff to the user and does the steps of the handoff, as [docs/dev/handoff-planner.md](handoff-planner.md) says.
