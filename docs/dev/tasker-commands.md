@@ -58,6 +58,37 @@ the user these facts. The orchestrator does not run the blocked action for the a
 recommendation mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) does not cover a tool
 block: the orchestrator always waits for the user.
 
+A check failure is a denial whose text says that the classifier of auto mode gave no verdict. A check failure is a tool
+block, with these differences:
+
+- After a check failure, the agent runs the same call again one time, in the same form. The text of the failure permits
+  this one try. For a check failure, this one try wins over the paragraph that starts "A denial covers the whole action"
+  and over the stop of the paragraph that starts "After a tool block". Apart from this one try, the agent runs the
+  action in no other form, and no part of it, as the paragraph that starts "A denial covers the whole action" says.
+- If the second try runs, the agent continues its work. If the second try also fails with a check failure, the agent
+  stops, as the paragraph that starts "After a tool block" says. In its report, the agent also says that the denial is a
+  check failure. If the second try gets a denial that is not a check failure, that denial is a tool block with none of
+  these differences.
+- For a check failure, the orchestrator tells the user the exact command and the link https://status.claude.com/. The
+  agent also gives the folder where the call ran, and the orchestrator tells the user that folder. The user can run the
+  command with the `!` prefix of Claude Code, which does not go through the classifier. If the user runs the command,
+  the orchestrator tells the agent in its answer that the command ran, with its output.
+- The orchestrator follows the same steps for a check failure of its own call: it runs the same call again one time, in
+  the same form. If that try also fails with a check failure, the orchestrator tells the user the exact command and the
+  link, so that the user can run the command with the `!` prefix.
+
+On 2026-10-25, in the session of #428, each Bash call that no permission rule allowed failed with this text:
+
+> The server-side auto mode classifier gave no verdict (error), so auto mode cannot determine the safety of Bash. This
+> is a transient failure of the check, not a judgment about the action: a later response may get a verdict. You may try
+> the action again once, as-is. Repeated attempts are slowed by a growing delay, and after 10 responses in a row without
+> a verdict the turn stops.
+
+The user saw "auto mode check unavailable" and "bash denied by auto mode". The calls included read-only commands, for
+example `git show origin/main:<path>` and `gh issue list`. At the same time, https://status.claude.com/ showed the
+incident "Elevated errors for Claude Sonnet 5.5" from 06:14 UTC, and Claude Code in "Partial Outage". No incident named
+auto mode. The user then ran `gh issue create` with the `!` prefix, and the posts of #482 and #483 worked.
+
 ## The command rules
 
 These rules apply to each `tasker` command that the agent runs, also to a read-only one. They add to the plain-form rule
