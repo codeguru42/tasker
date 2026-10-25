@@ -2,85 +2,203 @@
 
 This page gives the procedure for a rebase conflict that `tasker update-branch` reports.
 
-The page is for [the installed `tasker`](orchestrator.md) that drives the work on this repo. To see the flags of a command, run `tasker <command> --help`.
+The page is for [the installed `tasker`](orchestrator.md) that drives the work on this repo. To see the flags of a
+command, run `tasker <command> --help`.
 
 ## Who runs the procedure
 
-The driver does these steps. The driver is the person or the assistant session that drives tasker from a local clone of this repo.
+The driver does these steps. The driver is the person or the assistant session that drives tasker from a local clone of
+this repo.
 
-tasker keeps its own clone of this repo under its data root (`dataRoot`). This page calls it the tasker clone. tasker starts some assistant sessions in a worktree of the tasker clone. Such a session must not do these steps. It must stop and report the conflict to the driver.
+tasker keeps its own clone of this repo under its data root (`dataRoot`). This page calls it the tasker clone. tasker
+starts some assistant sessions in a worktree of the tasker clone. Such a session must not do these steps. It must stop
+and report the conflict to the driver.
 
-The driver must not run git commands in the tasker clone. The driver must not change the tasker clone. Only tasker commands change it. The driver reads the tasker clone only with a fetch through a read-only remote. A fetch only reads the tasker clone.
+The driver must not run git commands in the tasker clone. The driver must not change the tasker clone. Only tasker
+commands change it. The driver reads the tasker clone only with a fetch through a read-only remote. A fetch only reads
+the tasker clone.
 
 ## Procedure
 
 Run each git command in the clone of the driver or in its worktree.
 
-1. Once for each clone of the driver, add a remote named `tasker`. Run the commands of this step in the clone of the driver, not in a worktree and not in the tasker clone. Run `tasker show <issue>`. It prints the path of the tasker clone on the `clone:` line. If `tasker show` fails, or if it prints no `clone:` line, stop. The clone of the driver gets no new remote. A person decides the next step, as step 10 describes. Otherwise, run `git remote add tasker <path>`, with the value of the `clone:` line as `<path>`.
-2. In the same clone, block each push to this remote: `git remote set-url --push tasker DISABLED-read-only`. As a result, no push can reach the tasker clone.
-3. Run `tasker show <issue>`. It prints the base branch of the task as `base:`. For most tasks, the base branch is `main`.
-4. If the base branch is the branch of another task, the task is a stacked task. For a stacked task, the driver runs `tasker show <parent issue>` in the clone of the driver. The parent issue is the key in the note `based on <key>'s branch` that `tasker start` printed. For an agent, the prompt names the parent. If the driver cannot name the parent issue, stop. `tasker show` changes no task. If `tasker show` fails, stop. If the `state:` line is not `landed`, `finishing` or `finished`, stop. In each of these cases, a person decides the next step, as step 10 describes. If the parent landed, go on to step 5. A stacked task whose parent landed is no longer stacked after a `tasker update-branch` with no conflict.
-5. Run `git fetch --multiple tasker origin`. The fetch reads the task branch from the tasker clone. The fetch of `origin` also gets the base branch.
-6. If a worktree already holds the local task branch, use it, and do [the update rule](limits.md#the-update-rule) in the worktree. For an agent, that worktree is the task worktree of [the own-worktree rule](limits.md#the-own-worktree-rule) of `docs/dev/limits.md`. Then go to step 7. Otherwise, run `git worktree add -b <task branch> <path> tasker/<task branch>`. This makes a worktree with a local task branch. If the local task branch already exists, follow the branch-exists case of the own-worktree rule. Do not copy it here.
-7. In the worktree, rebase the task branch onto `origin/<base branch>`. If the task is a stacked task whose parent landed, the driver runs `git rebase --onto origin/<base branch> <start base> <task branch>` in the worktree instead. Here, `<base branch>` is the branch that the parent landed on, for example `main`. `<start base>` is the start base of the last read, as [the same-patch rule](review-findings.md#review-findings) of `docs/dev/review-findings.md` defines it. A plain rebase onto `origin/<base branch>` also replays the old commits of the parent. On #182, the 16 commits of the task replayed with one conflict, in `docs/dev/tasks.md`. If the driver holds no start base, stop. A person decides the next step, as step 10 describes. The worktree and the local task branch stay. Fix the conflicts. From here to step 11, [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds.
+1. Once for each clone of the driver, add a remote named `tasker`. Run the commands of this step in the clone of the
+   driver, not in a worktree and not in the tasker clone. Run `tasker show <issue>`. It prints the path of the tasker
+   clone on the `clone:` line. If `tasker show` fails, or if it prints no `clone:` line, stop. The clone of the driver
+   gets no new remote. A person decides the next step, as step 10 describes. Otherwise, run
+   `git remote add tasker <path>`, with the value of the `clone:` line as `<path>`.
+2. In the same clone, block each push to this remote: `git remote set-url --push tasker DISABLED-read-only`. As a
+   result, no push can reach the tasker clone.
+3. Run `tasker show <issue>`. It prints the base branch of the task as `base:`. For most tasks, the base branch is
+   `main`.
+4. If the base branch is the branch of another task, the task is a stacked task. For a stacked task, the driver runs
+   `tasker show <parent issue>` in the clone of the driver. The parent issue is the key in the note
+   `based on <key>'s branch` that `tasker start` printed. For an agent, the prompt names the parent. If the driver
+   cannot name the parent issue, stop. `tasker show` changes no task. If `tasker show` fails, stop. If the `state:` line
+   is not `landed`, `finishing` or `finished`, stop. In each of these cases, a person decides the next step, as step 10
+   describes. If the parent landed, go on to step 5. A stacked task whose parent landed is no longer stacked after a
+   `tasker update-branch` with no conflict.
+5. Run `git fetch --multiple tasker origin`. The fetch reads the task branch from the tasker clone. The fetch of
+   `origin` also gets the base branch.
+6. If a worktree already holds the local task branch, use it, and do [the update rule](limits.md#the-update-rule) in the
+   worktree. For an agent, that worktree is the task worktree of
+   [the own-worktree rule](limits.md#the-own-worktree-rule) of `docs/dev/limits.md`. Then go to step 7. Otherwise, run
+   `git worktree add -b <task branch> <path> tasker/<task branch>`. This makes a worktree with a local task branch. If
+   the local task branch already exists, follow the branch-exists case of the own-worktree rule. Do not copy it here.
+7. In the worktree, rebase the task branch onto `origin/<base branch>`. If the task is a stacked task whose parent
+   landed, the driver runs `git rebase --onto origin/<base branch> <start base> <task branch>` in the worktree instead.
+   Here, `<base branch>` is the branch that the parent landed on, for example `main`. `<start base>` is the start base
+   of the last read, as [the same-patch rule](review-findings.md#review-findings) of `docs/dev/review-findings.md`
+   defines it. A plain rebase onto `origin/<base branch>` also replays the old commits of the parent. On #182, the 16
+   commits of the task replayed with one conflict, in `docs/dev/tasks.md`. If the driver holds no start base, stop. A
+   person decides the next step, as step 10 describes. The worktree and the local task branch stay. Fix the conflicts.
+   From here to step 11, [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds.
 8. In the worktree, run `npm run check`. The command must pass.
-9. Push the task branch to `origin` with a normal push: `git push -u origin <task branch>`. Do not force-push. The upstream of the task branch can be `tasker/<task branch>`, or it can be unset. As a result, a plain `git push` goes to the `tasker` remote and fails, or it fails for no upstream, so the driver must name `origin`.
+9. Push the task branch to `origin` with a normal push: `git push -u origin <task branch>`. Do not force-push. The
+   upstream of the task branch can be `tasker/<task branch>`, or it can be unset. As a result, a plain `git push` goes
+   to the `tasker` remote and fails, or it fails for no upstream, so the driver must name `origin`.
 10. If the normal push of step 9 fails and `origin` has the task branch, do these steps.
 
     1. If the driver holds no `<taken>` of the last step 11, stop.
-    2. Run `git rev-parse --verify origin/<task branch>`. The fetch of step 5 already got this ref. Keep the printed hash as `<origin tip>` until step 10 ends. If the read fails, stop.
+    2. Run `git rev-parse --verify origin/<task branch>`. The fetch of step 5 already got this ref. Keep the printed
+       hash as `<origin tip>` until step 10 ends. If the read fails, stop.
     3. If `<origin tip>` differs from `<taken>`, stop.
-    4. Delete the task branch on `origin` with a lease: `git push --force-with-lease=refs/heads/<task branch>:<taken> origin --delete <task branch>`. If the delete fails, stop. The task branch on `origin` can still exist.
-    5. Do step 9 again. If this push fails, stop. The task branch on `origin` can be gone, or it can hold another commit.
+    4. Delete the task branch on `origin` with a lease:
+       `git push --force-with-lease=refs/heads/<task branch>:<taken> origin --delete <task branch>`. If the delete
+       fails, stop. The task branch on `origin` can still exist.
+    5. Do step 9 again. If this push fails, stop. The task branch on `origin` can be gone, or it can hold another
+       commit.
     6. Do steps 11 to 14.
 
-    The `<taken>` of the last step 11 lives until the next step 11 runs. That step records a new `<taken>`, or it records no `<taken>` when one of its two commands fails. After the next step 11, the old `<taken>` is gone. The delete gives no `<deleted>` of the pushed-branch rule of [the broken-commit steps](verify-failures.md#the-broken-commit-steps) in `docs/dev/verify-failures.md`, because the push of step 9 comes right after it.
+    The `<taken>` of the last step 11 lives until the next step 11 runs. That step records a new `<taken>`, or it
+    records no `<taken>` when one of its two commands fails. After the next step 11, the old `<taken>` is gone. The
+    delete gives no `<deleted>` of the pushed-branch rule of
+    [the broken-commit steps](verify-failures.md#the-broken-commit-steps) in `docs/dev/verify-failures.md`, because the
+    push of step 9 comes right after it.
 
-    If the normal push of step 9 fails in another case, stop. Do not force-push in this step. The delete with a lease of item 4 is the only exception. In each stop of this step, a person decides the next step. If the driver is a person, that person decides. If the driver is an assistant session, it reports the stop to the person who runs it. The worktree and the local task branch stay.
+    If the normal push of step 9 fails in another case, stop. Do not force-push in this step. The delete with a lease of
+    item 4 is the only exception. In each stop of this step, a person decides the next step. If the driver is a person,
+    that person decides. If the driver is an assistant session, it reports the stop to the person who runs it. The
+    worktree and the local task branch stay.
 
-    On 2026-10-24, #409 pushed 816f63f6 at step 9, and step 11 recorded 816f63f6 as `<taken>`. Then `main` moved, and a second `tasker update-branch` stopped on a conflict. The agent fixed the branch as 526e9e5b, and the normal push failed. The user said: "go ahead with the delete, no need to ask next time".
+    On 2026-10-24, #409 pushed 816f63f6 at step 9, and step 11 recorded 816f63f6 as `<taken>`. Then `main` moved, and a
+    second `tasker update-branch` stopped on a conflict. The agent fixed the branch as 526e9e5b, and the normal push
+    failed. The user said: "go ahead with the delete, no need to ask next time".
 
-11. Run `tasker update-branch <issue> --take-remote`. tasker resets its task branch to the task branch on `origin`. Then, before step 12, the driver records `<taken>` in the clone of the driver, not in the worktree. Run `git fetch tasker`. Then run `git rev-parse --verify tasker/<task branch>`. Keep the printed hash as `<taken>` until step 21 ends. [The take check](#the-take-check), step 10 of ["Run one ticket"](run-one-ticket.md#run-one-ticket), which step 21 runs, and the pushed-branch rule of [the broken-commit steps](verify-failures.md#the-broken-commit-steps), which runs after this step, use it. If one of the two commands fails, step 11 records no `<taken>`. Continue with step 12. [The take check](#the-take-check) then fails. As a result, the worktree, the local task branch and the task branch on `origin` stay.
+11. Run `tasker update-branch <issue> --take-remote`. tasker resets its task branch to the task branch on `origin`.
+    Then, before step 12, the driver records `<taken>` in the clone of the driver, not in the worktree. Run
+    `git fetch tasker`. Then run `git rev-parse --verify tasker/<task branch>`. Keep the printed hash as `<taken>` until
+    step 21 ends. [The take check](#the-take-check), step 10 of ["Run one ticket"](run-one-ticket.md#run-one-ticket),
+    which step 21 runs, and the pushed-branch rule of
+    [the broken-commit steps](verify-failures.md#the-broken-commit-steps), which runs after this step, use it. If one of
+    the two commands fails, step 11 records no `<taken>`. Continue with step 12. [The take check](#the-take-check) then
+    fails. As a result, the worktree, the local task branch and the task branch on `origin` stay.
 12. Run `tasker show <issue>`. It prints the state of the task and the next valid commands.
 13. If the task is in `executed`, run `tasker verify` and `tasker review` again. Then land the work as usual.
 14. If the task is in another state, follow the commands that `tasker show` prints.
 
-This paragraph applies to steps 15 to 21. If a command of these steps fails, or a step says to stop or not to do the next steps, the driver stops and deletes nothing more. In each of these cases, the worktree and the local task branch stay. The task branch on `origin` can still exist. A person decides the next step, as step 10 describes. A hand-over is not a stop. A hand-over goes from one check of step 17 to the next check, or from step 18 to step 19. Each step names only what differs.
+This paragraph applies to steps 15 to 21. If a command of these steps fails, or a step says to stop or not to do the
+next steps, the driver stops and deletes nothing more. In each of these cases, the worktree and the local task branch
+stay. The task branch on `origin` can still exist. A person decides the next step, as step 10 describes. A hand-over is
+not a stop. A hand-over goes from one check of step 17 to the next check, or from step 18 to step 19. Each step names
+only what differs.
 
-15. Keep the worktree and the local task branch until the work lands. For an agent, steps 18 to 20 are the only remove of its task worktree, at the end of its work. After `tasker finish`, run `tasker show <issue>` in the clone of the driver. If `tasker show` prints the line `state: finished`, do steps 16 to 21 in this order. Run them in the clone of the driver, not in the worktree. As a result, the driver deletes nothing before step 17 passes. If the task is in `cleanup_failed`, `tasker finish` stopped before its cleanup ended. In that case, do not do steps 16 to 21. If `tasker show` fails or prints another state, do not do steps 16 to 21.
+15. Keep the worktree and the local task branch until the work lands. For an agent, steps 18 to 20 are the only remove
+    of its task worktree, at the end of its work. After `tasker finish`, run `tasker show <issue>` in the clone of the
+    driver. If `tasker show` prints the line `state: finished`, do steps 16 to 21 in this order. Run them in the clone
+    of the driver, not in the worktree. As a result, the driver deletes nothing before step 17 passes. If the task is in
+    `cleanup_failed`, `tasker finish` stopped before its cleanup ended. In that case, do not do steps 16 to 21. If
+    `tasker show` fails or prints another state, do not do steps 16 to 21.
 16. Run `git fetch origin`. The fetch gets the base branch with the landed work. If the fetch fails, stop.
-17. Make sure that the base branch contains the work of the task branch. First, read two hashes in your clone: `git rev-parse --verify <task branch>` gives `<tip>`, and `git rev-parse --verify origin/<base branch>` gives `<base>`. For an agent, `<tip>` is the tip of the local task branch after its last update rule (see [the update rule](limits.md#the-update-rule) of `docs/dev/limits.md`). `tasker merge` lands the tip of tasker as a fast-forward, so the ancestor check then passes. If no update ran after step 11, `<tip>` is the pushed tip, and the take check applies as it is written. If a read fails, stop. Then run [the ancestor check](#the-ancestor-check). If it exits with 0, continue with step 18. If the ancestor check exits with 1, do [the patch check](#the-patch-check). If the ancestor check exits with a code that is not 0 and not 1, stop at once and do not run `git cherry`. If the patch check passes, continue with step 18. If `git cherry` exits with 0 and a line starts with `+`, do [the take check](#the-take-check). If the patch check fails in another case, stop. The take check does not run. If the take check passes, continue with step 18. If the take check fails, stop.
-18. Remove the worktree: `git worktree remove <path>`. Do not use `--force`, because `--force` deletes the changes that are not committed. Files that `.gitignore` lists do not stop `git worktree remove`, for example `node_modules/` from `npm ci`.
-19. If `git worktree remove` fails, stop. Report the exact error of git and the output of `git -C <path> status --porcelain --ignored`. For example, git prints `fatal: '<path>' contains modified or untracked files, use --force to delete it` when the worktree holds changed files or files that git does not track. The report helps to find the cause of such a failure. In one case, an agent used `--force` and blamed `node_modules/`. But git removes a worktree that holds only ignored files without `--force`, so the cause is unknown.
-20. Delete the local task branch: `git branch -D <task branch>`. Step 17 already makes sure that the base branch contains the work, a commit with the same patch for each commit, or the landed result of tasker after it took the pushed tip. If the command fails, stop. The worktree is gone. The local task branch stays.
-21. Make sure that `origin` has no task branch: do step 10 of "Run one ticket" in [docs/dev/run-one-ticket.md](run-one-ticket.md#run-one-ticket). If the driver is not the agent of a ticket, it runs those commands in the clone of the driver. Where that step says to report to the orchestrator, a person decides the next step instead. Step 10 of this page describes this rule. The driver does not do step 11 of "Run one ticket". In this step, the worktree and the local task branch are gone. The failure cases of step 21 are the cases of step 10 of "Run one ticket". Step 10 of "Run one ticket" names what stays.
+17. Make sure that the base branch contains the work of the task branch. First, read two hashes in your clone:
+    `git rev-parse --verify <task branch>` gives `<tip>`, and `git rev-parse --verify origin/<base branch>` gives
+    `<base>`. For an agent, `<tip>` is the tip of the local task branch after its last update rule (see
+    [the update rule](limits.md#the-update-rule) of `docs/dev/limits.md`). `tasker merge` lands the tip of tasker as a
+    fast-forward, so the ancestor check then passes. If no update ran after step 11, `<tip>` is the pushed tip, and the
+    take check applies as it is written. If a read fails, stop. Then run [the ancestor check](#the-ancestor-check). If
+    it exits with 0, continue with step 18. If the ancestor check exits with 1, do [the patch check](#the-patch-check).
+    If the ancestor check exits with a code that is not 0 and not 1, stop at once and do not run `git cherry`. If the
+    patch check passes, continue with step 18. If `git cherry` exits with 0 and a line starts with `+`, do
+    [the take check](#the-take-check). If the patch check fails in another case, stop. The take check does not run. If
+    the take check passes, continue with step 18. If the take check fails, stop.
+18. Remove the worktree: `git worktree remove <path>`. Do not use `--force`, because `--force` deletes the changes that
+    are not committed. Files that `.gitignore` lists do not stop `git worktree remove`, for example `node_modules/` from
+    `npm ci`.
+19. If `git worktree remove` fails, stop. Report the exact error of git and the output of
+    `git -C <path> status --porcelain --ignored`. For example, git prints
+    `fatal: '<path>' contains modified or untracked files, use --force to delete it` when the worktree holds changed
+    files or files that git does not track. The report helps to find the cause of such a failure. In one case, an agent
+    used `--force` and blamed `node_modules/`. But git removes a worktree that holds only ignored files without
+    `--force`, so the cause is unknown.
+20. Delete the local task branch: `git branch -D <task branch>`. Step 17 already makes sure that the base branch
+    contains the work, a commit with the same patch for each commit, or the landed result of tasker after it took the
+    pushed tip. If the command fails, stop. The worktree is gone. The local task branch stays.
+21. Make sure that `origin` has no task branch: do step 10 of "Run one ticket" in
+    [docs/dev/run-one-ticket.md](run-one-ticket.md#run-one-ticket). If the driver is not the agent of a ticket, it runs
+    those commands in the clone of the driver. Where that step says to report to the orchestrator, a person decides the
+    next step instead. Step 10 of this page describes this rule. The driver does not do step 11 of "Run one ticket". In
+    this step, the worktree and the local task branch are gone. The failure cases of step 21 are the cases of step 10 of
+    "Run one ticket". Step 10 of "Run one ticket" names what stays.
 
 ### The ancestor check
 
-Run the ancestor check: `git merge-base --is-ancestor <tip> <base>`. The command exits with 0 when the base branch contains the tip. It exits with 1 when the base branch does not contain the tip. It exits with 128 when git does not know one of the two names.
+Run the ancestor check: `git merge-base --is-ancestor <tip> <base>`. The command exits with 0 when the base branch
+contains the tip. It exits with 1 when the base branch does not contain the tip. It exits with 128 when git does not
+know one of the two names.
 
-If the exit code is 0, the check passes. The ancestor check exits with 1 when the work landed as new commits. For example, `tasker update-branch --take-remote` rebased the work again onto a newer base branch, or the work landed as a rebase merge or as a squash.
+If the exit code is 0, the check passes. The ancestor check exits with 1 when the work landed as new commits. For
+example, `tasker update-branch --take-remote` rebased the work again onto a newer base branch, or the work landed as a
+rebase merge or as a squash.
 
 ### The patch check
 
-If the ancestor check exits with 1, run the patch check: `git cherry <base> <tip>`. The command lists each commit of the task branch that `<base>` does not contain, one line for each commit, with a sign and the full hash. The sign `-` means that the base branch already has a commit with the same patch. The sign `+` means that it has none. The exit code is 0 in both cases. For example, the same patches print `- <hash>` and `- <hash>`. One changed patch prints `- <hash>` and `+ <hash>`.
+If the ancestor check exits with 1, run the patch check: `git cherry <base> <tip>`. The command lists each commit of the
+task branch that `<base>` does not contain, one line for each commit, with a sign and the full hash. The sign `-` means
+that the base branch already has a commit with the same patch. The sign `+` means that it has none. The exit code is 0
+in both cases. For example, the same patches print `- <hash>` and `- <hash>`. One changed patch prints `- <hash>` and
+`+ <hash>`.
 
-The patch check passes when the output has at least one line and each line starts with `-`. Then the work landed with the same patches. In issue #99, on 2026-10-14, another ticket landed between the push and `--take-remote`, and each of the 8 commits of the pushed branch had the same patch as a landed commit.
+The patch check passes when the output has at least one line and each line starts with `-`. Then the work landed with
+the same patches. In issue #99, on 2026-10-14, another ticket landed between the push and `--take-remote`, and each of
+the 8 commits of the pushed branch had the same patch as a landed commit.
 
-The patch check fails in each of these cases: a line starts with `+`, the output is empty, or `git cherry` exits with a code that is not 0.
+The patch check fails in each of these cases: a line starts with `+`, the output is empty, or `git cherry` exits with a
+code that is not 0.
 
-The patch check compares only the code change (the patch id). It does not compare the commit message or whitespace. A `-` can match any commit of the base branch after the merge base that has the same patch. The check prevents the delete of work that did not land. A difference only in the message or in whitespace loses no work. A rebase with the same patches passes the patch check. A squash of more than one commit makes one new patch, so `git cherry` prints `+` lines, and the patch check fails.
+The patch check compares only the code change (the patch id). It does not compare the commit message or whitespace. A
+`-` can match any commit of the base branch after the merge base that has the same patch. The check prevents the delete
+of work that did not land. A difference only in the message or in whitespace loses no work. A rebase with the same
+patches passes the patch check. A squash of more than one commit makes one new patch, so `git cherry` prints `+` lines,
+and the patch check fails.
 
 ### The take check
 
-If `git cherry` exits with 0 and a line starts with `+`, the driver runs the take check in the clone of the driver. In the other failure cases of the patch check, the driver does not run the take check. The take check is for a task where a later round of tasker rewrote the commits after the push of step 9. For example, a refine of a review loop folds a fix into an earlier commit with a fixup commit and an autosquash rebase. The local task branch keeps the old commits, and so does the task branch on `origin` until the pushed-branch rule of [the broken-commit steps](verify-failures.md#the-broken-commit-steps) deletes it. As a result, `git cherry` prints `+` for each rewritten commit. In issue #96, on 2026-10-15, the pushed tip was 198ba3a, and the work landed as 574877a.
+If `git cherry` exits with 0 and a line starts with `+`, the driver runs the take check in the clone of the driver. In
+the other failure cases of the patch check, the driver does not run the take check. The take check is for a task where a
+later round of tasker rewrote the commits after the push of step 9. For example, a refine of a review loop folds a fix
+into an earlier commit with a fixup commit and an autosquash rebase. The local task branch keeps the old commits, and so
+does the task branch on `origin` until the pushed-branch rule of
+[the broken-commit steps](verify-failures.md#the-broken-commit-steps) deletes it. As a result, `git cherry` prints `+`
+for each rewritten commit. In issue #96, on 2026-10-15, the pushed tip was 198ba3a, and the work landed as 574877a.
 
-In this check, the pushed tip is `<tip>`. First, read the tip of the task branch on `origin` one time: `git rev-parse --verify origin/<task branch>`. If the agent holds a `<deleted>` of the pushed-branch rule of [the broken-commit steps](verify-failures.md#the-broken-commit-steps), use it as this hash, and do not run the read. The delete removed `origin/<task branch>` from the local clone. This check calls this hash `<origin hash>`. If `<origin hash>` differs from `<tip>`, `origin` holds or held a commit other than the pushed tip.
+In this check, the pushed tip is `<tip>`. First, read the tip of the task branch on `origin` one time:
+`git rev-parse --verify origin/<task branch>`. If the agent holds a `<deleted>` of the pushed-branch rule of
+[the broken-commit steps](verify-failures.md#the-broken-commit-steps), use it as this hash, and do not run the read. The
+delete removed `origin/<task branch>` from the local clone. This check calls this hash `<origin hash>`. If
+`<origin hash>` differs from `<tip>`, `origin` holds or held a commit other than the pushed tip.
 
-The first fact: `<taken>` from step 11 is the same hash as the pushed tip. Then tasker took the pushed tip. If `<taken>` differs from the pushed tip, the local task branch has a commit that tasker did not take. After `tasker finish`, the tasker clone has no task branch. A plain `git fetch tasker` does not prune `tasker/<task branch>`. For this reason, step 11 reads `<taken>`, and this check does not read it.
+The first fact: `<taken>` from step 11 is the same hash as the pushed tip. Then tasker took the pushed tip. If `<taken>`
+differs from the pushed tip, the local task branch has a commit that tasker did not take. After `tasker finish`, the
+tasker clone has no task branch. A plain `git fetch tasker` does not prune `tasker/<task branch>`. For this reason, step
+11 reads `<taken>`, and this check does not read it.
 
-The second fact: `git merge-base --is-ancestor <landed commit> <base>` exits with 0. Then the landed commit is on the base branch. The landed commit is the full hash that `tasker merge` prints. `tasker show <issue>` of a finished task does not print it.
+The second fact: `git merge-base --is-ancestor <landed commit> <base>` exits with 0. Then the landed commit is on the
+base branch. The landed commit is the full hash that `tasker merge` prints. `tasker show <issue>` of a finished task
+does not print it.
 
-The take check passes when `<origin hash>` is the same hash as `<tip>` and both facts hold. Each commit of the pushed tip went into the task branch of tasker at step 11. Each later change is a round of tasker, and tasker landed the result.
+The take check passes when `<origin hash>` is the same hash as `<tip>` and both facts hold. Each commit of the pushed
+tip went into the task branch of tasker at step 11. Each later change is a round of tasker, and tasker landed the
+result.
 
-The take check fails in each of these cases: a hash differs, step 11 recorded no `<taken>`, the driver does not have the landed commit, `git merge-base` exits with 1, or a command of the take check exits with 128.
+The take check fails in each of these cases: a hash differs, step 11 recorded no `<taken>`, the driver does not have the
+landed commit, `git merge-base` exits with 1, or a command of the take check exits with 128.

@@ -21,7 +21,8 @@ A variable that is empty or has only spaces counts as not set.
 
 ## See the configuration with the defaults
 
-Run `tasker show-config` to print the configuration as tasker reads it. The output has every default filled in, and `dataRoot` and `skillsDirs` expanded.
+Run `tasker show-config` to print the configuration as tasker reads it. The output has every default filled in, and
+`dataRoot` and `skillsDirs` expanded.
 
 Run `tasker show-config --repo <key>` to print one repo.
 
@@ -39,7 +40,8 @@ If the configuration is invalid, the command prints the errors from the "Errors"
 | `trackers`             | object          | `{}`                   | Named issue tracker definitions that repos share. See [`trackers`](#trackers).                                                                                                                     |
 | `repos`                | object          | required               | Maps each repo key to a repo. See [`repos.<key>`](#reposkey).                                                                                                                                      |
 
-The file has no `landing` key. If it has one, tasker reports this error: `landing: is not accepted: there is no landing setting; the command you run picks how a task lands`.
+The file has no `landing` key. If it has one, tasker reports this error:
+`landing: is not accepted: there is no landing setting; the command you run picks how a task lands`.
 
 ## `limits`
 
@@ -82,14 +84,18 @@ The lists `verify.commands` and `bootstrap.commands` run in the same way:
 
 ### `env` lists
 
-`verify.env` and `bootstrap.env` name the environment variables that tasker hands to a phase. Each name must follow these rules:
+`verify.env` and `bootstrap.env` name the environment variables that tasker hands to a phase. Each name must follow
+these rules:
 
 - It matches `^[A-Za-z_][A-Za-z0-9_]*$`.
 - It does not start with `TASKER_`. A `TASKER_` variable belongs to tasker and tasker never hands it to a phase.
-- It is not a name that every phase already receives. Those names are:
-  `PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TERM`, `SHELL`, `TMPDIR`, `TZ`, `USER`, `LOGNAME`, `CLAUDE_CONFIG_DIR`, `NVM_DIR`, `ASDF_DIR`, `ASDF_DATA_DIR`, `VOLTA_HOME`, `FNM_DIR`, `N_PREFIX`, `PYENV_ROOT`, `RBENV_ROOT`, `SDKMAN_DIR`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`.
+- It is not a name that every phase already receives. Those names are: `PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`,
+  `TERM`, `SHELL`, `TMPDIR`, `TZ`, `USER`, `LOGNAME`, `CLAUDE_CONFIG_DIR`, `NVM_DIR`, `ASDF_DIR`, `ASDF_DATA_DIR`,
+  `VOLTA_HOME`, `FNM_DIR`, `N_PREFIX`, `PYENV_ROOT`, `RBENV_ROOT`, `SDKMAN_DIR`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`,
+  `XDG_DATA_HOME`, `XDG_STATE_HOME`.
 
-Tasker always drops `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the environment of a phase, also when a list names them.
+Tasker always drops `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the environment of a phase, also when a list
+names them.
 
 ## `issueTracker`
 
@@ -115,13 +121,18 @@ This table describes the object after tasker merges a named tracker into it.
 
 ### Token scopes
 
-The `github` tracker reads issues and their blocked-by links, assigns issues, adds and removes labels and closes issues. These calls need the scope `repo`. A scope is one permission of the token that `gh auth login` stores. GitHub refuses a call that needs a scope that the token does not have.
+The `github` tracker reads issues and their blocked-by links, assigns issues, adds and removes labels and closes issues.
+These calls need the scope `repo`. A scope is one permission of the token that `gh auth login` stores. GitHub refuses a
+call that needs a scope that the token does not have.
 
-To log in as the account of `account`, run `gh auth login --hostname github.com`, then log in as that account. By default, `gh auth login` asks for the scopes `repo`, `read:org` and `gist`. As a result, a default login has the scope that tasker needs. `gh auth status` shows the scopes of the token of each account in the line `Token scopes:`.
+To log in as the account of `account`, run `gh auth login --hostname github.com`, then log in as that account. By
+default, `gh auth login` asks for the scopes `repo`, `read:org` and `gist`. As a result, a default login has the scope
+that tasker needs. `gh auth status` shows the scopes of the token of each account in the line `Token scopes:`.
 
 ## `trackers`
 
-`trackers` maps a name to a tracker definition. A definition takes every `issueTracker` key except `project`, `tracker` and `match`. Its `provider` is required. A definition can leave `account` out, because each repo can set it.
+`trackers` maps a name to a tracker definition. A definition takes every `issueTracker` key except `project`, `tracker`
+and `match`. Its `provider` is required. A definition can leave `account` out, because each repo can set it.
 
 A repo uses a definition when `issueTracker.tracker` names it. Then tasker merges the two:
 
@@ -141,9 +152,11 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 | `account`           | non-empty string                       | optional | The account to use.                                                                                      |
 | `correctiveTurns`   | integer, 0 or more                     | `1`      | How many corrective turns the assistant can take.                                                        |
 
-Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"` or `"high"`).
+Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"`
+or `"high"`).
 
-The model and the effort of a role apply to new sessions only. A continued session keeps the provider, the model and the effort that it started with.
+The model and the effort of a role apply to new sessions only. A continued session keeps the provider, the model and the
+effort that it started with.
 
 For the `claude-code` provider, `model` must have one of these forms:
 
@@ -151,33 +164,43 @@ For the `claude-code` provider, `model` must have one of these forms:
 - A full id: `claude-` followed by lowercase letters, digits, `.` and `-`. For example, `claude-opus-5-5`.
 - Either form with the suffix `[1m]`. For example, `opus[1m]`.
 
-Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`. The providers `copilot` and `pi` have no model check.
+Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`. The
+providers `copilot` and `pi` have no model check.
 
-The command `tasker model` changes the model and the effort of one role in the file that "Where the file is" names. It keeps the other keys and their order. It writes an indent of two spaces and keeps the line end at the end of the file. It does not write the defaults. The command has two limits:
+The command `tasker model` changes the model and the effort of one role in the file that "Where the file is" names. It
+keeps the other keys and their order. It writes an indent of two spaces and keeps the line end at the end of the file.
+It does not write the defaults. The command has two limits:
 
 - Integer-like keys move to the front of their object, in number order.
 - If a key appears twice in one object, the command keeps only the last copy.
 
 ## `sessions`
 
-The user starts the operator. The operator starts the planner and the orchestrator of a milestone. The key `sessions` gives the agent kind of these sessions and the model and the effort of each role. It is separate from `assistant`, because `assistant` configures the runs that tasker starts.
+The user starts the operator. The operator starts the planner and the orchestrator of a milestone. The key `sessions`
+gives the agent kind of these sessions and the model and the effort of each role. It is separate from `assistant`,
+because `assistant` configures the runs that tasker starts.
 
-A session role is one of `operator`, `planner` and `orchestrator`. The agent kind is the program of a session, in the form that herdr names it in `herdr agent start --kind`.
+A session role is one of `operator`, `planner` and `orchestrator`. The agent kind is the program of a session, in the
+form that herdr names it in `herdr agent start --kind`.
 
 | Key      | Type       | Default    | Notes                                                           |
 | -------- | ---------- | ---------- | --------------------------------------------------------------- |
 | `kind`   | `"claude"` | `"claude"` | The agent kind of each session role.                            |
 | `models` | object     | `{}`       | Has the optional keys `operator`, `planner` and `orchestrator`. |
 
-Each entry of `models` is an object with the required keys `model` (non-empty string) and `effort` (`"low"`, `"medium"`, `"high"`, `"xhigh"` or `"max"`).
+Each entry of `models` is an object with the required keys `model` (non-empty string) and `effort` (`"low"`, `"medium"`,
+`"high"`, `"xhigh"` or `"max"`).
 
 A role with no entry in `models` gets no model and no effort. The session then uses the defaults of the agent.
 
-For the kind `claude`, `model` must have one of the forms that [`assistant`](#assistant) gives for the `claude-code` provider. Any other model gives the error `repos.<key>.sessions.models.<role>.model: is not a claude-code model: <value>`.
+For the kind `claude`, `model` must have one of the forms that [`assistant`](#assistant) gives for the `claude-code`
+provider. Any other model gives the error
+`repos.<key>.sessions.models.<role>.model: is not a claude-code model: <value>`.
 
 ### The seam of an agent kind
 
-The table has one row for each agent kind. Name gives the flags of the session name. Messages names the tools that send and list messages between sessions.
+The table has one row for each agent kind. Name gives the flags of the session name. Messages names the tools that send
+and list messages between sessions.
 
 | Kind     | Name        | Model             | Effort              | First prompt      | Messages                       |
 | -------- | ----------- | ----------------- | ------------------- | ----------------- | ------------------------------ |
@@ -210,11 +233,13 @@ For `"git"`, `config` takes these keys:
 | `authorEmail` | non-empty string | optional | The email of the author of a commit. Provision writes it as exactly one `user.email` line in the bare clone. If it is missing, provision writes nothing for it on a fresh clone and removes every local `user.email` line on a complete clone, and git uses the global identity.                                                                                                                |
 | `sshKey`      | non-empty string | optional | The path of the SSH key that git uses. Provision writes `core.sshCommand` in the clone (through the include file `tasker-ssh.config`) and sets `GIT_SSH_COMMAND` for each call to the remote. The command is `ssh -i '<key>' -o IdentitiesOnly=yes -o BatchMode=yes`. A key with a passphrase fails unless `ssh-agent` holds it. If it is missing, provision sets no ssh command for the clone. |
 
-The key `repos.<key>.git` does not exist. tasker reports it as `repos.<key>.git: unrecognized key`. Put the git configuration under `vcs.config`.
+The key `repos.<key>.git` does not exist. tasker reports it as `repos.<key>.git: unrecognized key`. Put the git
+configuration under `vcs.config`.
 
 ## Errors
 
-tasker reports each problem on its own line. A line has the dotted path of the key, a colon and a message. The first line says `Invalid configuration:`. For example:
+tasker reports each problem on its own line. A line has the dotted path of the key, a colon and a message. The first
+line says `Invalid configuration:`. For example:
 
 ```
 Invalid configuration:
@@ -222,7 +247,8 @@ Invalid configuration:
   - repos.tasker.verify.comands: unrecognized key
 ```
 
-The message of a built-in check can differ from this example. The path always names the bad key. A problem with no key uses `(config)` as its path.
+The message of a built-in check can differ from this example. The path always names the bad key. A problem with no key
+uses `(config)` as its path.
 
 ## Example
 

@@ -4,36 +4,142 @@ The readers of this page are the agent of a ticket for the CI wait, and the orch
 
 ## The CI wait
 
-After `tasker merge` in step 9 of [Run one ticket](run-one-ticket.md#run-one-ticket), the agent of the ticket waits for the CI runs of the landed commit. `tasker verify` runs on the local machine, and the `Check` workflow on GitHub can still fail. For example, the local Node version can differ from the Node version of CI. The runs that count are the runs of the `Check` workflow on `main` for the landed commit, because they test the merged result. The agent runs each command of the CI wait in the local clone of the orchestrator. During the whole CI wait, the task stays in `landed`. The step numbers in the list below name the steps of the CI wait, not the steps of "Run one ticket". The agent does these steps:
+After `tasker merge` in step 9 of [Run one ticket](run-one-ticket.md#run-one-ticket), the agent of the ticket waits for
+the CI runs of the landed commit. `tasker verify` runs on the local machine, and the `Check` workflow on GitHub can
+still fail. For example, the local Node version can differ from the Node version of CI. The runs that count are the runs
+of the `Check` workflow on `main` for the landed commit, because they test the merged result. The agent runs each
+command of the CI wait in the local clone of the orchestrator. During the whole CI wait, the task stays in `landed`. The
+step numbers in the list below name the steps of the CI wait, not the steps of "Run one ticket". The agent does these
+steps:
 
-1. Right after `tasker merge`, run `git fetch --multiple tasker origin`. The `tasker` remote is the read-only remote of [the diff read](run-one-ticket.md#the-diff-read). Then run `git rev-parse tasker/<task branch>`. The task branch is on the `branch:` line of `tasker show <issue>`. `tasker merge` lands the work as a fast-forward, so the tip of the task branch is the landed commit. The command prints the landed commit as a full hash of 40 characters. Use the full hash in the next steps, because `gh run list --commit` finds no run for a short hash.
-2. Make sure that `main` contains the landed commit: `git merge-base --is-ancestor <landed commit> origin/main`. The check also passes when other tickets landed on top of the landed commit after `tasker merge`. If the exit code is not 0, `origin/main` does not contain the work of the ticket. In that case, [stop](limits.md#the-answer-wait-rule) and report this.
-3. Find the run with this command: `timeout 300 bash -c 'while :; do n=$(gh run list --workflow Check --branch main --commit <landed commit> --json databaseId -q length) || exit 2; [ "$n" != 0 ] && exit 0; sleep 30; done'`. GitHub can start the run some seconds after the push, so the list can be empty at first. The command reads the list every 30 seconds for at most 5 minutes. It exits with 0 when the list has a run. If it exits with 124, no run showed after 5 minutes. In that case, stop and report that no run showed. If it exits with 2, `gh run list` failed. In that case, stop and report the error.
-4. Run `gh run list --workflow Check --branch main --commit <landed commit> --json databaseId,status,conclusion`. If the command fails, stop and report the error. The run id of each run is its `databaseId`. The list can have more than one run, because GitHub can record one push twice and start a run for each record. Take the runs in the order of the list. For each run, do step 5 of the CI wait. When step 5 or step 6 finds that the run passed, do step 5 for the next run of the list.
-5. Wait for the run: `timeout 580 gh run watch <run id> --exit-status`. A `Check` run takes about 2 minutes, but it can take longer than one tool call of the agent. The agent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means that the run passed. Exit code 124 means that the run is still in progress. In that case, run the same command again. The 30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a run is not complete when the 30 minutes end, stop. Any other exit code means that the run failed, or that `gh` failed. In that case, go to step 6 of the CI wait.
-6. Run `gh run view <run id> --json status,conclusion,url,jobs`. If the command fails, stop and report the error. If `status` is `completed` and `conclusion` is `success`, the run passed. If `status` is not `completed`, `gh run watch` failed and the run is still in progress. In that case, do step 5 of the CI wait again. If `status` is `completed` and `conclusion` is not `success`, the run failed. In that case, go to step 7 of the CI wait.
-7. If a run failed, do not fix the failure, and do not wait for the other runs of the list. Read the names of the failed jobs and steps from `jobs` (the entries with the `conclusion` `failure`). Read the names of the failed tests from `gh run view <run id> --log-failed`. With gh 2.101.0, `--log-failed` labels each line `UNKNOWN STEP`, so the step names come from `jobs`. If `gh run view --log-failed` fails, write down the error for the report of step 11 of the CI wait, and go to step 8 of the CI wait.
-8. Run the failed tests on the local machine, on the landed commit, in the task worktree. Do not change `main`. Do [the update rule](limits.md#the-update-rule) in the task worktree. Then compare `git rev-parse --verify HEAD` with the full hash of step 1 of the CI wait. After `tasker merge`, the tip of the task branch is the landed commit, as step 1 says. If a step of the update rule fails, or HEAD is not the landed commit, write down the error, skip the local run, and go to step 9 of the CI wait. Otherwise, run `node --version`. Then run `npm ci` as the npm ci bullet of ["Limits"](limits.md#limits) says. Then run `npm test -- <test file> -t "<test name>"` for each failed test. The report gives the Node version, because the Node version of CI can differ. The local run is evidence only, and a failure in this step does not stop the CI wait. If `npm ci` or the test command cannot run, write down the error, and go to step 9 of the CI wait. The commands of this step change no task.
-9. Rerun the failed jobs of the run one time: `gh run rerun <run id> --failed`. Do not rerun a second time. Exit code 0 means that GitHub accepted the rerun. Any other exit code means that the rerun did not start, and nothing changed on GitHub. With gh 2.101.0, the command exits with 0 when GitHub accepts the rerun. It exits with 1 when GitHub refuses it, for example while the run is still running, or when the run does not exist. If the rerun did not start, write down the error, and go to step 10 of the CI wait. If the rerun started, wait for it as steps 5 and 6 of the CI wait do. A new 30-minute limit counts from the first `gh run watch` of the rerun. When step 5 or step 6 finds that the rerun passed, or step 6 finds that it failed, go to step 10 of the CI wait, not to step 7. If the rerun is not complete when the 30 minutes end, go to step 10 of the CI wait. If `gh run view` fails in step 6, that is a stop, as step 6 says.
-10. Decide the verdict. The verdict is flaky when the rerun passes. The verdict is broken for every other result: the rerun fails again, the rerun does not start, or the rerun does not complete in its 30 minutes. The local run of step 8 of the CI wait is evidence for the report. It does not change the verdict.
-11. Report to the orchestrator: the run URL (`url`), the names of the failed jobs, steps and tests, and the verdict. The report also gives the result of the rerun: passed, failed again, did not start (with its error), or did not complete in 30 minutes. It also gives the result of the local run with the Node version, and each error of steps 7 to 9 of the CI wait. Then wait for the answer of the orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. While the agent waits, the task stays in `landed`. This wait is not a stop. The steps of the orchestrator are in "A failed CI run".
-12. When the orchestrator answers with the number of the new issue, run `tasker finish`. The task goes to `finished`, and the issue closes. Then do steps 10 and 11 of "Run one ticket". The comment of step 11 also names the failed run, the verdict and the new issue.
+1. Right after `tasker merge`, run `git fetch --multiple tasker origin`. The `tasker` remote is the read-only remote of
+   [the diff read](run-one-ticket.md#the-diff-read). Then run `git rev-parse tasker/<task branch>`. The task branch is
+   on the `branch:` line of `tasker show <issue>`. `tasker merge` lands the work as a fast-forward, so the tip of the
+   task branch is the landed commit. The command prints the landed commit as a full hash of 40 characters. Use the full
+   hash in the next steps, because `gh run list --commit` finds no run for a short hash.
+2. Make sure that `main` contains the landed commit: `git merge-base --is-ancestor <landed commit> origin/main`. The
+   check also passes when other tickets landed on top of the landed commit after `tasker merge`. If the exit code is not
+   0, `origin/main` does not contain the work of the ticket. In that case, [stop](limits.md#the-answer-wait-rule) and
+   report this.
+3. Find the run with this command:
+   `timeout 300 bash -c 'while :; do n=$(gh run list --workflow Check --branch main --commit <landed commit> --json databaseId -q length) || exit 2; [ "$n" != 0 ] && exit 0; sleep 30; done'`.
+   GitHub can start the run some seconds after the push, so the list can be empty at first. The command reads the list
+   every 30 seconds for at most 5 minutes. It exits with 0 when the list has a run. If it exits with 124, no run showed
+   after 5 minutes. In that case, stop and report that no run showed. If it exits with 2, `gh run list` failed. In that
+   case, stop and report the error.
+4. Run `gh run list --workflow Check --branch main --commit <landed commit> --json databaseId,status,conclusion`. If the
+   command fails, stop and report the error. The run id of each run is its `databaseId`. The list can have more than one
+   run, because GitHub can record one push twice and start a run for each record. Take the runs in the order of the
+   list. For each run, do step 5 of the CI wait. When step 5 or step 6 finds that the run passed, do step 5 for the next
+   run of the list.
+5. Wait for the run: `timeout 580 gh run watch <run id> --exit-status`. A `Check` run takes about 2 minutes, but it can
+   take longer than one tool call of the agent. The agent cannot run a foreground `sleep`, so it waits with `timeout`.
+   Exit code 0 means that the run passed. Exit code 124 means that the run is still in progress. In that case, run the
+   same command again. The 30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the
+   list together. If a run is not complete when the 30 minutes end, stop. Any other exit code means that the run failed,
+   or that `gh` failed. In that case, go to step 6 of the CI wait.
+6. Run `gh run view <run id> --json status,conclusion,url,jobs`. If the command fails, stop and report the error. If
+   `status` is `completed` and `conclusion` is `success`, the run passed. If `status` is not `completed`, `gh run watch`
+   failed and the run is still in progress. In that case, do step 5 of the CI wait again. If `status` is `completed` and
+   `conclusion` is not `success`, the run failed. In that case, go to step 7 of the CI wait.
+7. If a run failed, do not fix the failure, and do not wait for the other runs of the list. Read the names of the failed
+   jobs and steps from `jobs` (the entries with the `conclusion` `failure`). Read the names of the failed tests from
+   `gh run view <run id> --log-failed`. With gh 2.101.0, `--log-failed` labels each line `UNKNOWN STEP`, so the step
+   names come from `jobs`. If `gh run view --log-failed` fails, write down the error for the report of step 11 of the CI
+   wait, and go to step 8 of the CI wait.
+8. Run the failed tests on the local machine, on the landed commit, in the task worktree. Do not change `main`. Do
+   [the update rule](limits.md#the-update-rule) in the task worktree. Then compare `git rev-parse --verify HEAD` with
+   the full hash of step 1 of the CI wait. After `tasker merge`, the tip of the task branch is the landed commit, as
+   step 1 says. If a step of the update rule fails, or HEAD is not the landed commit, write down the error, skip the
+   local run, and go to step 9 of the CI wait. Otherwise, run `node --version`. Then run `npm ci` as the npm ci bullet
+   of ["Limits"](limits.md#limits) says. Then run `npm test -- <test file> -t "<test name>"` for each failed test. The
+   report gives the Node version, because the Node version of CI can differ. The local run is evidence only, and a
+   failure in this step does not stop the CI wait. If `npm ci` or the test command cannot run, write down the error, and
+   go to step 9 of the CI wait. The commands of this step change no task.
+9. Rerun the failed jobs of the run one time: `gh run rerun <run id> --failed`. Do not rerun a second time. Exit code 0
+   means that GitHub accepted the rerun. Any other exit code means that the rerun did not start, and nothing changed on
+   GitHub. With gh 2.101.0, the command exits with 0 when GitHub accepts the rerun. It exits with 1 when GitHub refuses
+   it, for example while the run is still running, or when the run does not exist. If the rerun did not start, write
+   down the error, and go to step 10 of the CI wait. If the rerun started, wait for it as steps 5 and 6 of the CI wait
+   do. A new 30-minute limit counts from the first `gh run watch` of the rerun. When step 5 or step 6 finds that the
+   rerun passed, or step 6 finds that it failed, go to step 10 of the CI wait, not to step 7. If the rerun is not
+   complete when the 30 minutes end, go to step 10 of the CI wait. If `gh run view` fails in step 6, that is a stop, as
+   step 6 says.
+10. Decide the verdict. The verdict is flaky when the rerun passes. The verdict is broken for every other result: the
+    rerun fails again, the rerun does not start, or the rerun does not complete in its 30 minutes. The local run of step
+    8 of the CI wait is evidence for the report. It does not change the verdict.
+11. Report to the orchestrator: the run URL (`url`), the names of the failed jobs, steps and tests, and the verdict. The
+    report also gives the result of the rerun: passed, failed again, did not start (with its error), or did not complete
+    in 30 minutes. It also gives the result of the local run with the Node version, and each error of steps 7 to 9 of
+    the CI wait. Then wait for the answer of the orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule)
+    says. While the agent waits, the task stays in `landed`. This wait is not a stop. The steps of the orchestrator are
+    in "A failed CI run".
+12. When the orchestrator answers with the number of the new issue, run `tasker finish`. The task goes to `finished`,
+    and the issue closes. Then do steps 10 and 11 of "Run one ticket". The comment of step 11 also names the failed run,
+    the verdict and the new issue.
 
-The CI wait passes only when each run of the list passed in step 5 or step 6 of the CI wait. A rerun that passes in step 9 of the CI wait does not make the CI wait pass. The agent still does steps 10 to 12 of the CI wait. Other agents can land on `main` during the wait. The agent waits only for the runs of its own landed commit, not for a later run on `main`. If a git command of the CI wait fails, the agent stops and reports the error. A stop of the CI wait also skips steps 10 and 11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the agent gets a resume message while the task is in `landed` (see ["When the job fires"](quota.md#when-the-job-fires) and ["What the agent does"](quota.md#what-the-agent-does) in ["Quota"](quota.md#quota)), the rule depends on what the agent did before. If the agent did not run `gh run rerun` yet, it does the CI wait again from step 1 of the CI wait. If it ran `gh run rerun` and did not send the report of step 11 yet, it does not run `gh run rerun` again. If the rerun did not start, it goes to step 10 of the CI wait with the result "did not start". Otherwise, it waits for the rerun as step 9 says, with a new 30-minute limit from its first `gh run watch` after the resume. Then it goes on with step 10. If it sent the report of step 11, it does not do the CI wait again. It waits for the answer of the orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of the new issue, it goes on with step 12 of the CI wait.
+The CI wait passes only when each run of the list passed in step 5 or step 6 of the CI wait. A rerun that passes in step
+9 of the CI wait does not make the CI wait pass. The agent still does steps 10 to 12 of the CI wait. Other agents can
+land on `main` during the wait. The agent waits only for the runs of its own landed commit, not for a later run on
+`main`. If a git command of the CI wait fails, the agent stops and reports the error. A stop of the CI wait also skips
+steps 10 and 11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the agent gets a resume
+message while the task is in `landed` (see ["When the job fires"](quota.md#when-the-job-fires) and
+["What the agent does"](quota.md#what-the-agent-does) in ["Quota"](quota.md#quota)), the rule depends on what the agent
+did before. If the agent did not run `gh run rerun` yet, it does the CI wait again from step 1 of the CI wait. If it ran
+`gh run rerun` and did not send the report of step 11 yet, it does not run `gh run rerun` again. If the rerun did not
+start, it goes to step 10 of the CI wait with the result "did not start". Otherwise, it waits for the rerun as step 9
+says, with a new 30-minute limit from its first `gh run watch` after the resume. Then it goes on with step 10. If it
+sent the report of step 11, it does not do the CI wait again. It waits for the answer of the orchestrator, as
+[the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of the new issue, it goes on with step
+12 of the CI wait.
 
 ## A failed CI run
 
-This section gives the steps of the orchestrator after an agent reports a failed run in step 11 of [the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that an agent reports. The repo has three priority labels: `priority: high`, `priority: medium` and `priority: low`. An issue of a failed CI run gets `priority: high`. The priority rule of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) makes that issue start before the tickets with a lower priority. The repo also has the label `broken-test`.
+This section gives the steps of the orchestrator after an agent reports a failed run in step 11 of
+[the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that an agent reports. The repo has
+three priority labels: `priority: high`, `priority: medium` and `priority: low`. An issue of a failed CI run gets
+`priority: high`. The priority rule of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) makes that issue start
+before the tickets with a lower priority. The repo also has the label `broken-test`.
 
-1. File a new issue: `gh issue create --title "<title>" --body-file <file> --label "priority: high" --milestone "<milestone in progress>"`. The milestone in progress is the current milestone of ["Pick the tickets"](pick-the-tickets.md#pick-the-tickets). If the verdict is broken, also add `--label broken-test` to the command. The body gives the run URL, the failed tests, the verdict and the evidence of the agent (the result of the rerun and of the local run). The body asks for the cause and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists, and [the failure rule](limits.md#the-failure-rule) applies. The agent keeps waiting, and the task stays in `landed`.
-2. If the verdict is broken, the new issue blocks all further work. Send the broken-test notice to each other orchestrator, as the broken-test rule says. Add no blocked-by link to the other issues. Tell the user at once. If a handoff starts while the issue is open, name the issue in the handoff file, as [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The reason: the classifier of auto mode denied the batch of links two times (see [the tool-block rule](tasker-commands.md#the-tool-block-rule)). On 2026-10-17, the user decided this for #287, the broken-test issue of #273, with the words "we don't need blocked-by links as long as all other orchestrators know to wait".
+1. File a new issue:
+   `gh issue create --title "<title>" --body-file <file> --label "priority: high" --milestone "<milestone in progress>"`.
+   The milestone in progress is the current milestone of ["Pick the tickets"](pick-the-tickets.md#pick-the-tickets). If
+   the verdict is broken, also add `--label broken-test` to the command. The body gives the run URL, the failed tests,
+   the verdict and the evidence of the agent (the result of the rerun and of the local run). The body asks for the cause
+   and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists, and
+   [the failure rule](limits.md#the-failure-rule) applies. The agent keeps waiting, and the task stays in `landed`.
+2. If the verdict is broken, the new issue blocks all further work. Send the broken-test notice to each other
+   orchestrator, as the broken-test rule says. Add no blocked-by link to the other issues. Tell the user at once. If a
+   handoff starts while the issue is open, name the issue in the handoff file, as
+   [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The
+   reason: the classifier of auto mode denied the batch of links two times (see
+   [the tool-block rule](tasker-commands.md#the-tool-block-rule)). On 2026-10-17, the user decided this for #287, the
+   broken-test issue of #273, with the words "we don't need blocked-by links as long as all other orchestrators know to
+   wait".
 3. If the verdict is flaky, the new issue blocks nothing.
-4. Send the agent the number of the new issue. The bullet of ["Land the work"](land-the-work.md#land-the-work) that reads the state with `tasker show <issue>` first applies to this message.
+4. Send the agent the number of the new issue. The bullet of ["Land the work"](land-the-work.md#land-the-work) that
+   reads the state with `tasker show <issue>` first applies to this message.
 
-The broken-test rule: a broken-test issue is the new issue of step 1 when the verdict is broken. It has the label `broken-test`. The rule has two actors: the orchestrator that files the broken-test issue, and each other orchestrator. The notice rule defines the other orchestrators (see [the notice rule](doc-reads.md#the-notice-rule)).
+The broken-test rule: a broken-test issue is the new issue of step 1 when the verdict is broken. It has the label
+`broken-test`. The rule has two actors: the orchestrator that files the broken-test issue, and each other orchestrator.
+The notice rule defines the other orchestrators (see [the notice rule](doc-reads.md#the-notice-rule)).
 
-In step 2, the orchestrator that filed the broken-test issue sends a broken-test notice to each other orchestrator. It sends a notice for the verdict broken only. The notice gives the number of the broken-test issue. The orchestrator lists the other orchestrators with step 3 of the notice rule and sends the notice with `SendMessage`, as step 4 of the notice rule says. If the session list or a message fails, the failure rule applies. When another orchestrator gets a broken-test notice, it keeps the number of the issue and follows the ban.
+In step 2, the orchestrator that filed the broken-test issue sends a broken-test notice to each other orchestrator. It
+sends a notice for the verdict broken only. The notice gives the number of the broken-test issue. The orchestrator lists
+the other orchestrators with step 3 of the notice rule and sends the notice with `SendMessage`, as step 4 of the notice
+rule says. If the session list or a message fails, the failure rule applies. When another orchestrator gets a
+broken-test notice, it keeps the number of the issue and follows the ban.
 
-The ban: an orchestrator that knows of an open broken-test issue starts no ticket, except the broken-test issue itself. The orchestrator knows of the issue because it filed the issue, because it got the notice, or because the label check found the issue. The ban rests on the label. The notice stays as the fast path. On 2026-10-18, review 1 of #288 found that an orchestrator that starts later, outside a handoff, gets no notice, for example a new session for a new milestone or a restart after a crash or a `/clear`. The label check: at the start of its session and before each start of a ticket, the orchestrator runs `gh issue list --state open --label broken-test --limit 1000 --json number` in its local clone. If the list has an issue, the ban holds, except for the start of that issue itself. When the list is empty, the ban ends. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket.
+The ban: an orchestrator that knows of an open broken-test issue starts no ticket, except the broken-test issue itself.
+The orchestrator knows of the issue because it filed the issue, because it got the notice, or because the label check
+found the issue. The ban rests on the label. The notice stays as the fast path. On 2026-10-18, review 1 of #288 found
+that an orchestrator that starts later, outside a handoff, gets no notice, for example a new session for a new milestone
+or a restart after a crash or a `/clear`. The label check: at the start of its session and before each start of a
+ticket, the orchestrator runs `gh issue list --state open --label broken-test --limit 1000 --json number` in its local
+clone. If the list has an issue, the ban holds, except for the start of that issue itself. When the list is empty, the
+ban ends. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no
+ticket.
 
-The ban covers only the start of a ticket. A task in flight is not a start, so the ban does not stop it. The rule gives no steps for two broken-test issues open at the same time. A second failed run most likely has the same cause, and the open broken-test issue covers the fix.
+The ban covers only the start of a ticket. A task in flight is not a start, so the ban does not stop it. The rule gives
+no steps for two broken-test issues open at the same time. A second failed run most likely has the same cause, and the
+open broken-test issue covers the fix.
