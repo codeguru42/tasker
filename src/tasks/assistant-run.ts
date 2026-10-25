@@ -159,9 +159,33 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
   };
 }
 
+// The deny rules of the shell of the plan and review roles that are not rules of the version control.
+// herdr holds the sessions of the user. A session that can send input to the pane of another session
+// can approve the permission prompts of that session.
+const PLAN_MODE_DENY_RULES: readonly string[] = ["Bash(herdr:*)"];
+
+// The one home of the sandbox of the shell of a task run, in each role: the write paths and the shared
+// folder of the version control, and the read deny list of every configured repo.
+async function taskSandbox(req: TaskRunRequest, common: CommonRun): Promise<SandboxLimits> {
+  const { surface, worktree } = common;
+  const sharedFolder = await surface.sharedFolder(worktree);
+  return {
+    allowWrite: await surface.sandboxWritePaths(worktree),
+    denyRead: sandboxReadDenyPaths({
+      env: req.env,
+      // The shared steps already built the surface of the task repo, so only the other repos get a new one.
+      repos: Object.keys(req.config.repos).map((key) =>
+        key === req.task.repoKey ? surface : assistantSurfaceOf(req.config, key, req.env),
+      ),
+    }),
+    trackedPaths: (paths) => surface.trackedPaths(worktree, paths),
+    sharedFolder,
+  };
+}
+
 // Prepares the run of the assistant of a task in the plan or the review role. The two roles differ
-// only in their model row, so they share one entry point. For now, tasker relies on the plan mode
-// for these roles, with no sandbox and no tool rule except the deny rules of the version control.
+// only in their model row, so they share one entry point. The shell runs in the sandbox of the
+// execute role, with the deny rules of the version control and the deny rule for herdr.
 // The caller must move the task into a spawning state before start().
 // The caller must record sessionId and session before start().
 export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<PreparedPlanModeRun> {
@@ -169,7 +193,8 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
   const limits: RoleLimits = {
     permissionMode: "plan",
     timeoutMs: req.config.limits.planTimeoutMin * 60_000,
-    disallowedTools: [...common.surface.denyRules],
+    disallowedTools: [...common.surface.denyRules, ...PLAN_MODE_DENY_RULES],
+    sandbox: await taskSandbox(req, common),
   };
   return {
     sessionId: common.sessionId,
@@ -181,7 +206,7 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
 }
 
 // Prepares the run of the assistant of a task in the execute role. This role does steps that the plan
-// and review roles do not do: the path rules, the sandbox and the commit text.
+// and review roles do not do: the path rules, the permission hook and the commit text.
 // The caller must move the task into a spawning state before start().
 // The caller must record sessionId and session before start().
 // The caller must replace {{BASE_REF}} in executeCommitText before it puts the text in the prompt.
@@ -189,7 +214,8 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
 export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<PreparedExecuteRun> {
   const common = prepareCommonRun(req, "execute");
   const { surface, worktree: wt } = common;
-  const clone = await surface.sharedFolder(wt);
+  const sandbox = await taskSandbox(req, common);
+  const clone = sandbox.sharedFolder;
   const claudeDir = claudeConfigDir(req.env);
   // One prepared run serves every turn of a session. The first start of a new session starts it.
   // Each later start continues it.
@@ -233,18 +259,7 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
       rule("Edit", `${wt}/.git/**`),
       rule("Edit", `${clone}/**`),
     ],
-    sandbox: {
-      allowWrite: await surface.sandboxWritePaths(wt),
-      denyRead: sandboxReadDenyPaths({
-        env: req.env,
-        // The shared steps already built the surface of the task repo, so only the other repos get a new one.
-        repos: Object.keys(req.config.repos).map((key) =>
-          key === req.task.repoKey ? surface : assistantSurfaceOf(req.config, key, req.env),
-        ),
-      }),
-      trackedPaths: (paths) => surface.trackedPaths(wt, paths),
-      sharedFolder: clone,
-    },
+    sandbox,
   };
   return {
     sessionId: common.sessionId,
