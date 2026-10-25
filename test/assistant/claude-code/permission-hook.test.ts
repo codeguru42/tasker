@@ -88,6 +88,35 @@ describe("permissionAnswer", () => {
     expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
   });
 
+  it("denies a Write of a dangling symlink under .claude/skills/ that leads out of the worktree", () => {
+    const wt = newWorktree();
+    const outside = realpathSync(useTempDir("tasker-hook-out-"));
+    mkdirSync(join(wt, ".claude/skills"), { recursive: true });
+    symlinkSync(join(outside, "new.sh"), join(wt, ".claude/skills/link"));
+    const input = request("Write", { file_path: join(wt, ".claude/skills/link") });
+
+    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+  });
+
+  it("denies a path under a dangling .claude/skills symlink that leads out of the worktree", () => {
+    const wt = newWorktree();
+    const outside = realpathSync(useTempDir("tasker-hook-out-"));
+    mkdirSync(join(wt, ".claude"));
+    symlinkSync(join(outside, "missing"), join(wt, ".claude/skills"));
+    const input = request("Write", { file_path: join(wt, ".claude/skills/x.md") });
+
+    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+  });
+
+  it("allows a dangling symlink under .claude/skills/ that leads to a missing file inside it", () => {
+    const wt = newWorktree();
+    mkdirSync(join(wt, ".claude/skills"), { recursive: true });
+    symlinkSync(join(wt, ".claude/skills/new.md"), join(wt, ".claude/skills/link"));
+    const input = request("Write", { file_path: join(wt, ".claude/skills/link") });
+
+    expect(answer(input, wt)).toBe(allowLine());
+  });
+
   it("denies the .claude/skills folder itself", () => {
     const wt = newWorktree();
     const input = request("Write", { file_path: join(wt, ".claude/skills") });

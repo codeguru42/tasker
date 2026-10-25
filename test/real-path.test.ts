@@ -98,4 +98,52 @@ describe("deepestRealPath", () => {
   it("throws for a relative path", () => {
     expect(() => deepest("a/b")).toThrow("the path is not absolute");
   });
+
+  it("follows a dangling symlink to a missing file in an existing folder", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    const outside = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync(join(outside, "new.sh"), join(dir, "link"));
+
+    expect(deepest(join(dir, "link"))).toBe(join(outside, "new.sh"));
+  });
+
+  it("follows a dangling symlink to a path under a missing folder", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    const outside = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync(join(outside, "missing/new.sh"), join(dir, "link"));
+
+    expect(deepest(join(dir, "link"))).toBe(join(outside, "missing/new.sh"));
+  });
+
+  it("follows a dangling symlink in the middle of the path", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    const outside = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync(join(outside, "missing"), join(dir, "link"));
+
+    expect(deepest(join(dir, "link/x.md"))).toBe(join(outside, "missing/x.md"));
+  });
+
+  it("follows a chain of symlinks to the final target", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    const outside = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync(join(outside, "new.sh"), join(dir, "b"));
+    symlinkSync(join(dir, "b"), join(dir, "a"));
+
+    expect(deepest(join(dir, "a"))).toBe(join(outside, "new.sh"));
+  });
+
+  it("follows a relative dangling symlink from the real folder of the link", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync("../x/new.sh", join(dir, "link"));
+
+    expect(deepest(join(dir, "link"))).toBe(join(dirname(dir), "x/new.sh"));
+  });
+
+  it("throws for a loop of symlinks", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync(join(dir, "b"), join(dir, "a"));
+    symlinkSync(join(dir, "a"), join(dir, "b"));
+
+    expect(() => deepest(join(dir, "a/x"))).toThrow(expect.objectContaining({ code: "ELOOP" }));
+  });
 });
