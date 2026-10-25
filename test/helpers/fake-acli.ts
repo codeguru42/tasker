@@ -1,6 +1,13 @@
 import { join } from "node:path";
 import { expect, onTestFinished } from "vitest";
-import { type FakeAnswer, fakeAnswerScript, readArgLog, readFakeCalls, writeFakeCommand } from "./fake-commands.js";
+import {
+  type FakeAnswer,
+  fakeAnswerScript,
+  logEnvItems,
+  readArgLog,
+  readFakeCalls,
+  writeFakeCommand,
+} from "./fake-commands.js";
 
 // One canned answer of the fake acli. See FakeAnswer.
 export type FakeAcliAnswer = FakeAnswer;
@@ -11,8 +18,6 @@ export interface FakeAcliCall {
   // Each name of logEnv. undefined when the name was not set.
   env: Record<string, string | undefined>;
 }
-
-const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 // Writes an executable named name into binDir. It uses shell builtins, so it works with binDir as the
 // only PATH folder. Only for a delay, it runs the real sleep by its absolute path. As a result, the
@@ -27,10 +32,7 @@ export function writeFakeAcli(
   logEnv: readonly string[] = [],
   name = "acli",
 ): void {
-  for (const envName of logEnv) {
-    if (!envNamePattern.test(envName)) throw new Error(`bad env name for the fake acli: ${envName}`);
-  }
-  const extra = logEnv.map((envName) => `"\${${envName}+set:$${envName}}"`);
+  const extra = logEnvItems("acli", logEnv);
   writeFakeCommand(binDir, name, fakeAnswerScript("acli", logPath, answers, extra));
 }
 

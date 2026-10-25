@@ -106,7 +106,7 @@ export function logEnvItems(tool: string, names: readonly string[]): string[] {
   });
 }
 
-// Reads a log of fakeAnswerScript(). The first leading items of a call and then one item for each name of
+// Reads a log of fakeAnswerScript(). logEnvItems() writes the form of the logEnv items. The first leading items of a call and then one item for each name of
 // logEnv are logged values: an empty item gives undefined, and "set:<value>" gives <value>.
 export function readFakeCalls(
   logPath: string,

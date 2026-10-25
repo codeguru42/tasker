@@ -1,6 +1,13 @@
 import { join } from "node:path";
 import { expect, onTestFinished } from "vitest";
-import { type FakeAnswer, fakeAnswerScript, readArgLog, readFakeCalls, writeFakeCommand } from "./fake-commands.js";
+import {
+  type FakeAnswer,
+  fakeAnswerScript,
+  logEnvItems,
+  readArgLog,
+  readFakeCalls,
+  writeFakeCommand,
+} from "./fake-commands.js";
 
 // One canned answer of the fake gh. See FakeAnswer.
 export type FakeGhAnswer = FakeAnswer;
@@ -84,8 +91,6 @@ export function githubLabelsAfter(
   return labels;
 }
 
-const envNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
-
 // Writes an executable gh into binDir. It uses shell builtins, so it works with binDir as the
 // only PATH folder. Only for a delay, it runs the real sleep by its absolute path. As a result, the
 // real gh can never run. Each call goes in the log at logPath (see readArgLog()).
@@ -98,10 +103,7 @@ export function writeFakeGh(
   answers: readonly FakeGhAnswer[],
   logEnv: readonly string[] = [],
 ): void {
-  for (const name of logEnv) {
-    if (!envNamePattern.test(name)) throw new Error(`bad env name for the fake gh: ${name}`);
-  }
-  const extra = ["GH_TOKEN", ...logEnv].map((name) => `"\${${name}+set:$${name}}"`);
+  const extra = logEnvItems("gh", ["GH_TOKEN", ...logEnv]);
   writeFakeCommand(binDir, "gh", fakeAnswerScript("gh", logPath, answers, extra));
 }
 
