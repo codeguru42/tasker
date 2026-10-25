@@ -224,7 +224,12 @@ For each such issue, the orchestrator posts a comment on the issue at once. The 
 `## Open question after the change of scope of <issue key>`. `<issue key>` is the key of the ticket whose scope changed.
 The comment states the changed fact with the link of the change-of-scope comment. It names each part of the issue that
 depends on the old form, and it asks the open question with the answers that the orchestrator sees. The comment says
-that it is a note and not a change of scope, and that the user decides the answer before the ticket starts.
+that it is a note and not a change of scope, and that the user decides the answer before the ticket starts. The note can
+name a place in a doc. Before the orchestrator posts the note, it runs `git fetch origin`. Then it reads the doc with
+`git show origin/main:<path>` and compares each place that the note names with that doc. The orchestrator makes sure
+that all the words that name one place point to the same place. For a change that did not land yet, the orchestrator
+compares each place with the change-of-scope comment that makes the change. If that comment gives no place for an item,
+the note does not assume a place for it. For example, the note does not assume that the milestone item is the last item.
 
 The orchestrator does not edit the body of the issue for this note. The orchestrator also does not decide the answer. An
 issue with a task in flight gets no note from this rule. The bullet of [Land the work](land-the-work.md#land-the-work)
@@ -233,7 +238,8 @@ for this note is a case of [the failure rule](limits.md#the-failure-rule).
 
 On 2026-10-17, the change of scope of #273 made the `revision` of the `base` event a ref, not a commit id. The Terms of
 #276 define the stored base revision as that value and replay the commits after it. The orchestrator named the gap only
-in the chat and in its handoff file. The user asked for the comment on #276 twice.
+in the chat and in its handoff file. The user asked for the comment on #276 twice. On #433 (2026-10-25), the
+open-question note treated the milestone item of #427 as the last item of the list, but #427 put that item second.
 
 ## The design-gap rule
 
