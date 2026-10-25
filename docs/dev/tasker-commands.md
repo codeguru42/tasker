@@ -156,6 +156,10 @@ it." A ticket that only records such a fact does no fact test, as the user decid
   nothing. `tasker update-branch` moves the task onto the base of the parent, and the task stays in
   `awaiting_plan_review`. tasker marks the plan as stale, so a refine comes before `tasker approve`, also when the new
   base changes no fact of the plan.
+- A task can fail in `executing` while its base is `main` and its task branch holds no commit of the task. For such a
+  task, `tasker update-branch` moves the task branch by fast-forward. The approved plan of such a task stays approved,
+  and the task stays in `failed`. After the update, `tasker show` prints `next: tasker retry`. On #413, on 2026-10-25,
+  the installed tasker 2026.10.25-60b6aa03 moved the task branch from 9d10f960 to 60b6aa03, and plan v2 stayed approved.
 - `tasker update-branch <issue> --take-remote` of a stacked task whose parent landed moves the base of the task to the
   base of the parent, for example `base: main`, and the task to `executed`, in one run.
 - If a task is stacked on the same parent as another task, the shared-file warning of `tasker refine` and
