@@ -21,7 +21,7 @@ The initial planner is the planner that writes the first issues of a milestone w
 - The follow-up planner takes lessons, session review findings and proposed issues from `orchestrator-<slug>` and from `operator-<slug>`.
 - The follow-up planner sends each question, each report and each draft that waits for a decision of the user to `operator-<slug>` as an item, in the form of [The form of an item](operator-items.md#the-form-of-an-item). [The review loop of a draft](#the-review-loop-of-a-draft) says which drafts wait.
 - Each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner puts the path in the item, not the draft.
-- For a draft that waits for a decision of the user, the answer of the item is the decision and the approval of the draft.
+- For a draft that waits for a decision of the user, [The escape hatch](#the-escape-hatch) says what the answer of the item does.
 
 The reason for the folder: the drafts go in `/tmp`, so they do not fill the `Documents` folder of the user, and the system deletes them. The limit: a reboot deletes the open drafts, and the follow-up planner then writes them again.
 
@@ -95,7 +95,12 @@ When a draft needs one of these decisions, the follow-up planner asks the user b
 - A security gap.
 - A finding of one of these kinds that the planner does not resolve in its loops.
 
-For a draft that waits for such a decision, the follow-up planner posts nothing. The follow-up planner sends the draft as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed. The answer of the item is the decision of the user and the approval of the draft. The follow-up planner goes on with the other drafts.
+For a draft that waits for such a decision, the follow-up planner posts nothing. The follow-up planner sends the draft as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed. The answer of the item is the decision of the user.
+
+- If the answer does not change the draft, the answer is also the approval of the draft, and the follow-up planner posts the draft.
+- If the answer changes the draft, the follow-up planner changes the draft as the answer says. Then the follow-up planner runs the review loops again for the changed draft. Then the follow-up planner posts it with no approval of the user. The escape hatch still applies to the changed draft.
+
+The follow-up planner goes on with the other drafts.
 
 ### The rules for the user alone
 
