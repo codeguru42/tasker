@@ -29,6 +29,7 @@ import {
 import { reviewFeedbackContextExpected, reviewFinding, validReviewAnswer } from "../helpers/review.js";
 import {
   databasePathOf,
+  eventDataOf,
   dayAt,
   eventsOf,
   latestTaskOf,
@@ -98,11 +99,20 @@ describe("review", () => {
     ]);
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
       { type: "transition", data: { from: "awaiting_work_review", to: "reviewing" } },
+      { type: "sandbox_cleanup", data: { removed: [] } },
       { type: "usage", data: expect.anything() },
       { type: "review", data: { number: 1, revision, findings: 2 } },
       { type: "transition", data: { from: "reviewing", to: "reviewed" } },
     ]);
     expect(transcriptLines(reviewTranscriptPath(dataRoot, task, 1))).toHaveLength(stream.length);
+  });
+
+  it("writes a sandbox_cleanup event with the sandboxCleanup of the outcome", async () => {
+    const work = await useReviewFixture({ stream: answerStream(validReviewAnswer()), placeholders: [".bashrc"] });
+
+    await runReview();
+
+    expect(eventDataOf(work.dataRoot, KEY, "sandbox_cleanup")).toEqual([{ removed: [".bashrc"] }]);
   });
 
   it("runs a new session with the review model and gives the earlier reviews and the commits on stdin", async () => {
@@ -302,6 +312,7 @@ describe("review with feedback", () => {
     expect(revision).toMatchObject({ version: 2, source: "review-feedback", feedback: FEEDBACK, answer: V2_ANSWER });
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
       { type: "transition", data: { feedback: FEEDBACK, from: "awaiting_work_review", to: "refining" } },
+      { type: "sandbox_cleanup", data: { removed: [] } },
       { type: "usage", data: expect.anything() },
       { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
       { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },

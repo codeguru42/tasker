@@ -38,6 +38,7 @@ import { quotaPauseLineExpected } from "../helpers/quota.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
+  eventDataOf,
   dayAt,
   eventsOf,
   failTaskFrom,
@@ -140,11 +141,23 @@ describe("refine", () => {
     expect(readFileSync(planRevisionPath(dataRoot, task, 1), "utf8")).toBe(V1_ANSWER.plan_markdown);
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
       { type: "transition", data: { feedback: FEEDBACK, from: "awaiting_plan_review", to: "refining" } },
+      { type: "sandbox_cleanup", data: { removed: [] } },
       { type: "usage", data: expect.anything() },
       { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
       { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },
     ]);
     expect(transcriptLines(planTranscriptPath(dataRoot, task, 2))).toHaveLength(stream.length);
+  });
+
+  it("writes a sandbox_cleanup event with the sandboxCleanup of the outcome", async () => {
+    const fixture = await useRefineFixture(
+      { stream: answerStream(V2_ANSWER), placeholders: [".bashrc"] },
+      { answer: V1_ANSWER },
+    );
+
+    await runRefine();
+
+    expect(eventDataOf(fixture.started.dataRoot, KEY, "sandbox_cleanup")).toEqual([{ removed: [".bashrc"] }]);
   });
 
   it("gives the plan, the context, the feedback, the open questions and the branch commits on the stdin", async () => {
@@ -348,6 +361,7 @@ describe("a promotion from reviewed", () => {
     expect(revision).toMatchObject({ version: 2, source: "review", feedback: null });
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
       { type: "transition", data: { from: "reviewed", to: "refining" } },
+      { type: "sandbox_cleanup", data: { removed: [] } },
       { type: "usage", data: expect.anything() },
       { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
       { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },
@@ -429,6 +443,7 @@ describe("a refine from failed", () => {
     expect(revision).toMatchObject({ version: 2, source: "refine", feedback: FEEDBACK });
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([
       { type: "transition", data: { feedback: FEEDBACK, from: "failed", to: "refining" } },
+      { type: "sandbox_cleanup", data: { removed: [] } },
       { type: "usage", data: expect.anything() },
       { type: "plan_revision", data: { version: 2, prompt: revision!.prompt } },
       { type: "transition", data: { from: "refining", to: "awaiting_plan_review" } },

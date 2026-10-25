@@ -34,6 +34,7 @@ import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
   dayAt,
+  eventDataOf,
   eventsOf,
   latestTaskOf,
   lockNames,
@@ -104,10 +105,19 @@ describe("plan", () => {
     expect(readFileSync(planPath, "utf8")).toBe(answer.plan_markdown);
     expect(eventsAfterStart(fixture)).toEqual([
       { type: "transition", data: { from: "workspace_ready", to: "planning" } },
+      { type: "sandbox_cleanup", data: { removed: [] } },
       { type: "usage", data: expect.anything() },
       { type: "plan_revision", data: { version: 1, prompt: revision!.prompt } },
       { type: "transition", data: { from: "planning", to: "awaiting_plan_review" } },
     ]);
+  });
+
+  it("writes a sandbox_cleanup event with the sandboxCleanup of the outcome", async () => {
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()), placeholders: [".bashrc"] });
+
+    await runPlan();
+
+    expect(eventDataOf(fixture.started.dataRoot, KEY, "sandbox_cleanup")).toEqual([{ removed: [".bashrc"] }]);
   });
 
   it("gives the issue text on the stdin of the assistant", async () => {
