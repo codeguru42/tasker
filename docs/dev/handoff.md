@@ -14,6 +14,8 @@ The old session can suggest a handoff to the user. The old session counts the ev
 
 The reason: the old session has no tool that shows its context use. The count of the role page stands in for a read of the context use.
 
+On 2026-10-16, the Docs orchestrator guessed that about 20% of its context was used and started a handoff. The session used 6%.
+
 The count starts at 0 at the start of the session. The count lives until the session ends.
 
 ## The handoff file

@@ -10,8 +10,6 @@ The rules of this page cover only a long-running orchestrator. An orchestrator o
 
 ## The landing count
 
-On 2026-10-16, the Docs orchestrator guessed that about 20% of its context was used and started a handoff. The session used 6%.
-
 The old orchestrator counts the landings of its session. Each of these also counts as one landing:
 
 - A quota resume
