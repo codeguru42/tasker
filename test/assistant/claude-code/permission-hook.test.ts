@@ -187,6 +187,13 @@ describe("permissionAnswer", () => {
     expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
   });
 
+  it("denies .claude/skills/ with two trailing slashes", () => {
+    const wt = newWorktree();
+    const input = request("Write", { file_path: `${wt}/.claude/skills//` });
+
+    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+  });
+
   it("denies a sibling folder that starts with skills", () => {
     const wt = newWorktree();
     const input = request("Write", { file_path: join(wt, ".claude/skills-x/a.md") });
