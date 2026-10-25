@@ -110,9 +110,6 @@ const ModelsSchema = z.strictObject({ plan: RoleSchema, execute: RoleSchema, rev
 // The assistant roles, in the order of the report of tasker model.
 export const ASSISTANT_ROLES = ModelsSchema.keyof().options;
 
-// The values of the effort of a role.
-export const EFFORTS = RoleSchema.shape.effort.options;
-
 const AssistantProviderSchema = z.enum(["claude-code", "copilot", "pi"]);
 
 const AssistantSchema = z.strictObject({
