@@ -9,6 +9,10 @@ import { useTempDir } from "../../helpers/temp.js";
 const BAD_INPUT = "the input of the hook is not a PermissionRequest in JSON";
 const OTHER_TOOL = "the execute session approves only a Write or an Edit";
 const OUTSIDE = "the path is not inside .claude/skills/ of the worktree";
+const NOT_ABSOLUTE = "the path must be absolute";
+const DOT_PART = "the path must have no . or .. part";
+const LINK = "the path has a symbolic link";
+const UNREADABLE = "the hook cannot read a part of the path";
 
 function answer(input: unknown, worktree: string): string {
   return permissionAnswer(typeof input === "string" ? input : JSON.stringify(input), worktree);
@@ -54,6 +58,14 @@ describe("permissionAnswer", () => {
     expect(answer(input, wt)).toBe(allowLine());
   });
 
+  it("allows a Write under folders that do not exist yet in .claude/skills/", () => {
+    const wt = newWorktree();
+    mkdirSync(join(wt, ".claude/skills"), { recursive: true });
+    const input = request("Write", { file_path: join(wt, ".claude/skills/a/b/SKILL.md") });
+
+    expect(answer(input, wt)).toBe(allowLine());
+  });
+
   it("denies .claude/settings.json", () => {
     const wt = newWorktree();
     const input = request("Write", { file_path: join(wt, ".claude/settings.json") });
@@ -61,60 +73,104 @@ describe("permissionAnswer", () => {
     expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
   });
 
-  it("denies a path with .. that leads out of .claude/skills/", () => {
+  it("denies a relative path", () => {
+    const wt = newWorktree();
+
+    expect(answer(request("Write", { file_path: ".claude/skills/x.md" }), wt)).toBe(denyLine(NOT_ABSOLUTE));
+  });
+
+  it("denies a missing file_path", () => {
+    const wt = newWorktree();
+
+    expect(answer(request("Write", {}), wt)).toBe(denyLine(OUTSIDE));
+  });
+
+  it("denies a path with a .. part that leads out of the folder", () => {
     const wt = newWorktree();
     const input = request("Write", { file_path: `${wt}/.claude/skills/../settings.json` });
 
-    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+    expect(answer(input, wt)).toBe(denyLine(DOT_PART));
   });
 
-  it("denies a path through a symlink that leads out of the worktree", () => {
+  it("denies a path with a . part that stays inside the folder", () => {
+    const wt = newWorktree();
+    const input = request("Write", { file_path: `${wt}/.claude/skills/./x.md` });
+
+    expect(answer(input, wt)).toBe(denyLine(DOT_PART));
+  });
+
+  it("denies a path with a .. part that stays inside the folder", () => {
+    const wt = newWorktree();
+    const input = request("Write", { file_path: `${wt}/.claude/skills/a/../x.md` });
+
+    expect(answer(input, wt)).toBe(denyLine(DOT_PART));
+  });
+
+  it("denies a symbolic link under .claude/skills/ that leads out of the folder", () => {
     const wt = newWorktree();
     const outside = realpathSync(useTempDir("tasker-hook-out-"));
     mkdirSync(join(wt, ".claude/skills"), { recursive: true });
     symlinkSync(outside, join(wt, ".claude/skills/out"));
     const input = request("Write", { file_path: join(wt, ".claude/skills/out/x.md") });
 
-    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+    expect(answer(input, wt)).toBe(denyLine(LINK));
   });
 
-  it("denies a path when .claude/skills itself is a symlink that leads out", () => {
+  it("denies a symbolic link under .claude/skills/ that leads to a place inside the folder", () => {
     const wt = newWorktree();
-    const outside = realpathSync(useTempDir("tasker-hook-out-"));
-    mkdirSync(join(wt, ".claude"));
-    symlinkSync(outside, join(wt, ".claude/skills"));
-    const input = request("Write", { file_path: join(wt, ".claude/skills/x.md") });
+    mkdirSync(join(wt, ".claude/skills/a"), { recursive: true });
+    symlinkSync(join(wt, ".claude/skills/a"), join(wt, ".claude/skills/in"));
+    const input = request("Write", { file_path: join(wt, ".claude/skills/in/x.md") });
 
-    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+    expect(answer(input, wt)).toBe(denyLine(LINK));
   });
 
-  it("denies a Write of a dangling symlink under .claude/skills/ that leads out of the worktree", () => {
+  it("denies a dangling symbolic link under .claude/skills/", () => {
     const wt = newWorktree();
     const outside = realpathSync(useTempDir("tasker-hook-out-"));
     mkdirSync(join(wt, ".claude/skills"), { recursive: true });
     symlinkSync(join(outside, "new.sh"), join(wt, ".claude/skills/link"));
     const input = request("Write", { file_path: join(wt, ".claude/skills/link") });
 
-    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+    expect(answer(input, wt)).toBe(denyLine(LINK));
   });
 
-  it("denies a path under a dangling .claude/skills symlink that leads out of the worktree", () => {
+  it("denies a dangling symbolic link that leads inside .claude/skills/", () => {
+    const wt = newWorktree();
+    mkdirSync(join(wt, ".claude/skills"), { recursive: true });
+    symlinkSync(join(wt, ".claude/skills/new.md"), join(wt, ".claude/skills/link"));
+    const input = request("Write", { file_path: join(wt, ".claude/skills/link") });
+
+    expect(answer(input, wt)).toBe(denyLine(LINK));
+  });
+
+  it("denies .claude/skills as a symbolic link", () => {
+    const wt = newWorktree();
+    const outside = realpathSync(useTempDir("tasker-hook-out-"));
+    mkdirSync(join(wt, ".claude"));
+    symlinkSync(outside, join(wt, ".claude/skills"));
+    const input = request("Write", { file_path: join(wt, ".claude/skills/x.md") });
+
+    expect(answer(input, wt)).toBe(denyLine(LINK));
+  });
+
+  it("denies .claude/skills as a dangling symbolic link", () => {
     const wt = newWorktree();
     const outside = realpathSync(useTempDir("tasker-hook-out-"));
     mkdirSync(join(wt, ".claude"));
     symlinkSync(join(outside, "missing"), join(wt, ".claude/skills"));
     const input = request("Write", { file_path: join(wt, ".claude/skills/x.md") });
 
-    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+    expect(answer(input, wt)).toBe(denyLine(LINK));
   });
 
-  it("allows a dangling symlink under .claude/skills/ that leads to a missing file inside it", () => {
+  it("denies .claude as a symbolic link", () => {
     const wt = newWorktree();
-    mkdirSync(join(wt, ".claude/skills"), { recursive: true });
-    symlinkSync(join(wt, ".claude/skills/new.md"), join(wt, ".claude/skills/link"));
-    const input = request("Write", { file_path: join(wt, ".claude/skills/link") });
+    const outside = realpathSync(useTempDir("tasker-hook-out-"));
+    symlinkSync(outside, join(wt, ".claude"));
+    const input = request("Write", { file_path: join(wt, ".claude/skills/x.md") });
 
-    expect(answer(input, wt)).toBe(allowLine());
+    expect(answer(input, wt)).toBe(denyLine(LINK));
   });
 
   it("denies the .claude/skills folder itself", () => {
@@ -124,11 +180,27 @@ describe("permissionAnswer", () => {
     expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
   });
 
-  it("denies a relative file_path and a missing file_path", () => {
+  it("denies .claude/skills/ with a trailing slash", () => {
     const wt = newWorktree();
+    const input = request("Write", { file_path: `${wt}/.claude/skills/` });
 
-    expect(answer(request("Write", { file_path: ".claude/skills/x.md" }), wt)).toBe(denyLine(OUTSIDE));
-    expect(answer(request("Write", {}), wt)).toBe(denyLine(OUTSIDE));
+    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+  });
+
+  it("denies a sibling folder that starts with skills", () => {
+    const wt = newWorktree();
+    const input = request("Write", { file_path: join(wt, ".claude/skills-x/a.md") });
+
+    expect(answer(input, wt)).toBe(denyLine(OUTSIDE));
+  });
+
+  it("denies a path when a part cannot be read", () => {
+    const wt = newWorktree();
+    mkdirSync(join(wt, ".claude/skills"), { recursive: true });
+    writeFileSync(join(wt, ".claude/skills/a.md"), "x");
+    const input = request("Write", { file_path: join(wt, ".claude/skills/a.md/x.md") });
+
+    expect(answer(input, wt)).toBe(denyLine(UNREADABLE));
   });
 
   it("denies a tool other than Write and Edit", () => {
