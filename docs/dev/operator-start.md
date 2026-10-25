@@ -75,7 +75,9 @@ You are the orchestrator of <milestone>. Read AGENTS.md and docs/dev/orchestrato
 
 ## Stop a session
 
-The operator stops a session only on a request of the user. The operator closes only a tab that it opened in its own session. The tab id is the `.result.tab.tab_id` that step 2 of "Start a session" kept.
+The operator stops a session only on a request of the user, or at the end of a handoff, as [The stop and the start](handoff.md#the-stop-and-the-start) says. The operator closes only a tab that it opened in its own session, or a tab that an earlier operator of its slug opened.
+
+For its own tab, the tab id is the `.result.tab.tab_id` that step 2 of "Start a session" kept. For a session of an earlier operator, the tab id and the name for `herdr agent wait <name>` come from the handoff file of the operator ([The handoff file of the operator](handoff-operator.md#the-handoff-file-of-the-operator)). If the handoff file gives no tab id for the session, the operator tells the user and closes nothing.
 
 1. The operator sends "stop" to the session with the tool `SendMessage`, as a word of the user (see [The word of the user](operator-conversations.md#the-word-of-the-user)). If `SendMessage` fails, the operator tells the user and does not do steps 2 and 3. The tab stays open.
 2. The operator runs `herdr agent wait <name> --timeout 600000` in its shell.
