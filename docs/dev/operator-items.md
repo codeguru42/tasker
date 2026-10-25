@@ -1,6 +1,6 @@
 # The items of the operator
 
-An [item](operator.md) is a message from a planner or an orchestrator to the operator about something that needs the user. The sender sends the item with `SendMessage`.
+The sender sends each [item](operator.md) to the operator with `SendMessage`.
 
 ## The form of an item
 
