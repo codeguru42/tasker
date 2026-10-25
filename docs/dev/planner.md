@@ -235,6 +235,19 @@ that it dismissed. The initial planner posts only after the approval of the user
   the next ticket wires the part, and that ticket must find and remove it. The rules of what a doc describes are in
   [rules.md](rules.md#docs). For a ticket that adds only a layer, the hint "Say that the wiring is out of scope" of
   [first-refine.md](first-refine.md#a-ticket-that-only-adds-a-layer-for-example-a-schema) covers the plan.
+- An issue can say in its Docs section that no doc names a thing. Examples of a thing are a rule, a flag and a file
+  name. Before the post, the planner runs `git fetch origin` in the local clone. Right after the fetch, the planner
+  searches `docs/`, `skills/`, `README.md` and `AGENTS.md` of `origin/main` for the thing, for example with
+  `git grep -n '<words>' origin/main -- docs skills README.md AGENTS.md`. The search follows
+  [the doc-search rule](rules.md#docs). If the search finds a doc that names the thing, the planner puts that doc and
+  its section in the Docs section of the issue. A search with no match is an answer, not a failure. For example, if
+  `git grep` finds no match, it exits with 1. Then the Docs section can say that no doc names the thing. On #428, the
+  Docs section said "None. No doc names the `Write` deny rules." That was false. On `main` (8d154163),
+  `docs/dev/assistants.md` said "The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and for
+  the shared git folder of the clone." The agent of #428 found the sentence at
+  [the issue check](plan-review.md#the-issue-check) with ``git grep -n 'blocks `Edit` and `Write`' 8d154163 -- docs``.
+  The fix cost a stop before `tasker approve` and a change of scope
+  (https://github.com/codeguru42/tasker/issues/428#issuecomment-6394115049).
 - An issue can require a doc to hold a sentence. Before the post, the planner compares that sentence with the bullets
   around its place in the doc. A sentence that repeats a bullet in other words goes out of the issue. On #305, the issue
   required the sentence "The Requirements state only what the software does". The bullet "A requirement says what the
