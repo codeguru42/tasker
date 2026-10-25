@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseGithubKey } from "../../src/issue-key/github.js";
+import { parseJiraKey } from "../../src/issue-key/jira.js";
 import { IssueKeyError, type IssueRef } from "../../src/issue-key/ref.js";
 import { issueKeyMatches, projectOf, resolveIssueKey, type ResolveOptions } from "../../src/issue-key/resolve.js";
 import { parseConfig } from "../../src/config/schema.js";
@@ -84,6 +85,65 @@ describe("resolveIssueKey", () => {
       "a/b#1",
       { repo: "a/b" },
       { key: "a/b#1", repoKey: "a/b", shortRef: "issue-1" },
+    ],
+    [
+      "a github repo and a jira repo, and a GitHub key",
+      { "a/b": { provider: "github" }, j: { provider: "jira", project: "PROJ" } },
+      "a/b#1",
+      {},
+      { key: "a/b#1", repoKey: "a/b", shortRef: "issue-1" },
+    ],
+  ];
+
+  const JIRA_REF_ROWS: RefRow[] = [
+    [
+      "a bare key of the project of one jira repo",
+      { j: { provider: "jira", project: "TEST" } },
+      "TEST-12",
+      {},
+      { key: "TEST-12", repoKey: "j", shortRef: "TEST-12" },
+    ],
+    [
+      "a key with the site of the repo",
+      { j: { provider: "jira", project: "TEST", site: "example.atlassian.net" } },
+      "example.atlassian.net/browse/TEST-12",
+      {},
+      { key: "TEST-12", repoKey: "j", shortRef: "TEST-12" },
+    ],
+    [
+      "a key with the site of the repo in another case",
+      { j: { provider: "jira", project: "TEST", site: "example.atlassian.net" } },
+      "Example.Atlassian.NET/browse/TEST-12",
+      {},
+      { key: "TEST-12", repoKey: "j", shortRef: "TEST-12" },
+    ],
+    [
+      "a key with the site of the repo, and the site of the repo in another case",
+      { j: { provider: "jira", project: "TEST", site: "Example.Atlassian.Net" } },
+      "example.atlassian.net/browse/TEST-12",
+      {},
+      { key: "TEST-12", repoKey: "j", shortRef: "TEST-12" },
+    ],
+    [
+      "a project with _",
+      { j: { provider: "jira", project: "A_B" } },
+      "A_B-3",
+      {},
+      { key: "A_B-3", repoKey: "j", shortRef: "A-B-3" },
+    ],
+    [
+      "--repo names a jira repo",
+      { j: { provider: "jira", project: "PROJ" } },
+      "PROJ-8",
+      { repo: "j" },
+      { key: "PROJ-8", repoKey: "j", shortRef: "PROJ-8" },
+    ],
+    [
+      "a github repo and a jira repo, and a Jira key",
+      { "a/b": { provider: "github" }, j: { provider: "jira", project: "PROJ" } },
+      "PROJ-8",
+      {},
+      { key: "PROJ-8", repoKey: "j", shortRef: "PROJ-8" },
     ],
   ];
 
@@ -172,38 +232,66 @@ describe("resolveIssueKey", () => {
     ],
     [
       "only jira repos and a Jira-shaped key",
-      { j1: { provider: "jira" }, j2: { provider: "jira" } },
+      { j1: { provider: "jira", project: "ONE" }, j2: { provider: "jira", project: "TWO" } },
       "PROJ-8",
       {},
       'no configured repo has the project of issue key "PROJ-8"',
     ],
     [
       "only jira repos and a key that no parser accepts",
-      { j1: { provider: "jira" }, j2: { provider: "jira" } },
+      { j1: { provider: "jira", project: "ONE" }, j2: { provider: "jira", project: "TWO" } },
       "foo",
       {},
       'not a Jira issue key: "foo" (expected PROJ-N or <site>/browse/PROJ-N)',
     ],
     [
       "a github repo then a jira repo, and a key that the jira parser accepts",
-      { "a/b": { provider: "github" }, j: { provider: "jira" } },
+      { "a/b": { provider: "github" }, j: { provider: "jira", project: "OTHER" } },
       "PROJ-8",
       {},
       'no configured repo has the project of issue key "PROJ-8"',
     ],
     [
       "a github repo then a jira repo, and a key that no parser accepts",
-      { "a/b": { provider: "github" }, j: { provider: "jira" } },
+      { "a/b": { provider: "github" }, j: { provider: "jira", project: "OTHER" } },
       "foo",
       {},
       'not a GitHub issue key: "foo" (expected owner/repo#N)',
     ],
     [
-      "--repo names a jira repo",
-      { j: { provider: "jira" } },
-      "PROJ-8",
-      { repo: "j" },
-      'repo "j" does not have the project of issue key "PROJ-8"',
+      "a bare key of a project that no repo has",
+      { j: { provider: "jira", project: "TEST" } },
+      "OTHER-1",
+      {},
+      'no configured repo has the project of issue key "OTHER-1"',
+    ],
+    [
+      "a key whose project is a prefix of the project of the repo",
+      { j: { provider: "jira", project: "TEST" } },
+      "TES-1",
+      {},
+      'no configured repo has the project of issue key "TES-1"',
+    ],
+    [
+      "a key with a site and a repo with another site",
+      { j: { provider: "jira", project: "TEST", site: "other.atlassian.net" } },
+      "example.atlassian.net/browse/TEST-12",
+      {},
+      'no configured repo has the project of issue key "example.atlassian.net/browse/TEST-12"',
+    ],
+    [
+      "a key with a site and a repo with no site",
+      { j: { provider: "jira", project: "TEST" } },
+      "example.atlassian.net/browse/TEST-12",
+      {},
+      'no configured repo has the project of issue key "example.atlassian.net/browse/TEST-12"',
+    ],
+    [
+      "two jira repos with the same project and no --repo",
+      { j1: { provider: "jira", project: "TEST" }, j2: { provider: "jira", project: "TEST" } },
+      "TEST-12",
+      {},
+      'issue key "TEST-12" matches more than one repo ("j1", "j2"): pass --repo <key> to pick one',
     ],
   ];
 
@@ -212,6 +300,13 @@ describe("resolveIssueKey", () => {
     expect(result).toStrictEqual(expected);
     // The stored key is a GitHub key, and the short ref has the same number.
     expect(parseGithubKey(result.key, result.repoKey).shortRef).toBe(result.shortRef);
+  });
+
+  it.each(JIRA_REF_ROWS)("holds for any input: %s gives a ref", (_label, trackers, rawKey, options, expected) => {
+    const result = resolveWith(rawKey, trackers, options);
+    expect(result).toStrictEqual(expected);
+    // The stored key is a bare Jira key.
+    expect(parseJiraKey(result.key, result.repoKey).ref).toStrictEqual(result);
   });
 
   it.each(ERROR_ROWS)("holds for any input: %s gives an error", async (_label, trackers, rawKey, options, message) => {

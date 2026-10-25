@@ -52,20 +52,20 @@ describe("parseJiraKey", () => {
   it("parses a <site>/browse/PROJ-N key", () => {
     expect(parseJiraKey("example.atlassian.net/browse/PROJ-7", "r")).toStrictEqual({
       ref: {
-        key: "example.atlassian.net/browse/PROJ-7",
+        key: "PROJ-7",
         repoKey: "r",
-        shortRef: "example-atlassian-net-browse-PROJ-7",
+        shortRef: "PROJ-7",
       },
       site: "example.atlassian.net",
     });
   });
 
-  it("stores the site in lower case", () => {
+  it("gives the site in lower case and the bare key", () => {
     expect(parseJiraKey("Example.Atlassian.NET/browse/PROJ-7", "r")).toStrictEqual({
       ref: {
-        key: "example.atlassian.net/browse/PROJ-7",
+        key: "PROJ-7",
         repoKey: "r",
-        shortRef: "example-atlassian-net-browse-PROJ-7",
+        shortRef: "PROJ-7",
       },
       site: "example.atlassian.net",
     });
@@ -74,9 +74,9 @@ describe("parseJiraKey", () => {
   it("gives - for each _ in the project of a site key", () => {
     expect(parseJiraKey("jira.example.com/browse/PROJ_X-12", "r")).toStrictEqual({
       ref: {
-        key: "jira.example.com/browse/PROJ_X-12",
+        key: "PROJ_X-12",
         repoKey: "r",
-        shortRef: "jira-example-com-browse-PROJ-X-12",
+        shortRef: "PROJ-X-12",
       },
       site: "jira.example.com",
     });
@@ -85,9 +85,9 @@ describe("parseJiraKey", () => {
   it("gives one - for a -- in the site", () => {
     expect(parseJiraKey("xn--d.example.com/browse/Q-1", "r")).toStrictEqual({
       ref: {
-        key: "xn--d.example.com/browse/Q-1",
+        key: "Q-1",
         repoKey: "r",
-        shortRef: "xn-d-example-com-browse-Q-1",
+        shortRef: "Q-1",
       },
       site: "xn--d.example.com",
     });
@@ -96,9 +96,9 @@ describe("parseJiraKey", () => {
   it("accepts a site with one label", () => {
     expect(parseJiraKey("jira/browse/AB-1", "r")).toStrictEqual({
       ref: {
-        key: "jira/browse/AB-1",
+        key: "AB-1",
         repoKey: "r",
-        shortRef: "jira-browse-AB-1",
+        shortRef: "AB-1",
       },
       site: "jira",
     });
