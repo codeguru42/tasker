@@ -7,7 +7,7 @@ import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
 import type { Task } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { vcsForRepo } from "../../src/vcs/provider.js";
+import { type AssistantSurface, vcsForRepo } from "../../src/vcs/provider.js";
 import {
   type AssistantSessionRequest,
   sandboxReadDenyPaths,
@@ -44,6 +44,29 @@ const ONE_REPO: readonly RepoReadDenyPaths[] = [{ denyReadPaths: ["/k/id"], publ
 // The call helper of sandboxReadDenyPaths().
 const denyPaths = (env: NodeJS.ProcessEnv, repos: readonly RepoReadDenyPaths[] = ONE_REPO) =>
   sandboxReadDenyPaths({ env, repos });
+
+// The assistant surface of the task repo of a fixture.
+const surfaceOf = (fixture: Pick<AssistantRunFixture, "config" | "started">, env: NodeJS.ProcessEnv) => {
+  const { vcs, ctx } = vcsForRepo(fixture.config, fixture.started.repoKey, env);
+  return vcs.assistantSurface(ctx);
+};
+
+// Expects that the settings of a run hold the sandbox with the write paths and the read deny list of the surface.
+const expectTaskSandbox = async (
+  settings: unknown,
+  surface: AssistantSurface,
+  worktree: string,
+  env: NodeJS.ProcessEnv,
+) => {
+  expect(settings).toMatchObject({
+    sandbox: {
+      filesystem: {
+        allowWrite: await surface.sandboxWritePaths(worktree),
+        denyRead: denyPaths(env, [surface]),
+      },
+    },
+  });
+};
 
 // The models of the task repo in the configuration of a fixture.
 const modelsOf = (fixture: AssistantRunFixture) => fixture.config.repos[fixture.started.repoKey].assistant.models;
@@ -112,8 +135,7 @@ const prepareAndStartExecute = async (
     for (const input of run.starts ?? [{ prompt: "p" }]) outcomes.push(await prepared.start(input));
     return { prepared, outcomes, outcome: outcomes[0] };
   });
-  const { vcs, ctx } = vcsForRepo(config, started.repoKey, env);
-  return { ...fixture, env, ...result, surface: vcs.assistantSurface(ctx), models: modelsOf(fixture) };
+  return { ...fixture, env, ...result, surface: surfaceOf(fixture, env), models: modelsOf(fixture) };
 };
 
 describe("sandboxReadDenyPaths", () => {
@@ -192,7 +214,7 @@ describe("sandboxReadDenyPaths", () => {
 describe("prepareTaskPlanModeRun", () => {
   const schema = { type: "object" };
 
-  it("runs the assistant in the plan mode with the plan model and no other limit", async () => {
+  it("runs the assistant in the plan mode with the plan model, the sandbox and the deny rules", async () => {
     const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
     const { claude, config, task, started } = fixture;
     const models = modelsOf(fixture);
@@ -206,9 +228,10 @@ describe("prepareTaskPlanModeRun", () => {
     expect(flagValues(call.argv, "--effort")).toEqual([models.plan.effort]);
     expect(flagValues(call.argv, "--permission-mode")).toEqual(["plan"]);
     expect(flagValues(call.argv, "--json-schema")).toEqual([JSON.stringify(schema)]);
-    expect(flagValues(call.argv, "--disallowedTools")).toEqual(["Bash(git push:*)"]);
+    expect(flagValues(call.argv, "--disallowedTools")).toEqual(["Bash(git push:*)", "Bash(herdr:*)"]);
     expect(call.argv).not.toContain("--allowedTools");
-    expect(call).not.toHaveProperty("settings");
+    await expectTaskSandbox(call.settings, surfaceOf(fixture, fixture.env), started.worktree, fixture.env);
+    expect(call.settings).not.toMatchObject(permissionHookSettings(started.worktree));
     expect(call.envNames).not.toContain("GH_TOKEN");
     expect(call.envNames).not.toContain("SSH_AUTH_SOCK");
     expect(existsSync(taskSessionsDir(config.dataRoot, task))).toBe(true);
@@ -234,9 +257,10 @@ describe("prepareTaskPlanModeRun", () => {
     expect(flagValues(call.argv, "--model")).toEqual([models.review.model]);
     expect(flagValues(call.argv, "--effort")).toEqual([models.review.effort]);
     expect(flagValues(call.argv, "--permission-mode")).toEqual(["plan"]);
-    expect(flagValues(call.argv, "--disallowedTools")).toEqual(["Bash(git push:*)"]);
+    expect(flagValues(call.argv, "--disallowedTools")).toEqual(["Bash(git push:*)", "Bash(herdr:*)"]);
     expect(call.argv).not.toContain("--allowedTools");
-    expect(call).not.toHaveProperty("settings");
+    await expectTaskSandbox(call.settings, surfaceOf(fixture, fixture.env), fixture.started.worktree, fixture.env);
+    expect(call.settings).not.toMatchObject(permissionHookSettings(fixture.started.worktree));
   });
 
   it("refuses a task that has no worktree, and starts no child", async () => {
@@ -394,14 +418,7 @@ describe("prepareTaskExecuteRun", () => {
       claude: { stream: claudeSample("plain") },
     });
 
-    expect(claude.calls()[0].settings).toMatchObject({
-      sandbox: {
-        filesystem: {
-          allowWrite: await surface.sandboxWritePaths(started.worktree),
-          denyRead: denyPaths(env, [surface]),
-        },
-      },
-    });
+    await expectTaskSandbox(claude.calls()[0].settings, surface, started.worktree, env);
   });
 
   it("denies the ssh keys and the publish tokens of every configured repo in the shell", async () => {
