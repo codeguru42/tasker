@@ -229,7 +229,8 @@ The steps run in this order.
 2. The command records the session of the plan before it starts the assistant.
    [The session id](assistants.md#the-session-id) gives the reason. A task that already has a plan session continues it.
 3. The command moves the task to `planning` and runs the assistant. It appends each event of the run to the transcript
-   of the revision.
+   of the revision. If the outcome of the run holds a sandbox cleanup, the command then writes one `sandbox_cleanup`
+   event with it, before it acts on the outcome.
 4. The command acts on the outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says. A plan
    that tasker refuses also moves the task to `failed`, and the error lists each problem.
 5. The command writes the plan file before it adds the row. [Plan files](data-root.md#plan-files) gives the reason.
@@ -289,7 +290,8 @@ The steps run in this order.
 4. The command moves the task to `refining` and runs the assistant. The move records the feedback in its `transition`
    event, as `{ feedback, from, to }`, so that `tasker resume` can run the same refine again (see [Resume](#resume)). A
    promotion with no feedback records no `feedback` key. The run step is the one that `tasker plan` uses, with the
-   prefix `refining failed:` for an error.
+   prefix `refining failed:` for an error. As in `tasker plan`, the run step writes one `sandbox_cleanup` event when the
+   outcome of the run holds a sandbox cleanup.
 
 [The refine prompt](assistants.md#the-refine-prompt) says what the prompt asks for. The new revision is a complete plan.
 A question that it leaves out counts as answered by the feedback, and the store computes this. A promotion with no
@@ -425,9 +427,10 @@ rules:
 5. Move the task to `reviewing`, which writes the run marker. Run the assistant, and write its events to the transcript.
 6. Check the answer. Record the review, its findings and the `review` event, and move the task.
 
-The command writes one `transition` event into `reviewing`, one `usage` event, one `review` event with the data
-`{ number, revision, findings }`, and one `transition` event out of `reviewing`. A failed run writes the `usage` event
-and no `review` event.
+The command writes one `transition` event into `reviewing`, one `sandbox_cleanup` event, one `usage` event, one `review`
+event with the data `{ number, revision, findings }`, and one `transition` event out of `reviewing`. The
+`sandbox_cleanup` event comes only when the outcome of the run holds a sandbox cleanup. A failed run writes the `usage`
+event and no `review` event.
 
 These reasons explain its rules:
 
