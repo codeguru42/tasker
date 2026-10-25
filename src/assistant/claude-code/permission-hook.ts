@@ -47,7 +47,9 @@ function skillPathProblem(filePath: unknown, worktree: string): string | undefin
   if (!isAbsolute(filePath)) return NOT_ABSOLUTE;
   if (filePath.split("/").some((part) => part === "." || part === "..")) return DOT_PART;
   const prefix = `${worktree}/.claude/skills/`;
-  if (!filePath.startsWith(prefix) || filePath.length === prefix.length) return OUTSIDE;
+  if (!filePath.startsWith(prefix)) return OUTSIDE;
+  const rest = filePath.slice(prefix.length).split("/");
+  if (!rest.some((part) => part !== "")) return OUTSIDE;
   let current = worktree;
   for (const part of filePath.slice(worktree.length + 1).split("/")) {
     if (part === "") continue;
