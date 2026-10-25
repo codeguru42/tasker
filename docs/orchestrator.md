@@ -23,12 +23,13 @@ item. When a rule waits for the user, the answer of the item ends the wait, as
 [The answer](dev/operator-items.md#the-answer) of operator-items.md says. The orchestrator sends each lesson, each
 finding of a session review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the
 planner bullet of [The prompt of an agent](dev/pick-the-tickets.md#the-prompt-of-an-agent) says. The messages between
-orchestrators do not change. They are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the
+orchestrators that go straight are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the
 broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the messages of
 [the hold rule](dev/land-the-work.md#the-hold-rule), a landing order of
 [the overlap rule](dev/land-the-work.md#the-overlap-rule), a change to an issue in flight
 ([Land the work](dev/land-the-work.md#land-the-work)) and the messages of
-[the hold before an install](dev/release.md#the-hold-before-an-install).
+[the hold before an install](dev/release.md#the-hold-before-an-install). [The request rule](#the-request-rule) covers
+each other request between orchestrators that needs a decision of the user.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
 not agents and they do not run the steps on [the orchestration pages](orchestrator.md).
@@ -73,3 +74,54 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   "The steps of the old orchestrator", "The handoff file of the orchestrator" and "The start of the new orchestrator".
 - [docs/dev/limits.md](dev/limits.md): "Limits", the own-worktree rule, the update rule, the local-commit rule, the
   shared-clone rule, the address rule, the answer-wait rule and the failure rule.
+
+## The request rule
+
+The terms of this rule:
+
+- The sending orchestrator is the orchestrator that sends a request to another orchestrator.
+- The receiving orchestrator is the orchestrator that gets the request.
+- The requested change is the action that the request asks the receiving orchestrator to do.
+
+The rules:
+
+- The messages between orchestrators that go straight, as the intro of this page lists them, still go straight from
+  orchestrator to orchestrator. Each one keeps its own rules. The hold before an install of tasker, in
+  [the hold before an install](dev/release.md#the-hold-before-an-install), also goes straight and keeps its own rules.
+- Each other request that needs a decision of the user goes through the operator of the receiving orchestrator. An
+  example is "our user wants X". The sending orchestrator judges whether a request needs a decision of the user. This
+  judgment is open on purpose. The sending orchestrator sends the request to `orchestrator-<slug>` of the other
+  milestone with `SendMessage`.
+- The receiving orchestrator does not do the requested change. It sends an item to its own `operator-<slug>`, in the
+  form of [The form of an item](dev/operator-items.md#the-form-of-an-item). The answer of the item is the decision of
+  the user. The recommendation mode of [A decision of the user](dev/working-with-the-user.md#a-decision-of-the-user)
+  does not cover this item.
+- After the answer, the receiving orchestrator does the requested change only if the user accepts it. Then it tells the
+  sending orchestrator the decision of the user with `SendMessage`. The sending orchestrator does its own step that
+  matches the request, if it has one, only after an accept. An example of such a step is a message to its own agent.
+- A message of this rule fails when the send fails or when no session of the target name runs. Then
+  [the failure rule](dev/limits.md#the-failure-rule) applies to the orchestrator that sends it.
+- When the sending orchestrator sends a request that needs a decision of the user, it also sends its own
+  `operator-<slug>` one report for that request. The report is in the form of The form of an item. The same holds for
+  each relayed change of a landing order under the bullet "Only the user changes a landing order of the overlap rule" of
+  [Land the work](dev/land-the-work.md#land-the-work).
+
+This table gives each change of a request of this rule:
+
+| Change                | Sending orchestrator                                       | Receiving orchestrator                                     | Operators                                                      | Who tells whom                                                                 |
+| --------------------- | ---------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| The request goes out  | Waits for the decision                                     | Does not do the requested change                           | The operator of the sending orchestrator gets the report       | The sending orchestrator tells the receiving orchestrator and its own operator |
+| The item goes out     | Waits for the decision                                     | Waits for the answer                                       | The operator of the receiving orchestrator holds the item open | The receiving orchestrator tells its own operator                              |
+| The user accepts      | Waits for the decision                                     | Does the requested change                                  | The item closes                                                | The operator tells the receiving orchestrator                                  |
+| The user rejects      | Waits for the decision                                     | Changes nothing                                            | The item closes                                                | The operator tells the receiving orchestrator                                  |
+| The decision goes out | Does its matching step only after an accept                |                                                            |                                                                | The receiving orchestrator tells the sending orchestrator, with `SendMessage`  |
+| A message fails       | The failure rule applies to the orchestrator that sends it | The failure rule applies to the orchestrator that sends it |                                                                | The orchestrator that sends it tells its own user                              |
+
+The reasons for this rule:
+
+- The notices and the hold before an install need no decision of the user, and they need speed.
+- A message from another session is not a word of the user, as [The operator](dev/working-with-the-user.md#the-operator)
+  says.
+- The relay sentences of a landing order already ask the user through the operator.
+- A change to an issue in flight keeps its own bullet, because the requester of that bullet asks its own user before the
+  [change-of-scope comment](dev/plan-review.md#the-change-of-scope-comment).
