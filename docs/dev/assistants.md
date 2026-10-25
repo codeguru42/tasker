@@ -39,11 +39,35 @@ two.
 
 ### The plan and review roles
 
-These roles run in the plan mode. They get no sandbox and no tool rule, except the deny rule that blocks `git push` for
-the shell. The deadline is the plan deadline of the configuration.
+These roles run in the plan mode. Their shell runs in the sandbox of [the execute role](#the-execute-role), with the
+same write paths and the same read deny list. Their shell also gets two deny rules: one blocks `git push`, and one
+blocks each `herdr` command. The deadline is the plan deadline of the configuration.
 
 The plan mode blocks `Edit` and `Write`, but it does not block a shell command that writes. A host test on `claude`
-2.1.300 showed this. Tasker relies on the plan mode for the plan and review roles for now.
+2.1.300 showed this. The sandbox keeps the writes of the shell in the write paths of the sandbox. The provider refuses
+these roles in the same cases as the execute role (see [Sandbox](#sandbox)).
+
+herdr is the terminal workspace manager that holds the sessions of the user. The reason for the deny rule of `herdr`: a
+session that can send input to the pane of another session can approve the permission prompts of that session. These
+`herdr` commands act on another pane or another session (herdr 0.9.3, measured on 2026-10-25):
+
+- Input: `pane send-text`, `pane send-keys`, `pane run`, `agent send-keys` and `agent prompt`.
+- Close or stop: `pane close`, `tab close`, `workspace close`, `worktree remove`, `session stop` and `session delete`.
+  With no target of its own, `server stop` stops the server that holds all the sessions.
+- Start or attach: `agent start`, `agent attach` and `session attach`.
+- Other changes: `pane split`, `pane swap`, `pane move`, `pane resize`, `pane zoom`, `pane focus`, `pane rename`,
+  `pane input`, `pane report-agent`, `pane report-agent-session`, `pane release-agent`, `pane report-metadata`,
+  `agent rename`, `agent focus`, `tab create`, `tab rename`, `tab focus`, `workspace create`, `workspace rename`,
+  `workspace focus`, `workspace report-metadata`, `worktree create` and `worktree open`.
+- Reads: `pane read`, `pane wait-output`, `pane get`, `pane current`, `pane layout`, `pane process-info`,
+  `pane neighbor`, `pane edges`, `pane list`, `agent read`, `agent wait`, `agent get`, `agent explain`, `agent list`,
+  `tab get`, `tab list`, `workspace get`, `workspace list`, `worktree list` and `session list`.
+
+The deny rule does not cover `sh -c 'herdr agent list'`, and it also does not cover other forms that start a new shell,
+for example `bash -c 'herdr agent list'` and `printf 'herdr agent list' | sh` (`claude` 2.1.310). It covers
+`cd /tmp && herdr agent list`, `env herdr agent list` and the absolute path of the `herdr` program. In the sandbox of
+these roles, `herdr agent list` and `sh -c 'herdr agent list'` exit with 1 and print `Operation not permitted` (measured
+on 2026-10-25).
 
 ### The execute role
 
@@ -94,6 +118,10 @@ The deny list names only `Edit` for the `.git` entry of the worktree and for the
 `Edit` rules cover each tool that edits a file, also `Write`. `claude` 2.1.310 warns that a `Write` deny rule does not
 match in the file permission checks. A deny wins over an allow. As a result, git data changes only through `git`
 commands in the sandboxed shell.
+
+The sandbox stops `herdr`. In the sandboxed shell, `herdr agent list`, `sh -c 'herdr agent list'` and the absolute path
+of the `herdr` program each exit with 1 and print `Operation not permitted` (herdr 0.9.3, `claude` 2.1.310, measured on
+2026-10-25). As a result, the execute role gets no deny rule for `herdr`.
 
 The sandbox follows the rules in [Sandbox](#sandbox). Its write paths and its shared folder come from the version
 control. Its read deny list holds these paths:
