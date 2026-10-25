@@ -6,7 +6,7 @@ An [item](operator.md) is a message from a planner or an orchestrator to the ope
 
 - The first line is one sentence that names the sender and the topic.
 - Then the id follows, in the form `<sender name>-<n>`. The number `<n>` counts from 1 in the session of the sender.
-- Then the text follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
+- Then the text follows the rules of [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
 - An item about a draft gives a summary of the draft and the path of the draft file, not the draft. The path is `/tmp/tasker/<slug>/drafts/<file>.md`.
 
 ## The open items
