@@ -243,20 +243,21 @@ that it dismissed. The initial planner posts only after the approval of the user
   tickets, #171, #172, #98 and #173. On #305, the case of this bullet and the case of the bullet before it each cost one
   stop of the agent before `tasker approve`.
 - An issue can add a general rule to a doc. Before the post, the planner searches the other docs for a narrower form of
-  the rule. The Docs section of the issue names each such place. The ticket then replaces each narrower form with a link
-  to the new rule, as [the one-home rule](rules.md#code) says. On #251, the new self-check rule of `docs/dev/issues.md`
-  made the hint of #228 in `docs/dev/first-refine.md` a copy, and the fix cost one review loop. The issue also names
-  each other rule that uses the new rule, and it says for each one whether the ticket covers it. On #387, the issue
-  named only the shared-file bullet and the link offer. Plan v1 also widened the overlap rule, refine 1 took that out,
-  and review 1 still found the gap.
+  the rule. The search follows [the doc-search rule](rules.md#docs). The Docs section of the issue names each such
+  place. The ticket then replaces each narrower form with a link to the new rule, as [the one-home rule](rules.md#code)
+  says. On #251, the new self-check rule of `docs/dev/issues.md` made the hint of #228 in `docs/dev/first-refine.md` a
+  copy, and the fix cost one review loop. The issue also names each other rule that uses the new rule, and it says for
+  each one whether the ticket covers it. On #387, the issue named only the shared-file bullet and the link offer. Plan
+  v1 also widened the overlap rule, refine 1 took that out, and review 1 still found the gap.
 - An issue can add a section to a doc. Then the Docs section of the issue names each index that lists the sections of
   that doc. Examples are the line of the doc in `AGENTS.md` and the list "The pages" of `docs/dev/orchestrator.md` for
   an orchestration page. On #336 (2026-10-18), plan v1 found only the line of `AGENTS.md` and missed the list "The
   pages".
 - An issue can add a rule that limits what a session reads. Before the post, the planner searches the docs for each link
-  to the files that the rule limits, and for each path of these files. For each hit, the issue says how the hit changes,
-  or why the hit stays. A hit stays when the rule permits the link, for example a link for a task that changes the file.
-  On #382, the issue put the other links of the dev docs out of scope. But step 2 of `docs/dev/setup.md` still linked to
+  to the files that the rule limits, and for each path of these files. The search follows
+  [the doc-search rule](rules.md#docs). For each hit, the issue says how the hit changes, or why the hit stays. A hit
+  stays when the rule permits the link, for example a link for a task that changes the file. On #382, the issue put the
+  other links of the dev docs out of scope. But step 2 of `docs/dev/setup.md` still linked to
   `skills/tasker/references/setup.md`, and review 1 found the conflict.
 - If an issue gives a rule with a judgment word that has no test on purpose, for example "a decision that still
   applies", the issue says that the judgment is open on purpose, and who makes it. If a review finding asks for a test

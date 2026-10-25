@@ -250,9 +250,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - If a case cannot happen in a real run, ask the plan to test it through the function that builds the result or the
   message, not through a real run. On #132, a command that the deadline keeps from its start cannot occur in a real
   verify run. The reason: a command that runs at the deadline gets SIGTERM and is itself the failing command.
-- In the diff read, also search for doc sentences that a new shared helper made false. On #133, a new shared read helper
-  changed an error text, and the diff read found two doc sentences that it made false. On #132, the helper-name search
-  of [the diff read](run-one-ticket.md#the-diff-read) found a copied test helper after a review with no findings.
+- In the diff read, also search for doc sentences that a new shared helper made false. The search follows
+  [the doc-search rule](rules.md#docs). On #133, a new shared read helper changed an error text, and the diff read found
+  two doc sentences that it made false. On #132, the helper-name search of
+  [the diff read](run-one-ticket.md#the-diff-read) found a copied test helper after a review with no findings.
 - To find a copied test helper, search the exact form of a mapping step, for example `({ name, required, timeoutMs })`.
   On #47, this search found a copy after a review with no findings.
 - Read the doc diff right after `tasker execute`, before the first review. Then a fix of a copied rule, or of a reason
@@ -315,8 +316,8 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   read again each sentence that starts with a word that points back. Examples are "Otherwise" and "Without that". After
   the move, such a sentence can attach to the wrong condition. On #431, review 3 found this.
 - If a refine removes a name from a list inside a sentence, ask the plan to fix the "and" of that sentence. Also ask it
-  to search each doc for the same list. On #20, a refine removed a name from a list, and the other docs with the same
-  list kept the old "and".
+  to search each doc for the same list. The search follows [the doc-search rule](rules.md#docs). On #20, a refine
+  removed a name from a list, and the other docs with the same list kept the old "and".
 - If a ticket writes files across the whole repo, for example a format run or a rename in each file, ask the plan to
   leave out the folder `.claude/`. The execute session cannot write some files under `.claude/`, for example
   `.claude/settings.json`. On #148, the format run left `.claude/settings.json` as it was, and the first `tasker verify`
@@ -401,20 +402,20 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   issue said that each refine of a pushed task puts the branch in the note case. A refine with an amend gets the at-risk
   error instead. Review 2 found this, and a change of scope of the user narrowed the sentence. It cost one loop. This
   also covers a reason that a hint or a refine adds about a state: before the feedback asks for it, search the docs for
-  each rule that changes that state. On #423, refine 1 asked for "origin keeps the push of an earlier step 9 until step
-  21", and review 3 found that the pushed-branch rule of `docs/dev/verify-failures.md` can delete that push earlier. It
-  cost one loop.
+  each rule that changes that state. The search follows [the doc-search rule](rules.md#docs). On #423, refine 1 asked
+  for "origin keeps the push of an earlier step 9 until step 21", and review 3 found that the pushed-branch rule of
+  `docs/dev/verify-failures.md` can delete that push earlier. It cost one loop.
 - If the issue gives a reason with a condition, for example "a failure would stop each update", ask the plan for the
   form "If X, Y" in the first refine. The simple-english skill bans "would". A plan that only drops the word loses the
   condition. On #365, this happened.
 - A search or a check command of the plan, for example a `grep` count or a claim that a doc does not hold some words, is
-  a fact of [the fact test](plan-review.md#the-fact-test). Before `tasker approve`, the agent runs it on each form of
-  the words, for example `--opt=value` next to `--opt value`. On #392, a pattern of plan v2 needed a space before
-  `$HOME`, and it counted 2 on the correct line. Refine 2 fixed it. On #388, plan v1 searched only for "the bullet
-  before it" and missed "the bullet before this one" in `docs/dev/planner.md`. The issue check found it with
-  `grep -n -E 'the bullet before (this one|it)'`. On #383, a search for `base branch:` also hit prose where a colon ends
-  a phrase before a code span, and the expected output of the plan missed one such hit. Sort each hit before the plan
-  calls one hit the only one.
+  a fact of [the fact test](plan-review.md#the-fact-test). The search follows [the doc-search rule](rules.md#docs).
+  Before `tasker approve`, the agent runs it on each form of the words, for example `--opt=value` next to `--opt value`.
+  On #392, a pattern of plan v2 needed a space before `$HOME`, and it counted 2 on the correct line. Refine 2 fixed it.
+  On #388, plan v1 searched only for "the bullet before it" and missed "the bullet before this one" in
+  `docs/dev/planner.md`. The issue check found it with `grep -n -E 'the bullet before (this one|it)'`. On #383, a search
+  for `base branch:` also hit prose where a colon ends a phrase before a code span, and the expected output of the plan
+  missed one such hit. Sort each hit before the plan calls one hit the only one.
 - In a ticket with an npm fact test, the agent runs the fact test and gives the results in the feedback. The execute
   session runs no fact test and no `npm install -g`, also not with `--prefix`. On #416, plan v1 put such a test in the
   execute session.
@@ -585,7 +586,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Make sure that each numbered list still renders. An edit can join two items on one line. In a ticket that removes the
   last sentence of a list item, ask the plan to keep the line break of the item. The execute session removes the line
   break with the sentence, and two items then sit on one line. Ask the plan to search the result for a step number after
-  a period, for example with `grep -n -E "[^0-9][.] ?[0-9]+[.] "`. On #266, this cost one review loop.
+  a period, for example with `grep -n -E "[^0-9][.] ?[0-9]+[.] "`. The search follows
+  [the doc-search rule](rules.md#docs). On #266, this cost one review loop.
 - A fenced code block at column 0 inside a numbered list ends the list. Then `npm run format:check` can fail, for
   example when indented text of the same step follows the block. Indent the block three spaces. On #119, this cost a
   loop.
@@ -659,8 +661,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   cover more than one such comment. [The issue check](plan-review.md#the-issue-check) gives the reason. On #247, reviews
   1 and 2 found these two gaps one at a time.
 - If the plan searches for the sentences that hold a term, ask for a pattern that also stops at a colon, for example
-  `[^.:]*`. The pattern `[^.]*` misses the lead-in of a list, which ends with a colon. On #152, the plan and the agent
-  missed one line this way, and it cost one loop.
+  `[^.:]*`. The search follows [the doc-search rule](rules.md#docs). The pattern `[^.]*` misses the lead-in of a list,
+  which ends with a colon. On #152, the plan and the agent missed one line this way, and it cost one loop.
 - If a rule takes sentences from one case for a new kind of case, ask the plan whether each borrowed sentence fits the
   new kind. On #139, a sentence for a false claim let a conflict skip the refine that changes the plan.
 - If a rule says "use X in place of Y" for a message, say if it means the address or the text of the message. On #143,
@@ -680,11 +682,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   plan to say when the skip applies. On #192, loop 1 found that the words "gives the next step" can send the agent past
   the refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket).
 - If a rule adds a new path to an existing step, ask the plan to search the whole paragraph of that step for the words
-  of the old path. Ask it to fix each such sentence in one commit. On #198, three review loops found the words "in an
-  answer", "that sends the answer" and "a comment of the orchestrator" one sentence at a time. The same search applies
-  when a ticket turns some statements into "not a claim": ask the plan to scope each later sentence of the same
-  paragraph that names an output or a claim. On #393, review 1 found the measure sentence of
-  [the issue check](plan-review.md#the-issue-check), and it cost one loop.
+  of the old path. The search follows [the doc-search rule](rules.md#docs). Ask it to fix each such sentence in one
+  commit. On #198, three review loops found the words "in an answer", "that sends the answer" and "a comment of the
+  orchestrator" one sentence at a time. The same search applies when a ticket turns some statements into "not a claim":
+  ask the plan to scope each later sentence of the same paragraph that names an output or a claim. On #393, review 1
+  found the measure sentence of [the issue check](plan-review.md#the-issue-check), and it cost one loop.
 - If a rule lets the user choose to skip a ban, for example with the answer "start now", ask the plan to say which rule
   wins in each case that the rule covers. Cover a task of the same milestone and a task of another milestone. On #145,
   review 1 found this gap.
@@ -767,8 +769,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   status line also shows it, for example "[Sonnet 5.5 low]". The agent of #459 measured this on 2026-10-25, with Claude
   Code 2.1.310 through `herdr agent start` of herdr 0.9.3.
 - A new page of a ticket can give the form of a message. Then each other step of the new pages that sends that message
-  links to that rule. Ask the plan to search each message form across all the new pages. On #403, one page said that an
-  instruction of the user goes as "From the user:". Review 1 found a bare "stop" in step 1 of "Stop a session".
+  links to that rule. Ask the plan to search each message form across all the new pages. The search follows
+  [the doc-search rule](rules.md#docs). On #403, one page said that an instruction of the user goes as "From the user:".
+  Review 1 found a bare "stop" in step 1 of "Stop a session".
 - If a hint or a plan line asks to cut a part of a list sentence, it also gives the full new sentence. On #405, a plan
   line said "remove only the false part" of a list sentence, and the execute session broke the list ("the drafts of each
   issue, their rewrites"). This cost refine 2 and review loop 2.
@@ -788,10 +791,10 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   copies. If the [home](rules.md#code) of a merged fact uses a term that an old copy defined, ask the plan to move the
   definition to the home too. On #204, the home said "prunes" but not what the prune removes, and review 2 found the
   lost definition. If a ticket gives a term its one home, ask the plan to search the docs for each other sentence that
-  defines the same term. On #338, the parent-hold rule still said "A ready state is ...", and review 1 found it. On
-  #342, plan v1 defined a free slot as "fewer agents run than the limit". A slot stays held until
-  [Delete the job](quota.md#delete-the-job) frees it, also after the turn of the agent ends. Link to the home of the
-  term, and do not define it again.
+  defines the same term. The search follows [the doc-search rule](rules.md#docs). On #338, the parent-hold rule still
+  said "A ready state is ...", and review 1 found it. On #342, plan v1 defined a free slot as "fewer agents run than the
+  limit". A slot stays held until [Delete the job](quota.md#delete-the-job) frees it, also after the turn of the agent
+  ends. Link to the home of the term, and do not define it again.
 - A code comment can name a doc heading. Search `src/` and `test/` for a heading before a rename.
 - Write a gap that no code covers yet as a rule for the caller with "must", not as a claim that the code does it.
 - If the issue calls a sentence a copy of a home ([the one-home rule](rules.md#code)), ask the plan to compare the words
@@ -814,17 +817,21 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   [the diff read](run-one-ticket.md#the-diff-read) and [the issue check](plan-review.md#the-issue-check). Loops 1 to 3
   found them one direction or one set of names at a time. On #322, the diff read found a quoted name,
   "[The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent)", that the plan missed. A search for the bare
-  quote with no `[` before it finds such names. If a hint is about a form of text, for example quote marks, ask the plan
-  to write each example of the hint in the exact form that the example describes. On #355, a new hint drew the
-  difference between a quoted name and a bare name of a rule. The plan put quote marks around the bare-name examples,
-  the diff read and the issue check, and review 1 found it. A hint of the orchestrator then asked for a link on each
-  term that another doc defines. The plan put the links inside the quote marks, so the mistake was harder to see.
+  quote with no `[` before it finds such names. The search follows [the doc-search rule](rules.md#docs). If a hint is
+  about a form of text, for example quote marks, ask the plan to write each example of the hint in the exact form that
+  the example describes. On #355, a new hint drew the difference between a quoted name and a bare name of a rule. The
+  plan put quote marks around the bare-name examples, the diff read and the issue check, and review 1 found it. A hint
+  of the orchestrator then asked for a link on each term that another doc defines. The plan put the links inside the
+  quote marks, so the mistake was harder to see.
 - An example sentence can name a section of a file, for example the sample notice of
   [the notice rule](doc-reads.md#the-notice-rule). After the move of that section, the file name changes, and the
   section name stays. On #322, the section name was swapped, and #324 fixed the same sample again.
 - For the proof of a move, ask the plan to undo each expected link change with a `sed` pass. Run the pass on both the
-  old text and the new text. The diff then shows only the real differences. The agents of #322, #323 and #324 used this
-  proof.
+  old text and the new text. The search follows [the doc-search rule](rules.md#docs). A `sed` pass edits one line at a
+  time. Prettier keeps each link on one line, so the pass still finds each link. But a changed link can move the line
+  breaks of its paragraph. So compare the two outputs of the pass with `git diff --no-index --word-diff=porcelain`. This
+  diff shows no word change for a moved line break. The diff then shows only the real differences. The agents of #322,
+  #323 and #324 used this proof.
 - If a hint keeps an old list item as its own sentence, first make sure that no kept rule of the page already says the
   same thing. Otherwise the kept sentence repeats that rule. On #338, a hint kept the fourth case of
   [the stop rule](plan-review.md#the-stop-rule) as its own sentence, and the sentence repeated the message bullet of
