@@ -170,6 +170,13 @@ const SessionModelsSchema = z.strictObject({
   orchestrator: SessionRoleSchema.optional(),
 });
 
+// The session roles, in the order of the report of tasker model.
+export const SESSION_ROLES = SessionModelsSchema.keyof().options;
+export type SessionRole = (typeof SESSION_ROLES)[number];
+
+// The values of the effort of a session role. They hold each effort of an assistant role.
+export const SESSION_EFFORTS = SessionRoleSchema.shape.effort.options;
+
 // The provider whose model forms an agent kind uses.
 const SESSION_KIND_PROVIDERS: Record<z.output<typeof SessionKindSchema>, AssistantProviderId> = {
   claude: "claude-code",
@@ -180,13 +187,7 @@ function checkSessionModels(sessions: unknown, ctx: z.RefinementCtx): void {
   if (!isObject(sessions)) return;
   const kind = SessionKindSchema.safeParse(sessions.kind);
   if (!kind.success) return;
-  addModelIssues(
-    sessions.models,
-    SessionModelsSchema.keyof().options,
-    SESSION_KIND_PROVIDERS[kind.data],
-    ["models"],
-    ctx,
-  );
+  addModelIssues(sessions.models, SESSION_ROLES, SESSION_KIND_PROVIDERS[kind.data], ["models"], ctx);
 }
 
 const SessionsSchema = z
