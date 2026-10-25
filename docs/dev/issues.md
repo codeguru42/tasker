@@ -47,7 +47,8 @@ session runs one Bash call with these steps, in this order:
 3. If `tasker status` lists no task for the full key of the issue and the state is `OPEN`, do the write.
 
 If the issue is in flight or closed, the call skips the write, and the session tells the user. The issue is in flight
-when `tasker status` lists a task for the full key of the issue.
+when `tasker status` lists a task for the full key of the issue. If `tasker status` or the read of the state fails, the
+call skips the write, and the session tells the user.
 
 A read in an earlier call can be old, because a task can start or the issue can close between the read and the write. On
 2026-10-18, a new link of the relinked Docs chains landed on #302, which started after the planning session read the
