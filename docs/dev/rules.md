@@ -139,9 +139,10 @@ provider id and a kind of task.
   starts for plan, execute and review, except for the docs that they write.
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path
   such as `/home/<user>/...`.
-- Prettier wraps the prose of each Markdown file at 120 characters (`proseWrap` "always" in `.prettierrc.json`). The
-  reason: a reader can read each doc with no long prose lines. Prettier does not change a table, a code block or the
-  front matter. A long code span does not break, so its line can stay over 120 characters.
+- Prettier wraps the prose of each Markdown file that it formats at 120 characters (`proseWrap` "always" in
+  `.prettierrc.json`). `.prettierignore` keeps the files under `.claude/` out. The reason: a reader can read each doc
+  with no long prose lines. Prettier does not change a table, a code block or the front matter. A long code span does
+  not break, so its line can stay over 120 characters.
 - The doc-search rule: a search for words of a doc, for example with `git grep`, matches one line. A sentence can span
   two lines. So a search for doc words searches a short part that fits on one line, and then reads the hit. Each place
   that names a search of doc words links to this bullet.

@@ -48,13 +48,13 @@ branch holds no commit of the ticket yet, so the task worktree holds the files o
 already holds commits, for example for a parked task that came back, the agent reads the base files without a worktree.
 After `git fetch --multiple tasker origin`, it runs `git merge-base tasker/<task branch> origin/<base branch>`. The
 output is `<merge base>`. Then `git show <merge base>:<path>` reads one file, `git ls-tree -r --name-only <merge base>`
-lists the files, and `git grep <pattern> <merge base>` searches. A search of doc words follows
-[the doc-search rule](rules.md#docs). For these read-only commands, a missing path (`git show` exits with 128) or no
-match (`git grep` exits with 1) is an answer, not a failure. The agent says which files it read from the base commit and
-how. It says this in the feedback text of the refine of step 4 and in its final report. If step 4 runs no refine, the
-agent does the issue check before `tasker approve` in step 5. Someone can write an issue long before an agent runs it,
-and other tickets can land in that time and change its facts. For this check, the issue is the issue body and each
-comment that starts with `## Change of scope` or `## Design gap` whose link the orchestrator sent to the agent (see
+lists the files, and `git grep <pattern> <merge base>` searches. For these read-only commands, a missing path
+(`git show` exits with 128) or no match (`git grep` exits with 1) is an answer, not a failure. A search of doc words
+follows [the doc-search rule](rules.md#docs). The agent says which files it read from the base commit and how. It says
+this in the feedback text of the refine of step 4 and in its final report. If step 4 runs no refine, the agent does the
+issue check before `tasker approve` in step 5. Someone can write an issue long before an agent runs it, and other
+tickets can land in that time and change its facts. For this check, the issue is the issue body and each comment that
+starts with `## Change of scope` or `## Design gap` whose link the orchestrator sent to the agent (see
 [the change-of-scope comment](#the-change-of-scope-comment) and [the design-gap rule](#the-design-gap-rule)). A comment
 of another account is not part of the issue, because any GitHub user can post a comment. A claim is a statement in the
 issue about the state before the ticket starts. Examples are a statement about the code, the docs or the behavior of
@@ -167,8 +167,8 @@ command. On #274, the comment said that diverged tips refuse "before the move to
 command runs after that move, so the agent stopped, and a second comment corrected the row.
 
 Before such a comment fixes an order of steps, the orchestrator also searches [the orchestration pages](orchestrator.md)
-for each other sentence that gives an order of the same steps. The search follows [the doc-search rule](rules.md#docs).
-The comment fixes each of them. On #272, the first comment fixed the order of the landing steps.
+for each other sentence that gives an order of the same steps. The comment fixes each of them. The search follows
+[the doc-search rule](rules.md#docs). On #272, the first comment fixed the order of the landing steps.
 [The issue check](#the-issue-check) of the agent then found two sentences with the opposite order, in
 [Pick the tickets](pick-the-tickets.md#pick-the-tickets) and in [the re-read rule](doc-reads.md#the-re-read-rule). A
 second comment fixed them.

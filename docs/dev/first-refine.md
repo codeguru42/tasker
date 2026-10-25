@@ -410,8 +410,8 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   form "If X, Y" in the first refine. The simple-english skill bans "would". A plan that only drops the word loses the
   condition. On #365, this happened.
 - A search or a check command of the plan, for example a `grep` count or a claim that a doc does not hold some words, is
-  a fact of [the fact test](plan-review.md#the-fact-test). The search follows [the doc-search rule](rules.md#docs).
-  Before `tasker approve`, the agent runs it on each form of the words, for example `--opt=value` next to `--opt value`.
+  a fact of [the fact test](plan-review.md#the-fact-test). Before `tasker approve`, the agent runs it on each form of
+  the words, for example `--opt=value` next to `--opt value`. The search follows [the doc-search rule](rules.md#docs).
   On #392, a pattern of plan v2 needed a space before `$HOME`, and it counted 2 on the correct line. Refine 2 fixed it.
   On #388, plan v1 searched only for "the bullet before it" and missed "the bullet before this one" in
   `docs/dev/planner.md`. The issue check found it with `grep -n -E 'the bullet before (this one|it)'`. On #383, a search
@@ -587,8 +587,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Make sure that each numbered list still renders. An edit can join two items on one line. In a ticket that removes the
   last sentence of a list item, ask the plan to keep the line break of the item. The execute session removes the line
   break with the sentence, and two items then sit on one line. Ask the plan to search the result for a step number after
-  a period, for example with `grep -n -E "[^0-9][.] ?[0-9]+[.] "`. The search follows
-  [the doc-search rule](rules.md#docs). On #266, this cost one review loop.
+  a period, for example with `grep -n -E "[^0-9][.] ?[0-9]+[.] "`. On #266, this cost one review loop. The search
+  follows [the doc-search rule](rules.md#docs).
 - A fenced code block at column 0 inside a numbered list ends the list. Then `npm run format:check` can fail, for
   example when indented text of the same step follows the block. Indent the block three spaces. On #119, this cost a
   loop.
@@ -683,11 +683,12 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   plan to say when the skip applies. On #192, loop 1 found that the words "gives the next step" can send the agent past
   the refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket).
 - If a rule adds a new path to an existing step, ask the plan to search the whole paragraph of that step for the words
-  of the old path. The search follows [the doc-search rule](rules.md#docs). Ask it to fix each such sentence in one
-  commit. On #198, three review loops found the words "in an answer", "that sends the answer" and "a comment of the
-  orchestrator" one sentence at a time. The same search applies when a ticket turns some statements into "not a claim":
-  ask the plan to scope each later sentence of the same paragraph that names an output or a claim. On #393, review 1
-  found the measure sentence of [the issue check](plan-review.md#the-issue-check), and it cost one loop.
+  of the old path. Ask it to fix each such sentence in one commit. The search follows
+  [the doc-search rule](rules.md#docs). On #198, three review loops found the words "in an answer", "that sends the
+  answer" and "a comment of the orchestrator" one sentence at a time. The same search applies when a ticket turns some
+  statements into "not a claim": ask the plan to scope each later sentence of the same paragraph that names an output or
+  a claim. On #393, review 1 found the measure sentence of [the issue check](plan-review.md#the-issue-check), and it
+  cost one loop.
 - If a rule lets the user choose to skip a ban, for example with the answer "start now", ask the plan to say which rule
   wins in each case that the rule covers. Cover a task of the same milestone and a task of another milestone. On #145,
   review 1 found this gap.
@@ -828,11 +829,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   [the notice rule](doc-reads.md#the-notice-rule). After the move of that section, the file name changes, and the
   section name stays. On #322, the section name was swapped, and #324 fixed the same sample again.
 - For the proof of a move, ask the plan to undo each expected link change with a `sed` pass. Run the pass on both the
-  old text and the new text. The search follows [the doc-search rule](rules.md#docs). A `sed` pass edits one line at a
-  time. Prettier keeps each link on one line, so the pass still finds each link. But a changed link can move the line
-  breaks of its paragraph. So compare the two outputs of the pass with `git diff --no-index --word-diff=porcelain`. This
-  diff shows no word change for a moved line break. The diff then shows only the real differences. The agents of #322,
-  #323 and #324 used this proof.
+  old text and the new text. A `sed` pass edits one line at a time. Prettier keeps each link on one line, so the pass
+  still finds each link, as [the doc-search rule](rules.md#docs) says. But a changed link can move the line breaks of
+  its paragraph. So compare the two outputs of the pass with `git diff --no-index --word-diff=porcelain`. Apart from the
+  two header lines, a moved line break gives no line that starts with `-` or `+` in this diff. As a result, these lines
+  show only the real differences. The agents of #322, #323 and #324 used this proof.
 - If a hint keeps an old list item as its own sentence, first make sure that no kept rule of the page already says the
   same thing. Otherwise the kept sentence repeats that rule. On #338, a hint kept the fourth case of
   [the stop rule](plan-review.md#the-stop-rule) as its own sentence, and the sentence repeated the message bullet of
