@@ -48,11 +48,12 @@ The pre-release tag stays local and never goes to GitHub.
 - Without a `files` list, npm leaves out each path of `.gitignore`. `dist/` is in `.gitignore`, so `package.json` has a `files` list.
 - `npm pack` first deletes `dist/` and then runs `npm run build`, through the `prepack` script. As a result, `dist/` holds only the build of the commit that is checked out.
 - `npm install -g` of a package file copies the files into the global folder of npm. A later change of the clone does not change the installed `tasker`.
+- An agent can test a review finding that says that npm changes a version with `npm install <tarball>` in a scratch folder, with no `-g`. A global install replaces the installed tasker. On #395, the agent dismissed finding 1 of review 1 after such a test.
 
 Measured on 2026-10-24 with npm 11.19.0 and GNU date:
 
 - `npm publish --dry-run` refuses `20261019.0100` and `20261019.010000-c0c0d1a5` with `npm error Invalid version`. It accepts `2026.1.5`.
 - `date -u +%Y.%-m.%-d` prints the date with no leading zeros, for example `2026.10.24`.
 - On a clone of tasker, `npm version 2026.10.24 --tag-version-prefix= -m "chore: Release %s"` changes only the three `version` fields in `package.json` and `package-lock.json`. It makes one commit with the subject `chore: Release 2026.10.24` and an annotated tag `2026.10.24`. The working tree stays clean.
-- `npm pkg set version=<value>`, `npm pack` and `npm install -g` keep `2026.10.23-c0c0d1a5` and `2026.10.23-0123456` exactly as written. Only `npm publish` changes a leading zero in a number part of a pre-release (`2026.10.19-0123456` becomes `2026.10.19-123456`), and a pre-release never goes to the registry.
+- `npm pkg set version=<value>`, `npm pack` and `npm install -g` keep `2026.10.23-c0c0d1a5` and `2026.10.23-0123456` exactly as written. They also keep a version that is not semver exactly as written, for example `v2026.10.24`, `2026.01.05` and `wip` (#395). Only `npm publish` changes a leading zero in a number part of a pre-release (`2026.10.19-0123456` becomes `2026.10.19-123456`), and a pre-release never goes to the registry.
 - semver sorts a pre-release before the stable release of the same day: `2026.10.23-c0c0d1a5 < 2026.10.23`.
