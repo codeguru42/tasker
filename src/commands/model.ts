@@ -5,7 +5,7 @@ import { setRoleModel, setSessionRoleModel } from "../config/edit.js";
 import { loadConfigFile, parseConfigText } from "../config/load.js";
 import {
   ASSISTANT_ROLES,
-  EFFORTS,
+  SESSION_EFFORTS,
   SESSION_ROLES,
   type Config,
   type RepoConfig,
@@ -23,7 +23,7 @@ const ROLES: readonly Role[] = [...ASSISTANT_ROLES, ...SESSION_ROLES];
 interface ModelOptions {
   role?: Role;
   repo?: string;
-  effort?: (typeof EFFORTS)[number];
+  effort?: (typeof SESSION_EFFORTS)[number];
 }
 
 const NEW_SESSIONS_NOTE =
@@ -75,7 +75,11 @@ export const model: RegisterCommand = (program, io) => {
       ).choices(ROLES),
     )
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
-    .addOption(new Option("--effort <effort>", "The new effort of the role").choices(EFFORTS))
+    .addOption(
+      new Option("--effort <effort>", "The new effort of the role. xhigh and max are for a session role only").choices(
+        SESSION_EFFORTS,
+      ),
+    )
     .action((issue: string, newModel: string | undefined, options: ModelOptions) => {
       const { role, effort } = options;
       const set = newModel !== undefined || effort !== undefined;
@@ -87,6 +91,11 @@ export const model: RegisterCommand = (program, io) => {
           io.stdout(lineOf(config.repos[repoKey], each));
         }
         return;
+      }
+      if (isSessionRole(role) && config.repos[repoKey].sessions.models[role] === undefined) {
+        if (newModel === undefined || effort === undefined) {
+          fail(io, `the role ${role} has no entry: give the model and --effort`);
+        }
       }
       const change = { model: newModel, effort };
       const next = isSessionRole(role)
