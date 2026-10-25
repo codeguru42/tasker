@@ -19,3 +19,22 @@ export function isInside(path: string, folder: string): boolean {
   const rel = relative(folder, path);
   return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
 }
+
+// The real path of the deepest part of an absolute path that exists, plus the rest of the path. A
+// symlink in the part that exists is resolved, and .. in the rest is resolved as text, because a
+// missing folder is no symlink. It uses the native realpath, because the JS one resolves .. as text
+// before it follows a symlink.
+export function deepestRealPath(path: string): string {
+  if (!isAbsolute(path)) throw new Error("the path is not absolute");
+  let head = path;
+  const rest: string[] = [];
+  for (;;) {
+    try {
+      return join(realpathSync.native(head), ...rest);
+    } catch (error) {
+      if (errnoCode(error) !== "ENOENT" || dirname(head) === head) throw error;
+      rest.unshift(basename(head));
+      head = dirname(head);
+    }
+  }
+}
