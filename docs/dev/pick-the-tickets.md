@@ -540,8 +540,28 @@ The orchestrator writes the prompt of each agent.
   project board (see ["Limits"](limits.md#limits)). In one case, a strong "never run a gh write" line in the prompt of
   an agent made the classifier of auto mode block the comment of step 11 (see
   [the tool-block rule](tasker-commands.md#the-tool-block-rule)).
-- For all the rules, the prompt points to [the orchestration pages](../orchestrator.md) and to the docs that `AGENTS.md`
-  names. No other base prompt exists.
+- For all the rules, the prompt names the docs of this list, "the base list". The base list is the same for the agent of
+  each milestone:
+
+  - `AGENTS.md`
+  - `docs/orchestrator.md` and the pages of its list "The pages". These are
+    [the orchestration pages](../orchestrator.md).
+  - `docs/sessions.md`
+  - `docs/dev/rules.md`
+  - `docs/dev/first-refine.md`
+  - `docs/dev/rebase-conflicts.md`
+  - `docs/dev/working-with-the-user.md`
+
+  The prompt also names each doc that the ticket changes, for example `docs/dev/planner.md`. These are:
+
+  - Each doc that the Requirements section or the Docs section of the issue asks to change.
+  - Each doc that a hint of the orchestrator for the first refine asks the ticket to change.
+  - Each file under `skills/` that the Requirements section, the Docs section or a hint for the first refine asks the
+    ticket to change.
+
+  For each other doc, [the intro of `AGENTS.md`](../../AGENTS.md) gives the rule. The reason for the base list:
+  `AGENTS.md` links each doc under `docs/`, so the old words named all of them. No other base prompt exists.
+
 - When the orchestrator learns a new rule for agents, it does not put the rule only in a prompt. It sends the rule to
   the planner, as the planner bullet of this section says. A rule that only one ticket needs can also go in the prompt
   of that ticket.
