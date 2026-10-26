@@ -23,7 +23,8 @@ session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-re
 - [docs/statemachine.md](docs/statemachine.md): the task states, the rules of the edges, the main lifecycle, the plan,
   build, work review and landing sections, the pauses, the failure and retry targets, update branch and the demotion
   rules.
-- [docs/dev/data-root.md](docs/dev/data-root.md): the folders and the database.
+- [docs/dev/data-root.md](docs/dev/data-root.md): the folders, the database and the rule that code reads no event as
+  data.
 - [docs/dev/version-control.md](docs/dev/version-control.md): the git code: the git boundary, how tasker uses git, the
   git environment, provision, the ssh key, the push guard, publish and land, the doctor checks and the repo slug.
 - [docs/dev/doctor.md](docs/dev/doctor.md): the code that all doctor checks share: the timeout rules and the signal
