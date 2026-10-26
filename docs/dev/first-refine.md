@@ -23,12 +23,17 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 ## All tickets
 
 - Name the shared test helpers of `test/helpers/` that the tests must use, and ask the plan to make each test call them.
-  A local helper in a test file can call a shared helper, for example to fix the arguments of one `describe` block. It
-  must not repeat the steps of the shared helper, for example a call of the same store function with its own default
-  values. The review counts such a local helper as a copy (#127). A key of a change object that names the case of the
-  test is not a repeated default, for example `failingCommand: null` for a failed run. On #220, a first refine read the
-  ban on a repeat of the steps of the shared helper too widely. The fix cost an extra refine. Before a ticket adds a
-  second test file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
+  Name the error helper of `test/helpers/errors.ts` that fits the code under test. For the `issues` list of a
+  `ConfigError` that a sync function throws, name `configIssuesOf()`. For another error of a sync function, name
+  `thrownBy()`. For the error that a promise rejects with (for example the promise that an async function returns), name
+  `failureOf()`. The reason: `failureOf()` takes a promise, not a function. On #541 (2026-10-25), plan v1 picked
+  `failureOf()` for the sync function `adfToText()`, and the first refine asked for `thrownBy()`. A local helper in a
+  test file can call a shared helper, for example to fix the arguments of one `describe` block. It must not repeat the
+  steps of the shared helper, for example a call of the same store function with its own default values. The review
+  counts such a local helper as a copy (#127). A key of a change object that names the case of the test is not a
+  repeated default, for example `failingCommand: null` for a failed run. On #220, a first refine read the ban on a
+  repeat of the steps of the shared helper too widely. The fix cost an extra refine. Before a ticket adds a second test
+  file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
 - Ask the plan for the side effects of each fix before `tasker approve`. A fix can cause a new finding about its own
   side effect.
 - If a ticket adds a small exported helper, ask the plan for each place that does the same job
