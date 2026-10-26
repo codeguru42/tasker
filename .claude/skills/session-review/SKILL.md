@@ -19,7 +19,7 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 2. Before the first write, read the memory index and each memory file. Then do two checks. The staleness check covers each existing entry: does each file, function or flag that it names still exist, and did a later decision of this session replace it? The duplicate check covers each new candidate: does an existing entry already hold it?
 3. Write each new candidate to memory. Follow the memory rules of the system prompt of the session: the types, the frontmatter, the line in the index and the list of what not to save.
 4. Update or remove each entry that step 2 found stale, wrong or duplicated.
-5. If a candidate belongs in a tracked doc of the repo, make a proposal. A proposal names the file and the change. Find the docs of the repo from the index in `AGENTS.md`. Send each proposal to the target that these docs give for the role of the session. If the docs give no target for the role of the session, give each proposal to the user in the reply.
+5. If a candidate belongs in a tracked doc of the repo, make a proposal. A proposal names the file and the change. Find the docs of the repo from the index in `AGENTS.md`. Send each proposal to the target that these docs give for the role of the session. If the docs give no target for the role of the session, give each proposal to the user in the reply. For a recurrence, follow [A recurrence](../../../docs/dev/issues.md#a-recurrence) of `docs/dev/issues.md`.
 6. Report a short summary: the memory entries that the session made, changed or removed, and each proposal with its target.
 
 ## Rules
