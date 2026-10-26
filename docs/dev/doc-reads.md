@@ -83,6 +83,77 @@ Each orchestrator has its own docs of the orchestrator, because each prompt name
 
 The re-read rule and the notice rule do not cover the agents. Each new agent reads the docs when it starts.
 
+## The agent notice
+
+After a landing, the orchestrator tells each agent in flight which sections of its docs changed. On #486, #444 landed
+while #486 ran and changed the order of the same-patch reads before `tasker update-branch`. The agent of #486 read the
+diff of the docs on its own, with no rule that asked it to.
+
+The docs of an agent are the docs that its prompt names for all the rules and for the change of its ticket, as
+[The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) of `docs/dev/pick-the-tickets.md` says. These are
+the docs of "[the base list](pick-the-tickets.md#the-prompt-of-an-agent)" and each file that the prompt names because
+the ticket changes it. Such a file can be under `skills/`.
+
+A file that the prompt names for another reason, for example as the source of a fact of a hint, is not a doc of the
+agent. Each agent has its own docs, because each prompt names its own docs. The orchestrator takes the docs of an agent
+from the prompt that it wrote for that agent.
+
+An agent in flight is an agent of the orchestrator from its start until its
+[final report](run-one-ticket.md#the-final-report) arrives. The term "running" of ["Terms"](quota.md#terms) in
+`docs/dev/quota.md` keeps its own meaning. An agent in flight can be running or ended in the meaning of that page.
+
+The agent notice covers each landing of a ticket of the orchestrator. The steps of the orchestrator come right after the
+steps of [the notice rule](#the-notice-rule), as [Land the work](land-the-work.md#land-the-work) says.
+
+1. When the final report of the agent says that the ticket landed, the orchestrator reads the files that landed in that
+   report.
+2. If no file of the report is a doc of an agent in flight, the orchestrator sends no agent notice for that landing.
+3. Otherwise, the orchestrator sends one message with `SendMessage` to each agent in flight that has a file of the
+   report among its docs. The message is the agent notice. It names the landed commit and each changed section of each
+   doc of that agent, from the same report.
+
+   For example: Landed `<commit>` on `main`. `docs/dev/run-one-ticket.md` changed in "The diff read", and
+   `docs/dev/review-findings.md` changed in "Review findings".
+
+When the orchestrator gets a notice of the notice rule from another orchestrator, it sends an agent notice too. It sends
+it to each agent in flight that has a doc of the notice among its docs. The agent notice names each section of the
+notice that is in a doc of that agent. If no section of the notice is in a doc of an agent in flight, the orchestrator
+sends no agent notice.
+
+The agent notice does not depend on [the re-read rule](#the-re-read-rule). If the re-read rule fails at this landing,
+the orchestrator still sends the agent notice. [The failure rule](limits.md#the-failure-rule) of `docs/dev/limits.md`
+applies, as the re-read rule says.
+
+When an agent gets an agent notice, it reads each named doc again, as [the doc-read rule](#the-doc-read-rule) says. It
+does this before its next command or tool call of its work. From then on, the agent follows the new text of the named
+sections. A step that the agent already did stays done.
+
+If the agent runs a long `tasker` command in the background, the read comes after the end of that command.
+
+An agent can wait in a loop that reads a state. Examples are the "To wait" bullet of "Land the work",
+[the CI wait](ci-wait.md#the-ci-wait) of `docs/dev/ci-wait.md` and the wait bullet of
+[the command rules](tasker-commands.md#the-command-rules) of `docs/dev/tasker-commands.md`. Such an agent reads the
+named docs again before its next read of the state. The limit of the wait does not change.
+
+An agent can also wait with its turn ended. Examples are a wait for an answer under
+[the answer-wait rule](limits.md#the-answer-wait-rule) of `docs/dev/limits.md`, and a wait in `quota_blocked` or
+`interrupted`, as ["What the agent does"](quota.md#what-the-agent-does) of `docs/dev/quota.md` says. Such an agent reads
+the named docs again. Then it ends its turn with an [interim final answer](limits.md#the-answer-wait-rule). It sends no
+`SendMessage` and does not repeat its question or its report.
+
+The first line of that interim final answer says that the answer is not the final report and names what the agent still
+waits for. The orchestrator treats it as no answer and no next step, and the wait does not change. For the orchestrator,
+each read that a rule gives after a report of an agent still applies.
+
+If the fetch of the doc-read rule fails, an agent that does not wait stops and reports the error. The doc-read rule says
+this for an agent. An agent that waits gives the error in its interim final answer, or in its next report, and keeps its
+wait.
+
+If a message of the orchestrator fails, the failure rule of `docs/dev/limits.md` applies, and the orchestrator continues
+its work. The orchestrator sends no second agent notice for that landing. The agent notice needs no answer.
+
+The agent notice is information. The agent takes each rule from the doc, not from the agent notice.
+
 ## The doc-read rule
 
 The local clone holds the checkout of the user, for example a commit of a pre-release. The docs of the orchestration
