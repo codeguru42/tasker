@@ -1169,4 +1169,5 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a hint asks the plan for one sentence that covers the facts of two bullets, the hint also names the place of that
   sentence. An example of a place is "at the end of the second bullet". Without the place, the plan makes a design
   choice, and the agent stops under the second case of [the stop rule](plan-review.md#the-stop-rule). On #310, plan v2
-  chose the end of the second bullet, and the question of that place cost one stop before `tasker approve`.
+  chose the end of the second bullet, and the question of that place cost one stop before `tasker approve`. See
+  [the bullet that starts "An issue that adds a bullet to a section"](planner.md#the-body-of-an-issue).
