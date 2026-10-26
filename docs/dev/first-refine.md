@@ -405,6 +405,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   the dismissal says that the move breaks the pointer. On #488 (2026-10-25), the end of the hint that starts "The agent
   of a stacked task runs" kept the pointer "both cases" true. Review 1 asked to move the text, and the agent dismissed
   the finding.
+- A doc can give the lines of an item in order with "Then" bullets. Before a ticket adds a rule to such a list, the
+  first refine asks the plan to keep each new rule out of the middle of that order, for example after the last line of
+  the order, as #468 did. On #468 (2026-10-25), the diff read caught new bullets in the middle of "The form of an item"
+  of `docs/dev/operator-items.md`, and review 1 did not.
 - If a refine puts a new sentence in the middle of a paragraph, ask the plan to read the sentences around it again. On
   #238, the agent learned this. A new sentence in the middle of a short section can also change what an "it" in the next
   sentence points to. On #244, review 1 found this in "Milestones" of `docs/dev/issues.md`: after the new sentence,
@@ -783,7 +787,10 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   `[^.:]*`. The search follows [the doc-search rule](rules.md#docs). The pattern `[^.]*` misses the lead-in of a list,
   which ends with a colon. On #152, the plan and the agent missed one line this way, and it cost one loop.
 - If a rule takes sentences from one case for a new kind of case, ask the plan whether each borrowed sentence fits the
-  new kind. On #139, a sentence for a false claim let a conflict skip the refine that changes the plan.
+  new kind. On #139, a sentence for a false claim let a conflict skip the refine that changes the plan. A new table row
+  that copies the cells of the row next to it also takes sentences from one case for a new kind of case. Ask the plan
+  whether each copied cell fits the new case. On #468 (2026-10-25), the new row "The operator shows a report" copied the
+  herdr notification of the row for an item that needs an answer, and review 1 found it.
 - If a rule says "use X in place of Y" for a message, say if it means the address or the text of the message. On #143,
   "the issue key in place of the session name" had a reading where the message went to the issue key as an address.
 - A shared failure sentence after a chain of checks names the real stop cases. If one check hands over to the next, the
