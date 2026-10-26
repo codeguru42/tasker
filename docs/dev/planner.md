@@ -197,6 +197,10 @@ that it dismissed. The initial planner posts only after the approval of the user
   `revision` of the `base` event is the base tip, a commit id. The code stores a ref, `refs/remotes/origin/<base>`, and
   resolves it after each fetch. A commit id freezes the base tip. The agent stopped under the fifth case of
   [the stop rule](plan-review.md#the-stop-rule), and the user changed the scope with a comment.
+- An issue that stores a value that code reads back puts the value in a column. As
+  [the rule of the `events` table](data-root.md#events-table) in `docs/dev/data-root.md` says. On #391 (2026-10-25), a
+  revision of the body kept the [parent](pick-the-tickets.md#the-stacked-ticket-rule) tip in the `workspace` and `base`
+  events. The user changed it to a column.
 - An issue can give a table of cases. Before the post, the planner reads each table of cases of the issue. It makes sure
   that no two rows match the same case. If two rows still match one case, the issue names the row that wins. On #346
   (2026-10-18), the rows "Diverged, no commit only on origin" and "Diverged, local work at risk" of the sync table both
