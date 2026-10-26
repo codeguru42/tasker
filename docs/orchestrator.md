@@ -40,7 +40,7 @@ Every `tasker` command on [the orchestration pages](orchestrator.md) is the inst
 the PATH from a global install. The installed `tasker` is a build of this repo, from a version that can be older than
 `main`. For this reason, `skills/tasker/SKILL.md` does not list its commands (see
 [The installed skill](dev/rules.md#the-installed-skill)). See the install bullet of [Limits](dev/limits.md#limits) in
-`docs/dev/limits.md`. For the facts of the earlier implementation of tasker, see
+`docs/dev/limits.md`. For the known behaviors of the installed `tasker`, see
 [the facts of the installed tasker](dev/tasker-commands.md#the-facts-of-the-installed-tasker).
 
 The start docs of the orchestrator are `docs/orchestrator.md`, the pages of the list "The pages" below and
