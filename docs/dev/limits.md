@@ -14,6 +14,9 @@ These limits apply to the orchestrator and to the agents, except where a bullet 
   agent runs `git log` or `git show` on `tasker/<task branch>`. For a diff of the task, the agent uses the command with
   three dots of [the diff read](run-one-ticket.md#the-diff-read). If a command fails, the agent
   [stops](#the-answer-wait-rule) and reports the error. Nothing changes.
+- If a `git fetch` of an agent fails, also after a `timeout` (exit code 124), and its step gives no failure path, the
+  agent runs the fetch one more time. If the fetch fails again, the agent [stops](#the-answer-wait-rule) and reports the
+  command and the error. A step that gives its own failure path keeps it.
 - A new worktree has no `node_modules`, and the local clone can have none. The task worktree lives long, and an update
   can change `package-lock.json`. The agent runs `npm ci` in the task worktree when the worktree has no `node_modules`.
   The agent does this before each npm script and each test that it runs there. Examples are `npm run check`,
