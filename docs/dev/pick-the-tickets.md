@@ -57,17 +57,23 @@ The orchestrator does all the steps of this section.
   [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says.
 - Run at most 3 agents at the same time, one ticket for each agent.
 - Do not run two tickets at the same time when both edit the same shared file, for example a file under `test/helpers/`
-  or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. This bullet and
-  [the link offer](#the-link-offer) count two kinds of files of a ticket before its start: the files that the issue
-  names, and each file that a hint of the orchestrator for the first refine asks the ticket to change. Examples are
-  `AGENTS.md` for the index entry of a page and `docs/orchestrator.md` for the list "The pages". On 2026-10-19, the
-  orchestrator gave #339 and #314 a hint to change their index entries in `AGENTS.md` and in the list "The pages", and
-  #382 already changed `AGENTS.md`. As a result, the three tickets shared files, and the orchestrator had to set the
-  landing order #382, #314, #339. If a ticket can start except for this bullet, because it shares a file with a task in
-  flight of the same milestone, [the link offer](#the-link-offer) applies. This bullet covers two tickets of the
-  milestone of the orchestrator. For a task in flight of another milestone,
-  [the overlap rule](land-the-work.md#the-overlap-rule) applies instead. For a stacked ticket and its parent,
-  [the stacking rule](#the-stacking-rule) wins.
+  or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. In this bullet, to change a file
+  also means to add, move or delete it. This bullet and [the link offer](#the-link-offer) count two kinds of files of a
+  ticket before its start: the files that the Requirements section or the Docs section of the issue asks to change, and
+  each file that a hint of the orchestrator for the first refine asks the ticket to change. Examples are `AGENTS.md` for
+  the index entry of a page and `docs/orchestrator.md` for the list "The pages". On 2026-10-19, the orchestrator gave
+  #339 and #314 a hint to change their index entries in `AGENTS.md` and in the list "The pages", and #382 already
+  changed `AGENTS.md`. As a result, the three tickets shared files, and the orchestrator had to set the landing order
+  #382, #314, #339. Each other file that the issue names does not count. Examples are a file that the issue names only
+  as the target of a link, as context or in its Out of scope section. The orchestrator judges whether an item of the
+  Requirements section or the Docs section asks to change a file. The judgment of the orchestrator is open on purpose.
+  On 2026-10-25, #554 and #489 gave examples of a file that an issue names but does not change: #554 named
+  `docs/dev/pick-the-tickets.md` only as context and as the target of a link, and #489 named three docs only as context,
+  as the target of a link or in its Out of scope section and changed only `docs/dev/planner.md`. If a ticket can start
+  except for this bullet, because it shares a file with a task in flight of the same milestone,
+  [the link offer](#the-link-offer) applies. This bullet covers two tickets of the milestone of the orchestrator. For a
+  task in flight of another milestone, [the overlap rule](land-the-work.md#the-overlap-rule) applies instead. For a
+  stacked ticket and its parent, [the stacking rule](#the-stacking-rule) wins.
 - The move rule: a moving ticket is a ticket that moves or splits a whole shared file, for example the split of
   `test/helpers.ts` into the folder `test/helpers/` on #140. The orchestrator starts a moving ticket only after each
   task in flight that changes that file has landed. This rule covers the tasks of every milestone, except a parked task
