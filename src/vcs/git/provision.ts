@@ -114,8 +114,9 @@ function writeIncludeFile(clone: string, sshKey: string | undefined): void {
 }
 
 // Makes the local lines of key in the clone match value: one line with value, or no line when
-// value is undefined. It writes only when the lines differ. A read takes no config.lock, and a
-// live sandboxed run holds a config.lock placeholder in the clone, so a write fails then.
+// value is undefined. It writes only when the lines differ. A read takes no config.lock, and
+// another holder of config.lock in the clone makes a write fail, for example a git config that
+// a person runs or a config.lock that a crashed git process left.
 async function syncConfig(
   clone: string,
   key: string,

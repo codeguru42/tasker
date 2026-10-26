@@ -174,7 +174,7 @@ describe("provisionClone", () => {
     }
   }
 
-  // The empty, read-only config.lock that a live sandboxed run holds in the clone.
+  // The empty, read-only config.lock that a crashed git process left in the clone.
   function holdConfigLock(): void {
     writeFileSync(join(clone, "config.lock"), "", { mode: 0o444 });
   }
