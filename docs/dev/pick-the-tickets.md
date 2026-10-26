@@ -492,11 +492,14 @@ The orchestrator writes the prompt of each agent.
     `git -C <local clone> grep -n -w -F -e '<name>' <hash>`, and reads each hit.
 
   If the base does not hold the fact, the prompt drops the fact, or it names the ticket that adds the fact. That ticket
-  is this ticket, or a ticket in flight by its issue key. A missing file is such a case. `git show` then prints
-  `fatal: path '<path>' does not exist in '<hash>'`, and that is an answer, not a failure. A search with no hit is such
-  a case too: `git grep` exits with 1. If the fetch or the read of the hash fails, or a command fails in another way,
-  [the failure rule](limits.md#the-failure-rule) applies. Then the prompt drops the fact. On #539 (2026-10-25), a hint
-  named a resolve of `TASKER_GH_BIN` in `src/issues/github/run.ts`, and the base held no such name.
+  is this ticket, or a ticket in flight by its issue key. A missing file is such a case. `git show` then exits with 128
+  and prints one of the two texts of [the doc-read rule](doc-reads.md#the-doc-read-rule), and that is an answer, not a
+  failure. The error text decides the answer, not the exit code. Another error of `git show` also exits with 128, and
+  that error is a failure. The two texts are an answer because the read of the hash in the step before already found the
+  commit. A search with no hit is such a case too: `git grep` exits with 1. If the fetch or the read of the hash fails,
+  or a command fails in another way, [the failure rule](limits.md#the-failure-rule) applies. Then the prompt drops the
+  fact. On #539 (2026-10-25), a hint named a resolve of `TASKER_GH_BIN` in `src/issues/github/run.ts`, and the base held
+  no such name.
 
 - If the account of the orchestrator posted comments on the issue of the agent that start with `## Change of scope` or
   `## Design gap`, the prompt links each one. If the issue has no such comment, the prompt does not mention these
