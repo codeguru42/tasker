@@ -504,14 +504,14 @@ The orchestrator writes the prompt of each agent.
 - When the orchestrator learns a new rule for agents, it does not put the rule only in a prompt. It sends the rule to
   the planner, as the planner bullet of this section says. A rule that only one ticket needs can also go in the prompt
   of that ticket.
-- The planner bullet: the orchestrator sends each lesson of a final report, each finding of a session review and each
-  proposed issue only to `planner-<slug>` of its own slug, with `SendMessage`.
+- The planner bullet: the orchestrator sends each lesson of a final report, each finding of a session review, each
+  recurrence and each proposed issue only to `planner-<slug>` of its own slug, with `SendMessage`.
   [Working with the user](planner.md#working-with-the-user) of planner.md names that session, and
   [sessions.md](../sessions.md) defines the slug. The message gives the lesson, the ticket, the date, and the doc and
-  the section that the lesson fits. The planner drafts and posts the issue, as
-  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
-  files no issue itself. The one exception is the issue of step 1 of [A failed CI run](ci-wait.md#a-failed-ci-run),
-  which the orchestrator files itself. If `SendMessage` fails, for example because no planner runs, the orchestrator
-  sends the lesson to `operator-<slug>` as an item. A refused message counts as a failed `SendMessage`. The orchestrator
-  waits for no answer from the planner. A missing answer is out of scope. On 2026-10-17 and 2026-10-18, the user asked
-  the Docs orchestrator to delegate each issue draft to the planner.
+  the section that the lesson fits. For a recurrence, the message also names the open issue. The planner drafts and
+  posts the issue, as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The
+  orchestrator drafts and files no issue itself. The one exception is the issue of step 1 of
+  [A failed CI run](ci-wait.md#a-failed-ci-run), which the orchestrator files itself. If `SendMessage` fails, for
+  example because no planner runs, the orchestrator sends the lesson to `operator-<slug>` as an item. A refused message
+  counts as a failed `SendMessage`. The orchestrator waits for no answer from the planner. A missing answer is out of
+  scope. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue draft to the planner.
