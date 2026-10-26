@@ -21,21 +21,35 @@ The old orchestrator counts the landings of its session. Each of these also coun
 - A new issue that the user asks the old orchestrator to send for drafting
 - A decision of the user that takes several question rounds
 
+An event adds to the count before any other step of that event. For a landing, the final report of the agent brings the
+count to 12 before the steps of the bullet "When the final report of the agent of a ticket says that the ticket landed"
+of [Land the work](land-the-work.md#land-the-work). So the read of the board of that landing starts no new ticket. For a
+decision of the user that takes several question rounds, the answer of the user that ends the decision brings the count
+up.
+
 At a count of 12, the old orchestrator suggests a handoff to the user in its report of that landing. The report of a
 landing (a landing report) is the reply in which the old orchestrator tells the user that a ticket landed. If a counted
 event that is not a landing brings the count to 12, the old orchestrator suggests a handoff in a later reply. That reply
 is its next reply to the user that does not answer a question of the user, for example the next landing report.
 
-After the suggestion of a handoff, the old orchestrator starts no new ticket. A new ticket is a ticket with no task yet.
-The start of a stacked ticket is also the start of a new ticket. The tasks in flight continue. A quota resume and a
-retry of a task in flight are not a new ticket.
+From the count of 12, the old orchestrator starts no new ticket. A new ticket is a ticket with no task yet. The start of
+a stacked ticket is also the start of a new ticket. The tasks in flight continue. A quota resume and a retry of a task
+in flight are not a new ticket.
 
-The ban on a new ticket starts with the reply or the item that holds the suggestion. It holds until the start of the
-handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. From the start, step 1 of
+Below the count of 12, no ban holds. From the count of 12, the ban holds also before the suggestion of a handoff. The
+suggestion can come in a reply, as the paragraph that starts "At a count of 12" says. It can also come in an item to the
+operator, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
+
+The ban on a new ticket holds until the start of the handoff, as
+[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. From the start, step 1 of
 [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) and the paragraph after the steps hold. The
 reason for this ban: each task in flight must land before the handoff file, as step 2 of "The steps of the old
 orchestrator" says. So a new ticket delays the handoff. On 2026-10-25, orchestrator-docs sent the suggestion at the
 landing count of 12 and started no new ticket until the go.
+
+The reason that the ban starts at the count of 12: the steps of a landing can read the board before the landing report
+goes out. So a ban that starts with the reply comes too late. On 2026-10-25, review 1 of #530 found that the landing of
+count 12 can start a new ticket before its landing report.
 
 In a new session after a handoff, the count starts again at 0.
 
