@@ -106,12 +106,11 @@ The table of node types follows. The reason: the plan session needs the words of
 | Each other type                        | The join of its children. An unknown node type gives its children and does not fail. |
 
 A value of `attrs` counts only if it is a non-empty string. An `orderedList` starts at `attrs.order` if that is a
-number, else at 1. Each later line of an item has as many spaces before it as the marker is wide, so a nested list stays
-under its item. An item whose text is `""` still gives one line: the marker alone, such as `-` or `2.`. It takes a
-number of an `orderedList`.
+number, else at 1. Each later line of an item has as many spaces before it as the marker is wide. An item whose text is
+`""` still gives one line: the marker alone, such as `-` or `2.`. It takes a number of an `orderedList`.
 
-A node with no `content` array has no children. A child that is not an object gives `""`. At the end, tasker removes the
-white space at the end of each line and the blank lines at the end of the text.
+A node with no `content` array has no children. A child that is not an object gives `""`. At the end, `adfToText()`
+removes the white space at the end of each line and the blank lines at the end of the text.
 
 ## The errors
 
