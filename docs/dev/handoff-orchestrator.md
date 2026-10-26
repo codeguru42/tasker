@@ -36,9 +36,10 @@ From the count of 12, the old orchestrator starts no new ticket. A new ticket is
 a stacked ticket is also the start of a new ticket. The tasks in flight continue. A quota resume and a retry of a task
 in flight are not a new ticket.
 
-Below the count of 12, no ban holds. From the count of 12, the ban holds also before the suggestion of a handoff. The
-suggestion can come in a reply, as the paragraph that starts "At a count of 12" says. It can also come in an item to the
-operator, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
+Below the count of 12, the landing count bans no new ticket. A handoff can start below the count of 12, for example at
+[a request of the user](handoff.md#the-suggestion-of-a-handoff). From the count of 12, the ban holds also before the
+suggestion of a handoff. The suggestion can come in a reply, as the paragraph that starts "At a count of 12" says. It
+can also come in an item to the operator, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
 
 The ban on a new ticket holds until the start of the handoff, as
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. From the start, step 1 of
