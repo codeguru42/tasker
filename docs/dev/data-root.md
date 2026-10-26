@@ -55,7 +55,7 @@ The table is an append-only log. Each event belongs to one task. See
 [Writes from more than one process](#writes-from-more-than-one-process).
 
 - Events are for troubleshooting and audit. Except in the last two cases of this list, code reads no event to decide
-  what to do. Or to get a value that it needs.
+  what to do or to get a value.
 - Each value that code reads back lives in a column of a table. A write of such a value can also copy it into its event,
   for audit.
 - The migration that adds such a column can fill it once from the events. The tasks that exist then keep their values.
