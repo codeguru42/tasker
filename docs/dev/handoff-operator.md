@@ -22,7 +22,10 @@ making a handoff recommendation."
 
 After the start, the old operator does these steps:
 
-1. Start and stop no session.
+1. Start and stop no session. Send each sender of the slug a hold message with `SendMessage`, as
+   [The hold of the items](handoff.md#the-hold-of-the-items) says. Then tell the user one time that the hold stops the
+   items. Name each sender of the slug that holds. Say that the hold ends when the new operator is ready or when the
+   user [ends the hold](handoff.md#the-end-of-the-hold-by-the-user).
 2. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round
    finds nothing new. Send each finding that proposes a change of the docs to `planner-<slug>` with `SendMessage`. The
    orchestrator does the same, as the planner bullet of
@@ -45,10 +48,15 @@ handoff file:
 
 - The prompt names the slug and the session name `operator-<slug>`. The first step of the prompt is a read of
   `AGENTS.md` and `docs/operator.md`. The prompt names no other doc for the start reads. The second step of the prompt
-  is [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).
+  is [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). The third step of the prompt is the
+  ready message of step 5 of [The start of the new operator](#the-start-of-the-new-operator), as
+  [The hold of the items](handoff.md#the-hold-of-the-items) says.
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
 - The kind of each planner, initial or follow-up.
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)).
+- Each sender of the slug that got the hold message, as [The hold of the items](handoff.md#the-hold-of-the-items) says.
+  The new operator sends the ready message to each of these senders in step 5 of
+  [The start of the new operator](#the-start-of-the-new-operator).
 - Each entry of [the tab list](../operator.md) of the old operator. So the file holds the tabs that the old operator
   started and the tabs that it took over.
 
@@ -65,6 +73,9 @@ The new operator starts in these steps:
    holds its cases and its failure case.
 4. The new operator keeps the open items of the file as its list of [the open items](operator-items.md#the-open-items).
    It also keeps each entry of the tab list of the file. These entries start the tab list of the new operator.
+5. The new operator sends a ready message with `SendMessage` to each sender that the handoff file names.
+   [The hold of the items](handoff.md#the-hold-of-the-items) gives the rules of the ready message. If the file names no
+   sender, the new operator sends no ready message.
 
 The new operator closes a tab of an earlier operator only as [Stop a session](operator-start.md#stop-a-session) says.
 The tab list gives the tab id of that tab.
