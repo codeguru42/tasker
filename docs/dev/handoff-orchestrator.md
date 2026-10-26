@@ -13,6 +13,56 @@ The rules of this page cover only a long-running orchestrator. An orchestrator o
 Todo column of its milestone is empty, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The rules of
 this page do not cover it.
 
+A long-running orchestrator also reads the board with one recurring job, the board watch job. A new issue can arrive
+when no ticket of the milestone runs. Then no landing comes, and no read of the board follows. On 2026-10-25,
+orchestrator-docs read the board with a job at minute 7 and minute 37 of each hour.
+
+The description of the CronCreate tool of Claude Code 2.1.310 (read by planner-docs on 2026-10-25) gives these facts:
+
+- A job lives only in its session.
+- A job fires only while the session is idle.
+- A recurring job expires after 7 days. It fires one last time, and then the tool deletes it.
+- CronCreate returns a job id that CronDelete takes.
+- CronList lists the jobs of the session.
+
+The board watch rule has these parts:
+
+- The orchestrator makes the board watch job with CronCreate at the start of its session. On a start from the start
+  prompt, it does this after the first doc read. On a start after a handoff, it does this after the check of the handoff
+  folder, as [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says. The job fires two times each
+  hour, for example with the cron `7,37 * * * *`.
+- The prompt of the job starts with "Board watch:". The rest of the prompt says: read the board, as
+  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
+- When the job fires, the orchestrator reads the board as the prompt says. It starts each ticket that the rules of Pick
+  the tickets allow. The job changes none of these rules.
+- A read by the job is a read of the board. It counts for each rule of Pick the tickets that acts "at its next read of
+  the board" or "each time it reads the board". The priority rule applies to each start of the job. A read by the job is
+  not a landing. As a result, it does not count for a read that a rule ties to a landing. An example is the read of the
+  state of the parent issue in [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule).
+- Each rule that stops a start wins over the job. Examples are the ban of [A failed CI run](ci-wait.md#a-failed-ci-run),
+  a hold of the user and step 1 of [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator). Another
+  example is the ban on a new ticket after the suggestion of a handoff in [The landing count](#the-landing-count). While
+  such a rule holds, the job still fires, and it starts no ticket.
+- The orchestrator has at most one board watch job. It keeps the id of the job and the time of its CronCreate. Before it
+  makes the job, it lists its jobs with CronList. If the list holds the kept id, it makes no second job. A quota job has
+  another id, so it is not a board watch job.
+- The id and the time live from the CronCreate of the job until the orchestrator deletes the job with CronDelete or the
+  job expires. Before the first CronCreate, the orchestrator keeps no id and no time. When the list of CronList does not
+  hold the kept id, the job ended, and the orchestrator drops the id and the time before it makes a new job.
+- If CronList or CronCreate fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator has no
+  board watch job. At each later landing, it tries again, CronList and then CronCreate, until it has a board watch job.
+  With no board watch job, it reads the board at the other moments that the docs give, for example after each landing.
+- When the job fires 6 days or more after the kept time, the orchestrator deletes it with CronDelete. Then it makes a
+  new job, with CronList first. If CronDelete fails, the failure rule applies, and the retry after a failure makes a new
+  job after the old job expires.
+- At the start of a handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says, the
+  orchestrator deletes the job with CronDelete, before step 1 of The steps of the old orchestrator. If CronDelete fails,
+  the failure rule applies. The new orchestrator makes its own job. A session that ends with no handoff loses the job
+  with the session.
+- The board watch job is not a job of [Quota](quota.md#quota). [Delete the job](quota.md#delete-the-job) does not cover
+  it. The step "delete the jobs" of step 2 of The steps of the old orchestrator does not cover it either. The job takes
+  no slot.
+
 ## The landing count
 
 The old orchestrator counts the landings of its session. Each of these also counts as one landing:
