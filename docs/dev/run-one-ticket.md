@@ -237,12 +237,43 @@ task worktree. The agent reads whole files of the task there. Then the agent run
 read, as [the same-patch rule](review-findings.md#review-findings) defines it. After a rewrite of the parent,
 `tasker/<parent branch>` holds the old commits of the parent, and a diff against it shows them too. A diff from the
 start base shows only the work of the task. If the agent holds no start base, the diff read stops. The task branch is on
-the `branch:` line of `tasker show <issue>`. The agent reads the full diff. The agent also searches each test file of
-the diff for a helper name that is defined two times, for example in the test file and in `test/helpers/`. A clean
-review missed such copies on more than one ticket. Such a copy is a duplication. If the agent finds a duplication, a
-fact that the docs lost, or a doc sentence that is false, it adds the work with the add-work rule.
-["Review findings"](review-findings.md#review-findings) limits the number of loops. Right before `tasker accept`, after
-the agent read the diff, the agent fetches again, as [the base rule](#the-base-rule) says:
+the `branch:` line of `tasker show <issue>`. The agent reads the full diff.
+
+If the full diff is too large for one context, the agent can split the read. This choice is open on purpose, and the
+agent makes it. The mechanical files of a commit are the files that the agent names as files with a change of form only.
+Examples of such a change are a format pass and a prose wrap. The machine proof is
+`git diff --word-diff=porcelain <commit>~1 <commit> -- <mechanical files>`. It shows whether the mechanical files change
+a word.
+
+The commits of a split read are the commits of the range of the diff read command, for example
+`git log --format=%H origin/<base branch>..tasker/<task branch>`. For a stacked task, the start base takes the place of
+`origin/<base branch>`. In a split read, the agent reads the diff of each commit itself, with
+`git diff <commit>~1 <commit>`. The one exception is the mechanical files of a commit with the machine proof.
+
+For the mechanical files of a commit, the agent runs the machine proof. An exit code of 0 is a success of the proof.
+Each other exit code is a failed command of the diff read. A changed word is a line of the proof that starts with `-` or
+`+`. The two header lines of each file do not count. If the proof shows a changed word, the agent reads the diff of
+those files itself.
+
+If the proof shows no changed word, the agent starts subagents with the Agent tool. The parts split the output of
+`git diff <commit>~1 <commit> -- <mechanical files>` into ranges of lines with no gap and no overlap. Each subagent
+reads one part, line by line. Each subagent reports the line count of its part and its findings to the agent. The
+reports are part of the own diff read of the agent.
+
+The agent chooses the number of parts and whether the subagents run in parallel. This choice is open on purpose. The sum
+of the line counts of the parts equals the output of `git diff <commit>~1 <commit> -- <mechanical files> | wc -l`. A sum
+that does not match is a failed command of the diff read. The agent applies [the add-work rule](#the-add-work-rule) to
+each finding of a subagent, in the same way as for a finding of the agent.
+
+A split read of this form counts as the full read. The reason: the machine proof shows that no word changes. The
+subagents read each line, and the agent reads each other change itself. On #506, the full diff had 12726 lines. Six
+parallel subagents read the wrap commit, and the agent ran the machine proof.
+
+The agent also searches each test file of the diff for a helper name that is defined two times, for example in the test
+file and in `test/helpers/`. A clean review missed such copies on more than one ticket. Such a copy is a duplication. If
+the agent finds a duplication, a fact that the docs lost, or a doc sentence that is false, it adds the work with the
+add-work rule. ["Review findings"](review-findings.md#review-findings) limits the number of loops. Right before
+`tasker accept`, after the agent read the diff, the agent fetches again, as [the base rule](#the-base-rule) says:
 `git fetch --multiple tasker origin` for a stacked task, and `git fetch origin` for a plain base. Then it runs
 `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. This command uses `origin/<base branch>` one
 time, so it needs no hash read. If the exit code is 0, the task branch contains the tip of the base branch, and the
