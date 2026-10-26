@@ -351,6 +351,11 @@ that it dismissed. The initial planner posts only after the approval of the user
   kind of ticket. Examples:
   - The report of every configuration error in one run, as [rules.md](rules.md#code) says.
   - [The fact test](plan-review.md#the-fact-test) for each fact about an outside tool.
+- An issue can be about a fact of a program of the local machine, for example `herdr` or `claude`. Then the issue body
+  says that the plan session runs no command of that program that reads or changes something outside the worktree (see
+  [the repo-files rule](plan-review.md#the-repo-files-rule)). The reason: the plan session of plan v1 sees only the
+  issue and the repo, and the installed tasker does not block these commands yet. On #557 (2026-10-25), plan v1 ran
+  `herdr --version` and `herdr agent list` before any feedback. Plan v1 of #523 also ran `herdr --version`.
 - An issue body has no dependency text, for example no "Depends on" section. The blocked-by links hold the order.
 - A planned issue gets no priority label when the planner plans it. The blocked-by links hold the order of the work in a
   milestone. Only an issue outside the plan, or a planned issue after a recurrence, gets a priority label. An example of
