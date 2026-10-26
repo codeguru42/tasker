@@ -150,6 +150,10 @@ gives these items:
   that already resolves the conflict, or the answer of the user. If the task branch already held commits at the issue
   check, also the files that the agent read from the base commit and how. The bullet also gives each claim that the
   agent cannot test, because the issue names no ticket and no date for an output of the installed tasker.
+- Each fact of `docs/dev/tasker-commands.md` that names the installed tasker, that the ticket depends on, and that the
+  agent cannot test (see [the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). For
+  each such fact, the bullet gives the fact and the reason that the agent cannot test it. The bullet covers only a fact
+  that the issue does not state. The bullet of the issue check covers a fact that the issue states.
 - Each task worktree or local task branch that stays, with its path.
   [The own-worktree rule](limits.md#the-own-worktree-rule) says when one stays.
 - The lessons.
