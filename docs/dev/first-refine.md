@@ -1116,7 +1116,19 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   prints a `diff --git` line, the lines that start with `-` or `+` decide, as the hint says. If no such line exists, the
   proof also succeeds. If it exits with 1 and prints no `diff --git` line, a path is wrong. Then the agent fixes the
   path and runs the diff again. Other exit codes are out of scope. The final report of #506 named the exit code 1 of a
-  moved line break. planner-docs measured the three results with git 2.47.3 on 2026-10-25.
+  moved line break. planner-docs measured the three results with git 2.47.3 on 2026-10-25. A `sed -n` call with more
+  than one range prints the lines in the order of the file, so it cannot reorder them. An `awk` step can reorder whole
+  lines. If the move changes the order of the text, ask the plan to reorder the old text with an `awk` step before the
+  word diff. The `awk` step moves whole lines. So if a moved sentence starts or ends inside a line, the plan first puts
+  each sentence on its own line in both outputs. In bash, the word diff reads a process substitution (`<(...)`) as a
+  path. The hint of [All tickets](#all-tickets) says that process substitution needs no file. `sh` (dash) gives a syntax
+  error at `(`. With `<(...)`, a wrong input does not give the result "exits with 1 and prints no `diff --git` line" of
+  this hint. Two wrong inputs give exit 0 and no output, and one wrong input gives exit 1 with a `diff --git` line. Only
+  the error of the command inside `<(...)` on stderr shows the wrong input. So before the word diff, ask the plan to
+  make sure that each command inside `<(...)` succeeds. Examples are `test -f <file>` for a file and
+  `git cat-file -e <rev>:<path>` for a revision. The agent of #558 measured the `sed`, the `awk` and the
+  process-substitution facts with git 2.47.3 on 2026-10-25. planner-m22 measured the wrong inputs, dash and a sentence
+  that starts inside a line with git 2.47.3 and bash 5.2.37 on 2026-10-25.
 - If a hint keeps an old list item as its own sentence, first make sure that no kept rule of the page already says the
   same thing. Otherwise the kept sentence repeats that rule. On #338, a hint kept the fourth case of
   [the stop rule](plan-review.md#the-stop-rule) as its own sentence, and the sentence repeated the message bullet of
