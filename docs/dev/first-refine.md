@@ -95,6 +95,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - If a change removes a state that the tests depend on, ask the plan to search the tests for it and to name each hit.
 - An explicit option from the caller is better than a detection inside a general helper. A detection causes findings
   about dropped errors and about cost.
+- A ticket can have a schema transform that lowers a value and an exported parser that folds the same value again. For
+  such a ticket, name the bullet "A general helper keeps its promise for each input that its type accepts" of
+  [rules.md](rules.md#code) in the first refine. The parser keeps its fold, because its type accepts a value that the
+  schema did not lower. "On #544 (2026-10-25), the configuration schema lowered the site of a Jira repo, and
+  `KEY_PARSERS.jira` folded it again with `asciiFold()`. A review asked to drop the fold of the parser."
 - If a review finding depends on the timing of the event loop, ask for a failing test first. If execute cannot make a
   test fail, dismiss the finding with the evidence from the local machine. The evidence is a loop of about 200 runs of
   that test. Such a loop finds a test that fails only sometimes. Before the dismiss, the agent runs the loop in the task
@@ -259,6 +264,12 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   in a scratch test did not show in the output of `npm test`. The write to a file showed the error.
 - [A fact test](plan-review.md#the-fact-test) tests the exact assertion of the plan, not only the text of the doc. On
   #137, `toEqual([input])` failed, because zod removes the unknown keys before the schema runs `refine()`.
+- To run [a fact test](plan-review.md#the-fact-test) of a Vitest assertion in a scratch folder, run
+  `npm test -- --root <folder> --dir <folder>` from the task worktree. The hint that starts "For
+  [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder. The worktree needs no new file.
+  Import `expect` from `vitest`, not from `@vitest/expect`. Vitest 5.0.3 bundles `@vitest/expect` into its own files, so
+  `node_modules` holds no `@vitest/expect` package, and a direct import from `node` fails. "On #544 (2026-10-25), with
+  Vitest 5.0.3, the agent ran a fact test of an assertion in this way."
 - To measure a `gh` write with no call to GitHub, run `gh` against a fake local HTTPS server. Set `SSL_CERT_FILE` and
   `GH_ENTERPRISE_TOKEN`. Name the host of the server in the repo of the command, for example
   `gh issue edit 7 -R localhost:8444/owner/repo`. Give `GH_CONFIG_DIR` and `XDG_CACHE_HOME` folders of their own,
