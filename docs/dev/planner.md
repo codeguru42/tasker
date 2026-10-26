@@ -280,6 +280,15 @@ that it dismissed. The initial planner posts only after the approval of the user
   copy, and the fix cost one review loop. The issue also names each other rule that uses the new rule, and it says for
   each one whether the ticket covers it. On #387, the issue named only the shared-file bullet and the link offer. Plan
   v1 also widened the overlap rule, refine 1 took that out, and review 1 still found the gap.
+- An issue that renames a name or a term of the docs names each doc that uses the old name. Each such place goes in the
+  Docs section of the issue or in its Out of scope section. Before the post, the planner searches the docs of
+  `origin/main` for the old name, for example with `git grep -n '<old name>' origin/main -- docs AGENTS.md`. The search
+  follows [the doc-search rule](rules.md#docs), and the planner gives the command and the hits in its message to the
+  user. On #405 (2026-10-25), `docs/dev/planner.md` changed `planner-<milestone>` to `planner-<slug>`, and
+  `docs/dev/pick-the-tickets.md` still named `planner-<milestone>` in the planner bullet of "The prompt of an agent".
+  Review 2 of #405 found it, and the agent dismissed the finding, because the issue did not name that doc. For the
+  rename of a doc, see the bullet "A ticket that renames a doc blocks each open issue whose body names that doc" in
+  [The blocked-by links](#the-blocked-by-links).
 - An issue can add a section to a doc. Then the Docs section of the issue names each index that lists the sections of
   that doc. Examples are the entry of the doc in `AGENTS.md` and the list "The pages" of `docs/orchestrator.md` for an
   orchestration page. On #336 (2026-10-18), plan v1 found only the entry of `AGENTS.md` and missed the list "The pages".
