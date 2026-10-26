@@ -560,7 +560,8 @@ The orchestrator writes the prompt of each agent.
     ticket to change.
 
   For each other doc, [the intro of `AGENTS.md`](../../AGENTS.md) gives the rule. The reason for the base list:
-  `AGENTS.md` links each doc under `docs/`, so the old words named all of them. No other base prompt exists.
+  `AGENTS.md` links each doc under `docs/`, so a prompt that names the docs of `AGENTS.md` names all of them. No other
+  base prompt exists.
 
 - When the orchestrator learns a new rule for agents, it does not put the rule only in a prompt. It sends the rule to
   the planner, as the planner bullet of this section says. A rule that only one ticket needs can also go in the prompt
