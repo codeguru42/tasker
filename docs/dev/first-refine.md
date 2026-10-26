@@ -121,7 +121,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   `ENOTDIR` for each user, also root. A folder with `chmod 0555` stops a write only for a user that cannot write
   everywhere. On #316, the test needed this.
 - If a new sentence makes an exception to an earlier clause, the exact text says which one wins. For example, the
-  dead-code rule of [rules.md](rules.md#code) keeps a function for a later ticket "also as an unused export" (#124).
+  dead-code rule of [rules.md](rules.md#code) keeps a function for a later ticket "also as an unused export" (#124). A
+  fallback sentence covers a case where a lookup finds no value, for example no tab id. If an exception covers another
+  case that also has no such value, the fallback comes before the exception. In the other order, the fallback also
+  covers the case of the exception. On #487 (2026-10-25), refine 1 put the fallback "If the tab list gives no tab id"
+  before the handoff case.
 - An issue can give a rule and a fallback in two sentences, for example "the rows do not overlap", and then "if two rows
   overlap, name the row that wins". Ask the plan to mark the fallback with a word such as "still". Then the review reads
   one rule with a fallback, not two rules that do not agree. On #357, the review read the two sentences as two rules.
@@ -176,6 +180,9 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   story "in one sentence". Such a sentence can fit the word limit of the simple-english skill only in a short form. Ask
   the plan in the first refine for the word count of each such example sentence. A split of that sentence breaks the
   requirement. On #450 (2026-10-25), plan v1 had an example sentence of 31 words, and its fallback split the sentence.
+  Each sentence of a numbered step of a procedure doc has the limit of Rule 5.1 of the simple-english skill
+  ([rules.md](rules.md#docs)). Ask the plan to count the words of each new step sentence. On #487 (2026-10-25), two new
+  step sentences went over the limit of Rule 5.1.
 - In a doc step, ask the plan to write a function name without its arguments, for example `doctorChecks()`, not
   `doctorChecks(repos)`. [rules.md](rules.md#docs) counts the arguments of a function as a repeat of the code. On #266,
   the trim of the sentences that repeat the code found such a step.
@@ -702,6 +709,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   plan to keep only the exit codes that the issue gives. On #483 (2026-10-25), plan v1 added a sentence for the exit
   code 128 of `git grep`, and refine 1 removed it.
 - Do not write "go to step N" without a condition. Define each term, for example "loop". Do not list a step two times.
+- The link to the home of a term goes on the first use of the term in the section. That first use can be in a step that
+  the ticket does not change. On #487 (2026-10-25), the plan put the link on "the tab list" in step 2, but step 1 used
+  the term first.
 - A ticket can define a common word. Then ask the plan to find each use of the word in another sense on the same pages.
   On #334, "stop" also meant the end of the work, and a link on "stops" narrowed a condition. This cost two review
   loops.
