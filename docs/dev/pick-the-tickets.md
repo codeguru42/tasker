@@ -384,7 +384,9 @@ The orchestrator offers the user a link: the ticket is blocked by the issue of t
   orchestrator makes no new offer for that ticket and that task.
 - If the call skips the write because the ticket is in flight or closed, the link offer ends for the ticket. The
   shared-file bullet does not apply to it. The orchestrator tells the user, as The read in the write call says. The
-  orchestrator makes no new offer for that ticket and that task.
+  orchestrator makes no new offer for that ticket and that task. These rules hold only while the ticket is in flight or
+  closed. When the ticket is open again, is not in flight and has no link (for example after an abort of its task), the
+  shared-file bullet and the link offer apply to it.
 - A task of the ticket can start between the read and the write, and the link can still land. Then the race paragraph of
   The read in the write call applies. The orchestrator removes the link and tells the user one time that the link was a
   race. The success steps of the approve bullet do not run. The ticket is in flight, so the bullet for a ticket in
