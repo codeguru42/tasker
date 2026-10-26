@@ -45,6 +45,30 @@ holds the rule:
 `TASKER_ACLI_BIN` does not pass to a child process of a phase. The rule for each `TASKER_` variable in
 `src/process/child-env.ts` covers it.
 
+## The active site
+
+`acli` has no flag that picks a site for one call. Each call uses the active site of `acli`, which the user picks with
+`acli jira auth switch --site <site>`. `activeSite()` in `src/issues/jira/site.ts` reads the active site with
+`acli jira auth status`.
+
+The active site is the value of the first line of stdout that starts with `Site:` after any leading white space. tasker
+matches `Site:` with its exact case. tasker removes the white space around the value and folds it to lower case with
+`asciiFold()`. A non-zero exit, stdout with no `Site:` line, or an empty value gives `JiraLoginError`. The rule of the
+`Site:` line is measured only with one login. The form of the output with more than one login is not measured.
+
+## The site guard
+
+Each Jira call of a repo runs the site guard first. `siteGuard()` in `src/issues/jira/site.ts` compares
+`issueTracker.site` of the repo with the active site. If the two sites differ, the guard fails with `JiraSiteError`. A
+repo with no site accepts the active site. The reason: an issue key such as `TEST-1` names a different issue on another
+site. A call on the wrong site reads or changes the wrong issue.
+
+tasker reads the active site again for each call of the guard. It keeps no value between two calls. The reason: the user
+can switch the site of `acli` while tasker runs.
+
+tasker supports repos on more than one site through `issueTracker.site`. The fact tests cover one site and one login
+only, and no test covers a switch between two sites.
+
 ## The errors
 
 - `AcliError`: `acli` exited with a code other than 0, or a signal stopped it. It holds the subcommand, the stdout, the
@@ -53,6 +77,9 @@ holds the rule:
 - `AcliNotInstalledError`: `acli` was not found. The message names the program that `runAcli()` tried to start.
 - `AcliBinError`: `TASKER_ACLI_BIN` names a file that does not exist, a folder, or a file that the user cannot run.
 - `AcliRefusedError`: the call is one that tasker never runs.
+- `JiraLoginError`: `acli` has no Jira login. `acli jira auth status` exited with a code other than 0, or its stdout has
+  no `Site:` line or an empty value.
+- `JiraSiteError`: the site of the repo differs from the active site.
 
 ## The measure of a failed call
 
@@ -62,3 +89,18 @@ The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-st
 - Exit code 1.
 - An empty stdout.
 - On stderr: `✗ Error: Issue does not exist or you do not have permission to see it.`
+
+## The measure of the login
+
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` with one login on 2026-10-25.
+`acli jira auth status` gives exit code 0, an empty stderr and this stdout:
+
+```
+✓ Authenticated
+  Site: codeguru42.atlassian.net
+  Email: <the email of the user>
+  Authentication Type: oauth_global
+```
+
+The help of `acli jira auth switch` gives `--site` as its flag for the site. Nobody measured the output with no login,
+because the agent must not log out.
