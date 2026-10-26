@@ -321,6 +321,34 @@ that it dismissed. The initial planner posts only after the approval of the user
   before a bullet that the issue names by its first words. The place can also be the start or the end of the section. On
   #435 (2026-10-25), the issue said "add two bullets to the section", and the agent stopped before `tasker approve` for
   a [design gap](plan-review.md#the-design-gap-rule).
+- An issue that adds a command, a [trigger](first-refine.md#a-ticket-that-changes-a-procedure-doc) or a text names each
+  list or gate that limits it. A gate is a rule that limits when a session does a step, or which reply or list of a
+  session holds a text. The hint of `docs/dev/first-refine.md` that starts "If an issue adds a second trigger to a
+  bullet" defines a trigger. A trigger sentence is a sentence that gives a trigger. The cases are these:
+  - Some docs give the list of the commands that a session runs, for example the list of the operator in
+    [`docs/operator.md`](../operator.md). An issue that adds a command to the steps of such a session compares the
+    command with that list before the post. If the list does not hold the command, the issue also adds the command to
+    the list, with its reason. Or the issue gives the steps in another form. On #408 (2026-10-25), the list was still
+    the old rule "runs no `tasker` command". The agent stopped under the fifth case of
+    [the stop rule](plan-review.md#the-stop-rule), and the user changed the scope.
+  - An example of the first kind is the sentence of [Stop a session](operator-start.md#stop-a-session) that starts "The
+    operator stops a session only". "The operator stops a session only on a request of the user." An issue that gives a
+    step a new trigger names each gate of that step, and it says how the new trigger meets the gate. On #453
+    (2026-10-25), the new trigger of step 6 was the message of the initial planner, with no request of the user. The
+    orchestrator answered the [design gap](plan-review.md#the-design-gap-rule): the word of the user to the planner in
+    step 5 is that request.
+  - An example of the second kind is [The landing count](handoff-orchestrator.md#the-landing-count) of
+    `docs/dev/handoff-orchestrator.md`, which names the replies that hold a suggestion of a handoff. An issue that adds
+    a text to each reply or list of a session names each gate that limits which reply or list holds it. The issue also
+    says which rule wins: the new rule or the gate. On #445 (2026-10-25), the issue added a handoff recommendation to
+    each list of open questions. It did not name the landing count of `docs/dev/handoff-orchestrator.md`. Review 1 found
+    the conflict after `tasker approve`, and the fix cost one stop and one
+    [review loop](review-findings.md#review-findings).
+  - An issue can give a step or a bullet a new trigger next to an old trigger. Then the issue puts no old trigger
+    sentence of that step or bullet, or a part that holds it, out of scope. The issue also says how the two triggers fit
+    together, for example as one rule, or with the old trigger removed. On #439 (2026-10-25), the Out of scope section
+    kept "the list of the findings", which held the old trigger sentence. The plan kept both trigger sentences. Review 1
+    found two moments for one report, and the user changed the scope.
 - An issue that adds hints to a page says, for each hint, which bullet of the page it extends, or that it goes in as a
   new bullet. The issue does not use the sentence "If a hint of the page already gives part of a hint above, extend that
   hint" without the name of the bullet. On #321, #355 and #356 (2026-10-24), each plan picked a bullet to extend, and
