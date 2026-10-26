@@ -12,7 +12,8 @@ These limits apply to the orchestrator and to the agents, except where a bullet 
 - To read the commits of a task branch, the agent runs `git fetch tasker` in the local clone of the orchestrator. If the
   clone has no `tasker` remote, the agent adds it as [the own-worktree rule](#the-own-worktree-rule) says. Then the
   agent runs `git log` or `git show` on `tasker/<task branch>`. For a diff of the task, the agent uses the command with
-  three dots of [the diff read](run-one-ticket.md#the-diff-read). If a command fails, the agent
+  three dots of [the diff read](run-one-ticket.md#the-diff-read). In a split read, the agent also uses
+  `git diff <commit>~1 <commit>` for each commit of the range. If a command fails, the agent
   [stops](#the-answer-wait-rule) and reports the error. Nothing changes.
 - If a `git fetch` of an agent fails, also after a `timeout` (exit code 124), and its step gives no failure path, the
   agent runs the fetch one more time. If the fetch fails again, the agent [stops](#the-answer-wait-rule) and reports the
