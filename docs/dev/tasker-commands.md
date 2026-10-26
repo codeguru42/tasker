@@ -118,14 +118,24 @@ and do not change it.
 
 ## The facts of the installed tasker
 
-The facts of this page that name the installed tasker, for example the facts of this section, came from an earlier,
-separate implementation of tasker. Each such fact is a requirement for the tasker that this repo builds. A session does
-not audit such a fact against the `tasker` command on the PATH. If the install does not show such a fact, the fact is
-not a false claim. The gap is work for the tasker that this repo builds, and it becomes a ticket. The user decided one
-exception on 2026-10-24, for #370. If a ticket changes a procedure that depends on such a behavior of tasker, the agent
-first does [the fact test](plan-review.md#the-fact-test) against the `tasker` command on the PATH. The reason, in the
-words of the user: "We need to verify that the tasker behavior we are changing actually exists before trying to change
-it." A ticket that only records such a fact does no fact test, as the user decided for #366.
+The installed tasker is a build of this repo, as [the intro of docs/orchestrator.md](../orchestrator.md) says.
+`tasker --version` prints the version of the build. [The intro of docs/dev/release.md](release.md) gives the forms of
+the version.
+
+Each fact of this page that names the installed tasker, for example each fact of this section, describes a behavior of
+the installed tasker. The fact is not a requirement for later work. If a ticket depends on such a fact, the agent first
+does [the fact test](plan-review.md#the-fact-test) against the installed `tasker`. The reason, in the words of the user:
+"We need to verify that the tasker behavior we are changing actually exists before trying to change it."
+
+The fact test can show that the installed tasker does not have the behavior. Then the fact is out of date. The agent
+gives the fact, the command and the output in the feedback text and in the lessons of
+[its final report](run-one-ticket.md#the-final-report). The lesson goes to the planner, and the planner files a ticket
+for the fact. If an open issue already covers an out-of-date fact, the agent names that issue in place of the lesson.
+
+The agent cannot always measure such a behavior, for example when no task of its own is in the state that the fact
+needs. Then the agent reports the fact as a fact that it cannot test, in the feedback text and in its final report. A
+ticket that only records such a fact does no fact test, as the user decided for #366. Such a ticket depends on no fact
+of the list. As a result, the rule that the agent first does the fact test does not apply to it.
 
 - `tasker plan` can fail with "planning returned no structured output; the assistant produced no plan object". The task
   goes to `failed`. This failure does not come from the code. One `tasker retry <issue>` plans again.
