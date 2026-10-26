@@ -195,9 +195,6 @@ its own milestone. If such a ticket can start by this rule and by the other rule
 [the failure rule](limits.md#the-failure-rule) applies. Then no ticket starts at that moment. The tickets wait until the
 next read of the board or the next start.
 
-The broken-test ban of the second bullet of [Pick the tickets](#pick-the-tickets) still wins. See
-[A failed CI run](ci-wait.md#a-failed-ci-run).
-
 Two exceptions apply to a stacked ticket and its parent:
 
 - The shared-file bullet does not stop the start, because the stacked task builds on the change of the parent. For each
