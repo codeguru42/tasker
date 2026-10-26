@@ -452,6 +452,32 @@ The orchestrator writes the prompt of each agent.
   code. On #274, a hint of the prompt said that the issue body states that the stored base revision is a ref. Only a
   comment on #273 stated it, and the agent reported the difference at step 1 of
   ["Run one ticket"](run-one-ticket.md#run-one-ticket).
+
+  A hint can give a fact with a file of the repo as its source. Before the orchestrator sends the prompt, it reads that
+  fact in the base of the ticket:
+
+  - For a plain ticket, the base ref is `origin/<base branch>`, read after `git -C <local clone> fetch origin`.
+    `<base branch>` is the [base hint](workspaces.md#the-resolve) of the issue, else `defaultBaseBranch` of the repo.
+    The orchestrator does not use the learned default, because that value is a row of the database, and the orchestrator
+    does not read the database.
+  - For a stacked ticket, the base ref is `tasker/<parent branch>`, read after `git -C <local clone> fetch tasker`. A
+    ticket with a parent in its prompt is stacked, as [the stacked-ticket rule](#the-stacked-ticket-rule) says.
+    `<parent branch>` is the `branch:` line of `tasker show <parent issue>`.
+  - Right after the fetch, the orchestrator reads the hash of the base ref one time with
+    `git -C <local clone> rev-parse --verify <base ref>`. Each later command of this step uses that hash, as
+    [the shared-clone rule](limits.md#the-shared-clone-rule) says.
+  - If the hint names a file, the orchestrator reads the file with `git -C <local clone> show <hash>:<path>` and finds
+    the fact in it.
+  - If the hint names no file, the orchestrator searches the tree with
+    `git -C <local clone> grep -n -w -F -e '<name>' <hash>`, and reads each hit.
+
+  If the base does not hold the fact, the prompt drops the fact, or it names the ticket that adds the fact. That ticket
+  is this ticket, or a ticket in flight by its issue key. A missing file is such a case. `git show` then prints
+  `fatal: path '<path>' does not exist in '<hash>'`, and that is an answer, not a failure. A search with no hit is such
+  a case too: `git grep` exits with 1. If the fetch or the read of the hash fails, or a command fails in another way,
+  [the failure rule](limits.md#the-failure-rule) applies. Then the prompt drops the fact. On #539 (2026-10-25), a hint
+  named a resolve of `TASKER_GH_BIN` in `src/issues/github/run.ts`, and the base held no such name.
+
 - If the account of the orchestrator posted comments on the issue of the agent that start with `## Change of scope` or
   `## Design gap`, the prompt links each one. If the issue has no such comment, the prompt does not mention these
   comments. The reason: [the issue check](plan-review.md#the-issue-check) counts such a comment of the account of the
