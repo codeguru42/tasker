@@ -190,14 +190,15 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   steps in this order. The final report says this when the agent ran `tasker finish`, which closes the issue. First, the
   orchestrator deletes the jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. Then the orchestrator
   does [the re-read rule](doc-reads.md#the-re-read-rule). Then the orchestrator does the memory step. Then the
-  orchestrator does [the notice rule](doc-reads.md#the-notice-rule). Last, the orchestrator reads the board for the next
-  ticket, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. In the memory step, the orchestrator
-  searches its memory files for the number of the issue. If the search finds no file with the number, the memory step is
-  complete. In each file that names the issue, the orchestrator deletes the lines that the landed docs now hold. After
-  the re-read rule, the orchestrator reads the landed docs as [the doc-read rule](doc-reads.md#the-doc-read-rule) says.
-  If no line is left besides the frontmatter and the links, the orchestrator deletes the file and its line in the index
-  of the memory. If a search, an edit or a delete of a memory file fails, the orchestrator tells the user the step and
-  the error. The memory file then stays as it was, and the orchestrator continues with the next step of the order. The
+  orchestrator does [the notice rule](doc-reads.md#the-notice-rule). Then the orchestrator does
+  [the agent notice](doc-reads.md#the-agent-notice). Last, the orchestrator reads the board for the next ticket, as
+  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. In the memory step, the orchestrator searches its
+  memory files for the number of the issue. If the search finds no file with the number, the memory step is complete. In
+  each file that names the issue, the orchestrator deletes the lines that the landed docs now hold. After the re-read
+  rule, the orchestrator reads the landed docs as [the doc-read rule](doc-reads.md#the-doc-read-rule) says. If no line
+  is left besides the frontmatter and the links, the orchestrator deletes the file and its line in the index of the
+  memory. If a search, an edit or a delete of a memory file fails, the orchestrator tells the user the step and the
+  error. The memory file then stays as it was, and the orchestrator continues with the next step of the order. The
   orchestrator does these steps for each ticket, also for a ticket of the milestone "Docs". The user decided the memory
   step on 2026-10-17 and the order on 2026-10-18.
 

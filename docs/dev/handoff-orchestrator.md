@@ -122,9 +122,9 @@ After the start, the old orchestrator does these steps:
 2. Wait until each task in flight lands. For each landing, do the usual steps: delete the jobs (see
    [Delete the job](quota.md#delete-the-job)), do [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step
    of the bullet "When the final report of the agent of a ticket says that the ticket landed" of
-   [Land the work](land-the-work.md#land-the-work) and do [the notice rule](doc-reads.md#the-notice-rule). The reason: a
-   job lives only in the session of the orchestrator (see [Terms](quota.md#terms)). If a task is still in flight at the
-   handoff, nobody resumes it after a quota stop.
+   [Land the work](land-the-work.md#land-the-work), do [the notice rule](doc-reads.md#the-notice-rule) and do
+   [the agent notice](doc-reads.md#the-agent-notice). The reason: a job lives only in the session of the orchestrator
+   (see [Terms](quota.md#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
 3. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round
    finds nothing new. The user asked for this rule on 2026-10-17. Then write the handoff file, as
    [The handoff file](handoff.md#the-handoff-file) says.
