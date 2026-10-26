@@ -317,6 +317,10 @@ that it dismissed. The initial planner posts only after the approval of the user
   [Review findings](review-findings.md#review-findings) says for a finding that contradicts an exact rule of the issue.
   On #398 (2026-10-24), review 1 asked for a new bullet in an altitude finding, and the agent dismissed the finding with
   the words of the issue.
+- An issue that adds a bullet to a section of a doc names the place of the bullet. The place is right after or right
+  before a bullet that the issue names by its first words. The place can also be the start or the end of the section. On
+  #435 (2026-10-25), the issue said "add two bullets to the section", and the agent stopped before `tasker approve` for
+  a [design gap](plan-review.md#the-design-gap-rule).
 - An issue that adds hints to a page says, for each hint, which bullet of the page it extends, or that it goes in as a
   new bullet. The issue does not use the sentence "If a hint of the page already gives part of a hint above, extend that
   hint" without the name of the bullet. On #321, #355 and #356 (2026-10-24), each plan picked a bullet to extend, and
@@ -325,7 +329,8 @@ that it dismissed. The initial planner posts only after the approval of the user
   start of the sentence. Each 'On #N' sentence of a hint with no such mark goes into the doc with the hint. A marked
   sentence is not a requirement, so the bullet that starts 'An issue dictates each requirement' does not cover it. On
   #412 (2026-10-25), the agent left out the #389 and #419 sentences on the design-gap answers of the orchestrator. It
-  kept the #356 example of the moved hint about `docs/statemachine.md`. Both were choices of the agent.
+  kept the #356 example of the moved hint about `docs/statemachine.md`. Both were choices of the agent. See
+  [the bullet that starts "An issue that adds a bullet to a section"](#the-body-of-an-issue).
 - An issue that names a git check gives the meaning and the action of each exit code, or it says that the other exit
   codes are out of scope. On #356, review 2 asked about the exit codes that the hint did not name.
 - An issue can give a rule that lets a session do a write only after a read. Examples are a read of `tasker status` and
