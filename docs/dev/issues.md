@@ -74,8 +74,9 @@ on that open issue that gives the new case. This section covers each session, al
 - With the draft, the planner gives the user one recommendation for the issue: no change, a priority label, another
   milestone, or new blocked-by links. The user decides. After the approval, the planner makes the change in the same
   post round.
-- A change of the milestone or of the links follows [The blocked-by links](planner.md#the-blocked-by-links) of
-  planner.md, as for any issue. That also covers the read of `tasker status` before a link.
+- A change of the milestone follows [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md. A
+  change of the links follows [The blocked-by links](planner.md#the-blocked-by-links) of planner.md, as for any issue.
+  That also covers the read of `tasker status` before a link.
 
 On 2026-10-24, #406 showed the problem of #391 again during the work, not in a `/session-review`. The user said: "if we
 see a recurrence we can bump up its priority and adjust the milestone and blockers."
