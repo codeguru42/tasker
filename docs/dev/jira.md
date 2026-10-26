@@ -112,6 +112,49 @@ number, else at 1. Each later line of an item has as many spaces before it as th
 A node with no `content` array has no children. A child that is not an object gives `""`. At the end, `adfToText()`
 removes the white space at the end of each line and the blank lines at the end of the text.
 
+## The read of an issue
+
+`readJiraIssue()` in `src/issues/jira/issue.ts` reads one issue. It runs the site guard first. Then it runs
+`acli jira workitem view <key> --json --fields summary,description,labels,status,components`.
+
+The call names these five fields and no other field. The reason: `--fields` replaces the default field list of `acli`,
+and a field that the call does not name does not come back.
+
+The function builds the `Issue` as this table says:
+
+| Field of `Issue` | Value                                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| `ref`            | The `IssueRef` of the call.                                                                                |
+| `title`          | `fields.summary`.                                                                                          |
+| `body`           | `adfToText(fields.description)` of `src/issues/jira/adf.ts`.                                               |
+| `url`            | `https://<site>/browse/<key>`. `<site>` is the site that the site guard gives.                             |
+| `labels`         | Each string in `fields.labels`. The function drops a value that is not a string.                           |
+| `components`     | The string `name` of each entry in `fields.components`. The function drops an entry with no string `name`. |
+| `status`         | The string `fields.status.name`. For an issue with no such string: undefined.                              |
+| `state`          | For `fields.status.statusCategory.key` `"done"`: `"closed"`. For any other key, or no status: `"open"`.    |
+| `comments`       | `[]`. A later ticket reads the comments.                                                                   |
+
+The reason for the `state` row: each team names its own statuses, but the category key `done` is fixed. `tasker start`
+refuses a closed issue.
+
+The function does not read other parts of an issue. Examples are the content of the attachments, the sub-tasks, the
+parent, the fix versions, the priority, the assignee and the issue type.
+
+The errors of the read:
+
+- An `AcliError` whose stderr holds `Issue does not exist` gives `IssueReadError` with the message
+  `the issue <key> does not exist, or you do not have permission to see it: <stderr>`. The reason: Jira gives one text
+  for an issue that does not exist and for an issue that the user cannot see.
+- Bad output gives `IssueReadError` with the message `acli jira workitem view gave bad output for <key>: <reason>`. The
+  reason is `the output is not JSON` or `the fields do not match`.
+- `the fields do not match` covers a missing `fields` object and a `fields.summary` that is not a string. It also covers
+  a `fields.labels` or `fields.components` that is there, is not `null` and is not an array. A missing or `null`
+  `fields.labels` or `fields.components` gives `[]`.
+- An `AdfError` for the description gives `IssueReadError` with the message
+  `the description of <key> is not an ADF document: <message of the AdfError>`.
+- Each other error passes through unchanged, for example an error of the site guard, a missing `acli` or another
+  `AcliError`.
+
 ## The errors
 
 - `AcliError`: `acli` exited with a code other than 0, or a signal stopped it. It holds the subcommand, the stdout, the
@@ -124,6 +167,7 @@ removes the white space at the end of each line and the blank lines at the end o
 - `JiraLoginError`: `acli` has no Jira login. `acli jira auth status` exited with a code other than 0, or its stdout has
   no `Site:` line or an empty value.
 - `JiraSiteError`: the site of the repo differs from the active site.
+- `IssueReadError`: the read of an issue failed. [The read of an issue](#the-read-of-an-issue) gives the messages.
 
 ## The measure of a failed call
 
@@ -159,3 +203,23 @@ issue:
 
 `--description-file` took the file as ADF, not as plain text. The `--json` output is one JSON object, and the ADF
 document is the value of `fields.description`. The read gave back the nodes, marks and attrs of the file.
+
+## The measure of an issue read
+
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-25. The agent of #543
+made three issues in the project `TEST`:
+
+- `TEST-2`, with the labels `base:main` and `tasker-measure` and the component `tasker-measure`.
+- `TEST-3`, with no description.
+- `TEST-4`, in the status `Done`.
+
+The command `acli jira workitem view <key> --json --fields summary,description,labels,status,components` read each
+issue. It gave:
+
+- Exit code 0, an empty stderr and one JSON object on stdout.
+- Only the five named fields in `fields`.
+- For `fields.labels`, an array of strings. For `fields.components`, an array of objects with `id`, `name` and `self`.
+- For an issue with no labels or no components, `[]`.
+- For `fields.description` of `TEST-3`, `null`.
+- For `fields.status.name`, `Backlog` for `TEST-2` and `TEST-3`, and `Done` for `TEST-4`.
+- For `fields.status.statusCategory.key`, `new` for `Backlog` and `done` for `Done`.

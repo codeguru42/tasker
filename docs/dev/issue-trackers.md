@@ -79,6 +79,9 @@ token with `***`. No error has a `cause`.
 
 The project and the number come from the stored key, so the stored spelling is used. See [Issue keys](issue-keys.md).
 
+The field `components` of `Issue` gives the component names, as the tracker gives them. The GitHub read gives `[]`. The
+field `status` of `Issue` gives the name of the status, as the tracker gives it. The GitHub read gives no status.
+
 gh 2.101.0 gives a pull request with exit code 0, and in any state. So the read finds a pull request from the path of
 its `url`: `/<owner>/<repo>/issues/<N>` for an issue and `/<owner>/<repo>/pull/<N>` for a pull request.
 
