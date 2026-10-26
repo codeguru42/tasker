@@ -304,7 +304,12 @@ that it dismissed. The initial planner posts only after the approval of the user
 - An issue that adds hints to a page says, for each hint, which bullet of the page it extends, or that it goes in as a
   new bullet. The issue does not use the sentence "If a hint of the page already gives part of a hint above, extend that
   hint" without the name of the bullet. On #321, #355 and #356 (2026-10-24), each plan picked a bullet to extend, and
-  each agent stopped before `tasker approve` for a design gap. Each answer was a new bullet.
+  each agent stopped before `tasker approve` for a design gap. Each answer was a new bullet. The issue also marks each
+  'On #N' sentence that only gives the context of the ticket. The mark is the words 'Context, not for the doc:' at the
+  start of the sentence. Each 'On #N' sentence of a hint with no such mark goes into the doc with the hint. A marked
+  sentence is not a requirement, so the bullet that starts 'An issue dictates each requirement' does not cover it. On
+  #412 (2026-10-25), the agent left out the #389 and #419 sentences on the design-gap answers of the orchestrator. It
+  kept the #356 example of the moved hint about `docs/statemachine.md`. Both were choices of the agent.
 - An issue that names a git check gives the meaning and the action of each exit code, or it says that the other exit
   codes are out of scope. On #356, review 2 asked about the exit codes that the hint did not name.
 - A fact that an issue copies from a ticket can be true in only one case. Before the post, the planner measures the
