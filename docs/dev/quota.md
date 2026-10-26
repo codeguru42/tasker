@@ -15,7 +15,8 @@ job.
   time.
 - A cron job (a job, on [the orchestration pages](../orchestrator.md)) is a prompt that the orchestrator schedules for a
   time. A one-shot job fires one time and then deletes itself. A job fires only while the orchestrator is idle. A job
-  lives only in the session of the orchestrator.
+  lives only in the session of the orchestrator. The board watch job of a long-running orchestrator is not a job of
+  these rules (see [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator)).
 - The five-hour job is the job for the five-hour reset time. The seven-day job is the job for the seven-day reset time.
   On [the orchestration pages](../orchestrator.md), "an agent has a job", "has no job" and "an agent without a job" mean
   the five-hour job. A seven-day job alone does not count.
