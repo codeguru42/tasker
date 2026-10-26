@@ -347,9 +347,9 @@ a task of another milestone is out of scope. [The overlap rule](land-the-work.md
 
 If the user told the orchestrator that a planner of the milestone adds the blocked-by links, the orchestrator makes no
 link offer. The orchestrator also adds no blocked-by link itself. The user can still ask the orchestrator for a link, as
-the decline bullet below says. Then the orchestrator does the steps of the approve bullet, and the bullet for a failed
-`gh issue edit` also applies. Without a link, the orchestrator follows the shared-file bullet of
-[Pick the tickets](#pick-the-tickets).
+the decline bullet below says. Then the orchestrator does the steps of the approve bullet, and the bullets for a failed
+`gh issue edit` and for a skipped write also apply. If the ticket is open, is not in flight and has no link, the
+orchestrator follows the shared-file bullet of [Pick the tickets](#pick-the-tickets).
 
 The orchestrator counts a new link of the planner at its next read of the states of
 [the stacking rule](#the-stacking-rule). Two of these reads come before each start and each time the orchestrator reads
@@ -361,15 +361,29 @@ the board. With a new link, the orchestrator starts the ticket or lets it wait a
 The orchestrator offers the user a link: the ticket is blocked by the issue of that task. The orchestrator follows
 [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
 
-- If the user approves, the orchestrator runs `gh issue edit <ticket> --add-blocked-by <issue of the task>`. If
-  `gh issue edit` succeeds, the orchestrator reads the states of the blockers of the ticket at once. If the ticket can
-  start by [the stacking rule](#the-stacking-rule) and by the other rules of [Pick the tickets](#pick-the-tickets), the
-  orchestrator starts it. Otherwise, the ticket waits. For example, [the stacking rule](#the-stacking-rule) makes the
-  ticket wait while the task is not ready to stack. When the task is ready to stack, the ticket can start as a stacked
-  ticket on the task. For that pair, [the stacking rule](#the-stacking-rule) wins over the sentence "Start the second
-  ticket after the first one lands." of the shared-file bullet. [The stacked-ticket rule](#the-stacked-ticket-rule) then
-  sets the landing order, with the task first.
+- If the user approves, the orchestrator adds the link as
+  [The read in the write call](issues.md#the-read-in-the-write-call) of issues.md says. The write of that call is
+  `gh issue edit <ticket> --add-blocked-by <issue of the task>`. If `gh issue edit` succeeds, the orchestrator reads the
+  states of the blockers of the ticket at once. If the ticket can start by [the stacking rule](#the-stacking-rule) and
+  by the other rules of [Pick the tickets](#pick-the-tickets), the orchestrator starts it. Otherwise, the ticket waits.
+  For example, [the stacking rule](#the-stacking-rule) makes the ticket wait while the task is not ready to stack. When
+  the task is ready to stack, the ticket can start as a stacked ticket on the task. For that pair,
+  [the stacking rule](#the-stacking-rule) wins over the sentence "Start the second ticket after the first one lands." of
+  the shared-file bullet. [The stacked-ticket rule](#the-stacked-ticket-rule) then sets the landing order, with the task
+  first.
 - If `gh issue edit` fails, [the failure rule](limits.md#the-failure-rule) applies. The ticket has no new link.
+- If the call skips the write because `tasker status` or the read of the state fails, the ticket has no new link.
+  [The failure rule](limits.md#the-failure-rule) applies, with the command and the error. Then the bullet that starts
+  "If the user declines, or if `gh issue edit` fails" applies, as for a failed `gh issue edit`. As a result, the
+  orchestrator makes no new offer for that ticket and that task.
+- If the call skips the write because the ticket is in flight or closed, the link offer ends for the ticket. The
+  shared-file bullet does not apply to it. The orchestrator tells the user, as The read in the write call says. The
+  orchestrator makes no new offer for that ticket and that task.
+- A task of the ticket can start between the read and the write, and the link can still land. Then the race paragraph of
+  The read in the write call applies. The orchestrator removes the link and tells the user one time that the link was a
+  race. The success steps of the approve bullet do not run. The ticket is in flight, so the bullet for a ticket in
+  flight or closed applies, with no second message. If the remove fails, [the failure rule](limits.md#the-failure-rule)
+  applies.
 - If the user declines, or if `gh issue edit` fails, the shared-file bullet applies, and the ticket starts after the
   task lands. The stacking rule still applies to the other blockers of the ticket. After that answer or that failure,
   the orchestrator makes no new offer for that ticket and that task. The user can still ask for the link at any time.
