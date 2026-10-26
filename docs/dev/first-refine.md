@@ -565,21 +565,31 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   local bare remote, and `updateOnStart` and `updateOnFinish` set to `false`. A `git clone --bare` of the local clone
   copies its local task branches, so delete them in the scratch remote. Otherwise `tasker update-branch` reports that
   the branches diverged. After the test, abort the scratch task, and make sure with `cmp` that the real configuration
-  did not change. On #370 (2026-10-24), the agent ran the fact test of the exception of #393 this way.
-- A rule about the states of the installed tasker does not link to `docs/statemachine.md`, because that page describes
-  the tasker that this repo builds. On #147, the plan linked to it. In a ticket about the installed tasker, also ask the
-  plan not to take facts about it from `docs/statemachine.md` or from the code of this repo. These also describe the
-  tasker that this repo builds. On #356, plan v1 of a hint ticket took a fact from `docs/statemachine.md`. For
-  `skills/tasker/`, see [The installed skill](rules.md#the-installed-skill). On #198, the plan took the output form of
+  did not change. On #370 (2026-10-24), the agent ran a fact test of the installed tasker this way.
+- A doc can link to `docs/statemachine.md`. In a ticket about the installed tasker, the agent takes each fact about the
+  behavior of tasker from the output of the installed `tasker`. The agent does this with
+  [the fact test](plan-review.md#the-fact-test), and it gives the fact in the feedback text. The agent asks the plan not
+  to take such a fact from `docs/statemachine.md`, from the code of this repo (`src/`) or from `skills/tasker/`.
+
+  The reasons: for the behavior of the installed tasker, `docs/statemachine.md` is a page for human users who want to
+  see how tasker works. That page can be out of date. The code of `src/` can be newer than the installed `tasker`, as
+  [the intro of docs/orchestrator.md](../orchestrator.md) says. For `skills/tasker/`, see
+  [The installed skill](rules.md#the-installed-skill).
+
+  On #356, plan v1 of a hint ticket took a fact from `docs/statemachine.md`. On #198, the plan took the output form of
   `tasker status` from `skills/tasker/references/inspect.md`. On #229, the plan took the text of an empty-feedback error
-  from `src/tasks/refine.ts`. The same reason answers a review finding that takes a fact about the installed tasker from
-  `docs/statemachine.md` or from the code of this repo (`src/`). The agent can expect such a finding in a ticket that
-  records an output of the installed tasker. On #283, #290 and #302, the review did this with `docs/statemachine.md`. On
-  #321, finding 1 of review 1 said that `tasker review` reads only the commits of the task, with
-  `src/vcs/git/changes.ts` and `src/tasks/review.ts` as evidence. The issue said that the review of a stacked task also
-  reviews the lines of its parent (#271), and the agent dismissed the finding with the issue text.
+  from `src/tasks/refine.ts`.
+
+  The same reasons answer a review finding that takes a fact about the installed tasker from `docs/statemachine.md` or
+  from the code of this repo (`src/`). The agent can expect such a finding in a ticket that records an output of the
+  installed tasker. On #283, #290 and #302, the review did this with `docs/statemachine.md`. On #321, finding 1 of
+  review 1 said that `tasker review` reads only the commits of the task, with `src/vcs/git/changes.ts` and
+  `src/tasks/review.ts` as evidence. The issue said that the review of a stacked task also reviews the lines of its
+  parent (#271). The agent dismissed the finding with the issue text.
+
   [The facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker) say how a session treats a
-  fact of the earlier implementation.
+  fact of its list.
+
 - In a ticket about the installed tasker, tell the plan that "the task worktree" is the worktree of the agent, as
   [the own-worktree rule](limits.md#the-own-worktree-rule) says. The worktree that tasker makes for a task is a worktree
   of tasker. On #366, plan v1 used "the task worktree" for the worktree of tasker.
