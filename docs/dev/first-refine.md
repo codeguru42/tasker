@@ -1142,12 +1142,13 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its
   lead-in names. If a hint links to a rule to prevent a repeat, put the link on the sentence that the rule supports, not
   on the new fact. On #149, review 1 found two links that only pointed near the topic.
-- Before the agent asks a plan to extend a bullet, the agent runs `git blame` on that bullet. The issue can put the
-  bullets of earlier tickets out of scope (#169). If an issue says to extend a hint that already gives part of a new
-  hint, and it also puts the other hints out of scope, the issue names the hint to extend, as the bullet "An issue that
-  adds hints to a page" of [The body of an issue](planner.md#the-body-of-an-issue) says, or the drafter says that the
-  move of a sentence is in scope. On #219, the plan asked this question, and the answer cost one more stop before
-  `tasker approve`.
+- Before the agent asks a plan to extend a bullet, the agent runs `git blame --ignore-revs-file .git-blame-ignore-revs`
+  on that bullet. The agent runs the command at the root of its [task worktree](limits.md#the-own-worktree-rule). A
+  plain `git blame` shows the wrap commit of #506 for most lines of the docs. The issue can put the bullets of earlier
+  tickets out of scope (#169). If an issue says to extend a hint that already gives part of a new hint, and it also puts
+  the other hints out of scope, the issue names the hint to extend, as the bullet "An issue that adds hints to a page"
+  of [The body of an issue](planner.md#the-body-of-an-issue) says, or the drafter says that the move of a sentence is in
+  scope. On #219, the plan asked this question, and the answer cost one more stop before `tasker approve`.
 - On #228, one hint of an issue used "check" as a verb, and the comment draft used "checked".
   [Before a post](issues.md#before-a-post) gives the self-check of each draft.
 - If a hint of the issue starts with a rule that a doc already gives, ask the plan to state only the new fact. Then the
