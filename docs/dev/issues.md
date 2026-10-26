@@ -37,6 +37,15 @@ planner.md also holds the rules for what an issue says and where it goes. This p
   fixes each hit before it shows the draft. For example, on 2026-10-15, a draft had four sentences over the limit, and
   one search and one word count over the draft file found them.
 - For a priority label on an issue, see [The body of an issue](planner.md#the-body-of-an-issue) of planner.md.
+- Right after each post of the body of an issue, the session compares the posted body with the body of its draft file.
+  The body of a draft file is the file with its title line and the blank line after it taken out. An example of the
+  compare is `diff <(gh issue view <number> --json body -q .body) <body of the draft>`. The compare ignores blank lines
+  at the end, because the read adds one.
+
+  A difference is a failed post. The session then posts the body again, as
+  [The read in the write call](#the-read-in-the-write-call) says, and compares again. If the read fails, or the second
+  compare also fails, the session stops and tells the user. On 2026-10-26, a script left an old second design after the
+  Docs section of #604, and only a review agent saw it.
 
 ### The read in the write call
 
