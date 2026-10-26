@@ -54,6 +54,24 @@ version 3.
 The table is an append-only log. Each event belongs to one task. See
 [Writes from more than one process](#writes-from-more-than-one-process).
 
+- Events are for troubleshooting and audit. Except in the last two cases of this list, code reads no event to decide
+  what to do. Or to get a value that it needs.
+- Each value that code reads back lives in a column of a table. A write of such a value can also copy it into its event,
+  for audit.
+- The migration that adds such a column can fill it once from the events. The tasks that exist then keep their values.
+- A command that prints events for troubleshooting can read them, for example the `last event` line of `tasker show`.
+
+These reads of today break the rule. The issue of each read removes it:
+
+- The base revision of a task, from the newest `base` event (#603).
+- The [origin](tasks.md#retry) of a state and the error of a [failure](../statemachine.md#failure-and-retry), from the
+  last move into a state (#604).
+- The feedback of a [refine](tasks.md#refine), the start head of an [update](tasks.md#update-branch) and the facts of a
+  [pause](../statemachine.md#pauses), from the last move into a state (#604).
+- The verify run of a failure, from the `verify_run` event right before the last move into `failed` (#604).
+- The reset time of the last [credits approval](tasks.md#approve-credits) (#605).
+- The check "the plan is older than the last move" of [`tasker approve`](tasks.md#approve) (#608).
+
 Two triggers make the table append-only. An `UPDATE` or a `DELETE` on `events` fails. This holds for raw SQL too, not
 only for the store functions. A later cleanup of old events (`retentionDays`) must drop or replace these triggers in a
 new schema version.
@@ -125,9 +143,9 @@ These rules hold:
 The table holds the state of each todo of a plan revision. A todo is one step of the plan. `tasker execute` works on one
 todo in each turn of the execute session.
 
-The states are in a table and not in events, because tasker reads them back to pick the next turn. A todo is in progress
-or done. A todo with no row is not started, so the table stores only the two other states. Only `tasker execute` writes
-a state, one turn at a time.
+The states are in a table, as [the rule of the `events` table](#events-table) says. A todo is in progress or done. A
+todo with no row is not started, so the table stores only the two other states. Only `tasker execute` writes a state,
+one turn at a time.
 
 ## `execute_fix_turns` table
 
