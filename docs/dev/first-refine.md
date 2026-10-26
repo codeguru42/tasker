@@ -375,7 +375,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   that the issue does not give, goes into the refine of loop 1. On #158, the first docs todo copied a shared rule and
   added reasons, and the review did not find them.
 - After `tasker execute`, read the bytes of each test string outside ASCII, for example with `grep -P "\x{212A}"`. On
-  #61, the execute session wrote a raw Kelvin sign in place of the escape.
+  #61, the execute session wrote a raw Kelvin sign in place of the escape. If a ticket has tests that need a character
+  outside ASCII, ask the plan in its first refine to build the character with `String.fromCodePoint(<code point>)`, for
+  example `String.fromCodePoint(0x212a)`. The reason: the call has no backslash. On #61 and #540, an escape turned into
+  the raw character. On #540 (2026-10-25), plan v3 held the raw Kelvin sign where it said "the escape", and refine 3
+  asked for `String.fromCodePoint(0x212a)`.
 - In [the diff read](run-one-ticket.md#the-diff-read), do not filter the diff with a pattern such as
   `grep -v '^[-+][-+]'`. A changed bullet line of a doc starts with `+-` or `--`, so the filter also drops it. Read the
   full diff. On #208, the agent found this, and the orchestrator hit it again on the same day.
