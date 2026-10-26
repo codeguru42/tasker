@@ -23,21 +23,28 @@ steps:
    report this.
 3. Find the run with this command:
    `timeout 300 bash -c 'while :; do n=$(gh run list --workflow Check --branch main --commit <landed commit> --json databaseId -q length) || exit 2; [ "$n" != 0 ] && exit 0; sleep 30; done'`.
-   GitHub can start the run some seconds after the push, so the list can be empty at first. The command reads the list
-   every 30 seconds for at most 5 minutes. It exits with 0 when the list has a run. If it exits with 124, no run showed
-   after 5 minutes. In that case, stop and report that no run showed. If it exits with 2, `gh run list` failed. In that
-   case, stop and report the error.
+   Set the `timeout` option of the Bash tool to 600000 for this call. The default limit of one Bash call is 120000 ms,
+   and the Bash tool moves a longer call to the background. The shell `timeout` of step 3 and step 5 is shorter than 600
+   seconds, so the shell command ends before the Bash call. GitHub can start the run some seconds after the push, so the
+   list can be empty at first. The command reads the list every 30 seconds for at most 5 minutes. It exits with 0 when
+   the list has a run. If it exits with 124, no run showed after 5 minutes. In that case, stop and report that no run
+   showed. If it exits with 2, `gh run list` failed. In that case, stop and report the error.
 4. Run `gh run list --workflow Check --branch main --commit <landed commit> --json databaseId,status,conclusion`. If the
    command fails, stop and report the error. The run id of each run is its `databaseId`. The list can have more than one
    run, because GitHub can record one push twice and start a run for each record. Take the runs in the order of the
    list. For each run, do step 5 of the CI wait. When step 5 or step 6 finds that the run passed, do step 5 for the next
    run of the list.
-5. Wait for the run: `timeout 580 gh run watch <run id> --exit-status`. A `Check` run takes about 2 minutes, but it can
-   take longer than one tool call of the agent. The agent cannot run a foreground `sleep`, so it waits with `timeout`.
-   Exit code 0 means that the run passed. Exit code 124 means that the run is still in progress. In that case, run the
-   same command again. The 30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the
-   list together. If a run is not complete when the 30 minutes end, stop. Any other exit code means that the run failed,
-   or that `gh` failed. In that case, go to step 6 of the CI wait.
+5. Wait for the run: `set -o pipefail; timeout 580 gh run watch <run id> --exit-status 2>&1 | tail -n 20`. Set the
+   `timeout` option of the Bash tool to 600000 for this call, as step 3 of the CI wait says. `gh run watch` refreshes
+   its output every 3 seconds, so a long wait gives a long output. This step reads only the exit code, so `tail` keeps
+   only the end of the output. `set -o pipefail` keeps the exit code of `timeout` and `gh run watch`, not the exit code
+   of `tail`. `2>&1` keeps an error of `gh` in the end of the output. `tail` reads its whole input, so the pipe gives no
+   exit code 141. A `Check` run takes about 2 minutes, but it can take longer than one tool call of the agent. The agent
+   cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means that the run passed. Exit code 124
+   means that the run is still in progress. In that case, run the same command again. The 30-minute limit counts from
+   the first `gh run watch` of the CI wait, for all the runs of the list together. If a run is not complete when the 30
+   minutes end, stop. Any other exit code means that the run failed, or that `gh` failed. In that case, go to step 6 of
+   the CI wait.
 6. Run `gh run view <run id> --json status,conclusion,url,jobs`. If the command fails, stop and report the error. If
    `status` is `completed` and `conclusion` is `success`, the run passed. If `status` is not `completed`, `gh run watch`
    failed and the run is still in progress. In that case, do step 5 of the CI wait again. If `status` is `completed` and
