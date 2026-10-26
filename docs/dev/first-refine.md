@@ -33,6 +33,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   side effect.
 - If a ticket adds a small exported helper, ask the plan for each place that does the same job
   ([rules.md](rules.md#tests)).
+- An issue can ask for the same behavior as existing code, for example with the words "as `<file>` does". Ask the plan
+  to call one shared helper for that behavior, not to copy the code ([the one-home rule](rules.md#code)). If no exported
+  helper exists yet, the plan moves the code into one, and the existing code calls it. On #542 (2026-10-25), the first
+  form had a copy in `src/prompts/plan.ts` of the rule that makes a closing tag harmless. Review 1 had no findings, and
+  the diff read found the copy. The fix cost one use of the add-work rule.
 - If a review or the diff read finds a duplication, ask the plan to search all of `src/` and `test/` for the same
   pattern, not only the files of the diff, and to fix every copy in the same refine. A copy can already be on the base
   branch, in a file that the ticket does not touch (#94). [Review findings](review-findings.md#review-findings) gives
@@ -421,6 +426,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - If a new search hit adds a file that the issue does not list under Docs, compare that file at once with the plans of
   the tasks in flight. On #168, a new hit added `docs/dev/phases.md`, and a task of another milestone also changed that
   file.
+- Ask the plan to change no test file that the issue does not name, unless a requirement needs the change. Such a file
+  can be a file that another task in progress also changes. Then the fourth case of
+  [the stop rule](plan-review.md#the-stop-rule) can apply. On #542 (2026-10-25), refine 1 added
+  `test/commands/plan.test.ts`, which #523 also changed, and refine 2 removed it.
 - If a plan rewrites a sentence, ask the plan to keep the scope of each example and to add no reference that the old
   sentence does not name. On #168, one rewrite used "that rule" with no rule named before it. Another rewrite widened
   the example `HEAD` to "such a base".
