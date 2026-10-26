@@ -111,7 +111,8 @@ function render(value: unknown): string {
       return renderList(value, true);
     case "codeBlock":
       return childrenOf(value)
-        .map((child) => (isObject(child) && child.type === "text" && typeof child.text === "string" ? child.text : ""))
+        .filter((child) => isObject(child) && typeOf(child) === "text")
+        .map(render)
         .join("");
     case "inlineCard":
     case "blockCard":
