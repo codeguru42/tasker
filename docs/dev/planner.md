@@ -357,6 +357,12 @@ that it dismissed. The initial planner posts only after the approval of the user
   before a bullet that the issue names by its first words. The place can also be the start or the end of the section. On
   #435 (2026-10-25), the issue said "add two bullets to the section", and the agent stopped before `tasker approve` for
   a [design gap](plan-review.md#the-design-gap-rule).
+
+  An issue that adds a sentence to an existing bullet also names the place of the sentence in the bullet. The place is
+  right after or right before a sentence that the issue names by its first words. The place can also be the start or the
+  end of a paragraph of the bullet. On #480 (2026-10-26), requirements 3 and 4 asked for "one sentence with a link" with
+  no place, and the agent stopped for a [design gap](plan-review.md#the-design-gap-rule).
+
 - An issue that adds a command, a [trigger](first-refine.md#a-ticket-that-changes-a-procedure-doc) or a text names each
   list or gate that limits it. A gate is a rule that limits when a session does a step, or which reply or list of a
   session holds a text. The hint of `docs/dev/first-refine.md` that starts "If an issue adds a second trigger to a
