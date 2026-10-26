@@ -257,6 +257,17 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   [the folder of the agent](limits.md#limits) with `mkdir`. Start each command in that folder as
   [the fact test](plan-review.md#the-fact-test) says. Do not clear a folder with `rm -rf`. On #231, a Bash call with
   `rm -rf` drew a permission prompt. The same test in a new folder ran with no prompt.
+- If [a fact test](plan-review.md#the-fact-test) starts `claude` from a Bash call of the agent, the test run gets no
+  `HERDR_*` name in its environment. A test session that `herdr agent start` starts is not covered. For example, the
+  test starts `claude -p` with `env -i` and only the names of `ALLOWED_ENV_NAMES` in `src/config/allowed-env-names.ts`,
+  the filter of [The environment of a phase](phases.md#the-environment-of-a-phase). The reason is that the hook
+  `herdr-agent-state.sh` of the user configuration of Claude Code runs at each `SessionStart`. The hook can report the
+  session onto the pane that the `HERDR_*` names give. The agent of #523 measured with Claude Code 2.1.310 and herdr
+  0.9.3 on 2026-10-25 that with the filter, no `HERDR_*` name passed and the hook did nothing.
+- If [a fact test](plan-review.md#the-fact-test) needs a command that runs for a set time, the agent uses
+  `timeout <seconds> tail -f /dev/null`. An example is a stand-in for a slow command. The agent cannot run a foreground
+  `sleep`, as step 5 of [the CI wait](ci-wait.md#the-ci-wait) says. On #523 (2026-10-25), Claude Code 2.1.310 blocked a
+  foreground `sleep 40` in a Bash call of the agent.
 - If a script for [a fact test](plan-review.md#the-fact-test) in [the folder of the agent](limits.md#limits), outside
   the repo, uses top-level `await`, give the script the extension `.mts`. No `package.json` in that folder sets
   `"type": "module"`. As a result, `tsx` builds a `.ts` file there as CommonJS and refuses top-level `await`. On #225,
