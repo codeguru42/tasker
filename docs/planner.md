@@ -16,7 +16,7 @@ The planner pages are `docs/planner.md` and the pages of this list, "The pages":
   operator, a decision of the user, a question of the user, the issue-link rule, core features first and the work that
   waits, simplify over special rules, and the tools of a session.
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
-  file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start" and "A
-  topic handoff".
+  file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
+  topic handoff" and "The hold of the items".
 - [docs/dev/handoff-planner.md](dev/handoff-planner.md): "The follow-up planner", "An open draft", "The post count",
   "The steps of the old planner", "The handoff file of the planner" and "The start of the new planner".
