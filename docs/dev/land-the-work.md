@@ -162,9 +162,10 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   task, the requester is the orchestrator of the task. This case also covers a blocker that the requester runs under
   [the earlier-blocker offer](pick-the-tickets.md#pick-the-tickets). In that case, the orchestrator of the task sends no
   message. If the issue is of the own milestone of the requester and the requester does not run the task, the requester
-  tells the user. Another orchestrator runs the task, and no rule finds which one. In each other case, the requester
-  sends the orchestrator of the task one message with `SendMessage` that gives the link of the comment. The requester
-  sends the message to the session name of the form `orchestrator-<milestone>` of
+  tells the user. If the task is not [a parked task](pick-the-tickets.md#the-defer-rule), another orchestrator runs the
+  task, and no rule finds which one. If the task is a parked task, no orchestrator runs it. In each other case, the
+  requester sends the orchestrator of the task one message with `SendMessage` that gives the link of the comment. The
+  requester sends the message to the session name of the form `orchestrator-<milestone>` of
   [the notice rule](doc-reads.md#the-notice-rule). The requester counts a missing session with the name of the milestone
   as a failed message. If `SendMessage` fails, the failure rule applies, and the requester leaves the comment on the
   issue and the body as it is. Before the orchestrator of the task sends the link of the comment, the orchestrator of
