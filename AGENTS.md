@@ -32,7 +32,8 @@ session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-re
   rebase conflict.
 - [docs/dev/pick-the-tickets.md](docs/dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the
   stacked-ticket rule, the parent-hold rule, the link offer, the defer rule and "The prompt of an agent".
-- [docs/dev/doc-reads.md](docs/dev/doc-reads.md): the re-read rule, the notice rule and the doc-read rule.
+- [docs/dev/doc-reads.md](docs/dev/doc-reads.md): the re-read rule, the notice rule, the agent notice and the doc-read
+  rule.
 - [docs/dev/run-one-ticket.md](docs/dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the
   base rule, the add-work rule, the diff read and the measure rule.
 - [docs/dev/plan-review.md](docs/dev/plan-review.md): the repo-files rule, the fact test, the issue check, the stop
