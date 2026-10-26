@@ -74,14 +74,16 @@ the session list or a message fails, the failure rule applies, and the orchestra
 session that does not answer gets no second notice. The re-read rule covers such an orchestrator at its next landing.
 
 The notice is information. When the other orchestrator gets a notice, the other orchestrator does the steps of the
-re-read rule before its next step. The other orchestrator takes the rule from the doc, not from the notice. When the
-operator gets a notice, the operator does [the doc-read rule](#the-doc-read-rule) and then reads each changed page of
-the operator again.
+re-read rule before its next step. The other orchestrator takes the rule from the doc, not from the notice. The other
+orchestrator also sends an agent notice to its own agents in flight, as [the agent notice](#the-agent-notice) says. When
+the operator gets a notice, the operator does [the doc-read rule](#the-doc-read-rule) and then reads each changed page
+of the operator again.
 
 Each orchestrator has its own docs of the orchestrator, because each prompt names its own docs. `AGENTS.md`,
 `docs/orchestrator.md`, the pages of its list "The pages" and `docs/sessions.md` are docs of each orchestrator.
 
-The re-read rule and the notice rule do not cover the agents. Each new agent reads the docs when it starts.
+The re-read rule and the notice rule do not cover the agents. Each new agent reads its docs when it starts.
+[The agent notice](#the-agent-notice) gives the docs of an agent, and it covers an agent in flight.
 
 ## The agent notice
 
