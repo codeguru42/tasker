@@ -1,10 +1,10 @@
 # Filing issues
 
 This page gives the steps and the GitHub facts to file issues, blocked-by links and milestones on GitHub.
-[Before a post](#before-a-post) covers each session that posts an issue, except where a sentence names the planner. The
-rest of the page is for the planner. [planner.md](planner.md) defines the terms "planner" and "blocked-by link", and
-[docs/sessions.md](../sessions.md) defines the term "user". planner.md also holds the rules for what an issue says and
-where it goes. This page holds only how to do it on GitHub.
+[Before a post](#before-a-post) covers each session that posts an issue, except where a sentence names the planner.
+[A recurrence](#a-recurrence) covers each session. The rest of the page is for the planner. [planner.md](planner.md)
+defines the terms "planner" and "blocked-by link", and [docs/sessions.md](../sessions.md) defines the term "user".
+planner.md also holds the rules for what an issue says and where it goes. This page holds only how to do it on GitHub.
 
 ## Before a post
 
@@ -59,6 +59,26 @@ tasks in flight.
 A link can still land on a task that started between the read and the write. Then the session removes the link with the
 command of [The blocked-by links](#the-blocked-by-links). The session tells the user that the link was a race. In that
 case, the orchestrator did not skip a blocker.
+
+## A recurrence
+
+A recurrence is a problem that shows again while an open issue already covers its fix. A recurrence comment is a comment
+on that open issue that gives the new case. This section covers each session, also during the work.
+
+- A session that finds a recurrence and is not the planner sends the recurrence to the planner, as each lesson goes. The
+  message names the open issue. For the orchestrator, the planner bullet of
+  [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) of pick-the-tickets.md gives the message.
+- The planner drafts the recurrence comment. The comment gives the ticket, the date and the facts of the new case. The
+  planner shows the draft to the user, as [Before a post](#before-a-post) says. The planner posts the comment after the
+  approval.
+- With the draft, the planner gives the user one recommendation for the issue: no change, a priority label, another
+  milestone, or new blocked-by links. The user decides. After the approval, the planner makes the change in the same
+  post round.
+- A change of the milestone or of the links follows [The blocked-by links](planner.md#the-blocked-by-links) of
+  planner.md, as for any issue. That also covers the read of `tasker status` before a link.
+
+On 2026-10-24, #406 showed the problem of #391 again during the work, not in a `/session-review`. The user said: "if we
+see a recurrence we can bump up its priority and adjust the milestone and blockers."
 
 ## The blocked-by links
 

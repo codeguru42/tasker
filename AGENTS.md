@@ -63,8 +63,8 @@ session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-re
 - [docs/dev/planner.md](docs/dev/planner.md): the rules for a planner that plans a milestone and writes its issues: the
   initial planner and the follow-up planner, the order of the work, the review loop of a draft, the body of an issue,
   the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the user.
-- [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, and the steps of the planner
-  for the blocked-by links, the project board and the milestones.
+- [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, "A recurrence", and the steps
+  of the planner for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user:
   the operator, a decision of the user, a question of the user, the issue-link rule, core features first and the work
   that waits, simplify over special rules, and the tools of a session.
