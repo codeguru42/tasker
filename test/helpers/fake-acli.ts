@@ -70,3 +70,15 @@ export function fakeAcli(
   };
   return fake;
 }
+
+// The args of the call that reads the active site.
+export const AUTH_STATUS_ARGS = ["jira", "auth", "status"];
+
+// The measured stdout of `acli jira auth status` with one login.
+export const MEASURED_AUTH_STATUS = [
+  "✓ Authenticated",
+  "  Site: codeguru42.atlassian.net",
+  "  Email: user@example.com",
+  "  Authentication Type: oauth_global",
+  "",
+].join("\n");
