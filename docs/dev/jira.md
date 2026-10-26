@@ -69,6 +69,50 @@ can switch the site of `acli` while tasker runs.
 tasker supports repos on more than one site through `issueTracker.site`. The fact tests cover one site and one login
 only, and no test covers a switch between two sites.
 
+## The conversion of ADF
+
+ADF (Atlassian Document Format) is the JSON tree that Jira Cloud uses for the description of an issue. `adfToText()` in
+`src/issues/jira/adf.ts` turns an ADF document into plain text. It starts no `acli` call. The text of `null` or
+`undefined` is `""`, and an issue with no description gives this input. Any other input must be a `doc` node with a
+`content` array. Otherwise, `adfToText()` throws `AdfError`.
+
+Each node is inline or block:
+
+- The inline types are `text`, `hardBreak`, `inlineCard`, `mention`, `media`, `emoji`, `status`, `date` and
+  `inlineExtension`.
+- Each child of a `paragraph` or a `heading` is also inline.
+- Each other node is a block.
+
+The join rule:
+
+- Inline nodes next to each other join with no separator.
+- A block has a blank line before it and a blank line after it.
+- A block that gives `""` adds no line and no blank line.
+- A `listItem` joins its parts with a line end, not with a blank line.
+
+The table of node types follows. The reason: the plan session needs the words of the issue, not its layout.
+
+| Node                                   | Text                                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------------------------ |
+| `text`                                 | The value of `text`. The marks do not change it.                                     |
+| `hardBreak`                            | A line end.                                                                          |
+| `bulletList`                           | One line for each item, in the form `- <text of the item>`.                          |
+| `orderedList`                          | One line for each item, in the form `<n>. <text of the item>`.                       |
+| `codeBlock`                            | The `text` of its children, with the white space as it is.                           |
+| `inlineCard`, `blockCard`, `embedCard` | `attrs.url`.                                                                         |
+| `mention`                              | `attrs.text`.                                                                        |
+| `media`                                | `[attachment: <alt>]`, else `[attachment: <id>]`, else `[attachment]`.               |
+| `rule`                                 | `""`.                                                                                |
+| Each other type                        | The join of its children. An unknown node type gives its children and does not fail. |
+
+A value of `attrs` counts only if it is a non-empty string. An `orderedList` starts at `attrs.order` if that is a
+number, else at 1. Each later line of an item has as many spaces before it as the marker is wide, so a nested list stays
+under its item. An item whose text is `""` still gives one line: the marker alone, such as `-` or `2.`. It takes a
+number of an `orderedList`.
+
+A node with no `content` array has no children. A child that is not an object gives `""`. At the end, tasker removes the
+white space at the end of each line and the blank lines at the end of the text.
+
 ## The errors
 
 - `AcliError`: `acli` exited with a code other than 0, or a signal stopped it. It holds the subcommand, the stdout, the
@@ -77,6 +121,7 @@ only, and no test covers a switch between two sites.
 - `AcliNotInstalledError`: `acli` was not found. The message names the program that `runAcli()` tried to start.
 - `AcliBinError`: `TASKER_ACLI_BIN` names a file that does not exist, a folder, or a file that the user cannot run.
 - `AcliRefusedError`: the call is one that tasker never runs.
+- `AdfError`: the input of `adfToText()` is not an object with `type` equal to `"doc"` and a `content` array.
 - `JiraLoginError`: `acli` has no Jira login. `acli jira auth status` exited with a code other than 0, or its stdout has
   no `Site:` line or an empty value.
 - `JiraSiteError`: the site of the repo differs from the active site.
@@ -104,3 +149,14 @@ The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-st
 
 The help of `acli jira auth switch` gives `--site` as its flag for the site. Nobody measured the output with no login,
 because the agent must not log out.
+
+## The measure of an ADF description
+
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable`. Two commands made and read an
+issue:
+
+- `acli jira workitem create --project TEST --type Task --summary "tasker #541 ADF measure" --description-file description.json`
+- `acli jira workitem view TEST-1 --json --fields description`
+
+`--description-file` took the file as ADF, not as plain text. The `--json` output is one JSON object, and the ADF
+document is the value of `fields.description`. The read gave back the nodes, marks and attrs of the file.
