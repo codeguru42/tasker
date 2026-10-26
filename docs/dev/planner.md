@@ -129,8 +129,10 @@ issue landed:
 The follow-up planner can also drop a lesson or a proposed issue with no approval of the user. A drop needs no review.
 
 After each post or drop, the follow-up planner tells the user in a short report. The report gives the link or the drop,
-the source, and each finding that the planner dismissed, with its reason. The follow-up planner also tells the session
-that sent the lesson or the proposed issue, if that session is not `operator-<slug>`.
+the source, and each finding that the planner dismissed, with its reason. The report also gives the command and the
+result of each test of a fact about an outside tool, as [The body of an issue](#the-body-of-an-issue) says. The
+follow-up planner also tells the session that sent the lesson or the proposed issue, if that session is not
+`operator-<slug>`.
 
 ### The escape hatch
 
@@ -309,6 +311,16 @@ that it dismissed. The initial planner posts only after the approval of the user
   fact, or it writes the fact with its case. On #369, the issue said that the format check fails after a fenced block.
   The agent measured that the check fails only when indented text of the same step follows the block. A design gap then
   changed the words to "can fail".
+- Before the post, the planner tests each fact about an outside tool (for example Claude Code, herdr, git or gh) that it
+  writes itself, also in the reason of a requirement. The planner does this with
+  [the fact test](plan-review.md#the-fact-test), in the way that the second bullet of
+  [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. If the planner does not test a fact,
+  the issue says next to the fact that no one tested it. The planner gives the command and the result of each test to
+  the user (the follow-up planner in the report of
+  [The post of the follow-up planner](#the-post-of-the-follow-up-planner), the initial planner in the chat with the
+  user). A fact that the issue copies from a ticket stays under the bullet "A fact that an issue copies from a ticket
+  can be true in only one case". On #413 (2026-10-25), the reason about the hook at `/clear` was false, and the fix cost
+  a change of scope.
 - An issue can let a session decide choices that other rules send to the user. Then the issue also names the rules that
   keep an action for the user alone, for example "Only the user changes a landing order of the overlap rule" (see
   [Land the work](land-the-work.md#land-the-work)). The issue says that the new rule does not cover them. On #375,
