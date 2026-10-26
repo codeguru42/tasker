@@ -295,6 +295,13 @@ found that no rule covered a web search result, and the agent dismissed the find
 finding can also give the output of a command that the repo-files rule forbids, for example a row of `herdr agent list`.
 Such a plan or finding also counts like a quote of a file outside the worktree.
 
+A plan can also give the output of a command of [a fact test](#the-fact-test) that the feedback text gives. Such a plan
+does not count like a quote of a file outside the worktree. The reason is that the agent puts the results of the fact
+test in the feedback text. [The repo-files rule](#the-repo-files-rule) names the feedback text as a source of the plan
+session. The exception covers only the output that the feedback text gives, and it does not let the plan session run
+such a command. On #560 (2026-10-25), plan v2 repeated the output `ctx:72%` of the fact test from the feedback text, and
+the agent judged it no quote.
+
 If a plan or a finding quotes a file outside the worktree, the agent tells the orchestrator. Then the orchestrator tells
 the user. After this report, the agent can still do the steps that come before `tasker approve` or `tasker accept`. For
 example, it can run a refine of step 4 or step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket), or dismiss a
