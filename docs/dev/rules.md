@@ -110,7 +110,8 @@ provider id and a kind of task.
   failed. The agent fixed the tests in a new commit on top of the branch. As a result, the implementation commits under
   that fix failed `npm run check` on the base branch.
 - A `docs:` commit has no rule for `npm run check`. Before a `docs:` commit, the session still runs `npm run check`, as
-  [Check](#check) says, but [the commit check](verify-failures.md#the-commit-check) does not run it on a `docs:` commit.
+  [Check](#check) says. Only step 8 of [the commit check](verify-failures.md#the-commit-check) runs it on a `docs:`
+  commit, and only at the tip of the task branch.
 - tasker does not check these rules. An agent checks each commit only after a failed `tasker verify`. When
   `tasker verify` passes, nobody checks the commits under the tip. `docs/dev/verify-failures.md` gives the steps of the
   agent, in [The broken-commit steps](verify-failures.md#the-broken-commit-steps).
