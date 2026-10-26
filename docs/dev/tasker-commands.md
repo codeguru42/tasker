@@ -148,10 +148,8 @@ of the list. As a result, the rule that the agent first does the fact test does 
   `tasker doctor` then passes, the agent runs `tasker start` again.
 - `tasker update-branch` prints `origin/<branch> does not exist; nothing to sync from` for a task branch that was never
   pushed. This output is normal.
-- `tasker dismiss-review` prints `dismissed review findings for <issue key>`. This output is normal. It differs from the
-  output that
-  [skills/tasker/references/work-review.md](../../skills/tasker/references/work-review.md#tasker-dismiss-review) gives
-  for the `tasker dismiss-review` of this repo.
+- `tasker dismiss-review` prints `dismissed findings <positions> of review <number> of <issue key>`. This output is
+  normal.
 - `tasker merge` prints `landed: <commit> on origin/main`. `tasker finish` prints that it marked the issue done on the
   tracker, and it closes the issue.
 - `tasker start` can print a GraphQL warning that the assign of the issue on the tracker failed. The warning does no
