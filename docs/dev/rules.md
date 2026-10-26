@@ -152,7 +152,15 @@ provider id and a kind of task.
   not break, so its line can stay over 120 characters.
 - The doc-search rule: a search for words of a doc, for example with `git grep`, matches one line. A sentence can span
   two lines. So a search for doc words searches a short part that fits on one line, and then reads the hit. Each place
-  that names a search of doc words links to this bullet.
+  that names a search of doc words links to this bullet. A short part of two or more words can still span two lines. For
+  such a part, the search joins the lines of a file first and searches the joined text. Between two words, the pattern
+  takes ` +` in place of one space. The reason: in a list item, the join puts the indent of the next line between the
+  two words. Then a single space in the pattern does not match. The search runs
+  `tr '\n' ' ' < FILE | grep -o -E '<pattern>'` on each file. The joined text has no line numbers, so after a hit the
+  search finds the line break of the hit. It searches for each word of the hit at the end of a line and shows the next
+  line too, for example `git grep -n -A1 -E 'index$'`. The search reads each hit. The right hit is the line whose next
+  line starts with the next word of the hit. On #506, plan v1 searched for `index lines?`. It missed "index" at the end
+  of one line and "line" at the start of the next line.
 
 ## The installed skill
 
