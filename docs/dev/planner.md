@@ -399,10 +399,10 @@ that it dismissed. The initial planner posts only after the approval of the user
   codes are out of scope. On #356, review 2 asked about the exit codes that the hint did not name.
 - An issue can give a rule that lets a session do a write only after a read. Examples are a read of `tasker status` and
   a read of the state of an issue. Each such read is a guard of the write. The issue gives the case of a failed read for
-  each guard. The case says whether the write goes on or stops. The reason: a failed read prints no output. So a rule
-  with no such case can read the failure as a pass of the guard and do the write. On #441 (2026-10-25), the rule let a
-  session write only if `tasker status` listed no task, and a failed `tasker status` prints no task list. Review 1 found
-  the gap, and the fix cost one more review loop.
+  each guard. The case says whether the write goes on or stops. The reason: a failed read prints no answer, for example
+  no task list. So a rule with no such case can read the failure as a pass of the guard and do the write. On #441
+  (2026-10-25), the rule let a session write only if `tasker status` listed no task, and a failed `tasker status` prints
+  no task list. Review 1 found the gap, and the fix cost one more review loop.
 - A fact that an issue copies from a ticket can be true in only one case. Before the post, the planner measures the
   fact, or it writes the fact with its case. On #369, the issue said that the format check fails after a fenced block.
   The agent measured that the check fails only when indented text of the same step follows the block. A design gap then
