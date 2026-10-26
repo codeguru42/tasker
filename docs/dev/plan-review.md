@@ -13,8 +13,8 @@ worktree when its path is not under the path on the `worktree:` line of `tasker 
 read or quote a file outside the worktree.
 
 The plan session also does not read a web page or a web search result. Examples of the tools are WebFetch and WebSearch.
-A web page counts like a file outside the worktree. On #430 (2026-10-25), the plan session read web pages on permission
-modes, sandboxing and hooks with WebFetch, and plan v1 quoted them.
+A web page and a web search result count like a file outside the worktree. On #430 (2026-10-25), the plan session read
+web pages on permission modes, sandboxing and hooks with WebFetch, and plan v1 quoted them.
 
 The plan session also runs no command that reads or changes something outside the worktree. The reason: a command on
 another session acts on a real session, and the output of such a command is a detail from another place. An example is a
@@ -291,9 +291,11 @@ removed the link for one case but still fixed the body, so the body named a path
 
 A plan or a finding quotes a file outside the worktree when it gives text from that file, or when it says that it read
 that file. "Outside the worktree" has the meaning of the repo-files rule. A plan or a finding can give text from a web
-page, or say that it read a web page. Such a plan or finding counts like a quote of a file outside the worktree. A plan
-or a finding can also give the output of a command that the repo-files rule forbids, for example a row of
-`herdr agent list`. Such a plan or finding also counts like a quote of a file outside the worktree.
+page, or say that it read a web page. A plan or a finding can also give text from a web search result, or say that it
+read one. Such a plan or finding counts like a quote of a file outside the worktree. On #491 (2026-10-25), review 1
+found that no rule covered a web search result, and the agent dismissed the finding as outside the issue. A plan or a
+finding can also give the output of a command that the repo-files rule forbids, for example a row of `herdr agent list`.
+Such a plan or finding also counts like a quote of a file outside the worktree.
 
 If a plan or a finding quotes a file outside the worktree, the agent tells the orchestrator. Then the orchestrator tells
 the user. After this report, the agent can still do the steps that come before `tasker approve` or `tasker accept`. For
