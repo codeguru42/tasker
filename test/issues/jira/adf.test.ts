@@ -124,6 +124,14 @@ describe("adfToText", () => {
       expect(toText(doc(node("codeBlock", [t(code, [{ type: "code" }])])))).toBe(code);
     });
 
+    it("gives only the text children of a codeBlock", () => {
+      expect(toText(doc(node("codeBlock", [t("a"), leaf("mention", { text: "@Ann" })])))).toBe("a");
+    });
+
+    it("gives an empty text for a rule with content", () => {
+      expect(toText(doc(p(t("a")), node("rule", [t("x")]), p(t("b"))))).toBe("a\n\nb");
+    });
+
     it("gives the url of an inlineCard", () => {
       expect(toText(doc(p(leaf("inlineCard", { url: "https://x.test" }))))).toBe("https://x.test");
     });
