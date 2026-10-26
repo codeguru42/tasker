@@ -156,7 +156,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   tests each such claim against the issue and the feedback of each refine. If neither gives that source, the agent asks
   the plan in a refine to remove the claim. On #475 (2026-10-25), plan v2 called a text of the feedback "text that the
   user dictated", to keep a sentence over the word limit. On #439 (2026-10-25), a todo of plans v2 and v3 gave a false
-  decision of the user about [the Check rule](rules.md#check) that no feedback gave.
+  decision of the user about [the Check rule](rules.md#check) that no feedback gave. If neither the issue nor an answer
+  of the orchestrator gives the source of a text, a feedback text names no source. It says "the agent". On #520
+  (2026-10-25), refine 1 wrote "the user asked for these scripts" with no such word of the user, and plan v2 copied it.
+  This cost refine 2.
 - If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
   [The body of an issue](planner.md#the-body-of-an-issue) asks the planner for the same compare before the post. If no
   doc supports the reason, ask the plan to drop it from the example. On #265, the Summary of the issue gave the reason
@@ -330,6 +333,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - A refine can ask for a check that throws for a value that the code always has. Such a check cannot fail, and the
   dead-code rule of [rules.md](rules.md#code) bans it. Point the plan to the existing form, for example `feedback!` in
   `runResumed()`. On #347, such a check cost one refine before `tasker approve`.
+- A ticket can change code to use a new export in place of an old one. If it does, ask the plan to name each old export
+  that loses its last use in `src/`. Ask the plan to remove each one in the same change, because the dead-code rule of
+  [rules.md](rules.md#code) bans an unused export. An example of a new export is a new list or a new schema. No step of
+  `npm run check` finds an unused export, so the check does not stop it. On #562 (2026-10-25), review 1 found the unused
+  export `EFFORTS` in `src/config/schema.ts`, and the fix cost one loop.
 - If a docs todo asks for reasons, give the plan the reasons that the issue lists. Then the session writes the reason,
   not only the rule. On #131, the first plan gave only the rules, and the diff read had to ask for the reasons again.
   Ask the plan to copy each reason text of the Docs section of the issue word for word. If such a reason text holds a
@@ -750,6 +758,10 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   plan to keep only the exit codes that the issue gives. On #483 (2026-10-25), plan v1 added a sentence for the exit
   code 128 of `git grep`, and refine 1 removed it.
 - Do not write "go to step N" without a condition. Define each term, for example "loop". Do not list a step two times.
+  If a step of a numbered list needs its own list, ask the plan for lettered bullets, for example `- (a)`. A numbered
+  sub-list makes "step N" ambiguous. Lines that start with "a." are no fix, because CommonMark (the Markdown standard)
+  does not read "a." as a list item. On #532 (2026-10-25), review 1 found a numbered sub-list and review 2 found lines
+  that start with "a.", and each cost one loop.
 - The link to the home of a term goes on the first use of the term in the section. That first use can be in a step that
   the ticket does not change. On #487 (2026-10-25), the plan put the link on "the tab list" in step 2, but step 1 used
   the term first.
