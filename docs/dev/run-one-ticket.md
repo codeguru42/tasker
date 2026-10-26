@@ -7,9 +7,16 @@ uses `origin/<base branch>`.
 
 The agent of the ticket runs steps 1 to 11. Each step gives the state of the task after its command succeeds.
 
-1. Run `tasker doctor`. Then read the issue with `gh issue view <number>`, and compare the issue body with the prompt of
-   the agent. If the body differs from the prompt, report each change to the orchestrator. The body can change while the
-   agent works. Each `tasker` command of steps 1 to 11 follows
+1. Run `tasker doctor`. A timeout line is a line of the output of `tasker doctor` that starts with `error` and ends with
+   `the check did not finish in <n> ms`. `<n>` is a number. If the output of the first run has a timeout line, run
+   `tasker doctor` one more time. On #562 (2026-10-25), the first run printed
+   `error gh project: codeguru42/tasker: the check did not finish in 15000 ms`, and the second run printed no error. If
+   the output of the second run has no timeout line, go on with this step. If it has a timeout line,
+   [stop](limits.md#the-answer-wait-rule), and give the output of both runs in the report. The two runs of
+   `tasker doctor` change no task. Run `tasker doctor` at most two times in this step. After the stop, the answer of the
+   orchestrator can say otherwise. Then read the issue with `gh issue view <number>`, and compare the issue body with
+   the prompt of the agent. If the body differs from the prompt, report each change to the orchestrator. The body can
+   change while the agent works. Each `tasker` command of steps 1 to 11 follows
    [the command rules](tasker-commands.md#the-command-rules).
 2. If `tasker status --issue <issue>` already lists a task for the ticket, for example a parked task that came back (see
    [the defer rule](pick-the-tickets.md#the-defer-rule)), follow [the comeback rule](#the-comeback-rule) instead of this
