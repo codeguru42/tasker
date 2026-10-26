@@ -77,6 +77,7 @@ export async function readGithubIssue(ref: IssueRef, account: string, env: NodeJ
     body: view.body ?? "",
     url: view.url,
     labels: view.labels.map((label) => label.name),
+    components: [],
     state,
     comments: [],
   };

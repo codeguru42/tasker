@@ -15,6 +15,8 @@ export interface Issue {
   body: string; // "" when the issue has no body
   url: string;
   labels: string[]; // the label names, as the tracker gives them
+  components: string[]; // the component names, as the tracker gives them
+  status?: string; // the name of the status, as the tracker gives it
   state: "open" | "closed";
   comments: IssueComment[]; // from the oldest to the newest, from each author
 }
