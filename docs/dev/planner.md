@@ -266,6 +266,13 @@ that it dismissed. The initial planner posts only after the approval of the user
 - An example in an issue names its ticket or tickets exactly. On #305, the issue said "the ticket" and then listed four
   tickets, #171, #172, #98 and #173. On #305, the case of this bullet and the case of the bullet before it each cost one
   stop of the agent before `tasker approve`.
+- Before the post, the planner searches the files under `docs/` for a definition of each term of the draft that a doc
+  can define. The planner chooses these terms, for example "tool block", and this choice is open on purpose. The search
+  follows [the doc-search rule](rules.md#docs) and covers the forms of a definition, for example `<term> is`,
+  `defines <term>` and `<term>:`. The list of forms is an example, not a full list. If a doc defines the term, the issue
+  uses it only in the meaning of that doc, and it uses other words for another meaning. On #444 (2026-10-25), the issue
+  said "the same tool block" for parallel calls of one message. The tool-block rule of `tasker-commands.md` defines a
+  tool block as a denial of a tool call.
 - An issue can add a general rule to a doc. Before the post, the planner searches the other docs for a narrower form of
   the rule. The search follows [the doc-search rule](rules.md#docs). The Docs section of the issue names each such
   place. The ticket then replaces each narrower form with a link to the new rule, as [the one-home rule](rules.md#code)
