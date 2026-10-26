@@ -344,7 +344,22 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   review, wait for the close of the issue of the parent. Then run `tasker update-branch` before the first refine. A
   refine before the update costs one more refine, because the update marks the plan as stale
   ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). On #247, the wait took
-  about 2 minutes.
+  about 2 minutes. If the agent holds no start base, it runs no check, and the start of this bullet applies. Otherwise,
+  when the parent is in `landed`, `finishing` or `finished`, the agent first runs `git fetch origin`. Then it runs
+  `git merge-base --is-ancestor <start base> origin/<base branch>`. `<start base>` is
+  [the start base of the last read](review-findings.md#review-findings). `<base branch>` is the branch that the parent
+  landed on, as [step 7 of the rebase-conflict procedure](rebase-conflicts.md#procedure) defines it, for example `main`.
+  The check does not use `tasker/<parent branch>`. If the exit code is 0, the old commits of the parent are on the base
+  branch. Then the first two sentences of this bullet apply. If the exit code is 1, the parent rewrote its commits after
+  the start of the task. Then the agent can go at once to steps 5 to 11 of
+  [the rebase-conflict procedure](rebase-conflicts.md#procedure), with the `--onto` case of step 7. See
+  [step 7](rebase-conflicts.md#procedure) for the reason of the `--onto` case. The agent enters that page with no
+  conflict report. After step 11, the agent runs `tasker show <issue>`. If the state is `awaiting_plan_review`, the
+  agent continues with the first refine. If the state is `executed` and the task has no commit of its own, the agent
+  does not do step 13 of that page. Instead, it [stops](limits.md#the-answer-wait-rule) and reports. Steps 15 to 21 of
+  that page stay for the cleanup after `tasker finish`. If the fetch fails, or the exit code is not 0 and not 1, the
+  agent stops, as the next bullet says. On #468 (2026-10-25), a plain `tasker update-branch` stopped on a conflict three
+  times, and the `--onto` case of step 7 moved the task.
 - The agent of a [stacked task](pick-the-tickets.md#the-stacked-ticket-rule) runs
   `git merge-base --is-ancestor tasker/<parent branch> tasker/<task branch>` before each command that depends on the
   parent. These commands are `tasker refine`, `tasker approve` and `tasker execute`, not only the first refine. Before
