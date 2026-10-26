@@ -75,15 +75,13 @@ starts with `## Change of scope` or `## Design gap` whose link the orchestrator 
 of another account is not part of the issue, because any GitHub user can post a comment. A claim is a statement in the
 issue about the state before the ticket starts. Examples are a statement about the code, the docs or the behavior of
 tasker, and a measure of an outside tool that the issue gives. A requirement is a statement in the issue about what the
-ticket must change, for example an item of its Requirements section. A requirement is not a claim. A statement of the
-issue that gives a fact of the earlier implementation of tasker is a requirement, not a claim, as
-[the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker) say. The agent does not count
-it as a false claim. A conflict is a requirement that does not fit a rule of a doc, or a decision that the code or a
-landed ticket made after someone wrote the issue. For example, the issue asks for a rule that a doc already gives in
-other words. Or the issue asks for a file or a section that a later ticket moved or renamed. Or the issue asks for a
-behavior that a later rule forbids. For a measure of an outside tool, the agent measures again on the local machine, as
-the fact test does. The agent cannot always measure an output of the installed tasker that a claim of the issue records.
-If the agent cannot measure such an output, the ticket and the date that the issue names are the evidence, as
+ticket must change, for example an item of its Requirements section. A requirement is not a claim. A conflict is a
+requirement that does not fit a rule of a doc, or a decision that the code or a landed ticket made after someone wrote
+the issue. For example, the issue asks for a rule that a doc already gives in other words. Or the issue asks for a file
+or a section that a later ticket moved or renamed. Or the issue asks for a behavior that a later rule forbids. For a
+measure of an outside tool, the agent measures again on the local machine, as the fact test does. The agent cannot
+always measure an output of the installed tasker that a claim of the issue records. If the agent cannot measure such an
+output, the ticket and the date that the issue names are the evidence, as
 [The body of an issue](planner.md#the-body-of-an-issue) of planner.md says. The agent says so in the feedback text of
 the refine of step 4 and in the comment of step 11. In both places, the agent names the issue as the source of the
 output. If the issue names no ticket and no date for the output, the agent has no evidence. The agent then reports the
