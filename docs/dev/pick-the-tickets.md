@@ -53,7 +53,8 @@ The orchestrator does all the steps of this section.
   issue can join a milestone while a run is in progress. In one milestone, a new issue stayed in Todo for hours, because
   the orchestrator read the board only at the start. The bullet "When the final report of the agent of a ticket says
   that the ticket landed" of [Land the work](land-the-work.md#land-the-work) gives the place of this read among the
-  landing steps.
+  landing steps. A long-running orchestrator also reads the board with its board watch job, as
+  [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says.
 - Run at most 3 agents at the same time, one ticket for each agent.
 - Do not run two tickets at the same time when both edit the same shared file, for example a file under `test/helpers/`
   or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. This bullet and
