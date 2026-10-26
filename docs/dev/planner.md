@@ -317,6 +317,42 @@ that it dismissed. The initial planner posts only after the approval of the user
   [Review findings](review-findings.md#review-findings) says for a finding that contradicts an exact rule of the issue.
   On #398 (2026-10-24), review 1 asked for a new bullet in an altitude finding, and the agent dismissed the finding with
   the words of the issue.
+- An issue can put new text in an existing paragraph or an existing bullet on purpose. For the limit of Rule 6.6 of the
+  simple-english skill, a bullet with one paragraph counts as one paragraph. In a bullet with two or more paragraphs,
+  each paragraph counts on its own. Before the post, the planner counts the sentences of the paragraph that gets the new
+  text, as it is today. It adds the sentences that the issue asks for in that paragraph. These are each rule, choice,
+  reason and example of the Requirements and the Docs section of the issue.
+
+  If the count is over six, the issue says that the new text starts a new paragraph. It gives the place: a new paragraph
+  inside the bullet, or a new bullet. It can also name each new paragraph and the sentences that it holds. Words such as
+  "at the end of this bullet" or "after its last sentence" alone put the text in the last paragraph. So, if the count is
+  over six, the issue does not use them alone. With a new paragraph inside the bullet, the issue can still say "in this
+  bullet, not a new bullet".
+
+  The reason: the agent of a ticket follows the exact words of the issue. So it keeps a paragraph or a bullet of more
+  than six sentences. On #534 (2026-10-25), the issue said "in this paragraph, not a new paragraph", and paragraph 1 of
+  "A side conversation" got 12 sentences. On #518 (2026-10-25), the issue said "at the end of this bullet, not in a new
+  bullet", and a hint of `docs/dev/first-refine.md` got 12 sentences.
+
+- The doc text of an issue is the text that the issue gives for a doc. It can be word for word, or content after words
+  such as "The new bullet says:". Before the post, the planner counts the doc text as it will stand in the doc. The
+  planner counts the sentences of each new paragraph and each new bullet. It also counts the words of each sentence that
+  the issue adds or changes. If an issue asks for a sentence count, for example "in one sentence", the issue gives the
+  text of that sentence word for word.
+
+  The limits are Rules 6.6, 6.3 and 5.1 of the simple-english skill, and the words count as Rules 8.5-8.7 say. The
+  simple-english bullet of [Docs](rules.md#docs) of `docs/dev/rules.md` says that each session writes its text with that
+  skill.
+
+  If a new paragraph or a new bullet is over six sentences, the issue gives two or more paragraphs. It names the
+  sentences of each one. If a sentence is over its word limit, the issue gives it as two sentences. Then the planner
+  counts the sentences of its paragraph again.
+
+  The reason: the agent also keeps a sentence over its word limit. The self-check of
+  [Before a post](issues.md#before-a-post) in `docs/dev/issues.md` does not count the doc text as it will stand in the
+  doc. On #575 (2026-10-25), the issue gave a new bullet of `docs/dev/first-refine.md` with 7 sentences and two
+  sentences of 26 words. The landed bullet kept the sentence that gives the source of the bullet, with 26 words.
+
 - An issue that adds a bullet to a section of a doc names the place of the bullet. The place is right after or right
   before a bullet that the issue names by its first words. The place can also be the start or the end of the section. On
   #435 (2026-10-25), the issue said "add two bullets to the section", and the agent stopped before `tasker approve` for
