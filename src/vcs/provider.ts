@@ -160,6 +160,7 @@ export interface PublishResult {
 export interface AssistantSurface {
   executeCommitText: string;
   denyRules: readonly string[];
+  deniedCommands: readonly string[];
   denyReadPaths: string[];
   // The folder of the publish tokens of the repo.
   publishTokensPath: string;

@@ -5,7 +5,6 @@ import type { RunInput } from "../../../src/assistant/provider.js";
 import { runInput } from "../../helpers/fake-claude.js";
 
 // The rules of claude for one run input. The input comes from the shared test helper.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 const rulesOf = (overrides: Partial<RunInput> = {}) => claudeRules(runInput(overrides));
 
 const writeAllowList = (cwd: string, folder?: string): string[] => [

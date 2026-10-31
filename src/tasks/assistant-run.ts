@@ -10,6 +10,7 @@ import {
   createSessionProvider,
   type PermissionMode,
   type RecordedSession,
+  type RunInput,
   type RunOutcome,
   type SandboxLimits,
 } from "../assistant/provider.js";
@@ -76,6 +77,9 @@ export interface PreparedPlanModeRun {
 
 // The limits that each entry point gives for its role.
 interface RoleLimits {
+  access: RunInput["access"];
+  deniedCommands: readonly string[];
+  deniedEditPaths: readonly string[];
   permissionMode: PermissionMode;
   timeoutMs: number;
   allowedTools?: readonly string[];
@@ -164,6 +168,7 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
 // herdr holds the sessions of the user. A session that can send input to the pane of another session
 // can approve the permission prompts of that session.
 const PLAN_MODE_DENY_RULES: readonly string[] = ["Bash(herdr:*)"];
+const PLAN_MODE_DENIED_COMMANDS: readonly string[] = ["herdr"];
 
 // The one home of the sandbox of the shell of a task run, in each role: the write paths and the shared
 // folder of the version control, and the read deny list of every configured repo.
@@ -192,6 +197,9 @@ async function taskSandbox(req: TaskRunRequest, common: CommonRun): Promise<Sand
 export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<PreparedPlanModeRun> {
   const common = prepareCommonRun(req, req.role);
   const limits: RoleLimits = {
+    access: "read-only",
+    deniedCommands: [...common.surface.deniedCommands, ...PLAN_MODE_DENIED_COMMANDS],
+    deniedEditPaths: [],
     permissionMode: "plan",
     timeoutMs: req.config.limits.planTimeoutMin * 60_000,
     disallowedTools: [...common.surface.denyRules, ...PLAN_MODE_DENY_RULES],
@@ -226,6 +234,9 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
   const limits: RoleLimits = {
     // The default mode lets the PermissionRequest hook of tasker answer each question that no rule decides.
     // permissionHookSettings gives the reason.
+    access: "workspace-write",
+    deniedCommands: surface.deniedCommands,
+    deniedEditPaths: [`${wt}/.git`, `${wt}/.git/**`, `${clone}/**`],
     permissionMode: "default",
     allowSkillWrites: true,
     timeoutMs: req.config.limits.executeTimeoutMin * 60_000,

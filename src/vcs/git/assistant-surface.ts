@@ -13,6 +13,9 @@ export const EXECUTE_COMMIT_TEXT = [
   "The branch can already hold commits from an earlier execute run of an earlier revision of this plan. Before you start, run `git log --reverse {{BASE_REF}}..HEAD` and read what is there. Build on that work. Do not do it again.",
 ].join("\n\n");
 
+// The commands that the shell of the assistant must not run. Each entry is the leading words of a shell command.
+export const DENIED_COMMANDS: readonly string[] = ["git push"];
+
 // The deny rules for the shell of the assistant, in the rule syntax of Claude Code.
 export const DENY_RULES: readonly string[] = ["Bash(git push:*)"];
 

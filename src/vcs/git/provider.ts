@@ -1,6 +1,7 @@
 import type { VcsContext, VcsProvider } from "../provider.js";
 import type { GitVcsConfig } from "./config.js";
 import {
+  DENIED_COMMANDS,
   DENY_RULES,
   EXECUTE_COMMIT_TEXT,
   readDenyPaths,
@@ -205,6 +206,7 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
       return {
         executeCommitText: EXECUTE_COMMIT_TEXT,
         denyRules: DENY_RULES,
+        deniedCommands: DENIED_COMMANDS,
         denyReadPaths: readDenyPaths(config),
         publishTokensPath: publishTokens,
         sandboxWritePaths: (path) => sandboxWritePaths({ clone, env: ctx.env, path }),

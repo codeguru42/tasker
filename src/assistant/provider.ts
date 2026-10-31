@@ -50,6 +50,12 @@ export interface RunInput {
   // Belongs to tasker.
   sessionDir: string;
   jsonSchema?: Record<string, unknown>;
+  // Whether the edit tools can change files of the worktree.
+  access: "read-only" | "workspace-write";
+  // Each entry is the leading words of a shell command that the assistant must not run, for example "git push".
+  deniedCommands: readonly string[];
+  // Each entry is an absolute path that the edit tools must not change. An entry that ends in /** covers each path under it.
+  deniedEditPaths: readonly string[];
   permissionMode?: PermissionMode;
   allowedTools?: readonly string[];
   // A deny wins over an allow.
