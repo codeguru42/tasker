@@ -97,8 +97,7 @@ describe("resolveBaseBranch", () => {
   }
 
   function resolve(extra: Partial<Parameters<typeof resolveBaseBranch>[0]> = {}) {
-    // The options stay in a variable, so that tsc accepts keys that the types do not name yet.
-    const options = {
+    return resolveBaseBranch({
       repoKey: "tasker",
       clone,
       sshKey: undefined,
@@ -113,8 +112,7 @@ describe("resolveBaseBranch", () => {
         return answer;
       },
       ...extra,
-    };
-    return resolveBaseBranch(options);
+    });
   }
 
   function breakOrigin(): void {
