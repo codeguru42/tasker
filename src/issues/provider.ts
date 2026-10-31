@@ -30,8 +30,8 @@ export interface AuthStatus {
 
 /**
  * The issue tracker operations of tasker. A command gets a provider from issueProviderFor()
- * and never imports from src/issues/github/ or src/issues/jira/. Each operation has the errors and the side
- * effects of the function of its tracker, GitHub or Jira, and no others.
+ * and never imports from src/issues/github/ or src/issues/jira/. Each operation has the errors and the
+ * side effects of the function of its tracker, GitHub or Jira, and no others.
  */
 export interface IssueProvider {
   // "github" or "jira".
@@ -40,8 +40,9 @@ export interface IssueProvider {
   // undefined.
   readonly account: string | undefined;
   // The IssueRef of rawKey in a repo with this project, with the stored spelling of the provider of the
-  // repo: `<project>#<N>` for github, `PROJ-N` for jira, or undefined for a key of another project. It throws the IssueKeyError of the parser for a
-  // key of the wrong form. It takes the project and the site because one provider serves many repos.
+  // repo: `<project>#<N>` for github, `PROJ-N` for jira, or undefined for a key of another project.
+  // It throws the IssueKeyError of the parser for a key of the wrong form. It takes the project and
+  // the site because one provider serves many repos.
   // The site is the issueTracker.site of the repo. It is the entry of KEY_PARSERS in
   // src/issue-key/resolve.ts.
   parse: (rawKey: string, repoKey: string, project: string, site: string | undefined) => IssueRef | undefined;
@@ -63,13 +64,13 @@ export interface IssueProvider {
   // issueTracker.inProgressStatus for jira. No tracker call.
   inProgressMarker: (issue: Issue, target: string | undefined) => boolean;
   // Removes the in-progress marker of the issue. target is issueTracker.inProgressLabel for github and
-  // issueTracker.inProgressStatus for jira. For github, a marker that the issue does not have counts as success.
-  // For jira, it rejects, and the abort of a Jira task does not call it. The caller reads issueTracker.updateOnStart to
-  // decide if it calls this write at all.
+  // issueTracker.inProgressStatus for jira. For github, a marker that the issue does not have counts
+  // as success. For jira, it rejects, and the abort of a Jira task does not call it. The caller reads
+  // issueTracker.updateOnStart to decide if it calls this write at all.
   clearInProgress(ref: IssueRef, target: string, env: NodeJS.ProcessEnv): Promise<void>;
   // Marks the issue done. target is issueTracker.doneLabel for github and issueTracker.doneStatus for jira.
-  // For github, with a label, the label is added and the issue stays open. With undefined, the issue closes as
-  // completed. For jira, the issue moves to the status. The caller reads
+  // For github, with a label, the label is added and the issue stays open. With undefined, the issue
+  // closes as completed. For jira, the issue moves to the status. The caller reads
   // issueTracker.updateOnFinish to decide if it calls this write at all.
   markDone(ref: IssueRef, target: string | undefined, env: NodeJS.ProcessEnv): Promise<void>;
   // The doctor checks of the provider for the repos in the list. Each repo names its own
@@ -123,7 +124,8 @@ export function issueProviderFor(config: Config, repoKey: string): IssueProvider
 // The doctor checks of every repo of the configuration. It groups the repos by
 // issueTracker.provider with reposByProvider(), and calls doctorChecks() once for each id
 // with all the repos of that id, in the order of the configuration. As a result, a check that
-// a provider gives once, such as gh version or acli auth, runs once. A configuration with no repo gives [].
+// a provider gives once, such as gh version or acli auth, runs once. A configuration with no repo
+// gives [].
 export function issueDoctorChecks(config: Config): Check[] {
   return reposByProvider(
     config,
