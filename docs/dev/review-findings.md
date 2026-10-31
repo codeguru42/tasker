@@ -18,19 +18,34 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   diff against it holds the old commits of the parent, and the patch id covers more than the work of the task. On #182,
   the parent #172 rewrote its commits in a fix round after the start of #182. The start base of a task is the commit
   that the task branch pointed to right after `tasker start`. For a stacked task, it is the tip of the parent branch at
-  that time. The agent reads it right after `tasker start` with the commands of the base-commit hint of
-  [All tickets](first-refine.md#all-tickets). The agent runs these commands in the local clone of the orchestrator. The
-  start base lives until the next read of the start base. The agent reads the start base again only after a
-  `tasker update-branch` that moved the task branch with no rebase conflict and keeps the task stacked. The task stays
-  stacked when the `base:` line of `tasker show <issue>` still has the form `refs/heads/<parent branch>`. For this read,
-  right after the update, the agent runs `git fetch tasker` and then
-  `git merge-base tasker/<task branch> tasker/<parent branch>` in the local clone of the orchestrator. After a
-  `tasker update-branch` that reports a rebase conflict, the start base of the last read stays. The first patch id of a
-  stacked task and the case of step 7 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) use the start
-  base of the last read. On #262, the agent ran `tasker update-branch` one time before the parent landed. The right
-  start base was then the tip of the parent under the task branch, not the commit of the start. If a command of a read
-  of the start base fails, the agent holds no start base. For the first patch id, that is a failed command of this rule,
-  as the bullet "The review after `tasker update-branch` counts as a loop" says. The second patch id: after
+  that time.
+
+  Right after `tasker start`, the agent reads it from the field `synced base tip` of `tasker show <issue>`. In two
+  cases, the agent reads it with the commands of the base-commit hint of [All tickets](first-refine.md#all-tickets)
+  instead. The first case: `tasker show` prints no field `synced base tip`. The second case: the field differs from
+  `git rev-parse --verify tasker/<task branch>` in the local clone of the orchestrator, after `git fetch tasker`. The
+  agent runs these commands in the local clone of the orchestrator.
+
+  The start base lives until the next read of the start base. The agent reads the start base again after each
+  `tasker update-branch` that moved the task branch with no rebase conflict and kept the task stacked. This holds in
+  each state of the task. The task stays stacked when the `base:` line of `tasker show <issue>` still has the form
+  `refs/heads/<parent branch>`.
+
+  For this read, right after the update, the agent runs `tasker show <issue>` and reads the field `synced base tip`.
+  That commit is the new start base. A failed `tasker show` is a failed command of a read of the start base.
+
+  In two cases, the agent runs `git fetch tasker` and then `git merge-base tasker/<task branch> tasker/<parent branch>`
+  in the local clone of the orchestrator instead. The first case: `tasker show` prints no field `synced base tip`. The
+  second case: the output of the update has a line `synced ...` and a line `... is current with ...; nothing moved`, and
+  no line `moved ... onto`. The reason: the field holds the tip that the move used, and a later move of the parent does
+  not change it.
+
+  After a `tasker update-branch` that reports a rebase conflict, the start base of the last read stays. The first patch
+  id of a stacked task and the case of step 7 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) use the
+  start base of the last read. On #262, the agent ran `tasker update-branch` one time before the parent landed. The
+  right start base was then the tip of the parent under the task branch, not the commit of the start. If a command of a
+  read of the start base fails, the agent holds no start base. For the first patch id, that is a failed command of this
+  rule, as the bullet "The review after `tasker update-branch` counts as a loop" says. The second patch id: after
   `tasker update-branch`, while the task is in `executed` and before `tasker verify`, the agent runs the same two
   commands again. The three dots diff against the merge base. As a result, the first patch id uses the old base, and the
   second patch id uses the new base. The agent must run the fetch before each read. The reads of this rule are each read
@@ -53,6 +68,7 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   classifier denied the second patch-id read once, the agent skipped the reads at the next update, and two reviews
   counted as loops. On #374, the diff read ran its first `tasker update-branch` with no first patch id, and the agent
   sent a read and an update in parallel.
+
 - The same-text compare: the patch id depends on more than the text of the changed lines, for example on the context
   lines of the hunks. On #229 and #231, the patch ids differed after the move onto `main` (7a499ce5 and 327f92ce on
   #231), although the changed lines kept their text. A text id is the output of
