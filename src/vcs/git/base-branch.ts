@@ -51,11 +51,11 @@ function exists(clone: string, env: NodeJS.ProcessEnv, base: string): Promise<bo
 
 // Fetches origin, then picks the base branch of a task. The sources come in this order:
 // --base, the hint, the stored base, the blocker, the learned default, defaultBaseBranch and the answer of ask.
-// The caller passes the stored base as explicit only when the issue gives no hint.
+// The caller reads no hint when it passes --base, and it passes the stored base as explicit
+// only when the issue gives no hint.
 export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<ResolvedBase> {
-  const { repoKey, clone, env, memory } = options;
+  const { repoKey, clone, env, hint, memory } = options;
   const explicit = options.explicit === undefined ? undefined : parseBaseInput(options.explicit);
-  const hint = explicit === undefined ? options.hint : undefined;
   if (hint === "") {
     throw new Error("the base branch of the issue is empty");
   }
