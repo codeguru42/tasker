@@ -671,9 +671,10 @@ task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not w
 
 These reasons explain its rules:
 
-- The landing guard runs before every other check. A stacked task lands only after its parent landed and the task moved,
-  so the work lands on the base of the first task (see [Stacked task](workspaces.md#stacked-task)). A stacked task has a
-  local base, so the guard also comes before the error for a local base.
+- The landing guard runs right after the check of the state, before the other checks. A stacked task lands only after
+  its parent landed and the task moved, so the work lands on the base of the first task (see
+  [Stacked task](workspaces.md#stacked-task)). A stacked task has a local base, so the guard also comes before the error
+  for a local base.
 - The compare of the tip with the accepted revision: the review and the accept cover one tree, and the land must cover
   the same tree. A commit that reaches the branch after the accept has no review.
 - The second compare: no lock covers a commit in the worktree. A commit can reach the branch during the fetch. The
@@ -702,8 +703,9 @@ of merge. If the base does not contain the work, the command stops with an error
 
 These reasons explain its rules:
 
-- The landing guard runs first, for the same reason as in [Merge](#merge). A stacked task with no own commit has a task
-  branch that equals its base, so without the guard the command would record `landed` for work that did not land.
+- The landing guard runs right after the check of the state, for the same reason as in [Merge](#merge). A stacked task
+  with no own commit has a task branch that equals its base, so without the guard the command would record `landed` for
+  work that did not land.
 - The check is read-only toward `origin`. The work landed outside tasker, so tasker only records it.
 - The check reads the tip of the task ref in the clone and not the worktree, for the same reason as the on-base check of
   [Merge](#merge).
