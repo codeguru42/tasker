@@ -48,6 +48,10 @@ Its parent is the newest task of the repo with that branch. The parent has lande
 `finishing`, `cleanup_failed` or `finished`. After `tasker update-branch` moves a task whose parent landed, the task is
 no longer stacked: its base is the base of the parent.
 
+The synced base tip is the commit id of the base tip that the task branch was last built on. It lives in the column
+`synced_base_tip` of the task row. For a stacked task, it is the parent tip: the commit of the branch of the parent that
+the task branch builds on.
+
 ### The resolve
 
 The checks that need no git run first, so a bad input causes no fetch and no write.
