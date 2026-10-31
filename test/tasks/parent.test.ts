@@ -182,13 +182,13 @@ describe.each(GUARDS)("the walk of landed parents in %s", (_name, guard) => {
   });
 
   it("ends the walk at a landed parent whose link has no row", () => {
-    const tasks = chain("landed").slice(1);
+    const tasks = [task(6, "landed", { branch: "b6", base: "main" }), task(7, "executed", { base: "refs/heads/b6" })];
     expect(
       guardError(guard, tasks, [
         [0, 9],
         [1, 0],
       ]),
-    ).toBe(movedError(6, 7, "refs/heads/b5"));
+    ).toBe(movedError(6, 7, "main"));
   });
 
   it("names the base of the direct parent when the next parent has not landed", () => {
