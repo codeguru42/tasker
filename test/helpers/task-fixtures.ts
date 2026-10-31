@@ -613,6 +613,7 @@ export async function useStackedTasks(
     issues: [
       { project: "codeguru42/tasker", number: 5 },
       { project: "codeguru42/tasker", number: 6 },
+      ...(startOptions.issues ?? []),
     ],
     repo: {
       vcs: { provider: "git", config: { authorName: GIT_TEST_IDENTITY.name, authorEmail: GIT_TEST_IDENTITY.email } },
@@ -637,6 +638,37 @@ export async function useStackedTasks(
     env: fixture.origin.env,
     parent: { key: parentStart.key, task: parent, branch: parentStart.branch, worktree: parentStart.worktree },
     stacked: { key: stackedStart.key, task: stacked, branch: stackedStart.branch, worktree: stackedStart.worktree },
+  };
+}
+
+export interface ChainedTasks extends StackedTasks {
+  // The first task of the chain, issue 5, in awaiting_work_review. Its base is main.
+  grandparent: StackedTasks["parent"];
+}
+
+// Runs useStackedTasks(options) with the issue 7 added. Then it moves the task of issue 6 on to awaiting_work_review,
+// and it starts the task of issue 7 with --base refs/heads/<branch of issue 6>, commits chained.txt and moves it to
+// executed. The result: grandparent is issue 5, parent is issue 6 and stacked is issue 7. It throws when a start fails.
+// Call it inside a test.
+export async function useChainedTasks(options: Parameters<typeof useStackedTasks>[0] = {}): Promise<ChainedTasks> {
+  const fixture = await useStackedTasks({
+    ...options,
+    issues: [...(options.issues ?? []), { project: "codeguru42/tasker", number: 7 }],
+  });
+  const middle = withDataRootStore(fixture.dataRoot, (store) =>
+    moveTaskThrough(store, fixture.stacked.task.id, TO_WORK_REVIEW.slice(5)),
+  );
+  const chainedStart = await startIssueTask(fixture, 7, "--base", `refs/heads/${fixture.stacked.branch}`);
+  if (chainedStart.result.code !== 0) {
+    throw new Error(`tasker start failed for ${chainedStart.key}: ${chainedStart.result.err}`);
+  }
+  await commitInWorktree(chainedStart.worktree, fixture.env, { file: "chained.txt" });
+  const chained = walkTask(fixture.dataRoot, fixture.repoKey, chainedStart.key, TO_WORK_REVIEW.slice(0, 5));
+  return {
+    ...fixture,
+    grandparent: fixture.parent,
+    parent: { ...fixture.stacked, task: middle },
+    stacked: { key: chainedStart.key, task: chained, branch: chainedStart.branch, worktree: chainedStart.worktree },
   };
 }
 

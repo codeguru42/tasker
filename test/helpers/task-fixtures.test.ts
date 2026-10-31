@@ -32,6 +32,7 @@ import {
 import { useTempDir } from "./temp.js";
 import {
   useStackedPlanTasks,
+  useChainedTasks,
   useStackedTasks,
   appendBaseEvent,
   landParent,
@@ -788,6 +789,59 @@ describe("useStackedTasks", () => {
     expect(files).toContain("parent.txt");
     expect(files).toContain("stacked.txt");
     expect(existsSync(join(fixture.parent.worktree, "stacked.txt"))).toBe(false);
+  });
+});
+
+describe("useChainedTasks", () => {
+  it("gives the three tasks in their states", async () => {
+    const fixture = await useChainedTasks();
+
+    expect(fixture.grandparent.key).toBe("codeguru42/tasker#5");
+    expect(fixture.parent.key).toBe("codeguru42/tasker#6");
+    expect(fixture.stacked.key).toBe("codeguru42/tasker#7");
+    expect(latestTaskOf(fixture.dataRoot, fixture.grandparent.key).state).toBe("awaiting_work_review");
+    expect(latestTaskOf(fixture.dataRoot, fixture.parent.key).state).toBe("awaiting_work_review");
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+    expect(fixture.parent.task.state).toBe("awaiting_work_review");
+    expect(fixture.stacked.task.state).toBe("executed");
+  });
+
+  it("links each task to the one before it", async () => {
+    const fixture = await useChainedTasks();
+    const grandparent = latestTaskOf(fixture.dataRoot, fixture.grandparent.key);
+    const parent = latestTaskOf(fixture.dataRoot, fixture.parent.key);
+    const stacked = latestTaskOf(fixture.dataRoot, fixture.stacked.key);
+
+    expect(grandparent.parentTaskId).toBeNull();
+    expect(grandparent.base).toBe("main");
+    expect(parent.parentTaskId).toBe(grandparent.id);
+    expect(parent.base).toBe(`refs/heads/${fixture.grandparent.branch}`);
+    expect(stacked.parentTaskId).toBe(parent.id);
+    expect(stacked.base).toBe(`refs/heads/${fixture.parent.branch}`);
+  });
+
+  it("puts the commit of each task on the branch of the next", async () => {
+    const fixture = await useChainedTasks();
+    const files = (await runGit(["ls-files"], { cwd: fixture.stacked.worktree, env: fixture.env })).split("\n");
+
+    expect(files).toEqual(expect.arrayContaining(["parent.txt", "stacked.txt", "chained.txt"]));
+  });
+
+  it("makes main the tip of issue 6 when both parents land", async () => {
+    const fixture = await useChainedTasks();
+    const tip = await gitOutput(
+      { gitDir: fixture.clone },
+      fixture.env,
+      "rev-parse",
+      `refs/heads/${fixture.parent.branch}`,
+    );
+
+    await landParent({ ...fixture, parent: fixture.grandparent }, ["accepted", "landed"]);
+    await landParent(fixture, ["accepted", "landed"]);
+
+    expect(await fixture.origin.branchHead("main")).toBe(tip);
+    expect(latestTaskOf(fixture.dataRoot, fixture.grandparent.key).state).toBe("landed");
+    expect(latestTaskOf(fixture.dataRoot, fixture.parent.key).state).toBe("landed");
   });
 });
 
