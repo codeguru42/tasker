@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, parseConfig } from "../../src/config/schema.js";
-import { validConfig } from "../helpers/config.js";
+import { configWithTrackers, validConfig } from "../helpers/config.js";
 import { configIssuesOf } from "../helpers/errors.js";
 
 const home = "/home/me";
@@ -984,6 +984,53 @@ describe("parseConfig jira tracker", () => {
     expect(issuesOf(jiraConfig({ [name]: "x" }))).toEqual([
       `repos.tasker.issueTracker.${name}: is not accepted for the jira tracker`,
     ]);
+  });
+
+  describe("project", () => {
+    const pattern = "^[A-Z][A-Z0-9_]*$";
+    const badLine = (project: string, key = "tasker") =>
+      `repos.${key}.issueTracker.project: must be a Jira project key that matches ${pattern}, got ${project}`;
+    const requiredLine = (key: string) =>
+      `repos.${key}.issueTracker.project: is required for the jira tracker when the repo key ${key} is not a Jira project key`;
+
+    function withoutProject(key: string): Record<string, unknown> {
+      const raw = jiraConfig({});
+      delete (raw.repos as Record<string, Record<string, Record<string, unknown>>>).tasker.issueTracker.project;
+      const repos = raw.repos as Record<string, unknown>;
+      raw.repos = { [key]: repos.tasker };
+      return raw;
+    }
+
+    it.each(["test", "T-1", "1A"])("refuses the project %s", (project) => {
+      expect(issuesOf(jiraConfig({ project }))).toEqual([badLine(project)]);
+    });
+
+    it("contains the line for an empty project", () => {
+      expect(issuesOf(jiraConfig({ project: "" }))).toContain(badLine(""));
+    });
+
+    it("gives one line and no jira text for a project that is not a string", () => {
+      const issues = issuesOf(jiraConfig({ project: 5 }));
+      expect(issues).toHaveLength(1);
+      expect(issues[0]).toMatch(/^repos\.tasker\.issueTracker\.project: /);
+      expect(issues[0]).not.toContain("jira");
+    });
+
+    it("requires a project when the repo key is not a project key", () => {
+      expect(issuesOf(withoutProject("tasker"))).toEqual([requiredLine("tasker")]);
+    });
+
+    it("names the repo key in the line for a key with a slash", () => {
+      expect(issuesOf(withoutProject("acme/foo"))).toEqual([requiredLine("acme/foo")]);
+    });
+
+    it("accepts a repo key that is a project key and has no project", () => {
+      expect(() => configWithTrackers({ TEST: { provider: "jira" } })).not.toThrow();
+    });
+
+    it.each(["TEST", "A_B"])("accepts the project %s", (project) => {
+      expect(parsedRepo(jiraConfig({ project })).issueTracker.project).toBe(project);
+    });
   });
 });
 
