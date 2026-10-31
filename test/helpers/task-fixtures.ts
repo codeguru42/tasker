@@ -555,15 +555,17 @@ export interface WorkReviewTask extends StartFixture {
   env: NodeJS.ProcessEnv;
 }
 
-// Appends a base event { base, revision, source: "explicit" } to the task of the fixture, in a store of its own.
+// Writes the base of the task of the fixture and appends a base event { base, revision, source: "explicit" }, in a store
+// of its own.
 export function appendBaseEvent(
   fixture: Pick<WorkReviewTask, "dataRoot" | "task">,
   base: string,
   revision: string,
 ): TaskEvent {
-  return withDataRootStore(fixture.dataRoot, (store) =>
-    store.appendEvent(fixture.task.id, "base", { base, revision, source: "explicit" }),
-  );
+  return withDataRootStore(fixture.dataRoot, (store) => {
+    store.updateTask(fixture.task.id, { base });
+    return store.appendEvent(fixture.task.id, "base", { base, revision, source: "explicit" });
+  });
 }
 
 // Runs useStartFixture(options), starts the task of issue 5 with startTaskWithCommits and one commit for each file of
