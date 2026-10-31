@@ -742,7 +742,10 @@ These reasons explain its rules:
   hand rebase, the head can build on a newer tip. A replay after the synced base tip then takes commits of other
   tickets.
 
-- The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task.
+- The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task. A
+  move under `merge` prints a [note](../../skills/tasker/references/keeping-current.md#the-base-step-of-a-stacked-task)
+  on stderr for a task that had a parent when the command started. A merge puts the commits of the parent in the history
+  of the task branch, and a later replay under `rebase` can still take them.
 - The base change after the parent landed: the command walks up the chain of landed parents, from the parent while the
   next parent has landed. The task where the walk stops is the end task. The command switches the base to the base of
   the end task, also when the head does not move. The task must not end on the branch of a parent that landed too,
