@@ -323,11 +323,13 @@ flowchart LR
   `reviewed`, `accepted`, `pushed`, `in_peer_review`, `failed`, `cleanup_failed`.
 - A task stacked on a parent moves onto the tip of the branch of the parent while the parent is in flight. After the
   parent landed, it moves onto the base that the walk ends on. The task is no longer stacked, or it stays stacked on the
-  parent of the end task. If the parent changed and the strategy is `rebase`, a task with a synced base tip replays only
-  the commits after that tip. This holds while the parent is in flight and after it landed. The commands of the
-  moved-base guard refuse the task until `update-branch` moves it (see
-  [the stacked-task guards](dev/workspaces.md#stacked-task)). If the merge base is newer than the synced base tip, the
-  replay starts after the merge base.
+  parent of the end task.
+
+  If the parent changed and the strategy is `rebase`, a task with a synced base tip replays only the commits after that
+  tip. This holds while the parent is in flight and after it landed. The commands of the moved-base guard refuse the
+  task until `update-branch` moves it (see [the stacked-task guards](dev/workspaces.md#stacked-task)). If the merge base
+  is newer than the synced base tip, the replay starts after the merge base.
+
 - If the worktree moved, the old plan approval or verify result no longer describes the tree. So the task is demoted:
 
 | Origin                                                                     | Demoted to             | Why                                                                                                                |

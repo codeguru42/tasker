@@ -743,12 +743,12 @@ These reasons explain its rules:
   tickets.
 
 - The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task.
-- The base change after the parent landed: the command walks up the chain of landed parents. The walk starts at the
-  parent and goes on while the next parent has landed. The task where it stops is the end task. The command switches the
-  base to the base of the end task, also when the head does not move. The task must not end on the branch of a parent
-  that landed too, because `tasker finish` can delete that branch. The same store write sets the column `parent_task_id`
-  to the parent of the end task, or to NULL when that parent has not landed or does not exist. The command changes the
-  column in no other case (see [Stacked task](workspaces.md#stacked-task)).
+- The base change after the parent landed: the command walks up the chain of landed parents, from the parent while the
+  next parent has landed. The task where the walk stops is the end task. The command switches the base to the base of
+  the end task, also when the head does not move. The task must not end on the branch of a parent that landed too,
+  because `tasker finish` can delete that branch. The same store write sets the column `parent_task_id` to the parent of
+  the end task, or to NULL when the end task has no parent. The command changes the column in no other case (see
+  [Stacked task](workspaces.md#stacked-task)).
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base`
   event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local

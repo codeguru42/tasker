@@ -81,8 +81,10 @@ the local tip from before the sync step. As a result, a failed update changes no
 The `branch_updated` event has the key `sync`. Its value is `absent`, `none`, `fast-forward` or `take-remote`.
 `before.head` is the local tip before the sync step. `before.syncedBaseTip` and `after.syncedBaseTip` are the synced
 base tip of the task before and after the command. The synced base tip is the base tip that the task branch was last
-built on. The key `how` has the value `undo` for an undo. After the parent landed, the event of a successful run also
-has `landedParents`: the issue keys of each landed parent on the walk, the direct parent first.
+built on. The key `how` has the value `undo` for an undo.
+
+After the parent landed, the event of a successful run also has `landedParents`: the issue keys of each landed parent on
+the walk, the direct parent first.
 
 When the sync step or the base step moved the head, the command writes a `base` event
 `{ base, revision, source: "update" }`. The `base` is the stored base. The `revision` is the stored base revision, a
@@ -173,10 +175,11 @@ The `revision` of each `base` event is a ref, never a commit id:
 After the parent landed, the command prints `<issue key> is no longer stacked on <parent key>` when the task has no
 parent after the walk. The line names the direct parent. When the task stays stacked, the command prints
 `<issue key> is now stacked on <new parent key>` in its place. The line comes after the current line or the moved line
-and before the demoted line. A later run of a task with no parent uses the plain base step with the new base. A task
-that stays stacked uses the base step of a stacked task. The stale-plan rule applies only when the head moved. The
-demotion applies when the head moved and in the one case that
-[The state after the command](#the-state-after-the-command) gives.
+and before the demoted line.
+
+A later run of a task with no parent uses the plain base step with the new base. A task that stays stacked uses the base
+step of a stacked task. The stale-plan rule applies only when the head moved. The demotion applies when the head moved
+and in the one case that [The state after the command](#the-state-after-the-command) gives.
 
 ### The state after the command
 
