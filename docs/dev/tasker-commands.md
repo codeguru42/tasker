@@ -1,7 +1,7 @@
 # Tasker commands
 
-The readers of this page are the agent of a ticket, the orchestrator, the planner and the operator. The orchestrator
-reads the plain-form rule and the tool-block rule. The planner and the operator read the tool-block rule.
+The readers of this page are the agent of a ticket, and the orchestrator for the plain-form rule and the tool-block
+rule.
 
 ## The plain-form rule
 
