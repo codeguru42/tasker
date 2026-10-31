@@ -181,7 +181,7 @@ describe("tasker update-branch for a stacked task", () => {
     expect(result.code).toBe(0);
     expect(result.err).toBe(
       absentRemoteNote(fixture.stacked.branch) +
-        `note: the synced base tip ${String(synced)} of ${fixture.stacked.key} is not an ancestor of HEAD; tasker replayed the commits after the merge base ${mergeBase}\n`,
+        `note: the synced base tip ${String(synced)} of ${fixture.stacked.key} is not an ancestor of HEAD; tasker replays the commits after the merge base ${mergeBase}\n`,
     );
     expect(result.out).not.toContain("replayed the commits");
   });
@@ -200,7 +200,7 @@ describe("tasker update-branch for a stacked task", () => {
 
     expect(result.code).toBe(0);
     expect(result.err).toContain(
-      `note: tasker could not check the synced base tip ${missing} of ${fixture.stacked.key} (git exit code 128); tasker replayed the commits after the merge base ${mergeBase}\n`,
+      `note: tasker could not check the synced base tip ${missing} of ${fixture.stacked.key} (git exit code 128); tasker replays the commits after the merge base ${mergeBase}\n`,
     );
     expect(result.out).not.toContain("replayed the commits");
   });
@@ -216,7 +216,7 @@ describe("tasker update-branch for a stacked task", () => {
 
     expect(result.code).toBe(0);
     expect(result.err).toContain(
-      `note: ${fixture.stacked.key} has no synced base tip; tasker replayed the commits after the merge base ${mergeBase}\n`,
+      `note: ${fixture.stacked.key} has no synced base tip; tasker replays the commits after the merge base ${mergeBase}\n`,
     );
     expect(result.out).not.toContain("replayed the commits");
   });
@@ -351,6 +351,23 @@ describe("tasker update-branch for a stacked task", () => {
     expect(await inStacked(fixture, "status", "--porcelain")).toBe("");
     expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
   });
+
+  it("writes the note with the words tasker replays when the replay stops on a conflict", async () => {
+    const fixture = await useStackedTasks();
+    withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.stacked.task.id, { syncedBaseTip: null }));
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "stacked.txt", content: "other\n" });
+    const tip = await inClone(fixture, "rev-parse", parentRef(fixture));
+    const mergeBase = await inStacked(fixture, "merge-base", "HEAD", tip);
+
+    const result = await update(fixture);
+
+    expect(result.code).toBe(1);
+    expect(result.out).toBe("");
+    expect(result.err).toContain(
+      `note: ${fixture.stacked.key} has no synced base tip; tasker replays the commits after the merge base ${mergeBase}\n`,
+    );
+  });
+
   describe("after the parent landed", () => {
     // The checks that a move onto the new main shares.
     const expectMovedOntoMain = async (fixture: StackedTasks, head: string, tip: string) => {
