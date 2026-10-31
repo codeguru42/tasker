@@ -155,6 +155,26 @@ describe("show", () => {
     });
   });
 
+  it("prints the synced base tip after the base", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    const [task] = seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "executed", at: dayAt(2) }]);
+    const tip = "c".repeat(40);
+    withDataRootStore(dataRoot, (store) => store.updateTask(task.id, { syncedBaseTip: tip }));
+
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(result.out).toContain(`base: -\nsynced base tip: ${tip}\nbranch: -\n`);
+  });
+
+  it("prints no synced base tip for a task with none", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "executed", at: dayAt(2) }]);
+
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(result.out).not.toContain("synced base tip");
+  });
+
   it("moves a task with a dead run to interrupted, prints it and writes the note on stderr", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     const [task] = seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "approved", at: dayAt(2) }]);

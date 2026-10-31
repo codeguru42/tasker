@@ -4,7 +4,7 @@ import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote } from "../helpers/command-output.js";
 import { commitInWorktree, gitOutput } from "../helpers/git.js";
-import { databasePathOf, eventsOf, latestTaskOf, withRawDatabase } from "../helpers/store.js";
+import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { expectCommandRefused, landParent, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
 
 const REPO = "codeguru42/tasker";
@@ -142,6 +142,7 @@ describe("tasker update-branch for a stacked task", () => {
     });
     expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
     expect(await inStacked(fixture, "rev-parse", "HEAD^2")).toBe(tip);
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).syncedBaseTip).toBe(tip);
     expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
       before: { head },
       after: { head: moved },
@@ -290,9 +291,13 @@ describe("tasker update-branch for a stacked task", () => {
       const head = await inStacked(fixture, "rev-parse", "HEAD");
       await landParent(fixture, ["accepted", "landed"]);
       const tip = (await fixture.origin.branchHead("main"))!;
+      withDataRootStore(fixture.dataRoot, (store) =>
+        store.updateTask(fixture.stacked.task.id, { syncedBaseTip: null }),
+      );
 
       const result = await update(fixture);
 
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).syncedBaseTip).toBe(tip);
       expect(result).toEqual({
         code: 0,
         out: `${fixture.stacked.key} is current with main at ${tip}; nothing moved\n${noLongerStacked(fixture)}\nstate: executed\n`,

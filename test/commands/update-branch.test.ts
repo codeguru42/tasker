@@ -95,18 +95,20 @@ describe("tasker update-branch", () => {
     const work = await useMovedBaseTask();
     const head = await taskBranchTipOf(work);
     const count = eventsOf(work.dataRoot, KEY).length;
+    const start = latestTaskOf(work.dataRoot, KEY).syncedBaseTip;
 
     const result = await runUpdateBranch();
 
     const newHead = await taskBranchTipOf(work);
     expect(newHead).not.toBe(head);
     expect(await revisionOf(work, "HEAD^")).toBe(work.baseTip);
+    expect(latestTaskOf(work.dataRoot, KEY).syncedBaseTip).toBe(work.baseTip);
     expect(result).toEqual({
       code: 0,
       out: `moved ${KEY} onto main at ${work.baseTip} by rebase: ${head} to ${newHead}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n`,
       err: absentRemoteNote(String(work.task.branch)),
     });
-    const before = { head, base: "main", baseRevision: BASE_REVISION };
+    const before = { head, base: "main", baseRevision: BASE_REVISION, syncedBaseTip: start };
     expect(eventsAfter(work, count)).toEqual([
       expect.objectContaining({
         type: "transition",
@@ -120,7 +122,7 @@ describe("tasker update-branch", () => {
         type: "branch_updated",
         data: {
           before,
-          after: { ...before, head: newHead },
+          after: { ...before, head: newHead, syncedBaseTip: work.baseTip },
           how: "rebase",
           sync: "absent",
           from: "updating_branch",

@@ -16,7 +16,7 @@ import {
   trackerWriteCalls,
   writeFakeGh,
 } from "../helpers/fake-gh.js";
-import { taskNames } from "../helpers/git.js";
+import { commitInWorktree, gitOutput, taskNames } from "../helpers/git.js";
 import { spawnTasker, startLockHolder, waitUntil, waitUntilGone } from "../helpers/processes.js";
 import {
   dayAt,
@@ -247,11 +247,26 @@ describe("start", () => {
       const { fixture, ok } = await failingFixture();
       expect((await runCommand(start, "start", KEY)).code).toBe(1);
       writeFileSync(ok, "");
+      const task = latestTaskOf(fixture.dataRoot, KEY);
+      const first = task.syncedBaseTip;
+      const branchTip = await gitOutput(
+        { gitDir: repoPaths(fixture.dataRoot, PROJECT).clone },
+        fixture.origin.env,
+        "rev-parse",
+        `refs/heads/${String(task.branch)}`,
+      );
+      expect(first).toBe(branchTip);
+      expect(eventsOf(fixture.dataRoot, KEY).find((event) => event.type === "workspace")?.data).toMatchObject({
+        state: "created",
+        syncedBaseTip: first,
+      });
+      await commitInWorktree(task.worktreePath!, fixture.origin.env, { file: "local.txt" });
 
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
       expect(result.out).toContain("state: workspace_ready\n");
+      expect(latestTaskOf(fixture.dataRoot, KEY).syncedBaseTip).toBe(first);
       const events = eventsOf(fixture.dataRoot, KEY);
       expect(events.filter((event) => event.type === "created")).toHaveLength(1);
       expect(
@@ -260,6 +275,7 @@ describe("start", () => {
       expect(events.filter((event) => event.type === "workspace").at(-1)?.data).toMatchObject({
         state: "reused-workspace",
       });
+      expect(events.filter((event) => event.type === "workspace").at(-1)?.data).not.toHaveProperty("syncedBaseTip");
       const log = bootstrapLogPath(taskLogsDir(fixture.dataRoot, { issueKey: KEY, attempt: 1 }));
       expect(readFileSync(log, "utf8").match(/=== bootstrap run /g)).toHaveLength(2);
       expect(lockNames(fixture.dataRoot)).toEqual([]);
