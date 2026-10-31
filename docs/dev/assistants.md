@@ -131,6 +131,7 @@ control. Its read deny list holds these paths:
 - The folder of the `gh` configuration.
 - The git credentials file and the `.netrc` file.
 - The credentials file of Claude Code.
+- The credentials file of Codex.
 - The folder of the publish tokens of every configured repo. The version control gives it.
 - The configuration of tasker.
 
