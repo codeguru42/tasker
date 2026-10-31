@@ -55,6 +55,12 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   only the one use that loop 1 named, and loop 2 found the next import from `src/plan/` in `src/review/`.
 - If a function becomes the one home of a rule, the old callers use only its result
   ([the one-home rule](rules.md#code)).
+- A rule can have a check in a caller, and that check must stay. Then ask the plan to put the rule in the caller only
+  ([the one-home rule](rules.md#code)). Ask the plan to add no check in the called function that no caller reaches,
+  because that check is a second home. For a general helper, the bullet of [rules.md](rules.md#code) that starts "A
+  general helper keeps its promise" wins. On #504 (2026-10-30), the rule that `--base` wins over the base branch hint
+  stood in `src/tasks/start.ts` and in a check of `resolveBaseBranch`. Review 1 found the second home, and the fix cost
+  one loop.
 - A ticket that adds a required option to a shared function breaks the callers that an earlier ticket landed. After the
   rebase, run `npm run check` and update those callers ([rules.md](rules.md#commits)).
 - The prompts of the installed tasker tell the plan that a todo does not run `npm run check`. Say in the first refine
