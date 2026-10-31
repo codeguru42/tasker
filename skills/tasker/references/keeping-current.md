@@ -137,8 +137,8 @@ it landed. The `how` is `rebase`. On success, the command prints
 line. A commit that git cannot replay is an ordinary rebase conflict, and the rule of a failure after the move applies
 as it is.
 
-The replay falls back to the commits after the merge base of the task branch and the new tip. It prints no `replayed`
-line then. It writes one of these notes on stderr before the rebase:
+The replay can also start after the merge base of the task branch and the new tip. It prints no `replayed` line then. It
+writes one of these notes on stderr before the rebase:
 
 - `note: the synced base tip <synced base tip> of <issue key> is not an ancestor of HEAD; tasker replays the commits after the merge base <merge base>`
   when the head does not build on the synced base tip.
@@ -146,6 +146,8 @@ line then. It writes one of these notes on stderr before the rebase:
   when git cannot make the check.
 - `note: <issue key> has no synced base tip; tasker replays the commits after the merge base <merge base>` when the task
   has no synced base tip.
+- `note: the merge base <merge base> of <issue key> is newer than the synced base tip <synced base tip>; tasker replays the commits after the merge base <merge base>`
+  when the merge base is newer than the synced base tip.
 
 Under `merge`, the command makes a fast-forward when the head is an ancestor of the new tip, and the `how` is
 `fast-forward`. Otherwise it merges the new tip into the task branch, and the `how` is `merge`.

@@ -737,6 +737,11 @@ These reasons explain its rules:
   id, because the replay needs the commit that the task branch builds on. The commits of the parent as they landed
   passed review and were accepted, and the replay keeps them. On 2026-10-25, each update of #539 tried to replay the old
   commits of #542 and stopped on a conflict.
+
+  The replay can also start after a merge base that is newer than the synced base tip, with a note on stderr. After a
+  hand rebase, the head can build on a newer tip. A replay after the synced base tip then takes commits of other
+  tickets.
+
 - The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task.
 - The base change after the parent landed: the command switches the base to the base of the parent, also when the head
   does not move. Without the switch, the task stays stacked, and the guards refuse it each time (see

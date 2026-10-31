@@ -325,7 +325,8 @@ flowchart LR
   parent landed, it moves onto the base of the parent, and the task is no longer stacked. If the parent changed and the
   strategy is `rebase`, a task with a synced base tip replays only the commits after that tip. This holds while the
   parent is in flight and after it landed. The commands of the moved-base guard refuse the task until `update-branch`
-  moves it (see [the stacked-task guards](dev/workspaces.md#stacked-task)).
+  moves it (see [the stacked-task guards](dev/workspaces.md#stacked-task)). If the merge base is newer than the synced
+  base tip, the replay starts after the merge base.
 - If the worktree moved, the old plan approval or verify result no longer describes the tree. So the task is demoted:
 
 | Origin                                                                     | Demoted to             | Why                                                                                                                |
