@@ -986,6 +986,52 @@ describe("parseConfig jira tracker", () => {
     ]);
   });
 
+  describe("site", () => {
+    const siteLine = (key = "tasker") =>
+      `repos.${key}.issueTracker.site: must be a host name such as example.atlassian.net, with no scheme, path or port`;
+
+    it.each([
+      "https://example.atlassian.net",
+      "example.atlassian.net/",
+      "example.atlassian.net:443",
+      "example",
+      "a..net",
+      ".a.net",
+      "a.net.",
+      "-a.net",
+      "a.net\n",
+    ])("refuses the site %j", (site) => {
+      expect(issuesOf(jiraConfig({ site }))).toEqual([siteLine()]);
+    });
+
+    it("refuses a site with the Kelvin sign", () => {
+      const site = String.fromCodePoint(0x212a) + "acme.atlassian.net";
+      expect(issuesOf(jiraConfig({ site }))).toEqual([siteLine()]);
+    });
+
+    it("contains the line for an empty site", () => {
+      expect(issuesOf(jiraConfig({ site: "" }))).toContain(siteLine());
+    });
+
+    it("gives one line and no jira text for a site that is not a string", () => {
+      const issues = issuesOf(jiraConfig({ site: 5 }));
+      expect(issues).toHaveLength(1);
+      expect(issues[0]).toMatch(/^repos\.tasker\.issueTracker\.site: /);
+      expect(issues[0]).not.toContain("host name");
+    });
+
+    it("reports a bad site of a definition under the repo", () => {
+      const raw = validConfig();
+      raw.trackers = { acme: { provider: "jira", site: "https://bad" } };
+      raw.repos.tasker.issueTracker = { tracker: "acme", project: "TEST" };
+      expect(issuesOf(raw)).toEqual([siteLine()]);
+    });
+
+    it("accepts a site in upper case and stores it in lower case", () => {
+      expect(parsedRepo(jiraConfig({ site: "ACME.atlassian.net" })).issueTracker.site).toBe("acme.atlassian.net");
+    });
+  });
+
   describe("project", () => {
     const pattern = "^[A-Z][A-Z0-9_]*$";
     const badLine = (project: string, key = "tasker") =>
