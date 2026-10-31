@@ -23,6 +23,7 @@ import {
   seedAcceptedTask,
   unacceptedTipError,
   useAcceptedTask,
+  useAcceptedTaskWithNoRevision,
   useStartFixture,
   useWorkReviewTask,
   type StartFixture,
@@ -175,8 +176,7 @@ describe("tasker merge", () => {
     });
 
     it("refuses a task with no accepted revision", async () => {
-      const work = await useWorkReviewTask();
-      withDataRootStore(work.dataRoot, (store) => placeTask(store, work.task.id, "accepted"));
+      const work = await useAcceptedTaskWithNoRevision();
 
       await expectRefused(work, `the task of ${KEY} has no accepted revision\n`);
     });

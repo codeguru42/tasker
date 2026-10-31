@@ -19,6 +19,7 @@ import { GIT_TEST_IDENTITY, commitInWorktree, gitOutput, localBranches } from ".
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { answerStream, planTodo, validPlanAnswer } from "./plan.js";
 import {
+  acceptedRevisionOf,
   dayAt,
   databasePathOf,
   eventsOf,
@@ -48,6 +49,7 @@ import {
   taskWorkspaceState,
   TO_WORK_REVIEW,
   useAcceptedTask,
+  useAcceptedTaskWithNoRevision,
   useAssistantRunFixture,
   useExecuteFixture,
   useLandedTask,
@@ -681,6 +683,16 @@ describe("useAcceptedTask", () => {
       }),
     ).toEqual(["work.txt"]);
     expect(await accepted.origin.branchHead("main")).not.toBe(accepted.revision);
+  });
+});
+
+describe("useAcceptedTaskWithNoRevision", () => {
+  it("gives a task in accepted with no accepted revision", async () => {
+    const work = await useAcceptedTaskWithNoRevision();
+
+    expect(work.task.state).toBe("accepted");
+    expect(latestTaskOf(work.dataRoot, work.key).state).toBe("accepted");
+    expect(acceptedRevisionOf(work.dataRoot, work.key)).toBeNull();
   });
 });
 

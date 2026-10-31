@@ -57,6 +57,7 @@ import {
   lockNames,
   pauseRefineFrom,
   pauseTaskFrom,
+  placeTask,
   seedReview,
   seedTasks,
   seedVerifyRun,
@@ -696,6 +697,16 @@ export async function useAcceptedTask(options?: Parameters<typeof useWorkReviewT
   const revision = (event?.data as { revision?: unknown } | undefined)?.revision;
   if (typeof revision !== "string") throw new Error("tasker accept wrote no accepted event");
   return { ...work, task: latestTaskOf(work.dataRoot, work.key), revision };
+}
+
+// Runs useWorkReviewTask(options), then places the task in accepted with placeTask(), so that the task has no accepted
+// revision. Call it inside a test.
+export async function useAcceptedTaskWithNoRevision(
+  options?: Parameters<typeof useWorkReviewTask>[0],
+): Promise<WorkReviewTask> {
+  const work = await useWorkReviewTask(options);
+  withDataRootStore(work.dataRoot, (store) => placeTask(store, work.task.id, "accepted"));
+  return { ...work, task: latestTaskOf(work.dataRoot, work.key) };
 }
 
 export interface LandedTask extends AcceptedTask {

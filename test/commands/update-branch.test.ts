@@ -24,6 +24,7 @@ import {
   expectCommandRefused,
   taskBranchTipOf,
   useAcceptedTask,
+  useAcceptedTaskWithNoRevision,
   useMovedBaseTask,
   useWorkReviewTask,
   type WorkReviewTask,
@@ -668,6 +669,22 @@ describe("tasker update-branch", () => {
       expect(result.code).toBe(0);
       expect(result.out.endsWith(`state: executed\n`)).toBe(true);
       expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("executed");
+    });
+
+    it("moves a task in accepted with no accepted revision to executed", async () => {
+      const work = await useAcceptedTaskWithNoRevision();
+      const count = eventsOf(work.dataRoot, KEY).length;
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.out.endsWith(`demoted ${KEY} from accepted to executed\nstate: executed\n`)).toBe(true);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("executed");
+      expect(
+        eventsOf(work.dataRoot, KEY)
+          .slice(count)
+          .map((e) => e.type),
+      ).not.toContain("base");
     });
 
     it("keeps a task in accepted when the tip is the accepted revision", async () => {
