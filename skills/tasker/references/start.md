@@ -46,7 +46,8 @@ The command picks the base branch from the first source that has one:
 
 1. The `--base` option of this run.
 2. The `base:` label of the issue, for example `base: dev`. The prefix matches without regard to case, for example
-   `Base: dev`. The branch name after the prefix keeps its case.
+   `Base: dev`. The branch name after the prefix keeps its case. A Jira repo has no such source: tasker reads no `base:`
+   label of a Jira issue.
 3. The stored base of the task, on a second run.
 4. The blocker step: the branch of the task of an open blocker, in the form `refs/heads/<branch>`, when that task is
    ready to stack. A task is ready to stack in the states `awaiting_work_review`, `reviewing`, `reviewed`, `accepted`,
