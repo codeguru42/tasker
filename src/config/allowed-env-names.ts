@@ -12,6 +12,7 @@ export const ALLOWED_ENV_NAMES: readonly string[] = [
   "USER",
   "LOGNAME",
   "CLAUDE_CONFIG_DIR",
+  "CODEX_HOME",
   "NVM_DIR",
   "ASDF_DIR",
   "ASDF_DATA_DIR",
