@@ -19,11 +19,22 @@ On success, the command prints one line for each field, as `<field>: <value>`, i
 - `repo`
 - `state`
 - `base`
+- `base source`
 - `branch`
 - `worktree`
 
-The state is `workspace_ready`. If the issue already has an active task that is past this step, the command changes
-nothing. It prints `task already started` first, then the same six lines.
+A run that resolves the base prints these seven lines. The state is `workspace_ready`. If the issue already has an
+active task that is past this step, the command changes nothing. It prints `task already started` first, then six lines
+with no `base source`.
+
+The field `base source` names the source that gave the base:
+
+- `explicit`: the `--base` option, or the stored base of a second run.
+- `hint`: the `base:` label of the issue.
+- `blocker`: the blocker step.
+- `learned`: the default that tasker learned for the repo.
+- `config`: the `defaultBaseBranch` of the repo.
+- `ask`: your answer to the question.
 
 If a run stops before `workspace_ready`, run the same command again. The second run continues the same task. This holds
 for a task that failed in the steps of `tasker start`. The second run keeps the stored base. A `--base` option sets a
@@ -40,13 +51,18 @@ The command picks the base branch from the first source that has one:
 4. The blocker step: the branch of the task of an open blocker, in the form `refs/heads/<branch>`, when that task is
    ready to stack. A task is ready to stack in the states `awaiting_work_review`, `reviewing`, `reviewed`, `accepted`,
    `pushing`, `pushed`, `opening_pr` and `in_peer_review`. A blocker is done when its issue is closed, or when its task
-   is in the state `landed`, `finishing`, `cleanup_failed` or `finished`.
+   is in the state `landed`, `finishing`, `cleanup_failed` or `finished`. If the branch of the ready blocker is not in
+   the clone, the command goes on with the next source.
 5. The default that tasker learned for the repo.
 6. The `defaultBaseBranch` of the repo in the configuration.
 7. A question to you. The command asks only when stdin is a terminal.
 
-The blocker step prints the note `based on <blocker key>'s branch` on stderr. The `base` line then shows the stored
-form, for example `base: refs/heads/<parent branch>`.
+When the blocker step gives the base, the command prints the note `based on <blocker key>'s branch` on stderr, after the
+source is known. The `base` line then shows the stored form, for example `base: refs/heads/<parent branch>`.
+
+When the branch of the ready blocker is not in the clone, the command prints this note on stderr at once:
+`the branch <branch> of the blocker <blocker key> is not in the clone; <issue key> is not stacked`. The note also prints
+when a later source fails. The next source gives the base, so the task has no parent.
 
 A start on the branch of a `cancelled` or `finished` task is not stacked. The `base` line shows `refs/heads/<branch>`,
 but the task has no parent.
@@ -54,11 +70,11 @@ but the task has no parent.
 If you press Ctrl-C at the question, the command stops. The task goes to the state `failed` with the error
 `no answer: the question was cancelled`. Run the command again to continue it.
 
-The question and the notes of the base step go to stderr. As a result, stdout holds only the six lines and the lines of
-the tracker writes.
+The question and the notes of the base step go to stderr. As a result, stdout holds only the field lines and the lines
+of the tracker writes.
 
 If `issueTracker.updateOnStart` is `true`, the command writes to the issue tracker after the task reaches
-`workspace_ready`. It prints one line on stdout for each write that works, after the six lines:
+`workspace_ready`. It prints one line on stdout for each write that works, after the field lines:
 
 - `assigned <issue key> to <assignee> on the tracker`
 - `marked <issue key> in progress on the tracker`
@@ -86,8 +102,9 @@ The command stops with exit code 1 and prints the error on stderr in these cases
   `<blocker key>: blocking issue is still open`, one line for each such blocker. The command makes no task. Wait until
   the blocker closes or its task is ready to stack, or pass `--base`.
 - More than one blocker is ready to stack. The error is
-  `<issue key> has more than one blocker ready to stack: <key>, <key>; pass --base refs/heads/<branch> to pick one`. The
-  command makes no task. Pass `--base refs/heads/<branch>` for the branch that you want.
+  `<issue key> has more than one blocker ready to stack: <key> (<branch>), <key> (<branch>); pass --base refs/heads/<branch> to pick one`.
+  A blocker with no branch shows as `<key> (no branch)`. The command makes no task. Pass `--base refs/heads/<branch>`
+  for the branch that you want.
 - The read of the blockers fails. The error is the error of the tracker. The command makes no task. Run the command
   again.
 - Another start of the same issue is running. The error says that the lock is busy. Wait until it ends.
