@@ -33,6 +33,8 @@ The order follows what each step needs and what a failure can leave.
 - The blocker step writes no learned default. The learned default names a remote branch, because a hint, an answer and
   `defaultBaseBranch` must name a remote branch ([The resolve](workspaces.md#the-resolve), and [config.md](../config.md)
   for `defaultBaseBranch`). The blocker base is the local branch `refs/heads/<x>` of one task.
+- The note of a missing blocker branch prints at once, so that it also prints when a later source fails. The `base`
+  event holds `blocker` only for the source `blocker`. [The resolve](workspaces.md#the-resolve) gives the source order.
 - The base comes before the workspace, because the workspace starts from the base.
 - The parent id of a stacked task goes in the same store write as the base. See
   [Stacked task](workspaces.md#stacked-task).

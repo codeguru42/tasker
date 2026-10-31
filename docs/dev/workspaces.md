@@ -72,7 +72,9 @@ hint. As a result, a bad hint does not stop the start.
 
 - Only `--base` and the blocker step can give a local branch (`refs/heads/<x>`). A hint and an answer must name a remote
   branch.
-- The resolve checks the blocker base with the same existence check as `--base refs/heads/<x>`.
+- The existence check runs on the blocker base, as for `--base refs/heads/<x>`. If the ref is missing, the command
+  prints a note on stderr, and the resolve goes on with the next source. The base is then a branch on origin, and the
+  parent of the task is `NULL`.
 - A missing `defaultBaseBranch` fails and does not ask.
 - The hint comes from the issue tracker, so it is untrusted text. It cannot reach `refs/heads/*`, because the check uses
   `refs/remotes/origin/<hint>`, and `git show-ref --verify` matches only the exact ref.
