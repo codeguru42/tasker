@@ -226,8 +226,8 @@ still works with the user in its tab, as that section says.
 
 Each item that the old operator gets is in its newest handoff file, as the paragraph after
 [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) says. A sender of the slug does not
-send such an item again. If the old operator closes the item before the end of its session, the old operator sends the
-answer. Otherwise the new operator sends the answer.
+send such an item again. If the user answers before the end of the session of the old operator, the old operator sends
+that answer. The new operator sends each other answer.
 
 ### The ready message
 
