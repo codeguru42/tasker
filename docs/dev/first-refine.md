@@ -165,6 +165,12 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   of the orchestrator gives the source of a text, a feedback text names no source. It says "the agent". On #520
   (2026-10-25), refine 1 wrote "the user asked for these scripts" with no such word of the user, and plan v2 copied it.
   This cost refine 2.
+
+  A first refine can give a fact that the agent measured, or a decision of the agent. Then the first refine asks the
+  plan to name no source for that fact or decision, or to say "the agent". On #391 (2026-10-26), refine 1 said "the
+  agent measured" for its facts and named no source for its changes. Plan v2 still wrote "the user measured" and "the
+  user decided". This cost refine 2.
+
 - If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
   [The body of an issue](planner.md#the-body-of-an-issue) asks the planner for the same compare before the post. If no
   doc supports the reason, ask the plan to drop it from the example. On #265, the Summary of the issue gave the reason
