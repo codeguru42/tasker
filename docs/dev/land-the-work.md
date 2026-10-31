@@ -130,10 +130,10 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
 - If the task is in `awaiting_plan_review` (a refine of step 4), `tasker update-branch` keeps the task in
   `awaiting_plan_review`. Then the agent runs the refine of step 4.
 - If a stacked task is in `approved` and its parent is in `landed`, `tasker update-branch` moves the base of the task to
-  the base of the parent. On 2026-10-18 at 08:09, the parent #340 of #347 was in `landed`, and `origin/main` was the tip
-  of #340. `tasker update-branch` of #347 printed that the parent landed, and it moved the base to `main`. The head of
-  the task did not move, so no demotion happened. The task stayed in `approved` with its approval, and no refine was
-  needed.
+  the base that the walk ends on. On 2026-10-18 at 08:09, the parent #340 of #347 was in `landed`, and `origin/main` was
+  the tip of #340. `tasker update-branch` of #347 printed that the parent landed, and it moved the base to `main`. The
+  head of the task did not move, so no demotion happened. The task stayed in `approved` with its approval, and no refine
+  was needed.
 - If `tasker update-branch` reports a rebase conflict, the agent follows
   [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The agent does not copy that procedure.
 - Before the orchestrator sends added work or an answer to an agent, the orchestrator reads the state of the task with

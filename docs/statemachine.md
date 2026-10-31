@@ -158,9 +158,9 @@ flowchart LR
 ```
 
 - `merge` from `accepted` fast-forwards the base branch on `origin` to the task sha, with one push. If the push is not a
-  fast-forward, the task fails from `merging`. `merge` and `mark-landed` refuse a stacked task until its parent landed
-  and the task moved (see [the stacked-task guards](dev/workspaces.md#stacked-task)). `merge` also refuses a base that
-  is a local branch of the tasker clone.
+  fast-forward, the task fails from `merging`. `merge` and `mark-landed` refuse a stacked task until each parent in its
+  chain landed and the task moved (see [the stacked-task guards](dev/workspaces.md#stacked-task)). `merge` also refuses
+  a base that is a local branch of the tasker clone.
 - tasker does not wait for CI. The CI wait is a step of the landing process of each project, outside the state machine.
   There is no `waiting_for_ci` or `ci_failed` state.
 - `finish` runs under `finishing`. It removes the worktree and the local branch ref. It deletes the task branch on
@@ -322,11 +322,12 @@ flowchart LR
 - The 11 origin states: `workspace_ready`, `awaiting_plan_review`, `approved`, `executed`, `awaiting_work_review`,
   `reviewed`, `accepted`, `pushed`, `in_peer_review`, `failed`, `cleanup_failed`.
 - A task stacked on a parent moves onto the tip of the branch of the parent while the parent is in flight. After the
-  parent landed, it moves onto the base of the parent, and the task is no longer stacked. If the parent changed and the
-  strategy is `rebase`, a task with a synced base tip replays only the commits after that tip. This holds while the
-  parent is in flight and after it landed. The commands of the moved-base guard refuse the task until `update-branch`
-  moves it (see [the stacked-task guards](dev/workspaces.md#stacked-task)). If the merge base is newer than the synced
-  base tip, the replay starts after the merge base.
+  parent landed, it moves onto the base that the walk ends on. The task is no longer stacked, or it stays stacked on the
+  parent of the end task. If the parent changed and the strategy is `rebase`, a task with a synced base tip replays only
+  the commits after that tip. This holds while the parent is in flight and after it landed. The commands of the
+  moved-base guard refuse the task until `update-branch` moves it (see
+  [the stacked-task guards](dev/workspaces.md#stacked-task)). If the merge base is newer than the synced base tip, the
+  replay starts after the merge base.
 - If the worktree moved, the old plan approval or verify result no longer describes the tree. So the task is demoted:
 
 | Origin                                                                     | Demoted to             | Why                                                                                                                |

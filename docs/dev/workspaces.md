@@ -45,8 +45,8 @@ rejects them, and its error names them.
 
 A stacked task is a task whose column `parent_task_id` is not NULL. Its parent is the task of that id. The parent has
 landed when its task is in `landed`, `finishing`, `cleanup_failed` or `finished`. After `tasker update-branch` moves a
-task whose parent landed, the task is no longer stacked: its base is the base of the parent. The same store write sets
-the column to NULL.
+task whose parent landed, the task has the base that the walk ends on, and it has the new parent, or none. The same
+store write sets the column (see [the base change after the parent landed](tasks.md#update-branch)).
 
 `tasker start` writes the column in the same store write as the base. For a base of the form `refs/heads/<x>`, the
 parent is a task of the same repo whose branch is `<x>`. Its state is not `cancelled` or `finished`. Of such tasks, the
@@ -54,9 +54,9 @@ parent is the one with the highest id. For each other base, or with no such task
 
 A cancelled task never lands. A finished task is done, and its branch is gone or left over. In both cases, a new start
 on that branch has a plain local base. A parent in `landed`, `finishing` or `cleanup_failed` gets the link on purpose.
-The landing guard refuses `tasker merge` and `tasker mark-landed` until the parent landed and `tasker update-branch`
-moved the task. The moved-base guard refuses `tasker refine`, `tasker execute`, `tasker verify`, `tasker review` and
-`tasker accept` while the parent has landed and the task did not move.
+The landing guard refuses `tasker merge` and `tasker mark-landed` until each parent in its chain landed and
+`tasker update-branch` moved the task. The moved-base guard refuses `tasker refine`, `tasker execute`, `tasker verify`,
+`tasker review` and `tasker accept` while the parent has landed and the task did not move.
 
 Each task of a chain lands on the base of the first task, after its parent. The landing guard refuses a task whose
 parent is in flight, with the error `has not landed`. It refuses a task whose parent is cancelled for good, so the user

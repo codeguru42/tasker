@@ -672,7 +672,7 @@ task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not w
 These reasons explain its rules:
 
 - The landing guard runs right after the check of the state, before the other checks. A stacked task lands only after
-  its parent landed and the task moved, so the work lands on the base of the first task (see
+  each parent in its chain landed and the task moved, so the work lands on the base of the first task (see
   [Stacked task](workspaces.md#stacked-task)). A stacked task has a local base, so the guard also comes before the error
   for a local base.
 - The compare of the tip with the accepted revision: the review and the accept cover one tree, and the land must cover
@@ -729,7 +729,7 @@ These reasons explain its rules:
   `tasker resume` reads it.
 - The `base` event is `{ base, revision, source: "update" }`. The command writes it only when the head moved. The
   `revision` is the stored base revision, a ref. The base change after the parent landed writes the event with the
-  source `parent`.
+  source `parent` and the field `baseOf`: the issue key of the end task of the walk.
 - The synced base tip of a stacked task: the replay is the `rebase` form of the move of a stacked task. It replays the
   commits after the synced base tip of the task onto the new tip. If the head does not build on the synced base tip, or
   the task has none, it replays the commits after the merge base of the task branch and the new tip, and it writes a
@@ -743,10 +743,12 @@ These reasons explain its rules:
   tickets.
 
 - The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task.
-- The base change after the parent landed: the command switches the base to the base of the parent, also when the head
-  does not move. Without the switch, the task stays stacked, and the guards refuse it each time (see
-  [Stacked task](workspaces.md#stacked-task)). The same store write sets the column `parent_task_id` to NULL. The
-  command changes the column in no other case.
+- The base change after the parent landed: the command walks up the chain of landed parents. The walk starts at the
+  parent and goes on while the next parent has landed. The task where it stops is the end task. The command switches the
+  base to the base of the end task, also when the head does not move. The task must not end on the branch of a parent
+  that landed too, because `tasker finish` can delete that branch. The same store write sets the column `parent_task_id`
+  to the parent of the end task, or to NULL when that parent has not landed or does not exist. The command changes the
+  column in no other case (see [Stacked task](workspaces.md#stacked-task)).
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base`
   event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local

@@ -204,7 +204,8 @@ Before each such command, the agent reads the `base:` line of `tasker show <issu
 3. If a step uses `tasker/<parent branch>` in more than one command, read its hash one time with
    `git rev-parse --verify`, as [the shared-clone rule](limits.md#the-shared-clone-rule) says.
 
-A `tasker update-branch` with no conflict moves a stacked task onto the base of the parent after the parent lands.
+A `tasker update-branch` with no conflict moves a stacked task onto the base that the walk ends on after the parent
+lands.
 
 An agent of a stacked task meets a landed parent at `tasker refine`, `tasker execute`, `tasker verify`, `tasker review`
 and `tasker accept`. The moved-base guard refuses each of them (see

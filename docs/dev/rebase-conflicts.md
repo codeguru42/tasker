@@ -36,8 +36,8 @@ Run each git command in the clone of the driver or in its worktree.
    `based on <key>'s branch` that `tasker start` printed. For an agent, the prompt names the parent. If the driver
    cannot name the parent issue, stop. `tasker show` changes no task. If `tasker show` fails, stop. If the `state:` line
    is not `landed`, `finishing` or `finished`, stop. In each of these cases, a person decides the next step, as step 10
-   describes. If the parent landed, go on to step 5. A stacked task whose parent landed is no longer stacked after a
-   `tasker update-branch` with no conflict.
+   describes. If the parent landed, go on to step 5. After a `tasker update-branch` with no conflict, a stacked task
+   whose parent landed is no longer stacked, or it stays stacked on the first parent that has not landed.
 5. Run `git fetch --multiple tasker origin`. The fetch reads the task branch from the tasker clone. The fetch of
    `origin` also gets the base branch.
 6. If a worktree already holds the local task branch, use it, and do [the update rule](limits.md#the-update-rule) in the
@@ -47,12 +47,12 @@ Run each git command in the clone of the driver or in its worktree.
    the local task branch already exists, follow the branch-exists case of the own-worktree rule. Do not copy it here.
 7. In the worktree, rebase the task branch onto `origin/<base branch>`. If the task is a stacked task whose parent
    landed, the driver runs `git rebase --onto origin/<base branch> <start base> <task branch>` in the worktree instead.
-   Here, `<base branch>` is the branch that the parent landed on, for example `main`. `<start base>` is the start base
-   of the last read, as [the same-patch rule](review-findings.md#review-findings) of `docs/dev/review-findings.md`
-   defines it. A plain rebase onto `origin/<base branch>` also replays the old commits of the parent. On #182, the 16
-   commits of the task replayed with one conflict, in `docs/dev/tasks.md`. If the driver holds no start base, stop. A
-   person decides the next step, as step 10 describes. The worktree and the local task branch stay. Fix the conflicts.
-   From here to step 11, [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds.
+   Here, `<base branch>` is the base that the walk ends on, for example `main`. `<start base>` is the start base of the
+   last read, as [the same-patch rule](review-findings.md#review-findings) of `docs/dev/review-findings.md` defines it.
+   A plain rebase onto `origin/<base branch>` also replays the old commits of the parent. On #182, the 16 commits of the
+   task replayed with one conflict, in `docs/dev/tasks.md`. If the driver holds no start base, stop. A person decides
+   the next step, as step 10 describes. The worktree and the local task branch stay. Fix the conflicts. From here to
+   step 11, [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds.
 8. In the worktree, run `npm run check`. The command must pass.
 9. Push the task branch to `origin` with a normal push: `git push -u origin <task branch>`. Do not force-push. The
    upstream of the task branch can be `tasker/<task branch>`, or it can be unset. As a result, a plain `git push` goes

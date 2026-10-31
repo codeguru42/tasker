@@ -173,14 +173,14 @@ of the list. As a result, the rule that the agent first does the fact test does 
   with 1 and prints `<parent issue key>: blocking issue is still open`. No task exists after the refusal.
 - `tasker refine`, `tasker execute`, `tasker verify`, `tasker review` and `tasker accept` refuse a stacked task whose
   parent has landed. They print
-  `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+  `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
   The task keeps its state. `tasker merge` and `tasker mark-landed` print the same error, and they print
   `the parent <parent key> of <issue key> has not landed; land the parent first, then run tasker update-branch <issue key>`
   while the parent is in flight (see [the stacked-task guards](workspaces.md#stacked-task)). `tasker update-branch`
-  rebases only the commits of the task onto the base of the parent.
+  rebases only the commits of the task onto the base that the walk ends on.
 - A stacked task in `awaiting_plan_review` loses its base when `tasker finish` of the parent deletes the branch of the
   parent. `tasker refine` then fails with exit code 1 and the landed error of the moved-base guard, and it changes
-  nothing. `tasker update-branch` moves the task onto the base of the parent, and the task stays in
+  nothing. `tasker update-branch` moves the task onto the base that the walk ends on, and the task stays in
   `awaiting_plan_review`. tasker marks the plan as stale, so a refine comes before `tasker approve`, also when the new
   base changes no fact of the plan.
 - A task can fail in `executing` while its base is `main` and its task branch holds no commit of the task. For such a
@@ -188,7 +188,7 @@ of the list. As a result, the rule that the agent first does the fact test does 
   and the task stays in `failed`. After the update, `tasker show` prints `next: tasker retry`. On #413, on 2026-10-25,
   the installed tasker 2026.10.25-60b6aa03 moved the task branch from 9d10f960 to 60b6aa03, and plan v2 stayed approved.
 - `tasker update-branch <issue> --take-remote` of a stacked task whose parent landed moves the base of the task to the
-  base of the parent, for example `base: main`, and the task to `executed`, in one run.
+  base that the walk ends on, for example `base: main`, and the task to `executed`, in one run.
 - If a task is stacked on the same parent as another task, the shared-file warning of `tasker refine` and
   `tasker approve` for that task lists the files of the parent too. The warning reads the files that the branch of the
   other task changes against the base, and that branch holds the commits of the parent.
