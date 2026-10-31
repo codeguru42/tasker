@@ -263,7 +263,10 @@ changes. [What the plan prompt asks for](assistants.md#what-the-plan-prompt-asks
 the approve, because the task that lands second can get merge conflicts and redo its work.
 
 The warning reads the files of the newest plan of the other task and the files that its task branch changes. A task that
-already executed has files that its plan did not list, so the plan alone is not enough.
+already executed has files that its plan did not list, so the plan alone is not enough. If the other task is stacked and
+its parent landed, the warning reads its task branch against the base of the parent. The reason: `tasker finish` deletes
+the branch of the parent, and `tasker update-branch` moves the task to the base of the parent. In a chain of landed
+parents, the base is the base that the walk of `tasker update-branch` ends on.
 
 The warning never refuses. Only a person can decide if an overlap is harmless and which task lands first. A failure
 inside the compare prints one note line on stderr and changes neither the exit code nor a state.
