@@ -308,6 +308,62 @@ describe("prepareTaskPlanModeRun", () => {
     expect(call.settings).not.toMatchObject(permissionHookSettings(fixture.started.worktree));
   });
 
+  it("pins the whole argument list of the plan role", async () => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+    const models = modelsOf(fixture);
+    const { prepared } = await runPlanMode(fixture, { jsonSchema: schema });
+
+    expect(fixture.claude.calls()[0].argv).toEqual([
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--session-id",
+      prepared.sessionId,
+      "--model",
+      models.plan.model,
+      "--effort",
+      models.plan.effort,
+      "--json-schema",
+      JSON.stringify(schema),
+      "--permission-mode",
+      "plan",
+      "--settings",
+      expect.any(String),
+      "--disallowedTools",
+      "Bash(git push:*)",
+      "Bash(herdr:*)",
+    ]);
+  });
+
+  it("pins the whole argument list of the review role", async () => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+    const models = modelsOf(fixture);
+    const { prepared } = await runPlanMode(fixture, { role: "review", jsonSchema: schema });
+
+    expect(fixture.claude.calls()[0].argv).toEqual([
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--session-id",
+      prepared.sessionId,
+      "--model",
+      models.review.model,
+      "--effort",
+      models.review.effort,
+      "--json-schema",
+      JSON.stringify(schema),
+      "--permission-mode",
+      "plan",
+      "--settings",
+      expect.any(String),
+      "--disallowedTools",
+      "Bash(git push:*)",
+      "Bash(herdr:*)",
+    ]);
+  });
+
   it("refuses a task that has no worktree, and starts no child", async () => {
     const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
 
@@ -445,6 +501,50 @@ describe("prepareTaskExecuteRun", () => {
       expectedRule("Read", `${String(env.HOME)}/.claude/plugins/**`),
     ]);
     expect(flagValues(argv, "--disallowedTools")).toEqual([
+      "Bash(git push:*)",
+      expectedRule("Edit", `${wt}/.git`),
+      expectedRule("Edit", `${wt}/.git/**`),
+      expectedRule("Edit", `${started.clone}/**`),
+    ]);
+  });
+
+  it("pins the whole argument list of the execute role", async () => {
+    const { claude, env, models, prepared, started } = await prepareAndStartExecute({
+      claude: { stream: claudeSample("plain") },
+    });
+    const wt = started.worktree;
+
+    expect(claude.calls()[0].argv).toEqual([
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--session-id",
+      prepared.sessionId,
+      "--model",
+      models.execute.model,
+      "--effort",
+      models.execute.effort,
+      "--permission-mode",
+      "default",
+      "--settings",
+      expect.any(String),
+      "--allowedTools",
+      expectedRule("Read", `${wt}/**`),
+      expectedRule("Glob", `${wt}/**`),
+      expectedRule("Grep", `${wt}/**`),
+      expectedRule("Edit", `${wt}/**`),
+      expectedRule("Write", `${wt}/**`),
+      "Bash",
+      "StructuredOutput",
+      "Skill",
+      "TodoWrite",
+      expectedRule("NotebookEdit", `${wt}/**`),
+      "Agent",
+      "Task",
+      expectedRule("Read", `${String(env.HOME)}/.claude/skills/**`),
+      expectedRule("Read", `${String(env.HOME)}/.claude/plugins/**`),
+      "--disallowedTools",
       "Bash(git push:*)",
       expectedRule("Edit", `${wt}/.git`),
       expectedRule("Edit", `${wt}/.git/**`),
