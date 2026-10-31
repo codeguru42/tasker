@@ -150,6 +150,11 @@ async function backAtStart(
 // commit that is not a merge commit, has no same-patch commit on the remote side, and that the base tip does not reach.
 // With takeRemote, the result is "take". Without it, the step throws the error that lists the commits at risk when local
 // work is at risk and a commit is only on origin. With a commit only on origin and no work at risk, the result is "take".
+// The values that tasker update-branch --undo reads: the head and the synced base tip before the run, and the head after.
+function undoRecord(before: BranchSnapshot, after: BranchSnapshot) {
+  return { beforeHead: before.head, afterHead: after.head, syncedBaseTip: before.syncedBaseTip };
+}
+
 // With local work at risk and no commit only on origin, the result is "note": nothing moves, and the caller writes a note.
 // Otherwise the result is "none".
 function divergedTake(
@@ -288,6 +293,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         baseRevision: writes.base?.revision ?? baseRevision,
         syncedBaseTip: writes.syncedBaseTip ?? before.syncedBaseTip,
       };
+      if (moved) writes.undo = undoRecord(before, after);
       transitionWithBranchUpdate(
         store,
         task.id,

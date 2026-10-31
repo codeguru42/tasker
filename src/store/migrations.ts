@@ -142,4 +142,7 @@ UPDATE tasks SET accepted_revision = (
   WHERE events.task_id = tasks.id AND events.type = 'accepted'
   ORDER BY events.id DESC LIMIT 1
 );`,
+  `ALTER TABLE tasks ADD COLUMN undo_before_head TEXT;
+ALTER TABLE tasks ADD COLUMN undo_after_head TEXT;
+ALTER TABLE tasks ADD COLUMN undo_synced_base_tip TEXT;`,
 ];

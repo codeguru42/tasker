@@ -53,6 +53,9 @@ export interface Task {
   shortRef: string | null;
   base: string | null;
   syncedBaseTip: string | null;
+  undoBeforeHead: string | null;
+  undoAfterHead: string | null;
+  undoSyncedBaseTip: string | null;
   acceptedRevision: string | null;
   parentTaskId: number | null;
   attempt: number;
@@ -87,6 +90,9 @@ export interface TaskChanges {
   shortRef?: string | null;
   base?: string | null;
   syncedBaseTip?: string | null;
+  undoBeforeHead?: string | null;
+  undoAfterHead?: string | null;
+  undoSyncedBaseTip?: string | null;
   acceptedRevision?: string | null;
   parentTaskId?: number | null;
 }
@@ -236,7 +242,9 @@ export interface StoreOptions {
 export interface BranchUpdateWrites {
   base?: { base: string; revision: string; source: "update" | "parent" };
   clearPlanApproval?: number;
-  syncedBaseTip?: string;
+  syncedBaseTip?: string | null;
+  // The values that tasker update-branch --undo reads. A null syncedBaseTip is written as NULL.
+  undo?: { beforeHead: string; afterHead: string; syncedBaseTip: string | null };
 }
 
 export interface TaskStore extends LockStore {
@@ -457,6 +465,9 @@ interface TaskRow {
   short_ref: string | null;
   base: string | null;
   synced_base_tip: string | null;
+  undo_before_head: string | null;
+  undo_after_head: string | null;
+  undo_synced_base_tip: string | null;
   accepted_revision: string | null;
   parent_task_id: number | null;
   attempt: number;
@@ -499,6 +510,9 @@ function rowToTask(row: TaskRow): Task {
     shortRef: row.short_ref,
     base: row.base,
     syncedBaseTip: row.synced_base_tip,
+    undoBeforeHead: row.undo_before_head,
+    undoAfterHead: row.undo_after_head,
+    undoSyncedBaseTip: row.undo_synced_base_tip,
     acceptedRevision: row.accepted_revision,
     parentTaskId: row.parent_task_id,
     attempt: row.attempt,
@@ -679,7 +693,8 @@ function setUp(db: DatabaseSync) {
     updateTask: db.prepare(
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
-           synced_base_tip = ?, accepted_revision = ?, parent_task_id = ?, updated_at = ?
+           synced_base_tip = ?, undo_before_head = ?, undo_after_head = ?, undo_synced_base_tip = ?,
+           accepted_revision = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -949,6 +964,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.shortRef !== undefined) next.shortRef = changes.shortRef;
     if (changes.base !== undefined) next.base = changes.base;
     if (changes.syncedBaseTip !== undefined) next.syncedBaseTip = changes.syncedBaseTip;
+    if (changes.undoBeforeHead !== undefined) next.undoBeforeHead = changes.undoBeforeHead;
+    if (changes.undoAfterHead !== undefined) next.undoAfterHead = changes.undoAfterHead;
+    if (changes.undoSyncedBaseTip !== undefined) next.undoSyncedBaseTip = changes.undoSyncedBaseTip;
     if (changes.acceptedRevision !== undefined) next.acceptedRevision = changes.acceptedRevision;
     if (changes.parentTaskId !== undefined) next.parentTaskId = changes.parentTaskId;
     const row = statements.updateTask.get(
@@ -959,6 +977,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.shortRef,
       next.base,
       next.syncedBaseTip,
+      next.undoBeforeHead,
+      next.undoAfterHead,
+      next.undoSyncedBaseTip,
       next.acceptedRevision,
       next.parentTaskId,
       at,
@@ -1542,6 +1563,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         state,
         base: writes.base?.base,
         syncedBaseTip: writes.syncedBaseTip,
+        undoBeforeHead: writes.undo?.beforeHead,
+        undoAfterHead: writes.undo?.afterHead,
+        undoSyncedBaseTip: writes.undo?.syncedBaseTip,
         parentTaskId: writes.base?.source === "parent" ? null : undefined,
       };
       return writeTask(taskId, changes, check, (at) => {
