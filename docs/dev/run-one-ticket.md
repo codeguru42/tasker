@@ -250,6 +250,11 @@ read, as [the same-patch rule](review-findings.md#review-findings) defines it. A
 start base shows only the work of the task. If the agent holds no start base, the diff read stops. The task branch is on
 the `branch:` line of `tasker show <issue>`. The agent reads the full diff.
 
+A same patch id or a [same-patch review](review-findings.md#review-findings) does not replace this read. The patch id
+covers only the diff of the task. The diff read also reads whole files of the task after the update and searches each
+test file. On #543 (2026-10-30), the agent did not read the full diff again before its last `tasker accept`, because the
+patch id stayed the same.
+
 If the full diff is too large for one context, the agent can split the read. This choice is open on purpose, and the
 agent makes it. The mechanical files of a commit are the files that the agent names as files with a change of form only.
 Examples of such a change are a format pass and a prose wrap. The machine proof is
