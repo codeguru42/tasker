@@ -10,7 +10,8 @@ Makes a task for an issue and takes it to the state `workspace_ready`: `tasker s
 issue, makes the clone, resolves the base branch, makes the worktree and runs bootstrap.
 
 `--base <branch>` sets the base branch of this task only. Give a branch on origin, or `refs/heads/<branch>` for a local
-branch of the clone.
+branch of the clone. With `--base`, the command does not read the `base:` label of the issue, so a bad label does not
+stop the start.
 
 On success, the command prints one line for each field, as `<field>: <value>`, in this order:
 
@@ -25,23 +26,24 @@ The state is `workspace_ready`. If the issue already has an active task that is 
 nothing. It prints `task already started` first, then the same six lines.
 
 If a run stops before `workspace_ready`, run the same command again. The second run continues the same task. This holds
-for a task that failed in the steps of `tasker start`. The second run keeps the stored base. A `--base` option or a
-`base:` label on the issue sets a new base, and the task keeps the new one. A second run with no stored base runs the
-blocker step. If the blocker step refuses, the task stays as the run found it. A new base does not move a task branch
-that already exists.
+for a task that failed in the steps of `tasker start`. The second run keeps the stored base. A `--base` option sets a
+new base. A `base:` label on the issue also sets a new base, but only when the run has no `--base` option. The task
+keeps the new base. A second run with no stored base runs the blocker step. If the blocker step refuses, the task stays
+as the run found it. A new base does not move a task branch that already exists.
 
 The command picks the base branch from the first source that has one:
 
-1. The `base:` label of the issue, for example `base: dev`. The prefix matches without regard to case, for example
+1. The `--base` option of this run.
+2. The `base:` label of the issue, for example `base: dev`. The prefix matches without regard to case, for example
    `Base: dev`. The branch name after the prefix keeps its case.
-2. The `--base` option, or the stored base of the task on a second run.
-3. The blocker step: the branch of the task of an open blocker, in the form `refs/heads/<branch>`, when that task is
+3. The stored base of the task, on a second run.
+4. The blocker step: the branch of the task of an open blocker, in the form `refs/heads/<branch>`, when that task is
    ready to stack. A task is ready to stack in the states `awaiting_work_review`, `reviewing`, `reviewed`, `accepted`,
    `pushing`, `pushed`, `opening_pr` and `in_peer_review`. A blocker is done when its issue is closed, or when its task
    is in the state `landed`, `finishing`, `cleanup_failed` or `finished`.
-4. The default that tasker learned for the repo.
-5. The `defaultBaseBranch` of the repo in the configuration.
-6. A question to you. The command asks only when stdin is a terminal.
+5. The default that tasker learned for the repo.
+6. The `defaultBaseBranch` of the repo in the configuration.
+7. A question to you. The command asks only when stdin is a terminal.
 
 The blocker step prints the note `based on <blocker key>'s branch` on stderr. The `base` line then shows the stored
 form, for example `base: refs/heads/<parent branch>`.

@@ -64,8 +64,11 @@ the task branch builds on.
 
 The checks that need no git run first, so a bad input causes no fetch and no write.
 
-The source order is: the issue hint, then `--base` or the stored base of the task, then the blocker step of start, then
-the learned default, then `defaultBaseBranch`, then a question.
+The source order is: `--base` of this run, then the issue hint, then the stored base of the task, then the blocker step
+of start, then the learned default, then `defaultBaseBranch`, then a question.
+
+The reason: the user who passes `--base` names the base of this run on purpose. With `--base`, start does not read the
+hint. As a result, a bad hint does not stop the start.
 
 - Only `--base` and the blocker step can give a local branch (`refs/heads/<x>`). A hint and an answer must name a remote
   branch.
