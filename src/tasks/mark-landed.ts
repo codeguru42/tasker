@@ -5,6 +5,7 @@ import { transitionWithMarkedLanding } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
+import { assertParentLanded } from "./parent.js";
 import { requireBase, requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
 export interface MarkLandedRequest {
@@ -32,6 +33,7 @@ export async function markLandedTask(store: TaskStore, request: MarkLandedReques
 async function markLandedLocked(store: TaskStore, request: MarkLandedRequest): Promise<MarkedLanded> {
   const { config, env } = request;
   const task = taskInState(store, request.taskId, "mark-landed");
+  assertParentLanded(store, task);
   const branch = requireBranch(task);
   requireBase(task);
   const baseRevision = requireBaseRevision(store, task);

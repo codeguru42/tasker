@@ -1,6 +1,7 @@
 import type { TaskState } from "../state/machine.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { LOCAL_PREFIX } from "../vcs/local-branch.js";
+import { requireBase } from "./task-state.js";
 
 // The parent of a stacked task has landed when its task is in one of these states, also when its issue is still open.
 export const LANDED_STATES: ReadonlySet<string> = new Set<TaskState>([
@@ -38,4 +39,27 @@ export function newParentId(store: TaskStore, repoKey: string, base: string): nu
 
 export function hasLanded(task: Task): boolean {
   return LANDED_STATES.has(task.state);
+}
+
+// The error for a task whose parent has landed: the task must move onto the base of the parent first.
+function landedParentError(parent: Task, task: Task): Error {
+  return new Error(
+    `the parent ${parent.issueKey} of ${task.issueKey} has landed; run tasker update-branch ${task.issueKey} to move the task onto ${requireBase(parent)} first`,
+  );
+}
+
+// Refuses to land a stacked task before its parent landed and tasker update-branch moved the task. A moved task has no
+// parent, so it passes. A task with no parent passes. The checks run in the order landed, cancelled, not landed.
+export function assertParentLanded(store: TaskStore, task: Task): void {
+  const parent = parentOf(store, task);
+  if (parent === undefined) return;
+  if (hasLanded(parent)) throw landedParentError(parent, task);
+  if (parent.state === "cancelled") {
+    throw new Error(
+      `the parent ${parent.issueKey} of ${task.issueKey} is cancelled; ${task.issueKey} cannot land on it`,
+    );
+  }
+  throw new Error(
+    `the parent ${parent.issueKey} of ${task.issueKey} has not landed; land the parent first, then run tasker update-branch ${task.issueKey}`,
+  );
 }

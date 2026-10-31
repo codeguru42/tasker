@@ -6,7 +6,7 @@ import { transitionTask, transitionWithLanding } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
-import { isLocalBase } from "./parent.js";
+import { assertParentLanded, isLocalBase } from "./parent.js";
 import { failRun } from "./run-outcome.js";
 import { requireAcceptedTip, requireBase, requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
@@ -40,6 +40,7 @@ export async function mergeTask(store: TaskStore, request: MergeRequest): Promis
 async function mergeLocked(store: TaskStore, request: MergeRequest): Promise<MergeTaskResult> {
   const { config, env, io } = request;
   const task = taskInState(store, request.taskId, "merge");
+  assertParentLanded(store, task);
   const branch = requireBranch(task);
   const base = requireBase(task);
   if (isLocalBase(base)) {

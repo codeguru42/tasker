@@ -13,9 +13,9 @@ const REPO = "codeguru42/tasker";
 const PARENT = "codeguru42/tasker#5";
 const STACKED = "codeguru42/tasker#6";
 
-const NOT_LANDED = `the parent ${PARENT} of ${STACKED} has not landed; land the parent first, then run tasker update-branch ${STACKED}`;
-const LANDED = `the parent ${PARENT} of ${STACKED} has landed; run tasker update-branch ${STACKED} to move the task onto main first`;
-const CANCELLED = `the parent ${PARENT} of ${STACKED} is cancelled; ${STACKED} cannot land on it`;
+const NOT_LANDED = `the parent ${PARENT} of ${STACKED} has not landed; land the parent first, then run tasker update-branch ${STACKED}\n`;
+const LANDED = `the parent ${PARENT} of ${STACKED} has landed; run tasker update-branch ${STACKED} to move the task onto main first\n`;
+const CANCELLED = `the parent ${PARENT} of ${STACKED} is cancelled; ${STACKED} cannot land on it\n`;
 
 const run = (command: typeof merge, name: string) => () => runCommand(command, name, STACKED, "--repo", REPO);
 
@@ -32,7 +32,7 @@ const LANDING_COMMANDS = [
 ] as const;
 
 describe.each(LANDING_COMMANDS)("tasker %s for a stacked task", (name, command) => {
-  const runIt = run(command as typeof merge, name);
+  const runIt = run(command, name);
 
   // Expects a refusal that changes nothing and leaves main on origin where it was.
   async function expectRefused(fixture: StackedTasks, error: string): Promise<void> {
