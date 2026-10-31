@@ -54,6 +54,8 @@ export type BranchUpdated = SyncOutcome & {
   how: ResyncResult["how"];
   // The head at the start of the base step. After a move of the sync step, this is the remote tip.
   headBefore: string;
+  // The head before the sync step.
+  startHead: string;
   headAfter: string;
   // Whether the head moved, in the sync step or in the base step.
   moved: boolean;
@@ -311,6 +313,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         ...synced,
         how: resynced.how,
         headBefore: syncedHead,
+        startHead: before.head,
         headAfter: resynced.head,
         moved,
         origin,

@@ -76,6 +76,11 @@ async function updateBranchIssue(
   if (result.state !== result.origin) {
     io.stdout(`demoted ${result.issueKey} from ${result.origin} to ${result.state}\n`);
   }
+  if (result.moved) {
+    io.stdout(
+      `previous HEAD was ${result.startHead}; run tasker update-branch ${result.issueKey} --undo to restore it\n`,
+    );
+  }
   if (result.moved && result.origin === "awaiting_plan_review") {
     io.stdout(`the plan is stale; run tasker refine ${result.issueKey} before tasker approve\n`);
   }
