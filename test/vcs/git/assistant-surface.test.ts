@@ -15,6 +15,7 @@ import { userInfo } from "node:os";
 import { join, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  DENIED_COMMANDS,
   DENY_RULES,
   EXECUTE_COMMIT_TEXT,
   readDenyPaths,
@@ -92,6 +93,10 @@ describe("assistant surface values", () => {
 
   it("denies git push in the shell of the assistant", () => {
     expect(DENY_RULES).toEqual(["Bash(git push:*)"]);
+  });
+
+  it("names git push as a command that the assistant must not run", () => {
+    expect(DENIED_COMMANDS).toEqual(["git push"]);
   });
 
   it.each(["~alice/.ssh/id", "~", "keys/id_tasker", "./id_tasker"])("throws for the ssh key %s", (key) => {

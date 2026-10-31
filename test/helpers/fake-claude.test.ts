@@ -70,6 +70,9 @@ describe("runInput", () => {
       sessionDir: "/sessions",
       model: "haiku",
       effort: "low",
+      access: "read-only",
+      deniedCommands: [],
+      deniedEditPaths: [],
     });
   });
 

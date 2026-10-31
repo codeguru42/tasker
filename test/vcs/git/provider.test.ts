@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { BaseBranchMemory } from "../../../src/vcs/provider.js";
 import { checkSummaries } from "../../helpers/doctor.js";
 import {
+  DENIED_COMMANDS,
   DENY_RULES,
   EXECUTE_COMMIT_TEXT,
   readDenyPaths,
@@ -501,6 +502,7 @@ describe("createGitProvider", () => {
       const surface = keyedProvider().assistantSurface(fixture.context);
       expect(surface.executeCommitText).toBe(EXECUTE_COMMIT_TEXT);
       expect(surface.denyRules).toEqual(DENY_RULES);
+      expect(surface.deniedCommands).toEqual(DENIED_COMMANDS);
       expect(surface.denyReadPaths).toEqual(readDenyPaths(keyed()));
     });
 

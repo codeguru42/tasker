@@ -151,6 +151,9 @@ export function runInput(overrides: Partial<RunInput> = {}): RunInput {
     sessionDir: "/sessions",
     model: "haiku",
     effort: "low",
+    access: "read-only",
+    deniedCommands: [],
+    deniedEditPaths: [],
     ...overrides,
   };
 }
