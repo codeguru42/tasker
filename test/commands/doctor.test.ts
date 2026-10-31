@@ -8,6 +8,7 @@ import { runCommand } from "../helpers/cli.js";
 import { validConfig, writeTempConfig } from "../helpers/config.js";
 import { useFakeClaude } from "../helpers/fake-claude.js";
 import { usePathWithout, writeFakeSandboxPrograms } from "../helpers/fake-commands.js";
+import { AUTH_STATUS_ARGS, AUTH_STATUS_CALLS, fakeAcli, MEASURED_AUTH_STATUS } from "../helpers/fake-acli.js";
 import { fakeGh, ghTokenAnswer, type FakeGhAnswer } from "../helpers/fake-gh.js";
 import { makeProviderFixture } from "../helpers/git.js";
 import { treeSnapshot, useProcessEnv, useTempDir } from "../helpers/temp.js";
@@ -43,7 +44,7 @@ async function setUp(answers: readonly FakeGhAnswer[], change: (raw: RawConfig) 
     PATH: [join(dir, "bin"), ...toolPath].join(delimiter),
     TASKER_CONFIG: written.path,
   });
-  return { fixture, fake };
+  return { fixture, fake, dir };
 }
 
 const OTHER_PROJECT = { ...PROJECT, args: ["repo", "view", "codeguru42/other", "--json", "nameWithOwner"] };
@@ -170,19 +171,61 @@ describe("doctor", () => {
     expect(statusLines(out).find((line) => line.includes("free space"))).toMatch(/^warn /);
   });
 
-  it("gives 1, prints the build error and runs no check for a jira repo", async () => {
-    const { fake } = await setUp(GOOD_GH, (raw) => {
-      raw.repos.tasker.issueTracker.provider = "jira";
-      raw.repos.tasker.issueTracker.project = "TEST";
-      delete raw.repos.tasker.issueTracker.account;
+  it("gives 0 and an ok acli auth line for one jira repo, and runs no gh check", async () => {
+    const { dir } = await setUp([], (raw) => {
+      raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST" };
     });
+    fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+    useProcessEnv({ TASKER_ACLI_BIN: join(dir, "bin", "acli") });
 
-    const { code, out, err } = await runCommand(doctor, "doctor");
+    const { code, out } = await runCommand(doctor, "doctor");
+
+    expect(code).toBe(0);
+    const lines = statusLines(out);
+    expect(lines.some((line) => /^ok {4}acli auth/.test(line))).toBe(true);
+    expect(lines.some((line) => line.includes("gh "))).toBe(false);
+  });
+
+  it("runs the checks of the github repos before the checks of a jira repo", async () => {
+    const { dir } = await setUp(GOOD_GH, (raw) => {
+      raw.repos.work = { ...raw.repos.tasker, issueTracker: { provider: "jira", project: "TEST" } };
+    });
+    fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+    useProcessEnv({ TASKER_ACLI_BIN: join(dir, "bin", "acli") });
+
+    const { out } = await runCommand(doctor, "doctor");
+
+    const lines = statusLines(out);
+    const first = lines.findIndex((line) => line.startsWith("ok    gh version"));
+    const names = [
+      "gh version",
+      "gh auth: codeguru42",
+      "gh project: tasker",
+      "gh labels: tasker",
+      "acli auth",
+      "claude version",
+    ];
+    expect(first).toBeGreaterThanOrEqual(0);
+    names.forEach((name, index) => expect(lines[first + index]).toMatch(new RegExp(`^ok    ${name}`)));
+  });
+
+  it("gives 1 and one acli auth line for all the jira repos when one site differs", async () => {
+    const { dir } = await setUp([], (raw) => {
+      raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST" };
+      raw.repos.work = {
+        ...raw.repos.tasker,
+        issueTracker: { provider: "jira", project: "TEST", site: "other.atlassian.net" },
+      };
+    });
+    const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+    useProcessEnv({ TASKER_ACLI_BIN: join(dir, "bin", "acli") });
+
+    const { code, out } = await runCommand(doctor, "doctor");
 
     expect(code).toBe(1);
-    expect(out).toBe("");
-    expect(err).toContain("the jira tracker is not available in this version");
-    expect(fake.calls()).toEqual([]);
+    expect(statusLines(out).filter((line) => line.includes("acli auth"))).toHaveLength(1);
+    expect(out).toContain("work");
+    expect(acli.calls()).toEqual(AUTH_STATUS_CALLS);
   });
 
   it("changes nothing at the remote, GitHub or the clone", async () => {

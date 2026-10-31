@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { issueDoctorChecks, issueProviderFor } from "../../src/issues/provider.js";
 import { configWithTrackers } from "../helpers/config.js";
-import { configIssuesOf } from "../helpers/errors.js";
 
 const github = (account: string) => ({ provider: "github", account });
+const jira = (site: string | undefined) => ({ provider: "jira", project: "TEST", site });
 
 describe("issueProviderFor", () => {
   it("gives a github provider with the account of the repo", () => {
@@ -58,22 +58,38 @@ describe("issueProviderFor", () => {
     expect(issueDoctorChecks(config).filter((check) => check.name === "gh version")).toHaveLength(1);
   });
 
-  it("throws the ConfigError of the registry for a jira repo in the doctor checks", () => {
-    const config = configWithTrackers({ j: { provider: "jira", project: "TEST" } });
-    expect(configIssuesOf(() => issueDoctorChecks(config))).toEqual([
-      "repos.j.issueTracker.provider: the jira tracker is not available in this version",
-    ]);
-  });
-
   it("gives no doctor checks for a configuration with no repo", () => {
     expect(issueDoctorChecks({ ...configWithTrackers({ "a/b": github("x") }), repos: {} })).toEqual([]);
   });
 
-  it("throws a ConfigError for a jira repo", () => {
-    const config = configWithTrackers({ j: { provider: "jira", project: "TEST" } });
-    expect(configIssuesOf(() => issueProviderFor(config, "j"))).toEqual([
-      "repos.j.issueTracker.provider: the jira tracker is not available in this version",
-    ]);
+  it("gives a jira provider for a jira repo", () => {
+    const config = configWithTrackers({ j: jira("one.atlassian.net") });
+    expect(issueProviderFor(config, "j").id).toBe("jira");
+  });
+
+  it("gives the same object for two jira repos with the same site", () => {
+    const config = configWithTrackers({ j: jira("one.atlassian.net"), k: jira("one.atlassian.net") });
+    expect(issueProviderFor(config, "j")).toBe(issueProviderFor(config, "k"));
+  });
+
+  it("gives the same object for two jira repos with no site", () => {
+    const config = configWithTrackers({ j: jira(undefined), k: jira(undefined) });
+    expect(issueProviderFor(config, "j")).toBe(issueProviderFor(config, "k"));
+  });
+
+  it("gives different objects for two jira repos with different sites", () => {
+    const config = configWithTrackers({ j: jira("one.atlassian.net"), k: jira("two.atlassian.net") });
+    expect(issueProviderFor(config, "j")).not.toBe(issueProviderFor(config, "k"));
+  });
+
+  it("gives different objects for a jira repo with a site and one with no site", () => {
+    const config = configWithTrackers({ j: jira("one.atlassian.net"), k: jira(undefined) });
+    expect(issueProviderFor(config, "j")).not.toBe(issueProviderFor(config, "k"));
+  });
+
+  it("gives one acli auth check for two jira repos with different sites", () => {
+    const config = configWithTrackers({ j: jira("one.atlassian.net"), k: jira("two.atlassian.net") });
+    expect(issueDoctorChecks(config).map((check) => check.name)).toEqual(["acli auth"]);
   });
 
   it.each(["nope", "constructor", "__proto__"])("throws for the unknown repo key %s", (key) => {
