@@ -158,16 +158,16 @@ async function backAtStart(
   }
 }
 
-// Decides the move of the sync step for tips that have diverged. A commit only on origin is a remote-side commit with
-// no same-patch commit on the local side. A remote merge commit always counts. Local work at risk is a local-side
-// commit that is not a merge commit, has no same-patch commit on the remote side, and that the base tip does not reach.
-// With takeRemote, the result is "take". Without it, the step throws the error that lists the commits at risk when local
-// work is at risk and a commit is only on origin. With a commit only on origin and no work at risk, the result is "take".
 // The values that tasker update-branch --undo reads: the head and the synced base tip before the run, and the head after.
 function undoRecord(before: BranchSnapshot, after: BranchSnapshot) {
   return { beforeHead: before.head, afterHead: after.head, syncedBaseTip: before.syncedBaseTip };
 }
 
+// Decides the move of the sync step for tips that have diverged. A commit only on origin is a remote-side commit with
+// no same-patch commit on the local side. A remote merge commit always counts. Local work at risk is a local-side
+// commit that is not a merge commit, has no same-patch commit on the remote side, and that the base tip does not reach.
+// With takeRemote, the result is "take". Without it, the step throws the error that lists the commits at risk when local
+// work is at risk and a commit is only on origin. With a commit only on origin and no work at risk, the result is "take".
 // With local work at risk and no commit only on origin, the result is "note": nothing moves, and the caller writes a note.
 // Otherwise the result is "none".
 function divergedTake(
