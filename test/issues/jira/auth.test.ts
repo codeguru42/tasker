@@ -2,10 +2,15 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { authStatus } from "../../../src/issues/jira/auth.js";
 import { failureOf } from "../../helpers/errors.js";
-import { AUTH_STATUS_ARGS, fakeAcli, MEASURED_AUTH_STATUS, MEASURED_NOT_FOUND } from "../../helpers/fake-acli.js";
+import {
+  AUTH_STATUS_ARGS,
+  AUTH_STATUS_CALLS,
+  JIRA_LOGIN_MESSAGE,
+  fakeAcli,
+  MEASURED_AUTH_STATUS,
+  MEASURED_NOT_FOUND,
+} from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
-
-const loginMessage = "acli has no Jira login. Run `acli jira auth login`.";
 
 const readStatus = (env: NodeJS.ProcessEnv, signal?: AbortSignal) => authStatus(env, { signal });
 
@@ -25,14 +30,14 @@ describe("authStatus", () => {
       detail: "acli uses the site codeguru42.atlassian.net",
       needsLogin: false,
     });
-    expect(fake.calls()).toEqual([{ args: AUTH_STATUS_ARGS, env: {} }]);
+    expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
   });
 
   it("asks for a login when acli has none", async () => {
     const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stderr: MEASURED_NOT_FOUND, exitCode: 1 }]);
 
-    expect(await readStatus(fake.env)).toStrictEqual({ ok: false, detail: loginMessage, needsLogin: true });
-    expect(fake.calls()).toEqual([{ args: AUTH_STATUS_ARGS, env: {} }]);
+    expect(await readStatus(fake.env)).toStrictEqual({ ok: false, detail: JIRA_LOGIN_MESSAGE, needsLogin: true });
+    expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
   });
 
   it("does not ask for a login when acli is not installed", async () => {
@@ -66,6 +71,6 @@ describe("authStatus", () => {
 
     expect(error.name).toBe("AbortError");
     expect(Date.now() - start).toBeLessThan(2000);
-    expect(fake.calls()).toEqual([{ args: AUTH_STATUS_ARGS, env: {} }]);
+    expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
   });
 });

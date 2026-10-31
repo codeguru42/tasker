@@ -3,12 +3,17 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { jiraAuthCheck, jiraDoctorChecks } from "../../../src/issues/jira/doctor.js";
 import type { IssueDoctorRepo } from "../../../src/issues/provider.js";
 import { checkSummaries } from "../../helpers/doctor.js";
-import { AUTH_STATUS_ARGS, fakeAcli, MEASURED_AUTH_STATUS, MEASURED_NOT_FOUND } from "../../helpers/fake-acli.js";
+import {
+  AUTH_STATUS_ARGS,
+  AUTH_STATUS_CALLS,
+  JIRA_LOGIN_MESSAGE,
+  fakeAcli,
+  MEASURED_AUTH_STATUS,
+  MEASURED_NOT_FOUND,
+} from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const ACTIVE = "codeguru42.atlassian.net";
-const statusCalls = [{ args: AUTH_STATUS_ARGS, env: {} }];
-const loginMessage = "acli has no Jira login. Run `acli jira auth login`.";
 const installRemediation = "Install acli, or fix TASKER_ACLI_BIN.";
 
 function repoOf(key: string, site?: string): IssueDoctorRepo {
@@ -75,10 +80,10 @@ describe("jira doctor", () => {
 
       expect(await runAuth([repoOf("work")], fake.env)).toStrictEqual({
         status: "error",
-        detail: loginMessage,
+        detail: JIRA_LOGIN_MESSAGE,
         remediation: "Run acli jira auth login.",
       });
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("gives a switch remediation when a repo names another site", async () => {
@@ -89,7 +94,7 @@ describe("jira doctor", () => {
         detail: `repo work names the site other.atlassian.net, but acli uses ${ACTIVE}`,
         remediation: "Run acli jira auth switch --site other.atlassian.net.",
       });
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("lists the wrong repos in the order of the list and names the first site", async () => {
@@ -109,7 +114,7 @@ describe("jira doctor", () => {
         ].join("\n"),
         remediation: "Run acli jira auth switch --site one.atlassian.net.",
       });
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("gives two lines and one remediation for two repos with the same wrong site", async () => {
@@ -124,7 +129,7 @@ describe("jira doctor", () => {
         ].join("\n"),
         remediation: "Run acli jira auth switch --site other.atlassian.net.",
       });
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("is ok for repos with no site, the active site or the active site in other form", async () => {
@@ -132,7 +137,7 @@ describe("jira doctor", () => {
       const repos = [repoOf("none"), repoOf("same", ACTIVE), repoOf("folded", "  CodeGuru42.Atlassian.NET ")];
 
       expect(await runAuth(repos, fake.env)).toStrictEqual({ status: "ok", detail: `acli uses the site ${ACTIVE}` });
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it.each([
@@ -146,7 +151,7 @@ describe("jira doctor", () => {
 
       expect(text).not.toContain("user@example.com");
       expect(text).not.toContain("Authentication Type");
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("gives the timeout result and stops acli when acli hangs", async () => {
@@ -157,7 +162,7 @@ describe("jira doctor", () => {
 
       expect(result).toStrictEqual({ status: "error", detail: "the check did not finish in 200 ms" });
       expect(Date.now() - start).toBeLessThan(2000);
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
   });
 });

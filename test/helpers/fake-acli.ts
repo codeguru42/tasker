@@ -76,6 +76,12 @@ export function fakeAcli(
 // The args of the call that reads the active site.
 export const AUTH_STATUS_ARGS = ["jira", "auth", "status"];
 
+// The calls of a fake acli that only read the active site, with no logEnv.
+export const AUTH_STATUS_CALLS = [{ args: AUTH_STATUS_ARGS, env: {} }];
+
+// The message of JiraLoginError. It is an expected value, so it does not come from src/.
+export const JIRA_LOGIN_MESSAGE = "acli has no Jira login. Run `acli jira auth login`.";
+
 // The measured stdout of `acli jira auth status` with one login.
 export const MEASURED_AUTH_STATUS = [
   "✓ Authenticated",

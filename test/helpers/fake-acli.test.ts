@@ -5,8 +5,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   acliWriteResult,
   AUTH_STATUS_ARGS,
+  AUTH_STATUS_CALLS,
   fakeAcli,
   fakeAcliView,
+  JIRA_LOGIN_MESSAGE,
   jiraRefOf,
   MEASURED_AUTH_STATUS,
   MEASURED_NOT_FOUND,
@@ -79,6 +81,18 @@ describe("jiraRefOf", () => {
 describe("MEASURED_NOT_FOUND", () => {
   it("is the stderr of a view of an issue that does not exist", () => {
     expect(MEASURED_NOT_FOUND).toBe("✗ Error: Issue does not exist or you do not have permission to see it.");
+  });
+});
+
+describe("AUTH_STATUS_CALLS", () => {
+  it("is the one call that reads the active site, with no logEnv", () => {
+    expect(AUTH_STATUS_CALLS).toEqual([{ args: ["jira", "auth", "status"], env: {} }]);
+  });
+});
+
+describe("JIRA_LOGIN_MESSAGE", () => {
+  it("is the message of JiraLoginError", () => {
+    expect(JIRA_LOGIN_MESSAGE).toBe("acli has no Jira login. Run `acli jira auth login`.");
   });
 });
 

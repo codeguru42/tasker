@@ -6,7 +6,13 @@ import { AcliError, AcliNotInstalledError } from "../../../src/issues/jira/run.j
 import { JiraSiteError } from "../../../src/issues/jira/site.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
 import { failureOf } from "../../helpers/errors.js";
-import { AUTH_STATUS_ARGS, fakeAcliView, jiraRefOf, MEASURED_NOT_FOUND } from "../../helpers/fake-acli.js";
+import {
+  AUTH_STATUS_ARGS,
+  AUTH_STATUS_CALLS,
+  fakeAcliView,
+  jiraRefOf,
+  MEASURED_NOT_FOUND,
+} from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 // The output of `acli jira workitem view <key> --json --fields summary,description,labels,status,components`
@@ -284,7 +290,7 @@ describe("readJiraIssue", () => {
 
     await failureOf(readJiraIssue(jiraRefOf("TEST-2"), "other.atlassian.net", fake.env), JiraSiteError);
 
-    expect(fake.calls()).toEqual([{ args: AUTH_STATUS_ARGS, env: {} }]);
+    expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
   });
 
   it("passes a missing acli through", async () => {

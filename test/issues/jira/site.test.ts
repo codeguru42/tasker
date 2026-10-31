@@ -3,12 +3,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { AcliBinError, AcliNotInstalledError } from "../../../src/issues/jira/run.js";
 import { activeSite, JiraLoginError, JiraSiteError, siteGuard } from "../../../src/issues/jira/site.js";
 import { failureOf } from "../../helpers/errors.js";
-import { AUTH_STATUS_ARGS, fakeAcli, MEASURED_AUTH_STATUS } from "../../helpers/fake-acli.js";
+import {
+  AUTH_STATUS_ARGS,
+  AUTH_STATUS_CALLS,
+  JIRA_LOGIN_MESSAGE,
+  fakeAcli,
+  MEASURED_AUTH_STATUS,
+} from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const KELVIN = String.fromCodePoint(0x212a);
-const statusCalls = [{ args: AUTH_STATUS_ARGS, env: {} }];
-const loginMessage = "acli has no Jira login. Run `acli jira auth login`.";
 
 const readSite = (env: NodeJS.ProcessEnv, signal?: AbortSignal) => activeSite(env, { signal });
 const guard = (site: string | undefined, env: NodeJS.ProcessEnv, signal?: AbortSignal) =>
@@ -26,7 +30,7 @@ describe("site", () => {
       const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
 
       expect(await readSite(fake.env)).toBe("codeguru42.atlassian.net");
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("removes the white space around the value", async () => {
@@ -67,7 +71,7 @@ describe("site", () => {
       const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: "site: x\n" }]);
 
       await failureOf(readSite(fake.env), JiraLoginError);
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("rejects with JiraLoginError when no Site line exists", async () => {
@@ -75,15 +79,15 @@ describe("site", () => {
 
       const error = await failureOf(readSite(fake.env), JiraLoginError);
 
-      expect(error.message).toBe(loginMessage);
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(error.message).toBe(JIRA_LOGIN_MESSAGE);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("rejects with JiraLoginError when the value is empty", async () => {
       const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: "  Site:   \n" }]);
 
       await failureOf(readSite(fake.env), JiraLoginError);
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("rejects with JiraLoginError for a non-zero exit", async () => {
@@ -91,8 +95,8 @@ describe("site", () => {
 
       const error = await failureOf(readSite(fake.env), JiraLoginError);
 
-      expect(error.message).toBe(loginMessage);
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(error.message).toBe(JIRA_LOGIN_MESSAGE);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("rejects with AcliNotInstalledError when acli is missing", async () => {
@@ -141,14 +145,14 @@ describe("site", () => {
       expect(error.message).toBe(
         "Jira repo 'work' names the site other.atlassian.net, but acli uses codeguru42.atlassian.net. Switch acli with `acli jira auth switch --site other.atlassian.net`, then run the command again.",
       );
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("keeps the Kelvin sign of the active site as it is", async () => {
       const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: `Site: ${KELVIN}elvin.atlassian.net\n` }]);
 
       await failureOf(guard("kelvin.atlassian.net", fake.env), JiraSiteError);
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("reads the active site on each call", async () => {
@@ -165,7 +169,7 @@ describe("site", () => {
       const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: "✓ Authenticated\n" }]);
 
       await failureOf(guard("a.atlassian.net", fake.env), JiraLoginError);
-      expect(fake.calls()).toEqual(statusCalls);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
     it("rejects with AbortError when the signal aborts", async () => {
