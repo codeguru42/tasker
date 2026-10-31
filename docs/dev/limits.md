@@ -210,6 +210,12 @@ reason: a message to an agent that has ended starts the agent again, and the age
 answer, then ended its turn with a stop report. The message with the answer started the agent again, and the agent went
 on with its work.
 
+In Claude Code 2.1.314, an agent gives its final answer with the tool `SubagentHandback`. The text of the tool says that
+plain text at the end of a turn does not reach the orchestrator. It also says "Use it once", "The call ends your run"
+and "do not use it for progress updates or questions". The agent still uses this tool for an interim report, because it
+has no other final answer. On 2026-10-30, a `SendMessage` after a `SubagentHandback` call started a background agent
+again with its context. A second `SubagentHandback` call of that agent also reached the session that started the agent.
+
 A stop of an agent has these parts:
 
 - The agent runs no other `tasker` command until the orchestrator tells it the next step.
