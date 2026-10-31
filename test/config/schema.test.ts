@@ -282,6 +282,15 @@ describe("parseConfig issueTracker", () => {
     expect(issuesOf(raw)).toContain("repos.tasker.issueTracker.bogus: unrecognized key");
   });
 
+  it.each([
+    ["github", {}],
+    ["jira", { provider: "jira", project: "TEST" }],
+  ])("rejects releaseBranchField on a %s repo", (_name, tracker) => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { ...raw.repos.tasker.issueTracker, ...tracker, releaseBranchField: "x" };
+    expect(issuesOf(raw)).toContain("repos.tasker.issueTracker.releaseBranchField: unrecognized key");
+  });
+
   it("rejects an empty match", () => {
     const raw = validConfig();
     raw.repos.tasker.issueTracker.match = {};
@@ -812,6 +821,11 @@ describe("parseConfig named trackers", () => {
     const value = key === "match" ? { labels: ["a"] } : "x";
     const raw = withTracker({ provider: "github" }, { acme: { ...acme, [key]: value } });
     expect(issuesOf(raw)).toContain(`trackers.acme.${key}: unrecognized key`);
+  });
+
+  it("rejects releaseBranchField in a definition", () => {
+    const raw = withTracker({ tracker: "acme", project: "TEST" }, { acme: { ...acme, releaseBranchField: "x" } });
+    expect(issuesOf(raw)).toContain("trackers.acme.releaseBranchField: unrecognized key");
   });
 
   it("reports a bad definition once, even when two repos use it", () => {
