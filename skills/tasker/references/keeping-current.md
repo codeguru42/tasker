@@ -79,7 +79,9 @@ If the base step fails after a move of the sync step, the command also moves the
 the local tip from before the sync step. As a result, a failed update changes nothing.
 
 The `branch_updated` event has the key `sync`. Its value is `absent`, `none`, `fast-forward` or `take-remote`.
-`before.head` is the local tip before the sync step.
+`before.head` is the local tip before the sync step. `before.syncedBaseTip` and `after.syncedBaseTip` are the synced
+base tip of the task before and after the command. The synced base tip is the base tip that the task branch was last
+built on.
 
 When the head moved in the sync step or in the base step, the command writes a `base` event
 `{ base, revision, source: "update" }`. The `base` is the stored base. The `revision` is the stored base revision, a
@@ -113,10 +115,22 @@ The new tip depends on the parent:
 
 The strategy picks the move.
 
-Under `rebase`, the command replays the commits of the task branch after the merge base of the task branch and the new
-tip onto the new tip, with a rebase. The `how` is `rebase`. Git skips each old commit of the parent whose patch the new
-tip already holds. A commit that git cannot replay is an ordinary rebase conflict, and the rule of a failure after the
-move applies as it is.
+Under `rebase`, the command replays the commits of the task branch after the synced base tip of the task onto the new
+tip, with a rebase. This holds for both new tips: the branch of the parent in flight, and the base of the parent after
+it landed. The `how` is `rebase`. On success, the command prints
+`replayed the commits of <issue key> after the synced base tip <synced base tip>` on stdout, right after the `moved`
+line. A commit that git cannot replay is an ordinary rebase conflict, and the rule of a failure after the move applies
+as it is.
+
+The replay falls back to the commits after the merge base of the task branch and the new tip. It prints no `replayed`
+line then. It writes one of these notes on stderr before the rebase:
+
+- `note: the synced base tip <synced base tip> of <issue key> is not an ancestor of HEAD; tasker replayed the commits after the merge base <merge base>`
+  when the head does not build on the synced base tip.
+- `note: tasker could not check the synced base tip <synced base tip> of <issue key> (git exit code <exit code>); tasker replayed the commits after the merge base <merge base>`
+  when git cannot make the check.
+- `note: <issue key> has no synced base tip; tasker replayed the commits after the merge base <merge base>` when the
+  task has no synced base tip.
 
 Under `merge`, the command makes a fast-forward when the head is an ancestor of the new tip, and the `how` is
 `fast-forward`. Otherwise it merges the new tip into the task branch, and the `how` is `merge`.
