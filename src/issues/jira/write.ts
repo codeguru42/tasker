@@ -61,7 +61,7 @@ export async function assignJiraIssue(
   );
 }
 
-// Moves one Jira issue to a status with `acli jira workitem transition`. The site guard has run before.
+// Moves one Jira issue to a status with `acli jira workitem transition`. The caller runs the site guard first.
 function moveToStatus(ref: IssueRef, status: string, configKey: string, env: NodeJS.ProcessEnv): Promise<void> {
   return runWrite(
     ["jira", "workitem", "transition", "--key", ref.key, "--status", status, "--yes", "--json"],
