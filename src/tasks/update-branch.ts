@@ -99,6 +99,11 @@ function replayNote(issueKey: string, start: ReplayStart): string | undefined {
   }
 }
 
+// The note for a merge move of a task that had a parent when the command started.
+function mergeMoveNote(base: string, issueKey: string): string {
+  return `note: tasker merged ${base} into ${issueKey}, so the commits of the parent are now in its history; use --strategy rebase for a stacked task that has no merge move yet\n`;
+}
+
 // A result with exitCode means that the step already printed the message.
 export type UpdateBranchResult = BranchUpdated | { exitCode: number };
 
@@ -327,6 +332,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         },
         writes,
       );
+      if (parent !== undefined && resynced.how === "merge") io.stderr(mergeMoveNote(target.base, task.issueKey));
       return {
         issueKey: task.issueKey,
         base: target.base,
