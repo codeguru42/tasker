@@ -106,6 +106,18 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   session lists the mode as a decision of the user in its [handoff file](handoff.md#the-items-of-a-handoff-file). The
   new session then holds the mode until the user ends it. On 2026-10-18, the user told orchestrator-docs: "Default to
   your evaluation and recommendation from here on."
+- Pending work is moot after a fact that the session read removes the purpose of the work. For example, a closed issue
+  makes an edit of its body moot. Whether the purpose of the work is gone is a judgment. The judgment is open on
+  purpose, and the session makes it.
+- The session drops moot work with no question to the user. This also covers work that waits for an approval of the
+  user. In its next reply to the user, the session names the dropped work and gives the reason. The reason names the
+  fact that the session read.
+- The two bullets before this one do not cover an action that a doc keeps for the user alone. An example is "Only the
+  user changes a landing order of the overlap rule" (see [Land the work](land-the-work.md#land-the-work)).
+- A question of the user about a decision of the session asks for the reasoning. The session answers the question, and
+  it does not treat the decision as wrong unless the user says so. On 2026-10-30, a session dropped seven planned edits
+  of issue bodies after #536 landed. Then the user asked why, and the session said that the drop needed a question. The
+  user said: "no, deciding without me is fine. I am just making sure I understand the reasoning."
 
 ## A question of the user
 
