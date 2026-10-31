@@ -237,8 +237,9 @@ A transition to the status that the issue has now passes. So a second run of a w
 ## The in-progress clear
 
 The Jira tracker has no clear of the in-progress marker. A status has no "clear". The status after an abort depends on
-the workflow of the team. The abort of a Jira task runs no tracker step. A later ticket adds the function that rejects
-with the message `the jira tracker has no in-progress clear`.
+the workflow of the team. The abort of a Jira task runs no tracker step. The `clearInProgress` member of
+[the provider](#the-provider) rejects with the message `the jira tracker has no in-progress clear`. Nothing calls it in
+a run.
 
 ## The auth status
 
@@ -259,6 +260,27 @@ the site of the first such repo.
 
 The detail shows no line of the output of `acli` other than the value of the `Site:` line. It never shows the email of
 the user. The reason: the output of `acli` holds the email of the user. The doctor output can go into a report.
+
+## The provider
+
+`createJiraProvider()` in `src/issues/jira/provider.ts` gives the `IssueProvider` of a Jira repo. It passes `site` to
+each Jira function that takes it. It runs no site guard itself, and it adds no behavior.
+
+| Member             | Jira function                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| `id`               | `"jira"`                                                                             |
+| `account`          | `undefined`                                                                          |
+| `parse`            | `KEY_PARSERS.jira` of `src/issue-key/resolve.ts`                                     |
+| `fetchIssue`       | `readJiraIssue()` of `src/issues/jira/issue.ts`                                      |
+| `authStatus`       | `authStatus()` of `src/issues/jira/auth.ts`                                          |
+| `baseBranchHint`   | A function that gives `undefined`                                                    |
+| `blockingIssues`   | `readJiraBlockers()` of `src/issues/jira/blockers.ts`                                |
+| `assign`           | `assignJiraIssue()` of `src/issues/jira/write.ts`                                    |
+| `transitionStatus` | `markJiraInProgress()` of `src/issues/jira/write.ts`                                 |
+| `inProgressMarker` | `jiraInProgressMarker()` of `src/issues/jira/write.ts`                               |
+| `clearInProgress`  | A function that rejects with the `Error` `the jira tracker has no in-progress clear` |
+| `markDone`         | `markJiraDone()` of `src/issues/jira/write.ts`                                       |
+| `doctorChecks`     | `jiraDoctorChecks()` of `src/issues/jira/doctor.ts`                                  |
 
 ## The errors
 

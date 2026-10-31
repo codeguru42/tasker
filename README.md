@@ -12,7 +12,8 @@ merge.
   [assistant configuration](docs/config.md#assistant) selects it.
 - An issue tracker: for a GitHub tracker, tasker runs the `gh` command, as the
   [tracker configuration](docs/config.md#issuetracker) says. The `gh` login of the account of `issueTracker.account`
-  needs the token scope `repo`, as the [token scopes](docs/config.md#token-scopes) say.
+  needs the token scope `repo`, as the [token scopes](docs/config.md#token-scopes) say. For a Jira tracker, tasker runs
+  `acli`, as [the acli login](docs/config.md#the-acli-login) says.
 
 ## Install
 

@@ -11,12 +11,13 @@ a provider from the registry (see [The issue provider](#the-issue-provider)). A
 
 ## The issue provider
 
-Each member of the provider maps to one GitHub function and adds no behavior.
+Each member of the provider maps to one function of its tracker, GitHub or Jira, and adds no behavior.
 
 - The caller reads `updateOnStart` and `updateOnFinish` to decide if it calls a write at all. The provider does not read
   them.
 - `parse` takes the project, because one provider object serves many repos. It is the key parser itself, not a wrapper.
   [Issue keys](issue-keys.md) gives the rules.
+- The Jira `baseBranchHint` gives `undefined`. #476 adds the hint.
 
 The field `comments` of `Issue` gives each comment of the issue with its author, its time and its body, from the oldest
 to the newest.
@@ -24,10 +25,9 @@ to the newest.
 ### The registry
 
 The registry is the only place that reads `issueTracker.provider`. One configuration object gives one provider for each
-account.
+GitHub account. It gives the Jira provider to a Jira repo, with one provider for each site.
 
 - Limit: a caller that changes a configuration object after the first call gets the old provider.
-- Limit: the jira tracker is not available in this version.
 
 ## runGh()
 

@@ -140,8 +140,8 @@ Prints the last quota event of each repo as JSON, and needs no task. See
 
 ### `tasker doctor`
 
-Makes sure that the configuration, the data root, git, `gh`, `claude` and the accounts work, and needs no task. See
-[the reference](references/setup.md#tasker-doctor).
+Makes sure that the configuration, the data root, git, `gh`, `acli`, `claude` and the accounts work, and needs no task.
+See [the reference](references/setup.md#tasker-doctor).
 
 ### `tasker install-skills`
 

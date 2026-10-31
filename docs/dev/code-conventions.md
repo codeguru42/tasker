@@ -102,8 +102,7 @@ git function with no operation adds the operation in the same change.
 2. Add a key parser for the id to `KEY_PARSERS` in `src/issue-key/resolve.ts`.
 3. Create `src/issues/<id>/provider.ts`. It implements `IssueProvider` from `src/issues/provider.ts`, and it imports the
    types of the interface from there. Its `parse` is the entry of `KEY_PARSERS`.
-4. Add a branch for the id in `issueProviderFor()` in `src/issues/provider.ts`, in place of the "not available in this
-   version" error.
+4. Add a branch for the id in `issueProviderFor()` in `src/issues/provider.ts`.
 5. Follow the doc comments of `blockingIssues` and `baseBranchHint` in `IssueProvider`.
 6. Give the doctor checks of the provider from `doctorChecks()`.
 7. Write the tests first (see "Tests").

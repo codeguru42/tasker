@@ -79,7 +79,8 @@ If `issueTracker.updateOnStart` is `true`, the command writes to the issue track
 - `assigned <issue key> to <assignee> on the tracker`
 - `marked <issue key> in progress on the tracker`
 
-If the configuration has no in-progress label, the command only assigns the issue and prints only the first line.
+If the configuration has no in-progress label or status, the command only assigns the issue and prints only the first
+line.
 
 A write that fails does not change the exit code, which stays 0, and does not change the task, which stays in
 `workspace_ready`. The command prints a warning on stderr at once, with the error of the tracker:
@@ -95,9 +96,9 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 - The issue does not exist, or it is closed and has no task. The error names the issue. Open the issue again or use
   another one.
 - The issue has no task, `issueTracker.updateOnStart` is `true`, you did not pass `--reclaim`, and the issue already has
-  the in-progress label. The error is
-  `the issue <issue key> already has the in-progress marker <label>. Pass --reclaim to start it anyway, or remove the marker on the tracker.`
-  The command makes no task and no write. Pass `--reclaim`, or remove the label on the tracker.
+  the in-progress marker (a label or a status). The error is
+  `the issue <issue key> already has the in-progress marker <marker>. Pass --reclaim to start it anyway, or remove the marker on the tracker.`
+  The command makes no task and no write. Pass `--reclaim`, or remove the marker on the tracker.
 - A blocker of the issue is open and its task is not ready to stack, or it has no task. The error is
   `<blocker key>: blocking issue is still open`, one line for each such blocker. The command makes no task. Wait until
   the blocker closes or its task is ready to stack, or pass `--base`.
