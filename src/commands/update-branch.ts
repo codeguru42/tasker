@@ -76,6 +76,12 @@ async function updateBranchIssue(
   if (result.state !== result.origin) {
     io.stdout(`demoted ${result.issueKey} from ${result.origin} to ${result.state}\n`);
   }
+  if (result.moved && result.origin === "awaiting_plan_review") {
+    io.stdout(`the plan is stale; run tasker refine ${result.issueKey} before tasker approve\n`);
+  }
+  if (result.moved && result.state === "failed") {
+    io.stderr("warning: tasker retry runs the old session and plan against the moved tree\n");
+  }
   io.stdout(`state: ${result.state}\n`);
   for (const line of showLines(result.state, result.issueKey)) io.stdout(`${line}\n`);
 }

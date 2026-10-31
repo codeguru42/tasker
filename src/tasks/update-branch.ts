@@ -55,6 +55,8 @@ export type BranchUpdated = SyncOutcome & {
   // The head at the start of the base step. After a move of the sync step, this is the remote tip.
   headBefore: string;
   headAfter: string;
+  // Whether the head moved, in the sync step or in the base step.
+  moved: boolean;
   // The synced base tip that the replay started after, set when the replay started there.
   replayedAfter?: string;
   // The key of the parent that the task is no longer stacked on, set when the parent landed.
@@ -301,6 +303,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         how: resynced.how,
         headBefore: syncedHead,
         headAfter: resynced.head,
+        moved,
         origin,
         state,
       };
