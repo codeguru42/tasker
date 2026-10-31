@@ -59,3 +59,14 @@ export function requireBaseRevision(store: TaskStore, task: Task): string {
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no base revision`);
   return revision;
 }
+
+// Throws when tip, the revision of the branch, is not the accepted revision of the task. The accepted revision is the
+// one that the last tasker accept stored. The task needs one.
+export function requireAcceptedTip(task: Task, branch: string, tip: string): void {
+  if (task.acceptedRevision === null) throw new Error(`the task of ${task.issueKey} has no accepted revision`);
+  if (tip !== task.acceptedRevision) {
+    throw new Error(
+      `the tip of ${branch} (${tip}) is not the accepted revision (${task.acceptedRevision}); run tasker update-branch and review the work again`,
+    );
+  }
+}

@@ -8,7 +8,7 @@ import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { isLocalBase } from "./parent.js";
 import { failRun } from "./run-outcome.js";
-import { requireBase, requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
+import { requireAcceptedTip, requireBase, requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
 export interface MergeRequest {
   config: Config;
@@ -49,12 +49,14 @@ async function mergeLocked(store: TaskStore, request: MergeRequest): Promise<Mer
   }
   const baseRevision = requireBaseRevision(store, task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  requireAcceptedTip(task, branch, await vcs.taskRefRevision(ctx, { taskRef: branch }));
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     transitionTask(store, task.id, "merging");
     let revision: string;
     let pushed: boolean;
     try {
       const read = await vcs.taskRefOnBase(ctx, { taskRef: branch, baseRevision });
+      requireAcceptedTip(task, branch, read.revision);
       revision = read.revision;
       pushed = !read.onBase;
       if (pushed) await vcs.land(ctx, { base, revision });
