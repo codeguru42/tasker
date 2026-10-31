@@ -81,7 +81,8 @@ the local tip from before the sync step. As a result, a failed update changes no
 The `branch_updated` event has the key `sync`. Its value is `absent`, `none`, `fast-forward` or `take-remote`.
 `before.head` is the local tip before the sync step. `before.syncedBaseTip` and `after.syncedBaseTip` are the synced
 base tip of the task before and after the command. The synced base tip is the base tip that the task branch was last
-built on. The key `how` has the value `undo` for an undo.
+built on. The key `how` has the value `undo` for an undo. After the parent landed, the event of a successful run also
+has `landedParents`: the issue keys of each landed parent on the walk, the direct parent first.
 
 When the sync step or the base step moved the head, the command writes a `base` event
 `{ base, revision, source: "update" }`. The `base` is the stored base. The `revision` is the stored base revision, a
@@ -120,21 +121,23 @@ A stacked task is a task with a stored parent. `tasker start` stores the parent 
 
 A stacked task whose parent landed must move first. `tasker merge`, `tasker mark-landed`, `tasker refine`,
 `tasker execute`, `tasker verify`, `tasker review` and `tasker accept` refuse it with
-`the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+`the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
 A cancelled parent stops only the landing commands. Their error is
 `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
 
 The new tip depends on the parent:
 
 - While the parent is in flight, the new tip is the tip of `refs/heads/<parent branch>`.
-- After the parent landed, the new tip is the tip of the base of the parent on `origin`, read after the fetch. The task
-  is then no longer stacked.
+- After the parent landed, the command makes the walk. The walk starts at the parent and goes up to each parent that
+  landed too. The task where it stops is the end task. The new tip is the tip of the base that the walk ends on, on
+  `origin`, read after the fetch. The task is then no longer stacked, or it stays stacked on the parent of the end task
+  when that parent has not landed.
 
 The strategy picks the move.
 
 Under `rebase`, the command replays the commits of the task branch after the synced base tip of the task onto the new
-tip, with a rebase. This holds for both new tips: the branch of the parent in flight, and the base of the parent after
-it landed. The `how` is `rebase`. On success, the command prints
+tip, with a rebase. This holds for both new tips: the branch of the parent in flight, and the base that the walk ends on
+after the parent landed. The `how` is `rebase`. On success, the command prints
 `replayed the commits of <issue key> after the synced base tip <synced base tip>` on stdout, right after the `moved`
 line. A commit that git cannot replay is an ordinary rebase conflict, and the rule of a failure after the move applies
 as it is.
@@ -162,12 +165,16 @@ The `revision` of each `base` event is a ref, never a commit id:
   `{ base: "refs/heads/<parent branch>", revision: "refs/heads/<parent branch>", source: "update" }`. The command writes
   no `base` event when nothing moved.
 - After the parent landed, the command always writes
-  `{ base: <base of the parent>, revision: <stored base revision of the parent>, source: "parent" }`, also when the head
-  does not move. The task row gets the new base. The `revision` is a ref such as `refs/remotes/origin/main`.
+  `{ base: <base that the walk ends on>, revision: <base revision of that base>, source: "parent", baseOf: <end task key> }`,
+  also when the head does not move. The task row gets the new base and the new parent, or no parent. The `revision` is a
+  ref such as `refs/remotes/origin/main`.
 
-After the parent landed, the command prints `<issue key> is no longer stacked on <parent key>` after the current line or
-the moved line and before the demoted line. A later run uses the plain base step with the new base. The stale-plan rule
-applies only when the head moved. The demotion applies when the head moved and in the one case that
+After the parent landed, the command prints `<issue key> is no longer stacked on <parent key>` when the task has no
+parent after the walk. The line names the direct parent. When the task stays stacked, the command prints
+`<issue key> is now stacked on <new parent key>` in its place. The line comes after the current line or the moved line
+and before the demoted line. A later run of a task with no parent uses the plain base step with the new base. A task
+that stays stacked uses the base step of a stacked task. The stale-plan rule applies only when the head moved. The
+demotion applies when the head moved and in the one case that
 [The state after the command](#the-state-after-the-command) gives.
 
 ### The state after the command
@@ -230,7 +237,7 @@ fails.
 These cases are out of scope:
 
 - A move that `tasker update-branch` did not make.
-- The run that unstacked the task after its parent landed.
+- The run that unstacked the task after its parent landed, or moved it onto a new parent.
 - The next plain run after an undo of a sync move.
 
 ### Errors
@@ -245,6 +252,10 @@ and of the clone lock belong to this group:
   `--undo cannot be combined with --strategy or --take-remote`.
 - The option `--undo` finds no stored move or a moved worktree. [Undo the last update](#undo-the-last-update) gives the
   errors.
+- The chain of parents has a loop. The error is
+  `the chain of parents of <issue key> has a loop at <issue key of that task>; nothing moved`.
+- The end task of the walk has a local base and no parent. The error is
+  `the base <base> of <end task key> is a local branch with no parent task; nothing moved`.
 - The worktree has uncommitted changes. The error has the line `the worktree has uncommitted changes: <path>`, then one
   line for each change, and the last line `tasker update-branch needs a clean worktree`.
 
@@ -261,9 +272,9 @@ depends on the worktree:
 - In each other case, the task goes to `failed` with the error `updating branch failed: <message>`. The command prints
   the same error on stderr.
 
-A stacked task fails in the same way in two more cases. The branch of the parent, while the parent is in flight, is gone
-from the clone: `the branch of the parent <parent key> is gone: <base>`. The parent landed and is stacked too:
-`the parent <parent key> of <issue key> is stacked too; its base is <base of the parent>`.
+A stacked task fails in the same way when the branch of its parent is gone from the clone. The parent is the direct
+parent while it is in flight, or the new parent after the walk:
+`the branch of the parent <parent key> is gone: refs/heads/<new parent branch>`.
 
 A failed read of the state of the worktree counts as not back at the start. `tasker retry` has no row for a task that
 failed in `updating_branch`. After a failed restore, run the git commands that the error names. Then run

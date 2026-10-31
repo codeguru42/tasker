@@ -25,7 +25,7 @@ and of the clone lock belong to this group:
 
 - The task is stacked, so it has a parent task. The error depends on the parent:
   - The parent landed. The error is
-    `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+    `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
     Run `tasker update-branch <issue key>`.
   - The parent is cancelled. The error is
     `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
@@ -84,7 +84,7 @@ to this group:
 
 - The task is stacked, so it has a parent task. The error depends on the parent:
   - The parent landed. The error is
-    `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+    `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
     Run `tasker update-branch <issue key>`.
   - The parent is cancelled. The error is
     `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
