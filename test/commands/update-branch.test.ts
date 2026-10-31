@@ -13,6 +13,7 @@ import {
   databasePathOf,
   eventsOf,
   failTaskFrom,
+  failTaskVia,
   lastErrorOf,
   latestTaskOf,
   placeTask,
@@ -22,6 +23,7 @@ import {
 import {
   expectCommandRefused,
   taskBranchTipOf,
+  useAcceptedTask,
   useMovedBaseTask,
   useWorkReviewTask,
   type WorkReviewTask,
@@ -635,6 +637,61 @@ describe("tasker update-branch", () => {
           data: { how: "none", sync: "take-remote", error: result.err.trimEnd() },
         });
       });
+    });
+  });
+
+  describe("the accepted revision", () => {
+    it("moves a task in accepted to executed when a commit moved the tip after the accept", async () => {
+      const accepted = await useAcceptedTask();
+      await commitInWorktree(accepted.task.worktreePath!, accepted.env, { file: "late.txt" });
+      const count = eventsOf(accepted.dataRoot, KEY).length;
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.out.endsWith(`demoted ${KEY} from accepted to executed\nstate: executed\n`)).toBe(true);
+      expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("executed");
+      expect(
+        eventsOf(accepted.dataRoot, KEY)
+          .slice(count)
+          .map((e) => e.type),
+      ).not.toContain("base");
+    });
+
+    it("moves a task that failed from merging to executed when its tip is not the accepted revision", async () => {
+      const accepted = await useAcceptedTask();
+      withDataRootStore(accepted.dataRoot, (store) => failTaskVia(store, accepted.task.id, "accepted", "merging"));
+      await commitInWorktree(accepted.task.worktreePath!, accepted.env, { file: "late.txt" });
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.out.endsWith(`state: executed\n`)).toBe(true);
+      expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("executed");
+    });
+
+    it("keeps a task in accepted when the tip is the accepted revision", async () => {
+      const accepted = await useAcceptedTask();
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(result.out.endsWith("state: accepted\n")).toBe(true);
+      expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("accepted");
+    });
+
+    it("moves a task in accepted to executed when the base step moved the head", async () => {
+      const accepted = await useAcceptedTask();
+      await accepted.origin.addCommit("main");
+      const count = eventsOf(accepted.dataRoot, KEY).length;
+
+      const result = await runUpdateBranch();
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("executed");
+      const events = eventsOf(accepted.dataRoot, KEY).slice(count);
+      expect(events.filter((e) => e.type === "base")).toHaveLength(1);
+      expect(events.at(-1)).toMatchObject({ type: "branch_updated", data: { how: "rebase" } });
     });
   });
 

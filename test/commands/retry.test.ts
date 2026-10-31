@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { retry } from "../../src/commands/retry.js";
+import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom, type TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { commitInWorktree } from "../helpers/git.js";
@@ -152,6 +153,10 @@ describe("tasker retry", () => {
     expect(result.err).toContain(`${unacceptedTipError(accepted.task.branch!, tip, accepted.revision)}\n`);
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("accepted");
     expect(await accepted.origin.branchHead("main")).toBe(head);
+
+    const updated = await runCommand(updateBranch, "update-branch", KEY, "--repo", "codeguru42/tasker");
+    expect(updated.code).toBe(0);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("executed");
   });
 
   it("pushes nothing on a retry after a push that was recorded as failed", async () => {

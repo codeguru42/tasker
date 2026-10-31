@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom } from "../../src/state/machine.js";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import { mergeTask } from "../../src/tasks/merge.js";
 import type { TaskStore } from "../../src/store/store.js";
-import { captureIo } from "../helpers/cli.js";
+import { captureIo, runCommand } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
 import { gitBeforeCommandEnv } from "../helpers/git.js";
@@ -111,5 +112,9 @@ describe("mergeTask", () => {
     withDataRootStore(accepted.dataRoot, (store) => expect(failedFrom(store, accepted.task.id)).toBe("merging"));
     expect(await accepted.origin.branchHead("main")).not.toBe(tip);
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
+
+    const updated = await runCommand(updateBranch, "update-branch", accepted.key, "--repo", accepted.repoKey);
+    expect(updated.code).toBe(0);
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("executed");
   });
 });

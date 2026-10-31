@@ -2,6 +2,7 @@ import { existsSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resume } from "../../src/commands/resume.js";
+import { updateBranch } from "../../src/commands/update-branch.js";
 import { canonicalPath } from "../../src/real-path.js";
 import { type TransitionDetail } from "../../src/state/machine.js";
 import { GitError } from "../../src/vcs/git/run.js";
@@ -358,6 +359,10 @@ describe("tasker resume", () => {
     expect(result.err).toContain(`${unacceptedTipError(accepted.task.branch!, tip, accepted.revision)}\n`);
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("accepted");
     expect(await accepted.origin.branchHead("main")).toBe(head);
+
+    const updated = await runCommand(updateBranch, "update-branch", KEY, "--repo", "codeguru42/tasker");
+    expect(updated.code).toBe(0);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("executed");
   });
 
   it("runs tasker finish for a task paused in interrupted from finishing", async () => {

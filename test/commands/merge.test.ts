@@ -1,6 +1,8 @@
 import { renameSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { accept } from "../../src/commands/accept.js";
 import { merge } from "../../src/commands/merge.js";
+import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
@@ -187,6 +189,24 @@ describe("tasker merge", () => {
 
       await expectRefused(accepted, new RegExp(`^the lock ${name} is busy`));
     });
+  });
+
+  it("lands the new tip after update-branch and a new accept", async () => {
+    const accepted = await useAcceptedTask();
+    const tip = await commitInWorktree(accepted.task.worktreePath!, accepted.env, { file: "late.txt" });
+    await expectRefused(accepted, `${unacceptedTipError(accepted.task.branch!, tip, accepted.revision)}\n`);
+
+    const updated = await runCommand(updateBranch, "update-branch", KEY, "--repo", REPO);
+    expect(updated.code).toBe(0);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("executed");
+    withDataRootStore(accepted.dataRoot, (store) => placeTask(store, accepted.task.id, "awaiting_work_review"));
+    const accepting = await runCommand(accept, "accept", KEY, "--repo", REPO);
+    expect(accepting.code).toBe(0);
+    const merged = await runMerge();
+
+    expect(merged.code).toBe(0);
+    expect(await accepted.origin.branchHead("main")).toBe(tip);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
