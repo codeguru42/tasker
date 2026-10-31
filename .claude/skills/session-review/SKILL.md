@@ -31,6 +31,12 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 
    On 2026-10-17, the user said: "if a memory contains the same note as a doc, then the memory should be deleted".
 3. Write each new candidate to memory. Follow the memory rules of the system prompt of the session: the types, the frontmatter, the line in the index and the list of what not to save.
+
+   A memory note never holds the status of an issue. Examples of a status are open, closed and landed. GitHub holds the status of each issue, and a status in a note can be wrong or go stale. A note can name an issue number, but only as its delete condition or as a source. For example, a note can say "delete when #500 lands".
+
+   A session that needs the status of an issue reads it from GitHub, as step 5 (a) does. This rule covers each note that this skill writes or changes.
+
+   On 2026-10-30, a new note said that #537 landed, but #537 closed as not planned. The user said: "Why are we tracking issue status in memory. Github is the source of truth."
 4. Update or remove each entry that step 2 found stale, wrong or duplicated. Also delete each note and trim each note, as the doc check of step 2 says.
 5. Do this step for each existing note that the doc check of step 2 keeps in full or in part. For each such note, decide whether it belongs in a tracked doc of the repo. The bullet "Each new rule, fact or preference goes to a doc of the repo" of [What goes in a ticket](../../../docs/dev/planner.md#what-goes-in-a-ticket) in `docs/dev/planner.md` guides this judgment. The judgment is open on purpose, and the session makes it.
    - (a) If the note names an open issue, make no proposal for it. Read the state with `gh issue view <number> --json state -q .state`.
@@ -56,5 +62,6 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 | The session skips the doc check of the existing notes. | Do the doc check of step 2, and step 5 for each kept note. |
 | The session edits a tracked doc. | Make a proposal, as step 6 says. |
 | The session saves the state of a task in progress as memory. | Follow the list of what not to save, as step 3 says. |
+| The session writes the status of an issue in a memory note, for example "#537 landed". | Name the issue number only as a delete condition or as a source, as step 3 says. Read the status from GitHub. |
 | The session tries to start the skill from a hook. | Run the skill only on a request, as "When to use" says. |
 | The session keeps a proposal only in its reply, but the docs give a target for its role. | Send the proposal to that target, as step 6 says. |
