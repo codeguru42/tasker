@@ -147,15 +147,21 @@ When a draft needs one of these decisions, the follow-up planner asks the user b
 
 For a draft that waits for such a decision, the follow-up planner posts nothing. The follow-up planner sends the draft
 as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed.
-The answer of the item is the decision of the user.
+The answer of the item is the decision of the user. The follow-up planner posts nothing for a draft item until each
+question of the item has an answer.
 
 - If the answer rejects the draft or says to drop it, the follow-up planner drops the draft and reports the drop, as
-  [The post of the follow-up planner](#the-post-of-the-follow-up-planner) says.
+  [The post of the follow-up planner](#the-post-of-the-follow-up-planner) says. A
+  [partial answer](operator-items.md#the-open-items) that rejects the draft or says to drop it also ends the draft.
 - If the answer accepts the draft with no change, the answer is also the approval of the draft, and the follow-up
   planner posts the draft.
 - If the answer changes the draft, the follow-up planner changes the draft as the answer says. Then the follow-up
   planner runs the review loops again for the changed draft. Then the follow-up planner posts it with no approval of the
   user. The escape hatch still applies to the changed draft.
+- The user can say that the sender decides the open part of a question, as [The answer](operator-items.md#the-answer)
+  says. Then the follow-up planner decides the open part by its recommendation. If that decision changes the draft, the
+  bullet "If the answer changes the draft" applies. Otherwise the bullet "If the answer accepts the draft" applies. If
+  the words of the user say to reject or drop the draft, the first bullet of this list applies.
 
 The follow-up planner goes on with the other drafts.
 
