@@ -281,6 +281,14 @@ function jiraTrackerIssues(key: string, issueTracker: Record<string, unknown>): 
       ),
     );
   }
+  if (issueTracker.updateOnFinish === true && issueTracker.doneStatus === undefined) {
+    issues.push(
+      issueLine(
+        ["repos", key, "issueTracker", "doneStatus"],
+        "is required for the jira tracker when updateOnFinish is true",
+      ),
+    );
+  }
   return issues;
 }
 
