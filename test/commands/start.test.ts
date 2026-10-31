@@ -1,9 +1,10 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
 import { start } from "../../src/commands/start.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
+import type { TaskState } from "../../src/state/machine.js";
 import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
@@ -236,10 +237,11 @@ describe("start", () => {
 
   describe("a second run", () => {
     // A repo with a bootstrap that fails until the file <tmp>/ok exists.
-    async function failingFixture() {
+    // options.issues gives the issues that the fake gh answers.
+    async function failingFixture(options: { issues?: { project: string; number: number }[] } = {}) {
       const tmp = useTempDir("tasker-second-run-");
       const command = `test -f ${tmp}/ok || exit 3`;
-      const fixture = await useStartFixture({ repo: { bootstrap: { commands: [command], env: [] } } });
+      const fixture = await useStartFixture({ ...options, repo: { bootstrap: { commands: [command], env: [] } } });
       return { fixture, ok: join(tmp, "ok") };
     }
 
@@ -324,6 +326,49 @@ describe("start", () => {
       expect(result.code).toBe(0);
       expect(result.out).toContain("base: main\n");
       expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+
+    describe("the parent of a stacked task", () => {
+      const issues = [3, 5].map((number) => ({ project: PROJECT, number }));
+      const PARENT = `${PROJECT}#3`;
+
+      // Starts the parent (issue 3) while ok exists, then removes ok so that the next bootstrap fails.
+      async function failingStackedFixture() {
+        const { fixture, ok } = await failingFixture({ issues });
+        writeFileSync(ok, "");
+        const parent = await startIssueTask(fixture, 3);
+        expect(parent.result.code).toBe(0);
+        rmSync(ok);
+        return { fixture, ok, parent, parentId: latestTaskOf(fixture.dataRoot, PARENT).id };
+      }
+
+      it("stores the link of a failed start and clears it when the second run has --base main", async () => {
+        const { fixture, ok, parent, parentId } = await failingStackedFixture();
+        expect((await runCommand(start, "start", KEY, "--base", `refs/heads/${parent.branch}`)).code).toBe(1);
+        expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBe(parentId);
+        writeFileSync(ok, "");
+
+        const result = await runCommand(start, "start", KEY, "--base", "main");
+
+        expect(result.code).toBe(0);
+        expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ base: "main", parentTaskId: null });
+      });
+
+      it("clears the link when the parent finished before the second run with no --base", async () => {
+        const { fixture, ok, parent, parentId } = await failingStackedFixture();
+        expect((await runCommand(start, "start", KEY, "--base", `refs/heads/${parent.branch}`)).code).toBe(1);
+        expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBe(parentId);
+        withDataRootStore(fixture.dataRoot, (store) => placeTask(store, parentId, "finished"));
+        writeFileSync(ok, "");
+
+        const result = await runCommand(start, "start", KEY);
+
+        expect(result.code).toBe(0);
+        expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({
+          base: `refs/heads/${parent.branch}`,
+          parentTaskId: null,
+        });
+      });
     });
   });
 
@@ -690,6 +735,108 @@ describe("the blocker step", () => {
     ]);
     withDataRootStore(fixture.dataRoot, (store) => {
       expect(store.getDefaultBaseBranch(PROJECT)).toBe("main");
+    });
+    expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBe(latestTaskOf(fixture.dataRoot, BLOCKER).id);
+  });
+
+  describe("the parent id of a task", () => {
+    // Starts the task of issue 3 as the parent, moves it to state and gives it.
+    async function startParent(fixture: Awaited<ReturnType<typeof useStartFixture>>, state: TaskState) {
+      const parent = await startIssueTask(fixture, 3);
+      expect(parent.result.code).toBe(0);
+      const id = latestTaskOf(fixture.dataRoot, BLOCKER).id;
+      withDataRootStore(fixture.dataRoot, (store) => placeTask(store, id, state));
+      return { ...parent, id, base: `refs/heads/${parent.branch}` };
+    }
+
+    it("writes the id of the parent for a start with --base of its branch", async () => {
+      const fixture = await useStartFixture({ issues });
+      const parent = await startParent(fixture, "awaiting_work_review");
+
+      const result = await runCommand(start, "start", KEY, "--base", parent.base);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ base: parent.base, parentTaskId: parent.id });
+    });
+
+    it("writes null for a start on a branch of origin", async () => {
+      const fixture = await useStartFixture({ issues });
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBeNull();
+    });
+
+    it.each(["cancelled", "finished"] as const)("writes null for a parent in %s", async (state) => {
+      const fixture = await useStartFixture({ issues });
+      const parent = await startParent(fixture, state);
+
+      const result = await runCommand(start, "start", KEY, "--base", parent.base);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ base: parent.base, parentTaskId: null });
+    });
+
+    it.each(["landed", "finishing", "cleanup_failed"] as const)("writes the id for a parent in %s", async (state) => {
+      const fixture = await useStartFixture({ issues });
+      const parent = await startParent(fixture, state);
+
+      const result = await runCommand(start, "start", KEY, "--base", parent.base);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ base: parent.base, parentTaskId: parent.id });
+    });
+
+    it("skips a finished task with the same branch that has a higher id", async () => {
+      const fixture = await useStartFixture({ issues });
+      const parent = await startParent(fixture, "awaiting_work_review");
+      seedTasks(fixture.dataRoot, [
+        { issueKey: `${PROJECT}#4`, repoKey: PROJECT, state: "finished", at: dayAt(1), branch: parent.branch },
+      ]);
+
+      const result = await runCommand(start, "start", KEY, "--base", parent.base);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBe(parent.id);
+    });
+
+    it("takes an active task with the same branch that has a higher id", async () => {
+      const fixture = await useStartFixture({ issues });
+      const parent = await startParent(fixture, "awaiting_work_review");
+      const [newer] = seedTasks(fixture.dataRoot, [
+        {
+          issueKey: `${PROJECT}#4`,
+          repoKey: PROJECT,
+          state: "awaiting_work_review",
+          at: dayAt(1),
+          branch: parent.branch,
+        },
+      ]);
+
+      const result = await runCommand(start, "start", KEY, "--base", parent.base);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBe(newer.id);
+    });
+
+    it("ignores an active task of another repo with the same branch", async () => {
+      const fixture = await useStartFixture({ issues });
+      const parent = await startParent(fixture, "cancelled");
+      seedTasks(fixture.dataRoot, [
+        {
+          issueKey: "other/repo#1",
+          repoKey: "other/repo",
+          state: "awaiting_work_review",
+          at: dayAt(1),
+          branch: parent.branch,
+        },
+      ]);
+
+      const result = await runCommand(start, "start", KEY, "--base", parent.base);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBeNull();
     });
   });
 
