@@ -90,9 +90,9 @@ these rules:
 - It matches `^[A-Za-z_][A-Za-z0-9_]*$`.
 - It does not start with `TASKER_`. A `TASKER_` variable belongs to tasker and tasker never hands it to a phase.
 - It is not a name that every phase already receives. Those names are: `PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`,
-  `TERM`, `SHELL`, `TMPDIR`, `TZ`, `USER`, `LOGNAME`, `CLAUDE_CONFIG_DIR`, `NVM_DIR`, `ASDF_DIR`, `ASDF_DATA_DIR`,
-  `VOLTA_HOME`, `FNM_DIR`, `N_PREFIX`, `PYENV_ROOT`, `RBENV_ROOT`, `SDKMAN_DIR`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`,
-  `XDG_DATA_HOME`, `XDG_STATE_HOME`.
+  `TERM`, `SHELL`, `TMPDIR`, `TZ`, `USER`, `LOGNAME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `NVM_DIR`, `ASDF_DIR`,
+  `ASDF_DATA_DIR`, `VOLTA_HOME`, `FNM_DIR`, `N_PREFIX`, `PYENV_ROOT`, `RBENV_ROOT`, `SDKMAN_DIR`, `XDG_CONFIG_HOME`,
+  `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`.
 
 Tasker always drops `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the environment of a phase, also when a list
 names them.
@@ -158,13 +158,13 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 
 ## `assistant`
 
-| Key                 | Type                                   | Default  | Notes                                                                                                    |
-| ------------------- | -------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
-| `provider`          | `"claude-code"`, `"copilot"` or `"pi"` | required | The assistant to run. The loader accepts `copilot` and `pi`, but they are not available in this version. |
-| `models`            | object                                 | required | Has the keys `plan`, `execute` and `review`. All three are required.                                     |
-| `trustedExtensions` | list of non-empty strings              | `[]`     | The extensions that the assistant can trust.                                                             |
-| `account`           | non-empty string                       | optional | The account to use.                                                                                      |
-| `correctiveTurns`   | integer, 0 or more                     | `1`      | How many corrective turns the assistant can take.                                                        |
+| Key                 | Type                                              | Default  | Notes                                                                                                                                                                                |
+| ------------------- | ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `provider`          | `"claude-code"`, `"copilot"`, `"pi"` or `"codex"` | required | The assistant to run. The loader accepts `copilot` and `pi`, but they are not available in this version. The loader also accepts `codex`, but a task run refuses it in this version. |
+| `models`            | object                                            | required | Has the keys `plan`, `execute` and `review`. All three are required.                                                                                                                 |
+| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust.                                                                                                                                         |
+| `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                                                  |
+| `correctiveTurns`   | integer, 0 or more                                | `1`      | How many corrective turns the assistant can take.                                                                                                                                    |
 
 Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"`
 or `"high"`).
@@ -179,7 +179,7 @@ For the `claude-code` provider, `model` must have one of these forms:
 - Either form with the suffix `[1m]`. For example, `opus[1m]`.
 
 Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`. The
-providers `copilot` and `pi` have no model check.
+providers `copilot`, `pi` and `codex` have no model check.
 
 The command `tasker model` changes the model and the effort of one assistant role or one session role in the file that
 "Where the file is" names. It keeps the other keys and their order. It writes an indent of two spaces and keeps the line

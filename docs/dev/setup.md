@@ -88,3 +88,8 @@ says.
    the repo.
 6. Install the Claude Code plugin `superpowers`: `claude plugin install superpowers@claude-plugins-official`.
 7. In `$HOME/.claude/CLAUDE.md`, add the line `activate simple-english in all sessions`.
+
+## Codex
+
+1. Install Codex: `npm install -g @openai/codex`.
+2. Log in to Codex: `codex login`.

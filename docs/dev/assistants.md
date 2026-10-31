@@ -359,6 +359,20 @@ because only an install fixes that cause. Other causes, such as a failed run of 
 
 The model check of a continued session uses the model forms of the configuration. It holds no second rule.
 
+## The codex provider
+
+The provider lets a repo name `codex` in `assistant.provider`, and it gives the doctor checks of Codex. The provider
+starts no child. Its `run()` gives a `failure` outcome, because a later ticket builds the run of a task under Codex.
+
+`doctorChecks()` gives the checks `codex version` and `codex login`. They run once for all repos of the provider.
+`codex version` makes sure that `codex` is on `PATH` and starts. `codex login` makes sure that `codex` has a login.
+
+The agent measured `codex login status` on `codex-cli 0.166.0` on 2026-10-31. With a login, the exit code was 0. With an
+empty folder as `CODEX_HOME`, the exit code was 1 and stderr was `Not logged in`.
+
+`CODEX_HOME` passes [the filter](phases.md#the-environment-of-a-phase) on purpose. It locates the credentials and the
+configuration of the child.
+
 ## The plan answer and the prompts
 
 ### The untrusted tag

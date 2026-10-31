@@ -11,8 +11,8 @@ If the repo key of `--repo` does not exist, the command prints an error and exit
 
 ## `tasker doctor`
 
-Makes sure that the configuration, the data root, git, `gh`, `acli`, `claude` and the accounts work before you start a
-task. The command has no options.
+Makes sure that the configuration, the data root, git, `gh`, `acli`, `claude`, `codex` and the accounts work before you
+start a task. The command has no options.
 
 The command runs these checks one at a time, in this order:
 
@@ -25,7 +25,8 @@ The command runs these checks one at a time, in this order:
   `github`, `gh version` runs once, `gh auth` runs once for each account, and the project and label checks run for each
   repo. For `jira`, `acli auth` runs once.
 - Once for each assistant provider that the configuration uses, in the order of first use: the checks of the provider.
-  For `claude-code`, this is `claude version`, and on Linux also `sandbox: bwrap` and `sandbox: socat`.
+  For `claude-code`, this is `claude version`, and on Linux also `sandbox: bwrap` and `sandbox: socat`. For `codex`,
+  these are `codex version` and `codex login`.
 
 The command prints one line for each check, with the status (`ok`, `warn` or `error`), the name and the first line of
 the detail. The other lines of the detail and the remediation follow with an indent. The command prints the lines of a
