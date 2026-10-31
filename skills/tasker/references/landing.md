@@ -29,6 +29,7 @@ and of the clone lock belong to this group:
   `the base of <issue key> is a local branch of the clone: <base>; tasker merge pushes only to a branch on origin`.
 - The task has no base revision. The error is `the task of <issue key> has no base revision`.
 - The task has no accepted revision. The error is `the task of <issue key> has no accepted revision`.
+  `tasker update-branch` recovers this task too.
 - The tip of the task branch is not the accepted revision. The error is
   `the tip of <branch> (<tip>) is not the accepted revision (<accepted revision>); run tasker update-branch and review the work again`.
   The accepted revision is the revision that the last `tasker accept` stored.
@@ -46,7 +47,7 @@ The task goes to `failed` with the error `merging failed: <reason>` when one of 
 - The compare of the tip with the accepted revision, which the command makes again after the fetch, because no lock
   covers a commit in the worktree. The reason is the same error as above, for example
   `merging failed: the tip of <branch> (<tip>) is not the accepted revision (<accepted revision>); run tasker update-branch and review the work again`.
-  `tasker update-branch` and `tasker retry` both recover this task.
+  `tasker update-branch` recovers this task. `tasker retry` does not, because it gives the same refusal.
 - The land. The reason is the error of the land.
 - The record of the result after a push. The reason is
   `pushed <revision> to origin/<base>, but tasker cannot record the result: <error>`. The push happened, so the work is

@@ -334,8 +334,8 @@ flowchart LR
 | any other                                                                  | its origin             | Nothing to demote.                                                                                                 |
 
 - A task in `accepted`, or a task that failed from `merging`, whose head is not the accepted revision goes to
-  `executed`, also when the command moved nothing. A commit after `tasker accept` has no review, and `tasker merge`
-  refuses its tip.
+  `executed`, also when the command moved nothing. A task with no accepted revision counts the same way. A commit after
+  `tasker accept` has no review, and `tasker merge` refuses its tip.
 - A failure after the move to `updating_branch` restores the worktree. If the head is the head of the start, the
   worktree is on the task branch and the worktree is clean, the task goes back to its origin state. Otherwise the task
   goes to `failed`.
