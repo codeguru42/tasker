@@ -7,7 +7,6 @@ import { TEST_SESSION_ID, runInput } from "../../helpers/fake-claude.js";
 import { CODEX_VERSION_ARGS, useFakeCodex } from "../../helpers/fake-codex.js";
 
 function codexProvider(): AssistantProvider {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return createCodexProvider();
 }
 

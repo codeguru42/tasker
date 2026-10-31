@@ -2,6 +2,7 @@ import { type Config, ConfigError, type RepoConfig } from "../config/schema.js";
 import { reposByProvider } from "../config/repo-groups.js";
 import type { Check } from "../doctor/check.js";
 import { createClaudeCodeProvider } from "./claude-code/provider.js";
+import { createCodexProvider } from "./codex/provider.js";
 
 // The id of an assistant: the value of assistant.provider.
 export type AssistantProviderId = RepoConfig["assistant"]["provider"];
@@ -151,6 +152,8 @@ function providerFor(repoKey: string, id: AssistantProviderId): AssistantProvide
   switch (id) {
     case "claude-code":
       return createClaudeCodeProvider();
+    case "codex":
+      return createCodexProvider();
     case "copilot":
     case "pi":
       throw new ConfigError([

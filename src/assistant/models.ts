@@ -11,6 +11,7 @@ export function modelIssue(provider: AssistantProviderId, model: string): string
       return CLAUDE_CODE_MODEL.test(model) ? undefined : `is not a claude-code model: ${model}`;
     case "copilot":
     case "pi":
+    case "codex":
       return undefined;
   }
 }

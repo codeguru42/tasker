@@ -111,7 +111,7 @@ const ModelsSchema = z.strictObject({ plan: RoleSchema, execute: RoleSchema, rev
 // The assistant roles, in the order of the report of tasker model.
 export const ASSISTANT_ROLES = ModelsSchema.keyof().options;
 
-const AssistantProviderSchema = z.enum(["claude-code", "copilot", "pi"]);
+const AssistantProviderSchema = z.enum(["claude-code", "copilot", "pi", "codex"]);
 
 const AssistantSchema = z.strictObject({
   provider: AssistantProviderSchema,

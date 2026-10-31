@@ -86,11 +86,14 @@ describe("assistantDoctorChecks", () => {
     ]);
   });
 
-  it.each([{ a: "codex" }, { a: "codex", b: "codex" }] as const)("gives the codex checks once for %j", (providers) => {
-    const checks = assistantDoctorChecks(configWith(providers));
+  it.each<Record<string, Id>>([{ a: "codex" }, { a: "codex", b: "codex" }])(
+    "gives the codex checks once for %j",
+    (providers) => {
+      const checks = assistantDoctorChecks(configWith(providers));
 
-    expect(checks.map((check) => check.name)).toEqual(["codex version", "codex login"]);
-  });
+      expect(checks.map((check) => check.name)).toEqual(["codex version", "codex login"]);
+    },
+  );
 
   it("gives no checks for a configuration with no repo", () => {
     expect(assistantDoctorChecks(configWith({}))).toEqual([]);
