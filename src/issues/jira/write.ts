@@ -1,6 +1,7 @@
+import { asciiFold } from "../../ascii-fold.js";
 import { isObject } from "../../object.js";
 import type { IssueRef } from "../../issue-key/ref.js";
-import { IssueWriteError } from "../issue.js";
+import { type Issue, IssueWriteError } from "../issue.js";
 import { AcliError, runAcli } from "./run.js";
 import { siteGuard } from "./site.js";
 
@@ -92,4 +93,11 @@ export async function markJiraDone(
   await siteGuard(ref.repoKey, site, env);
   if (status === undefined) throw new Error("issueTracker.doneStatus is not set");
   await moveToStatus(ref, status, "issueTracker.doneStatus", env);
+}
+
+// True when the status of the issue is the configured in-progress status. The compare ignores the case of the
+// ASCII letters. It makes no acli call.
+export function jiraInProgressMarker(issue: Issue, status: string | undefined): boolean {
+  if (status === undefined || issue.status === undefined) return false;
+  return asciiFold(issue.status) === asciiFold(status);
 }
