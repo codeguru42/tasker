@@ -86,6 +86,9 @@ async function updateBranchIssue(io: Io, config: Config, issue: string, options:
   if (result.unstackedFrom !== undefined) {
     io.stdout(`${result.issueKey} is no longer stacked on ${result.unstackedFrom}\n`);
   }
+  if (result.stackedOn !== undefined) {
+    io.stdout(`${result.issueKey} is now stacked on ${result.stackedOn}\n`);
+  }
   if (result.state !== result.origin) {
     io.stdout(`demoted ${result.issueKey} from ${result.origin} to ${result.state}\n`);
   }

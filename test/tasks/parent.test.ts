@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { assertBaseMoved, assertParentLanded, hasLanded, isLocalBase, parentOf } from "../../src/tasks/parent.js";
+import { assertBaseMoved, assertParentLanded, isLocalBase, parentOf } from "../../src/tasks/parent.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
 import { dayAt, seedTasks, withDataRootStore, type SeedTask } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
@@ -95,16 +95,6 @@ describe("parentOf", () => {
       0,
     );
     expect(parent?.issueKey).toBe(`${REPO}#3`);
-  });
-});
-
-describe("hasLanded", () => {
-  it.each(["landed", "finishing", "cleanup_failed", "finished"])("is true for a task in %s", (state) => {
-    expect(hasLanded({ state } as Task)).toBe(true);
-  });
-
-  it("is false for a task in accepted", () => {
-    expect(hasLanded({ state: "accepted" } as Task)).toBe(false);
   });
 });
 

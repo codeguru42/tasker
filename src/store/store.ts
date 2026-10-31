@@ -241,7 +241,9 @@ export interface StoreOptions {
 // landed, the same write sets it with the base. A write with no parentTaskId keeps the link, and no other write changes
 // the column. The base event holds no parent id.
 export interface BranchUpdateWrites {
-  base?: { base: string; revision: string; source: "update" | "parent" };
+  base?:
+    | { base: string; revision: string; source: "update" }
+    | { base: string; revision: string; source: "parent"; baseOf: string };
   parentTaskId?: number | null;
   clearPlanApproval?: number;
   syncedBaseTip?: string | null;

@@ -1638,7 +1638,12 @@ describe("task store", () => {
       it("sets the base of the row and keeps the source of the event", () => {
         const task = store.createTask({ ...newTask, state: "updating_branch", base: "refs/heads/parent" });
         writeRunMarker(dbPath, task.id, "updating_branch", process.pid);
-        const parent = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
+        const parent = {
+          base: "main",
+          revision: "refs/remotes/origin/main",
+          source: "parent" as const,
+          baseOf: "a/b#1",
+        };
         store.updateBranchTask(task.id, "executed", { base: parent }, branchUpdated);
         expect(store.getTask(task.id)?.base).toBe("main");
         expect(store.listEvents(task.id).find((e) => e.type === "base")?.data).toEqual(parent);
@@ -1660,7 +1665,12 @@ describe("task store", () => {
 
       it("clears the parent id when the base has the source parent", () => {
         const { task } = linkedTask();
-        const parent = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
+        const parent = {
+          base: "main",
+          revision: "refs/remotes/origin/main",
+          source: "parent" as const,
+          baseOf: "a/b#1",
+        };
         store.updateBranchTask(task.id, "executed", { base: parent, parentTaskId: null }, branchUpdated);
         expect(store.getTask(task.id)).toMatchObject({ base: "main", parentTaskId: null });
       });
@@ -1668,7 +1678,12 @@ describe("task store", () => {
       it("writes the parent id with the base", () => {
         const { parent, task } = linkedTask();
         const other = store.createTask({ ...newTask, issueKey: "a/b#3", branch: "other" });
-        const moved = { base: "refs/heads/other", revision: "refs/heads/other", source: "parent" as const };
+        const moved = {
+          base: "refs/heads/other",
+          revision: "refs/heads/other",
+          source: "parent" as const,
+          baseOf: "a/b#1",
+        };
         store.updateBranchTask(task.id, "executed", { base: moved, parentTaskId: other.id }, branchUpdated);
         expect(store.getTask(task.id)).toMatchObject({ base: "refs/heads/other", parentTaskId: other.id });
         expect(other.id).not.toBe(parent.id);
@@ -1676,14 +1691,24 @@ describe("task store", () => {
 
       it("keeps the parent id when the base has the source parent and writes has no parentTaskId", () => {
         const { parent, task } = linkedTask();
-        const moved = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
+        const moved = {
+          base: "main",
+          revision: "refs/remotes/origin/main",
+          source: "parent" as const,
+          baseOf: "a/b#1",
+        };
         store.updateBranchTask(task.id, "executed", { base: moved }, branchUpdated);
         expect(store.getTask(task.id)).toMatchObject({ base: "main", parentTaskId: parent.id });
       });
 
       it("writes a base event that holds no parent id", () => {
         const { task } = linkedTask();
-        const moved = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
+        const moved = {
+          base: "main",
+          revision: "refs/remotes/origin/main",
+          source: "parent" as const,
+          baseOf: "a/b#1",
+        };
         store.updateBranchTask(task.id, "executed", { base: moved, parentTaskId: null }, branchUpdated);
         expect(store.listEvents(task.id).find((e) => e.type === "base")?.data).toEqual(moved);
       });

@@ -21,7 +21,8 @@ import {
   uncommittedChangeText,
   vcsForRepo,
 } from "../vcs/provider.js";
-import { hasLanded, isLocalBase, parentOf } from "./parent.js";
+import { LOCAL_PREFIX } from "../vcs/local-branch.js";
+import { parentOf, walkLandedParents } from "./parent.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBaseRevision, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
@@ -57,8 +58,10 @@ interface UpdateFacts {
   moved: boolean;
   // The synced base tip that the replay started after, set when the replay started there.
   replayedAfter?: string;
-  // The key of the parent that the task is no longer stacked on, set when the parent landed.
+  // The key of the direct parent that the task is no longer stacked on, set when the task has no parent after the walk.
   unstackedFrom?: string;
+  // The key of the parent that the task is now stacked on, set when the walk ended on a parent that has not landed.
+  stackedOn?: string;
   // The state of the task before the command.
   origin: TaskState;
   // The state of the task after the command.
@@ -126,21 +129,12 @@ function strategyOf(raw: string | undefined, fallback: ReconcileStrategy): Recon
 }
 
 // Throws when the branch of the parent of a stacked task is gone from the clone. The name of the branch comes from
-// the parent task. The stored base of the stacked task is only for the error text.
-async function requireParentBranch(vcs: VcsProvider, ctx: VcsContext, parent: Task, base: string): Promise<void> {
-  if (!(await vcs.taskRefExists(ctx, { taskRef: requireBranch(parent) }))) {
-    throw new Error(`the branch of the parent ${parent.issueKey} is gone: ${base}`);
+// the parent task, and the error text names the same branch.
+async function requireParentBranch(vcs: VcsProvider, ctx: VcsContext, parent: Task): Promise<void> {
+  const branch = requireBranch(parent);
+  if (!(await vcs.taskRefExists(ctx, { taskRef: branch }))) {
+    throw new Error(`the branch of the parent ${parent.issueKey} is gone: ${LOCAL_PREFIX}${branch}`);
   }
-}
-
-// The base of a task whose parent landed: the base of the parent, and the stored revision of that base. The parent
-// must not be stacked too.
-function landedParentBase(store: TaskStore, task: Task, parent: Task): { base: string; revision: string } {
-  const base = requireBase(parent);
-  if (isLocalBase(base)) {
-    throw new Error(`the parent ${parent.issueKey} of ${task.issueKey} is stacked too; its base is ${base}`);
-  }
-  return { base, revision: requireBaseRevision(store, parent) };
 }
 
 // True when the worktree is at the head of the start, on the task branch and clean. A failed read of the state counts
@@ -232,14 +226,20 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   const run: UpdateRun = { store, task, vcs, ctx, io, path, branch, before, origin };
   if (request.undo) return undoLastUpdate(run, request, failedIn);
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
+    // The walk reads only rows. A loop or a local base with no parent throws here, before any write.
+    const walk = walkLandedParents(store, task);
+    const target =
+      walk === undefined
+        ? { base, revision: baseRevision }
+        : { base: walk.base, revision: vcs.baseRevision(walk.base) };
+    const stackedOn = walk === undefined ? parent : walk.newParent;
     transitionTask(store, task.id, "updating_branch", { head: before.head });
     // What the sync step did, and the head after it. The catch reads both to undo a sync move.
     let synced: SyncOutcome = { sync: "none" };
     let syncedHead = before.head;
     try {
-      const landed = parent !== undefined && hasLanded(parent);
-      const target = landed ? landedParentBase(store, task, parent) : { base, revision: baseRevision };
-      if (parent !== undefined && !landed) await requireParentBranch(vcs, ctx, parent, base);
+      const landed = walk !== undefined;
+      if (stackedOn !== undefined) await requireParentBranch(vcs, ctx, stackedOn);
       const { revision, baseTip, contains } = await vcs.baseContainment(ctx, {
         taskRef: branch,
         baseRevision: target.revision,
@@ -273,7 +273,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         ? { how: "none", head: syncedHead }
         : parent !== undefined && strategy === "rebase"
           ? // The new tip of a stacked task is the tip of the branch of the parent while the parent is in flight,
-            // and the tip of the base of the parent after the parent landed. Under rebase, the replay puts the
+            // and the tip of the base that the walk ends on after the parent landed. Under rebase, the replay puts the
             // commits after the synced base tip onto the new tip, with a rebase. It starts after the merge base when
             // the merge base is newer. It falls back to the commits after the merge base when it cannot use the
             // synced base tip. Under merge, a stacked task uses the resync of every other task.
@@ -298,9 +298,13 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const unaccepted = (origin === "accepted" || failedIn === "merging") && resynced.head !== task.acceptedRevision;
       const state = moved || unaccepted ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
-      // After the parent landed, the base switches also when the head does not move.
-      if (moved || landed) writes.base = { ...target, source: landed ? "parent" : "update" };
-      if (landed) writes.parentTaskId = null;
+      // After the parent landed, the base and the parent switch also when the head does not move.
+      if (walk !== undefined) {
+        writes.base = { ...target, source: "parent", baseOf: walk.end.issueKey };
+        writes.parentTaskId = walk.newParent?.id ?? null;
+      } else if (moved) {
+        writes.base = { ...target, source: "update" };
+      }
       // Each move of the base step, and the switch after the parent landed, build the branch on the base tip.
       if (resynced.how !== "none" || landed) writes.syncedBaseTip = baseTip;
       if (moved && origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
@@ -315,7 +319,13 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         store,
         task.id,
         state,
-        { before, after, how: resynced.how, sync: synced.sync },
+        {
+          before,
+          after,
+          how: resynced.how,
+          sync: synced.sync,
+          ...(walk === undefined ? {} : { landedParents: walk.landedParents }),
+        },
         writes,
       );
       return {
@@ -323,7 +333,8 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         base: target.base,
         baseTip,
         ...(replayStart?.from === "synced-base-tip" ? { replayedAfter: replayStart.syncedBaseTip } : {}),
-        ...(landed ? { unstackedFrom: parent.issueKey } : {}),
+        ...(walk !== undefined && walk.newParent === undefined ? { unstackedFrom: walk.landedParents[0] } : {}),
+        ...(walk?.newParent === undefined ? {} : { stackedOn: walk.newParent.issueKey }),
         branch,
         ...synced,
         how: resynced.how,

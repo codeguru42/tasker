@@ -37,7 +37,7 @@ export function newParentId(store: TaskStore, repoKey: string, base: string): nu
   return parent;
 }
 
-export function hasLanded(task: Task): boolean {
+function hasLanded(task: Task): boolean {
   return LANDED_STATES.has(task.state);
 }
 
