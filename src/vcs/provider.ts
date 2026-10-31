@@ -46,6 +46,10 @@ export interface BlockerBase {
 
 export interface ResolveBaseRequest {
   memory: BaseBranchMemory;
+  // The key of the issue that gets the task.
+  issueKey: string;
+  // Prints a line at once.
+  note: (line: string) => void;
   hint?: string;
   explicit?: string;
   blocker?: BlockerBase;

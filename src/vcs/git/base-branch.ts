@@ -33,11 +33,16 @@ interface ResolveBaseOptions {
   sshKey: string | undefined;
   env: NodeJS.ProcessEnv;
   memory: BaseBranchMemory;
+  // The key of the issue that gets the task.
+  issueKey: string;
+  // Prints a line at once.
+  note: (line: string) => void;
   // Untrusted text from the issue tracker, used as it is.
   hint?: string;
   // The raw --base text of this run, or the stored base of the task.
   explicit?: string;
-  // The base from the blocker step of start.
+  // The base from the blocker step of start. When its branch is not in the clone, the resolve prints a note
+  // and goes on with the next source.
   blocker?: BlockerBase;
   // repo.defaultBaseBranch, used as it is.
   defaultBaseBranch?: string;
@@ -53,6 +58,7 @@ function exists(clone: string, env: NodeJS.ProcessEnv, base: string): Promise<bo
 // --base, the hint, the stored base, the blocker, the learned default, defaultBaseBranch and the answer of ask.
 // The caller reads no hint when it passes --base, and it passes the stored base as explicit
 // only when the issue gives no hint.
+// A blocker branch that is not in the clone is no error: the resolve prints a note and goes on with the learned default.
 export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<ResolvedBase> {
   const { repoKey, clone, env, hint, memory } = options;
   const explicit = options.explicit === undefined ? undefined : parseBaseInput(options.explicit);
@@ -94,11 +100,14 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
 
   const { blocker } = options;
   if (blocker !== undefined) {
-    if (!(await exists(clone, env, blocker.base))) {
-      throw new Error(`the base branch does not exist: ${blocker.base} (from the blocker ${blocker.key})`);
+    if (await exists(clone, env, blocker.base)) {
+      notes.push(`based on ${blocker.key}'s branch`);
+      return found(blocker.base, "blocker");
     }
-    notes.push(`based on ${blocker.key}'s branch`);
-    return found(blocker.base, "blocker");
+    const branch = blocker.base.slice(LOCAL_PREFIX.length);
+    options.note(
+      `the branch ${branch} of the blocker ${blocker.key} is not in the clone; ${options.issueKey} is not stacked`,
+    );
   }
 
   const learned = memory.getDefaultBaseBranch(repoKey);

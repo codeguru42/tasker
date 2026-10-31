@@ -148,11 +148,15 @@ describe("createGitProvider", () => {
         sshKey: undefined,
         env: fixture.context.env,
         memory: memory(),
+        issueKey: "codeguru42/tasker#5",
+        note: () => {},
         explicit: "main",
         ask,
       });
       const mapped = await git.resolveBase(fixture.context, {
         memory: memory(),
+        issueKey: "codeguru42/tasker#5",
+        note: () => {},
         explicit: "main",
         ask,
       });
@@ -269,6 +273,8 @@ describe("createGitProvider", () => {
       await fixture.origin.addCommit("main", { file: "other.txt" });
       const resolved = await git.resolveBase(fixture.context, {
         memory: memory(),
+        issueKey: "codeguru42/tasker#5",
+        note: () => {},
         explicit: "main",
         ask,
       });

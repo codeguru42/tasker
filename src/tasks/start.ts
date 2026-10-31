@@ -125,6 +125,8 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
       const hint = request.base === undefined ? issueProvider.baseBranchHint(issue) : undefined;
       const resolved = await vcs.resolveBase(ctx, {
         memory: store,
+        issueKey: ref.key,
+        note: request.note,
         hint,
         explicit: request.base ?? (hint === undefined ? (task.base ?? undefined) : undefined),
         blocker,
@@ -140,8 +142,8 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
             base: resolved.base,
             revision: resolved.revision,
             source: resolved.source,
-            // The blocker is set only when no earlier source gives a base, so the resolve then gives the source "blocker" or throws.
-            ...(blocker === undefined ? {} : { blocker: blocker.key }),
+            // The field blocker is set only for the source "blocker". When the branch of the blocker is missing, the resolve goes on with a later source.
+            ...(resolved.source === "blocker" ? { blocker: blocker?.key } : {}),
           },
         }),
       );
