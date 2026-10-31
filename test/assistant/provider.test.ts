@@ -5,7 +5,7 @@ import { validConfig } from "../helpers/config.js";
 import { configIssuesOf } from "../helpers/errors.js";
 
 const unavailableIds = ["copilot", "pi"] as const;
-type Id = "claude-code" | (typeof unavailableIds)[number];
+type Id = "claude-code" | "codex" | (typeof unavailableIds)[number];
 
 function repoWith(provider: Id) {
   const repo = parseConfig(validConfig(), {}, "/home/me").repos.tasker;
@@ -28,6 +28,12 @@ describe("createAssistantProvider", () => {
 
     expect(selected.provider.id).toBe("claude-code");
     expect({ model: selected.model, effort: selected.effort }).toEqual({ model: "sonnet", effort: "medium" });
+  });
+
+  it("gives the codex provider", () => {
+    const selected = createAssistantProvider("tasker", repoWith("codex"), "plan");
+
+    expect(selected.provider.id).toBe("codex");
   });
 
   it("names the repo key in the path of the issue", () => {
@@ -56,6 +62,12 @@ describe("createSessionProvider", () => {
   });
 });
 
+it("gives the codex provider for a recorded session", () => {
+  const selected = createSessionProvider({ repoKey: "tasker", provider: "codex", model: "gpt-5", effort: "low" });
+
+  expect(selected.provider.id).toBe("codex");
+});
+
 function configWith(providers: Record<string, Id>) {
   const config = parseConfig(validConfig(), {}, "/home/me");
   return {
@@ -72,6 +84,12 @@ describe("assistantDoctorChecks", () => {
       "claude version",
       ...(process.platform === "linux" ? ["sandbox: bwrap", "sandbox: socat"] : []),
     ]);
+  });
+
+  it.each([{ a: "codex" }, { a: "codex", b: "codex" }] as const)("gives the codex checks once for %j", (providers) => {
+    const checks = assistantDoctorChecks(configWith(providers));
+
+    expect(checks.map((check) => check.name)).toEqual(["codex version", "codex login"]);
   });
 
   it("gives no checks for a configuration with no repo", () => {

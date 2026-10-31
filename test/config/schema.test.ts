@@ -462,7 +462,7 @@ describe("parseConfig assistant", () => {
     expect(() => parseConfig(raw, {}, home)).not.toThrow();
   });
 
-  it.each(["copilot", "pi"])("accepts any model for %s", (provider) => {
+  it.each(["copilot", "pi", "codex"])("accepts any model for %s", (provider) => {
     const raw = validConfig();
     raw.repos.tasker.assistant.provider = provider;
     raw.repos.tasker.assistant.models.plan.model = "gpt-5";
@@ -531,7 +531,7 @@ describe("parseConfig assistant", () => {
       raw.repos.tasker.assistant.provider = "gpt";
       raw.repos.tasker.assistant.models.plan.model = "gpt-5";
       expect(issuesOf(raw)).toEqual([
-        'repos.tasker.assistant.provider: Invalid option: expected one of "claude-code"|"copilot"|"pi"',
+        'repos.tasker.assistant.provider: Invalid option: expected one of "claude-code"|"copilot"|"pi"|"codex"',
       ]);
     });
   });

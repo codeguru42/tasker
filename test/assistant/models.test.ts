@@ -32,7 +32,7 @@ describe("modelIssue", () => {
     expect(modelIssue("claude-code", model)).toBe(`is not a claude-code model: ${model}`);
   });
 
-  it.each(["copilot", "pi"] as const)("accepts every model for %s", (provider) => {
+  it.each(["copilot", "pi", "codex"] as const)("accepts every model for %s", (provider) => {
     expect(modelIssue(provider, "gpt-5")).toBeUndefined();
   });
 });
