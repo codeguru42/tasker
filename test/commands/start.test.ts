@@ -779,6 +779,48 @@ describe("the blocker step", () => {
     expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBe(latestTaskOf(fixture.dataRoot, BLOCKER).id);
   });
 
+  describe("a ready blocker whose branch is not in the clone", () => {
+    const NOTE =
+      "the branch task-3 of the blocker codeguru42/tasker#3 is not in the clone; codeguru42/tasker#5 is not stacked\n";
+
+    it("goes on with the learned default and makes a task with no parent", async () => {
+      const fixture = await useStartFixture({
+        issues,
+        repo: { defaultBaseBranch: undefined },
+        ghAnswers: [blockersOf({ number: 3, state: "OPEN" })],
+      });
+      await fixture.origin.createBranch("dev");
+      withDataRootStore(fixture.dataRoot, (store) => {
+        store.setDefaultBaseBranch(fixture.repoKey, "dev");
+      });
+      seedReady(fixture.dataRoot, [3]);
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain("base: dev\n");
+      expect(result.err).toContain(NOTE);
+      expect(result.err).not.toContain("based on");
+      const [baseEvent] = eventDataOf(fixture.dataRoot, KEY, "base");
+      expect(baseEvent).toMatchObject({ base: "dev", source: "learned" });
+      expect(baseEvent).not.toHaveProperty("blocker");
+      expect(latestTaskOf(fixture.dataRoot, KEY).parentTaskId).toBeNull();
+    });
+
+    it("prints the note before the error of a later source that fails", async () => {
+      const fixture = await useStartFixture({
+        issues,
+        repo: { defaultBaseBranch: undefined },
+        ghAnswers: [blockersOf({ number: 3, state: "OPEN" })],
+      });
+      seedReady(fixture.dataRoot, [3]);
+
+      const result = await runCommand(start, "start", KEY);
+
+      expectFailed(fixture.dataRoot, result, NOTE);
+    });
+  });
+
   describe("the parent id of a task", () => {
     // Starts the task of issue 3 as the parent, moves it to state and gives it.
     async function startParent(fixture: Awaited<ReturnType<typeof useStartFixture>>, state: TaskState) {

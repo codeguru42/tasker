@@ -6,6 +6,7 @@ import { baseRevision, parseBaseInput, resolveBaseBranch } from "../../../src/vc
 import { provisionClone } from "../../../src/vcs/git/provision.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
+import { failureOf } from "../../helpers/errors.js";
 import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh, type FakeSsh } from "../../helpers/fake-ssh.js";
 import { gitOutput, makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
@@ -55,6 +56,7 @@ describe("resolveBaseBranch", () => {
   let store: TaskStore;
   let askCalls: number;
   let answer: string;
+  let noted: string[];
 
   const SOURCES = ["hinted", "explicit", "learned", "configured", "asked"];
 
@@ -91,21 +93,28 @@ describe("resolveBaseBranch", () => {
     store = openStore(join(tmp, "tasker.db"));
     askCalls = 0;
     answer = "asked";
+    noted = [];
   }
 
   function resolve(extra: Partial<Parameters<typeof resolveBaseBranch>[0]> = {}) {
-    return resolveBaseBranch({
+    // The options stay in a variable, so that tsc accepts keys that the types do not name yet.
+    const options = {
       repoKey: "tasker",
       clone,
       sshKey: undefined,
       env,
       memory: store,
+      issueKey: "codeguru42/tasker#5",
+      note: (line: string) => {
+        noted.push(line);
+      },
       ask: async () => {
         askCalls += 1;
         return answer;
       },
       ...extra,
-    });
+    };
+    return resolveBaseBranch(options);
   }
 
   function breakOrigin(): void {
@@ -281,6 +290,7 @@ describe("resolveBaseBranch", () => {
       expect(result.base).toBe("refs/heads/task-1");
       expect(result.revision).toBe("refs/heads/task-1");
       expect(result.notes).toContain("based on codeguru42/tasker#3's branch");
+      expect(noted).toEqual([]);
       expect(askCalls).toBe(0);
     });
 
@@ -294,10 +304,45 @@ describe("resolveBaseBranch", () => {
       expect(result.base).toBe("explicit");
     });
 
-    it("fails for a blocker branch that does not exist", async () => {
-      await expect(resolve({ blocker: { key: "codeguru42/tasker#3", base: "refs/heads/gone" } })).rejects.toThrow(
-        "the base branch does not exist: refs/heads/gone (from the blocker codeguru42/tasker#3)",
-      );
+    const GONE = { key: "codeguru42/tasker#3", base: "refs/heads/gone" };
+    const GONE_NOTE =
+      "the branch gone of the blocker codeguru42/tasker#3 is not in the clone; codeguru42/tasker#5 is not stacked";
+
+    it("goes on with the learned default for a blocker branch that is not in the clone", async () => {
+      store.setDefaultBaseBranch("tasker", "learned");
+      const result = await resolve({ blocker: GONE });
+      expect(result.source).toBe("learned");
+      expect(result.base).toBe("learned");
+      expect(askCalls).toBe(0);
+      expect(result.notes).toEqual([]);
+      expect(noted).toEqual([GONE_NOTE]);
+    });
+
+    it("goes on with defaultBaseBranch for a blocker branch that is not in the clone", async () => {
+      const result = await resolve({ blocker: GONE, defaultBaseBranch: "configured" });
+      expect(result.source).toBe("config");
+      expect(result.base).toBe("configured");
+      expect(noted).toEqual([GONE_NOTE]);
+    });
+
+    it("asks after the note for a blocker branch that is not in the clone", async () => {
+      let notedAtAsk = -1;
+      const result = await resolve({
+        blocker: GONE,
+        ask: async () => {
+          notedAtAsk = noted.length;
+          return "asked";
+        },
+      });
+      expect(result.source).toBe("ask");
+      expect(notedAtAsk).toBe(1);
+      expect(noted).toEqual([GONE_NOTE]);
+    });
+
+    it("prints the note before a later source fails", async () => {
+      const error = await failureOf(resolve({ blocker: GONE, defaultBaseBranch: "nope" }), Error);
+      expect(error.message).toContain("nope");
+      expect(noted).toEqual([GONE_NOTE]);
     });
 
     it("strips origin/ from an explicit base", async () => {
