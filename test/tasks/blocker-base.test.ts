@@ -5,6 +5,7 @@ import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import type { Blocker } from "../../src/issues/issue.js";
 import { blockerBase } from "../../src/tasks/blocker-base.js";
 import { dayAt, seedTasks, withDataRootStore, type SeedTask } from "../helpers/store.js";
+import { thrownBy } from "../helpers/errors.js";
 import { useTempDir } from "../helpers/temp.js";
 
 const REPO = "codeguru42/tasker";
@@ -92,9 +93,24 @@ describe("blockerBase", () => {
     );
   });
 
-  it("refuses more than one ready blocker", () => {
-    expect(() => call([task(3, "reviewed"), task(4, "pushed")], [open(3), open(4)])).toThrow(
-      `${REPO}#5 has more than one blocker ready to stack: ${REPO}#3, ${REPO}#4; pass --base refs/heads/<branch> to pick one`,
+  it("refuses more than one ready blocker and names the branch of each", () => {
+    const error = thrownBy(() => call([task(3, "reviewed"), task(4, "pushed")], [open(3), open(4)]));
+    expect(error).toEqual(
+      new Error(
+        `${REPO}#5 has more than one blocker ready to stack: ${REPO}#3 (b3), ${REPO}#4 (b4); pass --base refs/heads/<branch> to pick one`,
+      ),
     );
+  });
+
+  it("names a ready blocker with no branch in the list error", () => {
+    const noBranch = { issueKey: `${REPO}#3`, state: "reviewed" };
+    const error = thrownBy(() => call([noBranch, task(4, "pushed")], [open(3), open(4)]));
+    expect(String(error)).toContain(`${REPO}#3 (no branch), ${REPO}#4 (b4)`);
+  });
+
+  it("refuses one ready blocker with no branch", () => {
+    const noBranch = { issueKey: `${REPO}#3`, state: "reviewed" };
+    const error = thrownBy(() => call([noBranch], [open(3)]));
+    expect(error).toEqual(new Error(`the task of the blocker ${REPO}#3 has no branch`));
   });
 });

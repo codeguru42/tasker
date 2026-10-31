@@ -893,7 +893,7 @@ describe("the blocker step", () => {
       code: 1,
       out: "",
       err:
-        "codeguru42/tasker#5 has more than one blocker ready to stack: codeguru42/tasker#3, codeguru42/tasker#4; " +
+        "codeguru42/tasker#5 has more than one blocker ready to stack: codeguru42/tasker#3 (task-3), codeguru42/tasker#4 (task-4); " +
         "pass --base refs/heads/<branch> to pick one\n",
     });
     expect(hasTask(fixture.dataRoot)).toBe(false);
