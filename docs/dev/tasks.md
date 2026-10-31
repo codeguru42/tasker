@@ -694,7 +694,7 @@ These reasons explain its rules:
 `tasker mark-landed` records that the work of a task in `accepted`, `pushed` or `in_peer_review` already landed on the
 base branch outside tasker. The task goes to `landed`.
 
-Its checks cover the task, the state, the landing guard, the branch, the stored base. Then it takes the repo lock and
+Its checks cover the task, the state, the landing guard, the branch and the stored base. Then it takes the repo lock and
 fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base
 does not contain the work, the command stops with an error. The fetch can still move the refs of `origin` in the clone,
 also when the command stops with this error. The last write is one transaction that appends one `marked_landed` event
