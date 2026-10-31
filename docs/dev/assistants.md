@@ -6,9 +6,9 @@ one assistant.
 
 ## Refuse, never drop
 
-A provider that cannot enforce a limit that tasker asks for must refuse the run before it starts the program. A run with
-less confinement than tasker asked for can write or read outside the limits that the user relies on. The doc comment of
-the interface holds the rule for the code.
+A provider that cannot enforce a limit that tasker asks for (`access`, `deniedCommands`, `deniedEditPaths` or `sandbox`)
+must refuse the run before it starts the program. A run with less confinement than tasker asked for can write or read
+outside the limits that the user relies on. The doc comment of the interface holds the rule for the code.
 
 ## The session id
 
@@ -30,6 +30,27 @@ A provider must send the prompt on stdin, never in argv. A prompt can be longer 
 A new session uses the provider, the model and the effort of the configuration. A continued session must use the
 provider, the model and the effort that it recorded when it started, also after the configuration changed. The session
 and its context belong to that assistant and that model. A change of the configuration applies to new sessions only.
+
+## The limits of a run
+
+Each run gets typed limits in `RunInput`. The limits name no assistant, so a new provider has no syntax of Claude Code
+to parse.
+
+| Field             | Type                                 | Meaning                                                                                                                   |
+| ----------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `access`          | `"read-only"` or `"workspace-write"` | Whether the edit tools can change files of the worktree                                                                   |
+| `deniedCommands`  | `readonly string[]`                  | Each entry is the leading words of a shell command that the assistant must not run, for example `git push`                |
+| `deniedEditPaths` | `readonly string[]`                  | Each entry is an absolute path that the edit tools must not change. An entry that ends in `/**` covers each path under it |
+
+Each role gets these limits. [The assistant surface](version-control.md#assistant-surface) gives the entries of the
+surface.
+
+| Role         | `access`          | `deniedCommands`                        | `deniedEditPaths`                                     |
+| ------------ | ----------------- | --------------------------------------- | ----------------------------------------------------- |
+| plan, review | `read-only`       | the entries of the surface, and `herdr` | `[]`                                                  |
+| execute      | `workspace-write` | the entries of the surface              | `<worktree>/.git`, `<worktree>/.git/**`, `<clone>/**` |
+
+`<clone>` is `sandbox.sharedFolder`.
 
 ## The limits of each role
 

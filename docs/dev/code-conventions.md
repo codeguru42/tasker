@@ -117,8 +117,9 @@ git function with no operation adds the operation in the same change.
 4. Add a branch for the id to the pick switch in `src/assistant/provider.ts`, in place of the "not available in this
    version" error.
 5. Follow the rule "refuse, never drop" in the doc comment of the interface.
-6. Give the doctor checks of the provider from `doctorChecks()`.
-7. Write the tests first (see "Tests").
+6. Turn each neutral limit of `RunInput` into a rule of the assistant, or refuse the run.
+7. Give the doctor checks of the provider from `doctorChecks()`.
+8. Write the tests first (see "Tests").
 
 ## Imports
 
