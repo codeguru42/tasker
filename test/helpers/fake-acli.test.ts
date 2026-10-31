@@ -3,6 +3,7 @@ import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  acliWriteResult,
   AUTH_STATUS_ARGS,
   fakeAcli,
   fakeAcliView,
@@ -94,5 +95,19 @@ describe("fakeAcliView", () => {
     expect(view.stdout).toBe("view out\n");
     expect(view.status).toBe(2);
     expect(fake.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS, viewArgs]);
+  });
+});
+
+describe("acliWriteResult", () => {
+  it("gives the measured form of a passed write", () => {
+    expect(acliWriteResult("SUCCESS", "Work item TEST-10 has been successfully transitioned to In Progress")).toBe(
+      '{"results":[{"status":"SUCCESS","message":"Work item TEST-10 has been successfully transitioned to In Progress","id":"TEST-10"}],"totalCount":1,"successCount":1}',
+    );
+  });
+
+  it("gives the measured form of a refused write", () => {
+    expect(acliWriteResult("FAILURE", "No allowed transitions found for given status")).toBe(
+      '{"results":[{"status":"FAILURE","message":"No allowed transitions found for given status","id":"TEST-10"}],"totalCount":1,"successCount":0}',
+    );
   });
 });
