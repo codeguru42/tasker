@@ -20,6 +20,7 @@ import { useTempDir } from "./temp.js";
 import { useThreeRepoDataRoot } from "./config.js";
 import { taskNames } from "./git.js";
 import {
+  acceptedRevisionOf,
   dayAt,
   databasePathOf,
   eventDataOf,
@@ -1236,5 +1237,20 @@ describe("quotaEventsOf", () => {
     const dataRoot = join(useTempDir("tasker-quota-events-"), "data");
 
     expect(quotaEventsOf(dataRoot)).toEqual([]);
+  });
+});
+
+describe("acceptedRevisionOf", () => {
+  it("gives the column of the latest task of the key, and null for a task with no accept", () => {
+    const dataRoot = join(useTempDir("tasker-accepted-revision-"), "data");
+    seedTasks(dataRoot, [
+      { issueKey: "codeguru42/tasker#1", repoKey: "codeguru42/tasker", state: "accepted", at: dayAt(1) },
+    ]);
+
+    expect(acceptedRevisionOf(dataRoot, "codeguru42/tasker#1")).toBeNull();
+    withRawDatabase(databasePathOf(dataRoot), (db) => {
+      db.exec("UPDATE tasks SET accepted_revision = 'abc'");
+    });
+    expect(acceptedRevisionOf(dataRoot, "codeguru42/tasker#1")).toBe("abc");
   });
 });

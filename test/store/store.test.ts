@@ -570,6 +570,34 @@ describe("task store", () => {
     });
   });
 
+  describe("upgrade from version 14", () => {
+    it("fills the accepted revision from the newest accepted event", () => {
+      const oldPath = join(dir, "old14.db");
+      makeOldDatabase(oldPath, 14);
+      withRawDatabase(oldPath, (raw) => {
+        for (const n of [1, 2, 3]) {
+          raw
+            .prepare(
+              "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES (?, 'tasker', 'accepted', 't', 't')",
+            )
+            .run(`a/b#${n}`);
+        }
+        const addAccepted = raw.prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'accepted', ?)");
+        addAccepted.run(1, JSON.stringify({ revision: "old" }));
+        addAccepted.run(1, JSON.stringify({ revision: "new" }));
+        addAccepted.run(2, JSON.stringify({ revision: "only" }));
+      });
+      withStoreFile(oldPath, () => {}, { now });
+      const revisions = withRawDatabase(oldPath, (raw) =>
+        raw
+          .prepare("SELECT accepted_revision FROM tasks ORDER BY id")
+          .all()
+          .map((row) => row.accepted_revision),
+      );
+      expect(revisions).toEqual(["new", "only", null]);
+    });
+  });
+
   describe("upgrade from version 3", () => {
     it("gives old rows attempt 1 and null fields", () => {
       const oldPath = join(dir, "old3.db");

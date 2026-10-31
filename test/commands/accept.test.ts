@@ -6,11 +6,21 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { addCloneCommit, commitInWorktree, gitOutput } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { dayAt, databasePathOf, eventsOf, latestTaskOf, seedTasks } from "../helpers/store.js";
+import {
+  acceptedRevisionOf,
+  dayAt,
+  databasePathOf,
+  eventsOf,
+  latestTaskOf,
+  placeTask,
+  seedTasks,
+  withDataRootStore,
+} from "../helpers/store.js";
 import {
   appendBaseEvent,
   expectCommandRefused,
   taskBranchTipOf,
+  useAcceptedTask,
   useMovedBaseTask,
   useStartFixture,
   useWorkReviewTask,
@@ -187,5 +197,32 @@ describe("a refused accept", () => {
     await holder.attempt;
 
     await expectRefused(work.dataRoot, new RegExp(`^the lock ${name} is busy`));
+  });
+});
+
+describe("the accepted revision of accept", () => {
+  it("stores the accepted revision", async () => {
+    const accepted = await useAcceptedTask();
+
+    expect(acceptedRevisionOf(accepted.dataRoot, KEY)).toBe(accepted.revision);
+  });
+
+  it("stores the new tip on a second accept", async () => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => placeTask(store, accepted.task.id, "awaiting_work_review"));
+    const tip = await commitInWorktree(accepted.task.worktreePath!, accepted.env, { file: "second.txt" });
+
+    const result = await runAccept();
+
+    expect(result.code).toBe(0);
+    expect(tip).not.toBe(accepted.revision);
+    expect(acceptedRevisionOf(accepted.dataRoot, KEY)).toBe(tip);
+  });
+
+  it("stores no accepted revision for a refused accept", async () => {
+    const work = await useMovedBaseTask();
+
+    await expectRefused(work.dataRoot, /does not contain the tip of the base/);
+    expect(acceptedRevisionOf(work.dataRoot, KEY)).toBeNull();
   });
 });

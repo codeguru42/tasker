@@ -139,6 +139,17 @@ export function writeRunMarker(
   });
 }
 
+// The accepted_revision column of the latest task of issueKey, read with a raw query. It is null for a task with no accept.
+export function acceptedRevisionOf(dataRoot: string, issueKey: string): string | null {
+  const id = latestTaskOf(dataRoot, issueKey).id;
+  return withRawDatabase(databasePathOf(dataRoot), (db) => {
+    const row = db.prepare("SELECT accepted_revision FROM tasks WHERE id = ?").get(id) as {
+      accepted_revision: string | null;
+    };
+    return row.accepted_revision;
+  });
+}
+
 // The latest task of issueKey in the repo codeguru42/tasker. It throws when there is none.
 export function latestTaskOf(dataRoot: string, issueKey: string): Task {
   return withDataRootStore(dataRoot, (store) => {
