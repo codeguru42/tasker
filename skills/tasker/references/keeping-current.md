@@ -134,12 +134,12 @@ as it is.
 The replay falls back to the commits after the merge base of the task branch and the new tip. It prints no `replayed`
 line then. It writes one of these notes on stderr before the rebase:
 
-- `note: the synced base tip <synced base tip> of <issue key> is not an ancestor of HEAD; tasker replayed the commits after the merge base <merge base>`
+- `note: the synced base tip <synced base tip> of <issue key> is not an ancestor of HEAD; tasker replays the commits after the merge base <merge base>`
   when the head does not build on the synced base tip.
-- `note: tasker could not check the synced base tip <synced base tip> of <issue key> (git exit code <exit code>); tasker replayed the commits after the merge base <merge base>`
+- `note: tasker could not check the synced base tip <synced base tip> of <issue key> (git exit code <exit code>); tasker replays the commits after the merge base <merge base>`
   when git cannot make the check.
-- `note: <issue key> has no synced base tip; tasker replayed the commits after the merge base <merge base>` when the
-  task has no synced base tip.
+- `note: <issue key> has no synced base tip; tasker replays the commits after the merge base <merge base>` when the task
+  has no synced base tip.
 
 Under `merge`, the command makes a fast-forward when the head is an ancestor of the new tip, and the `how` is
 `fast-forward`. Otherwise it merges the new tip into the task branch, and the `how` is `merge`.
