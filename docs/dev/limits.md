@@ -67,6 +67,10 @@ These limits apply to the orchestrator and to the agents, except where a bullet 
   of the command. If two agents use the same file name, the refine or the review of one ticket can send the text of
   another ticket. The folder of the agent stays after the work. The agent removes only the task worktree, as the
   own-worktree rule says.
+- If a `gh issue`, `gh label` or `gh run` command runs outside a git repo with no `-R` flag and no issue URL, it fails.
+  The error holds `fatal: not a git repository`. The folder of an agent is outside a git repo. As a result, the agent
+  adds `-R <owner>/<repo>` to each such command that it runs in its folder. `<owner>/<repo>` is the `owner/repo` part of
+  the issue key of the ticket.
 - Do not use `pkill` or `killall`. To stop a process that it started, the orchestrator or the agent uses `kill` with the
   process id that it saved. `pkill` matches by name, so it can stop a process of another session of the same user.
 - Never print a credential, for example an access token, a password or a key. If a command gives a credential, store its
