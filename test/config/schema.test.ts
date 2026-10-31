@@ -807,8 +807,8 @@ describe("parseConfig named trackers", () => {
   it("folds only the ASCII letters of the site of a definition", () => {
     const kelvin = String.fromCodePoint(0x212a);
     const raw = withTracker(
-      { tracker: "acme", project: "TEST" },
-      { acme: { ...acme, site: kelvin + "ACME.example.com" } },
+      { tracker: "acme", account: "me" },
+      { acme: { provider: "github", site: kelvin + "ACME.example.com" } },
     );
     expect(parseConfig(raw, {}, home).trackers.acme.site).toBe(kelvin + "acme.example.com");
   });

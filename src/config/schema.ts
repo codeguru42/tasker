@@ -10,7 +10,7 @@ import { modelIssue } from "../assistant/models.js";
 import type { AssistantProviderId } from "../assistant/provider.js";
 import { formatIssues } from "../zod-issues.js";
 import { asciiFold } from "../ascii-fold.js";
-import { JIRA_PROJECT } from "../issue-key/short-ref.js";
+import { JIRA_PROJECT, SITE_LABEL } from "../issue-key/short-ref.js";
 
 const positive = z.number().positive();
 
@@ -242,6 +242,7 @@ function githubTrackerIssues(key: string, issueTracker: Record<string, unknown>)
 const JIRA_REFUSED_KEYS = ["account", "inProgressLabel", "doneLabel"] as const;
 
 const JIRA_PROJECT_PATTERN = new RegExp(`^${JIRA_PROJECT}$`);
+const JIRA_SITE_PATTERN = new RegExp(`^${SITE_LABEL}(?:\\.${SITE_LABEL})+$`);
 
 // A jira tracker refuses the keys that mean nothing for it, and needs a Jira project key.
 function jiraTrackerIssues(key: string, issueTracker: Record<string, unknown>): string[] {
@@ -268,6 +269,15 @@ function jiraTrackerIssues(key: string, issueTracker: Record<string, unknown>): 
       issueLine(
         ["repos", key, "issueTracker", "project"],
         `must be a Jira project key that matches ^${JIRA_PROJECT}$, got ${project}`,
+      ),
+    );
+  }
+  const { site } = issueTracker;
+  if (typeof site === "string" && !JIRA_SITE_PATTERN.test(site)) {
+    issues.push(
+      issueLine(
+        ["repos", key, "issueTracker", "site"],
+        "must be a host name such as example.atlassian.net, with no scheme, path or port",
       ),
     );
   }
