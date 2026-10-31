@@ -8,6 +8,14 @@ function readSkill(): string {
   return readFileSync(new URL("../skills/tasker/SKILL.md", import.meta.url), "utf8");
 }
 
+function runCommandSection(): string {
+  const skill = readSkill();
+  const start = skill.indexOf("\n## Run a command\n");
+  if (start === -1) return "";
+  const end = skill.indexOf("\n## ", start + 1);
+  return skill.slice(start + 1, end === -1 ? undefined : end);
+}
+
 function skillFrontmatter(): string {
   return /^---\n([\s\S]*?)\n---\n/.exec(readSkill())?.[1] ?? "";
 }
@@ -40,12 +48,29 @@ describe("skills/tasker/SKILL.md", () => {
     const skill = readSkill();
     const line = "`tasker $ARGUMENTS`";
     expect(skill.split(line).length - 1).toBe(1);
-    const start = skill.indexOf("\n## Run a command\n");
+    expect(runCommandSection()).toContain(line);
+    expect(skill.indexOf("\n## Run a command\n")).toBeLessThan(skill.indexOf("\n## Rules\n"));
+  });
+
+  it("holds the plain placeholder only once", () => {
+    expect(readSkill().split("$ARGUMENTS").length - 1).toBe(1);
+  });
+
+  it("lists the request and the folder of each assistant", () => {
+    const heading = "The command line in each assistant:\n\n";
+    const section = runCommandSection();
+    const start = section.indexOf(heading);
     expect(start).not.toBe(-1);
-    const end = skill.indexOf("\n## ", start + 1);
-    const section = skill.slice(start + 1, end === -1 ? undefined : end);
-    expect(section).toContain(line);
-    expect(start).toBeLessThan(skill.indexOf("\n## Rules\n"));
+    const rest = section.slice(start + heading.length);
+    const end = rest.indexOf("\n\n");
+    const items = (end === -1 ? rest : rest.slice(0, end)).split(/\n(?=- )/).map((item) => item.replace(/\s+/g, " "));
+    const claude = items.find((item) => item.startsWith("- Claude Code:")) ?? "";
+    const codex = items.find((item) => item.startsWith("- Codex:")) ?? "";
+    expect(claude).toContain("`/tasker <command line>`");
+    expect(claude).toContain("`$HOME/.claude/skills`");
+    expect(claude).toContain("fills in the placeholder");
+    expect(codex).toContain("`$tasker <command line>`");
+    expect(codex).toContain("`$HOME/.agents/skills`");
   });
 
   it("reports a command in --help that the skill does not list", async () => {
