@@ -7,6 +7,7 @@ import { PLAN_PROMPT, PLAN_PROMPT_NAME } from "../../src/prompts/plan.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
+import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import {
   TEST_SESSION_ID,
@@ -43,7 +44,12 @@ import {
   withDataRootStore,
   withRawDatabase,
 } from "../helpers/store.js";
-import { expectNoAssistantRun, startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
+import {
+  appendBaseEvent,
+  expectNoAssistantRun,
+  startTaskWithCommits,
+  usePlanFixture,
+} from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import { writeFileWithParents } from "../helpers/temp.js";
 import { plannedLine } from "../helpers/command-output.js";
@@ -496,6 +502,48 @@ describe("the overlap warning", () => {
         [{ issueKey: "codeguru42/tasker#6", state: "workspace_ready", files: ["test/a.test.ts"] }],
         LAST,
       ),
+    );
+  });
+
+  it("reads no branch of another task with no base, and prints no note", async () => {
+    const fixture = await planFixture(["test/a.test.ts"], 6);
+    const task = await startTaskWithCommits(fixture.started, 6, ["src/b.ts"]);
+    withDataRootStore(fixture.started.dataRoot, (store) => {
+      seedPlanRevision(
+        store,
+        task.id,
+        { answer: validPlanAnswer({ files_changed: ["test/a.test.ts"] }) },
+        "workspace_ready",
+      );
+      store.updateTask(task.id, { branch: "issue-6-gone", base: null });
+    });
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(result.err).not.toContain("note:");
+    expect(result.err).toBe(
+      overlapWarningText(
+        [{ issueKey: "codeguru42/tasker#6", state: "workspace_ready", files: ["test/a.test.ts"] }],
+        LAST,
+      ),
+    );
+  });
+
+  it("reads the files of another task with a local base", async () => {
+    const fixture = await planFixture(["src/b.ts"], 6);
+    const task = await startTaskWithCommits(fixture.started, 6, ["src/b.ts"]);
+    await runGit(["update-ref", "refs/heads/x", "refs/remotes/origin/main"], {
+      gitDir: fixture.started.clone,
+      env: fixture.started.env,
+    });
+    appendBaseEvent({ dataRoot: fixture.started.dataRoot, task }, "refs/heads/x", "refs/heads/x");
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe(
+      overlapWarningText([{ issueKey: "codeguru42/tasker#6", state: "workspace_ready", files: ["src/b.ts"] }], LAST),
     );
   });
 

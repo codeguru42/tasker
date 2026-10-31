@@ -5,6 +5,7 @@ import { planRevisionPath, planTranscriptPath, reviewTranscriptPath } from "../.
 import { archivePrompt } from "../../src/prompts/archive.js";
 import { REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
 import { formatFindings } from "../../src/review/findings-text.js";
+import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
 import {
@@ -40,6 +41,7 @@ import {
   reviewSessionRows,
 } from "../helpers/store.js";
 import {
+  appendBaseEvent,
   expectCommandRefused,
   expectNoAssistantRun,
   taskBranchTipOf,
@@ -130,6 +132,17 @@ describe("review", () => {
     const commits = /<branch-commits>([\s\S]*)<\/branch-commits>/.exec(call.stdin)?.[1];
     expect(commits).toContain("work.txt");
     expect(call.stdin).toContain("<earlier-reviews>No earlier review.</earlier-reviews>");
+  });
+
+  it("gives the commits of a task with a local base", async () => {
+    const work = await useReviewFixture({ stream: answerStream(validReviewAnswer()) });
+    await runGit(["update-ref", "refs/heads/x", "refs/remotes/origin/main"], { gitDir: work.clone, env: work.env });
+    appendBaseEvent(work, "refs/heads/x", "refs/heads/x");
+
+    await runReview();
+
+    const commits = /<branch-commits>([\s\S]*)<\/branch-commits>/.exec(work.claude.calls()[0].stdin)?.[1];
+    expect(commits).toContain("work.txt");
   });
 
   it("moves the task back to awaiting_work_review when the review has no findings", async () => {

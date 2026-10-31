@@ -918,6 +918,13 @@ describe("tasker update-branch", () => {
       );
     });
 
+    it("refuses a task with no base", async () => {
+      const work = await useMovedBaseTask();
+      withDataRootStore(work.dataRoot, (store) => store.updateTask(work.task.id, { base: null }));
+
+      await expectCommandRefused(work, runUpdateBranch, `the task of ${KEY} has no base\n`);
+    });
+
     it("refuses a task in a state that update-branch does not accept", async () => {
       const work = await useWorkReviewTask();
       place(work, "planning");

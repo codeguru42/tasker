@@ -54,6 +54,7 @@ import {
   withRawDatabase,
 } from "../helpers/store.js";
 import {
+  appendBaseEvent,
   type ExecuteFixture,
   expectRefusedWithoutChange,
   taskRefOf,
@@ -137,13 +138,9 @@ describe("executeTask checks", () => {
     await expectRefused(fixture, "todos: a dependency cycle between a, b");
   });
 
-  it("refuses a task that has no base event", async () => {
+  it("refuses a task that has no base", async () => {
     const fixture = await useExecuteFixture({});
-    withRawDatabase(databasePathOf(fixture.config.dataRoot), (db) => {
-      // The events table refuses a delete, so the test removes its trigger first.
-      db.exec("DROP TRIGGER events_no_delete");
-      db.prepare("DELETE FROM events WHERE type = 'base'").run();
-    });
+    withDataRootStore(fixture.config.dataRoot, (store) => store.updateTask(fixture.task.id, { base: null }));
 
     await expectRefused(fixture, "the task of codeguru42/tasker#5 has no base revision");
   });
@@ -219,6 +216,15 @@ const shell = (script: string) => [realCommandPath("sh"), "-c", script];
 const signalTasker = (signal: NodeJS.Signals) => `kill -s ${signal.slice(3)} ${process.pid}`;
 
 describe("executeTask turns", () => {
+  it("puts the local base of the task in the commit rules of the first turn", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
+    appendBaseEvent({ dataRoot: fixture.started.dataRoot, task: fixture.task }, "refs/heads/x", "refs/heads/x");
+
+    await runExecute(fixture);
+
+    expect(fixture.claude.calls()[0].stdin).toContain("git log --reverse refs/heads/x..HEAD");
+  });
+
   it("runs a new session in the dependency order with the prefix on the first turn only", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
     const { dataRoot } = fixture.started;

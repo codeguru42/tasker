@@ -25,6 +25,7 @@ import {
   withEventFirst,
 } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
+import { runGit } from "../../src/vcs/git/run.js";
 import {
   answerStream,
   planRevisionOf,
@@ -51,6 +52,7 @@ import {
 } from "../helpers/store.js";
 import { failureContextExpected, promotionContextExpected } from "../helpers/review.js";
 import {
+  appendBaseEvent,
   expectNoAssistantRun,
   type PlanFixture,
   useRefineFixture,
@@ -183,6 +185,22 @@ describe("refine", () => {
     const block = /<branch-commits>([\s\S]*)<\/branch-commits>/.exec(stdin)?.[1];
     expect(block).toContain("src/b.ts");
     expect(block).not.toContain(NO_OWN_COMMITS);
+  });
+
+  it("gives the commits of a task with a local base", async () => {
+    const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
+    await commitInWorktree(fixture.started.worktree, fixture.started.env, { file: "src/b.ts" });
+    await runGit(["update-ref", "refs/heads/x", "refs/remotes/origin/main"], {
+      gitDir: fixture.started.clone,
+      env: fixture.started.env,
+    });
+    appendBaseEvent({ dataRoot: fixture.started.dataRoot, task: fixture.task }, "refs/heads/x", "refs/heads/x");
+
+    await runRefine();
+
+    const stdin = fixture.claude.calls()[0].stdin;
+    const block = /<branch-commits>([\s\S]*)<\/branch-commits>/.exec(stdin)?.[1];
+    expect(block).toContain("src/b.ts");
   });
 
   it("counts a question that the new revision leaves out as answered by the feedback", async () => {
@@ -526,6 +544,18 @@ describe("a check before any write", () => {
     const fixture = await useReviewedRefineFixture({ stream }, { review: null });
 
     await expectRefused(fixture, fixture.task, "reviewed", NO_OPEN_FINDING, null);
+  });
+
+  it("refuses a task with no base", async () => {
+    const fixture = await useRefineFixture({ stream });
+    withDataRootStore(fixture.started.dataRoot, (store) => store.updateTask(fixture.task.id, { base: null }));
+
+    await expectRefused(
+      fixture,
+      latestTaskOf(fixture.started.dataRoot, KEY),
+      "awaiting_plan_review",
+      `the task of ${KEY} has no base revision`,
+    );
   });
 
   it("refuses a task with no plan revision", async () => {
