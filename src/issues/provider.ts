@@ -75,6 +75,28 @@ export interface IssueProvider {
 
 const providers = new WeakMap<Config, Map<string, IssueProvider>>();
 
+// Gives the provider of one (id, identity) pair for a configuration object. It creates the provider
+// once and keeps it.
+function cachedProvider(
+  config: Config,
+  id: IssueTrackerId,
+  identity: string | undefined,
+  create: () => IssueProvider,
+): IssueProvider {
+  const cacheKey = JSON.stringify([id, identity]);
+  let cache = providers.get(config);
+  if (cache === undefined) {
+    cache = new Map();
+    providers.set(config, cache);
+  }
+  let provider = cache.get(cacheKey);
+  if (provider === undefined) {
+    provider = create();
+    cache.set(cacheKey, provider);
+  }
+  return provider;
+}
+
 // The only place that picks an issue provider. It reads issueTracker.provider. One configuration
 // object gives one provider object for each (id, account) pair. Another configuration object gets
 // new providers.
@@ -86,18 +108,7 @@ export function issueProviderFor(config: Config, repoKey: string): IssueProvider
   switch (issueTracker.provider) {
     case "github": {
       const account = accountOf({ key: repoKey, issueTracker });
-      const cacheKey = JSON.stringify([issueTracker.provider, account]);
-      let cache = providers.get(config);
-      if (cache === undefined) {
-        cache = new Map();
-        providers.set(config, cache);
-      }
-      let provider = cache.get(cacheKey);
-      if (provider === undefined) {
-        provider = createGithubProvider({ account });
-        cache.set(cacheKey, provider);
-      }
-      return provider;
+      return cachedProvider(config, "github", account, () => createGithubProvider({ account }));
     }
     case "jira":
       throw new ConfigError([
