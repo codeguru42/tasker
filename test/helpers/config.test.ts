@@ -6,6 +6,7 @@ import { parseConfig } from "../../src/config/schema.js";
 import { IssueKeyError } from "../../src/issue-key/ref.js";
 import { resolveIssueKey } from "../../src/issue-key/resolve.js";
 import {
+  configWithTrackers,
   issueKeyErrorMessage,
   splitRoleModelsRepo,
   threeRepoConfig,
@@ -49,6 +50,20 @@ describe("threeRepoConfig", () => {
 
     expect(Object.keys(config.repos).sort()).toEqual(["codeguru42/other", "codeguru42/tasker", "fork"]);
     expect(config.repos.fork.issueTracker.project).toBe("codeguru42/tasker");
+  });
+});
+
+describe("configWithTrackers", () => {
+  it("gives a jira repo only its own keys, with no account", () => {
+    const config = configWithTrackers({ j: { provider: "jira", project: "TEST" } });
+
+    expect(config.repos.j.issueTracker.account).toBeUndefined();
+  });
+
+  it("keeps the account of validConfig for a github entry", () => {
+    const config = configWithTrackers({ "a/b": {} });
+
+    expect(config.repos["a/b"].issueTracker.account).toBe("codeguru42");
   });
 });
 
