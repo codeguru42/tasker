@@ -750,7 +750,7 @@ These reasons explain its rules:
 - The demotion of a head that is not the accepted revision: a task in `accepted`, or a task that failed in `merging`,
   goes to `executed` when its head is not the accepted revision, also when the command moved nothing. A commit that
   reaches the branch after the accept moves no base and no copy on origin. Without this demotion, `tasker merge` refuses
-  the tip again and again with an error that names `tasker update-branch`, and that command would not help. This value
+  the tip again and again with an error that names `tasker update-branch`, and that command does not help. This demotion
   does not change `moved`, because `moved` also decides the `base` event, and the head did not move.
 - The restore rule: the task goes back to its origin state when three facts hold. The head is the head of the start, the
   worktree is on the task branch, and the worktree is clean. Otherwise the task goes to `failed`.
