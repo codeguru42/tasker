@@ -40,7 +40,7 @@ export function blockerBase(store: TaskStore, ref: IssueRef, blockers: readonly 
     throw new Error(open.map((key) => `${key}: blocking issue is still open`).join("\n"));
   }
   if (ready.length > 1) {
-    const keys = ready.map((blocker) => blocker.key).join(", ");
+    const keys = ready.map((blocker) => `${blocker.key} (${blocker.branch ?? "no branch"})`).join(", ");
     throw new Error(
       `${ref.key} has more than one blocker ready to stack: ${keys}; pass --base refs/heads/<branch> to pick one`,
     );
