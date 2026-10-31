@@ -312,8 +312,8 @@ flowchart LR
 ```mermaid
 flowchart LR
   O[origin state] -->|tasker update-branch| UB[updating_branch]
-  UB -->|worktree did not move| O
-  UB -->|worktree moved: demote| D{{demotion target}}
+  UB -->|no demotion| O
+  UB -->|worktree moved or head not accepted: demote| D{{demotion target}}
   UB -->|run died| X[interrupted]
   X -->|tasker resume| O
 ```

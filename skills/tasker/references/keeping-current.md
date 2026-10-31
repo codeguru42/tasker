@@ -148,8 +148,9 @@ The `revision` of each `base` event is a ref, never a commit id:
   does not move. The task row gets the new base. The `revision` is a ref such as `refs/remotes/origin/main`.
 
 After the parent landed, the command prints `<issue key> is no longer stacked on <parent key>` after the current line or
-the moved line and before the demoted line. A later run uses the plain base step with the new base. The demotion and the
-stale-plan rule apply only when the head moved.
+the moved line and before the demoted line. A later run uses the plain base step with the new base. The stale-plan rule
+applies only when the head moved. The demotion applies when the head moved and in the one case that
+[The state after the command](#the-state-after-the-command) gives.
 
 ### The state after the command
 
