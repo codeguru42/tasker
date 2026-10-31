@@ -787,6 +787,12 @@ describe.each(["verify", "bootstrap"])("parseConfig %s.env", (phase) => {
     );
   });
 
+  it("rejects CODEX_HOME, which every phase receives", () => {
+    expect(issuesOf(withEnv(["CODEX_HOME"]))).toContain(
+      `${at}: must not be a name every phase already receives (such as HOME); remove it from env`,
+    );
+  });
+
   it.each(["HOME", "NVM_DIR"])("rejects the name %s that every phase receives", (name) => {
     expect(issuesOf(withEnv([name]))).toContain(
       `${at}: must not be a name every phase already receives (such as HOME); remove it from env`,

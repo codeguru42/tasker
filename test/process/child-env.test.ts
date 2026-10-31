@@ -83,6 +83,10 @@ describe("childEnv", () => {
     expect(result).toEqual(expectedEnv(row));
   });
 
+  it("passes CODEX_HOME", () => {
+    expect(childEnv({ CODEX_HOME: "/codex" }, [])).toEqual({ CODEX_HOME: "/codex" });
+  });
+
   it("does not change env", () => {
     const env = { HOME: "/home/me", NPM_TOKEN: "npm-secret", ANTHROPIC_API_KEY: "key", TASKER_CONFIG: "x" };
     const before = structuredClone(env);
