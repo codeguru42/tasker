@@ -10,13 +10,16 @@ operator knows the step of the milestone, the kind of each planner and its open 
 
 ## The close count
 
-The old operator counts the items that it closes. An item closes as [The answer](operator-items.md#the-answer) says. A
-report closes as [The open items](operator-items.md#the-open-items) says, and each report that the operator closes
-counts as one close. The reason: the count stands in for a read of the context use, and each report that the operator
-shows also fills its context. At a count of 15, the old operator suggests a handoff in the reply in which it closes the
-item. The suggestion starts the handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
-On 2026-10-25, the user said: "I think we are handing off too often. Bump the required operator count to 15 before
-making a handoff recommendation."
+The old operator counts the items that it closes. An item closes as [The answer](operator-items.md#the-answer) says. The
+send of a partial answer that leaves a question not sent is not a close, so the old operator does not count it. A report
+closes as [The open items](operator-items.md#the-open-items) says, and each report that the operator closes counts as
+one close. The reason: the count stands in for a read of the context use, and each report that the operator shows also
+fills its context.
+
+At a count of 15, the old operator suggests a handoff in the reply in which it closes the item. The suggestion starts
+the handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. On 2026-10-25, the user
+said: "I think we are handing off too often. Bump the required operator count to 15 before making a handoff
+recommendation."
 
 ## The steps of the old operator
 
@@ -35,9 +38,16 @@ After the start, the old operator does these steps:
    the write or the `date` command fails, [the failure rule](limits.md#the-failure-rule) applies.
 3. Give the path of the file to the user in the reply.
 
-After step 2, each change of the open items gives a new handoff file. A change is an arrival or a close. For each
-change, the old operator writes a new handoff file with the time of that write and gives the new path to the user. If
-the write fails, [the failure rule](limits.md#the-failure-rule) applies. Then
+After step 2, each change of the open items gives a new handoff file. A change is one of these events:
+
+- An arrival
+- A close
+- The send of a partial answer
+- A judgment that the words of the user do not fully settle a question
+- A send of the words of the user as information
+
+For each change, the old operator writes a new handoff file with the time of that write and gives the new path to the
+user. If the write fails, [the failure rule](limits.md#the-failure-rule) applies. Then
 [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder) by the new operator finds the newest file.
 
 ## The handoff file of the operator
@@ -53,7 +63,10 @@ handoff file:
   [The hold of the items](handoff.md#the-hold-of-the-items) says.
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
 - The kind of each planner, initial or follow-up.
-- Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)).
+- Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)). The
+  file marks each question of the item as open, answered or sent. The operator can keep a question open because the
+  words of the user do not fully settle it, as [The answer](operator-items.md#the-answer) says. For such a question, the
+  file gives what stays open and whether the ask to the user waits.
 - Each sender of the slug that got the hold message, as [The hold of the items](handoff.md#the-hold-of-the-items) says.
   The new operator sends the ready message to each of these senders in step 5 of
   [The start of the new operator](#the-start-of-the-new-operator).
