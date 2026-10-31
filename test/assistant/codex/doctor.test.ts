@@ -17,12 +17,10 @@ const NOT_INSTALLED = {
 };
 
 function versionCheck(timeoutMs?: number): Check {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return codexVersionCheck(timeoutMs);
 }
 
 function loginCheck(timeoutMs?: number): Check {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return codexLoginCheck(timeoutMs);
 }
 
