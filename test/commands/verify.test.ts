@@ -12,6 +12,7 @@ import {
   moveTaskThrough,
   startIssueTask,
   TO_WORK_REVIEW,
+  useChainedTasks,
   useStackedTasks,
   useStartFixture,
   useVerifyFixture,
@@ -69,6 +70,22 @@ describe("tasker verify", () => {
     expect((await runCommand(updateBranch, "update-branch", key)).code).toBe(0);
     expect((await runVerify(key)).code).toBe(0);
     expect(latestTaskOf(fixture.dataRoot, key).state).toBe("awaiting_work_review");
+  });
+
+  it("refuses a task whose chain of parents has a loop", async () => {
+    const fixture = await useChainedTasks({ repo: { verify: { commands: ["true"], env: [] } } });
+    await landParent(fixture, ["accepted", "landed"]);
+    const key = fixture.stacked.key;
+    withDataRootStore(fixture.dataRoot, (store) =>
+      store.updateTask(fixture.parent.task.id, { parentTaskId: fixture.stacked.task.id }),
+    );
+
+    await expectCommandRefused(
+      { dataRoot: fixture.dataRoot, key },
+      () => runVerify(key),
+      `the chain of parents of ${key} has a loop at ${key}; nothing moved\n`,
+    );
+    expect(latestTaskOf(fixture.dataRoot, key).state).toBe("executed");
   });
 
   describe("a task that starts on the branch of an earlier task", () => {
