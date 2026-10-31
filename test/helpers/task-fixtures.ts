@@ -640,6 +640,30 @@ export async function useStackedTasks(
   };
 }
 
+export interface StackedPlanTasks extends StackedTasks {
+  claude: FakeClaude;
+}
+
+// The setup of the tests of the commands that run a plan or an assistant on a stacked task: useStackedTasks(options),
+// then a fake claude with the control, first on PATH, and the stacked task with plan revision v1 and a plan session.
+// The stacked task ends in awaiting_plan_review, and stacked.task is that task. Call it inside a test.
+export async function useStackedPlanTasks(
+  control: FakeClaudeControl,
+  options: Parameters<typeof useStackedTasks>[0] = {},
+): Promise<StackedPlanTasks> {
+  const fixture = await useStackedTasks(options);
+  const claude = useFakeClaudeOnPath(control);
+  const task = withDataRootStore(fixture.dataRoot, (store) => {
+    placeTask(store, fixture.stacked.task.id, "planning");
+    const planned = recordTestPlanRevision(store, fixture.dataRoot, fixture.stacked.task.id, {
+      answer: validPlanAnswer(),
+    });
+    seedPlanSession(store, planned.id);
+    return planned;
+  });
+  return { ...fixture, claude, stacked: { ...fixture.stacked, task } };
+}
+
 // Makes the head of the branch of the parent the head of main on origin, as a landing outside tasker does, then moves
 // the task of the parent through states.
 export async function landParent(fixture: StackedTasks, states: readonly TaskState[]): Promise<void> {

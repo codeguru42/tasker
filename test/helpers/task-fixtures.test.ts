@@ -31,6 +31,7 @@ import {
 } from "./store.js";
 import { useTempDir } from "./temp.js";
 import {
+  useStackedPlanTasks,
   useStackedTasks,
   appendBaseEvent,
   landParent,
@@ -787,6 +788,21 @@ describe("useStackedTasks", () => {
     expect(files).toContain("parent.txt");
     expect(files).toContain("stacked.txt");
     expect(existsSync(join(fixture.parent.worktree, "stacked.txt"))).toBe(false);
+  });
+});
+
+describe("useStackedPlanTasks", () => {
+  it("gives the stacked task in awaiting_plan_review with plan v1 and a plan session", async () => {
+    const fixture = await useStackedPlanTasks({ stream: answerStream(validPlanAnswer()) });
+
+    expect(fixture.stacked.task.state).toBe("awaiting_plan_review");
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("awaiting_plan_review");
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).parentTaskId).toBe(fixture.parent.task.id);
+    withDataRootStore(fixture.dataRoot, (store) => {
+      expect(store.getPlanRevision(fixture.stacked.task.id, 1)).toBeDefined();
+      expect(store.planSession(fixture.stacked.task.id)).toBeDefined();
+    });
+    expect(fixture.claude.calls()).toEqual([]);
   });
 });
 

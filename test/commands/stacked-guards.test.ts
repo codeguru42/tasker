@@ -1,13 +1,30 @@
 import { describe, expect, it } from "vitest";
+import { approveCredits } from "../../src/commands/approve-credits.js";
 import { accept } from "../../src/commands/accept.js";
 import { markLanded } from "../../src/commands/mark-landed.js";
+import { execute } from "../../src/commands/execute.js";
 import { merge } from "../../src/commands/merge.js";
+import { refine } from "../../src/commands/refine.js";
+import { resume } from "../../src/commands/resume.js";
+import { retry } from "../../src/commands/retry.js";
+import { review } from "../../src/commands/review.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
+import { verify } from "../../src/commands/verify.js";
 import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "../helpers/cli.js";
 import { gitOutput } from "../helpers/git.js";
-import { latestTaskOf, placeTask, withDataRootStore } from "../helpers/store.js";
-import { expectCommandRefused, landParent, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
+import { answerStream, turnResultStream, validPlanAnswer } from "../helpers/plan.js";
+import { validReviewAnswer } from "../helpers/review.js";
+import { failTaskFrom, latestTaskOf, pauseTaskFrom, placeTask, withDataRootStore } from "../helpers/store.js";
+import {
+  expectCommandRefused,
+  expectNoAssistantRun,
+  landParent,
+  useStackedPlanTasks,
+  useStackedTasks,
+  type StackedPlanTasks,
+  type StackedTasks,
+} from "../helpers/task-fixtures.js";
 
 const REPO = "codeguru42/tasker";
 const PARENT = "codeguru42/tasker#5";
@@ -91,5 +108,155 @@ describe("tasker merge after tasker update-branch", () => {
     const tip = await gitOutput({ cwd: fixture.stacked.worktree }, fixture.env, "rev-parse", "HEAD");
     expect(await fixture.origin.branchHead("main")).toBe(tip);
     expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("landed");
+  });
+});
+
+interface MovedBaseRow {
+  name: string;
+  // The state that the stacked task starts in. The plan of the task has v1 in every case.
+  from: "awaiting_plan_review" | "approved" | "executed" | "awaiting_work_review";
+  stream: string[];
+  run: () => Promise<{ code: number; out: string; err: string }>;
+  // The state of the task after a run that the guard lets through.
+  after: string;
+}
+
+const MOVED_BASE_ROWS: MovedBaseRow[] = [
+  {
+    name: "accept",
+    from: "awaiting_work_review",
+    stream: [],
+    run: () => runCommand(accept, "accept", STACKED, "--repo", REPO),
+    after: "accepted",
+  },
+  {
+    name: "review",
+    from: "awaiting_work_review",
+    stream: answerStream(validReviewAnswer()),
+    run: () => runCommand(review, "review", STACKED, "--repo", REPO),
+    after: "reviewed",
+  },
+  {
+    name: "review with feedback",
+    from: "awaiting_work_review",
+    stream: answerStream(validPlanAnswer()),
+    run: () => runCommand(review, "review", STACKED, "Change the plan.", "--repo", REPO),
+    after: "awaiting_plan_review",
+  },
+  {
+    name: "refine with feedback",
+    from: "awaiting_plan_review",
+    stream: answerStream(validPlanAnswer()),
+    run: () => runCommand(refine, "refine", STACKED, "Change the plan.", "--repo", REPO),
+    after: "awaiting_plan_review",
+  },
+  {
+    name: "execute",
+    from: "approved",
+    stream: turnResultStream("done"),
+    run: () => runCommand(execute, "execute", STACKED, "--repo", REPO),
+    after: "executed",
+  },
+  {
+    name: "verify",
+    from: "executed",
+    stream: [],
+    run: () => runCommand(verify, "verify", STACKED, "--repo", REPO),
+    after: "awaiting_work_review",
+  },
+];
+
+// Gives the stacked task its plan, approves v1 for a state after the plan, and places the task in row.from.
+async function stackedAt(row: MovedBaseRow): Promise<StackedPlanTasks> {
+  const fixture = await useStackedPlanTasks(
+    { stream: row.stream },
+    { repo: { verify: { commands: ["true"], env: [] } } },
+  );
+  withDataRootStore(fixture.dataRoot, (store) => {
+    if (row.from !== "awaiting_plan_review") store.approvePlanRevision(fixture.stacked.task.id, 1, "approved");
+    if (row.from !== "awaiting_plan_review" && row.from !== "approved") {
+      placeTask(store, fixture.stacked.task.id, row.from);
+    }
+  });
+  return fixture;
+}
+
+describe.each(MOVED_BASE_ROWS)("tasker $name for a stacked task", (row) => {
+  it("refuses a task whose parent landed", async () => {
+    const fixture = await stackedAt(row);
+    await landAndDropParent(fixture);
+
+    await expectCommandRefused({ dataRoot: fixture.dataRoot, key: STACKED }, row.run, LANDED);
+
+    expectNoAssistantRun({ claude: fixture.claude, started: fixture });
+  });
+
+  it("still runs while the parent is in flight", async () => {
+    const fixture = await stackedAt(row);
+
+    const result = await row.run();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe(row.after);
+  });
+});
+
+describe("tasker accept for a stacked task whose parent is cancelled", () => {
+  it("still accepts the task", async () => {
+    const fixture = await useStackedTasks();
+    withDataRootStore(fixture.dataRoot, (store) => {
+      placeTask(store, fixture.stacked.task.id, "awaiting_work_review");
+      placeTask(store, fixture.parent.task.id, "cancelled");
+    });
+
+    const result = await runCommand(accept, "accept", STACKED, "--repo", REPO);
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("accepted");
+  });
+});
+
+describe("a command that moves the task and then runs the next command", () => {
+  const cases = [
+    {
+      name: "retry",
+      args: ["retry"],
+      command: retry,
+      out: `retried ${STACKED}: failed in executing, back in approved\n`,
+      prepare: (store: Parameters<typeof failTaskFrom>[0], id: number) => failTaskFrom(store, id, "executing"),
+    },
+    {
+      name: "resume",
+      args: ["resume"],
+      command: resume,
+      out: `resumed ${STACKED}: paused in executing, back in approved\n`,
+      prepare: (store: Parameters<typeof failTaskFrom>[0], id: number) =>
+        pauseTaskFrom(store, id, "executing", "interrupted"),
+    },
+    {
+      name: "approve-credits",
+      args: ["approve-credits"],
+      command: approveCredits,
+      out: undefined,
+      prepare: (store: Parameters<typeof failTaskFrom>[0], id: number) =>
+        pauseTaskFrom(store, id, "executing", "awaiting_quota_approval"),
+    },
+  ];
+
+  it.each(cases)("tasker $name leaves the task in approved when the guard refuses the next command", async (item) => {
+    const fixture = await useStackedPlanTasks({ stream: turnResultStream("done") });
+    withDataRootStore(fixture.dataRoot, (store) => {
+      store.approvePlanRevision(fixture.stacked.task.id, 1, "approved");
+      item.prepare(store, fixture.stacked.task.id);
+    });
+    await landAndDropParent(fixture);
+
+    const result = await runCommand(item.command, item.args[0], STACKED, "--repo", REPO);
+
+    expect(result.code).toBe(1);
+    if (item.out !== undefined) expect(result.out).toBe(item.out);
+    expect(result.err).toBe(LANDED);
+    expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("approved");
+    expectNoAssistantRun({ claude: fixture.claude, started: fixture });
   });
 });
