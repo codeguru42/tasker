@@ -173,6 +173,8 @@ describe("doctor", () => {
   it("gives 1, prints the build error and runs no check for a jira repo", async () => {
     const { fake } = await setUp(GOOD_GH, (raw) => {
       raw.repos.tasker.issueTracker.provider = "jira";
+      raw.repos.tasker.issueTracker.project = "TEST";
+      delete raw.repos.tasker.issueTracker.account;
     });
 
     const { code, out, err } = await runCommand(doctor, "doctor");

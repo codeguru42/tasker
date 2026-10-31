@@ -59,7 +59,7 @@ describe("issueProviderFor", () => {
   });
 
   it("throws the ConfigError of the registry for a jira repo in the doctor checks", () => {
-    const config = configWithTrackers({ j: { provider: "jira" } });
+    const config = configWithTrackers({ j: { provider: "jira", project: "TEST" } });
     expect(configIssuesOf(() => issueDoctorChecks(config))).toEqual([
       "repos.j.issueTracker.provider: the jira tracker is not available in this version",
     ]);
@@ -70,7 +70,7 @@ describe("issueProviderFor", () => {
   });
 
   it("throws a ConfigError for a jira repo", () => {
-    const config = configWithTrackers({ j: { provider: "jira" } });
+    const config = configWithTrackers({ j: { provider: "jira", project: "TEST" } });
     expect(configIssuesOf(() => issueProviderFor(config, "j"))).toEqual([
       "repos.j.issueTracker.provider: the jira tracker is not available in this version",
     ]);

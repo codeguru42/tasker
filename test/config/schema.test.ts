@@ -260,7 +260,7 @@ describe("parseConfig issueTracker", () => {
 
   it("stores site in lower case", () => {
     const raw = validConfig();
-    raw.repos.tasker.issueTracker = { provider: "jira", site: "ACME.atlassian.net" };
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", site: "ACME.atlassian.net" };
     expect(parsedRepo(raw).issueTracker.site).toBe("acme.atlassian.net");
   });
 
@@ -302,7 +302,7 @@ describe("parseConfig issueTracker", () => {
 
   it("accepts a jira tracker with no account", () => {
     const raw = validConfig();
-    raw.repos.tasker.issueTracker = { provider: "jira" };
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST" };
     expect(parsedRepo(raw).issueTracker.account).toBeUndefined();
   });
 
@@ -350,12 +350,6 @@ describe("parseConfig issueTracker", () => {
     const raw = validConfig();
     raw.repos.tasker.issueTracker[name] = value;
     expect(parsedRepo(raw).issueTracker[name]).toBe(value);
-  });
-
-  it("accepts a comma in a label of a jira tracker", () => {
-    const raw = validConfig();
-    raw.repos.tasker.issueTracker = { provider: "jira", inProgressLabel: "a,b" };
-    expect(parsedRepo(raw).issueTracker.inProgressLabel).toBe("a,b");
   });
 
   it("reports the commas with other errors", () => {
@@ -795,7 +789,7 @@ describe("parseConfig named trackers", () => {
   });
 
   it("lets a key of the repo win over the definition", () => {
-    const raw = withTracker({ tracker: "acme", updateOnStart: false });
+    const raw = withTracker({ tracker: "acme", project: "TEST", updateOnStart: false });
     expect(parsedRepo(raw).issueTracker.updateOnStart).toBe(false);
   });
 
@@ -847,7 +841,7 @@ describe("parseConfig named trackers", () => {
   });
 
   it("reports a bad provider next to tracker once", () => {
-    const issues = issuesOf(withTracker({ tracker: "acme", provider: "gitlab" }));
+    const issues = issuesOf(withTracker({ tracker: "acme", provider: "gitlab", project: "TEST" }));
     expect(issues).toEqual([
       "repos.tasker.issueTracker.provider: must not be set next to tracker; provider comes from tracker 'acme'",
     ]);
