@@ -49,6 +49,12 @@ An issue can have many tasks over time, one for each attempt. The attempt count 
 The column `synced_base_tip` holds the commit id of the base tip that the task branch was last built on. Schema version
 13 adds it. The rows that exist then hold NULL.
 
+The column `parent_task_id` holds the id of the parent of a stacked task, or NULL for a task that is not stacked. The
+column has no foreign key. Schema version 14 adds it. The migration fills it for each row that exists. In a row with the
+base `refs/heads/<x>`, the value is the highest id of a task of the repo whose branch is `<x>`. That task can be in any
+state. A task whose parent already finished keeps its link, so that `tasker update-branch` can still move it onto the
+base of the parent. In each other row, or with no such task, the value is NULL.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 
