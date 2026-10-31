@@ -164,6 +164,8 @@ of each check.
 `tasker doctor` asks each tracker once for its doctor checks, with all the repos of that tracker. As a result, the
 `gh version` check runs once, and the `gh auth` check runs once for each account of the github repos.
 
+The Jira check is in [The doctor check](jira.md#the-doctor-check) of jira.md.
+
 ### Version
 
 The minimum is 2.40.0, because `gh auth token` has the `--user` flag from that version. The source file

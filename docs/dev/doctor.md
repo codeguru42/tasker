@@ -2,8 +2,8 @@
 
 `src/doctor/` holds the code that all doctor checks share. It does not depend on git or on an issue tracker. The git
 checks are in [version-control.md](version-control.md#doctor-checks). The GitHub checks are in
-[issue-trackers.md](issue-trackers.md#doctor-checks). The assistant checks are in
-[assistants.md](assistants.md#doctor-checks).
+[issue-trackers.md](issue-trackers.md#doctor-checks), and the Jira checks are in [jira.md](jira.md#the-doctor-check).
+The assistant checks are in [assistants.md](assistants.md#doctor-checks).
 
 ## The shared wrapper
 

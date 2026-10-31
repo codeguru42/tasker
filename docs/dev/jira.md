@@ -240,6 +240,26 @@ The Jira tracker has no clear of the in-progress marker. A status has no "clear"
 the workflow of the team. The abort of a Jira task runs no tracker step. A later ticket adds the function that rejects
 with the message `the jira tracker has no in-progress clear`.
 
+## The auth status
+
+`authStatus()` in `src/issues/jira/auth.ts` gives the state of the login of `acli`, from `activeSite()`. `login` is the
+active site. `needsLogin` is true when `acli` has no Jira login. A missing `acli` or a bad `TASKER_ACLI_BIN` gives `ok`
+false and `needsLogin` false.
+
+## The doctor check
+
+The check `acli auth` in `src/issues/jira/doctor.ts` is one required check for all the Jira repos. It makes one
+read-only `acli` call, and it compares the active site with the site of each repo, with the fold of
+[the site guard](#the-site-guard). [The shared wrapper](doctor.md#the-shared-wrapper) gives the timeout and signal
+rules.
+
+The status is `error` when a Jira repo names another site than the active site. The reason: each Jira call of that repo
+fails at the site guard, so the repo cannot work. The detail has one line for each such repo. The remediation names only
+the site of the first such repo.
+
+The detail shows no line of the output of `acli` other than the value of the `Site:` line. It never shows the email of
+the user. The reason: the output of `acli` holds the email of the user. The doctor output can go into a report.
+
 ## The errors
 
 - `AcliError`: `acli` exited with a code other than 0, or a signal stopped it. It holds the subcommand, the stdout, the

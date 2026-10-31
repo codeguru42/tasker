@@ -23,7 +23,7 @@ The command runs these checks one at a time, in this order:
   repo, in the order of the configuration.
 - Once for each issue tracker that the configuration uses, in the order of first use: the checks of the tracker. For
   `github`, `gh version` runs once, `gh auth` runs once for each account, and the project and label checks run for each
-  repo.
+  repo. For `jira`, which is not available in this version, `acli auth` runs once.
 - Once for each assistant provider that the configuration uses, in the order of first use: the checks of the provider.
   For `claude-code`, this is `claude version`, and on Linux also `sandbox: bwrap` and `sandbox: socat`.
 
