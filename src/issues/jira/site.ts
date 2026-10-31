@@ -26,7 +26,7 @@ export class JiraSiteError extends Error {
   }
 }
 
-function foldSite(text: string): string {
+export function foldSite(text: string): string {
   return asciiFold(text.trim());
 }
 
