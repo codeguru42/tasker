@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { updateBranch } from "../../src/commands/update-branch.js";
@@ -7,7 +7,7 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote, undoHint } from "../helpers/command-output.js";
 import { amendWorktreeMessage, commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
-import { seedPinnedPlanRevision } from "../helpers/plan.js";
+import { runApprove, seedPinnedPlanRevision, seedPlanRevision } from "../helpers/plan.js";
 import { expectedShowLines, wrongStateError } from "../helpers/state-commands.js";
 import {
   databasePathOf,
@@ -19,6 +19,7 @@ import {
   placeTask,
   readRunMarker,
   withDataRootStore,
+  withRawDatabase,
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
@@ -1088,6 +1089,270 @@ describe("the undo record", () => {
       undoBeforeHead: null,
       undoAfterHead: null,
       undoSyncedBaseTip: null,
+    });
+  });
+});
+
+describe("--undo", () => {
+  // A task whose base moved. A first run of tasker update-branch rebased it, and the task is in executed.
+  const useRebasedTask = async () => {
+    const work = await useMovedBaseTask();
+    const head = await taskBranchTipOf(work);
+    const start = latestTaskOf(work.dataRoot, KEY).syncedBaseTip;
+    expect((await runUpdateBranch()).code).toBe(0);
+    const newHead = await taskBranchTipOf(work);
+    return { work, head, start, newHead };
+  };
+
+  const worktreeOf = (work: WorkReviewTask) => ({ cwd: work.task.worktreePath! });
+  const COMBINED = "--undo cannot be combined with --strategy or --take-remote\n";
+  const NOTE = `the plan is stale; run tasker refine ${KEY} before tasker approve\n`;
+
+  it("puts the head, the branch and the synced base tip back after a rebase", async () => {
+    const { work, head, start, newHead } = await useRebasedTask();
+    place(work, "awaiting_work_review");
+    const count = eventsOf(work.dataRoot, KEY).length;
+
+    const result = await runUpdateBranch("--undo");
+
+    expect(result).toEqual({
+      code: 0,
+      out: `undid the last update of ${KEY}: ${newHead} back to ${head}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n${expectedShowLines("executed", KEY)}`,
+      err: "",
+    });
+    expect(await taskBranchTipOf(work)).toBe(head);
+    expect(await revisionOf(work, "HEAD")).toBe(head);
+    const snapshot = { base: "main", baseRevision: BASE_REVISION };
+    expect(eventsAfter(work, count).at(-1)).toMatchObject({
+      type: "branch_updated",
+      data: {
+        before: { head: newHead, ...snapshot, syncedBaseTip: work.baseTip },
+        after: { head, ...snapshot, syncedBaseTip: start },
+        how: "undo",
+        sync: "none",
+        from: "updating_branch",
+        to: "executed",
+      },
+    });
+    expect(eventsAfter(work, count).map((e) => e.type)).not.toContain("base");
+    expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+      base: "main",
+      syncedBaseTip: start,
+      undoBeforeHead: newHead,
+      undoAfterHead: head,
+      undoSyncedBaseTip: work.baseTip,
+    });
+    expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();
+  });
+
+  it("goes back to the rebased head and the base tip with a second undo", async () => {
+    const { work, head, newHead } = await useRebasedTask();
+    expect((await runUpdateBranch("--undo")).code).toBe(0);
+    expect(await taskBranchTipOf(work)).toBe(head);
+
+    const result = await runUpdateBranch("--undo");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`undid the last update of ${KEY}: ${head} back to ${newHead}\n`);
+    expect(await taskBranchTipOf(work)).toBe(newHead);
+    expect(latestTaskOf(work.dataRoot, KEY).syncedBaseTip).toBe(work.baseTip);
+  });
+
+  it("moves an approved task to awaiting_plan_review and clears the approval", async () => {
+    const { work } = await useRebasedTask();
+    withDataRootStore(work.dataRoot, (store) => {
+      seedPinnedPlanRevision(store, work.task.id, {}, "approved");
+    });
+
+    const result = await runUpdateBranch("--undo");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`demoted ${KEY} from approved to awaiting_plan_review\n`);
+    expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_plan_review");
+    withDataRootStore(work.dataRoot, (store) => {
+      expect(store.pinnedPlanRevision(work.task.id)).toBeUndefined();
+    });
+  });
+
+  it("prints the stale note and makes tasker approve refuse a plan that is older than the undo", async () => {
+    const work = await useMovedBaseTask();
+    place(work, "awaiting_plan_review");
+    expect((await runUpdateBranch()).code).toBe(0);
+    place(work, "awaiting_plan_review");
+    withDataRootStore(work.dataRoot, (store) => seedPlanRevision(store, work.task.id));
+    expect((await runApprove(KEY)).code).toBe(0);
+    place(work, "awaiting_plan_review");
+
+    const result = await runUpdateBranch("--undo");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`${NOTE}state: awaiting_plan_review\n`);
+    expect(result.out).not.toContain("previous HEAD");
+    const approve = await runApprove(KEY);
+    expect(approve.code).toBe(1);
+    expect(approve.err).toContain("is older than the last move of the worktree");
+  });
+
+  it("puts the head back after a fast-forward of the sync step alone", async () => {
+    const work = await useWorkReviewTask();
+    const branch = work.task.branch!;
+    const head = await taskBranchTipOf(work);
+    await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+    const remote = await work.origin.addCommit(branch, { file: "remote.txt" });
+    expect((await runUpdateBranch()).code).toBe(0);
+    expect(await taskBranchTipOf(work)).toBe(remote);
+
+    const result = await runUpdateBranch("--undo");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`undid the last update of ${KEY}: ${remote} back to ${head}\n`);
+    expect(await taskBranchTipOf(work)).toBe(head);
+    expect(await revisionOf(work, "HEAD")).toBe(head);
+  });
+
+  it("writes NULL for a synced base tip that was NULL before the run", async () => {
+    const work = await useMovedBaseTask();
+    withDataRootStore(work.dataRoot, (store) => store.updateTask(work.task.id, { syncedBaseTip: null }));
+    expect((await runUpdateBranch()).code).toBe(0);
+
+    const result = await runUpdateBranch("--undo");
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+      syncedBaseTip: null,
+      undoSyncedBaseTip: work.baseTip,
+    });
+  });
+
+  describe("refusals", () => {
+    it.each([["--strategy", "merge"], ["--strategy", "bad"], ["--take-remote"]])(
+      "refuses --undo with %s",
+      async (...extra) => {
+        const { work } = await useRebasedTask();
+
+        await expectCommandRefused(work, () => runUpdateBranch("--undo", ...extra), COMBINED);
+      },
+    );
+
+    it("refuses a task in a state that update-branch does not accept", async () => {
+      const { work } = await useRebasedTask();
+      place(work, "planning");
+
+      await expectCommandRefused(
+        work,
+        () => runUpdateBranch("--undo"),
+        `${wrongStateError("planning", KEY, "update-branch", NEEDS)}\n`,
+      );
+    });
+
+    it("refuses a worktree with uncommitted changes", async () => {
+      const { work } = await useRebasedTask();
+      writeFileSync(join(work.task.worktreePath!, "dirty.txt"), "dirty\n");
+
+      await expectCommandRefused(
+        work,
+        () => runUpdateBranch("--undo"),
+        /^the worktree has uncommitted changes: .*dirty\.txt\ntasker update-branch needs a clean worktree\n$/s,
+      );
+    });
+
+    it("refuses a task with no move to undo", async () => {
+      const work = await useWorkReviewTask();
+
+      await expectCommandRefused(work, () => runUpdateBranch("--undo"), `nothing to undo for ${KEY}\n`);
+    });
+
+    it("refuses a worktree that has a commit after the update", async () => {
+      const { work, newHead } = await useRebasedTask();
+      const extra = await commitInWorktree(work.task.worktreePath!, work.env, { file: "later.txt" });
+
+      await expectCommandRefused(
+        work,
+        () => runUpdateBranch("--undo"),
+        `the worktree of ${KEY} moved since the last update (HEAD ${extra}, branch ${extra}, last update ${newHead}); nothing undone\n`,
+      );
+      expect(await taskBranchTipOf(work)).toBe(extra);
+    });
+
+    it("refuses a branch tip that differs from HEAD", async () => {
+      const { work, head, newHead } = await useRebasedTask();
+      const branch = work.task.branch!;
+      await gitOutput(worktreeOf(work), work.env, "checkout", "--detach");
+      await gitOutput(worktreeOf(work), work.env, "branch", "-f", branch, head);
+
+      await expectCommandRefused(
+        work,
+        () => runUpdateBranch("--undo"),
+        `the worktree of ${KEY} moved since the last update (HEAD ${newHead}, branch ${head}, last update ${newHead}); nothing undone\n`,
+      );
+    });
+
+    it("refuses when the worktree cannot be read", async () => {
+      const { work } = await useRebasedTask();
+      rmSync(work.task.worktreePath!, { recursive: true, force: true });
+
+      await expectCommandRefused(work, () => runUpdateBranch("--undo"), /^[^\n]+\n$/);
+    });
+
+    it("refuses when the branch cannot be read", async () => {
+      const { work } = await useRebasedTask();
+      const branch = work.task.branch!;
+      await gitOutput(worktreeOf(work), work.env, "checkout", "--detach");
+      await gitOutput(worktreeOf(work), work.env, "update-ref", "-d", `refs/heads/${branch}`);
+
+      await expectCommandRefused(work, () => runUpdateBranch("--undo"), /^[^\n]+\n$/);
+    });
+  });
+
+  describe("a failed undo", () => {
+    it("moves the task back to its origin and keeps the head and the columns", async () => {
+      const { work, newHead } = await useRebasedTask();
+      withDataRootStore(work.dataRoot, (store) =>
+        store.updateTask(work.task.id, { undoBeforeHead: "1234567890".repeat(4) }),
+      );
+      const columns = latestTaskOf(work.dataRoot, KEY);
+
+      const result = await runUpdateBranch("--undo");
+
+      expect(result.code).toBe(1);
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+        state: "executed",
+        undoBeforeHead: columns.undoBeforeHead,
+        undoAfterHead: columns.undoAfterHead,
+        undoSyncedBaseTip: columns.undoSyncedBaseTip,
+        syncedBaseTip: columns.syncedBaseTip,
+      });
+      expect(await taskBranchTipOf(work)).toBe(newHead);
+      expect(await revisionOf(work, "HEAD")).toBe(newHead);
+      expect(eventsOf(work.dataRoot, KEY).at(-1)).toMatchObject({
+        type: "branch_updated",
+        data: { how: "none", error: expect.any(String) },
+      });
+      expect(readRunMarker(databasePathOf(work.dataRoot), work.task.id)).toBeUndefined();
+    });
+
+    it("puts the head back and keeps the columns when the last write fails", async () => {
+      const { work, newHead } = await useRebasedTask();
+      withRawDatabase(databasePathOf(work.dataRoot), (db) =>
+        db.exec(
+          "CREATE TRIGGER refuse_undo BEFORE INSERT ON events WHEN NEW.type = 'branch_updated' AND json_extract(NEW.data, '$.error') IS NULL BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
+        ),
+      );
+      const columns = latestTaskOf(work.dataRoot, KEY);
+
+      const result = await runUpdateBranch("--undo");
+
+      expect(result.code).toBe(1);
+      expect(result.err).toContain("refused by the test");
+      expect(await taskBranchTipOf(work)).toBe(newHead);
+      expect(await revisionOf(work, "HEAD")).toBe(newHead);
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+        state: "executed",
+        undoBeforeHead: columns.undoBeforeHead,
+        undoAfterHead: columns.undoAfterHead,
+        undoSyncedBaseTip: columns.undoSyncedBaseTip,
+        syncedBaseTip: columns.syncedBaseTip,
+      });
     });
   });
 });
