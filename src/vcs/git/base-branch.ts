@@ -35,7 +35,7 @@ interface ResolveBaseOptions {
   memory: BaseBranchMemory;
   // Untrusted text from the issue tracker, used as it is.
   hint?: string;
-  // The raw --base text of this run.
+  // The raw --base text of this run, or the stored base of the task.
   explicit?: string;
   // The base from the blocker step of start.
   blocker?: BlockerBase;
@@ -50,10 +50,12 @@ function exists(clone: string, env: NodeJS.ProcessEnv, base: string): Promise<bo
 }
 
 // Fetches origin, then picks the base branch of a task. The sources come in this order:
-// the hint, --base, the blocker, the learned default, defaultBaseBranch and the answer of ask.
+// --base, the hint, the stored base, the blocker, the learned default, defaultBaseBranch and the answer of ask.
+// The caller passes the stored base as explicit only when the issue gives no hint.
 export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<ResolvedBase> {
-  const { repoKey, clone, env, hint, memory } = options;
+  const { repoKey, clone, env, memory } = options;
   const explicit = options.explicit === undefined ? undefined : parseBaseInput(options.explicit);
+  const hint = explicit === undefined ? options.hint : undefined;
   if (hint === "") {
     throw new Error("the base branch of the issue is empty");
   }
@@ -76,18 +78,18 @@ export async function resolveBaseBranch(options: ResolveBaseOptions): Promise<Re
     return found(base, source);
   };
 
-  if (hint !== undefined) {
-    if (!(await exists(clone, env, hint))) {
-      throw new Error(`the base branch does not exist on origin: ${hint} (from the issue)`);
-    }
-    return found(hint, "hint");
-  }
-
   if (explicit !== undefined) {
     if (!(await exists(clone, env, explicit))) {
       throw new Error(`the base branch does not exist: ${explicit} (from --base)`);
     }
     return found(explicit, "explicit");
+  }
+
+  if (hint !== undefined) {
+    if (!(await exists(clone, env, hint))) {
+      throw new Error(`the base branch does not exist on origin: ${hint} (from the issue)`);
+    }
+    return found(hint, "hint");
   }
 
   const { blocker } = options;

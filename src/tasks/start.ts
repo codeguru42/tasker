@@ -122,7 +122,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
   const workspace = await withRepoLock(store, ref.repoKey, request.repoLockWaitMs, () =>
     failOnError(async () => {
       await vcs.provision(ctx);
-      const hint = issueProvider.baseBranchHint(issue);
+      const hint = request.base === undefined ? issueProvider.baseBranchHint(issue) : undefined;
       const resolved = await vcs.resolveBase(ctx, {
         memory: store,
         hint,
