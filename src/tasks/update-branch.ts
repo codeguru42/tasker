@@ -82,7 +82,7 @@ function replayNote(issueKey: string, start: ReplayStart): string | undefined {
 // A result with exitCode means that the step already printed the message.
 export type UpdateBranchResult = BranchUpdated | { exitCode: number };
 
-// The target of a task whose head moved, by origin state. An origin that is not in the table keeps its state.
+// The target of a task demoted task, by origin state. An origin that is not in the table keeps its state.
 const DEMOTED_TO: Readonly<Partial<Record<TaskState, TaskState>>> = {
   approved: "awaiting_plan_review",
   awaiting_work_review: "executed",
@@ -92,7 +92,7 @@ const DEMOTED_TO: Readonly<Partial<Record<TaskState, TaskState>>> = {
   in_peer_review: "executed",
 };
 
-// The states a task failed in that a moved head demotes to executed.
+// The states a task failed in that a demotion moves to executed.
 const FAILED_IN_DEMOTED: readonly TaskState[] = ["reviewing", "accepted", "pushing", "opening_pr", "merging"];
 
 function demotedTarget(origin: TaskState, failedIn: TaskState | undefined): TaskState {
@@ -176,8 +176,9 @@ function divergedTake(
 // only on origin and no local work is at risk, or with takeRemote. It fails and lists the commits at risk only when local work is at risk, origin has
 // a commit only on origin, and takeRemote is off. With local work at risk and no commit only on origin, nothing moves and
 // a note goes to stderr. Then the base step runs on the new local tip. A failed base step also undoes the sync move. When
-// the head moved in either step, the task goes to the target of the demotion table. Otherwise it goes back to its origin
-// state.
+// the head moved in either step, the task goes to the target of the demotion table. A task that is ready to land, or that
+// failed in the land, with a head that is not the accepted revision also goes to the target, because it needs a new
+// review. Otherwise it goes back to its origin state.
 export async function updateBranchTask(store: TaskStore, request: UpdateBranchRequest): Promise<UpdateBranchResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => updateBranchLocked(store, request));
 }
