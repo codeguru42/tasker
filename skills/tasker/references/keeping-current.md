@@ -103,9 +103,10 @@ On success, the command prints these lines on stdout:
 
 ### The base step of a stacked task
 
-A stacked task is a task whose base is `refs/heads/<x>`, where `<x>` is the branch of a task of the same repo. That task
-is the parent. If more than one task has the branch, the parent is the newest of them. The parent has landed when its
-task is in `landed`, `finishing`, `cleanup_failed` or `finished`.
+A stacked task is a task with a stored parent. `tasker start` stores the parent with the base. For a base
+`refs/heads/<x>`, the parent is the newest task of the same repo whose branch is `<x>`. The state of that task is not
+`cancelled` or `finished`. The parent has landed when its task is in `landed`, `finishing`, `cleanup_failed` or
+`finished`.
 
 The new tip depends on the parent:
 
