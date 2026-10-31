@@ -6,3 +6,9 @@ export function claudeConfigDir(env: NodeJS.ProcessEnv): string | undefined {
   if (isSet(env.CLAUDE_CONFIG_DIR)) return env.CLAUDE_CONFIG_DIR;
   return isSet(env.HOME) ? join(env.HOME, ".claude") : undefined;
 }
+
+// The home folder of Codex: CODEX_HOME, else .codex under HOME, else none.
+export function codexHome(env: NodeJS.ProcessEnv): string | undefined {
+  if (isSet(env.CODEX_HOME)) return env.CODEX_HOME;
+  return isSet(env.HOME) ? join(env.HOME, ".codex") : undefined;
+}

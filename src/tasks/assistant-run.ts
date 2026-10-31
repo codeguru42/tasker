@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { claudeConfigDir } from "../assistant/config-folders.js";
+import { claudeConfigDir, codexHome } from "../assistant/config-folders.js";
 import {
   type AssistantEvent,
   type AssistantProvider,
@@ -297,6 +297,8 @@ export function sandboxReadDenyPaths(o: { env: NodeJS.ProcessEnv; repos: readonl
   if (home) fromEnv.push(join(home, ".git-credentials"), join(home, ".netrc"));
   const claudeDir = claudeConfigDir(env);
   if (claudeDir !== undefined) fromEnv.push(join(claudeDir, ".credentials.json"));
+  const codexDir = codexHome(env);
+  if (codexDir !== undefined) fromEnv.push(join(codexDir, "auth.json"));
   // resolveConfigPath() reads its homedir argument only when TASKER_CONFIG and XDG_CONFIG_HOME are
   // unset, and the default of that argument is the home folder of the host. So the entry goes in
   // only when the env names the file or a folder for it, and the call never passes undefined.
