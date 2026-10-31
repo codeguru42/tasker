@@ -13,6 +13,22 @@ merge.
 
 The command line of the user: `tasker $ARGUMENTS`
 
+If this line still shows the `$` sign and the word `ARGUMENTS` after `tasker`, it is an unfilled command line. The
+assistant did not fill in the command line. Then follow these rules:
+
+1. Do not run the line as it is.
+2. Take the command line of the user from the request of the user. It is the text that follows the name of the skill.
+   The list "The command line in each assistant" gives the form of the request.
+3. If the request holds no text after the name of the skill, the skill is a reference only. Then the rest of the skill
+   applies.
+4. If the command line of the user is not empty, the other rules of this section apply.
+
+The command line in each assistant:
+
+- Claude Code: the request is `/tasker <command line>`. The folder of `skillsDirs` is `$HOME/.claude/skills`. Claude
+  Code fills in the placeholder.
+- Codex: the request is `$tasker <command line>`. The folder of `skillsDirs` is `$HOME/.agents/skills`.
+
 If the command line of the user is not empty, follow these rules:
 
 1. Run `tasker` with the command line exactly as the user typed it, in one shell call. Do not add, remove, quote or
