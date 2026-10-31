@@ -37,8 +37,8 @@ and of the clone lock belong to this group:
 The command makes this compare before the move to `merging`. It reads the exact ref `refs/heads/<branch>` of the clone,
 with no fetch. The task keeps its state. A commit after `tasker accept` has no review, so the command lands only the
 accepted revision. To recover, run `tasker update-branch`. It moves the task to `executed`, as
-[the demotion table](keeping-current.md#the-state-after-the-command) says. Then run `tasker verify`, `tasker accept` and
-`tasker merge` again.
+[the demotion table](keeping-current.md#the-state-after-the-command) says. Then run `tasker verify`, `tasker review`,
+`tasker accept` and `tasker merge` again.
 
 The task goes to `failed` with the error `merging failed: <reason>` when one of these steps fails after the move to
 `merging`. The command prints the same error on stderr and stops with exit code 1:
