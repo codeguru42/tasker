@@ -3,6 +3,7 @@ import { removeTaskWorktree, deleteTaskBranch } from "../../src/vcs/git/worktree
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote } from "../helpers/command-output.js";
+import { expectedShowLines } from "../helpers/state-commands.js";
 import { commitInWorktree, gitOutput } from "../helpers/git.js";
 import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { expectCommandRefused, landParent, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
@@ -74,7 +75,7 @@ describe("tasker update-branch for a stacked task", () => {
     const moved = await inStacked(fixture, "rev-parse", "HEAD");
     expect(result).toEqual({
       code: 0,
-      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by rebase: ${head} to ${moved}\n${replayedLine(fixture, synced)}state: executed\n`,
+      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by rebase: ${head} to ${moved}\n${replayedLine(fixture, synced)}state: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
       err: absentRemoteNote(fixture.stacked.branch),
     });
     expect(moved).not.toBe(head);
@@ -122,7 +123,7 @@ describe("tasker update-branch for a stacked task", () => {
     const moved = await inStacked(fixture, "rev-parse", "HEAD");
     expect(result).toEqual({
       code: 0,
-      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by rebase: ${head} to ${moved}\n${replayedLine(fixture, synced)}state: executed\n`,
+      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by rebase: ${head} to ${moved}\n${replayedLine(fixture, synced)}state: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
       err: absentRemoteNote(fixture.stacked.branch),
     });
     expect((await inStacked(fixture, "rev-list", `${tip}..HEAD`)).split("\n")).toHaveLength(1);
@@ -143,7 +144,7 @@ describe("tasker update-branch for a stacked task", () => {
     const moved = await inStacked(fixture, "rev-parse", "HEAD");
     expect(result).toEqual({
       code: 0,
-      out: `moved ${fixture.stacked.key} onto main at ${tip} by rebase: ${head} to ${moved}\n${replayedLine(fixture, synced)}${noLongerStacked(fixture)}\nstate: executed\n`,
+      out: `moved ${fixture.stacked.key} onto main at ${tip} by rebase: ${head} to ${moved}\n${replayedLine(fixture, synced)}${noLongerStacked(fixture)}\nstate: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
       err: absentRemoteNote(fixture.stacked.branch),
     });
     expect(await inStacked(fixture, "rev-parse", "HEAD^")).toBe(tip);
@@ -161,7 +162,7 @@ describe("tasker update-branch for a stacked task", () => {
     expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(tip);
     expect(result).toEqual({
       code: 0,
-      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by rebase: ${head} to ${tip}\n${replayedLine(fixture, synced)}state: executed\n`,
+      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by rebase: ${head} to ${tip}\n${replayedLine(fixture, synced)}state: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
       err: absentRemoteNote(fixture.stacked.branch),
     });
   });
@@ -230,7 +231,7 @@ describe("tasker update-branch for a stacked task", () => {
 
     expect(result).toEqual({
       code: 0,
-      out: `${fixture.stacked.key} is current with ${parentRef(fixture)} at ${tip}; nothing moved\nstate: executed\n`,
+      out: `${fixture.stacked.key} is current with ${parentRef(fixture)} at ${tip}; nothing moved\nstate: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
       err: absentRemoteNote(fixture.stacked.branch),
     });
     expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(head);
@@ -275,7 +276,7 @@ describe("tasker update-branch for a stacked task", () => {
     const moved = await inStacked(fixture, "rev-parse", "HEAD");
     expect(result).toEqual({
       code: 0,
-      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by merge: ${head} to ${moved}\nstate: executed\n`,
+      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by merge: ${head} to ${moved}\nstate: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
       err: absentRemoteNote(fixture.stacked.branch),
     });
     expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
@@ -300,7 +301,7 @@ describe("tasker update-branch for a stacked task", () => {
 
     expect(result).toEqual({
       code: 0,
-      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by fast-forward: ${head} to ${tip}\nstate: executed\n`,
+      out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by fast-forward: ${head} to ${tip}\nstate: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
       err: absentRemoteNote(fixture.stacked.branch),
     });
     expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(tip);
@@ -358,7 +359,7 @@ describe("tasker update-branch for a stacked task", () => {
       const moved = await inStacked(fixture, "rev-parse", "HEAD");
       expect(result).toEqual({
         code: 0,
-        out: `moved ${fixture.stacked.key} onto main at ${tip} by rebase: ${head} to ${moved}\n${replayedLine(fixture, synced)}${noLongerStacked(fixture)}\nstate: executed\n`,
+        out: `moved ${fixture.stacked.key} onto main at ${tip} by rebase: ${head} to ${moved}\n${replayedLine(fixture, synced)}${noLongerStacked(fixture)}\nstate: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
         err: absentRemoteNote(fixture.stacked.branch),
       });
       expect(await inStacked(fixture, "rev-parse", "HEAD^")).toBe(tip);
@@ -398,7 +399,7 @@ describe("tasker update-branch for a stacked task", () => {
       const moved = await inStacked(fixture, "rev-parse", "HEAD");
       expect(result).toEqual({
         code: 0,
-        out: `moved ${fixture.stacked.key} onto main at ${tip} by merge: ${head} to ${moved}\n${noLongerStacked(fixture)}\nstate: executed\n`,
+        out: `moved ${fixture.stacked.key} onto main at ${tip} by merge: ${head} to ${moved}\n${noLongerStacked(fixture)}\nstate: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
         err: absentRemoteNote(fixture.stacked.branch),
       });
       expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
@@ -438,7 +439,7 @@ describe("tasker update-branch for a stacked task", () => {
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).syncedBaseTip).toBe(tip);
       expect(result).toEqual({
         code: 0,
-        out: `${fixture.stacked.key} is current with main at ${tip}; nothing moved\n${noLongerStacked(fixture)}\nstate: executed\n`,
+        out: `${fixture.stacked.key} is current with main at ${tip}; nothing moved\n${noLongerStacked(fixture)}\nstate: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
         err: absentRemoteNote(fixture.stacked.branch),
       });
       expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(head);
