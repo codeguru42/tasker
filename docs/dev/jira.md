@@ -320,6 +320,11 @@ made three issues in the project `TEST`:
 - `TEST-3`, with no description.
 - `TEST-4`, in the status `Done`.
 
+`acli` has no command for a component. The agent of #543 made `TEST-2` with
+`acli jira workitem create --from-json <file>`. The field `additionalAttributes.components` of the file held
+`[{"name": "tasker-measure"}]`. The project `TEST` had no component before this command. Jira made the component
+`tasker-measure` (id 10000) with the issue.
+
 The command `acli jira workitem view <key> --json --fields summary,description,labels,status,components` read each
 issue. It gave:
 
