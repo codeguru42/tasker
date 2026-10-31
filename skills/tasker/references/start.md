@@ -46,6 +46,9 @@ The command picks the base branch from the first source that has one:
 The blocker step prints the note `based on <blocker key>'s branch` on stderr. The `base` line then shows the stored
 form, for example `base: refs/heads/<parent branch>`.
 
+A start on the branch of a `cancelled` or `finished` task is not stacked. The `base` line shows `refs/heads/<branch>`,
+but the task has no parent.
+
 If you press Ctrl-C at the question, the command stops. The task goes to the state `failed` with the error
 `no answer: the question was cancelled`. Run the command again to continue it.
 
