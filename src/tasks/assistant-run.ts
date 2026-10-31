@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { claudeConfigDir } from "../assistant/config-folders.js";
 import {
   type AssistantEvent,
   type AssistantProvider,
@@ -273,12 +274,6 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
       return outcome;
     },
   };
-}
-
-// The configuration folder of claude: CLAUDE_CONFIG_DIR, else .claude under HOME, else none.
-function claudeConfigDir(env: NodeJS.ProcessEnv): string | undefined {
-  if (isSet(env.CLAUDE_CONFIG_DIR)) return env.CLAUDE_CONFIG_DIR;
-  return isSet(env.HOME) ? join(env.HOME, ".claude") : undefined;
 }
 
 // The paths that one configured repo gives for the read deny list. AssistantSurface has both fields.
