@@ -63,6 +63,7 @@ describe("tasker retry", () => {
     expect(result.code).toBe(0);
     expect(result.out.startsWith(firstLine("provisioning", "provisioning"))).toBe(true);
     expect(result.out).toContain("state: workspace_ready");
+    expect(result.out).toContain("base source: explicit\n");
     expect(latestTaskOf(started.dataRoot, KEY).state).toBe("workspace_ready");
     expect(eventDataOf(started.dataRoot, KEY, "retry")).toEqual([
       { origin: "provisioning", target: "provisioning", resumeExecute: false },

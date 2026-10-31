@@ -70,11 +70,11 @@ function hasTask(dataRoot: string): boolean {
   return taskState(dataRoot) !== undefined;
 }
 
-// The six field lines of the output of a new task.
+// The seven field lines of the output of a new task.
 function fieldLines(dataRoot: string): string {
   const names = taskNames(repoPaths(dataRoot, PROJECT).worktrees, 5, "Issue 5");
   return (
-    `issue: ${KEY}\nrepo: ${PROJECT}\nstate: workspace_ready\nbase: main\n` +
+    `issue: ${KEY}\nrepo: ${PROJECT}\nstate: workspace_ready\nbase: main\nbase source: config\n` +
     `branch: ${names.branch}\nworktree: ${names.worktree}\n`
   );
 }
@@ -114,7 +114,7 @@ describe("start", () => {
     const result = await runCommand(start, "start", KEY);
 
     expect(result.code).toBe(0);
-    expect(result.out).toContain("base: dev\n");
+    expect(result.out).toContain("base: dev\nbase source: learned\n");
     expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "dev", source: "learned" });
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
@@ -128,7 +128,7 @@ describe("start", () => {
     const result = await runCommand(start, "start", KEY);
 
     expect(result).toMatchObject({ code: 0, err: "" });
-    expect(result.out).toContain("base: dev\n");
+    expect(result.out).toContain("base: dev\nbase source: hint\n");
     expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "dev", source: "hint" });
     withDataRootStore(fixture.dataRoot, (store) => {
       expect(store.getDefaultBaseBranch(fixture.repoKey)).toBeUndefined();
@@ -143,7 +143,7 @@ describe("start", () => {
     const result = await runCommand(start, "start", KEY, "--base", "dev");
 
     expect(result.code).toBe(0);
-    expect(result.out).toContain("base: dev\n");
+    expect(result.out).toContain("base: dev\nbase source: explicit\n");
     expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "dev", source: "explicit" });
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
@@ -178,7 +178,7 @@ describe("start", () => {
 
     expect(code).toBe(0);
     expect(io.questions).toEqual(["Base branch for codeguru42/tasker: "]);
-    expect(io.out.join("")).toContain("base: main\n");
+    expect(io.out.join("")).toContain("base: main\nbase source: ask\n");
     expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "main", source: "ask" });
     withDataRootStore(fixture.dataRoot, (store) => {
       expect(store.getDefaultBaseBranch(fixture.repoKey)).toBe("main");
@@ -333,7 +333,7 @@ describe("start", () => {
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
-      expect(result.out).toContain("base: dev\n");
+      expect(result.out).toContain("base: dev\nbase source: explicit\n");
       expect(lockNames(fixture.dataRoot)).toEqual([]);
     });
 
@@ -421,7 +421,8 @@ describe("start", () => {
       const second = await runCommand(start, "start", KEY);
 
       expect(second.code).toBe(0);
-      expect(second.out).toBe(`task already started\n${first.out}`);
+      expect(second.out).toBe(`task already started\n${first.out.replace("base source: config\n", "")}`);
+      expect(second.out).not.toContain("base source");
       expect(eventsOf(fixture.dataRoot, KEY)).toHaveLength(count);
       expect(lockNames(fixture.dataRoot)).toEqual([]);
     });
@@ -768,7 +769,7 @@ describe("the blocker step", () => {
     const result = await runCommand(start, "start", KEY);
 
     expect(result.code).toBe(0);
-    expect(result.out).toContain(`base: ${base}\n`);
+    expect(result.out).toContain(`base: ${base}\nbase source: blocker\n`);
     expect(result.err).toContain("based on codeguru42/tasker#3's branch\n");
     expect(eventDataOf(fixture.dataRoot, KEY, "base")).toEqual([
       { base, revision: base, source: "blocker", blocker: BLOCKER },
@@ -798,7 +799,7 @@ describe("the blocker step", () => {
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
-      expect(result.out).toContain("base: dev\n");
+      expect(result.out).toContain("base: dev\nbase source: learned\n");
       expect(result.err).toContain(NOTE);
       expect(result.err).not.toContain("based on");
       const [baseEvent] = eventDataOf(fixture.dataRoot, KEY, "base");
