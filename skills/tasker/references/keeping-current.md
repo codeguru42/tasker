@@ -122,7 +122,8 @@ A stacked task is a task with a stored parent. `tasker start` stores the parent 
 A stacked task whose parent landed must move first. `tasker merge`, `tasker mark-landed`, `tasker refine`,
 `tasker execute`, `tasker verify`, `tasker review` and `tasker accept` refuse it with
 `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
-A cancelled parent stops only the landing commands. Their error is
+These commands print the loop error or the local-base error of [Errors](#errors) when the walk fails. A cancelled parent
+stops only the landing commands. Their error is
 `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
 
 The new tip depends on the parent:
@@ -252,9 +253,9 @@ and of the clone lock belong to this group:
   `--undo cannot be combined with --strategy or --take-remote`.
 - The option `--undo` finds no stored move or a moved worktree. [Undo the last update](#undo-the-last-update) gives the
   errors.
-- The chain of parents has a loop. The error is
+- The chain of parents has a loop. This is the loop error. The error is
   `the chain of parents of <issue key> has a loop at <issue key of that task>; nothing moved`.
-- The end task of the walk has a local base and no parent. The error is
+- The end task of the walk has a local base and no parent. This is the local-base error. The error is
   `the base <base> of <end task key> is a local branch with no parent task; nothing moved`.
 - The worktree has uncommitted changes. The error has the line `the worktree has uncommitted changes: <path>`, then one
   line for each change, and the last line `tasker update-branch needs a clean worktree`.

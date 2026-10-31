@@ -46,6 +46,8 @@ of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock
 - The task is stacked and its parent has landed. The error is
   `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
   See [`tasker update-branch`](keeping-current.md#the-base-step-of-a-stacked-task).
+- The walk of the parents fails. The errors are the loop error and the local-base error of
+  [`tasker update-branch`](keeping-current.md#errors).
 - The task is approved, but no revision is pinned. The error is
   `the task of <issue key> is approved, but no revision is pinned`.
 - The plan file of the pinned revision cannot be read. The error is
@@ -117,6 +119,8 @@ of the wrong state and of the task lock belong to this group:
 - The task is stacked and its parent has landed. The error is
   `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
   See [`tasker update-branch`](keeping-current.md#the-base-step-of-a-stacked-task).
+- The walk of the parents fails. The errors are the loop error and the local-base error of
+  [`tasker update-branch`](keeping-current.md#errors).
 
 These errors move the task to the state `failed`. The shared unexpected error belongs to this group:
 
