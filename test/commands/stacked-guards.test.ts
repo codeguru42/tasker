@@ -10,7 +10,6 @@ import { retry } from "../../src/commands/retry.js";
 import { review } from "../../src/commands/review.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { verify } from "../../src/commands/verify.js";
-import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "../helpers/cli.js";
 import { gitOutput } from "../helpers/git.js";
 import { answerStream, turnResultStream, validPlanAnswer } from "../helpers/plan.js";
@@ -19,6 +18,7 @@ import { failTaskFrom, latestTaskOf, pauseTaskFrom, placeTask, withDataRootStore
 import {
   expectCommandRefused,
   expectNoAssistantRun,
+  landAndDropParent,
   landParent,
   useStackedPlanTasks,
   useStackedTasks,
@@ -35,13 +35,6 @@ const LANDED = `the parent ${PARENT} of ${STACKED} has landed; run tasker update
 const CANCELLED = `the parent ${PARENT} of ${STACKED} is cancelled; ${STACKED} cannot land on it\n`;
 
 const run = (command: typeof merge, name: string) => () => runCommand(command, name, STACKED, "--repo", REPO);
-
-// Lands the parent on main, finishes its task, then removes its worktree and its branch.
-async function landAndDropParent(fixture: StackedTasks): Promise<void> {
-  await landParent(fixture, ["accepted", "landed", "finishing", "finished"]);
-  await removeTaskWorktree({ clone: fixture.clone, env: fixture.env, path: fixture.parent.worktree });
-  await deleteTaskBranch({ clone: fixture.clone, env: fixture.env, branch: fixture.parent.branch });
-}
 
 const LANDING_COMMANDS = [
   ["merge", merge],

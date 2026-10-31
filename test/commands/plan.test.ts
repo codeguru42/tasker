@@ -10,6 +10,7 @@ import { taskLockName } from "../../src/store/locks.js";
 import { runCommand } from "../helpers/cli.js";
 import {
   TEST_SESSION_ID,
+  useFakeClaudeOnPath,
   claudeApprovalWarningEvent,
   noResetsAt,
   claudeOverageEvent,
@@ -43,7 +44,16 @@ import {
   withDataRootStore,
   withRawDatabase,
 } from "../helpers/store.js";
-import { useLocalBase, expectNoAssistantRun, startTaskWithCommits, usePlanFixture } from "../helpers/task-fixtures.js";
+import {
+  expectNoAssistantRun,
+  landAndDropParent,
+  startTaskWithCommits,
+  useChainedTasks,
+  useLocalBase,
+  usePlanFixture,
+  useStackedTasks,
+  type StartFixture,
+} from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import { writeFileWithParents } from "../helpers/temp.js";
 import { plannedLine } from "../helpers/command-output.js";
@@ -558,6 +568,97 @@ describe("the overlap warning", () => {
         LAST,
       ),
     );
+  });
+
+  describe("a stacked task", () => {
+    // Puts a fake claude that answers with a plan of files on PATH, then starts the task of the issue that plans.
+    const startPlanningTask = async (fixture: StartFixture, issueNumber: number, files: string[]) => {
+      useFakeClaudeOnPath({ stream: answerStream(validPlanAnswer({ files_changed: files })) });
+      await startTaskWithCommits(fixture, issueNumber, []);
+    };
+    const stackedWarning = (issueKey: string, file: string) =>
+      overlapWarningText([{ issueKey, state: "executed", files: [file] }], LAST);
+
+    it("warns of the branch files of a stacked task, with no note, after its landed parent branch is gone", async () => {
+      const fixture = await useStackedTasks({ issues: [{ project: REPO, number: 7 }] });
+      await startPlanningTask(fixture, 7, ["stacked.txt"]);
+      await landAndDropParent(fixture);
+
+      const result = await runPlan("codeguru42/tasker#7");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe(stackedWarning("codeguru42/tasker#6", "stacked.txt"));
+    });
+
+    it("warns of the branch files of a stacked task, with no note, after each parent of its chain landed", async () => {
+      const fixture = await useChainedTasks({ issues: [{ project: REPO, number: 8 }] });
+      await startPlanningTask(fixture, 8, ["chained.txt"]);
+      await landAndDropParent({ ...fixture, parent: fixture.grandparent });
+      await landAndDropParent(fixture);
+
+      const result = await runPlan("codeguru42/tasker#8");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe(stackedWarning("codeguru42/tasker#7", "chained.txt"));
+    });
+
+    it("warns of the branch files of a stacked task, with no note, when only its direct parent of a chain landed", async () => {
+      const fixture = await useChainedTasks({ issues: [{ project: REPO, number: 8 }] });
+      await startPlanningTask(fixture, 8, ["chained.txt"]);
+      await landAndDropParent(fixture);
+
+      const result = await runPlan("codeguru42/tasker#8");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe(stackedWarning("codeguru42/tasker#7", "chained.txt"));
+    });
+
+    it("prints the note with the error of the walk when the landed parent has a local base and no parent", async () => {
+      const fixture = await useStackedTasks({ issues: [{ project: REPO, number: 7 }] });
+      await startPlanningTask(fixture, 7, ["stacked.txt"]);
+      await landAndDropParent(fixture);
+      withDataRootStore(fixture.dataRoot, (store) =>
+        store.updateTask(fixture.parent.task.id, { base: "refs/heads/gone" }),
+      );
+
+      const result = await runPlan("codeguru42/tasker#7");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toMatch(
+        /^note: cannot read the files of the task branch of codeguru42\/tasker#6: the base refs\/heads\/gone of codeguru42\/tasker#5 is a local branch with no parent task; nothing moved/,
+      );
+    });
+
+    it("keeps the note for a missing task branch after the parent landed", async () => {
+      const fixture = await useStackedTasks({ issues: [{ project: REPO, number: 7 }] });
+      await startPlanningTask(fixture, 7, ["stacked.txt"]);
+      await landAndDropParent(fixture);
+      withDataRootStore(fixture.dataRoot, (store) =>
+        store.updateTask(fixture.stacked.task.id, { branch: "issue-6-gone" }),
+      );
+
+      const result = await runPlan("codeguru42/tasker#7");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toMatch(
+        /^note: cannot read the files of the task branch of codeguru42\/tasker#6: .*cannot resolve the task branch: issue-6-gone/,
+      );
+    });
+
+    it("keeps the note for a missing base while the parent has not landed", async () => {
+      const fixture = await useStackedTasks({ issues: [{ project: REPO, number: 7 }] });
+      await startPlanningTask(fixture, 7, ["stacked.txt"]);
+      withDataRootStore(fixture.dataRoot, (store) =>
+        store.updateTask(fixture.stacked.task.id, { base: "refs/heads/gone" }),
+      );
+
+      const result = await runPlan("codeguru42/tasker#7");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toMatch(
+        /^note: cannot read the files of the task branch of codeguru42\/tasker#6: .*cannot resolve the revision: refs\/heads\/gone/,
+      );
+    });
   });
 
   it("prints no warning after a failure or a quota stop", async () => {

@@ -23,7 +23,7 @@ import type {
   VerifyRun,
 } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
-import { listWorktrees } from "../../src/vcs/git/worktree.js";
+import { deleteTaskBranch, listWorktrees, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "./cli.js";
 import { failureOf } from "./errors.js";
 import { validConfig, writeDataRootConfig } from "./config.js";
@@ -718,6 +718,13 @@ export async function landParent(fixture: StackedTasks, states: readonly TaskSta
     env: fixture.env,
   });
   withDataRootStore(fixture.dataRoot, (store) => moveTaskThrough(store, fixture.parent.task.id, states));
+}
+
+// Lands the parent on main, finishes its task, then removes its worktree and its branch.
+export async function landAndDropParent(fixture: StackedTasks): Promise<void> {
+  await landParent(fixture, ["accepted", "landed", "finishing", "finished"]);
+  await removeTaskWorktree({ clone: fixture.clone, env: fixture.env, path: fixture.parent.worktree });
+  await deleteTaskBranch({ clone: fixture.clone, env: fixture.env, branch: fixture.parent.branch });
 }
 
 export interface MovedBaseTask extends WorkReviewTask {
