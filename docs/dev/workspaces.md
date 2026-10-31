@@ -43,10 +43,18 @@ rejects them, and its error names them.
 
 ### Stacked task
 
-A stacked task is a task whose base has the form `refs/heads/<x>`, where `<x>` is the branch of a task of the same repo.
-Its parent is the newest task of the repo with that branch. The parent has landed when its task is in `landed`,
-`finishing`, `cleanup_failed` or `finished`. After `tasker update-branch` moves a task whose parent landed, the task is
-no longer stacked: its base is the base of the parent.
+A stacked task is a task whose column `parent_task_id` is not NULL. Its parent is the task of that id. The parent has
+landed when its task is in `landed`, `finishing`, `cleanup_failed` or `finished`. After `tasker update-branch` moves a
+task whose parent landed, the task is no longer stacked: its base is the base of the parent. The same store write sets
+the column to NULL.
+
+`tasker start` writes the column in the same store write as the base. For a base of the form `refs/heads/<x>`, the
+parent is a task of the same repo whose branch is `<x>`. Its state is not `cancelled` or `finished`. Of such tasks, the
+parent is the one with the highest id. For each other base, or with no such task, the value is NULL.
+
+A cancelled task never lands. A finished task is done, and its branch is gone or left over. In both cases, a new start
+on that branch has a plain local base. A parent in `landed`, `finishing` or `cleanup_failed` gets the link on purpose.
+`tasker verify` then refuses the task until `tasker update-branch` moves it.
 
 The synced base tip is the commit id of the base tip that the task branch was last built on. It lives in the column
 `synced_base_tip` of the task row. For a stacked task, it is the parent tip: the commit of the branch of the parent that
