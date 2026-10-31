@@ -1007,3 +1007,50 @@ describe("the next step", () => {
     expect(result.err).toBe(absentRemoteNote(String(work.task.branch)));
   });
 });
+
+describe("the undo record", () => {
+  it("writes the old head, the new head and the old synced base tip after a rebase", async () => {
+    const work = await useMovedBaseTask();
+    const head = await taskBranchTipOf(work);
+    const start = latestTaskOf(work.dataRoot, KEY).syncedBaseTip;
+
+    const result = await runUpdateBranch();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+      undoBeforeHead: head,
+      undoAfterHead: await taskBranchTipOf(work),
+      undoSyncedBaseTip: start,
+    });
+  });
+
+  it("writes the head before the sync step after a sync move and a base move", async () => {
+    const work = await useMovedBaseTask();
+    const branch = work.task.branch!;
+    const head = await taskBranchTipOf(work);
+    await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+    const remote = await work.origin.addCommit(branch, { file: "remote.txt" });
+    expect(remote).not.toBe(head);
+
+    const result = await runUpdateBranch();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+      undoBeforeHead: head,
+      undoAfterHead: await taskBranchTipOf(work),
+    });
+  });
+
+  it("leaves the three columns null when the run moved nothing", async () => {
+    const work = await useWorkReviewTask();
+
+    const result = await runUpdateBranch();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+      undoBeforeHead: null,
+      undoAfterHead: null,
+      undoSyncedBaseTip: null,
+    });
+  });
+});

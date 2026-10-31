@@ -204,6 +204,9 @@ describe("task store", () => {
       shortRef: null,
       base: null,
       syncedBaseTip: null,
+      undoBeforeHead: null,
+      undoAfterHead: null,
+      undoSyncedBaseTip: null,
       acceptedRevision: null,
       parentTaskId: null,
       attempt: 1,
@@ -599,6 +602,25 @@ describe("task store", () => {
     });
   });
 
+  describe("upgrade from version 15", () => {
+    it("adds the three undo columns with the value null", () => {
+      const oldPath = join(dir, "old15.db");
+      makeOldDatabase(oldPath, 15);
+      withRawDatabase(oldPath, (raw) => {
+        raw
+          .prepare(
+            "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES ('a/b#1', 'tasker', 'executed', 't', 't')",
+          )
+          .run();
+      });
+      withStoreFile(oldPath, () => {}, { now });
+      const row = withRawDatabase(oldPath, (raw) =>
+        raw.prepare("SELECT undo_before_head, undo_after_head, undo_synced_base_tip FROM tasks").get(),
+      );
+      expect({ ...row }).toEqual({ undo_before_head: null, undo_after_head: null, undo_synced_base_tip: null });
+    });
+  });
+
   describe("upgrade from version 3", () => {
     it("gives old rows attempt 1 and null fields", () => {
       const oldPath = join(dir, "old3.db");
@@ -840,7 +862,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(15);
+        expect(migrations.length).toBe(16);
       });
     });
   });
@@ -1669,6 +1691,41 @@ describe("task store", () => {
         store.updateBranchTask(task.id, "awaiting_work_review", {}, branchUpdated);
         expect(eventCount()).toBe(events + 1);
         expect(store.listEvents(task.id).at(-1)?.type).toBe("branch_updated");
+      });
+
+      it("writes the three undo columns from writes.undo", () => {
+        const task = runningTask("updating_branch");
+        const undo = { beforeHead: "aaa", afterHead: "bbb", syncedBaseTip: "ccc" };
+        store.updateBranchTask(task.id, "executed", { undo }, branchUpdated);
+        expect(store.getTask(task.id)).toMatchObject({
+          undoBeforeHead: "aaa",
+          undoAfterHead: "bbb",
+          undoSyncedBaseTip: "ccc",
+        });
+      });
+
+      it("writes null for an undo synced base tip of null and for a synced base tip of null", () => {
+        const task = runningTask("updating_branch");
+        store.updateTask(task.id, { syncedBaseTip: "old", undoSyncedBaseTip: "old" });
+        const undo = { beforeHead: "aaa", afterHead: "bbb", syncedBaseTip: null };
+        store.updateBranchTask(task.id, "executed", { syncedBaseTip: null, undo }, branchUpdated);
+        expect(store.getTask(task.id)).toMatchObject({
+          syncedBaseTip: null,
+          undoBeforeHead: "aaa",
+          undoAfterHead: "bbb",
+          undoSyncedBaseTip: null,
+        });
+      });
+
+      it("keeps the undo columns when writes has no undo", () => {
+        const task = runningTask("updating_branch");
+        store.updateTask(task.id, { undoBeforeHead: "aaa", undoAfterHead: "bbb", undoSyncedBaseTip: "ccc" });
+        store.updateBranchTask(task.id, "executed", {}, branchUpdated);
+        expect(store.getTask(task.id)).toMatchObject({
+          undoBeforeHead: "aaa",
+          undoAfterHead: "bbb",
+          undoSyncedBaseTip: "ccc",
+        });
       });
 
       it("deletes the run marker", () => {
