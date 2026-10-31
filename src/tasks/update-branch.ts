@@ -70,7 +70,7 @@ export type BranchUpdated = SyncOutcome & {
 // The note for a replay that fell back to the merge base. A replay after the synced base tip needs no note.
 function replayNote(issueKey: string, start: ReplayStart): string | undefined {
   if (start.from === "synced-base-tip") return undefined;
-  const tail = `tasker replayed the commits after the merge base ${start.mergeBase}\n`;
+  const tail = `tasker replays the commits after the merge base ${start.mergeBase}\n`;
   switch (start.why) {
     case "not-ancestor":
       return `note: the synced base tip ${start.syncedBaseTip} of ${issueKey} is not an ancestor of HEAD; ${tail}`;
