@@ -238,7 +238,6 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
     let synced: SyncOutcome = { sync: "none" };
     let syncedHead = before.head;
     try {
-      const landed = walk !== undefined;
       if (stackedOn !== undefined) await requireParentBranch(vcs, ctx, stackedOn);
       const { revision, baseTip, contains } = await vcs.baseContainment(ctx, {
         taskRef: branch,
@@ -306,7 +305,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         writes.base = { ...target, source: "update" };
       }
       // Each move of the base step, and the switch after the parent landed, build the branch on the base tip.
-      if (resynced.how !== "none" || landed) writes.syncedBaseTip = baseTip;
+      if (resynced.how !== "none" || walk !== undefined) writes.syncedBaseTip = baseTip;
       if (moved && origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       const after: BranchSnapshot = {
         head: resynced.head,
