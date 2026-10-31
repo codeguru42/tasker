@@ -25,10 +25,10 @@ steps:
    `timeout 300 bash -c 'while :; do n=$(gh run list --workflow Check --branch main --commit <landed commit> --json databaseId -q length) || exit 2; [ "$n" != 0 ] && exit 0; sleep 30; done'`.
    Set the `timeout` option of the Bash tool to 600000 for this call. The default limit of one Bash call is 120000 ms,
    and the Bash tool moves a longer call to the background. The shell `timeout` of step 3 and step 5 is shorter than 600
-   seconds, so the shell command ends before the Bash call. GitHub can start the run some seconds after the push, so the
-   list can be empty at first. The command reads the list every 30 seconds for at most 5 minutes. It exits with 0 when
-   the list has a run. If it exits with 124, no run showed after 5 minutes. In that case, stop and report that no run
-   showed. If it exits with 2, `gh run list` failed. In that case, stop and report the error.
+   seconds, so the shell command ends before the limit of the Bash call. GitHub can start the run some seconds after the
+   push, so the list can be empty at first. The command reads the list every 30 seconds for at most 5 minutes. It exits
+   with 0 when the list has a run. If it exits with 124, no run showed after 5 minutes. In that case, stop and report
+   that no run showed. If it exits with 2, `gh run list` failed. In that case, stop and report the error.
 4. Run `gh run list --workflow Check --branch main --commit <landed commit> --json databaseId,status,conclusion`. If the
    command fails, stop and report the error. The run id of each run is its `databaseId`. The list can have more than one
    run, because GitHub can record one push twice and start a run for each record. Take the runs in the order of the
@@ -84,6 +84,14 @@ steps:
 12. When the orchestrator answers with the number of the new issue, run `tasker finish`. The task goes to `finished`,
     and the issue closes. Then do steps 10 and 11 of "Run one ticket". The comment of step 11 also names the failed run,
     the verdict and the new issue.
+
+The Bash tool can still move a long call to the background, also with the `timeout` option at 600000. On #493 and #565
+(2026-10-30), it moved step 5 after 180 seconds, with Claude Code 2.1.310 and 2.1.314.
+
+If the tool moves a call of step 5, wait for the report of the Bash tool. Until the report, start no second copy of the
+call and no other long wait. While you wait, run only the short wait of the bullet "To wait for the end of a long
+command" of [the command rules](tasker-commands.md#the-command-rules). After the report, do step 6 of the CI wait. For a
+moved call, step 6 takes the place of the exit codes of step 5.
 
 The CI wait passes only when each run of the list passed in step 5 or step 6 of the CI wait. A rerun that passes in step
 9 of the CI wait does not make the CI wait pass. The agent still does steps 10 to 12 of the CI wait. Other agents can
