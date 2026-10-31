@@ -59,3 +59,37 @@ export async function assignJiraIssue(
     env,
   );
 }
+
+// Moves one Jira issue to a status with `acli jira workitem transition`. The site guard has run before.
+function moveToStatus(ref: IssueRef, status: string, configKey: string, env: NodeJS.ProcessEnv): Promise<void> {
+  return runWrite(
+    ["jira", "workitem", "transition", "--key", ref.key, "--status", status, "--yes", "--json"],
+    ref,
+    configKey,
+    `move ${ref.key} to the status ${JSON.stringify(status)} of ${configKey}`,
+    env,
+  );
+}
+
+// Moves one Jira issue to the in-progress status. The site guard runs first.
+export async function markJiraInProgress(
+  ref: IssueRef,
+  status: string,
+  site: string | undefined,
+  env: NodeJS.ProcessEnv,
+): Promise<void> {
+  await siteGuard(ref.repoKey, site, env);
+  await moveToStatus(ref, status, "issueTracker.inProgressStatus", env);
+}
+
+// Moves one Jira issue to the done status. The site guard runs first, then the check of the status.
+export async function markJiraDone(
+  ref: IssueRef,
+  status: string | undefined,
+  site: string | undefined,
+  env: NodeJS.ProcessEnv,
+): Promise<void> {
+  await siteGuard(ref.repoKey, site, env);
+  if (status === undefined) throw new Error("issueTracker.doneStatus is not set");
+  await moveToStatus(ref, status, "issueTracker.doneStatus", env);
+}
