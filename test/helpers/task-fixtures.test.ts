@@ -621,7 +621,7 @@ describe("expectCommandRefused", () => {
 });
 
 describe("appendBaseEvent", () => {
-  it("appends an explicit base event to the task", () => {
+  it("writes the base of the task and appends an explicit base event", () => {
     const dataRoot = useTempDir("tasker-base-event-");
     const [task] = seedTasks(dataRoot, [
       { issueKey: "codeguru42/tasker#5", repoKey: "codeguru42/tasker", state: "accepted", at: dayAt(1) },
@@ -637,6 +637,7 @@ describe("appendBaseEvent", () => {
       type: "base",
       data: { base: "refs/heads/x", revision: "refs/heads/x", source: "explicit" },
     });
+    expect(latestTaskOf(dataRoot, "codeguru42/tasker#5").base).toBe("refs/heads/x");
   });
 });
 
