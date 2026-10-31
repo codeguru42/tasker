@@ -108,3 +108,19 @@ describe("a default value", () => {
     expect(upper.prefault("a").parse(undefined), MEASURE_AGAIN).toBe("A");
   });
 });
+
+describe("a z.unknown() field of a z.object()", () => {
+  it("fails with one issue at its key when plain and the key is missing", () => {
+    const result = z.object({ value: z.unknown() }).safeParse({});
+    const issues = result.error?.issues;
+    expect(result.success, MEASURE_AGAIN).toBe(false);
+    expect(issues, MEASURE_AGAIN).toHaveLength(1);
+    expect(issues?.[0]?.path, MEASURE_AGAIN).toEqual(["value"]);
+    expect(issues?.[0]?.message, MEASURE_AGAIN).toBe("Invalid input: expected nonoptional, received undefined");
+  });
+
+  it("succeeds with .optional() when the key is missing", () => {
+    const result = z.object({ value: z.unknown().optional() }).safeParse({});
+    expect(result.success, MEASURE_AGAIN).toBe(true);
+  });
+});

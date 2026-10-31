@@ -139,6 +139,9 @@ These facts hold for zod 4.6.5. `test/zod-facts.test.ts` guards these facts.
   It must still check the shape of each field that it reads.
 - A `.default()` value skips the schema, so a transform does not change it. A `.prefault()` value goes through the
   schema. As a result, a default that must be expanded like `dataRoot` uses `.prefault()`.
+- In a `z.object()`, the key of a `z.unknown()` field is required. A missing field fails with the message
+  `Invalid input: expected nonoptional, received undefined`. As a result, a field that can be missing uses
+  `z.unknown().optional()`.
 
 As a result, when a check must report all problems in one run, as [rules.md](rules.md#code) says, give it
 `{ when: () => true }`. When a check must stop after a schema failure, run it as plain code after a successful
