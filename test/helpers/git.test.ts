@@ -20,6 +20,7 @@ import {
   landBranchOnOriginMain,
   gitCloneTokens,
   gitOutput,
+  gitBeforeCommandEnv,
   gitBeforePushEnv,
   gitRecorderEnv,
   gitTestEnv,
@@ -473,6 +474,26 @@ describe("gitBeforePushEnv", () => {
     await runGit(["version"], { cwd: dir, env });
     expect(existsSync(marker)).toBe(false);
     await failureOf(runGit(["push"], { cwd: dir, env }), GitError);
+    expect(existsSync(marker)).toBe(true);
+  });
+});
+
+describe("gitBeforeCommandEnv", () => {
+  it("puts the wrapper of the subcommand first on the PATH and keeps the other values", () => {
+    const dir = useTempDir("tasker-before-command-");
+    const base = { ...gitTestEnv(dir), PATH: `/other${delimiter}${String(process.env.PATH)}`, MARK: "kept" };
+    const env = gitBeforeCommandEnv(dir, base, "fetch", [realCommandPath("true")]);
+    expect(env.PATH).toBe(`${join(dir, "gitbin-before-fetch")}${delimiter}${base.PATH}`);
+    expect(env.MARK).toBe("kept");
+  });
+
+  it("runs the command before the subcommand and not before a push", async () => {
+    const dir = useTempDir("tasker-before-command-");
+    const marker = join(dir, "marker");
+    const env = gitBeforeCommandEnv(dir, gitTestEnv(dir), "fetch", [realCommandPath("touch"), marker]);
+    await failureOf(runGit(["push"], { cwd: dir, env }), GitError);
+    expect(existsSync(marker)).toBe(false);
+    await failureOf(runGit(["fetch"], { cwd: dir, env }), GitError);
     expect(existsSync(marker)).toBe(true);
   });
 });

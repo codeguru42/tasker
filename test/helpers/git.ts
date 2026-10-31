@@ -366,12 +366,23 @@ export function gitRecorderEnv(dir: string, base: NodeJS.ProcessEnv): { env: Nod
 // It returns base with that folder first on PATH. In a bare clone, push is not the first
 // argument, so the wrapper looks at each argument.
 export function gitBeforePushEnv(dir: string, base: NodeJS.ProcessEnv, command: readonly string[]): NodeJS.ProcessEnv {
-  const bin = join(dir, "gitbin-before-push");
+  return gitBeforeCommandEnv(dir, base, "push", command);
+}
+
+// Like gitBeforePushEnv, but the wrapper runs command before each git call that has subcommand as an argument.
+// The wrapper folder is dir/gitbin-before-<subcommand>.
+export function gitBeforeCommandEnv(
+  dir: string,
+  base: NodeJS.ProcessEnv,
+  subcommand: string,
+  command: readonly string[],
+): NodeJS.ProcessEnv {
+  const bin = join(dir, `gitbin-before-${subcommand}`);
   writeFakeGit(
     bin,
     [
       'for arg in "$@"; do',
-      '  if [ "$arg" = push ]; then',
+      `  if [ "$arg" = ${shellQuote(subcommand)} ]; then`,
       `    ${command.map(shellQuote).join(" ")} || exit 1`,
       "    break",
       "  fi",

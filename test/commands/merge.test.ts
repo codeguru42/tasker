@@ -4,7 +4,7 @@ import { merge } from "../../src/commands/merge.js";
 import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
-import { gitOutput } from "../helpers/git.js";
+import { commitInWorktree, gitOutput } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -12,12 +12,14 @@ import {
   lastErrorOf,
   latestTaskOf,
   readRunMarker,
+  placeTask,
   withDataRootStore,
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
   landAcceptedTask,
   seedAcceptedTask,
+  unacceptedTipError,
   useAcceptedTask,
   useStartFixture,
   useWorkReviewTask,
@@ -160,6 +162,21 @@ describe("tasker merge", () => {
       seedAcceptedTask(fixture, { branch: "tasker/five", base: "main" });
 
       await expectRefused(fixture, `the task of ${KEY} has no base revision\n`);
+    });
+
+    it("refuses a tip that is not the accepted revision", async () => {
+      const accepted = await useAcceptedTask();
+      const tip = await commitInWorktree(accepted.task.worktreePath!, accepted.env, { file: "late.txt" });
+
+      await expectRefused(accepted, `${unacceptedTipError(accepted.task.branch!, tip, accepted.revision)}\n`);
+      expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("accepted");
+    });
+
+    it("refuses a task with no accepted revision", async () => {
+      const work = await useWorkReviewTask();
+      withDataRootStore(work.dataRoot, (store) => placeTask(store, work.task.id, "accepted"));
+
+      await expectRefused(work, `the task of ${KEY} has no accepted revision\n`);
     });
 
     it("fails at once when another process holds the task lock", async () => {

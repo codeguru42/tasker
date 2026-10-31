@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { retry } from "../../src/commands/retry.js";
 import { failedFrom, type TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { commitInWorktree } from "../helpers/git.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   answerStream,
@@ -28,6 +29,7 @@ import {
 import {
   expectCommandRefused,
   landAcceptedTask,
+  unacceptedTipError,
   useAcceptedTask,
   useExecuteFixture,
   usePlanFixture,
@@ -136,6 +138,20 @@ describe("tasker retry", () => {
     expect(eventDataOf(accepted.dataRoot, KEY, "retry")).toEqual([
       { origin: "merging", target: "accepted", resumeExecute: false, from: "failed", to: "accepted" },
     ]);
+  });
+
+  it("refuses a tip that is not the accepted revision after a failed merge", async () => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => failTaskVia(store, accepted.task.id, "accepted", "merging"));
+    const tip = await commitInWorktree(accepted.task.worktreePath!, accepted.env, { file: "late.txt" });
+    const head = await accepted.origin.branchHead("main");
+
+    const result = await runRetry();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain(`${unacceptedTipError(accepted.task.branch!, tip, accepted.revision)}\n`);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("accepted");
+    expect(await accepted.origin.branchHead("main")).toBe(head);
   });
 
   it("pushes nothing on a retry after a push that was recorded as failed", async () => {

@@ -5,6 +5,8 @@ import { mergeTask } from "../../src/tasks/merge.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
+import { realCommandPath } from "../helpers/fake-commands.js";
+import { gitBeforeCommandEnv } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -15,16 +17,23 @@ import {
   readRunMarker,
   withDataRootStore,
 } from "../helpers/store.js";
-import { taskRefOf, useAcceptedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
+import {
+  taskBranchTipOf,
+  taskRefOf,
+  unacceptedTipError,
+  useAcceptedTask,
+  type AcceptedTask,
+} from "../helpers/task-fixtures.js";
+import { useTempDir } from "../helpers/temp.js";
 
 // Calls mergeTask for the task of the fixture with a store, and gives the result and the io.
-const callMerge = async (fixture: AcceptedTask, store: TaskStore, waitMs = 300) => {
+const callMerge = async (fixture: AcceptedTask, store: TaskStore, waitMs = 300, env = process.env) => {
   const io = captureIo();
   const result = await mergeTask(store, {
     config: fixture.config,
     ref: taskRefOf(fixture),
     taskId: fixture.task.id,
-    env: process.env,
+    env,
     io,
     repoLockWaitMs: waitMs,
   });
@@ -74,6 +83,33 @@ describe("mergeTask", () => {
     expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("failed");
     withDataRootStore(accepted.dataRoot, (store) => expect(failedFrom(store, accepted.task.id)).toBe("merging"));
     expect(await accepted.origin.branchHead("main")).toBe(accepted.revision);
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
+  });
+
+  it("fails the task when a commit reaches the tip during the merge", async () => {
+    const accepted = await useAcceptedTask();
+    const dir = useTempDir("tasker-merge-late-");
+    const env = gitBeforeCommandEnv(dir, process.env, "fetch", [
+      realCommandPath("git"),
+      "-C",
+      accepted.task.worktreePath!,
+      "commit",
+      "--allow-empty",
+      "-m",
+      "late",
+    ]);
+
+    const { result, io } = await withDataRootStore(accepted.dataRoot, (store) => callMerge(accepted, store, 300, env));
+
+    const tip = await taskBranchTipOf(accepted);
+    expect(tip).not.toBe(accepted.revision);
+    const error = `merging failed: ${unacceptedTipError(accepted.task.branch!, tip, accepted.revision)}`;
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe(`${error}\n`);
+    expect(lastErrorOf(accepted.dataRoot, accepted.task.id)).toBe(error);
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("failed");
+    withDataRootStore(accepted.dataRoot, (store) => expect(failedFrom(store, accepted.task.id)).toBe("merging"));
+    expect(await accepted.origin.branchHead("main")).not.toBe(tip);
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
   });
 });

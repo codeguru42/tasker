@@ -42,6 +42,7 @@ import {
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
+  unacceptedTipError,
   pausePlanFixtureTask,
   taskBranchTipOf,
   useAcceptedTask,
@@ -343,6 +344,20 @@ describe("tasker resume", () => {
     );
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
     expect(eventDataOf(accepted.dataRoot, KEY, "resume")).toEqual([{ origin: "merging", target: "accepted" }]);
+  });
+
+  it("refuses a tip that is not the accepted revision after a paused merge", async () => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => pauseTaskVia(store, accepted.task.id, "accepted", "merging"));
+    const tip = await commitInWorktree(accepted.task.worktreePath!, accepted.env, { file: "late.txt" });
+    const head = await accepted.origin.branchHead("main");
+
+    const result = await runResume();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain(`${unacceptedTipError(accepted.task.branch!, tip, accepted.revision)}\n`);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("accepted");
+    expect(await accepted.origin.branchHead("main")).toBe(head);
   });
 
   it("runs tasker finish for a task paused in interrupted from finishing", async () => {

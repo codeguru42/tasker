@@ -764,3 +764,8 @@ export async function useVerifyFixture(options: {
   const task = walkTask(started.dataRoot, started.repoKey, started.key, TO_WORK_REVIEW.slice(0, 5));
   return { started, task, config: started.config, env: started.env };
 }
+
+// The error of a land of a tip that is not the accepted revision, with the newline of a refused command.
+export function unacceptedTipError(branch: string, tip: string, accepted: string): string {
+  return `the tip of ${branch} (${tip}) is not the accepted revision (${accepted}); run tasker update-branch and review the work again`;
+}
