@@ -18,6 +18,7 @@ import {
 } from "../helpers/store.js";
 import {
   appendBaseEvent,
+  useLocalBase,
   expectCommandRefused,
   taskBranchTipOf,
   useAcceptedTask,
@@ -70,8 +71,7 @@ describe("accept", () => {
 
   it("accepts a task whose base is a local branch at the tip", async () => {
     const work = await useWorkReviewTask();
-    await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: work.clone, env: work.env });
-    appendBaseEvent(work, "refs/heads/x", "refs/heads/x");
+    await useLocalBase(work, BASE);
     const tip = await revisionOf(work, "refs/heads/x");
 
     const result = await runAccept();
@@ -161,8 +161,7 @@ describe("a refused accept", () => {
   it("refuses a branch that does not contain the tip of a local base", async () => {
     const work = await useWorkReviewTask();
     const head = await taskBranchTipOf(work);
-    await runGit(["update-ref", "refs/heads/x", BASE], { gitDir: work.clone, env: work.env });
-    appendBaseEvent(work, "refs/heads/x", "refs/heads/x");
+    await useLocalBase(work, BASE);
     const tip = await addCloneCommit(work.clone, work.env, "x");
 
     await expectRefused(

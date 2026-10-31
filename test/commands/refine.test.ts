@@ -25,7 +25,6 @@ import {
   withEventFirst,
 } from "../helpers/fake-claude.js";
 import { commitInWorktree } from "../helpers/git.js";
-import { runGit } from "../../src/vcs/git/run.js";
 import {
   answerStream,
   planRevisionOf,
@@ -52,7 +51,7 @@ import {
 } from "../helpers/store.js";
 import { failureContextExpected, promotionContextExpected } from "../helpers/review.js";
 import {
-  appendBaseEvent,
+  useLocalBase,
   expectNoAssistantRun,
   type PlanFixture,
   useRefineFixture,
@@ -190,11 +189,7 @@ describe("refine", () => {
   it("gives the commits of a task with a local base", async () => {
     const fixture = await useRefineFixture({ stream: answerStream(V2_ANSWER) });
     await commitInWorktree(fixture.started.worktree, fixture.started.env, { file: "src/b.ts" });
-    await runGit(["update-ref", "refs/heads/x", "refs/remotes/origin/main"], {
-      gitDir: fixture.started.clone,
-      env: fixture.started.env,
-    });
-    appendBaseEvent({ dataRoot: fixture.started.dataRoot, task: fixture.task }, "refs/heads/x", "refs/heads/x");
+    await useLocalBase({ ...fixture.started, task: fixture.task }, "refs/remotes/origin/main");
 
     await runRefine();
 

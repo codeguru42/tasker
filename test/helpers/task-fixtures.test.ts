@@ -34,6 +34,7 @@ import {
   useChainedTasks,
   useStackedTasks,
   appendBaseEvent,
+  useLocalBase,
   landParent,
   expectCommandRefused,
   expectNoAssistantRun,
@@ -637,6 +638,18 @@ describe("appendBaseEvent", () => {
       data: { base: "refs/heads/x", revision: "refs/heads/x", source: "explicit" },
     });
     expect(latestTaskOf(dataRoot, "codeguru42/tasker#5").base).toBe("refs/heads/x");
+  });
+});
+
+describe("useLocalBase", () => {
+  it("points refs/heads/x to the revision and makes it the base of the task", async () => {
+    const work = await useWorkReviewTask();
+    const revision = await taskBranchTipOf(work);
+
+    await useLocalBase(work, revision);
+
+    expect(await gitOutput({ gitDir: work.clone }, work.env, "rev-parse", "refs/heads/x")).toBe(revision);
+    expect(latestTaskOf(work.dataRoot, work.key).base).toBe("refs/heads/x");
   });
 });
 

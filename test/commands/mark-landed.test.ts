@@ -2,12 +2,11 @@ import { renameSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { markLanded } from "../../src/commands/mark-landed.js";
 import { taskLockName } from "../../src/store/locks.js";
-import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { databasePathOf, eventsOf, latestTaskOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
 import {
-  appendBaseEvent,
+  useLocalBase,
   expectCommandRefused,
   landAcceptedTask,
   moveTaskThrough,
@@ -63,8 +62,7 @@ describe("tasker mark-landed", () => {
 
   it("reads the local tip of a base that is a local branch of the clone", async () => {
     const accepted = await useAcceptedTask();
-    await runGit(["update-ref", "refs/heads/x", accepted.revision], { gitDir: accepted.clone, env: accepted.env });
-    appendBaseEvent(accepted, "refs/heads/x", "refs/heads/x");
+    await useLocalBase(accepted, accepted.revision);
     const head = await accepted.origin.branchHead("main");
 
     const result = await runMarkLanded();
