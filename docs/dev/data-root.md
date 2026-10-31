@@ -55,6 +55,12 @@ base `refs/heads/<x>`, the value is the highest id of a task of the repo whose b
 state. A task whose parent already finished keeps its link, so that `tasker update-branch` can still move it onto the
 base of the parent. In each other row, or with no such task, the value is NULL.
 
+The column `accepted_revision` holds the revision that the last `tasker accept` of the task stored, or NULL for a task
+with no accept. `tasker accept` writes it in the same transaction as the `accepted` event, so the two agree. Nothing
+clears it. `tasker merge` compares the tip of the task branch with it. Schema version 15 adds it. The migration fills it
+once for each row that exists, from the revision of the newest `accepted` event of the task. Code reads the column and
+never the event, as the rule of the `events` table says.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 

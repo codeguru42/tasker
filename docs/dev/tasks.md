@@ -629,8 +629,9 @@ It holds the repo lock for the fetch, as [the locks table](data-root.md#locks-ta
 task, the state, the worktree, the branch, the stored base revision and the fetch of `origin` with the read of the base
 tip. The fetch can still move the refs of `origin` in the clone, also for a refused accept.
 
-The write is one transaction. It appends one `accepted` event with the data `{ revision, baseTip, from, to }` and moves
-the task to `accepted`. The `accepted` event takes the place of the `transition` event for this move.
+The write is one transaction. It appends one `accepted` event with the data `{ revision, baseTip, from, to }`, moves the
+task to `accepted` and sets the column `accepted_revision` to the revision. The `accepted` event takes the place of the
+`transition` event for this move. [The `tasks` table](data-root.md#tasks-table) describes the column.
 
 These reasons explain its rules:
 
@@ -646,8 +647,10 @@ The base can move after the check of `tasker accept`. Then `tasker merge` fails,
 `tasker merge` lands the work of a task in `accepted` on the base branch of `origin`. The task goes through `merging` to
 `landed`.
 
-Its checks cover the task, the state, the branch, the stored base, the base revision and the repo lock. After the check,
-the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task
+Its checks cover the task, the state, the branch, the stored base, the base revision, the tip of the branch and the repo
+lock. The tip check compares the exact ref `refs/heads/<branch>` of the clone with the accepted revision of the task.
+[Landing commands](../../skills/tasker/references/landing.md#tasker-merge) gives its errors. After the checks, the
+command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task
 branch and the tip of the base. If the base does not contain the work, the command pushes it with
 [the land operation of the version control provider](version-control.md#land). The last write is one transaction that
 appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. The
@@ -656,9 +659,14 @@ task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not w
 
 These reasons explain its rules:
 
-- `tasker merge` runs no check of its own before the push. The land fails before the push when the revision does not
-  build on the tip of the base on origin. The lease refuses the push when the base moves after the read. In both cases
-  nothing moves on origin. [version-control.md](version-control.md#land) gives the mechanism.
+- The compare of the tip with the accepted revision: the review and the accept cover one tree, and the land must cover
+  the same tree. A commit that reaches the branch after the accept has no review.
+- The second compare: no lock covers a commit in the worktree. A commit can reach the branch during the fetch. The
+  command compares again with the revision that it reads after the fetch, and it lands only the accepted revision. A
+  failed second compare moves the task to `failed`, as any step after the move to `merging` does.
+- `tasker merge` runs no check of its own before the push for the base. The land fails before the push when the revision
+  does not build on the tip of the base on origin. The lease refuses the push when the base moves after the read. In
+  both cases nothing moves on origin. [version-control.md](version-control.md#land) gives the mechanism.
 - The on-base check runs first, so a second run after a crash lands with no second push. The check reads the clone, so a
   missing worktree cannot cause a second push.
 - The repo lock covers the fetch and the push, because both change the refs of the clone.
@@ -739,6 +747,11 @@ These reasons explain its rules:
 - The undo of the sync move: a failed base step also moves the branch and the worktree back to the local tip from before
   the sync step, so that a failed update changes nothing.
 - The demotion: when the head moved, the old approval or the old verify result no longer describes the tree.
+- The demotion of a head that is not the accepted revision: a task in `accepted`, or a task that failed in `merging`,
+  goes to `executed` when its head is not the accepted revision, also when the command moved nothing. A commit that
+  reaches the branch after the accept moves no base and no copy on origin. Without this demotion, `tasker merge` refuses
+  the tip again and again with an error that names `tasker update-branch`, and that command would not help. This value
+  does not change `moved`, because `moved` also decides the `base` event, and the head did not move.
 - The restore rule: the task goes back to its origin state when three facts hold. The head is the head of the start, the
   worktree is on the task branch, and the worktree is clean. Otherwise the task goes to `failed`.
 - The missing retry row: `tasker retry` has no row for a task that failed in `updating_branch`. The error of a failed

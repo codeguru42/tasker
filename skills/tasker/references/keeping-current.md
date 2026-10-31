@@ -153,9 +153,11 @@ stale-plan rule apply only when the head moved.
 
 ### The state after the command
 
-A move of the sync step counts as a moved head. If the head did not move, the task goes back to its origin state. If the
-head moved, the old approval or the old verify result no longer describes the tree, so the task goes to the target of
-this table:
+A move of the sync step counts as a moved head. If the head did not move, the task goes back to its origin state. One
+exception: a task in `accepted`, or a task that failed in `merging`, whose head is not the accepted revision goes to
+`executed`, also when the head did not move. [The state machine](../../../docs/statemachine.md#update-branch) gives the
+reason. If the head moved, the old approval or the old verify result no longer describes the tree, so the task goes to
+the target of this table:
 
 | Origin state                                                                                    | Target                 |
 | ----------------------------------------------------------------------------------------------- | ---------------------- |
