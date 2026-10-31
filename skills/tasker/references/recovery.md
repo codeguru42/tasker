@@ -210,7 +210,7 @@ of the dead run come on stderr before the steps. See [A dead run](../SKILL.md#a-
 the uncommitted changes (only with `--force`), the removal of the worktree and the deletion of the branch. Then comes
 the tracker step. It runs only when `issueTracker.updateOnStart` is `true` and the repo sets `inProgressLabel`. It
 removes the in-progress label from the issue and prints `cleared the in-progress marker of <issue> on the tracker`. The
-assignee stays. If the write fails, stderr gets
+assignee stays. For a Jira task, the tracker step does not run and prints no line. If the write fails, stderr gets
 `warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. The task still goes to `cancelled`
 and the command exits with 0. A step that has nothing to do prints no line. The files under `artifacts/` stay.
 

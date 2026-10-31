@@ -101,7 +101,8 @@ If `issueTracker.updateOnStart` is `true`, the start assigns the issue and marks
 when it fails. The value of `action` is `assign`, `in_progress`, `clear_in_progress` or `done`.
 
 The abort also makes a tracker write. If `issueTracker.updateOnStart` is `true` and the repo sets the in-progress label,
-it removes the marker with the action `clear_in_progress`. A failed write is a warning, the same as for the start.
+it removes the marker with the action `clear_in_progress`. A failed write is a warning, the same as for the start. The
+abort of a Jira task runs no tracker step.
 
 The start follows the check-before-write rule in the [intro](#the-task-commands) and the rules in
 [The locks](#the-locks). These are the reasons of the tracker writes:
@@ -114,7 +115,8 @@ The start follows the check-before-write rule in the [intro](#the-task-commands)
 - The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked. tasker
   cannot undo the assign, and only an abort removes the marker.
 - The write of finish comes before the move to `finished`. The reason: a second run after a crash runs it again, and the
-  writes are safe to repeat. [Writes](issue-trackers.md#writes) gives the facts.
+  writes are safe to repeat. [Writes](issue-trackers.md#writes) gives the facts. For Jira, a transition to the status
+  that the issue has now exits with 0 and passes.
 
 ## Abort
 
@@ -123,7 +125,7 @@ and the branch as they were.
 
 The abort removes the in-progress marker of the issue on the tracker. The reason: the marker protects an issue against
 two machines, and after an abort no machine works on the issue. [The tracker writes](#the-tracker-writes) gives the rule
-for a failed write.
+for a failed write. The abort of a Jira task runs no tracker step.
 
 A task that is `finished` or `cancelled` is an error, because it has nothing to abort.
 

@@ -194,6 +194,52 @@ the reason `the fields do not match` covers these cases:
 tasker does not check the inward or the outward issue of another link. The other errors of `acli` and the site guard
 pass through unchanged.
 
+## The writes
+
+`src/issues/jira/write.ts` writes to Jira with two `acli` commands. tasker writes nothing else to Jira.
+
+- `assignJiraIssue()` runs `acli jira workitem assign --key <key> --assignee <assignee> --yes --json`.
+- `markJiraInProgress()` and `markJiraDone()` run
+  `acli jira workitem transition --key <key> --status <status> --yes --json`.
+
+Each write runs [the site guard](#the-site-guard) first, so an error of the guard is never an `IssueWriteError`.
+`markJiraDone()` then makes sure that the status is set. With no status, it rejects with an `Error` that says
+`issueTracker.doneStatus is not set`, and the only `acli` call is `acli jira auth status`.
+
+Each write has the flag `--json`, because `acli` exits with 0 for a refused write.
+[The measure of the writes](#the-measure-of-the-writes) shows this. tasker reads the JSON result of the write. A result
+with one item in `results` and the `status` `SUCCESS` is a passed write. The code does not read `totalCount`,
+`successCount` or `id`.
+
+A failed write is an `IssueWriteError` with the key of the issue and the configuration key of the write. The message is
+`could not <action>: <text>`. The action is one of these:
+
+- `assign <key> to "<assignee>"`, with the configuration key `issueTracker.assignee`.
+- `move <key> to the status "<status>" of issueTracker.inProgressStatus`.
+- `move <key> to the status "<status>" of issueTracker.doneStatus`.
+
+The assignee and the status are in `JSON.stringify()` form. The text after `: ` has three cases:
+
+- `acli` failed with an `AcliError`: the message of the `AcliError`.
+- The `status` of the one item is not `SUCCESS`: the string `message` of the item, also when it is empty. With no string
+  `message`, the text is `acli gave no message`.
+- The output is bad: the text is `acli gave bad output`. Bad output is stdout that is not JSON, JSON that is not an
+  object, no `results` array, a `results` array that does not hold exactly one item, an item that is not an object, or
+  an item with no string `status`.
+
+A transition to the status that the issue has now passes. So a second run of a write gives no warning.
+
+## The in-progress check
+
+`jiraInProgressMarker()` is true when the status of the issue and the configured in-progress status are equal after
+`asciiFold()`. It is false when either one is undefined. It makes no `acli` call.
+
+## The in-progress clear
+
+The Jira tracker has no clear of the in-progress marker. A status has no clear, and the status after an abort depends on
+the workflow of the team. The abort of a Jira task runs no tracker step. A later ticket adds the function that rejects
+with the message `the jira tracker has no in-progress clear`.
+
 ## The errors
 
 - `AcliError`: `acli` exited with a code other than 0, or a signal stopped it. It holds the subcommand, the stdout, the
@@ -206,6 +252,7 @@ pass through unchanged.
 - `JiraLoginError`: `acli` has no Jira login. `acli jira auth status` exited with a code other than 0, or its stdout has
   no `Site:` line or an empty value.
 - `JiraSiteError`: the site of the repo differs from the active site.
+- `IssueWriteError`: a write failed. [The writes](#the-writes) give the messages.
 - `IssueReadError`: the read of an issue or of its blockers failed. [The read of an issue](#the-read-of-an-issue) and
   [The blockers of an issue](#the-blockers-of-an-issue) give the messages.
 
@@ -290,3 +337,37 @@ of [The measure of a failed call](#the-measure-of-a-failed-call). With no `--fie
 `--out A --in B --type Blocks` makes the link "B blocks A", but `acli` prints `A Blocks B`. `TEST-6` and `TEST-4` are in
 `inwardIssue` of `TEST-9`. The Jira search `issue in linkedIssues("TEST-9", "is blocked by")` also gave `TEST-6` and
 `TEST-4`.
+
+## The measure of the writes
+
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The agent of #546
+made the issue `TEST-10` of the project `TEST` with
+`acli jira workitem create --project TEST --type Task --summary "tasker #546 assign and transition measure" --json`. Its
+first status was `Backlog`. Stderr was empty in each case, and the exit code was 0 in each case.
+
+- Assign with `acli jira workitem assign --key TEST-10 --assignee @me --yes`: the stdout is
+  `✓ Work item TEST-10 has been successfully assigned to <the email of the user>`. A second assign gave the same line.
+- The same command with `--json` gave
+  `{"results":[{"status":"SUCCESS","message":"Work item TEST-10 has been successfully assigned to <the email of the user>","id":"TEST-10"}],"totalCount":1,"successCount":1}`.
+- An allowed transition from `Backlog` with `acli jira workitem transition --key TEST-10 --status "In Progress" --yes`
+  gave `✓ Work item TEST-10 has been successfully transitioned to In Progress`.
+- A refused transition from `In Progress` with `--status "No Such Status"`, and the same with
+  `--status "Awaiting deploy"`, gave
+  `✗ Failure: TEST-10 can't be transitioned: No allowed transitions found for given status`. With `--json`, the
+  `--status "No Such Status"` call gave
+  `{"results":[{"status":"FAILURE","message":"No allowed transitions found for given status","id":"TEST-10"}],"totalCount":1,"successCount":0}`.
+- A transition to the current status, `--status "In Progress"` while the status was `In Progress`, gave the success line
+  of the allowed transition. With `--json`, it gave
+  `{"results":[{"status":"SUCCESS","message":"Work item TEST-10 has been successfully transitioned to In Progress","id":"TEST-10"}],"totalCount":1,"successCount":1}`.
+- A refused assign with `--assignee nobody-546@example.invalid --yes` gave
+  `✗ Failure: TEST-10 can't be assigned: unexpected error, trace id: <id>`. With `--json`, it gave
+  `{"results":[{"status":"FAILURE","message":"unexpected error, trace id: <id>","id":"TEST-10"}],"totalCount":1,"successCount":0}`.
+
+More facts:
+
+- After each refused call, the status or the assignee of `TEST-10` stayed as it was.
+- `--status "in progress"` from `In Progress` also exited with 0. Its stdout repeated the lower-case text.
+- `--status "Selected for Development"` from `In Progress` passed.
+
+The limit: the refused transitions used only names that the workflow of `TEST` does not offer. The agent found no status
+of that workflow that the workflow refuses.

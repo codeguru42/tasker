@@ -111,6 +111,8 @@ The read gives every issue that blocks one GitHub issue.
 
 ## Writes
 
+The Jira writes are in [The writes](jira.md#the-writes).
+
 The writes read nothing before they write. They rely on these facts of the gh 2.101.0 source:
 
 - `pkg/cmd/issue/close/close.go`: for an issue that is already closed, `gh issue close` prints
