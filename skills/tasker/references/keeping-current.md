@@ -99,7 +99,15 @@ On success, the command prints these lines on stdout:
   head. `<head before>` is the head at the start of the base step. The value of `<how>` is `fast-forward`, `rebase` or
   `merge`.
 - `demoted <issue key> from <origin> to <target>` only when the target differs from the origin state.
-- `state: <state>` as the last line.
+- `the plan is stale; run tasker refine <issue key> before tasker approve` only when the head moved and the task stays
+  in `awaiting_plan_review`.
+- `state: <state>`.
+- The commands of that state as the last lines, in the form of `tasker show`. A state with a primary command gets
+  `next: tasker <primary command> <issue key>` and `also: <the other commands>`. A state with no primary command gets
+  `commands: <all commands>`.
+
+When the head moved and the task stays in `failed`, the command also writes the warning
+`warning: tasker retry runs the old session and plan against the moved tree` on stderr.
 
 ### The base step of a stacked task
 
