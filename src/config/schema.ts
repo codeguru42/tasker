@@ -237,6 +237,27 @@ function githubTrackerIssues(key: string, issueTracker: Record<string, unknown>)
   return issues;
 }
 
+// acli has no flag for a site or a user for one call, so a Jira repo sets no account. A Jira repo uses statuses, not labels.
+const JIRA_REFUSED_KEYS = ["account", "inProgressLabel", "doneLabel"] as const;
+
+// A jira tracker refuses the keys that mean nothing for it.
+function jiraTrackerIssues(key: string, issueTracker: Record<string, unknown>): string[] {
+  if (issueTracker.provider !== "jira") {
+    return [];
+  }
+  const issues: string[] = [];
+  for (const name of JIRA_REFUSED_KEYS) {
+    if (issueTracker[name] !== undefined) {
+      issues.push(issueLine(["repos", key, "issueTracker", name], "is not accepted for the jira tracker"));
+    }
+  }
+  return issues;
+}
+
+function trackerIssues(key: string, issueTracker: Record<string, unknown>): string[] {
+  return [...githubTrackerIssues(key, issueTracker), ...jiraTrackerIssues(key, issueTracker)];
+}
+
 interface Prepared {
   input: unknown;
   issues: string[];
@@ -274,7 +295,7 @@ function prepareConfig(raw: unknown): Prepared {
     const issueTracker = isObject(repo) ? repo.issueTracker : undefined;
     if (!isObject(repo) || !isObject(issueTracker) || typeof issueTracker.tracker !== "string") {
       if (isObject(repo) && isObject(issueTracker)) {
-        issues.push(...githubTrackerIssues(key, issueTracker));
+        issues.push(...trackerIssues(key, issueTracker));
       }
       repos[key] = repo;
       continue;
@@ -308,7 +329,7 @@ function prepareConfig(raw: unknown): Prepared {
     const merged = validDefinition ? { ...(definition as Record<string, unknown>), ...own } : placeholder;
     if (validDefinition) {
       // Never on the placeholder: the real error is already reported.
-      issues.push(...githubTrackerIssues(key, merged));
+      issues.push(...trackerIssues(key, merged));
     }
     repos[key] = { ...repo, issueTracker: merged };
   }
