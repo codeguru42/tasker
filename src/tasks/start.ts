@@ -15,7 +15,7 @@ import type { Task, TaskStore } from "../store/store.js";
 import { blockerBase } from "./blocker-base.js";
 import { newParentId } from "./parent.js";
 import { runTrackerWrite, trackerTargets } from "./tracker-write.js";
-import { vcsForRepo } from "../vcs/provider.js";
+import { vcsForRepo, type ResolvedBase } from "../vcs/provider.js";
 
 export interface StartRequest {
   config: Config;
@@ -35,10 +35,9 @@ export interface StartRequest {
   trackerIo: Pick<Io, "stdout" | "stderr">;
 }
 
-export interface StartOutcome {
-  started: boolean;
-  task: Task;
-}
+// baseSource is the source of the base. A task that was already started has none.
+export type StartOutcome =
+  { started: false; task: Task } | { started: true; task: Task; baseSource: ResolvedBase["source"] };
 
 // The bootstrap failed. The tail is the text of the end of the log.
 export class BootstrapFailedError extends Error {
@@ -119,7 +118,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
   const { vcs, ctx } = vcsForRepo(config, ref.repoKey, env);
   // The repo lock covers only the steps that use the clone. A busy lock changes no task, so it
   // wraps failOnError and not the other way round. Bootstrap runs after the lock is free.
-  const workspace = await withRepoLock(store, ref.repoKey, request.repoLockWaitMs, () =>
+  const { workspace, baseSource } = await withRepoLock(store, ref.repoKey, request.repoLockWaitMs, () =>
     failOnError(async () => {
       await vcs.provision(ctx);
       const hint = request.base === undefined ? issueProvider.baseBranchHint(issue) : undefined;
@@ -165,7 +164,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
           ...(syncedBaseTip === undefined ? {} : { syncedBaseTip }),
         },
       }));
-      return created;
+      return { workspace: created, baseSource: resolved.source };
     }),
   );
   await failOnError(async () => {
@@ -217,5 +216,5 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
       );
     }
   }
-  return { started: true, task: ready };
+  return { started: true, task: ready, baseSource };
 }

@@ -71,6 +71,7 @@ export async function startIssue(
       error instanceof BootstrapFailedError ? `${error.message}\n${error.tail.trimEnd()}` : errorMessage(error),
   );
   const { task } = outcome;
+  const sourceField: [string, string][] = outcome.started ? [["base source", outcome.baseSource]] : [];
   if (!outcome.started) io.stdout("task already started\n");
   io.stdout(
     formatFields([
@@ -78,6 +79,7 @@ export async function startIssue(
       ["repo", task.repoKey],
       ["state", task.state],
       ["base", task.base],
+      ...sourceField,
       ["branch", task.branch],
       ["worktree", task.worktreePath],
     ]),
