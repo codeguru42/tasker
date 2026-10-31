@@ -23,7 +23,7 @@ export interface Issue {
 
 // One issue that blocks another issue.
 export interface Blocker {
-  key: string; // <owner>/<repo>#<N>
+  key: string; // <owner>/<repo>#<N> for GitHub, <PROJECT>-<N> for Jira
   state: Issue["state"];
 }
 
