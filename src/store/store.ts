@@ -53,6 +53,7 @@ export interface Task {
   shortRef: string | null;
   base: string | null;
   syncedBaseTip: string | null;
+  parentTaskId: number | null;
   attempt: number;
   createdAt: string;
   updatedAt: string;
@@ -85,6 +86,7 @@ export interface TaskChanges {
   shortRef?: string | null;
   base?: string | null;
   syncedBaseTip?: string | null;
+  parentTaskId?: number | null;
 }
 
 export interface TaskFilter {
@@ -448,6 +450,7 @@ interface TaskRow {
   short_ref: string | null;
   base: string | null;
   synced_base_tip: string | null;
+  parent_task_id: number | null;
   attempt: number;
   created_at: string;
   updated_at: string;
@@ -488,6 +491,7 @@ function rowToTask(row: TaskRow): Task {
     shortRef: row.short_ref,
     base: row.base,
     syncedBaseTip: row.synced_base_tip,
+    parentTaskId: row.parent_task_id,
     attempt: row.attempt,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -666,7 +670,7 @@ function setUp(db: DatabaseSync) {
     updateTask: db.prepare(
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
-           synced_base_tip = ?, updated_at = ?
+           synced_base_tip = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -936,6 +940,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.shortRef !== undefined) next.shortRef = changes.shortRef;
     if (changes.base !== undefined) next.base = changes.base;
     if (changes.syncedBaseTip !== undefined) next.syncedBaseTip = changes.syncedBaseTip;
+    if (changes.parentTaskId !== undefined) next.parentTaskId = changes.parentTaskId;
     const row = statements.updateTask.get(
       next.state,
       next.branch,
@@ -944,6 +949,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.shortRef,
       next.base,
       next.syncedBaseTip,
+      next.parentTaskId,
       at,
       current.id,
     ) as unknown as TaskRow;

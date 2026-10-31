@@ -131,4 +131,9 @@ CREATE UNIQUE INDEX sessions_task_review ON sessions (task_id, review_number) WH
   received_at TEXT NOT NULL
 );`,
   `ALTER TABLE tasks ADD COLUMN synced_base_tip TEXT;`,
+  `ALTER TABLE tasks ADD COLUMN parent_task_id INTEGER;
+UPDATE tasks SET parent_task_id = (
+  SELECT MAX(parent.id) FROM tasks AS parent
+  WHERE parent.repo_key = tasks.repo_key AND 'refs/heads/' || parent.branch = tasks.base
+);`,
 ];

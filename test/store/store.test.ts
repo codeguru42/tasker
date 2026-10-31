@@ -811,7 +811,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(13);
+        expect(migrations.length).toBe(14);
       });
     });
   });
