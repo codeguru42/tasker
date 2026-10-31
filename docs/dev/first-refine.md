@@ -63,6 +63,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   one loop.
 - A ticket that adds a required option to a shared function breaks the callers that an earlier ticket landed. After the
   rebase, run `npm run check` and update those callers ([rules.md](rules.md#commits)).
+- A ticket can add lines to the output of a command. Then ask the plan to name each test that reads that output with
+  `toEqual`, `toBe` or `endsWith`. Another ticket that lands first can add more such tests, also to a file that the plan
+  named. After each `tasker update-branch`, the agent searches `test/` again for such tests and names each new test in
+  the next refine. On #351 (2026-10-30), the update onto #233 brought four new tests that expected the output to end at
+  the `state:` line. The verify run failed, and the fix cost one refine.
 - The prompts of the installed tasker tell the plan that a todo does not run `npm run check`. Say in the first refine
   that [the Check rule](rules.md#check) wins over those prompts. On #158, the plan asked about the conflict as an open
   question, and the answer cost an extra refine. The Check rule also wins for `npm run format:check`. On #417, plan v2
