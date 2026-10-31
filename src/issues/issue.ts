@@ -38,7 +38,7 @@ export class IssueReadError extends Error {
   }
 }
 
-// A label write to one issue failed. The error names the configuration key of the label.
+// A write to one issue failed. The error names the configuration key of the write.
 export class IssueWriteError extends Error {
   readonly key: string;
   readonly configKey: string;
