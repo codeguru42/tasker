@@ -2,10 +2,20 @@ import { describe, expect, it } from "vitest";
 import { verify } from "../../src/commands/verify.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { verifyRunDir } from "../../src/store/layout.js";
+import { landBranchOnOriginMain, commitInWorktree } from "../helpers/git.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { latestTaskOf, withDataRootStore } from "../helpers/store.js";
-import { expectCommandRefused, landParent, useStackedTasks, useVerifyFixture } from "../helpers/task-fixtures.js";
+import {
+  expectCommandRefused,
+  landParent,
+  moveTaskThrough,
+  startIssueTask,
+  TO_WORK_REVIEW,
+  useStackedTasks,
+  useStartFixture,
+  useVerifyFixture,
+} from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -59,6 +69,64 @@ describe("tasker verify", () => {
     expect((await runCommand(updateBranch, "update-branch", key)).code).toBe(0);
     expect((await runVerify(key)).code).toBe(0);
     expect(latestTaskOf(fixture.dataRoot, key).state).toBe("awaiting_work_review");
+  });
+
+  describe("a task that starts on the branch of an earlier task", () => {
+    const PARENT = "codeguru42/tasker#5";
+    const CHILD = "codeguru42/tasker#6";
+
+    // Starts the task of issue 5, moves it to states, then starts the task of issue 6 on its branch and moves it to
+    // executed.
+    async function startOnBranchOfParent(parentStates: Parameters<typeof moveTaskThrough>[2], landOnOrigin = false) {
+      const fixture = await useStartFixture({
+        issues: [5, 6].map((number) => ({ project: "codeguru42/tasker", number })),
+        repo: { verify: { commands: ["true"], env: [] } },
+      });
+      const parent = await startIssueTask(fixture, 5);
+      expect(parent.result.code).toBe(0);
+      if (landOnOrigin) {
+        await landBranchOnOriginMain({
+          origin: fixture.origin.path,
+          clone: parent.clone,
+          branch: parent.branch,
+          env: fixture.origin.env,
+        });
+      }
+      withDataRootStore(fixture.dataRoot, (store) => {
+        const id = store.findLatestTask(fixture.repoKey, PARENT)!.id;
+        moveTaskThrough(store, id, TO_WORK_REVIEW);
+        if (parentStates.length > 0) moveTaskThrough(store, id, parentStates);
+      });
+      const child = await startIssueTask(fixture, 6, "--base", `refs/heads/${parent.branch}`);
+      expect(child.result.code).toBe(0);
+      await commitInWorktree(child.worktree, fixture.origin.env, { file: "child.txt" });
+      withDataRootStore(fixture.dataRoot, (store) => {
+        moveTaskThrough(store, store.findLatestTask(fixture.repoKey, CHILD)!.id, TO_WORK_REVIEW.slice(0, 5));
+      });
+      return fixture;
+    }
+
+    it("verifies when the earlier task finished", async () => {
+      const fixture = await startOnBranchOfParent(["accepted", "landed", "finishing", "finished"]);
+
+      const result = await runVerify(CHILD);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, CHILD).state).toBe("awaiting_work_review");
+    });
+
+    it("refuses when the earlier task landed, until update-branch moves it", async () => {
+      const fixture = await startOnBranchOfParent(["accepted", "landed"], true);
+
+      await expectCommandRefused(
+        { dataRoot: fixture.dataRoot, key: CHILD },
+        () => runVerify(CHILD),
+        `the parent ${PARENT} of ${CHILD} has landed; run tasker update-branch ${CHILD} to move the task onto main first\n`,
+      );
+
+      expect((await runCommand(updateBranch, "update-branch", CHILD)).code).toBe(0);
+      expect((await runVerify(CHILD)).code).toBe(0);
+    });
   });
 
   it("prints the description of the command and of --repo for --help", async () => {
