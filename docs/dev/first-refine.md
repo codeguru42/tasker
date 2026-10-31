@@ -167,6 +167,8 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   first refine gave this hint. On #432 (2026-10-25), refine 1 removed the link to the home of "fact test", because the
   first refine gave this hint. Review 1 asked for the link again, refine 4 added it again, and this cost one review
   loop.
+- If an issue says that a page or a bullet stays, ask the plan to change no line of it. On #632, the Docs section said
+  that a bullet of `docs/dev/operator-items.md` stays, and plan v1 still changed that section.
 - Before `tasker approve`, the agent reads the todos and the risks of the plan, and it looks for each claim about the
   source of a text. Examples of such a claim are "the user dictated this text" and "the user decided that X". The agent
   tests each such claim against the issue and the feedback of each refine. If neither gives that source, the agent asks
