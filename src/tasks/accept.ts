@@ -35,8 +35,8 @@ async function acceptLocked(store: TaskStore, request: AcceptRequest): Promise<A
   assertBaseMoved(store, task);
   requireWorktree(task);
   const branch = requireBranch(task);
-  const baseRevision = requireBaseRevision(store, task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const baseRevision = requireBaseRevision(vcs, task);
   const read = await withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     try {
       return await vcs.baseContainment(ctx, { taskRef: branch, baseRevision });

@@ -6,7 +6,7 @@ import { provisionClone } from "../../src/vcs/git/provision.js";
 import { type RepoPaths, repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../../src/vcs/git/run.js";
 import { taskBranchName, taskWorktreePath } from "../../src/vcs/git/worktree.js";
-import type { VcsContext } from "../../src/vcs/provider.js";
+import { createVcsProvider, type VcsContext, type VcsProvider } from "../../src/vcs/provider.js";
 import { logLine, pathWithFirst, realCommandPath, writeFakeCommand } from "./fake-commands.js";
 import { makeTempDir, writeFileWithParents } from "./temp.js";
 
@@ -401,4 +401,9 @@ export function writeGitFailAfter(binDir: string, subcommand: string): void {
     binDir,
     `${shellQuote(realCommandPath("git"))} "$@"\ncode=$?\nif [ "$1" = ${shellQuote(subcommand)} ]; then exit 1; fi\nexit $code`,
   );
+}
+
+// A git provider for a test that uses only its pure functions. It reads no remote.
+export function gitProvider(): VcsProvider {
+  return createVcsProvider({ remote: "/no-remote", vcs: { provider: "git", config: {} } });
 }

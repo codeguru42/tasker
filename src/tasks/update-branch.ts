@@ -211,10 +211,10 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   const branch = requireBranch(task);
   const path = requireWorktree(task);
   const base = requireBase(task);
-  const baseRevision = requireBaseRevision(store, task);
+  const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const baseRevision = requireBaseRevision(vcs, task);
   const parent = parentOf(store, task);
   const strategy = strategyOf(request.strategy, config.repos[task.repoKey].updateBranchStrategy);
-  const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   const start = await vcs.workspaceState(ctx, { path });
   if (start.changes.length > 0) {
     throw new Error(

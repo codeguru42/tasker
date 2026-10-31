@@ -86,9 +86,9 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   const version = revision.version;
   const planText = readPlanFile(config.dataRoot, task, version);
   const ordered = orderTodos(revision.answer.todos);
-  const baseRevision = requireBaseRevision(store, task);
-  const branch = requireBranch(task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const baseRevision = requireBaseRevision(vcs, task);
+  const branch = requireBranch(task);
   let before: RemoteTip;
   try {
     before = await vcs.remoteTaskRefTip(ctx, { taskRef: branch });

@@ -19,11 +19,12 @@ import { fillTemplate } from "../../src/prompts/template.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { executeTranscriptPath, planRevisionPath, taskTranscriptsDir } from "../../src/store/layout.js";
 import { resumeTask } from "../../src/tasks/resume.js";
-import { baseRevisionOf } from "../../src/tasks/base-revision.js";
+import { requireBaseRevision } from "../../src/tasks/task-state.js";
 import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
+import { gitProvider } from "../helpers/git.js";
 import {
   argAfter,
   claudeApprovalWarningEvent,
@@ -183,7 +184,7 @@ const todoPrompt = (id: string): string =>
 // The prefix of the first turn of a new session, as the plan gives it, with doneIds marked done in the todos.
 const expectedPrefix = (fixture: ExecuteFixture, todos: typeof TODOS, doneIds: ReadonlySet<string>): string => {
   const { dataRoot } = fixture.started;
-  const baseRevision = withDataRootStore(dataRoot, (store) => baseRevisionOf(store, fixture.task.id))!;
+  const baseRevision = requireBaseRevision(gitProvider(), latestTaskOf(dataRoot, fixture.started.key));
   const questions = withDataRootStore(dataRoot, (store) => store.resolvedQuestionsThrough(fixture.task.id, 1));
   return fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, {
     COMMIT_RULES: fillTemplate("commit-rules", EXECUTE_COMMIT_TEXT, { BASE_REF: baseRevision }),

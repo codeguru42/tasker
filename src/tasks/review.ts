@@ -48,8 +48,8 @@ async function reviewLocked(store: TaskStore, request: ReviewRequest): Promise<R
   assertBaseMoved(store, task);
   requireWorktree(task);
   const branch = requireBranch(task);
-  const baseRevision = requireBaseRevision(store, task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const baseRevision = requireBaseRevision(vcs, task);
   const revision = await vcs.taskRefRevision(ctx, { taskRef: branch });
   const branchCommits = await vcs.ownCommits(ctx, { taskRef: branch, baseRevision });
   const earlier = earlierReviewsText(store.listReviews(task.id), store.listPlanRevisions(task.id));

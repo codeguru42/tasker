@@ -9,6 +9,7 @@ import {
   taskById,
   taskInState,
 } from "../../src/tasks/task-state.js";
+import { gitProvider } from "../helpers/git.js";
 import { dayAt, seedTasks, withDataRootStore } from "../helpers/store.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import { useTempDir } from "../helpers/temp.js";
@@ -138,7 +139,8 @@ describe("taskInState", () => {
 const worktreeOf = (store: TaskStore, id: number) => requireWorktree(taskById(store, id));
 const baseOf = (store: TaskStore, id: number) => requireBase(taskById(store, id));
 const branchOf = (store: TaskStore, id: number) => requireBranch(taskById(store, id));
-const requiredBaseRevisionOf = (store: TaskStore, id: number) => requireBaseRevision(store, taskById(store, id));
+const requiredBaseRevisionOf = (store: TaskStore, id: number) =>
+  requireBaseRevision(gitProvider(), taskById(store, id));
 
 describe("requireWorktree", () => {
   it("gives the worktree path", () => {
@@ -183,16 +185,17 @@ describe("requireBase", () => {
 });
 
 describe("requireBaseRevision", () => {
-  it("gives the revision of the newest base event", () => {
-    const { dataRoot, id } = seeded("awaiting_work_review");
-    withDataRootStore(dataRoot, (store) => {
-      store.appendEvent(id, "base", { base: "main", revision: "refs/remotes/origin/main", source: "default" });
-      store.appendEvent(id, "base", { base: "dev", revision: "refs/remotes/origin/dev", source: "explicit" });
-      expect(requiredBaseRevisionOf(store, id)).toBe("refs/remotes/origin/dev");
-    });
+  it("gives the revision of a base on origin", () => {
+    const { dataRoot, id } = seeded("awaiting_work_review", { base: "dev" });
+    withDataRootStore(dataRoot, (store) => expect(requiredBaseRevisionOf(store, id)).toBe("refs/remotes/origin/dev"));
   });
 
-  it("throws for a task without a base event", () => {
+  it("gives the revision of a local base", () => {
+    const { dataRoot, id } = seeded("awaiting_work_review", { base: "refs/heads/x" });
+    withDataRootStore(dataRoot, (store) => expect(requiredBaseRevisionOf(store, id)).toBe("refs/heads/x"));
+  });
+
+  it("throws for a task without a base", () => {
     const { dataRoot, id } = seeded("awaiting_work_review");
     withDataRootStore(dataRoot, (store) =>
       expect(() => requiredBaseRevisionOf(store, id)).toThrow("the task of codeguru42/tasker#5 has no base revision"),

@@ -36,8 +36,8 @@ async function markLandedLocked(store: TaskStore, request: MarkLandedRequest): P
   assertParentLanded(store, task);
   const branch = requireBranch(task);
   requireBase(task);
-  const baseRevision = requireBaseRevision(store, task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const baseRevision = requireBaseRevision(vcs, task);
   const read = await withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     try {
       return await vcs.taskRefOnBase(ctx, { taskRef: branch, baseRevision });

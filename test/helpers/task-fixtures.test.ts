@@ -8,7 +8,6 @@ import { loadConfig } from "../../src/config/load.js";
 import type { IssueRef } from "../../src/issue-key/ref.js";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { issueProviderFor } from "../../src/issues/provider.js";
-import { baseRevisionOf } from "../../src/tasks/base-revision.js";
 import { dataRootLayout, planRevisionPath } from "../../src/store/layout.js";
 import { changedPaths } from "../../src/vcs/git/changes.js";
 import { runGit } from "../../src/vcs/git/run.js";
@@ -501,7 +500,7 @@ describe("useExecuteFixture", () => {
 
     expect(existsSync(planRevisionPath(dataRoot, fixture.task, 1))).toBe(true);
     expect(existsSync(worktree)).toBe(true);
-    expect(withDataRootStore(dataRoot, (store) => baseRevisionOf(store, fixture.task.id))).toBeDefined();
+    expect(latestTaskOf(dataRoot, fixture.started.key).base).toBe("main");
   });
 
   it("puts the fake bwrap on PATH and gives the configuration and the env", async () => {

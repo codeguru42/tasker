@@ -160,13 +160,6 @@ describe("tasker merge", () => {
       );
     });
 
-    it("refuses a task with no base revision", async () => {
-      const fixture = await useStartFixture();
-      seedAcceptedTask(fixture, { branch: "tasker/five", base: "main" });
-
-      await expectRefused(fixture, `the task of ${KEY} has no base revision\n`);
-    });
-
     it("refuses a tip that is not the accepted revision", async () => {
       const accepted = await useAcceptedTask();
       const tip = await commitInWorktree(accepted.task.worktreePath!, accepted.env, { file: "late.txt" });

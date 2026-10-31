@@ -4,7 +4,8 @@ import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote, undoHint } from "../helpers/command-output.js";
 import { expectedShowLines } from "../helpers/state-commands.js";
-import { commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
+import { commitInWorktree, copyCloneBranchToOrigin, gitOutput, gitProvider } from "../helpers/git.js";
+import { requireBaseRevision } from "../../src/tasks/task-state.js";
 import {
   databasePathOf,
   eventsOf,
@@ -488,6 +489,9 @@ describe("tasker update-branch for a stacked task", () => {
         baseOf: end,
       });
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key)).toMatchObject({ base: "main", parentTaskId: null });
+      expect(requireBaseRevision(gitProvider(), latestTaskOf(fixture.dataRoot, fixture.stacked.key))).toBe(
+        "refs/remotes/origin/main",
+      );
       expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
         after: { head: moved, base: "main", baseRevision: "refs/remotes/origin/main" },
       });

@@ -107,9 +107,9 @@ export async function runRefine(store: TaskStore, run: RefineRun): Promise<PlanR
   if (session === undefined) throw new Error(`the task of ${task.issueKey} has no plan session`);
   await assertSessionModel(session, env, `the plan session of ${task.issueKey}`);
   const currentPlan = readPlanFile(config.dataRoot, task, revision.version);
-  const baseRevision = requireBaseRevision(store, task);
-  const branch = requireBranch(task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const baseRevision = requireBaseRevision(vcs, task);
+  const branch = requireBranch(task);
   const branchCommits = await vcs.ownCommits(ctx, { taskRef: branch, baseRevision });
   const prompt = fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, {
     CURRENT_PLAN: currentPlan,

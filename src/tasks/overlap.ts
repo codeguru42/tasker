@@ -4,7 +4,6 @@ import { errorMessage } from "../error-message.js";
 import { compareIssueKeys } from "../issue-key/order.js";
 import { cleanPlanPaths } from "../plan/answer.js";
 import type { Task, TaskStore } from "../store/store.js";
-import { baseRevisionOf } from "./base-revision.js";
 import { vcsForRepo } from "../vcs/provider.js";
 
 // The files of the task that another task in flight also changes.
@@ -39,10 +38,11 @@ export async function findOverlaps(o: {
   const report: OverlapReport = { overlaps: [], notes: [] };
   for (const other of others) {
     const theirs = [...(store.latestPlanRevision(other.id)?.answer.files_changed ?? [])];
-    const baseRevision = baseRevisionOf(store, other.id);
-    if (other.branch !== null && baseRevision !== undefined) {
+    if (other.branch !== null && other.base !== null) {
       try {
-        theirs.push(...(await vcs.changedPaths(ctx, { taskRef: other.branch, baseRevision })));
+        theirs.push(
+          ...(await vcs.changedPaths(ctx, { taskRef: other.branch, baseRevision: vcs.baseRevision(other.base) })),
+        );
       } catch (error) {
         report.notes.push(
           `note: cannot read the files of the task branch of ${other.issueKey}: ${errorMessage(error)}`,

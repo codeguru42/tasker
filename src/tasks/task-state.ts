@@ -1,7 +1,7 @@
 import { acceptedStates, acceptsState, errorSentence, type TaskCommand } from "../state/commands.js";
 import type { TaskState } from "../state/machine.js";
-import { baseRevisionOf } from "./base-revision.js";
 import { taskNotFound, type Task, type TaskStore } from "../store/store.js";
+import type { VcsProvider } from "../vcs/provider.js";
 
 // The task with the id. An id with no task throws taskNotFound.
 export function taskById(store: TaskStore, taskId: number): Task {
@@ -53,11 +53,10 @@ export function requireBase(task: Task): string {
   return task.base;
 }
 
-// The revision of the newest base event of the task. Throws when the task has none.
-export function requireBaseRevision(store: TaskStore, task: Task): string {
-  const revision = baseRevisionOf(store, task.id);
-  if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no base revision`);
-  return revision;
+// The revision of the base of the task. Throws when the task has no base.
+export function requireBaseRevision(vcs: VcsProvider, task: Task): string {
+  if (task.base === null) throw new Error(`the task of ${task.issueKey} has no base revision`);
+  return vcs.baseRevision(task.base);
 }
 
 // Throws when tip, the revision of the branch, is not the accepted revision of the task. The accepted revision is the

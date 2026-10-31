@@ -20,6 +20,7 @@ import {
   landBranchOnOriginMain,
   gitCloneTokens,
   gitOutput,
+  gitProvider,
   gitBeforeCommandEnv,
   gitBeforePushEnv,
   gitRecorderEnv,
@@ -495,5 +496,12 @@ describe("gitBeforeCommandEnv", () => {
     expect(existsSync(marker)).toBe(false);
     await failureOf(runGit(["fetch"], { cwd: dir, env }), GitError);
     expect(existsSync(marker)).toBe(true);
+  });
+});
+
+describe("gitProvider", () => {
+  it("gives the revision of a base on origin and of a local base", () => {
+    expect(gitProvider().baseRevision("dev")).toBe("refs/remotes/origin/dev");
+    expect(gitProvider().baseRevision("refs/heads/x")).toBe("refs/heads/x");
   });
 });

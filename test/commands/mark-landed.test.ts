@@ -116,13 +116,6 @@ describe("tasker mark-landed", () => {
       await expectRefused(fixture, `the task of ${KEY} has no base\n`);
     });
 
-    it("refuses a task with no base revision", async () => {
-      const fixture = await useStartFixture();
-      seedAcceptedTask(fixture, { branch: "tasker/five", base: "main" });
-
-      await expectRefused(fixture, `the task of ${KEY} has no base revision\n`);
-    });
-
     it("fails at once when another process holds the task lock", async () => {
       const accepted = await useAcceptedTask();
       const name = taskLockName(REPO, KEY);

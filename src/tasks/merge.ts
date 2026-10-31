@@ -48,8 +48,8 @@ async function mergeLocked(store: TaskStore, request: MergeRequest): Promise<Mer
       `the base of ${task.issueKey} is a local branch of the clone: ${base}; tasker merge pushes only to a branch on origin`,
     );
   }
-  const baseRevision = requireBaseRevision(store, task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const baseRevision = requireBaseRevision(vcs, task);
   requireAcceptedTip(task, branch, await vcs.taskRefRevision(ctx, { taskRef: branch }));
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     transitionTask(store, task.id, "merging");
