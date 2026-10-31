@@ -582,6 +582,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - If a refine removes the first sentence of a paragraph, the feedback gives the new lead-in of that paragraph. On #173,
   a doc fix removed the first sentence of a paragraph in `docs/dev/tasks.md`, and the paragraph lost its subject.
 - A test with one case is a plain `it`, not an `it.each`. On #262, a review flagged an `it.each` with only one case.
+- For the rows of an `it.each`, ask the plan to read what the test helper does with each value. A default parameter of
+  the helper takes `undefined` as a missing argument. As a result, a row with `undefined` tests the default value, not
+  the case of its label. On #545 (2026-10-30), `blockerTo("TEST-3", undefined)` took the default `BACKLOG`, and review 1
+  found it.
 - [The orchestration pages](../orchestrator.md) describe the installed tasker. A plan for a change of the tasker that
   this repo builds does not edit them. On #278, plan v2 added a todo for `docs/dev/orchestration.md`, and the agent took
   it out.
