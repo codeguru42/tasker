@@ -1,7 +1,7 @@
 # Tasker commands
 
 The readers of this page are the agent of a ticket, and the orchestrator for the plain-form rule and the tool-block
-rule.
+rule. The planner and the operator also read the tool-block rule.
 
 ## The plain-form rule
 
@@ -60,9 +60,11 @@ block: the orchestrator always waits for the user.
 
 The classifier of auto mode can deny a `gh` write of a follow-up planner or an orchestrator. That session sends the
 operator an item with the exact command, the folder and the exact text of the denial. The operator gives the user the
-exact command and the folder, with the `!` prefix of Claude Code. The answer of the operator gives the output of the
-command, or says that the command did not run. If the command ran, the session goes on with its work. If it did not run,
-the step stays open, and the session runs the action in no other form.
+exact command and the folder, with the `!` prefix of Claude Code.
+
+The answer of the operator gives the output of the command, or says that the command did not run. The output goes with
+the words of the user, and this paragraph wins over [The answer](operator-items.md#the-answer). If the command ran, the
+session goes on with its work. If it did not run, the step stays open, and the session runs the action in no other form.
 
 An initial planner gives the user the command directly. A check failure keeps its own bullets. On 2026-10-30, the
 classifier denied `gh issue comment` and `gh issue edit` of planner-m26, and the user ran each command.
@@ -85,6 +87,10 @@ block, with these differences:
 - The orchestrator follows the same steps for a check failure of its own call: it runs the same call again one time, in
   the same form. If that try also fails with a check failure, the orchestrator tells the user the exact command and the
   link, so that the user can run the command with the `!` prefix.
+- A planner follows the same steps for a check failure of its own call. If the second try also fails with a check
+  failure, a follow-up planner sends the operator an item. The paragraph that starts "The classifier of auto mode can
+  deny" and the paragraph after it give the steps of the item. The item also gives the link, and the operator gives the
+  user the link. An initial planner gives the user the command and the link directly.
 
 On 2026-10-25, in the session of #428, each Bash call that no permission rule allowed failed with this text:
 

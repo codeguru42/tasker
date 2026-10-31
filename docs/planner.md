@@ -5,6 +5,8 @@ This page is the index of the planner. The rules of the planner are in [docs/dev
 The start docs of the planner are `docs/planner.md`, the pages of the list "The pages" below,
 [docs/dev/rules.md](dev/rules.md) and [docs/sessions.md](sessions.md). The planner reads them at its start.
 
+After a tool block, the planner follows [the tool-block rule](dev/tasker-commands.md#the-tool-block-rule).
+
 The planner pages are `docs/planner.md` and the pages of this list, "The pages":
 
 - [docs/dev/planner.md](dev/planner.md): the rules for a planner that plans a milestone and writes its issues: the

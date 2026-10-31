@@ -24,7 +24,8 @@ agent of a ticket. An installing operator also runs the commands that
 
 When a step of the operator pages applies [the failure rule](dev/limits.md#the-failure-rule), the rule covers the
 operator in the place of the orchestrator. When the operator gets a notice, the operator follows
-[the notice rule](dev/doc-reads.md#the-notice-rule).
+[the notice rule](dev/doc-reads.md#the-notice-rule). For an item with a denied command, the operator follows
+[the tool-block rule](dev/tasker-commands.md#the-tool-block-rule).
 
 The operator pages are `docs/operator.md` and the pages of this list, "The pages":
 
