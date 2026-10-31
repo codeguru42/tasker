@@ -6,8 +6,8 @@ The readers of this page are the orchestrator, the agents, and the operator for 
 
 The orchestrator works from the current docs of the orchestrator. The docs of the orchestrator are `AGENTS.md`,
 `docs/orchestrator.md`, the pages of the list "The pages" of [docs/orchestrator.md](../orchestrator.md),
-`docs/sessions.md`, and the docs that the prompt of the orchestrator names. For example, a prompt can name
-`docs/dev/rules.md`, `docs/dev/planner.md`, `docs/dev/issues.md`, `docs/dev/working-with-the-user.md`,
+`docs/sessions.md`, `docs/dev/rules.md`, `docs/dev/working-with-the-user.md`, and the docs that the prompt of the
+orchestrator names. For example, a prompt can name `docs/dev/planner.md`, `docs/dev/issues.md`,
 `docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `origin/main` from which
 the orchestrator last read the docs of the orchestrator.
 
@@ -81,7 +81,8 @@ the operator gets a notice, the operator does [the doc-read rule](#the-doc-read-
 doc of the operator again.
 
 Each orchestrator has its own docs of the orchestrator, because each prompt names its own docs. `AGENTS.md`,
-`docs/orchestrator.md`, the pages of its list "The pages" and `docs/sessions.md` are docs of each orchestrator.
+`docs/orchestrator.md`, the pages of its list "The pages", `docs/sessions.md`, `docs/dev/rules.md` and
+`docs/dev/working-with-the-user.md` are docs of each orchestrator.
 
 The re-read rule and the notice rule do not cover the agents. Each new agent reads its docs when it starts.
 [The agent notice](#the-agent-notice) gives the docs of an agent, and it covers an agent in flight.
