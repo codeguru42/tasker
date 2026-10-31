@@ -804,13 +804,12 @@ describe("tasker update-branch", () => {
 
     it("keeps a task in awaiting_work_review when the head did not move", async () => {
       const work = await useWorkReviewTask();
-      place(work, "accepted");
 
       const result = await runUpdateBranch();
 
       expect(result.code).toBe(0);
       expect(result.out).toContain("nothing moved");
-      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("accepted");
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
     });
   });
 

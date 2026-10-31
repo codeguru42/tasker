@@ -266,11 +266,9 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
           : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
       const moved = "remoteTip" in synced || resynced.how !== "none";
       // A task that is ready to land, or failed in the land, with a head that is not the accepted revision needs a new
-      // review, also when the head did not move. This value does not change moved, because moved also decides the base event.
-      const unaccepted =
-        (origin === "accepted" || failedIn === "merging") &&
-        task.acceptedRevision !== null &&
-        resynced.head !== task.acceptedRevision;
+      // review, also when the head did not move. A task with no accepted revision needs a new review too. This value
+      // does not change moved, because moved also decides the base event.
+      const unaccepted = (origin === "accepted" || failedIn === "merging") && resynced.head !== task.acceptedRevision;
       const state = moved || unaccepted ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {};
       // After the parent landed, the base switches also when the head does not move.
