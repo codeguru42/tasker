@@ -386,6 +386,12 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   [the doc-search rule](rules.md#docs). On #133, a new shared read helper changed an error text, and the diff read found
   two doc sentences that it made false. On #132, the helper-name search of
   [the diff read](run-one-ticket.md#the-diff-read) found a copied test helper after a review with no findings.
+- A ticket can add a reason for a command to demote a task or to refuse. Then ask the plan to search `src/`, `docs/`,
+  `skills/` and `README.md` for each form of the old condition. The search of `src/` covers the code comments and the
+  help text, and each other search follows [the doc-search rule](rules.md#docs). For each hit, the plan says whether the
+  text changes or why it stays. On #233 (2026-10-30), the old condition was that the head moved, and the texts gave it
+  as "only when the head moved", "a moved head" and "worktree moved". Review 3 found three such texts, and the fix cost
+  one loop.
 - In [the diff read](run-one-ticket.md#the-diff-read), read each sentence that starts with "The reason:" together with
   the sentence before it. Make sure that the reason argues for that sentence, not against it. On #422 (2026-10-25), the
   diff read found a reason that the diff of #422 itself put in [the overlap rule](land-the-work.md#the-overlap-rule) of
