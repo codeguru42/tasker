@@ -368,6 +368,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   The comment goes on the line that calls the new method. Without the comment, `npm run lint` fails, because the method
   does not exist yet. The `feat:` commit removes the comment. On #26, the `test:` commit `01704bf5` had this comment,
   and the `feat:` commit `254d65e5` removed it.
+- In a ticket that adds a new export, a red `test:` commit ([rules.md](rules.md#commits)) that calls the missing export
+  fails `npm run lint` with `no-unsafe-call`. Ask the plan to test the export through the command that uses it. That
+  test needs no `eslint-disable-next-line` comment. If no command uses the export yet, the red commit uses the comment
+  of the hint that starts "In a ticket that adds a method to an interface". On #599 (2026-10-30), the tests of
+  `newParentId()` ran through `tasker start`.
 - If a case cannot happen in a real run, ask the plan to test it through the function that builds the result or the
   message, not through a real run. On #132, a command that the deadline keeps from its start cannot occur in a real
   verify run. The reason: a command that runs at the deadline gets SIGTERM and is itself the failing command.
