@@ -65,9 +65,11 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
     await cleanUpTaskWorkspace(vcs, ctx, entry, task.branch, report);
     // The marker protects an issue against two machines. After an abort, no machine works on the issue,
     // so the abort removes the marker. A failed write only warns. The assignee stays.
+    // A Jira status has no clear, so the abort of a Jira task runs no tracker step.
     const { issueTracker } = config.repos[ref.repoKey];
     const marker = trackerTargets(issueTracker).inProgress;
-    if (issueTracker.updateOnStart && marker !== undefined) {
+    const isJira = issueTracker.provider === "jira";
+    if (issueTracker.updateOnStart && marker !== undefined && !isJira) {
       await runTrackerWrite(
         store,
         task.id,
