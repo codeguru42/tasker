@@ -1661,8 +1661,31 @@ describe("task store", () => {
       it("clears the parent id when the base has the source parent", () => {
         const { task } = linkedTask();
         const parent = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
-        store.updateBranchTask(task.id, "executed", { base: parent }, branchUpdated);
+        store.updateBranchTask(task.id, "executed", { base: parent, parentTaskId: null }, branchUpdated);
         expect(store.getTask(task.id)).toMatchObject({ base: "main", parentTaskId: null });
+      });
+
+      it("writes the parent id with the base", () => {
+        const { parent, task } = linkedTask();
+        const other = store.createTask({ ...newTask, issueKey: "a/b#3", branch: "other" });
+        const moved = { base: "refs/heads/other", revision: "refs/heads/other", source: "parent" as const };
+        store.updateBranchTask(task.id, "executed", { base: moved, parentTaskId: other.id }, branchUpdated);
+        expect(store.getTask(task.id)).toMatchObject({ base: "refs/heads/other", parentTaskId: other.id });
+        expect(other.id).not.toBe(parent.id);
+      });
+
+      it("keeps the parent id when the base has the source parent and writes has no parentTaskId", () => {
+        const { parent, task } = linkedTask();
+        const moved = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
+        store.updateBranchTask(task.id, "executed", { base: moved }, branchUpdated);
+        expect(store.getTask(task.id)).toMatchObject({ base: "main", parentTaskId: parent.id });
+      });
+
+      it("writes a base event that holds no parent id", () => {
+        const { task } = linkedTask();
+        const moved = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
+        store.updateBranchTask(task.id, "executed", { base: moved, parentTaskId: null }, branchUpdated);
+        expect(store.listEvents(task.id).find((e) => e.type === "base")?.data).toEqual(moved);
       });
 
       it("keeps the parent id when the base has the source update", () => {

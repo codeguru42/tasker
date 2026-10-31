@@ -237,10 +237,12 @@ export interface StoreOptions {
 
 // The writes of tasker update-branch besides the move. base is the data of a base event.
 // clearPlanApproval is the pinned version whose approval is cleared.
-// A base with the source "parent" moves the task off a landed parent, so the same write sets parentTaskId to null.
-// No other writes change parentTaskId.
+// parentTaskId is the new parent of the task: a number, or null when the task is no longer stacked. After the parent
+// landed, the same write sets it with the base. A write with no parentTaskId keeps the link, and no other write changes
+// the column. The base event holds no parent id.
 export interface BranchUpdateWrites {
   base?: { base: string; revision: string; source: "update" | "parent" };
+  parentTaskId?: number | null;
   clearPlanApproval?: number;
   syncedBaseTip?: string | null;
   // The values that tasker update-branch --undo reads. A null syncedBaseTip is written as NULL.
@@ -1566,7 +1568,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         undoBeforeHead: writes.undo?.beforeHead,
         undoAfterHead: writes.undo?.afterHead,
         undoSyncedBaseTip: writes.undo?.syncedBaseTip,
-        parentTaskId: writes.base?.source === "parent" ? null : undefined,
+        parentTaskId: writes.parentTaskId,
       };
       return writeTask(taskId, changes, check, (at) => {
         endRunStep(taskId, state);

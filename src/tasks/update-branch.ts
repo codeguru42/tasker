@@ -300,6 +300,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const writes: BranchUpdateWrites = {};
       // After the parent landed, the base switches also when the head does not move.
       if (moved || landed) writes.base = { ...target, source: landed ? "parent" : "update" };
+      if (landed) writes.parentTaskId = null;
       // Each move of the base step, and the switch after the parent landed, build the branch on the base tip.
       if (resynced.how !== "none" || landed) writes.syncedBaseTip = baseTip;
       if (moved && origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
