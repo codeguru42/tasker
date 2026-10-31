@@ -100,6 +100,9 @@ function formatTask(store: TaskStore, task: Task, clone: string): string {
     ["updated", task.updatedAt],
     ["last event", last && `${last.at} ${last.type} ${JSON.stringify(last.data)}`],
   ];
+  if (task.syncedBaseTip !== null) {
+    fields.splice(fields.findIndex(([name]) => name === "base") + 1, 0, ["synced base tip", task.syncedBaseTip]);
+  }
   if (task.state === "failed") {
     fields.push(
       ["failed in", transitionFromEvents(events, "failed")],

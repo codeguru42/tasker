@@ -185,7 +185,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       ].join("\n"),
     );
   }
-  const before: BranchSnapshot = { head: start.head, base, baseRevision };
+  const before: BranchSnapshot = { head: start.head, base, baseRevision, syncedBaseTip: task.syncedBaseTip };
   const origin = task.state as TaskState;
   const failedIn = origin === "failed" ? transitionFromEvents(store.listEvents(task.id), "failed") : undefined;
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
@@ -239,11 +239,14 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       const writes: BranchUpdateWrites = {};
       // After the parent landed, the base switches also when the head does not move.
       if (moved || landed) writes.base = { ...target, source: landed ? "parent" : "update" };
+      // Each move of the base step, and the switch after the parent landed, build the branch on the base tip.
+      if (resynced.how !== "none" || landed) writes.syncedBaseTip = baseTip;
       if (moved && origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       const after: BranchSnapshot = {
         head: resynced.head,
         base: writes.base?.base ?? base,
         baseRevision: writes.base?.revision ?? baseRevision,
+        syncedBaseTip: writes.syncedBaseTip ?? before.syncedBaseTip,
       };
       transitionWithBranchUpdate(
         store,

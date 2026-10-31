@@ -52,6 +52,7 @@ export interface Task {
   title: string | null;
   shortRef: string | null;
   base: string | null;
+  syncedBaseTip: string | null;
   attempt: number;
   createdAt: string;
   updatedAt: string;
@@ -83,6 +84,7 @@ export interface TaskChanges {
   title?: string | null;
   shortRef?: string | null;
   base?: string | null;
+  syncedBaseTip?: string | null;
 }
 
 export interface TaskFilter {
@@ -228,6 +230,7 @@ export interface StoreOptions {
 export interface BranchUpdateWrites {
   base?: { base: string; revision: string; source: "update" | "parent" };
   clearPlanApproval?: number;
+  syncedBaseTip?: string;
 }
 
 export interface TaskStore extends LockStore {
@@ -444,6 +447,7 @@ interface TaskRow {
   title: string | null;
   short_ref: string | null;
   base: string | null;
+  synced_base_tip: string | null;
   attempt: number;
   created_at: string;
   updated_at: string;
@@ -483,6 +487,7 @@ function rowToTask(row: TaskRow): Task {
     title: row.title,
     shortRef: row.short_ref,
     base: row.base,
+    syncedBaseTip: row.synced_base_tip,
     attempt: row.attempt,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -661,7 +666,7 @@ function setUp(db: DatabaseSync) {
     updateTask: db.prepare(
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
-           updated_at = ?
+           synced_base_tip = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -930,6 +935,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.title !== undefined) next.title = changes.title;
     if (changes.shortRef !== undefined) next.shortRef = changes.shortRef;
     if (changes.base !== undefined) next.base = changes.base;
+    if (changes.syncedBaseTip !== undefined) next.syncedBaseTip = changes.syncedBaseTip;
     const row = statements.updateTask.get(
       next.state,
       next.branch,
@@ -937,6 +943,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.title,
       next.shortRef,
       next.base,
+      next.syncedBaseTip,
       at,
       current.id,
     ) as unknown as TaskRow;
@@ -1514,7 +1521,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     updateBranchTask(taskId, state, writes, check) {
-      return writeTask(taskId, { state, base: writes.base?.base }, check, (at) => {
+      return writeTask(taskId, { state, base: writes.base?.base, syncedBaseTip: writes.syncedBaseTip }, check, (at) => {
         endRunStep(taskId, state);
         if (writes.clearPlanApproval !== undefined) clearPinnedApprovalStep(taskId, writes.clearPlanApproval);
         if (writes.base !== undefined) writeEvent(taskId, at, "base", writes.base);

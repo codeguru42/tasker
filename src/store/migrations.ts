@@ -130,4 +130,5 @@ CREATE UNIQUE INDEX sessions_task_review ON sessions (task_id, review_number) WH
   event TEXT NOT NULL,
   received_at TEXT NOT NULL
 );`,
+  `ALTER TABLE tasks ADD COLUMN synced_base_tip TEXT;`,
 ];

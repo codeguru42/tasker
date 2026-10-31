@@ -582,7 +582,12 @@ describe("task transitions", () => {
   });
 
   describe("lastTransitionError", () => {
-    const before = { head: "a".repeat(40), base: "main", baseRevision: "refs/remotes/origin/main" };
+    const before = {
+      head: "a".repeat(40),
+      base: "main",
+      baseRevision: "refs/remotes/origin/main",
+      syncedBaseTip: null,
+    };
 
     it("keeps the error of a failed task after a branch_updated move back to failed", () => {
       const task = store.createTask(newTask("executing"));
@@ -600,7 +605,12 @@ describe("task transitions", () => {
   });
 
   describe("transitionWithBranchUpdate", () => {
-    const before = { head: "a".repeat(40), base: "main", baseRevision: "refs/remotes/origin/main" };
+    const before = {
+      head: "a".repeat(40),
+      base: "main",
+      baseRevision: "refs/remotes/origin/main",
+      syncedBaseTip: null,
+    };
     const after = { ...before, head: "b".repeat(40) };
 
     it("moves the task with one branch_updated event in place of a transition event", () => {

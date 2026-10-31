@@ -342,7 +342,7 @@ describe("show", () => {
     const [task] = seedTasks(dataRoot, [
       { issueKey: `${TASKER}#5`, repoKey: TASKER, state: "executing", at: dayAt(4), failWith: "git push failed" },
     ]);
-    const head = { head: "a".repeat(40), base: "main", baseRevision: "refs/remotes/origin/main" };
+    const head = { head: "a".repeat(40), base: "main", baseRevision: "refs/remotes/origin/main", syncedBaseTip: null };
     withDataRootStore(dataRoot, (store) => {
       transitionTask(store, task.id, "updating_branch");
       transitionWithBranchUpdate(

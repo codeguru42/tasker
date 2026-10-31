@@ -303,6 +303,7 @@ export interface BranchSnapshot {
   head: string;
   base: string;
   baseRevision: string;
+  syncedBaseTip: string | null;
 }
 
 // How the sync step of tasker update-branch found the copy of the task branch on origin: "absent" when origin has no

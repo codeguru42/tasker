@@ -146,9 +146,17 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
         title: task.title ?? issue.title,
         baseRevision: resolved.revision,
       });
-      store.updateTask(task.id, { branch: created.taskRef, worktreePath: created.path }, () => ({
+      // Only a fresh task branch is built on the base tip. A reused branch keeps the tip it has.
+      const syncedBaseTip =
+        created.state === "created" ? await vcs.taskRefRevision(ctx, { taskRef: created.taskRef }) : undefined;
+      store.updateTask(task.id, { branch: created.taskRef, worktreePath: created.path, syncedBaseTip }, () => ({
         type: "workspace",
-        data: { path: created.path, taskRef: created.taskRef, state: created.state },
+        data: {
+          path: created.path,
+          taskRef: created.taskRef,
+          state: created.state,
+          ...(syncedBaseTip === undefined ? {} : { syncedBaseTip }),
+        },
       }));
       return created;
     }),
