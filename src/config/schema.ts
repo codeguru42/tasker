@@ -244,7 +244,7 @@ const JIRA_REFUSED_KEYS = ["account", "inProgressLabel", "doneLabel"] as const;
 const JIRA_PROJECT_PATTERN = new RegExp(`^${JIRA_PROJECT}$`);
 const JIRA_SITE_PATTERN = new RegExp(`^${SITE_LABEL}(?:\\.${SITE_LABEL})+$`);
 
-// A jira tracker refuses the keys that mean nothing for it, and needs a Jira project key.
+// The rules of a jira tracker on the merged issueTracker. A value that is not a string gets no line here, because the schema reports its type.
 function jiraTrackerIssues(key: string, issueTracker: Record<string, unknown>): string[] {
   if (issueTracker.provider !== "jira") {
     return [];
