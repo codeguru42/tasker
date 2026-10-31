@@ -19,7 +19,7 @@ question and each other item that needs the user to that session, in the form of
 [The form of an item](dev/operator-items.md#the-form-of-an-item).
 [The operator](dev/working-with-the-user.md#the-operator) of working-with-the-user.md says how "tell the user" or "ask
 the user" reads. A report or a question to the user that a rule of the orchestration pages calls a reply is also an
-item. When a rule waits for the user, the answer of the item ends the wait, as
+item. When a rule waits for the user, the answer of the question that the rule waits for ends the wait, as
 [The answer](dev/operator-items.md#the-answer) of operator-items.md says. The orchestrator sends each lesson, each
 finding of a session review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the
 planner bullet of [The prompt of an agent](dev/pick-the-tickets.md#the-prompt-of-an-agent) says. The messages between
