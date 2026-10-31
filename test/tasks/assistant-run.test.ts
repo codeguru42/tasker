@@ -153,6 +153,7 @@ describe("sandboxReadDenyPaths", () => {
       "/h/.git-credentials",
       "/h/.netrc",
       "/h/.claude/.credentials.json",
+      "/h/.codex/auth.json",
       "/p/a",
       "/p/b",
       "/t/config.json",
@@ -167,6 +168,7 @@ describe("sandboxReadDenyPaths", () => {
       "/h/.git-credentials",
       "/h/.netrc",
       "/h/.claude/.credentials.json",
+      "/h/.codex/auth.json",
       "/p",
       "/t/config.json",
     ]);
@@ -183,6 +185,49 @@ describe("sandboxReadDenyPaths", () => {
     const paths = denyPaths({ HOME: "/h", CLAUDE_CONFIG_DIR: "/c" });
     expect(paths).toContain("/c/.credentials.json");
     expect(paths).not.toContain("/h/.claude/.credentials.json");
+  });
+
+  it("takes the credentials of Codex from CODEX_HOME", () => {
+    const paths = denyPaths({ HOME: "/h", CODEX_HOME: "/cx" });
+    expect(paths).toContain("/cx/auth.json");
+    expect(paths).not.toContain("/h/.codex/auth.json");
+  });
+
+  it("takes the credentials of Codex from .codex under HOME", () => {
+    expect(denyPaths({ HOME: "/h" })).toContain("/h/.codex/auth.json");
+  });
+
+  it("gives the credentials of Codex when only CODEX_HOME is set", () => {
+    expect(denyPaths({ CODEX_HOME: "/cx" })).toEqual(["/k/id", "/cx/auth.json", "/p"]);
+  });
+
+  it("counts a blank CODEX_HOME as unset", () => {
+    const paths = denyPaths({ HOME: "/h", CODEX_HOME: "  " });
+    expect(paths).toContain("/h/.codex/auth.json");
+    expect(paths.some((path) => path.endsWith("  /auth.json"))).toBe(false);
+  });
+
+  it("gives no Codex entry when CODEX_HOME and HOME are blank", () => {
+    expect(denyPaths({ HOME: "  ", CODEX_HOME: "  " })).toEqual(["/k/id", "/p"]);
+  });
+
+  it("gives no Codex entry when CODEX_HOME and HOME are unset", () => {
+    expect(denyPaths({}).some((path) => path.endsWith("auth.json"))).toBe(false);
+  });
+
+  it("makes a relative CODEX_HOME absolute, against the cwd of tasker", () => {
+    const paths = denyPaths({ CODEX_HOME: "rel/codex" });
+    expect(paths).toContain(resolve(process.cwd(), "rel/codex/auth.json"));
+    expect(paths).not.toContain("rel/codex/auth.json");
+  });
+
+  it("gives the credentials of Codex right after those of Claude Code", () => {
+    expect(denyPaths({ CLAUDE_CONFIG_DIR: "/c", CODEX_HOME: "/cx" })).toEqual([
+      "/k/id",
+      "/c/.credentials.json",
+      "/cx/auth.json",
+      "/p",
+    ]);
   });
 
   it("gives only the surface paths and the publish tokens when the env names no folder", () => {
@@ -507,6 +552,17 @@ describe("prepareTaskExecuteRun", () => {
       expect(flagValues(argv, "--resume")).toEqual([TEST_EXECUTE_SESSION_ID]);
       expect(argv).not.toContain("--session-id");
     }
+  });
+
+  it("denies the credentials of Codex to the shell of a claude-code run", async () => {
+    const { claude } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain") } },
+      { env: (env) => ({ ...env, CODEX_HOME: "/cx" }) },
+    );
+
+    expect(claude.calls()[0].settings).toMatchObject({
+      sandbox: { filesystem: { denyRead: expect.arrayContaining(["/cx/auth.json"]) } },
+    });
   });
 
   describe("the read rules of the skills", () => {
