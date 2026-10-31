@@ -10,8 +10,16 @@ import { abortTask } from "../../src/tasks/abort.js";
 import { startTask } from "../../src/tasks/start.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
+import { jiraRefOf } from "../helpers/fake-acli.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { databasePathOf, latestTaskOf, lockNames, readRunMarker, withDataRootStore } from "../helpers/store.js";
+import {
+  databasePathOf,
+  eventDataOf,
+  latestTaskOf,
+  lockNames,
+  readRunMarker,
+  withDataRootStore,
+} from "../helpers/store.js";
 import { taskWorkspaceState, useStartFixture, useStartedTask } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -110,5 +118,47 @@ describe("abortTask", () => {
     expect((error as Error).message).toContain("the lock repo:codeguru42/tasker is busy");
     expect(await taskWorkspaceState(started)).toEqual(before);
     expect(lockNames(started.dataRoot)).toEqual([repoLockName(started.repoKey)]);
+  });
+
+  it("runs no tracker step for a Jira task", async () => {
+    const started = await useStartedTask();
+    const repo = started.config.repos[started.repoKey];
+    const config = {
+      ...started.config,
+      repos: {
+        ...started.config.repos,
+        [started.repoKey]: {
+          ...repo,
+          issueTracker: {
+            ...repo.issueTracker,
+            provider: "jira" as const,
+            project: "TEST",
+            updateOnStart: true,
+            inProgressStatus: "In Progress",
+          },
+        },
+      },
+    };
+    const lines: string[] = [];
+    const task = withDataRootStore(started.dataRoot, (store) =>
+      store.createTask({ issueKey: "TEST-5", repoKey: started.repoKey, state: "workspace_ready" }),
+    );
+
+    const cancelled = await withDataRootStore(started.dataRoot, (store) =>
+      abortTask(store, {
+        config,
+        ref: { ...jiraRefOf("TEST-5"), repoKey: started.repoKey },
+        taskId: task.id,
+        force: false,
+        env: process.env,
+        repoLockWaitMs: 300,
+        report: (line) => lines.push(line),
+        trackerIo: { stdout: (text) => lines.push(text), stderr: (text) => lines.push(text) },
+      }),
+    );
+
+    expect(cancelled.state).toBe("cancelled");
+    expect(lines).toEqual([]);
+    expect(eventDataOf(started.dataRoot, "TEST-5", "tracker_update")).toEqual([]);
   });
 });
