@@ -5,6 +5,7 @@ import { compareIssueKeys } from "../issue-key/order.js";
 import { cleanPlanPaths } from "../plan/answer.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
+import { walkLandedParents } from "./parent.js";
 
 // The files of the task that another task in flight also changes.
 export interface TaskOverlap {
@@ -40,9 +41,9 @@ export async function findOverlaps(o: {
     const theirs = [...(store.latestPlanRevision(other.id)?.answer.files_changed ?? [])];
     if (other.branch !== null && other.base !== null) {
       try {
-        theirs.push(
-          ...(await vcs.changedPaths(ctx, { taskRef: other.branch, baseRevision: vcs.baseRevision(other.base) })),
-        );
+        // The branch of a landed parent can be gone, so the read uses the base that tasker update-branch moves the task to.
+        const base = walkLandedParents(store, other)?.base ?? other.base;
+        theirs.push(...(await vcs.changedPaths(ctx, { taskRef: other.branch, baseRevision: vcs.baseRevision(base) })));
       } catch (error) {
         report.notes.push(
           `note: cannot read the files of the task branch of ${other.issueKey}: ${errorMessage(error)}`,
