@@ -102,7 +102,7 @@ export function fakeAcliView(dir: string, viewArgs: readonly string[], view: Omi
 }
 
 // One line of JSON in the measured form of a write with `--json`: one result, totalCount 1.
-export function acliWriteResult(status: string, message: string, id = "TEST-10"): string {
+export function acliWriteResult(status: string, message: string): string {
   const successCount = status === "SUCCESS" ? 1 : 0;
-  return JSON.stringify({ results: [{ status, message, id }], totalCount: 1, successCount });
+  return JSON.stringify({ results: [{ status, message, id: "TEST-10" }], totalCount: 1, successCount });
 }
