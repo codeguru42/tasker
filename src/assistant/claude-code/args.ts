@@ -1,3 +1,4 @@
+import { claudeRules } from "./rules.js";
 import type { RunInput } from "../provider.js";
 
 // The arguments of claude for one session. The prompt goes to stdin, so it is not here.
@@ -17,9 +18,10 @@ export function claudeArgs(input: RunInput, settings?: Record<string, unknown>):
     input.effort,
   ];
   if (input.jsonSchema !== undefined) args.push("--json-schema", JSON.stringify(input.jsonSchema));
-  if (input.permissionMode !== undefined) args.push("--permission-mode", input.permissionMode);
+  const rules = claudeRules(input);
+  args.push("--permission-mode", rules.permissionMode);
   if (settings !== undefined) args.push("--settings", JSON.stringify(settings));
-  if (input.allowedTools?.length) args.push("--allowedTools", ...input.allowedTools);
-  if (input.disallowedTools?.length) args.push("--disallowedTools", ...input.disallowedTools);
+  if (rules.allowedTools.length > 0) args.push("--allowedTools", ...rules.allowedTools);
+  if (rules.disallowedTools.length > 0) args.push("--disallowedTools", ...rules.disallowedTools);
   return args;
 }

@@ -16,7 +16,6 @@ import { join, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DENIED_COMMANDS,
-  DENY_RULES,
   EXECUTE_COMMIT_TEXT,
   readDenyPaths,
   sandboxWritePaths,
@@ -89,10 +88,6 @@ function snapshot(folder: string): Map<string, string> {
 describe("assistant surface values", () => {
   it("gives the commit rules of the execute prompt", () => {
     expect(EXECUTE_COMMIT_TEXT).toBe(EXPECTED);
-  });
-
-  it("denies git push in the shell of the assistant", () => {
-    expect(DENY_RULES).toEqual(["Bash(git push:*)"]);
   });
 
   it("names git push as a command that the assistant must not run", () => {

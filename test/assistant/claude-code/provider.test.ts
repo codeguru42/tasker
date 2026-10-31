@@ -81,6 +81,8 @@ describe("createClaudeCodeProvider run", () => {
       "haiku",
       "--effort",
       "low",
+      "--permission-mode",
+      "plan",
     ]);
     expect(calls[0].stdin).toBe("say hello");
     expect(outcome).toEqual({

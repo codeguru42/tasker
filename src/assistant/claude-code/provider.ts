@@ -124,7 +124,9 @@ export function createClaudeCodeProvider(
           return failureWithNoExit(input, errorMessage(error), []);
         }
       }
-      if (input.allowSkillWrites === true) settings = { ...settings, ...permissionHookSettings(input.cwd) };
+      // Under workspace-write, the hook approves a Write or an Edit under .claude/skills/ of cwd and denies
+      // each other question of the assistant. The deny rules still win.
+      if (input.access === "workspace-write") settings = { ...settings, ...permissionHookSettings(input.cwd) };
       // After a sandboxed run, the leftover placeholders go. The cleanup never changes the kind.
       const finish = async (outcome: RunOutcome): Promise<RunOutcome> =>
         sandbox === undefined

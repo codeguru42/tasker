@@ -8,7 +8,6 @@ import { createCodexProvider } from "./codex/provider.js";
 export type AssistantProviderId = RepoConfig["assistant"]["provider"];
 export type AssistantRole = keyof RepoConfig["assistant"]["models"];
 export type Effort = RepoConfig["assistant"]["models"]["plan"]["effort"];
-export type PermissionMode = "plan" | "default" | "dontAsk" | "auto";
 
 export interface SandboxLimits {
   allowWrite: string[];
@@ -56,12 +55,6 @@ export interface RunInput {
   deniedCommands: readonly string[];
   // Each entry is an absolute path that the edit tools must not change. An entry that ends in /** covers each path under it.
   deniedEditPaths: readonly string[];
-  permissionMode?: PermissionMode;
-  allowedTools?: readonly string[];
-  // A deny wins over an allow.
-  disallowedTools?: readonly string[];
-  // Approves a Write or an Edit under .claude/skills/ of cwd, and denies each other question of the assistant. The deny rules still win.
-  allowSkillWrites?: boolean;
   // No fallback to a shell with no sandbox. The network stays open.
   sandbox?: SandboxLimits;
   model: string;
@@ -133,8 +126,8 @@ export interface RecordedSession extends ModelChoice {
  * to execute and to review. A command gets a provider from createAssistantProvider() or
  * createSessionProvider() and never imports a provider module.
  *
- * Refuse, never drop: a provider that cannot enforce a limit that tasker asks for (a tool rule,
- * a sandbox, a permission mode) gives a "failure" outcome before the spawn. It never runs with
+ * Refuse, never drop: a provider that cannot enforce a limit of a run (access, deniedCommands,
+ * deniedEditPaths or sandbox) gives a "failure" outcome before the spawn. It never runs with
  * less confinement than tasker asked for.
  */
 export interface AssistantProvider {

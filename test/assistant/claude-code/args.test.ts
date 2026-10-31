@@ -71,7 +71,6 @@ describe("claudeArgs", () => {
       }),
     );
 
-    expect(args.at(-3)).toBe("Bash(git push:*)");
     expect(args.slice(args.indexOf("--disallowedTools"))).toEqual([
       "--disallowedTools",
       "Bash(git push:*)",

@@ -5,7 +5,6 @@ import type { BaseBranchMemory } from "../../../src/vcs/provider.js";
 import { checkSummaries } from "../../helpers/doctor.js";
 import {
   DENIED_COMMANDS,
-  DENY_RULES,
   EXECUTE_COMMIT_TEXT,
   readDenyPaths,
   sandboxWritePaths,
@@ -501,7 +500,6 @@ describe("createGitProvider", () => {
     it("gives the text, the rules and the deny paths of the git code", () => {
       const surface = keyedProvider().assistantSurface(fixture.context);
       expect(surface.executeCommitText).toBe(EXECUTE_COMMIT_TEXT);
-      expect(surface.denyRules).toEqual(DENY_RULES);
       expect(surface.deniedCommands).toEqual(DENIED_COMMANDS);
       expect(surface.denyReadPaths).toEqual(readDenyPaths(keyed()));
     });

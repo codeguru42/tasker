@@ -8,7 +8,6 @@ import {
   type AssistantRole,
   createAssistantProvider,
   createSessionProvider,
-  type PermissionMode,
   type RecordedSession,
   type RunInput,
   type RunOutcome,
@@ -80,12 +79,8 @@ interface RoleLimits {
   access: RunInput["access"];
   deniedCommands: readonly string[];
   deniedEditPaths: readonly string[];
-  permissionMode: PermissionMode;
   timeoutMs: number;
-  allowedTools?: readonly string[];
-  disallowedTools: readonly string[];
   sandbox?: SandboxLimits;
-  allowSkillWrites?: boolean;
 }
 
 interface CommonRun {
@@ -164,10 +159,9 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
   };
 }
 
-// The deny rules of the shell of the plan and review roles that are not rules of the version control.
+// The denied commands of the shell of the plan and review roles that do not come from the version control.
 // herdr holds the sessions of the user. A session that can send input to the pane of another session
 // can approve the permission prompts of that session.
-const PLAN_MODE_DENY_RULES: readonly string[] = ["Bash(herdr:*)"];
 const PLAN_MODE_DENIED_COMMANDS: readonly string[] = ["herdr"];
 
 // The one home of the sandbox of the shell of a task run, in each role: the write paths and the shared
@@ -191,7 +185,7 @@ async function taskSandbox(req: TaskRunRequest, common: CommonRun): Promise<Sand
 
 // Prepares the run of the assistant of a task in the plan or the review role. The two roles differ
 // only in their model row, so they share one entry point. The shell runs in the sandbox of the
-// execute role, with the deny rules of the version control and the deny rule for herdr.
+// execute role, with the denied commands of the version control and herdr.
 // The caller must move the task into a spawning state before start().
 // The caller must record sessionId and session before start().
 export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<PreparedPlanModeRun> {
@@ -200,9 +194,7 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
     access: "read-only",
     deniedCommands: [...common.surface.deniedCommands, ...PLAN_MODE_DENIED_COMMANDS],
     deniedEditPaths: [],
-    permissionMode: "plan",
     timeoutMs: req.config.limits.planTimeoutMin * 60_000,
-    disallowedTools: [...common.surface.denyRules, ...PLAN_MODE_DENY_RULES],
     sandbox: await taskSandbox(req, common),
   };
   return {
@@ -215,7 +207,7 @@ export async function prepareTaskPlanModeRun(req: PlanModeRunRequest): Promise<P
 }
 
 // Prepares the run of the assistant of a task in the execute role. This role does steps that the plan
-// and review roles do not do: the path rules, the permission hook and the commit text.
+// and review roles do not do: the denied edit paths and the commit text.
 // The caller must move the task into a spawning state before start().
 // The caller must record sessionId and session before start().
 // The caller must replace {{BASE_REF}} in executeCommitText before it puts the text in the prompt.
@@ -225,52 +217,14 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
   const { surface, worktree: wt } = common;
   const sandbox = await taskSandbox(req, common);
   const clone = sandbox.sharedFolder;
-  const claudeDir = claudeConfigDir(req.env);
   // One prepared run serves every turn of a session. The first start of a new session starts it.
   // Each later start continues it.
   let resume = common.resume;
-  // The path is absolute. The // prefix marks an absolute path in the rule syntax of claude.
-  const rule = (tool: string, absolutePath: string) => `${tool}(/${absolutePath})`;
   const limits: RoleLimits = {
-    // The default mode lets the PermissionRequest hook of tasker answer each question that no rule decides.
-    // permissionHookSettings gives the reason.
     access: "workspace-write",
     deniedCommands: surface.deniedCommands,
     deniedEditPaths: [`${wt}/.git`, `${wt}/.git/**`, `${clone}/**`],
-    permissionMode: "default",
-    allowSkillWrites: true,
     timeoutMs: req.config.limits.executeTimeoutMin * 60_000,
-    // The path rules keep Read, Glob and Grep in the worktree.
-    allowedTools: [
-      rule("Read", `${wt}/**`),
-      rule("Glob", `${wt}/**`),
-      rule("Grep", `${wt}/**`),
-      rule("Edit", `${wt}/**`),
-      rule("Write", `${wt}/**`),
-      "Bash",
-      // claude answers --json-schema through this tool. Without this rule, the hook denies the call (see permissionHookSettings).
-      "StructuredOutput",
-      "Skill",
-      "TodoWrite",
-      rule("NotebookEdit", `${wt}/**`),
-      // The model calls Agent. The init event of claude 2.1.300 lists Task.
-      "Agent",
-      "Task",
-      // A skill points the model at reference files in these folders. Without these rules, the hook denies the read (see permissionHookSettings).
-      // Never allow the whole folder: it holds the credentials and the settings.
-      ...(claudeDir === undefined
-        ? []
-        : [rule("Read", `${resolve(claudeDir)}/skills/**`), rule("Read", `${resolve(claudeDir)}/plugins/**`)]),
-    ],
-    // A deny wins over an allow, so git data changes only through git in the sandboxed shell.
-    // The Edit rules cover each tool that edits a file, also Write. claude 2.1.310 warns that a Write deny rule
-    // does not match in the file permission checks, and that only Edit rules match.
-    disallowedTools: [
-      ...surface.denyRules,
-      rule("Edit", `${wt}/.git`),
-      rule("Edit", `${wt}/.git/**`),
-      rule("Edit", `${clone}/**`),
-    ],
     sandbox,
   };
   return {

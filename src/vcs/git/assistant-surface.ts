@@ -16,9 +16,6 @@ export const EXECUTE_COMMIT_TEXT = [
 // The commands that the shell of the assistant must not run. Each entry is the leading words of a shell command.
 export const DENIED_COMMANDS: readonly string[] = ["git push"];
 
-// The deny rules for the shell of the assistant, in the rule syntax of Claude Code.
-export const DENY_RULES: readonly string[] = ["Bash(git push:*)"];
-
 // The files that the sandbox must not read: the ssh key, when it is set.
 // - No key: no path.
 // - A key that is not "~/" and not absolute: throws, because tasker cannot resolve it, and a deny
