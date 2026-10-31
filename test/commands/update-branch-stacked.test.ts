@@ -4,7 +4,7 @@ import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote } from "../helpers/command-output.js";
 import { expectedShowLines } from "../helpers/state-commands.js";
-import { commitInWorktree, gitOutput } from "../helpers/git.js";
+import { commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
 import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
 import { expectCommandRefused, landParent, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
 
@@ -61,6 +61,9 @@ const syncedOf = (fixture: StackedTasks) => latestTaskOf(fixture.dataRoot, fixtu
 
 const replayedLine = (fixture: StackedTasks, synced: string | null) =>
   `replayed the commits of ${fixture.stacked.key} after the synced base tip ${String(synced)}\n`;
+
+const newerMergeBaseNote = (fixture: StackedTasks, mergeBase: string, synced: string | null) =>
+  `note: the merge base ${mergeBase} of ${fixture.stacked.key} is newer than the synced base tip ${String(synced)}; tasker replays the commits after the merge base ${mergeBase}\n`;
 
 describe("tasker update-branch for a stacked task", () => {
   it("rebases the commits of the task onto new commits of the parent", async () => {
@@ -219,6 +222,28 @@ describe("tasker update-branch for a stacked task", () => {
       `note: ${fixture.stacked.key} has no synced base tip; tasker replays the commits after the merge base ${mergeBase}\n`,
     );
     expect(result.out).not.toContain("replayed the commits");
+  });
+
+  it("replays after a newer merge base when the head builds on a newer tip of the parent", async () => {
+    const fixture = await useStackedTasks({ parentCommits: PARENT_COMMITS });
+    const synced = syncedOf(fixture);
+    const newer = await commitInWorktree(fixture.parent.worktree, fixture.env, {
+      file: "parent.txt",
+      content: "one\n2\nthree\n",
+    });
+    await inStacked(fixture, "rebase", newer);
+    const tip = await commitInWorktree(fixture.parent.worktree, fixture.env, {
+      file: "parent.txt",
+      content: "one\nII\nthree\n",
+    });
+
+    const result = await update(fixture);
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe(absentRemoteNote(fixture.stacked.branch) + newerMergeBaseNote(fixture, newer, synced));
+    expect(result.out).not.toContain("replayed the commits");
+    expect(await inStacked(fixture, "rev-parse", "HEAD^")).toBe(tip);
+    expect(syncedOf(fixture)).toBe(tip);
   });
 
   it("moves nothing when the branch of the task already contains the tip of the parent", async () => {
@@ -440,6 +465,33 @@ describe("tasker update-branch for a stacked task", () => {
       const tip = await fixture.origin.addCommit("main");
 
       await expectMovedOntoMain(fixture, head, tip);
+    });
+
+    it("takes the copy on origin with --take-remote when the merge base is newer", async () => {
+      const fixture = await useStackedTasks({ parentCommits: PARENT_COMMITS });
+      const head = await inStacked(fixture, "rev-parse", "HEAD");
+      const synced = syncedOf(fixture);
+      await landParent(fixture, ["accepted", "landed"]);
+      await fixture.origin.addCommit("main", { file: "parent.txt", content: "one\n2\nthree\n" });
+      const tip = await fixture.origin.addCommit("main", { file: "parent.txt", content: "one\nII\nthree\n" });
+      await inClone(fixture, "fetch", "origin", "main");
+      await inStacked(fixture, "rebase", tip);
+      const copy = await inStacked(fixture, "rev-parse", "HEAD");
+      await copyCloneBranchToOrigin({
+        origin: fixture.origin.path,
+        clone: fixture.clone,
+        branch: fixture.stacked.branch,
+        env: fixture.env,
+      });
+      await inStacked(fixture, "reset", "--hard", head);
+
+      const result = await update(fixture, "--take-remote");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toContain(newerMergeBaseNote(fixture, tip, synced));
+      expect(result.out).not.toContain("replayed the commits");
+      expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(copy);
+      expect(syncedOf(fixture)).toBe(tip);
     });
 
     it("switches the base with no move when the parent landed at the tip that the task holds", async () => {
