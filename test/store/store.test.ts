@@ -204,6 +204,7 @@ describe("task store", () => {
       shortRef: null,
       base: null,
       syncedBaseTip: null,
+      parentTaskId: null,
       attempt: 1,
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
@@ -219,6 +220,19 @@ describe("task store", () => {
     });
     expect(task).toMatchObject({ title: "Add a store", shortRef: "t6", base: "main" });
     expect(store.getTask(task.id)).toEqual(task);
+  });
+
+  it("sets the parent task id, keeps it on a write with no key, and clears it with null", () => {
+    const parent = store.createTask({ ...newTask, issueKey: "a/b#1", branch: "issue-1" });
+    const task = store.createTask({ ...newTask, issueKey: "a/b#2", branch: "issue-2" });
+    const set = store.updateTask(task.id, { parentTaskId: parent.id });
+    expect(set.parentTaskId).toBe(parent.id);
+    expect(store.getTask(task.id)?.parentTaskId).toBe(parent.id);
+    const kept = store.updateTask(task.id, { state: "planned" });
+    expect(kept.parentTaskId).toBe(parent.id);
+    const cleared = store.updateTask(task.id, { parentTaskId: null });
+    expect(cleared.parentTaskId).toBeNull();
+    expect(store.getTask(task.id)?.parentTaskId).toBeNull();
   });
 
   it("sets the title, short ref and base, and clears each with null", () => {
@@ -453,6 +467,106 @@ describe("task store", () => {
         .map((s) => s.trim().replace(/^'|'$/g, ""))
         .sort();
       expect(states).toEqual([...TERMINAL_STATES].sort());
+    });
+  });
+
+  describe("upgrade from version 13", () => {
+    interface OldTask {
+      issueKey: string;
+      repoKey: string;
+      state: string;
+      branch: string | null;
+      base: string | null;
+    }
+
+    const insertOldTask = (db: DatabaseSync, task: OldTask) =>
+      Number(
+        db
+          .prepare(
+            "INSERT INTO tasks (issue_key, repo_key, state, branch, base, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 't', 'u')",
+          )
+          .run(task.issueKey, task.repoKey, task.state, task.branch, task.base).lastInsertRowid,
+      );
+
+    // Makes a version-13 database, adds the tasks, opens it and gives the parent ids in the order of the tasks.
+    const upgradedParents = (tasks: OldTask[]): (number | null)[] => {
+      const oldPath = join(dir, "old13.db");
+      makeOldDatabase(oldPath, 13);
+      const ids = withRawDatabase(oldPath, (raw) => tasks.map((task) => insertOldTask(raw, task)));
+      return withStoreFile(oldPath, (upgraded) => ids.map((id) => upgraded.getTask(id)?.parentTaskId ?? null), { now });
+    };
+
+    const task = (issueKey: string, branch: string | null, base: string | null, extra: Partial<OldTask> = {}) => ({
+      issueKey,
+      repoKey: "tasker",
+      state: "planning",
+      branch,
+      base,
+      ...extra,
+    });
+
+    it("links a child to a parent that is in flight", () => {
+      const parents = upgradedParents([
+        task("a/b#1", "issue-1", "origin/main"),
+        task("a/b#2", "issue-2", "refs/heads/issue-1"),
+      ]);
+      expect(parents).toEqual([null, 1]);
+    });
+
+    it("links a child to a parent that finished", () => {
+      const parents = upgradedParents([
+        task("a/b#1", "issue-1", "origin/main", { state: "finished" }),
+        task("a/b#2", "issue-2", "refs/heads/issue-1"),
+      ]);
+      expect(parents).toEqual([null, 1]);
+    });
+
+    it("picks the highest id when two tasks share the branch, also when it is cancelled", () => {
+      const parents = upgradedParents([
+        task("a/b#1", "issue-1", "origin/main", { state: "finished" }),
+        task("a/b#1", "issue-1", "origin/main", { state: "cancelled" }),
+        task("a/b#2", "issue-2", "refs/heads/issue-1"),
+      ]);
+      expect(parents).toEqual([null, null, 2]);
+    });
+
+    it("does not match a branch of another repo", () => {
+      const parents = upgradedParents([
+        task("a/b#1", "issue-1", "origin/main", { repoKey: "other" }),
+        task("a/b#2", "issue-2", "refs/heads/issue-1"),
+      ]);
+      expect(parents).toEqual([null, null]);
+    });
+
+    it("gives null for a remote base", () => {
+      const parents = upgradedParents([task("a/b#1", "main", "origin/main"), task("a/b#2", "issue-2", "main")]);
+      expect(parents).toEqual([null, null]);
+    });
+
+    it("gives null for a local base with no such task", () => {
+      const parents = upgradedParents([task("a/b#1", "issue-1", "refs/heads/gone")]);
+      expect(parents).toEqual([null]);
+    });
+
+    it("gives null for a task with no base", () => {
+      const parents = upgradedParents([task("a/b#1", "issue-1", null), task("a/b#2", null, null)]);
+      expect(parents).toEqual([null, null]);
+    });
+
+    it("keeps updated_at", () => {
+      const oldPath = join(dir, "old13-time.db");
+      makeOldDatabase(oldPath, 13);
+      withRawDatabase(oldPath, (raw) => {
+        insertOldTask(raw, task("a/b#1", "issue-1", "origin/main"));
+        insertOldTask(raw, task("a/b#2", "issue-2", "refs/heads/issue-1"));
+      });
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          expect(upgraded.getTask(2)?.updatedAt).toBe("u");
+        },
+        { now },
+      );
     });
   });
 
