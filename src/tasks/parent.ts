@@ -1,4 +1,4 @@
-import { STATES, type TaskState } from "../state/machine.js";
+import type { TaskState } from "../state/machine.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { LOCAL_PREFIX } from "../vcs/local-branch.js";
 
@@ -15,17 +15,10 @@ export function isLocalBase(base: string): boolean {
   return base.startsWith(LOCAL_PREFIX);
 }
 
-// The parent of a stacked task: the newest task of the repo whose branch is the local base of the task.
-// It gives undefined when the base is not a local branch or when no task has that branch. It reads tasks in every
-// state, because the task of a parent that finished keeps its branch name.
+// The parent of a stacked task: the task whose id the column parent_task_id holds. It gives undefined when the column is
+// NULL. It reads the task in every state, because a parent that finished keeps its row.
 export function parentOf(store: TaskStore, task: Task): Task | undefined {
-  if (task.base === null || !isLocalBase(task.base)) return undefined;
-  const branch = task.base.slice(LOCAL_PREFIX.length);
-  let parent: Task | undefined;
-  for (const candidate of store.listTasks({ repoKey: task.repoKey, states: [...STATES] })) {
-    if (candidate.branch === branch && (parent === undefined || candidate.id > parent.id)) parent = candidate;
-  }
-  return parent;
+  return task.parentTaskId === null ? undefined : store.getTask(task.parentTaskId);
 }
 
 // The parent id that tasker start stores for a task with this base: the highest id of an active task of the repo
