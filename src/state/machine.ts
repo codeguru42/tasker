@@ -324,7 +324,8 @@ export function branchUpdateMoved(data: unknown): boolean {
 export type BranchUpdateHow = ResyncResult["how"] | "undo";
 
 // Moves the task out of updating_branch with one branch_updated event
-// { before, after, how, sync, [error], [landedParents], from, to } in place of a transition event, and makes the writes, in one transaction. An illegal edge writes nothing.
+// { before, after, how, sync, [error], [landedParents], from, to } in place of a transition event, and makes the writes,
+// in one transaction. An illegal edge writes nothing.
 export function transitionWithBranchUpdate(
   store: TaskStore,
   id: number,

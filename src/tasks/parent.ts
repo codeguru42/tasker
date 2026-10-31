@@ -49,7 +49,8 @@ export interface ParentWalk {
   end: Task;
   // The base of the end task: the new base of the task.
   base: string;
-  // The parent of the end task when it has not landed. The task stays stacked on it. Undefined when the task is no longer stacked.
+  // The parent of the end task when it has not landed. The task stays stacked on it. Undefined when the task is no
+  // longer stacked.
   newParent: Task | undefined;
 }
 
