@@ -146,6 +146,15 @@ Outside a handoff, the operator takes the tab id of each session from [the tab l
 sessions. If the tab list gives no tab id for the session, the operator tells the user and closes nothing. In a handoff,
 the operator takes the tab id from the row of the session.
 
+A missing tab id has two reports: the tab list gives none, or the row gives a tab id outside the tab list. After either
+report, the user can tell the operator to close the session. On that word, the operator takes the tab id from the row of
+the session, as in a handoff. That word covers a tab that the operator did not open. It wins over each sentence here
+that limits a stop to a tab of the tab list, or to a tab that the operator opened. It also wins over the sentence on the
+tab list in [docs/operator.md](../operator.md).
+
+On 2026-10-30, the user opened the initial planner, so its tab was not in the tab list. The user said: "You close the
+initial planner".
+
 The operator finds the pane id and the tab id in the row of the session. The row of a session is the object in
 `.result.agents` of the output of `herdr agent list` whose `terminal_title_stripped` is the name of the session. The row
 gives `pane_id` and `tab_id`. Before step 1, the operator runs `herdr agent list` in its shell. If the command fails,
