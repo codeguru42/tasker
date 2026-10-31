@@ -15,9 +15,11 @@ export interface IssueDoctorRepo {
   issueTracker: RepoConfig["issueTracker"];
 }
 
-// The result of authStatus(). login is the login that the token of the account belongs to.
-// needsLogin is true only when a new login is the fix: a failed token call, an empty login,
-// another login, or a 401 of gh api user.
+// The result of authStatus().
+// For github, login is the login that the token of the account belongs to. needsLogin is true
+// only when a new login is the fix: a failed token call, an empty login, another login, or a
+// 401 of gh api user.
+// For jira, login is the active site of acli. If acli has no Jira login, needsLogin is true.
 export interface AuthStatus {
   ok: boolean;
   login?: string;
