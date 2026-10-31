@@ -158,7 +158,11 @@ writes one of these notes on stderr before the rebase:
   when the merge base is newer than the synced base tip.
 
 Under `merge`, the command makes a fast-forward when the head is an ancestor of the new tip, and the `how` is
-`fast-forward`. Otherwise it merges the new tip into the task branch, and the `how` is `merge`.
+`fast-forward`. Otherwise it merges the new tip into the task branch, and the `how` is `merge`. If the task has a parent
+when the command starts, a `merge` move writes
+`note: tasker merged <base> into <issue key>, so the commits of the parent are now in its history; use --strategy rebase for a stacked task that has no merge move yet`
+on stderr after each note of the sync step. The `<base>` is `refs/heads/<parent branch>` while the parent is in flight,
+and the base that the walk ends on after the parent landed.
 
 If the task branch already contains the new tip, nothing moves: the head and the worktree stay as they are.
 
