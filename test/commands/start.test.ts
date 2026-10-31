@@ -148,6 +148,28 @@ describe("start", () => {
     expect(lockNames(fixture.dataRoot)).toEqual([]);
   });
 
+  it("lets --base win over a base: label", async () => {
+    const fixture = await useStartFixture({
+      issues: [{ project: "codeguru42/tasker", number: 5, labels: ["base: dev"] }],
+    });
+    await fixture.origin.createBranch("dev");
+
+    const result = await runCommand(start, "start", KEY, "--base", "main");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("base: main\n");
+    expect(eventsOf(fixture.dataRoot, KEY)[1].data).toMatchObject({ base: "main", source: "explicit" });
+  });
+
+  it.each([[["base: dev", "base: main"]], [["base:"]]])("starts with --base and the bad labels %j", async (labels) => {
+    await useStartFixture({ issues: [{ project: "codeguru42/tasker", number: 5, labels }] });
+
+    const result = await runCommand(start, "start", KEY, "--base", "main");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("base: main\n");
+  });
+
   it("asks for the base in a terminal and learns the answer", async () => {
     const fixture = await useStartFixture({ repo: { defaultBaseBranch: undefined } });
     const io = captureIo({ answers: ["main"] });
@@ -238,7 +260,7 @@ describe("start", () => {
   describe("a second run", () => {
     // A repo with a bootstrap that fails until the file <tmp>/ok exists.
     // options.issues gives the issues that the fake gh answers.
-    async function failingFixture(options: { issues?: { project: string; number: number }[] } = {}) {
+    async function failingFixture(options: { issues?: { project: string; number: number; labels?: string[] }[] } = {}) {
       const tmp = useTempDir("tasker-second-run-");
       const command = `test -f ${tmp}/ok || exit 3`;
       const fixture = await useStartFixture({ ...options, repo: { bootstrap: { commands: [command], env: [] } } });
@@ -326,6 +348,24 @@ describe("start", () => {
       expect(result.code).toBe(0);
       expect(result.out).toContain("base: main\n");
       expect(lockNames(fixture.dataRoot)).toEqual([]);
+    });
+
+    it("lets a base: label win over a stored --base", async () => {
+      const { fixture, ok } = await failingFixture({
+        issues: [{ project: PROJECT, number: 5, labels: ["base: dev"] }],
+      });
+      await fixture.origin.createBranch("dev");
+      expect((await runCommand(start, "start", KEY, "--base", "main")).code).toBe(1);
+      writeFileSync(ok, "");
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain("base: dev\n");
+      const sources = eventsOf(fixture.dataRoot, KEY)
+        .filter((event) => event.type === "base")
+        .map((event) => (event.data as { source: string }).source);
+      expect(sources).toEqual(["explicit", "hint"]);
     });
 
     describe("the parent of a stacked task", () => {

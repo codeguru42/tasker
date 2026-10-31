@@ -188,12 +188,24 @@ describe("resolveBaseBranch", () => {
 
     const all = { hint: "hinted", explicit: "explicit", defaultBaseBranch: "configured" };
 
-    it("uses the hint first", async () => {
+    it("uses the explicit base first", async () => {
       store.setDefaultBaseBranch("tasker", "learned");
       const result = await resolve(all);
+      expect(result.source).toBe("explicit");
+      expect(result.base).toBe("explicit");
+      expect(askCalls).toBe(0);
+    });
+
+    it("uses the hint without an explicit base", async () => {
+      store.setDefaultBaseBranch("tasker", "learned");
+      const result = await resolve({ hint: "hinted", defaultBaseBranch: "configured" });
       expect(result.source).toBe("hint");
       expect(result.base).toBe("hinted");
-      expect(askCalls).toBe(0);
+    });
+
+    it.each(["", "refs/heads/main", "no-such-branch"])("ignores the hint %j with an explicit base", async (hint) => {
+      const result = await resolve({ hint, explicit: "explicit" });
+      expect(result.source).toBe("explicit");
     });
 
     it("uses the explicit base without a hint", async () => {
