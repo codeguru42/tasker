@@ -8,7 +8,13 @@ import { runCommand } from "../helpers/cli.js";
 import { validConfig, writeTempConfig } from "../helpers/config.js";
 import { useFakeClaude } from "../helpers/fake-claude.js";
 import { usePathWithout, writeFakeSandboxPrograms } from "../helpers/fake-commands.js";
-import { AUTH_STATUS_ARGS, AUTH_STATUS_CALLS, fakeAcli, MEASURED_AUTH_STATUS } from "../helpers/fake-acli.js";
+import {
+  AUTH_STATUS_ARGS,
+  AUTH_STATUS_CALLS,
+  type FakeAcli,
+  fakeAcli,
+  MEASURED_AUTH_STATUS,
+} from "../helpers/fake-acli.js";
 import { fakeGh, ghTokenAnswer, type FakeGhAnswer } from "../helpers/fake-gh.js";
 import { makeProviderFixture } from "../helpers/git.js";
 import { treeSnapshot, useProcessEnv, useTempDir } from "../helpers/temp.js";
@@ -58,6 +64,13 @@ const setUpTwoRepos = () =>
   });
 
 const statusLines = (out: string) => out.split("\n").filter((line) => line !== "" && !line.startsWith(" "));
+
+// A fake acli that answers the site guard, and TASKER_ACLI_BIN set to it for the test.
+function useFakeAcli(dir: string): FakeAcli {
+  const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+  useProcessEnv({ TASKER_ACLI_BIN: join(dir, "bin", "acli") });
+  return acli;
+}
 
 describe("doctor", () => {
   it("gives 0 and one ok line for each check in order for a good setup", async () => {
@@ -175,8 +188,7 @@ describe("doctor", () => {
     const { dir } = await setUp([], (raw) => {
       raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST" };
     });
-    fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
-    useProcessEnv({ TASKER_ACLI_BIN: join(dir, "bin", "acli") });
+    useFakeAcli(dir);
 
     const { code, out } = await runCommand(doctor, "doctor");
 
@@ -190,8 +202,7 @@ describe("doctor", () => {
     const { dir } = await setUp(GOOD_GH, (raw) => {
       raw.repos.work = { ...raw.repos.tasker, issueTracker: { provider: "jira", project: "TEST" } };
     });
-    fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
-    useProcessEnv({ TASKER_ACLI_BIN: join(dir, "bin", "acli") });
+    useFakeAcli(dir);
 
     const { out } = await runCommand(doctor, "doctor");
 
@@ -217,8 +228,7 @@ describe("doctor", () => {
         issueTracker: { provider: "jira", project: "TEST", site: "other.atlassian.net" },
       };
     });
-    const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
-    useProcessEnv({ TASKER_ACLI_BIN: join(dir, "bin", "acli") });
+    const acli = useFakeAcli(dir);
 
     const { code, out } = await runCommand(doctor, "doctor");
 

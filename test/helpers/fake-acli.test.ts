@@ -6,12 +6,18 @@ import {
   acliWriteResult,
   AUTH_STATUS_ARGS,
   AUTH_STATUS_CALLS,
+  assignArgs,
+  BACKLOG_ISSUE_VIEW,
   fakeAcli,
   fakeAcliView,
+  issueViewArgs,
   JIRA_LOGIN_MESSAGE,
   jiraRefOf,
+  linksViewArgs,
   MEASURED_AUTH_STATUS,
   MEASURED_NOT_FOUND,
+  NO_LINKS_VIEW,
+  transitionArgs,
   writeFakeAcli,
 } from "./fake-acli.js";
 import { useTempDir } from "./temp.js";
@@ -123,5 +129,69 @@ describe("acliWriteResult", () => {
     expect(acliWriteResult("FAILURE", "No allowed transitions found for given status")).toBe(
       '{"results":[{"status":"FAILURE","message":"No allowed transitions found for given status","id":"TEST-10"}],"totalCount":1,"successCount":0}',
     );
+  });
+});
+
+describe("issueViewArgs", () => {
+  it("gives the call that reads an issue with its fields", () => {
+    expect(issueViewArgs("TEST-3")).toEqual([
+      "jira",
+      "workitem",
+      "view",
+      "TEST-3",
+      "--json",
+      "--fields",
+      "summary,description,labels,status,components",
+    ]);
+  });
+});
+
+describe("linksViewArgs", () => {
+  it("gives the call that reads the links of an issue", () => {
+    expect(linksViewArgs("TEST-3")).toEqual(["jira", "workitem", "view", "TEST-3", "--json", "--fields", "issuelinks"]);
+  });
+});
+
+describe("assignArgs", () => {
+  it("gives the call that assigns an issue", () => {
+    expect(assignArgs("TEST-3", "@me")).toEqual([
+      "jira",
+      "workitem",
+      "assign",
+      "--key",
+      "TEST-3",
+      "--assignee",
+      "@me",
+      "--yes",
+      "--json",
+    ]);
+  });
+});
+
+describe("transitionArgs", () => {
+  it("gives the call that moves an issue to a status", () => {
+    expect(transitionArgs("TEST-3", "Done")).toEqual([
+      "jira",
+      "workitem",
+      "transition",
+      "--key",
+      "TEST-3",
+      "--status",
+      "Done",
+      "--yes",
+      "--json",
+    ]);
+  });
+});
+
+describe("BACKLOG_ISSUE_VIEW", () => {
+  it("holds an issue in the status Backlog", () => {
+    expect(JSON.parse(BACKLOG_ISSUE_VIEW).fields.status.name).toBe("Backlog");
+  });
+});
+
+describe("NO_LINKS_VIEW", () => {
+  it("holds an empty list of links", () => {
+    expect(JSON.parse(NO_LINKS_VIEW).fields.issuelinks).toEqual([]);
   });
 });

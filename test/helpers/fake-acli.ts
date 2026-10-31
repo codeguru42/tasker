@@ -112,3 +112,37 @@ export function acliWriteResult(status: string, message: string): string {
   const successCount = status === "SUCCESS" ? 1 : 0;
   return JSON.stringify({ results: [{ status, message, id: "TEST-10" }], totalCount: 1, successCount });
 }
+
+// The call of readJiraIssue(). The field list is a literal, so that the test checks the call on its own.
+export function issueViewArgs(key: string): string[] {
+  return ["jira", "workitem", "view", key, "--json", "--fields", "summary,description,labels,status,components"];
+}
+
+// The call of readJiraBlockers(). The field list is a literal, so that the test checks the call on its own.
+export function linksViewArgs(key: string): string[] {
+  return ["jira", "workitem", "view", key, "--json", "--fields", "issuelinks"];
+}
+
+// The call of the assign write.
+export function assignArgs(key: string, assignee: string): string[] {
+  return ["jira", "workitem", "assign", "--key", key, "--assignee", assignee, "--yes", "--json"];
+}
+
+// The call of the transition write.
+export function transitionArgs(key: string, status: string): string[] {
+  return ["jira", "workitem", "transition", "--key", key, "--status", status, "--yes", "--json"];
+}
+
+// The stdout of the view call for an issue in the status Backlog.
+export const BACKLOG_ISSUE_VIEW = JSON.stringify({
+  fields: {
+    summary: "Issue 5",
+    description: null,
+    labels: [],
+    components: [],
+    status: { name: "Backlog", statusCategory: { key: "new" } },
+  },
+});
+
+// The stdout of the view call for an issue with no links.
+export const NO_LINKS_VIEW = '{"fields":{"issuelinks":[]}}';

@@ -4,7 +4,13 @@ import { readJiraBlockers } from "../../../src/issues/jira/blockers.js";
 import { AcliError, AcliNotInstalledError } from "../../../src/issues/jira/run.js";
 import { JiraSiteError } from "../../../src/issues/jira/site.js";
 import { failureOf } from "../../helpers/errors.js";
-import { AUTH_STATUS_ARGS, fakeAcliView, jiraRefOf, MEASURED_NOT_FOUND } from "../../helpers/fake-acli.js";
+import {
+  AUTH_STATUS_ARGS,
+  fakeAcliView,
+  jiraRefOf,
+  linksViewArgs,
+  MEASURED_NOT_FOUND,
+} from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const API = "https://jira-prod-us-63-5.prod.atl-paas.net";
@@ -158,9 +164,6 @@ const TEST_9 = {
 
 const BAD_FIELDS = "acli jira workitem view gave bad output for TEST-9: the fields do not match";
 
-// The call of readJiraBlockers(). The field list is a literal, so that the test checks the call on its own.
-const viewArgs = (key: string) => ["jira", "workitem", "view", key, "--json", "--fields", "issuelinks"];
-
 type Link = Record<string, unknown>;
 
 // The measured blocker link to TEST-6, the base of the other links.
@@ -190,16 +193,16 @@ describe("readJiraBlockers", () => {
   });
 
   const read = (stdout: string, site?: string) =>
-    readJiraBlockers(jiraRefOf("TEST-9"), site, fakeAcliView(dir, viewArgs("TEST-9"), { stdout }).env);
+    readJiraBlockers(jiraRefOf("TEST-9"), site, fakeAcliView(dir, linksViewArgs("TEST-9"), { stdout }).env);
 
   const readLinks = (links: unknown) => read(test9With(links));
 
   it("makes the auth status call, then the view call", async () => {
-    const fake = fakeAcliView(dir, viewArgs("TEST-9"), { stdout: JSON.stringify(TEST_9) });
+    const fake = fakeAcliView(dir, linksViewArgs("TEST-9"), { stdout: JSON.stringify(TEST_9) });
 
     await readJiraBlockers(jiraRefOf("TEST-9"), undefined, fake.env);
 
-    expect(fake.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS, viewArgs("TEST-9")]);
+    expect(fake.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS, linksViewArgs("TEST-9")]);
   });
 
   it("reads the measured blockers of TEST-9 in the order of the links", async () => {
@@ -333,7 +336,7 @@ describe("readJiraBlockers", () => {
 
   describe("the errors", () => {
     it("rejects an issue that does not exist", async () => {
-      const fake = fakeAcliView(dir, viewArgs("TEST-999999"), { exitCode: 1, stderr: `${MEASURED_NOT_FOUND}\n` });
+      const fake = fakeAcliView(dir, linksViewArgs("TEST-999999"), { exitCode: 1, stderr: `${MEASURED_NOT_FOUND}\n` });
 
       const error = await failureOf(readJiraBlockers(jiraRefOf("TEST-999999"), undefined, fake.env), IssueReadError);
 
@@ -343,7 +346,7 @@ describe("readJiraBlockers", () => {
     });
 
     it("passes through another AcliError", async () => {
-      const fake = fakeAcliView(dir, viewArgs("TEST-9"), { exitCode: 1, stderr: "boom" });
+      const fake = fakeAcliView(dir, linksViewArgs("TEST-9"), { exitCode: 1, stderr: "boom" });
 
       const error = await failureOf(readJiraBlockers(jiraRefOf("TEST-9"), undefined, fake.env), AcliError);
 
@@ -351,7 +354,7 @@ describe("readJiraBlockers", () => {
     });
 
     it("passes through the error of the site guard, before the view call", async () => {
-      const fake = fakeAcliView(dir, viewArgs("TEST-9"), { stdout: JSON.stringify(TEST_9) });
+      const fake = fakeAcliView(dir, linksViewArgs("TEST-9"), { stdout: JSON.stringify(TEST_9) });
 
       await failureOf(readJiraBlockers(jiraRefOf("TEST-9"), "other.atlassian.net", fake.env), JiraSiteError);
 

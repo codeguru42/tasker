@@ -11,11 +11,13 @@ import {
 import { failureOf } from "../../helpers/errors.js";
 import {
   acliWriteResult,
+  assignArgs,
   AUTH_STATUS_ARGS,
-  type FakeAcliAnswer,
   fakeAcli,
+  type FakeAcliAnswer,
   jiraRefOf,
   MEASURED_AUTH_STATUS,
+  transitionArgs,
 } from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
 
@@ -51,30 +53,6 @@ describe("Jira writes", () => {
     dir = useTempDir("tasker-jira-write-");
   });
 
-  const assignArgs = (assignee: string) => [
-    "jira",
-    "workitem",
-    "assign",
-    "--key",
-    "TEST-10",
-    "--assignee",
-    assignee,
-    "--yes",
-    "--json",
-  ];
-
-  const moveArgs = (status: string) => [
-    "jira",
-    "workitem",
-    "transition",
-    "--key",
-    "TEST-10",
-    "--status",
-    status,
-    "--yes",
-    "--json",
-  ];
-
   function fakeWrite(args: readonly string[], answer: Omit<FakeAcliAnswer, "args">) {
     return fakeAcli(dir, {}, [
       { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
@@ -92,7 +70,7 @@ describe("Jira writes", () => {
   const WRITES = [
     {
       name: "assignJiraIssue",
-      args: assignArgs("@me"),
+      args: assignArgs("TEST-10", "@me"),
       configKey: "issueTracker.assignee",
       prefix: 'could not assign TEST-10 to "@me"',
       passed: ASSIGNED,
@@ -100,7 +78,7 @@ describe("Jira writes", () => {
     },
     {
       name: "markJiraInProgress",
-      args: moveArgs("In Progress"),
+      args: transitionArgs("TEST-10", "In Progress"),
       configKey: "issueTracker.inProgressStatus",
       prefix: 'could not move TEST-10 to the status "In Progress" of issueTracker.inProgressStatus',
       passed: MOVED,
@@ -109,7 +87,7 @@ describe("Jira writes", () => {
     },
     {
       name: "markJiraDone",
-      args: moveArgs("Awaiting deploy"),
+      args: transitionArgs("TEST-10", "Awaiting deploy"),
       configKey: "issueTracker.doneStatus",
       prefix: 'could not move TEST-10 to the status "Awaiting deploy" of issueTracker.doneStatus',
       passed: MOVED,
@@ -209,23 +187,23 @@ describe("Jira writes", () => {
 
   describe("assignJiraIssue", () => {
     it("passes @me as it is", async () => {
-      const fake = fakeWrite(assignArgs("@me"), { stdout: acliWriteResult("SUCCESS", ASSIGNED) });
+      const fake = fakeWrite(assignArgs("TEST-10", "@me"), { stdout: acliWriteResult("SUCCESS", ASSIGNED) });
 
       await assign(fake.env);
 
-      expect(callArgs(fake)).toEqual([AUTH_STATUS_ARGS, assignArgs("@me")]);
+      expect(callArgs(fake)).toEqual([AUTH_STATUS_ARGS, assignArgs("TEST-10", "@me")]);
     });
 
     it("passes a named assignee as one argument", async () => {
-      const fake = fakeWrite(assignArgs("Ann Lee"), { stdout: acliWriteResult("SUCCESS", ASSIGNED) });
+      const fake = fakeWrite(assignArgs("TEST-10", "Ann Lee"), { stdout: acliWriteResult("SUCCESS", ASSIGNED) });
 
       await assign(fake.env, "Ann Lee");
 
-      expect(callArgs(fake)).toEqual([AUTH_STATUS_ARGS, assignArgs("Ann Lee")]);
+      expect(callArgs(fake)).toEqual([AUTH_STATUS_ARGS, assignArgs("TEST-10", "Ann Lee")]);
     });
 
     it("shows the assignee in JSON form in the message", async () => {
-      const fake = fakeWrite(assignArgs('a"b'), { stderr: "boom", exitCode: 1 });
+      const fake = fakeWrite(assignArgs("TEST-10", 'a"b'), { stderr: "boom", exitCode: 1 });
 
       const error = await failureOf(assign(fake.env, 'a"b'), IssueWriteError);
 

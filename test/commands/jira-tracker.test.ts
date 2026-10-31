@@ -5,47 +5,20 @@ import { start } from "../../src/commands/start.js";
 import { runCommand } from "../helpers/cli.js";
 import {
   acliWriteResult,
+  assignArgs,
   AUTH_STATUS_ARGS,
-  type FakeAcli,
+  BACKLOG_ISSUE_VIEW,
   fakeAcli,
+  type FakeAcli,
+  issueViewArgs,
+  linksViewArgs,
   MEASURED_AUTH_STATUS,
+  NO_LINKS_VIEW,
+  transitionArgs,
 } from "../helpers/fake-acli.js";
 import { eventDataOf, latestTaskOf, placeTask, withDataRootStore } from "../helpers/store.js";
 import { useStartFixture } from "../helpers/task-fixtures.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
-
-const VIEW_ARGS = [
-  "jira",
-  "workitem",
-  "view",
-  "TEST-5",
-  "--json",
-  "--fields",
-  "summary,description,labels,status,components",
-];
-const LINKS_ARGS = ["jira", "workitem", "view", "TEST-5", "--json", "--fields", "issuelinks"];
-const ASSIGN_ARGS = ["jira", "workitem", "assign", "--key", "TEST-5", "--assignee", "@me", "--yes", "--json"];
-const transitionArgs = (status: string) => [
-  "jira",
-  "workitem",
-  "transition",
-  "--key",
-  "TEST-5",
-  "--status",
-  status,
-  "--yes",
-  "--json",
-];
-
-const ISSUE_JSON = JSON.stringify({
-  fields: {
-    summary: "Issue 5",
-    description: null,
-    labels: [],
-    components: [],
-    status: { name: "Backlog", statusCategory: { key: "new" } },
-  },
-});
 
 // The setup of a test of a Jira repo: a start fixture with a jira tracker and a fake acli that answers the calls
 // of tasker start and tasker finish for TEST-5.
@@ -64,11 +37,11 @@ async function useJiraTask(): Promise<{ dataRoot: string; acli: FakeAcli }> {
   });
   const acli = fakeAcli(useTempDir("tasker-jira-"), {}, [
     { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
-    { args: VIEW_ARGS, stdout: ISSUE_JSON },
-    { args: LINKS_ARGS, stdout: '{"fields":{"issuelinks":[]}}' },
-    { args: ASSIGN_ARGS, stdout: acliWriteResult("SUCCESS", "assigned") },
-    { args: transitionArgs("In Progress"), stdout: acliWriteResult("SUCCESS", "moved") },
-    { args: transitionArgs("Done"), stdout: acliWriteResult("SUCCESS", "moved") },
+    { args: issueViewArgs("TEST-5"), stdout: BACKLOG_ISSUE_VIEW },
+    { args: linksViewArgs("TEST-5"), stdout: NO_LINKS_VIEW },
+    { args: assignArgs("TEST-5", "@me"), stdout: acliWriteResult("SUCCESS", "assigned") },
+    { args: transitionArgs("TEST-5", "In Progress"), stdout: acliWriteResult("SUCCESS", "moved") },
+    { args: transitionArgs("TEST-5", "Done"), stdout: acliWriteResult("SUCCESS", "moved") },
   ]);
   useProcessEnv({ TASKER_ACLI_BIN: String(acli.env.TASKER_ACLI_BIN) });
   return { dataRoot: fixture.dataRoot, acli };
@@ -85,13 +58,13 @@ describe("a Jira repo", () => {
     expect(code).toBe(0);
     expect(argsOf(acli)).toEqual([
       AUTH_STATUS_ARGS,
-      VIEW_ARGS,
+      issueViewArgs("TEST-5"),
       AUTH_STATUS_ARGS,
-      LINKS_ARGS,
+      linksViewArgs("TEST-5"),
       AUTH_STATUS_ARGS,
-      ASSIGN_ARGS,
+      assignArgs("TEST-5", "@me"),
       AUTH_STATUS_ARGS,
-      transitionArgs("In Progress"),
+      transitionArgs("TEST-5", "In Progress"),
     ]);
     expect(out).toContain("assigned TEST-5 to @me on the tracker\nmarked TEST-5 in progress on the tracker\n");
     expect(eventDataOf(dataRoot, "TEST-5", "tracker_update")).toEqual([
@@ -109,7 +82,7 @@ describe("a Jira repo", () => {
     const { code } = await runCommand(finish, "finish", "TEST-5");
 
     expect(code).toBe(0);
-    expect(argsOf(acli).slice(before)).toEqual([AUTH_STATUS_ARGS, transitionArgs("Done")]);
+    expect(argsOf(acli).slice(before)).toEqual([AUTH_STATUS_ARGS, transitionArgs("TEST-5", "Done")]);
     const updates = eventDataOf(dataRoot, "TEST-5", "tracker_update");
     expect(updates.at(-1)).toEqual({ action: "done", result: "ok" });
     expect(updates.filter((data) => (data as { action: string }).action === "done")).toHaveLength(1);
