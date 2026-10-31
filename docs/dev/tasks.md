@@ -34,6 +34,8 @@ The order follows what each step needs and what a failure can leave.
   `defaultBaseBranch` must name a remote branch ([The resolve](workspaces.md#the-resolve), and [config.md](../config.md)
   for `defaultBaseBranch`). The blocker base is the local branch `refs/heads/<x>` of one task.
 - The base comes before the workspace, because the workspace starts from the base.
+- The parent id of a stacked task goes in the same store write as the base. See
+  [Stacked task](workspaces.md#stacked-task).
 - Only a start that makes a new task branch writes the column `synced_base_tip` and the key `syncedBaseTip` of the
   `workspace` event. The value is the tip of the new branch.
 - Bootstrap runs after the repo lock is free. A bootstrap can run for a long time, and it does not use the clone. If
@@ -70,6 +72,8 @@ A second run continues a task that did not reach `workspace_ready`. It does not 
 - A task that is past this step is not changed. The command only prints it.
 - The stored base stays on a second run. A `--base` option or a `base:` label wins and is stored as the new base. A
   second run with no stored base runs the blocker step.
+- Each run that writes the base also writes the column `parent_task_id` again, with the rule of
+  [Stacked task](workspaces.md#stacked-task).
 - A second run that reuses a task branch or a worktree writes neither the column `synced_base_tip` nor the key
   `syncedBaseTip` of the `workspace` event.
 - A new base on a second run does not move a task branch that already exists. The stored base can differ from the real
@@ -708,7 +712,8 @@ These reasons explain its rules:
   commits of #542 and stopped on a conflict.
 - The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task.
 - The base change after the parent landed: the command switches the base to the base of the parent, also when the head
-  does not move. Without the switch, the task stays stacked, and the guard of `tasker verify` refuses it each time.
+  does not move. Without the switch, the task stays stacked, and the guard of `tasker verify` refuses it each time. The
+  same store write sets the column `parent_task_id` to NULL. The command changes the column in no other case.
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base`
   event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local
