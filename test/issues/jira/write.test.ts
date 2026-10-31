@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { IssueWriteError } from "../../../src/issues/issue.js";
+import { type Issue, IssueWriteError } from "../../../src/issues/issue.js";
 import { AcliNotInstalledError } from "../../../src/issues/jira/run.js";
 import { JiraLoginError, JiraSiteError } from "../../../src/issues/jira/site.js";
-import { assignJiraIssue, markJiraDone, markJiraInProgress } from "../../../src/issues/jira/write.js";
+import {
+  assignJiraIssue,
+  jiraInProgressMarker,
+  markJiraDone,
+  markJiraInProgress,
+} from "../../../src/issues/jira/write.js";
 import { failureOf } from "../../helpers/errors.js";
 import {
   acliWriteResult,
@@ -313,6 +318,40 @@ describe("Jira writes", () => {
       expect(error.message).toBe("issueTracker.doneStatus is not set");
       expect(error).not.toBeInstanceOf(IssueWriteError);
       expect(callArgs(fake)).toEqual([AUTH_STATUS_ARGS]);
+    });
+  });
+
+  describe("jiraInProgressMarker", () => {
+    const issueWith = (status?: string): Issue => ({
+      ref: jiraRefOf("TEST-10"),
+      title: "t",
+      body: "",
+      url: "https://example.atlassian.net/browse/TEST-10",
+      labels: [],
+      components: [],
+      ...(status === undefined ? {} : { status }),
+      state: "open",
+      comments: [],
+    });
+
+    it.each(["In Progress", "IN PROGRESS", "in progress"])("is true for the status %j", (status) => {
+      expect(jiraInProgressMarker(issueWith(status), "In Progress")).toBe(true);
+    });
+
+    it("is false for another status", () => {
+      expect(jiraInProgressMarker(issueWith("Backlog"), "In Progress")).toBe(false);
+    });
+
+    it("is false when the configured status is undefined", () => {
+      expect(jiraInProgressMarker(issueWith("In Progress"), undefined)).toBe(false);
+    });
+
+    it("is false for an issue with no status", () => {
+      expect(jiraInProgressMarker(issueWith(), "In Progress")).toBe(false);
+    });
+
+    it("does not fold the Kelvin sign to k", () => {
+      expect(jiraInProgressMarker(issueWith("\u212Aanban"), "kanban")).toBe(false);
     });
   });
 });
