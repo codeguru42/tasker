@@ -9,6 +9,7 @@ import { errorMessage } from "../error-message.js";
 import { modelIssue } from "../assistant/models.js";
 import type { AssistantProviderId } from "../assistant/provider.js";
 import { formatIssues } from "../zod-issues.js";
+import { asciiFold } from "../ascii-fold.js";
 
 const positive = z.number().positive();
 
@@ -80,7 +81,7 @@ const IssueTrackerSchema = z.strictObject({
   provider: z.enum(["github", "jira"]),
   project: nonEmpty.optional(),
   match: MatchSchema.optional(),
-  site: nonEmpty.transform((site) => site.toLowerCase()).optional(),
+  site: nonEmpty.transform(asciiFold).optional(),
   tracker: nonEmpty.optional(),
   account: nonEmpty.optional(),
   releaseBranchFieldId: nonEmpty.optional(),
