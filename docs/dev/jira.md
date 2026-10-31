@@ -155,6 +155,45 @@ The errors of the read:
 - Each other error passes through unchanged, for example an error of the site guard, a missing `acli` or another
   `AcliError`.
 
+## The blockers of an issue
+
+`readJiraBlockers()` in `src/issues/jira/blockers.ts` reads the blockers of one issue. It runs the site guard first.
+Then it runs `acli jira workitem view <key> --json --fields issuelinks`.
+
+A link counts as a blocker only when it has an `inwardIssue`, it has no `outwardIssue`, and one of these is true:
+
+- `type.name` is `Blocks`.
+- `type.inward` is `is blocked by`.
+
+Both compares are exact, with case. The reason that a link with an `outwardIssue` does not count: a link with an
+`outwardIssue` means that this issue blocks the other issue.
+
+The function builds each `Blocker` as this list says:
+
+- The `key` is the key of the inward issue, for example `TEST-3`. This is the stored form of a Jira key, so the blocker
+  step finds the task of the blocker in the same repo.
+- The `state` is `"closed"` for `inwardIssue.fields.status.statusCategory.key` `"done"`. Each other key, and a missing
+  status, gives `"open"`.
+- An inward issue of another project gives a `Blocker` with its key too. The blocker step finds no task for it in the
+  repo, so it counts as open until it is closed.
+
+The list keeps the order of the links that `acli` gives. Two links can name the same inward issue. Then the key comes
+one time in the list, at its first place. The reason: the blocker step counts two entries of one ready blocker as two
+ready blockers, and it refuses the start.
+
+An issue with no links, or with no `fields.issuelinks`, gives `[]`.
+
+An issue that does not exist and bad output give the messages of [The read of an issue](#the-read-of-an-issue). Here,
+the reason `the fields do not match` covers these cases:
+
+- A missing `fields` object.
+- A `fields.issuelinks` that is there but is not an array.
+- A link that is not an object.
+- A link that counts as a blocker, whose `inwardIssue.key` is not a string of the form `<PROJECT>-<N>`.
+
+tasker does not check the inward or the outward issue of another link. The other errors of `acli` and the site guard
+pass through unchanged.
+
 ## The errors
 
 - `AcliError`: `acli` exited with a code other than 0, or a signal stopped it. It holds the subcommand, the stdout, the
@@ -167,7 +206,8 @@ The errors of the read:
 - `JiraLoginError`: `acli` has no Jira login. `acli jira auth status` exited with a code other than 0, or its stdout has
   no `Site:` line or an empty value.
 - `JiraSiteError`: the site of the repo differs from the active site.
-- `IssueReadError`: the read of an issue failed. [The read of an issue](#the-read-of-an-issue) gives the messages.
+- `IssueReadError`: the read of an issue or of its blockers failed. [The read of an issue](#the-read-of-an-issue) and
+  [The blockers of an issue](#the-blockers-of-an-issue) give the messages.
 
 ## The measure of a failed call
 
@@ -223,3 +263,30 @@ issue. It gave:
 - For `fields.description` of `TEST-3`, `null`.
 - For `fields.status.name`, `Backlog` for `TEST-2` and `TEST-3`, and `Done` for `TEST-4`.
 - For `fields.status.statusCategory.key`, `new` for `Backlog` and `done` for `Done`.
+
+## The measure of the blockers
+
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The agent of #545
+made these links for the issue `TEST-9` of the project `TEST`:
+
+- `acli jira workitem link create --out TEST-9 --in TEST-6 --type Blocks --yes`
+- `acli jira workitem link create --out TEST-9 --in TEST-4 --type Blocks --yes`
+- `acli jira workitem link create --out TEST-7 --in TEST-9 --type Blocks --yes`
+- `acli jira workitem link create --out TEST-9 --in TEST-8 --type Relates --yes`
+
+The command `acli jira workitem view TEST-9 --json --fields issuelinks` gave:
+
+- Exit code 0, an empty stderr and one JSON object on stdout.
+- For `fields.issuelinks`, an array with one object for each link, in the order of the creates.
+- In each link, either `inwardIssue` or `outwardIssue`. The key of the other side is missing.
+- For `type` of a `Blocks` link, the `name` `Blocks`, the `inward` `is blocked by` and the `outward` `blocks`. For a
+  `Relates` link, the `name` `Relates`, and `relates to` for `inward` and `outward`.
+- In `inwardIssue`, the `key` and `fields.status.statusCategory.key`: `new` for `TEST-6` and `TEST-8`, `done` for
+  `TEST-4`.
+
+The issue `TEST-3` has no links, and the same command gives `[]` for `fields.issuelinks`. `TEST-999999` gives the stderr
+of [The measure of a failed call](#the-measure-of-a-failed-call). With no `--fields`, the output has no `issuelinks`.
+
+`--out A --in B --type Blocks` makes the link "B blocks A", but `acli` prints `A Blocks B`. `TEST-6` and `TEST-4` are in
+`inwardIssue` of `TEST-9`. The Jira search `issue in linkedIssues("TEST-9", "is blocked by")` also gave `TEST-6` and
+`TEST-4`.
