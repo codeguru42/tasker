@@ -46,6 +46,9 @@ pair of repo and issue. A partial unique index on the active rows keeps this rul
 
 An issue can have many tasks over time, one for each attempt. The attempt count covers all repos.
 
+The column `synced_base_tip` holds the commit id of the base tip that the task branch was last built on. Schema version
+13 adds it. The rows that exist then hold NULL.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 
