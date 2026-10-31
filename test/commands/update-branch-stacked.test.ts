@@ -5,8 +5,23 @@ import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote, undoHint } from "../helpers/command-output.js";
 import { expectedShowLines } from "../helpers/state-commands.js";
 import { commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
-import { databasePathOf, eventsOf, latestTaskOf, withDataRootStore, withRawDatabase } from "../helpers/store.js";
-import { expectCommandRefused, landParent, useStackedTasks, type StackedTasks } from "../helpers/task-fixtures.js";
+import {
+  databasePathOf,
+  eventsOf,
+  latestTaskOf,
+  placeTask,
+  withDataRootStore,
+  withRawDatabase,
+} from "../helpers/store.js";
+import {
+  expectCommandRefused,
+  landParent,
+  moveTaskThrough,
+  useChainedTasks,
+  useStackedTasks,
+  type ChainedTasks,
+  type StackedTasks,
+} from "../helpers/task-fixtures.js";
 
 const REPO = "codeguru42/tasker";
 
@@ -395,7 +410,8 @@ describe("tasker update-branch for a stacked task", () => {
 
   describe("after the parent landed", () => {
     // The checks that a move onto the new main shares.
-    const expectMovedOntoMain = async (fixture: StackedTasks, head: string, tip: string) => {
+    // end is the key of the end task of the walk: the parent unless the chain has more landed parents.
+    const expectMovedOntoMain = async (fixture: StackedTasks, head: string, tip: string, end = fixture.parent.key) => {
       const synced = syncedOf(fixture);
       const result = await update(fixture);
       const moved = await inStacked(fixture, "rev-parse", "HEAD");
@@ -409,6 +425,7 @@ describe("tasker update-branch for a stacked task", () => {
         base: "main",
         revision: "refs/remotes/origin/main",
         source: "parent",
+        baseOf: end,
       });
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key)).toMatchObject({ base: "main", parentTaskId: null });
       expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
@@ -450,6 +467,7 @@ describe("tasker update-branch for a stacked task", () => {
         base: "main",
         revision: "refs/remotes/origin/main",
         source: "parent",
+        baseOf: fixture.parent.key,
       });
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe("main");
       expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({ how: "merge" });
@@ -516,28 +534,171 @@ describe("tasker update-branch for a stacked task", () => {
         base: "main",
         revision: "refs/remotes/origin/main",
         source: "parent",
+        baseOf: fixture.parent.key,
       });
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe("main");
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
     });
 
-    it("refuses a parent that is stacked too", async () => {
+    it("refuses an end task with a local base and no parent", async () => {
       const fixture = await useStackedTasks();
       await landParent(fixture, ["accepted", "landed"]);
       withRawDatabase(databasePathOf(fixture.dataRoot), (db) =>
         db.prepare("UPDATE tasks SET base = ? WHERE id = ?").run("refs/heads/other", fixture.parent.task.id),
       );
+      const before = eventsOf(fixture.dataRoot, fixture.stacked.key);
 
       const result = await update(fixture);
 
       expect(result.code).toBe(1);
-      expect(
-        result.err.endsWith(
-          `the parent ${fixture.parent.key} of ${fixture.stacked.key} is stacked too; its base is refs/heads/other\n`,
-        ),
-      ).toBe(true);
+      expect(result.out).toBe("");
+      expect(result.err).toBe(
+        `the base refs/heads/other of ${fixture.parent.key} is a local branch with no parent task; nothing moved\n`,
+      );
+      expect(eventsOf(fixture.dataRoot, fixture.stacked.key)).toEqual(before);
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).parentTaskId).toBe(fixture.parent.task.id);
+    });
+
+    it("moves the task onto main when two parents in a chain landed", async () => {
+      const fixture = await useChainedTasks();
+      const head = await inStacked(fixture, "rev-parse", "HEAD");
+      await landParent({ ...fixture, parent: fixture.grandparent }, ["accepted", "landed"]);
+      await landParent(fixture, ["accepted", "landed"]);
+      const tip = await fixture.origin.addCommit("main");
+
+      await expectMovedOntoMain(fixture, head, tip, fixture.grandparent.key);
+
+      expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
+        landedParents: [fixture.parent.key, fixture.grandparent.key],
+      });
+    });
+
+    describe("when the next parent has not landed", () => {
+      const grandparentRef = (fixture: ChainedTasks) => `refs/heads/${fixture.grandparent.branch}`;
+
+      // Moves the task of the parent to landed with no landing on origin, and adds a commit to the branch of the
+      // grandparent. The task of the grandparent stays in the state that the fixture gives, or in grandparentState.
+      const landOnlyParent = async (fixture: ChainedTasks, grandparentState?: "cancelled") => {
+        withDataRootStore(fixture.dataRoot, (store) => {
+          moveTaskThrough(store, fixture.parent.task.id, ["accepted", "landed"]);
+          if (grandparentState !== undefined) placeTask(store, fixture.grandparent.task.id, grandparentState);
+        });
+        await commitInWorktree(fixture.grandparent.worktree, fixture.env, { file: "grandparent-more.txt" });
+      };
+
+      it("stays stacked on the next parent and prints the new parent", async () => {
+        const fixture = await useChainedTasks();
+        await landOnlyParent(fixture);
+
+        const result = await update(fixture);
+
+        expect(result.code).toBe(0);
+        expect(result.out).toContain(`${fixture.stacked.key} is now stacked on ${fixture.grandparent.key}\n`);
+        expect(result.out).not.toContain("no longer stacked");
+        expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key)).toMatchObject({
+          base: grandparentRef(fixture),
+          parentTaskId: fixture.grandparent.task.id,
+          state: "executed",
+        });
+        expect(eventsOfType(fixture, "base").at(-1)?.data).toEqual({
+          base: grandparentRef(fixture),
+          revision: grandparentRef(fixture),
+          source: "parent",
+          baseOf: fixture.parent.key,
+        });
+        expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
+          landedParents: [fixture.parent.key],
+        });
+      });
+
+      it("prints no new parent and writes no landedParents in the second run", async () => {
+        const fixture = await useChainedTasks();
+        await landOnlyParent(fixture);
+        expect((await update(fixture)).code).toBe(0);
+
+        const second = await update(fixture);
+
+        expect(second.code).toBe(0);
+        expect(second.out).not.toContain("now stacked");
+        expect(second.out).not.toContain("no longer stacked");
+        expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).not.toHaveProperty("landedParents");
+        expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).parentTaskId).toBe(fixture.grandparent.task.id);
+      });
+
+      it("fails and keeps the base and the parent when the branch of the new parent is gone", async () => {
+        const fixture = await useChainedTasks();
+        await landOnlyParent(fixture);
+        await inClone(fixture, "update-ref", "-d", grandparentRef(fixture));
+
+        const result = await update(fixture);
+
+        expect(result.code).toBe(1);
+        expect(result.out).toBe("");
+        expect(
+          result.err.endsWith(
+            `the branch of the parent ${fixture.grandparent.key} is gone: ${grandparentRef(fixture)}\n`,
+          ),
+        ).toBe(true);
+        expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key)).toMatchObject({
+          base: parentRef(fixture),
+          parentTaskId: fixture.parent.task.id,
+          state: "executed",
+        });
+        expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toHaveProperty("error");
+        const sources = eventsOfType(fixture, "base").map((event) => (event.data as { source: string }).source);
+        expect(sources).not.toContain("parent");
+      });
+
+      it("stays stacked on a cancelled next parent", async () => {
+        const fixture = await useChainedTasks();
+        await landOnlyParent(fixture, "cancelled");
+
+        const result = await update(fixture);
+
+        expect(result.code).toBe(0);
+        expect(result.out).toContain(`${fixture.stacked.key} is now stacked on ${fixture.grandparent.key}\n`);
+        expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).parentTaskId).toBe(fixture.grandparent.task.id);
+      });
+    });
+
+    describe("when the chain has a loop", () => {
+      // Runs the update and makes sure that it wrote no row and no event.
+      const expectNothingWritten = async (fixture: StackedTasks, at: string) => {
+        const row = latestTaskOf(fixture.dataRoot, fixture.stacked.key);
+        const events = eventsOf(fixture.dataRoot, fixture.stacked.key);
+
+        const result = await update(fixture);
+
+        expect(result).toEqual({
+          code: 1,
+          out: "",
+          err: `the chain of parents of ${fixture.stacked.key} has a loop at ${at}; nothing moved\n`,
+        });
+        expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key)).toEqual(row);
+        expect(eventsOf(fixture.dataRoot, fixture.stacked.key)).toEqual(events);
+      };
+
+      it("refuses a chain that goes back to the task", async () => {
+        const fixture = await useStackedTasks();
+        await landParent(fixture, ["accepted", "landed"]);
+        withDataRootStore(fixture.dataRoot, (store) =>
+          store.updateTask(fixture.parent.task.id, { parentTaskId: fixture.stacked.task.id }),
+        );
+
+        await expectNothingWritten(fixture, fixture.stacked.key);
+      });
+
+      it("refuses a chain with a loop above the task", async () => {
+        const fixture = await useChainedTasks();
+        withDataRootStore(fixture.dataRoot, (store) => {
+          moveTaskThrough(store, fixture.grandparent.task.id, ["accepted", "landed"]);
+          moveTaskThrough(store, fixture.parent.task.id, ["accepted", "landed"]);
+          store.updateTask(fixture.grandparent.task.id, { parentTaskId: fixture.parent.task.id });
+        });
+
+        await expectNothingWritten(fixture, fixture.parent.key);
+      });
     });
   });
 });
@@ -569,5 +730,20 @@ describe("tasker update-branch --undo for a stacked task", () => {
     expect(second.out).toContain(replayedLine(fixture, synced));
     expect((await inStacked(fixture, "rev-list", `${tip}..HEAD`)).split("\n")).toHaveLength(1);
     expect(await inStacked(fixture, "rev-parse", "HEAD^")).toBe(tip);
+  });
+
+  it("undoes the last update of a task whose chain of parents has a loop", async () => {
+    const fixture = await useStackedTasks();
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-more.txt" });
+    expect((await update(fixture)).code).toBe(0);
+    withDataRootStore(fixture.dataRoot, (store) => {
+      moveTaskThrough(store, fixture.parent.task.id, ["accepted", "landed"]);
+      store.updateTask(fixture.parent.task.id, { parentTaskId: fixture.stacked.task.id });
+    });
+
+    const undone = await update(fixture, "--undo");
+
+    expect(undone.code).toBe(0);
+    expect(undone.out).toContain(`undid the last update of ${fixture.stacked.key}`);
   });
 });
