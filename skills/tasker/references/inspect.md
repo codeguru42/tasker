@@ -64,6 +64,7 @@ The command prints one line for each field, as `<field>: <value>`, in this order
 - `state`
 - `attempt`
 - `base`
+- `synced base tip`
 - `branch`
 - `worktree`
 - `clone`
@@ -73,6 +74,9 @@ The command prints one line for each field, as `<field>: <value>`, in this order
 
 `clone` is the absolute path of the bare clone of the repo of the task. The command prints it for each task, in each
 state.
+
+`synced base tip` is the commit id of the base tip that the task branch was last built on. A task with no stored tip
+prints no such field, because an agent reads a missing field as "no stored tip".
 
 A field with no value prints `-`. The `last event` line holds the time, the type and the data of the last event of the
 task, as one line of JSON text: `last event: <time> <type> <data>`. An event with no data prints `null`.
