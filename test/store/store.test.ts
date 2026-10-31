@@ -1593,6 +1593,40 @@ describe("task store", () => {
         expect(store.listEvents(task.id).find((e) => e.type === "base")?.data).toEqual(parent);
       });
 
+      // A task in updating_branch with a base on the branch of a parent and a link to the parent.
+      const linkedTask = () => {
+        const parent = store.createTask({ ...newTask, issueKey: "a/b#1", branch: "parent" });
+        const task = store.createTask({
+          ...newTask,
+          issueKey: "a/b#2",
+          state: "updating_branch",
+          base: "refs/heads/parent",
+        });
+        store.updateTask(task.id, { parentTaskId: parent.id });
+        writeRunMarker(dbPath, task.id, "updating_branch", process.pid);
+        return { parent, task };
+      };
+
+      it("clears the parent id when the base has the source parent", () => {
+        const { task } = linkedTask();
+        const parent = { base: "main", revision: "refs/remotes/origin/main", source: "parent" as const };
+        store.updateBranchTask(task.id, "executed", { base: parent }, branchUpdated);
+        expect(store.getTask(task.id)).toMatchObject({ base: "main", parentTaskId: null });
+      });
+
+      it("keeps the parent id when the base has the source update", () => {
+        const { parent, task } = linkedTask();
+        const moved = { base: "refs/heads/parent", revision: "refs/heads/parent", source: "update" as const };
+        store.updateBranchTask(task.id, "executed", { base: moved }, branchUpdated);
+        expect(store.getTask(task.id)?.parentTaskId).toBe(parent.id);
+      });
+
+      it("keeps the parent id when writes is empty", () => {
+        const { parent, task } = linkedTask();
+        store.updateBranchTask(task.id, "executed", {}, branchUpdated);
+        expect(store.getTask(task.id)?.parentTaskId).toBe(parent.id);
+      });
+
       it("keeps the base of the row when writes has no base", () => {
         const task = store.createTask({ ...newTask, state: "updating_branch", base: "refs/heads/parent" });
         writeRunMarker(dbPath, task.id, "updating_branch", process.pid);

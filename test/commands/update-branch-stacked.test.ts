@@ -90,6 +90,7 @@ describe("tasker update-branch for a stacked task", () => {
       how: "rebase",
     });
     expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).parentTaskId).toBe(fixture.parent.task.id);
   });
 
   it("drops the old commit of a parent that was rewritten and keeps the commits of the task", async () => {
@@ -366,7 +367,7 @@ describe("tasker update-branch for a stacked task", () => {
         revision: "refs/remotes/origin/main",
         source: "parent",
       });
-      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe("main");
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key)).toMatchObject({ base: "main", parentTaskId: null });
       expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
         after: { head: moved, base: "main", baseRevision: "refs/remotes/origin/main" },
       });
@@ -466,6 +467,7 @@ describe("tasker update-branch for a stacked task", () => {
         ),
       ).toBe(true);
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+      expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).parentTaskId).toBe(fixture.parent.task.id);
     });
   });
 });
