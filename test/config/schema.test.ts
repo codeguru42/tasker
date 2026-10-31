@@ -939,6 +939,52 @@ describe("parseConfig named trackers", () => {
     issuesOf(raw);
     expect(raw).toEqual(withLanding);
   });
+
+  describe("jira keys that mean nothing", () => {
+    const line = (name: string, key = "tasker") =>
+      `repos.${key}.issueTracker.${name}: is not accepted for the jira tracker`;
+
+    it("reports a refused key of a definition under the repo", () => {
+      const raw = withTracker({ tracker: "acme", project: "TEST" }, { acme: { ...acme, account: "me" } });
+      expect(issuesOf(raw)).toEqual([line("account")]);
+    });
+
+    it("reports a refused key of a definition once for each repo that uses it", () => {
+      const raw = withTracker({ tracker: "acme", project: "TEST" }, { acme: { ...acme, doneLabel: "done" } });
+      const repos = raw.repos as Record<string, { issueTracker: unknown }>;
+      raw.repos = {
+        tasker: repos.tasker,
+        other: { ...repos.tasker, issueTracker: { tracker: "acme", project: "TEST" } },
+      };
+      expect(issuesOf(raw).sort()).toEqual([line("doneLabel", "other"), line("doneLabel")].sort());
+    });
+
+    it("reports nothing for a jira definition that no repo uses", () => {
+      const raw = validConfig();
+      raw.trackers = { acme: { ...acme, account: "me", site: "https://bad" } };
+      expect(() => parseConfig(raw, {}, home)).not.toThrow();
+    });
+  });
+});
+
+describe("parseConfig jira tracker", () => {
+  function jiraConfig(keys: Record<string, unknown>): Record<string, unknown> {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", ...keys };
+    return raw;
+  }
+
+  it("gives a github repo no jira line", () => {
+    const raw = validConfig();
+    Object.assign(raw.repos.tasker.issueTracker, { inProgressLabel: "wip", updateOnFinish: true });
+    expect(parsedRepo(raw).issueTracker.inProgressLabel).toBe("wip");
+  });
+
+  it.each(["account", "inProgressLabel", "doneLabel"])("refuses %s on a jira repo", (name) => {
+    expect(issuesOf(jiraConfig({ [name]: "x" }))).toEqual([
+      `repos.tasker.issueTracker.${name}: is not accepted for the jira tracker`,
+    ]);
+  });
 });
 
 describe("parseConfig skillsDirs", () => {
