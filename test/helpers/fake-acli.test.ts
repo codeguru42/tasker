@@ -2,7 +2,15 @@ import { spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { fakeAcli, writeFakeAcli } from "./fake-acli.js";
+import {
+  AUTH_STATUS_ARGS,
+  fakeAcli,
+  fakeAcliView,
+  jiraRefOf,
+  MEASURED_AUTH_STATUS,
+  MEASURED_NOT_FOUND,
+  writeFakeAcli,
+} from "./fake-acli.js";
 import { useTempDir } from "./temp.js";
 
 describe("fakeAcli", () => {
@@ -58,5 +66,33 @@ describe("fakeAcli", () => {
     writeFakeAcli(binDir, join(dir, "other.log"), [{ args: [], stdout: "hi" }], [], "other");
 
     expect(spawnSync(join(binDir, "other"), [], { encoding: "utf8" }).stdout).toBe("hi");
+  });
+});
+
+describe("jiraRefOf", () => {
+  it("gives the ref of a Jira issue in the repo work", () => {
+    expect(jiraRefOf("TEST-2")).toEqual({ key: "TEST-2", repoKey: "work", shortRef: "TEST-2" });
+  });
+});
+
+describe("MEASURED_NOT_FOUND", () => {
+  it("is the stderr of a view of an issue that does not exist", () => {
+    expect(MEASURED_NOT_FOUND).toBe("✗ Error: Issue does not exist or you do not have permission to see it.");
+  });
+});
+
+describe("fakeAcliView", () => {
+  it("answers the auth status, then the view call", () => {
+    const dir = useTempDir("tasker-fake-acli-view-");
+    const viewArgs = ["jira", "workitem", "view", "TEST-2", "--json", "--fields", "summary"];
+    const fake = fakeAcliView(dir, viewArgs, { stdout: "view out\n", exitCode: 2 });
+    const run = (...args: string[]) =>
+      spawnSync(fake.env.TASKER_ACLI_BIN ?? "acli", args, { env: fake.env, encoding: "utf8" });
+
+    expect(run(...AUTH_STATUS_ARGS).stdout).toBe(MEASURED_AUTH_STATUS);
+    const view = run(...viewArgs);
+    expect(view.stdout).toBe("view out\n");
+    expect(view.status).toBe(2);
+    expect(fake.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS, viewArgs]);
   });
 });

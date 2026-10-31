@@ -1,4 +1,6 @@
 import { join } from "node:path";
+import type { IssueRef } from "../../src/issue-key/ref.js";
+import { jiraShortRef } from "../../src/issue-key/short-ref.js";
 import {
   answerChecks,
   type FakeAnswer,
@@ -82,3 +84,19 @@ export const MEASURED_AUTH_STATUS = [
   "  Authentication Type: oauth_global",
   "",
 ].join("\n");
+
+// The measured stderr of `acli jira workitem view` for an issue that does not exist.
+export const MEASURED_NOT_FOUND = "✗ Error: Issue does not exist or you do not have permission to see it.";
+
+// The ref of a Jira issue in the repo "work".
+export function jiraRefOf(key: string): IssueRef {
+  return { key, repoKey: "work", shortRef: jiraShortRef(key) };
+}
+
+// The fake acli with the answer of the site guard, then the answer of the view call for viewArgs.
+export function fakeAcliView(dir: string, viewArgs: readonly string[], view: Omit<FakeAcliAnswer, "args">): FakeAcli {
+  return fakeAcli(dir, {}, [
+    { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
+    { args: [...viewArgs], ...view },
+  ]);
+}

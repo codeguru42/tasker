@@ -1,14 +1,12 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { IssueRef } from "../../../src/issue-key/ref.js";
-import { jiraShortRef } from "../../../src/issue-key/short-ref.js";
 import { readJiraIssue } from "../../../src/issues/jira/issue.js";
 import { AcliError, AcliNotInstalledError } from "../../../src/issues/jira/run.js";
 import { JiraSiteError } from "../../../src/issues/jira/site.js";
 import { IssueReadError } from "../../../src/issues/issue.js";
 import { failureOf } from "../../helpers/errors.js";
-import { AUTH_STATUS_ARGS, type FakeAcliAnswer, fakeAcli, MEASURED_AUTH_STATUS } from "../../helpers/fake-acli.js";
+import { AUTH_STATUS_ARGS, fakeAcliView, jiraRefOf, MEASURED_NOT_FOUND } from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 // The output of `acli jira workitem view <key> --json --fields summary,description,labels,status,components`
@@ -139,10 +137,7 @@ const TEST_4 = {
   versionedRepresentations: null,
 };
 
-const NOT_FOUND = "✗ Error: Issue does not exist or you do not have permission to see it.";
 const BAD_FIELDS = "acli jira workitem view gave bad output for TEST-2: the fields do not match";
-
-const refOf = (key: string): IssueRef => ({ key, repoKey: "work", shortRef: jiraShortRef(key) });
 
 // The call of readJiraIssue(). The field list is a literal, so that the test checks the call on its own.
 const viewArgs = (key: string) => [
@@ -168,21 +163,14 @@ describe("readJiraIssue", () => {
     dir = useTempDir("tasker-jira-issue-");
   });
 
-  // The fake acli with the answer of the site guard, then the answer of the view call.
-  const fakeWith = (key: string, view: Omit<FakeAcliAnswer, "args">) =>
-    fakeAcli(dir, {}, [
-      { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
-      { args: viewArgs(key), ...view },
-    ]);
-
   const read = (key: string, stdout: string, site?: string) =>
-    readJiraIssue(refOf(key), site, fakeWith(key, { stdout }).env);
+    readJiraIssue(jiraRefOf(key), site, fakeAcliView(dir, viewArgs(key), { stdout }).env);
 
   it("reads an issue with labels and components", async () => {
-    const fake = fakeWith("TEST-2", { stdout: JSON.stringify(TEST_2) });
+    const fake = fakeAcliView(dir, viewArgs("TEST-2"), { stdout: JSON.stringify(TEST_2) });
 
-    await expect(readJiraIssue(refOf("TEST-2"), undefined, fake.env)).resolves.toEqual({
-      ref: refOf("TEST-2"),
+    await expect(readJiraIssue(jiraRefOf("TEST-2"), undefined, fake.env)).resolves.toEqual({
+      ref: jiraRefOf("TEST-2"),
       title: "tasker #543 measure: labels and components",
       body: "An issue with labels and components for the measure of #543.",
       url: "https://codeguru42.atlassian.net/browse/TEST-2",
@@ -272,19 +260,19 @@ describe("readJiraIssue", () => {
   });
 
   it("fails with IssueReadError for an issue that does not exist", async () => {
-    const fake = fakeWith("TEST-999999", { exitCode: 1, stderr: `${NOT_FOUND}\n` });
+    const fake = fakeAcliView(dir, viewArgs("TEST-999999"), { exitCode: 1, stderr: `${MEASURED_NOT_FOUND}\n` });
 
-    const error = await failureOf(readJiraIssue(refOf("TEST-999999"), undefined, fake.env), IssueReadError);
+    const error = await failureOf(readJiraIssue(jiraRefOf("TEST-999999"), undefined, fake.env), IssueReadError);
 
     expect(error.message).toBe(
-      `the issue TEST-999999 does not exist, or you do not have permission to see it: ${NOT_FOUND}`,
+      `the issue TEST-999999 does not exist, or you do not have permission to see it: ${MEASURED_NOT_FOUND}`,
     );
   });
 
   it("passes another AcliError through", async () => {
-    const fake = fakeWith("TEST-2", { exitCode: 1, stderr: "boom" });
+    const fake = fakeAcliView(dir, viewArgs("TEST-2"), { exitCode: 1, stderr: "boom" });
 
-    const error = await failureOf(readJiraIssue(refOf("TEST-2"), undefined, fake.env), AcliError);
+    const error = await failureOf(readJiraIssue(jiraRefOf("TEST-2"), undefined, fake.env), AcliError);
 
     expect(error).not.toBeInstanceOf(IssueReadError);
     expect(error.stderr).toBe("boom");
@@ -292,9 +280,9 @@ describe("readJiraIssue", () => {
   });
 
   it("passes an error of the site guard through", async () => {
-    const fake = fakeWith("TEST-2", { stdout: JSON.stringify(TEST_2) });
+    const fake = fakeAcliView(dir, viewArgs("TEST-2"), { stdout: JSON.stringify(TEST_2) });
 
-    await failureOf(readJiraIssue(refOf("TEST-2"), "other.atlassian.net", fake.env), JiraSiteError);
+    await failureOf(readJiraIssue(jiraRefOf("TEST-2"), "other.atlassian.net", fake.env), JiraSiteError);
 
     expect(fake.calls()).toEqual([{ args: AUTH_STATUS_ARGS, env: {} }]);
   });
@@ -303,7 +291,7 @@ describe("readJiraIssue", () => {
     const empty = join(dir, "empty");
     mkdirSync(empty);
 
-    await failureOf(readJiraIssue(refOf("TEST-2"), undefined, { PATH: empty }), AcliNotInstalledError);
+    await failureOf(readJiraIssue(jiraRefOf("TEST-2"), undefined, { PATH: empty }), AcliNotInstalledError);
   });
 
   it("fails when the output is not JSON", async () => {
