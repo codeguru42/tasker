@@ -517,6 +517,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - If a page has two headings with the same name, the issue gives the exact anchor (#194).
 - If an issue asks for a heading "next to a bullet", ask the plan to put the heading after the bullet list, not inside
   it. On #230, the orchestrator gave this answer before `tasker approve`.
+- A page can have no `##` heading. For example, `docs/orchestrator.md` had no `##` heading before #490. An issue can ask
+  for a section after the intro of such a page. Then ask the plan to put the section at the end of the page. Ask the
+  plan to give the reason: a section right after the intro takes the next paragraphs under its heading. On #490, the
+  agent gave this answer in refine 1.
 - If an issue says that link text "is the issue key", ask the plan which form of the key it uses. A short form of the
   key can differ from the full key. On #230, the agent found this.
 - In step 7 of [the rebase-conflict procedure](rebase-conflicts.md#procedure), resolve only the conflict hunk.
