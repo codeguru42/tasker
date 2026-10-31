@@ -192,9 +192,10 @@ of the list. As a result, the rule that the agent first does the fact test does 
 - If a task is stacked on the same parent as another task, the shared-file warning of `tasker refine` and
   `tasker approve` for that task lists the files of the parent too. The warning reads the files that the branch of the
   other task changes against the base, and that branch holds the commits of the parent.
-- `tasker update-branch` prints the command that undoes the update after each update that moves the task branch, also
-  with `--take-remote`. The output gives `previous HEAD was <hash>`, and the command is
-  `tasker update-branch <issue> --undo`. On #252, each plain `tasker update-branch` printed this hint.
+- `tasker update-branch` prints the command that undoes the update after each run that moved the head, also with
+  `--strategy` or `--take-remote`. A run moved the head when its base step or its sync step moved it. The output gives
+  `previous HEAD was <hash>`, and the command is `tasker update-branch <issue> --undo`. On #252, each plain
+  `tasker update-branch` printed this hint.
 - When the rebase of `tasker update-branch` stops with a conflict, the output names each conflicting path.
 - After `tasker update-branch`, the bootstrap of the task does not run again. If the new base changes
   `package-lock.json`, `tasker verify` fails on the old `node_modules` of the worktree of tasker. The fix is a refine

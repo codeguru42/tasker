@@ -7,9 +7,9 @@ its base branch. [Shared errors](../SKILL.md#shared-errors) lists the errors tha
 ## `tasker update-branch`
 
 Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base
-branch: `tasker update-branch <issue> [--strategy rebase|merge] [--take-remote]`. The task goes through the state
-`updating_branch`. The command accepts a task in `workspace_ready`, `awaiting_plan_review`, `approved`, `executed`,
-`awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`, `cleanup_failed` or `failed`.
+branch: `tasker update-branch <issue> [--strategy rebase|merge] [--take-remote] [--undo]`. The task goes through the
+state `updating_branch`. The command accepts a task in `workspace_ready`, `awaiting_plan_review`, `approved`,
+`executed`, `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`, `cleanup_failed` or `failed`.
 
 The strategy is the value of `--strategy`. If the option is absent, the strategy is `updateBranchStrategy` of the repo,
 which is `rebase` by default. The option overrides `updateBranchStrategy` for one run.
@@ -81,9 +81,9 @@ the local tip from before the sync step. As a result, a failed update changes no
 The `branch_updated` event has the key `sync`. Its value is `absent`, `none`, `fast-forward` or `take-remote`.
 `before.head` is the local tip before the sync step. `before.syncedBaseTip` and `after.syncedBaseTip` are the synced
 base tip of the task before and after the command. The synced base tip is the base tip that the task branch was last
-built on.
+built on. The key `how` has the value `undo` for an undo.
 
-When the head moved in the sync step or in the base step, the command writes a `base` event
+When the sync step or the base step moved the head, the command writes a `base` event
 `{ base, revision, source: "update" }`. The `base` is the stored base. The `revision` is the stored base revision, a
 ref, for example `refs/remotes/origin/main`. The command writes no `base` event when the head did not move. A task whose
 parent landed is the exception: [The base step of a stacked task](#the-base-step-of-a-stacked-task) gives its `base`
@@ -99,6 +99,8 @@ On success, the command prints these lines on stdout:
   head. `<head before>` is the head at the start of the base step. The value of `<how>` is `fast-forward`, `rebase` or
   `merge`.
 - `demoted <issue key> from <origin> to <target>` only when the target differs from the origin state.
+- `previous HEAD was <head before>; run tasker update-branch <issue key> --undo to restore it` after each run without
+  `--undo` that moved the head. `<head before>` is the head before the sync step.
 - `the plan is stale; run tasker refine <issue key> before tasker approve` only when the head moved and the task stays
   in `awaiting_plan_review`.
 - `state: <state>`.
@@ -189,6 +191,48 @@ After a move of the head, also a move of the sync step, `tasker approve` refuses
 error is
 `the plan v<N> of <issue key> is older than the last move of the worktree; run tasker refine <issue key> "<feedback>" first`.
 
+### Undo the last update
+
+`tasker update-branch <issue> --undo` puts the task branch and the worktree back at the head from before the last run
+that moved the head. It also puts the synced base tip back. The command reads these values from the task row. It reads
+no event. It fetches nothing and runs no sync step and no base step.
+
+The command makes these checks, in this order, before it moves anything:
+
+1. The task is in a state that the command accepts.
+2. The worktree is clean.
+3. The task has a stored move. If not, the error is `nothing to undo for <issue key>`.
+4. `HEAD` and the task branch both name the head that the last run left. If not, the command stops with an error and
+   undoes nothing.
+
+The `HEAD` error is
+`the worktree of <issue key> moved since the last update (HEAD <head>, branch <branch tip>, last update <head of the last run>); nothing undone`.
+A failed read of `HEAD` or of the branch stops the command with the error of the read.
+
+The undo counts as a move of the head. As a result, the demotion table and the rule for a stale plan apply. The undo
+also stores its own values, so a second `--undo` goes back again. The base, the base revision and the parent link stay.
+The undo writes a `branch_updated` event with `how: "undo"` and `sync: "none"`. It writes no `base` event.
+
+On success, the command prints these lines on stdout:
+
+- `undid the last update of <issue key>: <head before the undo> back to <head after the undo>`.
+- `demoted <issue key> from <origin> to <target>` only when the target differs from the origin state.
+- `the plan is stale; run tasker refine <issue key> before tasker approve` only when the task stays in
+  `awaiting_plan_review`.
+- `state: <state>`, then the commands of that state, as for a plain run.
+
+The command prints no `previous HEAD was` line after an undo.
+
+If the move fails, the restore rule of a plain run applies. The worktree goes back to the head from before the undo, and
+the task goes back to its origin state. The three stored values stay as they were. The same holds when the last write
+fails.
+
+These cases are out of scope:
+
+- A move that `tasker update-branch` did not make.
+- The run that unstacked the task after its parent landed.
+- The next plain run after an undo of a sync move.
+
 ### Errors
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state
@@ -197,6 +241,10 @@ and of the clone lock belong to this group:
 
 - The task has no branch, no worktree, no base or no base revision.
 - The value of `--strategy` is not `rebase` or `merge`. The error is `--strategy must be rebase or merge: <value>`.
+- The options are `--undo` with `--strategy` or `--take-remote`. The error is
+  `--undo cannot be combined with --strategy or --take-remote`.
+- The option `--undo` finds no stored move or a moved worktree. [Undo the last update](#undo-the-last-update) gives the
+  errors.
 - The worktree has uncommitted changes. The error has the line `the worktree has uncommitted changes: <path>`, then one
   line for each change, and the last line `tasker update-branch needs a clean worktree`.
 

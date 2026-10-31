@@ -771,6 +771,14 @@ These reasons explain its rules:
   refusal of a dirty worktree before `updating_branch` makes sure that the take drops no uncommitted change.
 - The undo of the sync move: a failed base step also moves the branch and the worktree back to the local tip from before
   the sync step, so that a failed update changes nothing.
+- The head of the last move: a rebase rewrites each commit, so the new head does not reach the old head. Only the stored
+  head names the commit that the undo goes back to.
+- The demotion of an undo: the undo moves the head, so the old approval or the old verify result no longer describes the
+  tree.
+- The base of an undo: the base, the base revision and the parent link stay, also after a move that changed the base.
+  The commits of the old parent are in the new base.
+- The synced base tip of an undo: the undo puts the old tip back, because the head builds on that tip. The next replay
+  of a stacked task starts after that tip, so it replays only the commits of the task.
 - The demotion: when the head moved, the old approval or the old verify result no longer describes the tree.
 - The demotion of a head that is not the accepted revision: a task in `accepted`, or a task that failed in `merging`,
   goes to `executed` when its head is not the accepted revision, also when the command moved nothing. A commit that

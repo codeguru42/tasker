@@ -13,7 +13,12 @@ import {
   withIssueTaskAsync,
 } from "./shared.js";
 
-interface UpdateBranchOptions { repo?: string; strategy?: string; takeRemote?: boolean; undo?: boolean }
+interface UpdateBranchOptions {
+  repo?: string;
+  strategy?: string;
+  takeRemote?: boolean;
+  undo?: boolean;
+}
 
 export const updateBranch: RegisterCommand = (program, io) => {
   program

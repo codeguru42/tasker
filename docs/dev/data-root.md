@@ -61,6 +61,12 @@ clears it. `tasker merge` compares the tip of the task branch with it. Schema ve
 once for each row that exists, from the revision of the newest `accepted` event of the task. Code reads the column and
 never the event, as the rule of the `events` table says.
 
+The columns `undo_before_head`, `undo_after_head` and `undo_synced_base_tip` hold the values that
+`tasker update-branch --undo` reads. Each run that moved the head writes all three in its store write.
+`undo_before_head` is the head before the sync step, and `undo_after_head` is the head after the run.
+`undo_synced_base_tip` is the synced base tip before the run, or NULL. Schema version 16 adds them. The migration writes
+no value, so the rows that exist hold NULL.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 
