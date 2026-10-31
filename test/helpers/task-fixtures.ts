@@ -776,7 +776,8 @@ export async function useVerifyFixture(options: {
   return { started, task, config: started.config, env: started.env };
 }
 
-// The error of a land of a tip that is not the accepted revision, with the newline of a refused command.
+// The error of a land of a tip that is not the accepted revision, with no newline.
+// A refused command prints this text with a final newline.
 export function unacceptedTipError(branch: string, tip: string, accepted: string): string {
   return `the tip of ${branch} (${tip}) is not the accepted revision (${accepted}); run tasker update-branch and review the work again`;
 }
