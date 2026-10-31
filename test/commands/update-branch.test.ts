@@ -937,4 +937,73 @@ describe("the next step", () => {
       ),
     ).toBe(true);
   });
+
+  const NOTE = `the plan is stale; run tasker refine ${KEY} before tasker approve\n`;
+  const WARNING = "warning: tasker retry runs the old session and plan against the moved tree\n";
+
+  it("prints the stale note when the head moved and the task stays in awaiting_plan_review", async () => {
+    const work = await useMovedBaseTask();
+    place(work, "awaiting_plan_review");
+
+    const result = await runUpdateBranch();
+
+    expect(result.code).toBe(0);
+    expect(
+      result.out.endsWith(`${NOTE}state: awaiting_plan_review\n${expectedShowLines("awaiting_plan_review", KEY)}`),
+    ).toBe(true);
+    expect(result.err).toBe(absentRemoteNote(String(work.task.branch)));
+  });
+
+  it("prints the stale note after a move of the sync step", async () => {
+    const work = await useWorkReviewTask();
+    const branch = work.task.branch!;
+    place(work, "awaiting_plan_review");
+    await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+    await work.origin.addCommit(branch, { file: "remote.txt" });
+
+    const result = await runUpdateBranch();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(NOTE);
+  });
+
+  it("prints the warning when the head moved and the task stays in failed", async () => {
+    const work = await useMovedBaseTask();
+    withDataRootStore(work.dataRoot, (store) => failTaskFrom(store, work.task.id, "executing"));
+
+    const result = await runUpdateBranch();
+
+    expect(result.code).toBe(0);
+    expect(result.err).toBe(`${absentRemoteNote(String(work.task.branch))}${WARNING}`);
+    expect(result.out.endsWith(`state: failed\n${expectedShowLines("failed", KEY)}`)).toBe(true);
+  });
+
+  it("prints no warning for a failed task that a move demotes to executed", async () => {
+    const work = await useMovedBaseTask();
+    withDataRootStore(work.dataRoot, (store) => failTaskFrom(store, work.task.id, "reviewing"));
+
+    const result = await runUpdateBranch();
+
+    expect(result.code).toBe(0);
+    expect(result.err).not.toContain("warning:");
+  });
+
+  it("prints no note when nothing moved", async () => {
+    const work = await useWorkReviewTask();
+    place(work, "awaiting_plan_review");
+
+    const result = await runUpdateBranch();
+
+    expect(result.out).not.toContain("the plan is stale");
+    expect(result.err).toBe(absentRemoteNote(String(work.task.branch)));
+  });
+
+  it("prints no warning when nothing moved", async () => {
+    const work = await useWorkReviewTask();
+    withDataRootStore(work.dataRoot, (store) => failTaskFrom(store, work.task.id, "executing"));
+
+    const result = await runUpdateBranch();
+
+    expect(result.err).toBe(absentRemoteNote(String(work.task.branch)));
+  });
 });
