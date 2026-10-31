@@ -304,10 +304,30 @@ export async function rebaseOnto(o: {
 
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
 
-// Replays the commits after syncedBaseTip, onto onto. Onto is a full revision or a full ref. When syncedBaseTip is not
-// set, or the head does not build on it, or git cannot check it, the replay starts after the merge base of the head
-// and onto. It reads the merge base right before the rebase. onStart gets the form of the replay before the rebase
-// runs. It gives the new head.
+// Gives the merge base of the head and onto when it is newer than syncedBaseTip. Otherwise it gives undefined, also
+// after a GitError. Any other error passes through.
+async function newerMergeBase(o: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  head: string;
+  onto: string;
+  syncedBaseTip: string;
+}): Promise<string | undefined> {
+  const { clone, env, head, onto, syncedBaseTip } = o;
+  try {
+    const found = await mergeBase({ clone, env, a: head, b: onto });
+    if (found === syncedBaseTip) return undefined;
+    return (await isAncestor({ clone, env, ancestor: syncedBaseTip, descendant: found })) ? found : undefined;
+  } catch (error) {
+    if (!(error instanceof GitError)) throw error;
+    return undefined;
+  }
+}
+
+// Replays the commits of the head onto onto. Onto is a full revision or a full ref. The replay starts after
+// syncedBaseTip, or after the merge base of the head and onto when that merge base is newer. When syncedBaseTip is not
+// set, or the head does not build on it, or git cannot check it, the replay starts after the merge base. It reads the
+// merge base right before the rebase. onStart gets the form of the replay before the rebase runs. It gives the new head.
 export async function replayOntoTip(o: {
   clone: string;
   env: NodeJS.ProcessEnv;
@@ -332,6 +352,11 @@ export async function replayOntoTip(o: {
       fallback = { from: "merge-base", why: "check-failed", syncedBaseTip, exitCode: error.exitCode };
     }
     if (ancestor === true) {
+      const newer = await newerMergeBase({ clone, env, head, onto, syncedBaseTip });
+      if (newer !== undefined) {
+        onStart?.({ from: "merge-base", mergeBase: newer, why: "newer-merge-base", syncedBaseTip });
+        return rebaseOnto({ clone, env, path, upstream: newer, onto });
+      }
       onStart?.({ from: "synced-base-tip", syncedBaseTip });
       return rebaseOnto({ clone, env, path, upstream: syncedBaseTip, onto });
     }

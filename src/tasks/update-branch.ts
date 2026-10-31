@@ -67,7 +67,7 @@ export type BranchUpdated = SyncOutcome & {
   state: TaskState;
 };
 
-// The note for a replay that fell back to the merge base. A replay after the synced base tip needs no note.
+// The note for a replay that starts after the merge base. A replay after the synced base tip needs no note.
 function replayNote(issueKey: string, start: ReplayStart): string | undefined {
   if (start.from === "synced-base-tip") return undefined;
   const tail = `tasker replays the commits after the merge base ${start.mergeBase}\n`;
@@ -78,6 +78,8 @@ function replayNote(issueKey: string, start: ReplayStart): string | undefined {
       return `note: tasker could not check the synced base tip ${start.syncedBaseTip} of ${issueKey} (git exit code ${String(start.exitCode)}); ${tail}`;
     case "no-synced-base-tip":
       return `note: ${issueKey} has no synced base tip; ${tail}`;
+    case "newer-merge-base":
+      return `note: the merge base ${start.mergeBase} of ${issueKey} is newer than the synced base tip ${start.syncedBaseTip}; ${tail}`;
   }
 }
 
@@ -251,8 +253,9 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         : parent !== undefined && strategy === "rebase"
           ? // The new tip of a stacked task is the tip of the branch of the parent while the parent is in flight,
             // and the tip of the base of the parent after the parent landed. Under rebase, the replay puts the
-            // commits after the synced base tip onto the new tip, with a rebase. It falls back to the commits after
-            // the merge base. Under merge, a stacked task uses the resync of every other task.
+            // commits after the synced base tip onto the new tip, with a rebase. It starts after the merge base when
+            // the merge base is newer. It falls back to the commits after the merge base when it cannot use the
+            // synced base tip. Under merge, a stacked task uses the resync of every other task.
             {
               how: "rebase",
               head: await vcs.replayOnto(ctx, {

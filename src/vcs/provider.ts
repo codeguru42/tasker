@@ -98,10 +98,12 @@ export function uncommittedChangeText(change: UncommittedChange): string {
 
 export type ReconcileStrategy = "rebase" | "merge";
 
-// Where a replay starts. A fallback to the merge base holds the reason: the task has no synced base tip, the head does not
-// build on it, or git could not check it (exitCode is the exit code of git).
+// Where a replay starts. The replay starts after the synced base tip, or after the merge base when the merge base is
+// newer. A fallback to the merge base holds the reason: the task has no synced base tip, the head does not build on it,
+// or git could not check it (exitCode is the exit code of git).
 export type ReplayStart =
   | { from: "synced-base-tip"; syncedBaseTip: string }
+  | { from: "merge-base"; mergeBase: string; why: "newer-merge-base"; syncedBaseTip: string }
   | { from: "merge-base"; mergeBase: string; why: "no-synced-base-tip" }
   | { from: "merge-base"; mergeBase: string; why: "not-ancestor"; syncedBaseTip: string }
   | { from: "merge-base"; mergeBase: string; why: "check-failed"; syncedBaseTip: string; exitCode: number | null };
@@ -244,8 +246,9 @@ export interface VcsProvider {
     ctx: VcsContext,
     o: { path: string; baseRevision: string; strategy: ReconcileStrategy },
   ): Promise<ResyncResult>;
-  // Replays the commits of the workspace after syncedBaseTip, onto onto, and gives the new head. When syncedBaseTip is
-  // not set, or the head does not build on it, it replays the commits after the merge base of the head and onto.
+  // Replays the commits of the workspace onto onto, and gives the new head. The replay starts after syncedBaseTip, or
+  // after the merge base of the head and onto when that merge base is newer. When syncedBaseTip is not set, or the head
+  // does not build on it, it replays the commits after the merge base.
   // onStart gets the form of the replay before the rebase runs. It does not fetch. A conflict rejects with
   // ReconcileConflictError (src/vcs/errors.ts) and the workspace is restored.
   replayOnto(
