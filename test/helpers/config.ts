@@ -115,14 +115,18 @@ export type Trackers = Record<string, Record<string, unknown>>;
 
 // A parsed configuration with one repo for each entry of trackers. Each repo copies the
 // repo of validConfig(). Its issueTracker is the issueTracker of validConfig() (which has
-// the account that a github tracker needs) with the keys of the entry on top.
+// the account that a github tracker needs) with the keys of the entry on top. A jira entry
+// uses only its own keys, because a jira tracker refuses the account.
 export function configWithTrackers(trackers: Trackers): Config {
   const raw = validConfig();
   const base = raw.repos.tasker;
   raw.repos = Object.fromEntries(
     Object.entries(trackers).map(([key, issueTracker]) => [
       key,
-      { ...base, issueTracker: { ...base.issueTracker, ...issueTracker } },
+      {
+        ...base,
+        issueTracker: issueTracker.provider === "jira" ? issueTracker : { ...base.issueTracker, ...issueTracker },
+      },
     ]),
   );
   return parseConfig(raw, {}, "/home/test");
