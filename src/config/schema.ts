@@ -84,7 +84,6 @@ const IssueTrackerSchema = z.strictObject({
   tracker: nonEmpty.optional(),
   account: nonEmpty.optional(),
   releaseBranchFieldId: nonEmpty.optional(),
-  releaseBranchField: nonEmpty.optional(),
   updateOnStart: z.boolean().default(false),
   assignee: nonEmpty.default("@me"),
   inProgressLabel: nonEmpty.optional(),
