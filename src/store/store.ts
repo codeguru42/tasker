@@ -229,6 +229,8 @@ export interface StoreOptions {
 
 // The writes of tasker update-branch besides the move. base is the data of a base event.
 // clearPlanApproval is the pinned version whose approval is cleared.
+// A base with the source "parent" moves the task off a landed parent, so the same write sets parentTaskId to null.
+// No other writes change parentTaskId.
 export interface BranchUpdateWrites {
   base?: { base: string; revision: string; source: "update" | "parent" };
   clearPlanApproval?: number;
@@ -1527,7 +1529,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     updateBranchTask(taskId, state, writes, check) {
-      return writeTask(taskId, { state, base: writes.base?.base, syncedBaseTip: writes.syncedBaseTip }, check, (at) => {
+      const changes = {
+        state,
+        base: writes.base?.base,
+        syncedBaseTip: writes.syncedBaseTip,
+        parentTaskId: writes.base?.source === "parent" ? null : undefined,
+      };
+      return writeTask(taskId, changes, check, (at) => {
         endRunStep(taskId, state);
         if (writes.clearPlanApproval !== undefined) clearPinnedApprovalStep(taskId, writes.clearPlanApproval);
         if (writes.base !== undefined) writeEvent(taskId, at, "base", writes.base);
