@@ -76,8 +76,8 @@ prints one line and exits with code 0. The line depends on the origin of the ref
 - `awaiting_work_review`: `run tasker review <issue key> "<feedback>" again`
 
 The command makes its move before it runs the next command. If the guard of a stacked task refuses the next command, the
-task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`, then
-run the next command.
+task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`. Then
+read the state and the `next:` or `commands:` line that it prints. Run a command that the state allows.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state
 and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the
@@ -138,8 +138,8 @@ section of the next command gives them. If the assistant never created the sessi
 next command fails. Then `tasker retry` starts a new session.
 
 The command makes its move before it runs the next command. If the guard of a stacked task refuses the next command, the
-task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`, then
-run the next command.
+task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`. Then
+read the state and the `next:` or `commands:` line that it prints. Run a command that the state allows.
 
 The command does not wait for the reset time of a quota limit. You decide when to run it. If the run of the task is
 dead, the note of the dead run comes on stderr first. See [A dead run](../SKILL.md#a-dead-run).
@@ -190,8 +190,8 @@ command:
 The next command keeps its own output, its own errors and its own exit code.
 
 The command makes its move before it runs the next command. If the guard of a stacked task refuses the next command, the
-task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`, then
-run the next command.
+task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`. Then
+read the state and the `next:` or `commands:` line that it prints. Run a command that the state allows.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state
 and the command writes nothing. If the run of the task is dead, the task moves to `interrupted` before the checks (see
