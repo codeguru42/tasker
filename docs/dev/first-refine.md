@@ -173,9 +173,10 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   This cost refine 2.
 
   A first refine can give a fact that the agent measured, or a decision of the agent. Then the first refine asks the
-  plan to name no source for that fact or decision, or to say "the agent". On #391 (2026-10-26), refine 1 said "the
-  agent measured" for its facts and named no source for its changes. Plan v2 still wrote "the user measured" and "the
-  user decided". This cost refine 2.
+  plan to name no source for that fact or decision, or to say "the agent". It also says: "Do not name the user as the
+  source of this fact or decision." On #391 (2026-10-26), refine 1 said "the agent measured" for its facts and named no
+  source for its changes. Plan v2 still wrote "the user measured" and "the user decided", and this cost refine 2. On
+  #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
 
 - If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
   [The body of an issue](planner.md#the-body-of-an-issue) asks the planner for the same compare before the post. If no
