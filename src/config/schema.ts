@@ -10,6 +10,7 @@ import { modelIssue } from "../assistant/models.js";
 import type { AssistantProviderId } from "../assistant/provider.js";
 import { formatIssues } from "../zod-issues.js";
 import { asciiFold } from "../ascii-fold.js";
+import { JIRA_PROJECT } from "../issue-key/short-ref.js";
 
 const positive = z.number().positive();
 
@@ -240,7 +241,9 @@ function githubTrackerIssues(key: string, issueTracker: Record<string, unknown>)
 // acli has no flag for a site or a user for one call, so a Jira repo sets no account. A Jira repo uses statuses, not labels.
 const JIRA_REFUSED_KEYS = ["account", "inProgressLabel", "doneLabel"] as const;
 
-// A jira tracker refuses the keys that mean nothing for it.
+const JIRA_PROJECT_PATTERN = new RegExp(`^${JIRA_PROJECT}$`);
+
+// A jira tracker refuses the keys that mean nothing for it, and needs a Jira project key.
 function jiraTrackerIssues(key: string, issueTracker: Record<string, unknown>): string[] {
   if (issueTracker.provider !== "jira") {
     return [];
@@ -250,6 +253,23 @@ function jiraTrackerIssues(key: string, issueTracker: Record<string, unknown>): 
     if (issueTracker[name] !== undefined) {
       issues.push(issueLine(["repos", key, "issueTracker", name], "is not accepted for the jira tracker"));
     }
+  }
+  const { project } = issueTracker;
+  if (project === undefined && !JIRA_PROJECT_PATTERN.test(key)) {
+    issues.push(
+      issueLine(
+        ["repos", key, "issueTracker", "project"],
+        `is required for the jira tracker when the repo key ${key} is not a Jira project key`,
+      ),
+    );
+  }
+  if (typeof project === "string" && !JIRA_PROJECT_PATTERN.test(project)) {
+    issues.push(
+      issueLine(
+        ["repos", key, "issueTracker", "project"],
+        `must be a Jira project key that matches ^${JIRA_PROJECT}$, got ${project}`,
+      ),
+    );
   }
   return issues;
 }
