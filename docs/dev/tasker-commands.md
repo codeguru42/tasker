@@ -1,7 +1,7 @@
 # Tasker commands
 
-The readers of this page are the agent of a ticket, and the orchestrator for the plain-form rule and the tool-block
-rule.
+The readers of this page are the agent of a ticket, the orchestrator, the planner and the operator. The orchestrator
+reads the plain-form rule and the tool-block rule. The planner and the operator read the tool-block rule.
 
 ## The plain-form rule
 
@@ -57,6 +57,15 @@ exact command, the step of the work that the command belongs to, and the purpose
 the user these facts. The orchestrator does not run the blocked action for the agent, unless the user tells it to. The
 recommendation mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) does not cover a tool
 block: the orchestrator always waits for the user.
+
+The classifier of auto mode can deny a `gh` write of a follow-up planner or an orchestrator. That session sends the
+operator an item with the exact command, the folder and the exact text of the denial. The operator gives the user the
+exact command and the folder, with the `!` prefix of Claude Code. The answer of the operator gives the output of the
+command, or says that the command did not run. If the command ran, the session goes on with its work. If it did not run,
+the step stays open, and the session runs the action in no other form.
+
+An initial planner gives the user the command directly. A check failure keeps its own bullets. On 2026-10-30, the
+classifier denied `gh issue comment` and `gh issue edit` of planner-m26, and the user ran each command.
 
 A check failure is a denial whose text says that the classifier of auto mode gave no verdict. A check failure is a tool
 block, with these differences:
