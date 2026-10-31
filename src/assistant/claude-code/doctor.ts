@@ -2,7 +2,7 @@ import type { Check } from "../../doctor/check.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import { childEnv } from "../../process/child-env.js";
 import { modelIssue } from "../models.js";
-import { programVersionCheck } from "../version-check.js";
+import { programVersionCheck } from "../program-check.js";
 import { isOnPath } from "./sandbox.js";
 
 // The detail when claude cannot start because it is missing or not on PATH.
