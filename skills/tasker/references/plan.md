@@ -107,6 +107,9 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 These errors leave the task in its state. The command writes nothing. The shared errors of no task, of the wrong state,
 of the task lock and of the prompt archive belong to this group:
 
+- The task is stacked and its parent has landed. The error is
+  `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+  See [`tasker update-branch`](keeping-current.md#the-base-step-of-a-stacked-task).
 - The task is in `awaiting_plan_review` or `failed` and you give no feedback. The error is
   `the feedback is missing; tasker refine needs it unless the task is in reviewed`.
 - The feedback is empty or has only spaces. The error is `the feedback is empty`.

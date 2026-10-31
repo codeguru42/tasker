@@ -43,6 +43,9 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 These errors leave the task in its state. The command writes no event, no session and no transcript. The shared errors
 of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
+- The task is stacked and its parent has landed. The error is
+  `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+  See [`tasker update-branch`](keeping-current.md#the-base-step-of-a-stacked-task).
 - The task is approved, but no revision is pinned. The error is
   `the task of <issue key> is approved, but no revision is pinned`.
 - The plan file of the pinned revision cannot be read. The error is

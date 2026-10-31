@@ -23,9 +23,17 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 and nothing is written. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors), of the task lock
 and of the clone lock belong to this group:
 
+- The task is stacked, so it has a parent task. The error depends on the parent:
+  - The parent landed. The error is
+    `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+    Run `tasker update-branch <issue key>`.
+  - The parent is cancelled. The error is
+    `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
+  - The parent is in any other state. The error is
+    `the parent <parent key> of <issue key> has not landed; land the parent first, then run tasker update-branch <issue key>`.
 - The task has no branch. The error is `the task of <issue key> has no branch`.
 - The task has no base. The error is `the task of <issue key> has no base`.
-- The base is a local branch of the clone. The error is
+- The task has no parent, and the base is a local branch of the clone. The error is
   `the base of <issue key> is a local branch of the clone: <base>; tasker merge pushes only to a branch on origin`.
 - The task has no base revision. The error is `the task of <issue key> has no base revision`.
 - The task has no accepted revision. The error is `the task of <issue key> has no accepted revision`.
@@ -74,6 +82,14 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 and nothing is written. The shared errors of no task, of the wrong state, of the task lock and of the clone lock belong
 to this group:
 
+- The task is stacked, so it has a parent task. The error depends on the parent:
+  - The parent landed. The error is
+    `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+    Run `tasker update-branch <issue key>`.
+  - The parent is cancelled. The error is
+    `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
+  - The parent is in any other state. The error is
+    `the parent <parent key> of <issue key> has not landed; land the parent first, then run tasker update-branch <issue key>`.
 - The task has no branch. The error is `the task of <issue key> has no branch`.
 - The task has no base. The error is `the task of <issue key> has no base`.
 - The task has no base revision. The error is `the task of <issue key> has no base revision`.
