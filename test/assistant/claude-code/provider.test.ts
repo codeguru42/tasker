@@ -551,10 +551,10 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
     expect(call.argv).toContain("--settings");
   });
 
-  it("adds the permission hook to the settings of a sandboxed run that allows skill writes", async () => {
+  it("adds the permission hook to the settings of a sandboxed run with workspace-write access", async () => {
     const { outcome, fake, tmpRoot, cwd } = await sandboxed(
       { stream: claudeSample("plain") },
-      { overrides: { allowSkillWrites: true } },
+      { overrides: { access: "workspace-write" } },
     );
 
     expect(outcome.kind).toBe("success");
@@ -590,9 +590,9 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
     expect(outcome).not.toHaveProperty("sandboxCleanup");
   });
 
-  it("gives only the permission hook as settings for a run with no sandbox that allows skill writes", async () => {
+  it("gives only the permission hook as settings for a run with no sandbox with workspace-write access", async () => {
     const cwd = useTempDir("tasker-claude-cwd-");
-    const { fake } = await run({ stream: claudeSample("plain") }, { cwd, allowSkillWrites: true });
+    const { fake } = await run({ stream: claudeSample("plain") }, { cwd, access: "workspace-write" });
 
     expect(fake.calls()[0].settings).toEqual(permissionHookSettings(cwd));
   });
