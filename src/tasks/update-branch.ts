@@ -82,7 +82,7 @@ function replayNote(issueKey: string, start: ReplayStart): string | undefined {
 // A result with exitCode means that the step already printed the message.
 export type UpdateBranchResult = BranchUpdated | { exitCode: number };
 
-// The target of a task demoted task, by origin state. An origin that is not in the table keeps its state.
+// The target of a demoted task, by origin state. An origin that is not in the table keeps its state.
 const DEMOTED_TO: Readonly<Partial<Record<TaskState, TaskState>>> = {
   approved: "awaiting_plan_review",
   awaiting_work_review: "executed",
