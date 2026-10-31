@@ -18,6 +18,7 @@ import {
   landParent,
   moveTaskThrough,
   useChainedTasks,
+  useMovedBaseTask,
   useStackedTasks,
   type ChainedTasks,
   type StackedTasks,
@@ -79,6 +80,10 @@ const replayedLine = (fixture: StackedTasks, synced: string | null) =>
 
 const newerMergeBaseNote = (fixture: StackedTasks, mergeBase: string, synced: string | null) =>
   `note: the merge base ${mergeBase} of ${fixture.stacked.key} is newer than the synced base tip ${String(synced)}; tasker replays the commits after the merge base ${mergeBase}\n`;
+
+const MERGE_NOTE_START = "note: tasker merged";
+const mergeNote = (fixture: StackedTasks, base: string) =>
+  `note: tasker merged ${base} into ${fixture.stacked.key}, so the commits of the parent are now in its history; use --strategy rebase for a stacked task that has no merge move yet\n`;
 
 describe("tasker update-branch for a stacked task", () => {
   it("rebases the commits of the task onto new commits of the parent", async () => {
@@ -317,7 +322,7 @@ describe("tasker update-branch for a stacked task", () => {
     expect(result).toEqual({
       code: 0,
       out: `moved ${fixture.stacked.key} onto ${parentRef(fixture)} at ${tip} by merge: ${head} to ${moved}\n${undoHint(fixture.stacked.key, head)}state: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
-      err: absentRemoteNote(fixture.stacked.branch),
+      err: absentRemoteNote(fixture.stacked.branch) + mergeNote(fixture, parentRef(fixture)),
     });
     expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
     expect(await inStacked(fixture, "rev-parse", "HEAD^2")).toBe(tip);
@@ -358,6 +363,7 @@ describe("tasker update-branch for a stacked task", () => {
 
     expect(result.code).toBe(0);
     expect(result.out).toContain("by rebase:");
+    expect(result.err).toBe(absentRemoteNote(fixture.stacked.branch));
     expect(await inStacked(fixture, "rev-parse", "HEAD^")).toBe(tip);
     expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({ how: "rebase" });
   });
@@ -372,9 +378,66 @@ describe("tasker update-branch for a stacked task", () => {
 
     expect(result.code).toBe(0);
     expect(result.out).toContain("by merge:");
+    expect(result.err).toBe(absentRemoteNote(fixture.stacked.branch) + mergeNote(fixture, parentRef(fixture)));
     expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
     expect(await inStacked(fixture, "rev-parse", "HEAD^2")).toBe(tip);
     expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({ how: "merge" });
+  });
+
+  it("prints no note for a merge move of a task that is not stacked", async () => {
+    const work = await useMovedBaseTask({ repo: { updateBranchStrategy: "merge" } });
+
+    const result = await runCommand(updateBranch, "update-branch", work.key, "--repo", REPO);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("by merge:");
+    expect(result.err).toBe(absentRemoteNote(String(work.task.branch)));
+  });
+
+  it("prints no note when a merge stops on a conflict", async () => {
+    const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "stacked.txt", content: "other\n" });
+
+    const result = await update(fixture);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("stacked.txt");
+    expect(result.err).not.toContain(MERGE_NOTE_START);
+  });
+
+  it("prints no note for a move of the sync step alone", async () => {
+    const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+    await commitInWorktree(fixture.stacked.worktree, fixture.env, { file: "later.txt" });
+    await copyCloneBranchToOrigin({
+      origin: fixture.origin.path,
+      clone: fixture.clone,
+      branch: fixture.stacked.branch,
+      env: fixture.env,
+    });
+    await inStacked(fixture, "reset", "--hard", "HEAD^");
+
+    const result = await update(fixture);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`synced ${fixture.stacked.branch} from origin/`);
+    expect(result.out).toContain("nothing moved");
+    expect(result.err).toBe("");
+  });
+
+  it("prints no note when the last write fails", async () => {
+    const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-more.txt" });
+    withRawDatabase(databasePathOf(fixture.dataRoot), (db) =>
+      db.exec(
+        "CREATE TRIGGER refuse_update BEFORE INSERT ON events WHEN NEW.type = 'branch_updated' AND json_extract(NEW.data, '$.error') IS NULL BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
+      ),
+    );
+
+    const result = await update(fixture);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("refused by the test");
+    expect(result.err).not.toContain(MERGE_NOTE_START);
   });
 
   it("restores the worktree when a commit of the task conflicts", async () => {
@@ -459,7 +522,7 @@ describe("tasker update-branch for a stacked task", () => {
       expect(result).toEqual({
         code: 0,
         out: `moved ${fixture.stacked.key} onto main at ${tip} by merge: ${head} to ${moved}\n${noLongerStacked(fixture)}\n${undoHint(fixture.stacked.key, head)}state: executed\n${expectedShowLines("executed", fixture.stacked.key)}`,
-        err: absentRemoteNote(fixture.stacked.branch),
+        err: absentRemoteNote(fixture.stacked.branch) + mergeNote(fixture, "main"),
       });
       expect(await inStacked(fixture, "rev-parse", "HEAD^1")).toBe(head);
       expect(await inStacked(fixture, "rev-parse", "HEAD^2")).toBe(tip);
@@ -472,6 +535,20 @@ describe("tasker update-branch for a stacked task", () => {
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe("main");
       expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({ how: "merge" });
       expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("executed");
+    });
+
+    it("prints no note for a later merge move of a task with no parent", async () => {
+      const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+      await landParent(fixture, ["accepted", "landed"]);
+      await fixture.origin.addCommit("main");
+      expect((await update(fixture)).code).toBe(0);
+      await fixture.origin.addCommit("main");
+
+      const second = await update(fixture);
+
+      expect(second.code).toBe(0);
+      expect(second.out).toContain("by merge:");
+      expect(second.err).toBe(absentRemoteNote(fixture.stacked.branch));
     });
 
     it("moves the task when the parent finished and its branch and worktree are gone", async () => {
@@ -612,6 +689,17 @@ describe("tasker update-branch for a stacked task", () => {
         });
       });
 
+      it("prints the note with the branch of the next parent after a merge move", async () => {
+        const fixture = await useChainedTasks({ repo: { updateBranchStrategy: "merge" } });
+        await landOnlyParent(fixture);
+
+        const result = await update(fixture);
+
+        expect(result.code).toBe(0);
+        expect(result.out).toContain("by merge:");
+        expect(result.err).toBe(absentRemoteNote(fixture.stacked.branch) + mergeNote(fixture, grandparentRef(fixture)));
+      });
+
       it("prints no new parent and writes no landedParents in the second run", async () => {
         const fixture = await useChainedTasks();
         await landOnlyParent(fixture);
@@ -730,6 +818,17 @@ describe("tasker update-branch --undo for a stacked task", () => {
     expect(second.out).toContain(replayedLine(fixture, synced));
     expect((await inStacked(fixture, "rev-list", `${tip}..HEAD`)).split("\n")).toHaveLength(1);
     expect(await inStacked(fixture, "rev-parse", "HEAD^")).toBe(tip);
+  });
+
+  it("prints no note for an undo of a merge move", async () => {
+    const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
+    await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-more.txt" });
+    expect((await update(fixture, "--strategy", "merge")).code).toBe(0);
+
+    const undone = await update(fixture, "--undo");
+
+    expect(undone.code).toBe(0);
+    expect(undone.err).not.toContain(MERGE_NOTE_START);
   });
 
   it("undoes the last update of a task whose chain of parents has a loop", async () => {
