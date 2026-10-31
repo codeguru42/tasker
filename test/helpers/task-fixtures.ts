@@ -595,33 +595,40 @@ export interface StackedTasks extends StartFixture {
   stacked: { key: string; task: Task; branch: string; worktree: string };
 }
 
-// Runs useStartFixture with the issues 5 and 6, starts the task of issue 5 with one commit parent.txt and moves it to
-// awaiting_work_review. Then it starts the task of issue 6 with --base refs/heads/<branch of the parent>, commits
-// stacked.txt and moves it to executed. It throws when a start fails. It sets the git identity of the clone to
+// Runs useStartFixture with the issues 5 and 6, starts the task of issue 5 with the commits of options.parentCommits
+// (one commit parent.txt by default) and moves it to awaiting_work_review. Then it starts the task of issue 6 with
+// --base refs/heads/<branch of the parent>, commits stacked.txt unless options.stackedCommit is false and moves it to
+// executed. It throws when a start fails. It sets the git identity of the clone to
 // GIT_TEST_IDENTITY through vcs.config, and a vcs key of options.repo replaces this default. Call it inside a test.
-export async function useStackedTasks(options: Parameters<typeof useStartFixture>[0] = {}): Promise<StackedTasks> {
+export async function useStackedTasks(
+  options: NonNullable<Parameters<typeof useStartFixture>[0]> & {
+    parentCommits?: { file: string; content?: string }[];
+    stackedCommit?: boolean;
+  } = {},
+): Promise<StackedTasks> {
+  const { parentCommits = [{ file: "parent.txt" }], stackedCommit = true, ...startOptions } = options;
   const fixture = await useStartFixture({
-    ...options,
+    ...startOptions,
     issues: [
       { project: "codeguru42/tasker", number: 5 },
       { project: "codeguru42/tasker", number: 6 },
     ],
     repo: {
       vcs: { provider: "git", config: { authorName: GIT_TEST_IDENTITY.name, authorEmail: GIT_TEST_IDENTITY.email } },
-      ...options.repo,
+      ...startOptions.repo,
     },
   });
   const { repoKey, dataRoot } = fixture;
   const parentStart = await startIssueTask(fixture, 5);
   if (parentStart.result.code !== 0)
     throw new Error(`tasker start failed for ${parentStart.key}: ${parentStart.result.err}`);
-  await commitInWorktree(parentStart.worktree, fixture.origin.env, { file: "parent.txt" });
+  for (const commit of parentCommits) await commitInWorktree(parentStart.worktree, fixture.origin.env, commit);
   const parent = walkTask(dataRoot, repoKey, parentStart.key, TO_WORK_REVIEW);
   const stackedStart = await startIssueTask(fixture, 6, "--base", `refs/heads/${parentStart.branch}`);
   if (stackedStart.result.code !== 0) {
     throw new Error(`tasker start failed for ${stackedStart.key}: ${stackedStart.result.err}`);
   }
-  await commitInWorktree(stackedStart.worktree, fixture.origin.env, { file: "stacked.txt" });
+  if (stackedCommit) await commitInWorktree(stackedStart.worktree, fixture.origin.env, { file: "stacked.txt" });
   const stacked = walkTask(dataRoot, repoKey, stackedStart.key, TO_WORK_REVIEW.slice(0, 5));
   return {
     ...fixture,

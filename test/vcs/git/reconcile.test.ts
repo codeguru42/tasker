@@ -345,6 +345,58 @@ describe("git reconcile", () => {
       expect(await git("ls-files")).toContain("g.txt");
     });
 
+    it("replays only the commits after the synced base tip", async () => {
+      const p = await commitInWorktree(path, env, { file: "p.txt" });
+      await commitInWorktree(path, env, { file: "g.txt" });
+      const tree = await git("rev-parse", `${p}^{tree}`);
+      const tip = await git("commit-tree", tree, "-p", p, "-m", "parent next");
+      const starts: unknown[] = [];
+      await replay(tip, { syncedBaseTip: p, onStart: (s) => starts.push(s) });
+      expect(starts).toEqual([{ from: "synced-base-tip", syncedBaseTip: p }]);
+      expect(await git("rev-parse", "HEAD~1")).toBe(tip);
+      expect(await git("ls-files")).toContain("g.txt");
+    });
+
+    it("moves a head with no commit after the synced base tip to the tip", async () => {
+      const p = await commitInWorktree(path, env, { file: "p.txt" });
+      const tree = await git("rev-parse", `${p}^{tree}`);
+      const tip = await git("commit-tree", tree, "-p", p, "-m", "parent next");
+      const starts: { from: string }[] = [];
+      const result = await replay(tip, { syncedBaseTip: p, onStart: (s) => starts.push(s) });
+      expect(result).toBe(tip);
+      expect(await git("rev-parse", "HEAD")).toBe(tip);
+      expect(starts[0]?.from).toBe("synced-base-tip");
+    });
+
+    it("falls back to the merge base when the synced base tip is not an ancestor of HEAD", async () => {
+      await commitInWorktree(path, env, { file: "g.txt" });
+      const syncedBaseTip = await moveBase({ file: "other.txt" });
+      const tip = await moveBase({ file: "next.txt" });
+      const mergeBase = await git("merge-base", "HEAD", tip);
+      const starts: unknown[] = [];
+      await replay(tip, { syncedBaseTip, onStart: (s) => starts.push(s) });
+      expect(starts).toEqual([{ from: "merge-base", why: "not-ancestor", syncedBaseTip, mergeBase }]);
+    });
+
+    it("falls back with the exit code when git cannot check the synced base tip", async () => {
+      await commitInWorktree(path, env, { file: "g.txt" });
+      const syncedBaseTip = "1234567890".repeat(4);
+      const tip = await moveBase({ file: "next.txt" });
+      const mergeBase = await git("merge-base", "HEAD", tip);
+      const starts: unknown[] = [];
+      await replay(tip, { syncedBaseTip, onStart: (s) => starts.push(s) });
+      expect(starts).toEqual([{ from: "merge-base", why: "check-failed", syncedBaseTip, exitCode: 128, mergeBase }]);
+    });
+
+    it("falls back to the merge base with no synced base tip", async () => {
+      await commitInWorktree(path, env, { file: "g.txt" });
+      const tip = await moveBase({ file: "next.txt" });
+      const mergeBase = await git("merge-base", "HEAD", tip);
+      const starts: unknown[] = [];
+      await replay(tip, { onStart: (s) => starts.push(s) });
+      expect(starts).toEqual([{ from: "merge-base", why: "no-synced-base-tip", mergeBase }]);
+    });
+
     it("aborts and restores when a commit conflicts", async () => {
       const tip = await conflictSetup();
       const start = await state();
