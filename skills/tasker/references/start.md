@@ -30,7 +30,7 @@ with no `base source`.
 The field `base source` names the source that gave the base:
 
 - `explicit`: the `--base` option, or the stored base of a second run.
-- `hint`: the `base:` label of the issue.
+- `hint`: the `base:` label of an issue of a GitHub repo.
 - `blocker`: the blocker step.
 - `learned`: the default that tasker learned for the repo.
 - `config`: the `defaultBaseBranch` of the repo.
@@ -38,9 +38,9 @@ The field `base source` names the source that gave the base:
 
 If a run stops before `workspace_ready`, run the same command again. The second run continues the same task. This holds
 for a task that failed in the steps of `tasker start`. The second run keeps the stored base. A `--base` option sets a
-new base. A `base:` label on the issue also sets a new base, but only when the run has no `--base` option. The task
-keeps the new base. A second run with no stored base runs the blocker step. If the blocker step refuses, the task stays
-as the run found it. A new base does not move a task branch that already exists.
+new base. A `base:` label on an issue of a GitHub repo also sets a new base, but only when the run has no `--base`
+option. The task keeps the new base. A second run with no stored base runs the blocker step. If the blocker step
+refuses, the task stays as the run found it. A new base does not move a task branch that already exists.
 
 The command picks the base branch from the first source that has one:
 
