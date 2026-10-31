@@ -320,13 +320,16 @@ export function branchUpdateMoved(data: unknown): boolean {
   return how !== "none" || sync === "fast-forward" || sync === "take-remote";
 }
 
+// The ways a branch update moves the head: a result of the base step, or an undo.
+export type BranchUpdateHow = ResyncResult["how"] | "undo";
+
 // Moves the task out of updating_branch with one branch_updated event { before, after, how, sync, [error], from, to } in
 // place of a transition event, and makes the writes, in one transaction. An illegal edge writes nothing.
 export function transitionWithBranchUpdate(
   store: TaskStore,
   id: number,
   to: TaskState,
-  detail: { before: BranchSnapshot; after: BranchSnapshot; how: ResyncResult["how"]; sync: BranchSync; error?: string },
+  detail: { before: BranchSnapshot; after: BranchSnapshot; how: BranchUpdateHow; sync: BranchSync; error?: string },
   writes: BranchUpdateWrites,
 ): Task {
   return store.updateBranchTask(id, to, writes, transitionCheck("branch_updated", to, detail));
