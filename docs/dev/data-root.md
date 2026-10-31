@@ -87,7 +87,6 @@ The table is an append-only log. Each event belongs to one task. See
 
 These reads of today break the rule. The issue of each read removes it:
 
-- The base revision of a task, from the newest `base` event (#603).
 - The [origin](tasks.md#retry) of a state and the error of a [failure](../statemachine.md#failure-and-retry), from the
   last move into a state (#604).
 - The feedback of a [refine](tasks.md#refine), the start head of an [update](tasks.md#update-branch) and the facts of a

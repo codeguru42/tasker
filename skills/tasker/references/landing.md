@@ -38,7 +38,6 @@ and of the clone lock belong to this group:
 - The task has no base. The error is `the task of <issue key> has no base`.
 - The task has no parent, and the base is a local branch of the clone. The error is
   `the base of <issue key> is a local branch of the clone: <base>; tasker merge pushes only to a branch on origin`.
-- The task has no base revision. The error is `the task of <issue key> has no base revision`.
 - The task has no accepted revision. The error is `the task of <issue key> has no accepted revision`.
   `tasker update-branch` recovers this task, as the paragraph after this list says.
 - The tip of the task branch is not the accepted revision. The error is
@@ -98,7 +97,6 @@ to this group:
     `the parent <parent key> of <issue key> has not landed; land the parent first, then run tasker update-branch <issue key>`.
 - The task has no branch. The error is `the task of <issue key> has no branch`.
 - The task has no base. The error is `the task of <issue key> has no base`.
-- The task has no base revision. The error is `the task of <issue key> has no base revision`.
 - The fetch or the read of the base fails, for example because `origin` has no such base. The error is
   `cannot read the base tip: <error>`.
 - The base does not contain the task branch. The error is

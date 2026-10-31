@@ -659,11 +659,11 @@ The base can move after the check of `tasker accept`. Then `tasker merge` fails,
 `tasker merge` lands the work of a task in `accepted` on the base branch of `origin`. The task goes through `merging` to
 `landed`.
 
-Its checks cover the task, the state, the landing guard, the branch, the stored base, the base revision, the tip of the
-branch and the repo lock. The tip check compares the exact ref `refs/heads/<branch>` of the clone with the accepted
-revision of the task. [Landing commands](../../skills/tasker/references/landing.md#tasker-merge) gives its errors. After
-the checks, the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip
-of the task branch and the tip of the base. If the base does not contain the work, the command pushes it with
+Its checks cover the task, the state, the landing guard, the branch, the stored base, the tip of the branch and the repo
+lock. The tip check compares the exact ref `refs/heads/<branch>` of the clone with the accepted revision of the task.
+[Landing commands](../../skills/tasker/references/landing.md#tasker-merge) gives its errors. After the checks, the
+command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task
+branch and the tip of the base. If the base does not contain the work, the command pushes it with
 [the land operation of the version control provider](version-control.md#land). The last write is one transaction that
 appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. The
 `landed` event takes the place of the `transition` event for this move. If a step fails after the move to `merging`, the
@@ -694,12 +694,12 @@ These reasons explain its rules:
 `tasker mark-landed` records that the work of a task in `accepted`, `pushed` or `in_peer_review` already landed on the
 base branch outside tasker. The task goes to `landed`.
 
-Its checks cover the task, the state, the landing guard, the branch, the stored base and the base revision. Then it
-takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation
-of merge. If the base does not contain the work, the command stops with an error. The fetch can still move the refs of
-`origin` in the clone, also when the command stops with this error. The last write is one transaction that appends one
-`marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`. The
-`marked_landed` event takes the place of the `transition` event for this move.
+Its checks cover the task, the state, the landing guard, the branch, the stored base. Then it takes the repo lock and
+fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base
+does not contain the work, the command stops with an error. The fetch can still move the refs of `origin` in the clone,
+also when the command stops with this error. The last write is one transaction that appends one `marked_landed` event
+with the data `{ revision, baseTip, from, to }` and moves the task to `landed`. The `marked_landed` event takes the
+place of the `transition` event for this move.
 
 These reasons explain its rules:
 

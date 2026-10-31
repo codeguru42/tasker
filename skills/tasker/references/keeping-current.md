@@ -254,7 +254,7 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 and nothing is written. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors), of the task lock
 and of the clone lock belong to this group:
 
-- The task has no branch, no worktree, no base or no base revision.
+- The task has no branch, no worktree or no base.
 - The value of `--strategy` is not `rebase` or `merge`. The error is `--strategy must be rebase or merge: <value>`.
 - The options are `--undo` with `--strategy` or `--take-remote`. The error is
   `--undo cannot be combined with --strategy or --take-remote`.
