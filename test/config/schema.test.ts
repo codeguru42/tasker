@@ -264,6 +264,13 @@ describe("parseConfig issueTracker", () => {
     expect(parsedRepo(raw).issueTracker.site).toBe("acme.atlassian.net");
   });
 
+  it("folds only the ASCII letters of the site of a github repo", () => {
+    const kelvin = String.fromCodePoint(0x212a);
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker.site = kelvin + "ACME.example.com";
+    expect(parsedRepo(raw).issueTracker.site).toBe(kelvin + "acme.example.com");
+  });
+
   it("rejects a missing provider", () => {
     const raw = validConfig();
     delete raw.repos.tasker.issueTracker.provider;
@@ -795,6 +802,15 @@ describe("parseConfig named trackers", () => {
       tracker: "acme",
       assignee: "@me",
     });
+  });
+
+  it("folds only the ASCII letters of the site of a definition", () => {
+    const kelvin = String.fromCodePoint(0x212a);
+    const raw = withTracker(
+      { tracker: "acme", project: "TEST" },
+      { acme: { ...acme, site: kelvin + "ACME.example.com" } },
+    );
+    expect(parseConfig(raw, {}, home).trackers.acme.site).toBe(kelvin + "acme.example.com");
   });
 
   it("lets a key of the repo win over the definition", () => {
