@@ -9,7 +9,6 @@ import type { IssueRef } from "../../src/issue-key/ref.js";
 import { loadConfig } from "../../src/config/load.js";
 import type { Config } from "../../src/config/schema.js";
 import { canonicalPath } from "../../src/real-path.js";
-import { runGit } from "../../src/vcs/git/run.js";
 import type { PlanAnswer } from "../../src/plan/answer.js";
 import { transitionTask, type TaskState, type TransitionDetail } from "../../src/state/machine.js";
 import type {
@@ -575,7 +574,7 @@ export async function useLocalBase(
   fixture: Pick<WorkReviewTask, "dataRoot" | "task" | "clone" | "env">,
   revision: string,
 ): Promise<void> {
-  await runGit(["update-ref", "refs/heads/x", revision], { gitDir: fixture.clone, env: fixture.env });
+  await gitOutput({ gitDir: fixture.clone }, fixture.env, "update-ref", "refs/heads/x", revision);
   appendBaseEvent(fixture, "refs/heads/x", "refs/heads/x");
 }
 
