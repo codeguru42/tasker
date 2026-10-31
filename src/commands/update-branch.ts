@@ -15,7 +15,7 @@ export const updateBranch: RegisterCommand = (program, io) => {
   program
     .command("update-branch")
     .description(
-      "Bring the task branch current with its copy on origin, and bring the worktree of the task up to date with its base branch. The command does the first step first. It moves the branch by a fast-forward when the local tip is an ancestor of the tip on origin. For tips that have diverged, it compares the patches of the two sides. Without --take-remote, it moves the branch to origin when origin has a commit that is only on origin and no local work is at risk. It fails and lists the local commits that origin has no copy of only when local work is at risk and origin also has a commit that is only on origin. When local work is at risk and no commit is only on origin, it moves nothing and writes a note. The task goes through updating_branch. When the head moved, the task goes back to executed, or to awaiting_plan_review for an approved plan, because the old approval or verify result no longer describes the tree. A task stacked on the branch of a parent task moves onto the tip of that branch. Under the rebase strategy, the command replays the commits of the task after the merge base with a rebase",
+      "Bring the task branch current with its copy on origin, and bring the worktree of the task up to date with its base branch. The command does the first step first. It moves the branch by a fast-forward when the local tip is an ancestor of the tip on origin. For tips that have diverged, it compares the patches of the two sides. Without --take-remote, it moves the branch to origin when origin has a commit that is only on origin and no local work is at risk. It fails and lists the local commits that origin has no copy of only when local work is at risk and origin also has a commit that is only on origin. When local work is at risk and no commit is only on origin, it moves nothing and writes a note. The task goes through updating_branch. When the head moved, the task goes back to executed, or to awaiting_plan_review for an approved plan, because the old approval or verify result no longer describes the tree. A task stacked on the branch of a parent task moves onto the tip of that branch. Under the rebase strategy, the command replays the commits of the task after its synced base tip, the base tip that the task branch was last built on, with a rebase. If the head does not build on that tip, or the task has no such tip, it replays the commits after the merge base",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
@@ -65,6 +65,9 @@ async function updateBranchIssue(
     io.stdout(
       `moved ${result.issueKey} onto ${result.base} at ${result.baseTip} by ${result.how}: ${result.headBefore} to ${result.headAfter}\n`,
     );
+    if (result.replayedAfter !== undefined) {
+      io.stdout(`replayed the commits of ${result.issueKey} after the synced base tip ${result.replayedAfter}\n`);
+    }
   }
   if (result.unstackedFrom !== undefined) {
     io.stdout(`${result.issueKey} is no longer stacked on ${result.unstackedFrom}\n`);

@@ -13,6 +13,7 @@ import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { BranchUpdateWrites, Task, TaskStore } from "../store/store.js";
 import {
   type ReconcileStrategy,
+  type ReplayStart,
   type ResyncResult,
   type RemoteTaskRefSides,
   type VcsProvider,
@@ -54,6 +55,8 @@ export type BranchUpdated = SyncOutcome & {
   // The head at the start of the base step. After a move of the sync step, this is the remote tip.
   headBefore: string;
   headAfter: string;
+  // The synced base tip that the replay started after, set when the replay started there.
+  replayedAfter?: string;
   // The key of the parent that the task is no longer stacked on, set when the parent landed.
   unstackedFrom?: string;
   // The state of the task before the command.
@@ -61,6 +64,20 @@ export type BranchUpdated = SyncOutcome & {
   // The state of the task after the command.
   state: TaskState;
 };
+
+// The note for a replay that fell back to the merge base. A replay after the synced base tip needs no note.
+function replayNote(issueKey: string, start: ReplayStart): string | undefined {
+  if (start.from === "synced-base-tip") return undefined;
+  const tail = `tasker replayed the commits after the merge base ${start.mergeBase}\n`;
+  switch (start.why) {
+    case "not-ancestor":
+      return `note: the synced base tip ${start.syncedBaseTip} of ${issueKey} is not an ancestor of HEAD; ${tail}`;
+    case "check-failed":
+      return `note: tasker could not check the synced base tip ${start.syncedBaseTip} of ${issueKey} (git exit code ${String(start.exitCode)}); ${tail}`;
+    case "no-synced-base-tip":
+      return `note: ${issueKey} has no synced base tip; ${tail}`;
+  }
+}
 
 // A result with exitCode means that the step already printed the message.
 export type UpdateBranchResult = BranchUpdated | { exitCode: number };
@@ -225,14 +242,27 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       }
       // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
       const upToDate = contains && synced.sync !== "take-remote";
+      let replayStart: ReplayStart | undefined;
       const resynced: Pick<ResyncResult, "how" | "head"> = upToDate
         ? { how: "none", head: syncedHead }
         : parent !== undefined && strategy === "rebase"
           ? // The new tip of a stacked task is the tip of the branch of the parent while the parent is in flight,
             // and the tip of the base of the parent after the parent landed. Under rebase, the replay puts the
-            // commits after the merge base onto the new tip, with a rebase. Under merge, a stacked task uses the
-            // resync of every other task.
-            { how: "rebase", head: await vcs.replayOnto(ctx, { path, onto: baseTip }) }
+            // commits after the synced base tip onto the new tip, with a rebase. It falls back to the commits after
+            // the merge base. Under merge, a stacked task uses the resync of every other task.
+            {
+              how: "rebase",
+              head: await vcs.replayOnto(ctx, {
+                path,
+                onto: baseTip,
+                syncedBaseTip: task.syncedBaseTip ?? undefined,
+                onStart: (start) => {
+                  replayStart = start;
+                  const note = replayNote(task.issueKey, start);
+                  if (note !== undefined) io.stderr(note);
+                },
+              }),
+            }
           : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
       const moved = "remoteTip" in synced || resynced.how !== "none";
       const state = moved ? demotedTarget(origin, failedIn) : origin;
@@ -259,6 +289,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         issueKey: task.issueKey,
         base: target.base,
         baseTip,
+        ...(replayStart?.from === "synced-base-tip" ? { replayedAfter: replayStart.syncedBaseTip } : {}),
         ...(landed ? { unstackedFrom: parent.issueKey } : {}),
         branch,
         ...synced,

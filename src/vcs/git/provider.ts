@@ -172,9 +172,9 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
       const { clone } = pathsOf(ctx);
       return resyncWorktree({ clone, env: ctx.env, path, baseRevision, strategy });
     },
-    async replayOnto(ctx, { path, onto }) {
+    async replayOnto(ctx, { path, onto, syncedBaseTip, onStart }) {
       const { clone } = pathsOf(ctx);
-      return replayOntoTip({ clone, env: ctx.env, path, onto });
+      return replayOntoTip({ clone, env: ctx.env, path, onto, syncedBaseTip, onStart });
     },
     async workspaceState(ctx, { path }) {
       const { clone } = pathsOf(ctx);

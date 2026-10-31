@@ -94,6 +94,14 @@ export function uncommittedChangeText(change: UncommittedChange): string {
 
 export type ReconcileStrategy = "rebase" | "merge";
 
+// Where a replay starts. A fallback to the merge base holds the reason: the task has no synced base tip, the head does not
+// build on it, or git could not check it (exitCode is the exit code of git).
+export type ReplayStart =
+  | { from: "synced-base-tip"; syncedBaseTip: string }
+  | { from: "merge-base"; mergeBase: string; why: "no-synced-base-tip" }
+  | { from: "merge-base"; mergeBase: string; why: "not-ancestor"; syncedBaseTip: string }
+  | { from: "merge-base"; mergeBase: string; why: "check-failed"; syncedBaseTip: string; exitCode: number | null };
+
 export interface ResyncResult {
   moved: boolean;
   how: "none" | "fast-forward" | "rebase" | "merge";
@@ -232,9 +240,14 @@ export interface VcsProvider {
     ctx: VcsContext,
     o: { path: string; baseRevision: string; strategy: ReconcileStrategy },
   ): Promise<ResyncResult>;
-  // Replays the commits of the workspace after the merge base of its head and onto, onto onto, and gives the new head.
-  // It does not fetch. A conflict rejects with ReconcileConflictError (src/vcs/errors.ts) and the workspace is restored.
-  replayOnto(ctx: VcsContext, o: { path: string; onto: string }): Promise<string>;
+  // Replays the commits of the workspace after syncedBaseTip, onto onto, and gives the new head. When syncedBaseTip is
+  // not set, or the head does not build on it, it replays the commits after the merge base of the head and onto.
+  // onStart gets the form of the replay before the rebase runs. It does not fetch. A conflict rejects with
+  // ReconcileConflictError (src/vcs/errors.ts) and the workspace is restored.
+  replayOnto(
+    ctx: VcsContext,
+    o: { path: string; onto: string; syncedBaseTip?: string; onStart?: (start: ReplayStart) => void },
+  ): Promise<string>;
   // Reads the head, the task ref and the uncommitted changes of the workspace. It changes nothing.
   workspaceState(ctx: VcsContext, o: { path: string }): Promise<WorkspaceState>;
   // Pushes taskRef to the remote. published is the revision that the last publish gave.

@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { detailSuffix } from "../../detail-suffix.js";
 import { ReconcileConflictError } from "../errors.js";
 import { LOCAL_PREFIX } from "../local-branch.js";
-import type { ReconcileStrategy, ResyncResult, UncommittedChange } from "../provider.js";
+import type { ReconcileStrategy, ReplayStart, ResyncResult, UncommittedChange } from "../provider.js";
 import {
   isAncestor,
   jsonPathList,
@@ -302,18 +302,43 @@ export async function rebaseOnto(o: {
   return worktreeHead(target, env);
 }
 
-// Replays the commits after the merge base of the head and onto, onto onto. Onto is a full revision or a full ref.
-// It reads the merge base right before the rebase, so a commit that onto already holds by its patch is dropped.
-// It gives the new head.
+type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
+
+// Replays the commits after syncedBaseTip, onto onto. Onto is a full revision or a full ref. When syncedBaseTip is not
+// set, or the head does not build on it, or git cannot check it, the replay starts after the merge base of the head
+// and onto. It reads the merge base right before the rebase. onStart gets the form of the replay before the rebase
+// runs. It gives the new head.
 export async function replayOntoTip(o: {
   clone: string;
   env: NodeJS.ProcessEnv;
   path: string;
   onto: string;
+  syncedBaseTip?: string;
+  onStart?: (start: ReplayStart) => void;
 }): Promise<string> {
-  const { clone, env, path, onto } = o;
+  const { clone, env, path, onto, syncedBaseTip, onStart } = o;
   const { head } = await worktreeState({ clone, env, path });
+  let fallback: DistributiveOmit<Extract<ReplayStart, { from: "merge-base" }>, "mergeBase"> = {
+    from: "merge-base",
+    why: "no-synced-base-tip",
+  };
+  if (syncedBaseTip !== undefined) {
+    let ancestor: boolean | undefined;
+    try {
+      // The head is the HEAD of the worktree, so this gives the same answer as a check of HEAD in the worktree.
+      ancestor = await isAncestor({ clone, env, ancestor: syncedBaseTip, descendant: head });
+    } catch (error) {
+      if (!(error instanceof GitError)) throw error;
+      fallback = { from: "merge-base", why: "check-failed", syncedBaseTip, exitCode: error.exitCode };
+    }
+    if (ancestor === true) {
+      onStart?.({ from: "synced-base-tip", syncedBaseTip });
+      return rebaseOnto({ clone, env, path, upstream: syncedBaseTip, onto });
+    }
+    if (ancestor === false) fallback = { from: "merge-base", why: "not-ancestor", syncedBaseTip };
+  }
   const upstream = await mergeBase({ clone, env, a: head, b: onto });
+  onStart?.({ ...fallback, mergeBase: upstream });
   return rebaseOnto({ clone, env, path, upstream, onto });
 }
 
