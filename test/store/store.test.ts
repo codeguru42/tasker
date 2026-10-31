@@ -204,6 +204,7 @@ describe("task store", () => {
       shortRef: null,
       base: null,
       syncedBaseTip: null,
+      acceptedRevision: null,
       parentTaskId: null,
       attempt: 1,
       createdAt: "2026-01-01T00:00:00.000Z",
@@ -839,7 +840,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(14);
+        expect(migrations.length).toBe(15);
       });
     });
   });

@@ -136,4 +136,10 @@ UPDATE tasks SET parent_task_id = (
   SELECT MAX(parent.id) FROM tasks AS parent
   WHERE parent.repo_key = tasks.repo_key AND 'refs/heads/' || parent.branch = tasks.base
 );`,
+  `ALTER TABLE tasks ADD COLUMN accepted_revision TEXT;
+UPDATE tasks SET accepted_revision = (
+  SELECT json_extract(data, '$.revision') FROM events
+  WHERE events.task_id = tasks.id AND events.type = 'accepted'
+  ORDER BY events.id DESC LIMIT 1
+);`,
 ];

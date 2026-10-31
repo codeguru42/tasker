@@ -53,6 +53,7 @@ export interface Task {
   shortRef: string | null;
   base: string | null;
   syncedBaseTip: string | null;
+  acceptedRevision: string | null;
   parentTaskId: number | null;
   attempt: number;
   createdAt: string;
@@ -86,6 +87,7 @@ export interface TaskChanges {
   shortRef?: string | null;
   base?: string | null;
   syncedBaseTip?: string | null;
+  acceptedRevision?: string | null;
   parentTaskId?: number | null;
 }
 
@@ -358,6 +360,9 @@ export interface TaskStore extends LockStore {
     writes: BranchUpdateWrites,
     check?: (current: Task) => NewEvent | undefined,
   ): Task;
+  // Moves the task out of its run to accepted and stores revision as its accepted revision, in one transaction.
+  // The event that check returns is appended in the same transaction.
+  acceptTask(id: number, revision: string, check?: (current: Task) => NewEvent | undefined): Task;
   // The questions of a revision with their state. The newest revision has only open questions.
   // A resolved question names the next version, and its answer is the feedback of that version.
   planQuestions(taskId: number, version: number): PlanQuestionState[];
@@ -452,6 +457,7 @@ interface TaskRow {
   short_ref: string | null;
   base: string | null;
   synced_base_tip: string | null;
+  accepted_revision: string | null;
   parent_task_id: number | null;
   attempt: number;
   created_at: string;
@@ -493,6 +499,7 @@ function rowToTask(row: TaskRow): Task {
     shortRef: row.short_ref,
     base: row.base,
     syncedBaseTip: row.synced_base_tip,
+    acceptedRevision: row.accepted_revision,
     parentTaskId: row.parent_task_id,
     attempt: row.attempt,
     createdAt: row.created_at,
@@ -672,7 +679,7 @@ function setUp(db: DatabaseSync) {
     updateTask: db.prepare(
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
-           synced_base_tip = ?, parent_task_id = ?, updated_at = ?
+           synced_base_tip = ?, accepted_revision = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -942,6 +949,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.shortRef !== undefined) next.shortRef = changes.shortRef;
     if (changes.base !== undefined) next.base = changes.base;
     if (changes.syncedBaseTip !== undefined) next.syncedBaseTip = changes.syncedBaseTip;
+    if (changes.acceptedRevision !== undefined) next.acceptedRevision = changes.acceptedRevision;
     if (changes.parentTaskId !== undefined) next.parentTaskId = changes.parentTaskId;
     const row = statements.updateTask.get(
       next.state,
@@ -951,6 +959,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.shortRef,
       next.base,
       next.syncedBaseTip,
+      next.acceptedRevision,
       next.parentTaskId,
       at,
       current.id,
@@ -1540,6 +1549,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (writes.clearPlanApproval !== undefined) clearPinnedApprovalStep(taskId, writes.clearPlanApproval);
         if (writes.base !== undefined) writeEvent(taskId, at, "base", writes.base);
       });
+    },
+
+    acceptTask(id, revision, check) {
+      return writeTask(id, { state: "accepted", acceptedRevision: revision }, check, () => endRunStep(id, "accepted"));
     },
 
     latestPlanRevision: readLatestPlanRevision,
