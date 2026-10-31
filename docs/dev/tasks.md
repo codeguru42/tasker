@@ -34,6 +34,8 @@ The order follows what each step needs and what a failure can leave.
   `defaultBaseBranch` must name a remote branch ([The resolve](workspaces.md#the-resolve), and [config.md](../config.md)
   for `defaultBaseBranch`). The blocker base is the local branch `refs/heads/<x>` of one task.
 - The base comes before the workspace, because the workspace starts from the base.
+- Only a start that makes a new task branch writes the column `synced_base_tip` and the key `syncedBaseTip` of the
+  `workspace` event. The value is the tip of the new branch.
 - Bootstrap runs after the repo lock is free. A bootstrap can run for a long time, and it does not use the clone. If
   bootstrap holds the repo lock, one slow bootstrap stops the start of every other task in the repo.
 
@@ -68,6 +70,8 @@ A second run continues a task that did not reach `workspace_ready`. It does not 
 - A task that is past this step is not changed. The command only prints it.
 - The stored base stays on a second run. A `--base` option or a `base:` label wins and is stored as the new base. A
   second run with no stored base runs the blocker step.
+- A second run that reuses a task branch or a worktree writes neither the column `synced_base_tip` nor the key
+  `syncedBaseTip` of the `workspace` event.
 - A new base on a second run does not move a task branch that already exists. The stored base can differ from the real
   start point of the branch.
 - An issue that closes after its task exists does not stop a second run. The closed check runs only when no task exists.
@@ -75,7 +79,8 @@ A second run continues a task that did not reach `workspace_ready`. It does not 
 ### Why the events are separate
 
 Each learned value has its own event: the base, the workspace and the bootstrap result. A value is not part of the next
-transition. As a result, a failure in a later step still keeps the earlier values on record.
+transition. As a result, a failure in a later step still keeps the earlier values on record. The `workspace` event holds
+`syncedBaseTip` only when the start made a new task branch.
 
 ### Why stderr holds the question and the notes
 
@@ -694,9 +699,13 @@ These reasons explain its rules:
 - The `base` event is `{ base, revision, source: "update" }`. The command writes it only when the head moved. The
   `revision` is the stored base revision, a ref. The base change after the parent landed writes the event with the
   source `parent`.
-- The merge base of a stacked task: the replay is the `rebase` form of the move of a stacked task. It replays the
-  commits after the merge base of the task branch and the new tip. No new record is needed. Git skips each old commit of
-  the parent whose patch the new tip already holds.
+- The synced base tip of a stacked task: the replay is the `rebase` form of the move of a stacked task. It replays the
+  commits after the synced base tip of the task onto the new tip. If the head does not build on the synced base tip, or
+  the task has none, it replays the commits after the merge base of the task branch and the new tip, and it writes a
+  note on stderr. The base is a name, because a move reads the current tip of the base. The synced base tip is a commit
+  id, because the replay needs the commit that the task branch builds on. The commits of the parent as they landed
+  passed review and were accepted, and the replay keeps them. On 2026-10-25, each update of #539 tried to replay the old
+  commits of #542 and stopped on a conflict.
 - The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task.
 - The base change after the parent landed: the command switches the base to the base of the parent, also when the head
   does not move. Without the switch, the task stays stacked, and the guard of `tasker verify` refuses it each time.
