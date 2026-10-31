@@ -291,10 +291,11 @@ revision has the source `refine`.
 
 The steps run in this order.
 
-1. The command checks the state, the feedback, the plan revision, the plan session and the recorded model before it
-   reads a file. In `reviewed`, it also checks that the latest review has an open finding. In `failed`, the error for a
-   missing plan revision names the origin and `tasker retry`. A refused refine changes nothing, as the intro says, so
-   the user can fix the cause and run the same command again.
+1. The command checks the state, the moved-base guard, the feedback, the plan revision, the plan session and the
+   recorded model before it reads a file. In `reviewed`, it also checks that the latest review has an open finding. In
+   `failed`, the error for a missing plan revision names the origin and `tasker retry`. A refused refine changes
+   nothing, as the intro says, so the user can fix the cause and run the same command again. The branch of a landed
+   parent is no base for a new plan (see [Stacked task](workspaces.md#stacked-task)).
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base
    revision and the commits of the task branch.
 3. The command fills the prompt, with the open findings in the context block for a promotion, archives the template and
@@ -361,6 +362,9 @@ The task goes to `executing`, then to `executed`. The command runs one turn for 
 dependency order. Then it runs the queued fix turn of the revision, when the store has one. The command does not run the
 verify commands.
 
+The moved-base guard runs right after the check of the state. The branch of a landed parent is no base to build against
+(see [Stacked task](workspaces.md#stacked-task)).
+
 The steps run in this order.
 
 1. The checks cover the state, the pinned revision, the plan file, the order of the todos, the base revision, the
@@ -421,8 +425,8 @@ rules:
 - The worktree must be clean before the commands. If it is not, the commands test code that the branch does not hold.
 - The worktree must be clean after the commands. The worktree goes to a person as ready. A dirty tree makes that claim
   false.
-- A task whose parent landed is refused. Such a run tests a tree without the current base. The error tells the user to
-  run `tasker update-branch` first.
+- A task whose parent landed is refused by the moved-base guard. Such a run tests a tree without the current base. The
+  error tells the user to run `tasker update-branch` first (see [Stacked task](workspaces.md#stacked-task)).
 - Only the exit codes count, because tasker never reads the output of a command. As a result, no output can change a
   result. [phases.md](phases.md#the-verify-phase) gives the rule.
 - A failed run is recorded too. `tasker show-verify` prints the run, and the fix turn gets its log.
@@ -433,7 +437,7 @@ rules:
 
 `tasker review` reviews the committed work of a task in `awaiting_work_review`. It runs in this order:
 
-1. Check the task: its state, its worktree, its branch and its base revision.
+1. Check the task: its state, the moved-base guard, its worktree, its branch and its base revision.
 2. Read the tip of the task branch and the commits of the branch.
 3. Build the text of the earlier reviews, and archive the prompt.
 4. Prepare a new session, and record it with the next review number.
@@ -475,9 +479,11 @@ runs in this order:
 
 1. Take the task lock, and check the state with the row of `review` in the table of
    [the commands of each state](#the-commands-of-each-state).
-2. Check that the feedback is not empty. The error is `the feedback is empty`.
-3. Check the worktree and the branch, and read the tip of the task branch.
-4. Build the context from the tip and the latest verify run, and run the shared refine step with the source
+2. Run the moved-base guard. The branch of a landed parent is no base to judge against (see
+   [Stacked task](workspaces.md#stacked-task)).
+3. Check that the feedback is not empty. The error is `the feedback is empty`.
+4. Check the worktree and the branch, and read the tip of the task branch.
+5. Build the context from the tip and the latest verify run, and run the shared refine step with the source
    `review-feedback` and the feedback.
 
 The context names no review, and the command reads no review.
@@ -630,8 +636,8 @@ The command has this limit:
 `tasker accept` records that a person accepts the work of a task in `awaiting_work_review`. The task goes to `accepted`.
 
 It holds the repo lock for the fetch, as [the locks table](data-root.md#locks-table) requires. Its checks cover the
-task, the state, the worktree, the branch, the stored base revision and the fetch of `origin` with the read of the base
-tip. The fetch can still move the refs of `origin` in the clone, also for a refused accept.
+task, the state, the moved-base guard, the worktree, the branch, the stored base revision and the fetch of `origin` with
+the read of the base tip. The fetch can still move the refs of `origin` in the clone, also for a refused accept.
 
 The write is one transaction. It appends one `accepted` event with the data `{ revision, baseTip, from, to }`, moves the
 task to `accepted` and sets the column `accepted_revision` to the revision. The `accepted` event takes the place of the
@@ -641,6 +647,8 @@ These reasons explain its rules:
 
 - The base check runs here and not at the landing. As a result, a base that moved while the task waited in review shows
   before a person lands it.
+- The moved-base guard refuses a task whose parent landed. The branch of a landed parent is no base to judge the work
+  against (see [Stacked task](workspaces.md#stacked-task)).
 - Accept only records the decision of a person. `tasker merge` is the one step that changes origin. As a result, a
   refused or an accepted task leaves origin as it was, and the person still decides to land in a separate step.
 
@@ -651,11 +659,11 @@ The base can move after the check of `tasker accept`. Then `tasker merge` fails,
 `tasker merge` lands the work of a task in `accepted` on the base branch of `origin`. The task goes through `merging` to
 `landed`.
 
-Its checks cover the task, the state, the branch, the stored base, the base revision, the tip of the branch and the repo
-lock. The tip check compares the exact ref `refs/heads/<branch>` of the clone with the accepted revision of the task.
-[Landing commands](../../skills/tasker/references/landing.md#tasker-merge) gives its errors. After the checks, the
-command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task
-branch and the tip of the base. If the base does not contain the work, the command pushes it with
+Its checks cover the task, the state, the landing guard, the branch, the stored base, the base revision, the tip of the
+branch and the repo lock. The tip check compares the exact ref `refs/heads/<branch>` of the clone with the accepted
+revision of the task. [Landing commands](../../skills/tasker/references/landing.md#tasker-merge) gives its errors. After
+the checks, the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip
+of the task branch and the tip of the base. If the base does not contain the work, the command pushes it with
 [the land operation of the version control provider](version-control.md#land). The last write is one transaction that
 appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. The
 `landed` event takes the place of the `transition` event for this move. If a step fails after the move to `merging`, the
@@ -663,6 +671,9 @@ task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not w
 
 These reasons explain its rules:
 
+- The landing guard runs before every other check. A stacked task lands only after its parent landed and the task moved,
+  so the work lands on the base of the first task (see [Stacked task](workspaces.md#stacked-task)). A stacked task has a
+  local base, so the guard also comes before the error for a local base.
 - The compare of the tip with the accepted revision: the review and the accept cover one tree, and the land must cover
   the same tree. A commit that reaches the branch after the accept has no review.
 - The second compare: no lock covers a commit in the worktree. A commit can reach the branch during the fetch. The
@@ -682,15 +693,17 @@ These reasons explain its rules:
 `tasker mark-landed` records that the work of a task in `accepted`, `pushed` or `in_peer_review` already landed on the
 base branch outside tasker. The task goes to `landed`.
 
-Its checks cover the task, the state, the branch, the stored base and the base revision. Then it takes the repo lock and
-fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base
-does not contain the work, the command stops with an error. The fetch can still move the refs of `origin` in the clone,
-also when the command stops with this error. The last write is one transaction that appends one `marked_landed` event
-with the data `{ revision, baseTip, from, to }` and moves the task to `landed`. The `marked_landed` event takes the
-place of the `transition` event for this move.
+Its checks cover the task, the state, the landing guard, the branch, the stored base and the base revision. Then it
+takes the repo lock and fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation
+of merge. If the base does not contain the work, the command stops with an error. The fetch can still move the refs of
+`origin` in the clone, also when the command stops with this error. The last write is one transaction that appends one
+`marked_landed` event with the data `{ revision, baseTip, from, to }` and moves the task to `landed`. The
+`marked_landed` event takes the place of the `transition` event for this move.
 
 These reasons explain its rules:
 
+- The landing guard runs first, for the same reason as in [Merge](#merge). A stacked task with no own commit has a task
+  branch that equals its base, so without the guard the command would record `landed` for work that did not land.
 - The check is read-only toward `origin`. The work landed outside tasker, so tasker only records it.
 - The check reads the tip of the task ref in the clone and not the worktree, for the same reason as the on-base check of
   [Merge](#merge).
@@ -724,8 +737,9 @@ These reasons explain its rules:
   commits of #542 and stopped on a conflict.
 - The strategy of a stacked task: the strategy applies to every task, so it also picks the move of a stacked task.
 - The base change after the parent landed: the command switches the base to the base of the parent, also when the head
-  does not move. Without the switch, the task stays stacked, and the guard of `tasker verify` refuses it each time. The
-  same store write sets the column `parent_task_id` to NULL. The command changes the column in no other case.
+  does not move. Without the switch, the task stays stacked, and the guards refuse it each time (see
+  [Stacked task](workspaces.md#stacked-task)). The same store write sets the column `parent_task_id` to NULL. The
+  command changes the column in no other case.
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base`
   event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local

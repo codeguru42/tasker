@@ -54,7 +54,13 @@ parent is the one with the highest id. For each other base, or with no such task
 
 A cancelled task never lands. A finished task is done, and its branch is gone or left over. In both cases, a new start
 on that branch has a plain local base. A parent in `landed`, `finishing` or `cleanup_failed` gets the link on purpose.
-`tasker verify` then refuses the task until `tasker update-branch` moves it.
+The landing guard refuses `tasker merge` and `tasker mark-landed` until the parent landed and `tasker update-branch`
+moved the task. The moved-base guard refuses `tasker refine`, `tasker execute`, `tasker verify`, `tasker review` and
+`tasker accept` while the parent has landed and the task did not move.
+
+Each task of a chain lands on the base of the first task, after its parent. The landing guard refuses a task whose
+parent is in flight, with the error `has not landed`. It refuses a task whose parent is cancelled for good, so the user
+runs `tasker abort` for that task. The moved-base guard does not stop for a cancelled parent, so other work goes on.
 
 The synced base tip is the commit id of the base tip that the task branch was last built on. It lives in the column
 `synced_base_tip` of the task row. For a stacked task, it is the parent tip: the commit of the branch of the parent that

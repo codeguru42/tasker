@@ -415,12 +415,13 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   the agent adds the work before the wait. On #221, the fix landed in the loop before the wait. The review after
   `tasker update-branch` then had nothing new to find.
 - For a [stacked task](pick-the-tickets.md#the-stacked-ticket-rule) whose parent is in `landed` while plan v1 is under
-  review, wait for the close of the issue of the parent. Then run `tasker update-branch` before the first refine. A
-  refine before the update costs one more refine, because the update marks the plan as stale
-  ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). On #247, the wait took
-  about 2 minutes. If the agent holds no start base, it runs no check, and the start of this bullet applies. Otherwise,
-  when the parent is in `landed`, `finishing` or `finished`, the agent first runs `git fetch origin`. Then it runs
-  `git merge-base --is-ancestor <start base> origin/<base branch>`. `<start base>` is
+  review, wait for the close of the issue of the parent. Then run `tasker update-branch` before the first refine.
+  `tasker refine` refuses the task until the update, with the error of the moved-base guard
+  ([the stacked-task guards](workspaces.md#stacked-task)). A refine after the update is still needed, because the update
+  marks the plan as stale ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)).
+  On #247, the wait took about 2 minutes. If the agent holds no start base, it runs no check, and the start of this
+  bullet applies. Otherwise, when the parent is in `landed`, `finishing` or `finished`, the agent first runs
+  `git fetch origin`. Then it runs `git merge-base --is-ancestor <start base> origin/<base branch>`. `<start base>` is
   [the start base of the last read](review-findings.md#review-findings). `<base branch>` is the branch that the parent
   landed on, as [step 7 of the rebase-conflict procedure](rebase-conflicts.md#procedure) defines it, for example `main`.
   The check does not use `tasker/<parent branch>`. If the exit code is 0, the old commits of the parent are on the base
@@ -440,15 +441,16 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   the check, the agent runs `git fetch tasker`. Exit code 1 means that the branch of the parent holds a commit that the
   task branch does not hold. Then an update moves the head. [The base rule](run-one-ticket.md#the-base-rule) says where
   the agent meets a landed parent at `tasker verify` and at `tasker refine`. The parent can land while the task is in
-  `approved`. If the check then exits with 1, the agent runs `tasker execute` first. Then it runs `tasker update-branch`
-  from `executed`, where the task stays in `executed`. An update from `approved` that moves the head demotes the task to
-  `awaiting_plan_review` and costs a refine. The bullet of [Land the work](land-the-work.md#land-the-work) for a stacked
-  task in `approved` gives the case where the head does not move. On #347, lesson 1 of the final report gave the
-  demotion. On #346, the agent ran the update from `executed` after #47 landed. If the check exits with 1 in
-  `awaiting_plan_review`, the agent runs `tasker update-branch` before the refine, because the update marks the plan as
-  stale ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). If the check exits
-  with another code, for example 128 for a pruned parent ref, the agent [stops](limits.md#the-answer-wait-rule) and
-  reports the error. On #356, review 2 asked for both cases. The sentence that starts "If the check exits with 1 in
+  `approved`. If the check then exits with 1, the agent runs `tasker update-branch` from `approved`, because
+  `tasker execute` refuses a task whose parent landed ([the stacked-task guards](workspaces.md#stacked-task)). An update
+  that moves the head demotes the task to `awaiting_plan_review` and costs a refine. The bullet of
+  [Land the work](land-the-work.md#land-the-work) for a stacked task in `approved` gives the case where the head does
+  not move. On #347, lesson 1 of the final report gave the demotion. On #346, the agent ran the update from `executed`
+  after #47 landed. If the check exits with 1 in `awaiting_plan_review`, the agent runs `tasker update-branch` before
+  the refine, because the update marks the plan as stale
+  ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). If the check exits with
+  another code, for example 128 for a pruned parent ref, the agent [stops](limits.md#the-answer-wait-rule) and reports
+  the error. On #356, review 2 asked for both cases. The sentence that starts "If the check exits with 1 in
   `awaiting_plan_review`" has an exception. A parent can move again and again in its own review loops before it lands.
   Right after the check before `tasker approve` exits with 1, the agent runs `tasker show <full key of the parent>`. If
   the `state:` line is not `merging`, `landed`, `finishing` or `finished`, the exception applies. Then the agent lists

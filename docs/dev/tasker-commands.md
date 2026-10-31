@@ -171,11 +171,15 @@ of the list. As a result, the rule that the agent first does the fact test does 
   harm.
 - `tasker start` refuses a ticket whose parent is not [ready to stack](pick-the-tickets.md#the-stacking-rule). It exits
   with 1 and prints `<parent issue key>: blocking issue is still open`. No task exists after the refusal.
-- `tasker verify` refuses a stacked task whose parent has landed. It prints
-  `task <id>'s parent <parent issue key> has landed on origin/main; run tasker update-branch <issue key> to move this task onto it first`.
-  The task stays in `executed`. `tasker update-branch` rebases only the commits of the task onto the base of the parent.
+- `tasker refine`, `tasker execute`, `tasker verify`, `tasker review` and `tasker accept` refuse a stacked task whose
+  parent has landed. They print
+  `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base of the parent> first`.
+  The task keeps its state. `tasker merge` and `tasker mark-landed` print the same error, and they print
+  `the parent <parent key> of <issue key> has not landed; land the parent first, then run tasker update-branch <issue key>`
+  while the parent is in flight (see [the stacked-task guards](workspaces.md#stacked-task)). `tasker update-branch`
+  rebases only the commits of the task onto the base of the parent.
 - A stacked task in `awaiting_plan_review` loses its base when `tasker finish` of the parent deletes the branch of the
-  parent. `tasker refine` then fails with exit code 1 and an `unknown revision` error of `git diff`, and it changes
+  parent. `tasker refine` then fails with exit code 1 and the landed error of the moved-base guard, and it changes
   nothing. `tasker update-branch` moves the task onto the base of the parent, and the task stays in
   `awaiting_plan_review`. tasker marks the plan as stale, so a refine comes before `tasker approve`, also when the new
   base changes no fact of the plan.

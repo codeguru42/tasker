@@ -206,8 +206,10 @@ Before each such command, the agent reads the `base:` line of `tasker show <issu
 
 A `tasker update-branch` with no conflict moves a stacked task onto the base of the parent after the parent lands.
 
-An agent of a stacked task meets a landed parent at `tasker verify` in `executed`. It also meets a landed parent at
-`tasker refine` in `awaiting_plan_review`, after `tasker finish` of the parent.
+An agent of a stacked task meets a landed parent at `tasker refine`, `tasker execute`, `tasker verify`, `tasker review`
+and `tasker accept`. The moved-base guard refuses each of them (see
+[the stacked-task guards](workspaces.md#stacked-task)). After `tasker finish` of the parent, `tasker refine` in
+`awaiting_plan_review` meets the same guard.
 [The facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker) say what happens in each case.
 
 These steps use the base: the comeback rule, the diff read, [the issue check](plan-review.md#the-issue-check),

@@ -106,8 +106,9 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   [the diff read](run-one-ticket.md#the-diff-read) right before `tasker accept` finds a later move of the base branch.
   On 2026-10-17, the agent of #248 updated its branch from `executed` after its parent #252 landed, and then asked the
   orchestrator about a second update.
-- The later agent of a stacked task never runs `tasker merge` before the issue of the parent is closed, because
-  `tasker merge` refuses a stacked task.
+- The later agent of a stacked task never runs `tasker merge` or `tasker mark-landed` before the issue of the parent is
+  closed, because the landing guard refuses a stacked task whose parent did not land and whose task did not move (see
+  [the stacked-task guards](workspaces.md#stacked-task)).
 - If a refine, or the `tasker review <issue> "<feedback>"` of the add-work rule, must change a file that another ticket
   changed and landed after this task started, the agent runs `tasker update-branch` first. Otherwise the new work uses
   the old text of the file, and the rebase at landing can conflict.
