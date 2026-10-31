@@ -90,7 +90,7 @@ function renderAll(commands: readonly TaskCommand[], issueKey: string): string {
   return commands.map((c) => render(c, issueKey)).join(", ");
 }
 
-// The lines that tasker show prints after the fields. No row gives no line.
+// The lines that tasker show prints after the fields, and tasker update-branch prints after the state. No row gives no line.
 export function showLines(state: string, issueKey: string): string[] {
   const row = stateCommands(state);
   if (row === undefined) return [];

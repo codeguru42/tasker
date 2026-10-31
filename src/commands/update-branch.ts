@@ -1,6 +1,7 @@
 import { CommanderError } from "commander";
 import type { Io, RegisterCommand } from "../cli.js";
 import type { Config } from "../config/schema.js";
+import { showLines } from "../state/commands.js";
 import { updateBranchTask } from "../tasks/update-branch.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
@@ -76,4 +77,5 @@ async function updateBranchIssue(
     io.stdout(`demoted ${result.issueKey} from ${result.origin} to ${result.state}\n`);
   }
   io.stdout(`state: ${result.state}\n`);
+  for (const line of showLines(result.state, result.issueKey)) io.stdout(`${line}\n`);
 }
