@@ -5,7 +5,7 @@ import { updateBranch } from "../../src/commands/update-branch.js";
 import type { TaskState } from "../../src/state/machine.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
-import { absentRemoteNote } from "../helpers/command-output.js";
+import { absentRemoteNote, undoHint } from "../helpers/command-output.js";
 import { amendWorktreeMessage, commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
 import { seedPinnedPlanRevision } from "../helpers/plan.js";
 import { expectedShowLines, wrongStateError } from "../helpers/state-commands.js";
@@ -84,7 +84,7 @@ describe("tasker update-branch", () => {
 
     expect(result).toEqual({
       code: 0,
-      out: `moved ${KEY} onto main at ${work.baseTip} by fast-forward: ${head} to ${work.baseTip}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n${expectedShowLines("executed", KEY)}`,
+      out: `moved ${KEY} onto main at ${work.baseTip} by fast-forward: ${head} to ${work.baseTip}\ndemoted ${KEY} from awaiting_work_review to executed\n${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
       err: absentRemoteNote(String(work.task.branch)),
     });
     expect(await taskBranchTipOf(work)).toBe(work.baseTip);
@@ -108,7 +108,7 @@ describe("tasker update-branch", () => {
     expect(latestTaskOf(work.dataRoot, KEY).syncedBaseTip).toBe(work.baseTip);
     expect(result).toEqual({
       code: 0,
-      out: `moved ${KEY} onto main at ${work.baseTip} by rebase: ${head} to ${newHead}\ndemoted ${KEY} from awaiting_work_review to executed\nstate: executed\n${expectedShowLines("executed", KEY)}`,
+      out: `moved ${KEY} onto main at ${work.baseTip} by rebase: ${head} to ${newHead}\ndemoted ${KEY} from awaiting_work_review to executed\n${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
       err: absentRemoteNote(String(work.task.branch)),
     });
     const before = { head, base: "main", baseRevision: BASE_REVISION, syncedBaseTip: start };
@@ -168,13 +168,14 @@ describe("tasker update-branch", () => {
   });
 
   it("prints the demoted line when the head moved from awaiting_work_review", async () => {
-    await useMovedBaseTask();
+    const work = await useMovedBaseTask();
+    const head = await taskBranchTipOf(work);
 
     const result = await runUpdateBranch();
 
     expect(
       result.out.endsWith(
-        `demoted ${KEY} from awaiting_work_review to executed\nstate: executed\n${expectedShowLines("executed", KEY)}`,
+        `demoted ${KEY} from awaiting_work_review to executed\n${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
       ),
     ).toBe(true);
   });
@@ -234,7 +235,7 @@ describe("tasker update-branch", () => {
       expect(result.out.split("\n")[0]).toBe(`synced ${branch} from origin/${branch} at ${remote} by fast-forward`);
       expect(
         result.out.endsWith(
-          `demoted ${KEY} from awaiting_work_review to executed\nstate: executed\n${expectedShowLines("executed", KEY)}`,
+          `demoted ${KEY} from awaiting_work_review to executed\n${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
         ),
       ).toBe(true);
       expect(await taskBranchTipOf(work)).toBe(remote);
@@ -397,6 +398,7 @@ describe("tasker update-branch", () => {
     it("rebases onto the moved base after a fast-forward of the sync step", async () => {
       const work = await useMovedBaseTask();
       const branch = work.task.branch!;
+      const head = await taskBranchTipOf(work);
       await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
       const remote = await work.origin.addCommit(branch, { file: "remote.txt" });
 
@@ -407,7 +409,7 @@ describe("tasker update-branch", () => {
       expect(result.out).toBe(
         `synced ${branch} from origin/${branch} at ${remote} by fast-forward\n` +
           `moved ${KEY} onto main at ${work.baseTip} by rebase: ${remote} to ${newHead}\n` +
-          `demoted ${KEY} from awaiting_work_review to executed\nstate: executed\n${expectedShowLines("executed", KEY)}`,
+          `demoted ${KEY} from awaiting_work_review to executed\n${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
       );
       expect(await revisionOf(work, "HEAD^^")).toBe(work.baseTip);
       expect(lastEvent(work)).toMatchObject({
@@ -419,6 +421,7 @@ describe("tasker update-branch", () => {
     it("moves an approved task that only the sync step moved to awaiting_plan_review", async () => {
       const work = await useWorkReviewTask();
       const branch = work.task.branch!;
+      const head = await taskBranchTipOf(work);
       withDataRootStore(work.dataRoot, (store) => {
         placeTask(store, work.task.id, "awaiting_plan_review");
         seedPinnedPlanRevision(store, work.task.id, {}, "approved");
@@ -435,7 +438,7 @@ describe("tasker update-branch", () => {
       });
       expect(
         result.out.endsWith(
-          `demoted ${KEY} from approved to awaiting_plan_review\nstate: awaiting_plan_review\n${expectedShowLines("awaiting_plan_review", KEY)}`,
+          `demoted ${KEY} from approved to awaiting_plan_review\n${undoHint(KEY, head)}state: awaiting_plan_review\n${expectedShowLines("awaiting_plan_review", KEY)}`,
         ),
       ).toBe(true);
     });
@@ -587,7 +590,7 @@ describe("tasker update-branch", () => {
         const branch = work.task.branch!;
         await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
         const remote = await work.origin.addCommit(branch, { file: "remote.txt" });
-        await commitInWorktree(work.task.worktreePath!, work.env, { file: "local.txt" });
+        const head = await commitInWorktree(work.task.worktreePath!, work.env, { file: "local.txt" });
 
         const result = await runUpdateBranch("--take-remote");
 
@@ -596,7 +599,7 @@ describe("tasker update-branch", () => {
         expect(result.out).toBe(
           `${takeLine(branch, remote)}\n` +
             `moved ${KEY} onto main at ${work.baseTip} by rebase: ${remote} to ${newHead}\n` +
-            `demoted ${KEY} from awaiting_work_review to executed\nstate: executed\n${expectedShowLines("executed", KEY)}`,
+            `demoted ${KEY} from awaiting_work_review to executed\n${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
         );
         expect(await revisionOf(work, "HEAD^^")).toBe(work.baseTip);
         expect(lastEvent(work)).toMatchObject({
@@ -611,6 +614,7 @@ describe("tasker update-branch", () => {
         const remote = await taskBranchTipOf(work);
         await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
         expect((await runUpdateBranch()).code).toBe(0);
+        const head = await taskBranchTipOf(work);
 
         const result = await runUpdateBranch("--take-remote");
 
@@ -619,7 +623,7 @@ describe("tasker update-branch", () => {
         expect(result.out).toBe(
           `${takeLine(branch, remote)}\n` +
             `moved ${KEY} onto main at ${work.baseTip} by rebase: ${remote} to ${newHead}\n` +
-            `state: executed\n${expectedShowLines("executed", KEY)}`,
+            `${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
         );
         expect(await revisionOf(work, "HEAD^")).toBe(work.baseTip);
         expect(lastEvent(work)).toMatchObject({
@@ -740,6 +744,7 @@ describe("tasker update-branch", () => {
     ])("moves a task in %s to %s when the head moved", async (origin, target) => {
       const work = await useMovedBaseTask();
       place(work, origin);
+      const head = await taskBranchTipOf(work);
 
       const result = await runUpdateBranch();
 
@@ -751,7 +756,7 @@ describe("tasker update-branch", () => {
       });
       expect(
         result.out.endsWith(
-          `demoted ${KEY} from ${origin} to ${target}\nstate: ${target}\n${expectedShowLines(target, KEY)}`,
+          `demoted ${KEY} from ${origin} to ${target}\n${undoHint(KEY, head)}state: ${target}\n${expectedShowLines(target, KEY)}`,
         ),
       ).toBe(true);
     });
@@ -774,6 +779,7 @@ describe("tasker update-branch", () => {
 
     it("moves an approved task to awaiting_plan_review and clears the approval", async () => {
       const work = await useMovedBaseTask();
+      const head = await taskBranchTipOf(work);
       withDataRootStore(work.dataRoot, (store) => {
         placeTask(store, work.task.id, "awaiting_plan_review");
         seedPinnedPlanRevision(store, work.task.id, {}, "approved");
@@ -791,7 +797,7 @@ describe("tasker update-branch", () => {
       expect(types).not.toContain("unapproved");
       expect(
         result.out.endsWith(
-          `demoted ${KEY} from approved to awaiting_plan_review\nstate: awaiting_plan_review\n${expectedShowLines("awaiting_plan_review", KEY)}`,
+          `demoted ${KEY} from approved to awaiting_plan_review\n${undoHint(KEY, head)}state: awaiting_plan_review\n${expectedShowLines("awaiting_plan_review", KEY)}`,
         ),
       ).toBe(true);
     });
@@ -926,16 +932,29 @@ describe("tasker update-branch", () => {
 
 describe("the next step", () => {
   it("prints the commands of executed after a demotion", async () => {
-    await useMovedBaseTask();
+    const work = await useMovedBaseTask();
+    const head = await taskBranchTipOf(work);
 
     const result = await runUpdateBranch();
 
     expect(result.code).toBe(0);
     expect(
       result.out.endsWith(
-        `demoted ${KEY} from awaiting_work_review to executed\nstate: executed\n${expectedShowLines("executed", KEY)}`,
+        `demoted ${KEY} from awaiting_work_review to executed\n${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
       ),
     ).toBe(true);
+  });
+
+  it("prints the hint after the demoted line and before the state line", async () => {
+    const work = await useMovedBaseTask();
+    const head = await taskBranchTipOf(work);
+
+    const result = await runUpdateBranch();
+
+    const lines = result.out.split("\n");
+    const hint = undoHint(KEY, head).trimEnd();
+    expect(lines.indexOf(hint)).toBe(lines.findIndex((line) => line.startsWith("demoted ")) + 1);
+    expect(lines.indexOf(hint) + 1).toBe(lines.indexOf("state: executed"));
   });
 
   const NOTE = `the plan is stale; run tasker refine ${KEY} before tasker approve\n`;
@@ -952,6 +971,24 @@ describe("the next step", () => {
       result.out.endsWith(`${NOTE}state: awaiting_plan_review\n${expectedShowLines("awaiting_plan_review", KEY)}`),
     ).toBe(true);
     expect(result.err).toBe(absentRemoteNote(String(work.task.branch)));
+  });
+
+  it("prints the hint before the stale note", async () => {
+    const work = await useMovedBaseTask();
+    const head = await taskBranchTipOf(work);
+    place(work, "awaiting_plan_review");
+
+    const result = await runUpdateBranch();
+
+    expect(result.out).toContain(`${undoHint(KEY, head)}${NOTE}state: awaiting_plan_review\n`);
+  });
+
+  it("prints no hint when nothing moved", async () => {
+    await useWorkReviewTask();
+
+    const result = await runUpdateBranch();
+
+    expect(result.out).not.toContain("previous HEAD");
   });
 
   it("prints the stale note after a move of the sync step", async () => {

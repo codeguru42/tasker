@@ -6,6 +6,7 @@ import {
   refinedLine,
   resumedLine,
   reviewedLinePrefix,
+  undoHint,
   verifiedLine,
 } from "./command-output.js";
 
@@ -38,5 +39,11 @@ describe("command output lines", () => {
 
   it("builds the note of a branch that origin does not have", () => {
     expect(absentRemoteNote("tasker/a-1")).toBe("note: origin/tasker/a-1 does not exist; nothing to sync from\n");
+  });
+
+  it("builds the undo hint with a newline", () => {
+    expect(undoHint("a/b#1", "abc")).toBe(
+      "previous HEAD was abc; run tasker update-branch a/b#1 --undo to restore it\n",
+    );
   });
 });

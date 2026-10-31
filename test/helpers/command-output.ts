@@ -32,3 +32,9 @@ export function resumedLine(key: string, origin: string, target: string): string
 export function absentRemoteNote(branch: string): string {
   return `note: origin/${branch} does not exist; nothing to sync from\n`;
 }
+
+// The hint line of tasker update-branch after a run that moved the head. It ends with a newline, because the next line
+// follows it.
+export function undoHint(key: string, head: string): string {
+  return `previous HEAD was ${head}; run tasker update-branch ${key} --undo to restore it\n`;
+}
