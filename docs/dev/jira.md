@@ -236,7 +236,7 @@ A transition to the status that the issue has now passes. So a second run of a w
 
 ## The in-progress clear
 
-The Jira tracker has no clear of the in-progress marker. A status has no clear, and the status after an abort depends on
+The Jira tracker has no clear of the in-progress marker. A status has no "clear". The status after an abort depends on
 the workflow of the team. The abort of a Jira task runs no tracker step. A later ticket adds the function that rejects
 with the message `the jira tracker has no in-progress clear`.
 
