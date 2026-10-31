@@ -6,7 +6,7 @@ import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { assertParentLanded } from "./parent.js";
-import { requireBase, requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
+import { requireBase, requireBranch, taskInState } from "./task-state.js";
 
 export interface MarkLandedRequest {
   config: Config;
@@ -35,9 +35,9 @@ async function markLandedLocked(store: TaskStore, request: MarkLandedRequest): P
   const task = taskInState(store, request.taskId, "mark-landed");
   assertParentLanded(store, task);
   const branch = requireBranch(task);
-  requireBase(task);
+  const base = requireBase(task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
-  const baseRevision = requireBaseRevision(vcs, task);
+  const baseRevision = vcs.baseRevision(base);
   const read = await withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     try {
       return await vcs.taskRefOnBase(ctx, { taskRef: branch, baseRevision });

@@ -24,7 +24,7 @@ import {
 import { LOCAL_PREFIX } from "../vcs/local-branch.js";
 import { parentOf, walkLandedParents } from "./parent.js";
 import { failRun } from "./run-outcome.js";
-import { requireBase, requireBaseRevision, requireBranch, requireWorktree, taskInState } from "./task-state.js";
+import { requireBase, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
 export interface UpdateBranchRequest {
   config: Config;
@@ -212,7 +212,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   const path = requireWorktree(task);
   const base = requireBase(task);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
-  const baseRevision = requireBaseRevision(vcs, task);
+  const baseRevision = vcs.baseRevision(base);
   const parent = parentOf(store, task);
   const strategy = strategyOf(request.strategy, config.repos[task.repoKey].updateBranchStrategy);
   const start = await vcs.workspaceState(ctx, { path });
