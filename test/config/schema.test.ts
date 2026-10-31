@@ -940,6 +940,27 @@ describe("parseConfig named trackers", () => {
     expect(raw).toEqual(withLanding);
   });
 
+  describe("jira doneStatus from a definition", () => {
+    const doneLine =
+      "repos.tasker.issueTracker.doneStatus: is required for the jira tracker when updateOnFinish is true";
+    const finishing = { ...acme, updateOnFinish: true };
+
+    it("accepts a repo that sets doneStatus", () => {
+      const raw = withTracker({ tracker: "acme", project: "TEST", doneStatus: "Done" }, { acme: finishing });
+      expect(parsedRepo(raw).issueTracker.doneStatus).toBe("Done");
+    });
+
+    it("reports a repo that leaves doneStatus out", () => {
+      const raw = withTracker({ tracker: "acme", project: "TEST" }, { acme: finishing });
+      expect(issuesOf(raw)).toEqual([doneLine]);
+    });
+
+    it("accepts a repo that sets updateOnFinish to false over the definition", () => {
+      const raw = withTracker({ tracker: "acme", project: "TEST", updateOnFinish: false }, { acme: finishing });
+      expect(parsedRepo(raw).issueTracker.updateOnFinish).toBe(false);
+    });
+  });
+
   describe("jira keys that mean nothing", () => {
     const line = (name: string, key = "tasker") =>
       `repos.${key}.issueTracker.${name}: is not accepted for the jira tracker`;
@@ -984,6 +1005,39 @@ describe("parseConfig jira tracker", () => {
     expect(issuesOf(jiraConfig({ [name]: "x" }))).toEqual([
       `repos.tasker.issueTracker.${name}: is not accepted for the jira tracker`,
     ]);
+  });
+
+  describe("doneStatus", () => {
+    const doneLine = (key = "tasker") =>
+      `repos.${key}.issueTracker.doneStatus: is required for the jira tracker when updateOnFinish is true`;
+
+    it("requires doneStatus when updateOnFinish is true", () => {
+      expect(issuesOf(jiraConfig({ updateOnFinish: true }))).toEqual([doneLine()]);
+    });
+
+    it("accepts updateOnFinish with doneStatus", () => {
+      const raw = jiraConfig({ updateOnFinish: true, doneStatus: "Done" });
+      expect(parsedRepo(raw).issueTracker.doneStatus).toBe("Done");
+    });
+
+    it("reports every rule in one run", () => {
+      const raw = jiraConfig({ account: "me", project: "bad", site: "https://bad", updateOnFinish: true });
+      (raw.repos as Record<string, { verify: { commands: unknown } }>).tasker.verify.commands = [];
+      raw.bogus = 1;
+      const issues = issuesOf(raw);
+      expect(issues).toContain("repos.tasker.issueTracker.account: is not accepted for the jira tracker");
+      expect(issues).toContain(
+        "repos.tasker.issueTracker.project: must be a Jira project key that matches ^[A-Z][A-Z0-9_]*$, got bad",
+      );
+      expect(issues).toContain(
+        "repos.tasker.issueTracker.site: must be a host name such as example.atlassian.net, with no scheme, path or port",
+      );
+      expect(issues).toContain(
+        "repos.tasker.issueTracker.doneStatus: is required for the jira tracker when updateOnFinish is true",
+      );
+      expectIssueAt(issues, "repos.tasker.verify.commands");
+      expect(issues).toContain("bogus: unrecognized key");
+    });
   });
 
   describe("site", () => {
