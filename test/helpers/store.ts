@@ -59,6 +59,16 @@ export function databasePathOf(dataRoot: string): string {
   return createDataRoot(dataRoot).database;
 }
 
+// Makes each later write of a branch_updated event with no error fail with the message "refused by the test".
+// A write with an error still succeeds, so a test can reach the failure path.
+export function refuseBranchUpdated(dataRoot: string): void {
+  withRawDatabase(databasePathOf(dataRoot), (db) =>
+    db.exec(
+      "CREATE TRIGGER refuse_branch_updated BEFORE INSERT ON events WHEN NEW.type = 'branch_updated' AND json_extract(NEW.data, '$.error') IS NULL BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
+    ),
+  );
+}
+
 // Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
 export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
   return withStoreFile(databasePathOf(dataRoot), fn, options);

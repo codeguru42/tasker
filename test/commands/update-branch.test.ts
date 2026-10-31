@@ -18,8 +18,8 @@ import {
   latestTaskOf,
   placeTask,
   readRunMarker,
+  refuseBranchUpdated,
   withDataRootStore,
-  withRawDatabase,
 } from "../helpers/store.js";
 import {
   expectCommandRefused,
@@ -1333,11 +1333,7 @@ describe("--undo", () => {
 
     it("puts the head back and keeps the columns when the last write fails", async () => {
       const { work, newHead } = await useRebasedTask();
-      withRawDatabase(databasePathOf(work.dataRoot), (db) =>
-        db.exec(
-          "CREATE TRIGGER refuse_undo BEFORE INSERT ON events WHEN NEW.type = 'branch_updated' AND json_extract(NEW.data, '$.error') IS NULL BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
-        ),
-      );
+      refuseBranchUpdated(work.dataRoot);
       const columns = latestTaskOf(work.dataRoot, KEY);
 
       const result = await runUpdateBranch("--undo");

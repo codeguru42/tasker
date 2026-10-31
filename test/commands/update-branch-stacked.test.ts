@@ -10,6 +10,7 @@ import {
   eventsOf,
   latestTaskOf,
   placeTask,
+  refuseBranchUpdated,
   withDataRootStore,
   withRawDatabase,
 } from "../helpers/store.js";
@@ -427,11 +428,7 @@ describe("tasker update-branch for a stacked task", () => {
   it("prints no note when the last write fails", async () => {
     const fixture = await useStackedTasks({ repo: { updateBranchStrategy: "merge" } });
     await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-more.txt" });
-    withRawDatabase(databasePathOf(fixture.dataRoot), (db) =>
-      db.exec(
-        "CREATE TRIGGER refuse_update BEFORE INSERT ON events WHEN NEW.type = 'branch_updated' AND json_extract(NEW.data, '$.error') IS NULL BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
-      ),
-    );
+    refuseBranchUpdated(fixture.dataRoot);
 
     const result = await update(fixture);
 

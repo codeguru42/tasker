@@ -40,6 +40,7 @@ import {
   newVerifyRun,
   quotaEventsOf,
   readRunMarker,
+  refuseBranchUpdated,
   reviewSessionRows,
   seedCreditsApproval,
   seedCreditsApprovalIn,
@@ -283,6 +284,31 @@ describe("databasePathOf", () => {
     const found = withStoreFile(databasePathOf(dataRoot), (store) => store.getTask(seeded.id));
 
     expect(found?.issueKey).toBe("a/b#1");
+  });
+});
+
+describe("refuseBranchUpdated", () => {
+  it("makes the write of a branch_updated event with no error fail", () => {
+    const { dataRoot, task } = seedOneTask("planning", "codeguru42/tasker#9", "codeguru42/tasker");
+    refuseBranchUpdated(dataRoot);
+
+    const error = withDataRootStore(dataRoot, (store) =>
+      thrownBy(() => store.appendEvent(task.id, "branch_updated", { how: "none" })),
+    );
+
+    expect((error as Error).message).toContain("refused by the test");
+    expect(eventDataOf(dataRoot, "codeguru42/tasker#9", "branch_updated")).toEqual([]);
+  });
+
+  it("keeps the write of a branch_updated event with an error", () => {
+    const { dataRoot, task } = seedOneTask("planning", "codeguru42/tasker#9", "codeguru42/tasker");
+    refuseBranchUpdated(dataRoot);
+
+    withDataRootStore(dataRoot, (store) =>
+      store.appendEvent(task.id, "branch_updated", { how: "none", error: "boom" }),
+    );
+
+    expect(eventDataOf(dataRoot, "codeguru42/tasker#9", "branch_updated")).toEqual([{ how: "none", error: "boom" }]);
   });
 });
 
