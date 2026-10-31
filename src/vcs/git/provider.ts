@@ -8,7 +8,7 @@ import {
   sharedFolder,
   trackedPaths,
 } from "./assistant-surface.js";
-import { resolveBaseBranch } from "./base-branch.js";
+import { baseRevision as baseRevisionOf, resolveBaseBranch } from "./base-branch.js";
 import {
   changedPaths,
   fetchBaseContainment,
@@ -115,6 +115,7 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
         ask,
       });
     },
+    baseRevision: (base) => baseRevisionOf(base),
     async diffAgainstBase(ctx, { path, baseRevision }) {
       const { clone } = pathsOf(ctx);
       return worktreeDiff({ clone, env: ctx.env, path, baseRevision });

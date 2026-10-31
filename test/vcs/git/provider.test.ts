@@ -11,7 +11,7 @@ import {
   sharedFolder,
   trackedPaths,
 } from "../../../src/vcs/git/assistant-surface.js";
-import { resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
+import { baseRevision, resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
 import {
   changedPaths,
   ownCommitsText,
@@ -161,6 +161,12 @@ describe("createGitProvider", () => {
         ask,
       });
       expect(mapped).toEqual(direct);
+    });
+
+    it("gives the full ref of a base like baseRevision", () => {
+      const git = provider();
+      expect(git.baseRevision("main")).toBe(baseRevision("main"));
+      expect(git.baseRevision("refs/heads/x")).toBe(baseRevision("refs/heads/x"));
     });
 
     it("gives the diff and the own commits like the git functions", async () => {

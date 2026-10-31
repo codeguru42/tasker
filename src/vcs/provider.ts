@@ -201,6 +201,8 @@ export interface VcsProvider {
   discardWorkspaceChanges(ctx: VcsContext, o: { path: string }): Promise<void>;
   // Picks the base of a task, fetches the remote and gives the base with its revision.
   resolveBase(ctx: VcsContext, o: ResolveBaseRequest): Promise<ResolvedBase>;
+  // The full ref of a stored base. It makes no version control call.
+  baseRevision(base: string): string;
   // The diff of the workspace against baseRevision, as text.
   diffAgainstBase(ctx: VcsContext, o: { path: string; baseRevision: string }): Promise<string>;
   // The commits of taskRef that baseRevision does not hold, as text.
