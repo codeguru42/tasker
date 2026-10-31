@@ -13,6 +13,7 @@ import { taskLogsDir } from "../store/layout.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { blockerBase } from "./blocker-base.js";
+import { newParentId } from "./parent.js";
 import { runTrackerWrite, trackerTargets } from "./tracker-write.js";
 import { vcsForRepo } from "../vcs/provider.js";
 
@@ -130,16 +131,20 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
         defaultBase: repo.defaultBaseBranch,
         ask: request.ask,
       });
-      store.updateTask(task.id, { base: resolved.base }, () => ({
-        type: "base",
-        data: {
-          base: resolved.base,
-          revision: resolved.revision,
-          source: resolved.source,
-          // The blocker is set only when no earlier source gives a base, so the resolve then gives the source "blocker" or throws.
-          ...(blocker === undefined ? {} : { blocker: blocker.key }),
-        },
-      }));
+      store.updateTask(
+        task.id,
+        { base: resolved.base, parentTaskId: newParentId(store, ref.repoKey, resolved.base) },
+        () => ({
+          type: "base",
+          data: {
+            base: resolved.base,
+            revision: resolved.revision,
+            source: resolved.source,
+            // The blocker is set only when no earlier source gives a base, so the resolve then gives the source "blocker" or throws.
+            ...(blocker === undefined ? {} : { blocker: blocker.key }),
+          },
+        }),
+      );
       resolved.notes.forEach(request.note);
       const created = await vcs.createWorkspace(ctx, {
         shortRef: task.shortRef ?? ref.shortRef,
