@@ -5,6 +5,7 @@ import { transitionWithAcceptance } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
+import { assertBaseMoved } from "./parent.js";
 import { requireBaseRevision, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
 export interface AcceptRequest {
@@ -31,6 +32,7 @@ export async function acceptTask(store: TaskStore, request: AcceptRequest): Prom
 async function acceptLocked(store: TaskStore, request: AcceptRequest): Promise<Accepted> {
   const { config, env } = request;
   const task = taskInState(store, request.taskId, "accept");
+  assertBaseMoved(store, task);
   requireWorktree(task);
   const branch = requireBranch(task);
   const baseRevision = requireBaseRevision(store, task);

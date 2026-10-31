@@ -13,6 +13,7 @@ import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanModeAnswer } from "./plan-run.js";
+import { assertBaseMoved } from "./parent.js";
 import { requireBaseRevision, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
 export interface ReviewRequest {
@@ -44,6 +45,7 @@ export async function reviewTask(store: TaskStore, request: ReviewRequest): Prom
 async function reviewLocked(store: TaskStore, request: ReviewRequest): Promise<ReviewResult> {
   const { config, env, io } = request;
   const task = taskInState(store, request.taskId, "review");
+  assertBaseMoved(store, task);
   requireWorktree(task);
   const branch = requireBranch(task);
   const baseRevision = requireBaseRevision(store, task);

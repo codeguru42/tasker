@@ -19,6 +19,7 @@ import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
 import { assertSessionModel } from "./session-model.js";
+import { assertBaseMoved } from "./parent.js";
 import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
 export interface RefineRequest {
@@ -74,6 +75,7 @@ function refineContext(store: TaskStore, task: Task): { context: string; source:
 async function refineLocked(store: TaskStore, request: RefineRequest): Promise<PlanResult> {
   const { config, env, io, feedback } = request;
   const task = taskInState(store, request.taskId, "refine");
+  assertBaseMoved(store, task);
   const promotion = task.state === "reviewed";
   if (!promotion && feedback === undefined) {
     throw new Error("the feedback is missing; tasker refine needs it unless the task is in reviewed");

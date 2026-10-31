@@ -38,6 +38,7 @@ import {
   recordSandboxCleanup,
 } from "./run-outcome.js";
 import { assertSessionModel } from "./session-model.js";
+import { assertBaseMoved } from "./parent.js";
 import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
 
 type PlanTodo = PlanAnswer["todos"][number];
@@ -79,6 +80,7 @@ export async function executeTask(store: TaskStore, request: ExecuteRequest): Pr
 async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise<ExecuteResult> {
   const { config, env, io } = request;
   const task = taskInState(store, request.taskId, "execute");
+  assertBaseMoved(store, task);
   const revision = store.pinnedPlanRevision(task.id);
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} is approved, but no revision is pinned`);
   const version = revision.version;

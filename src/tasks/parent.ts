@@ -26,7 +26,7 @@ export function parentOf(store: TaskStore, task: Task): Task | undefined {
 // whose branch is the local base. It gives null when the base is not a local branch or when no such task exists.
 // A cancelled task never lands, and a finished task is done and its branch is gone or left over. In both cases a new
 // start on that branch has a plain local base and no parent. A task in landed, finishing or cleanup_failed is active,
-// so it is a parent and tasker verify refuses the child until tasker update-branch moves it.
+// so it is a parent and the moved-base guard refuses the child until tasker update-branch moves it.
 export function newParentId(store: TaskStore, repoKey: string, base: string): number | null {
   if (!isLocalBase(base)) return null;
   const branch = base.slice(LOCAL_PREFIX.length);
@@ -62,4 +62,12 @@ export function assertParentLanded(store: TaskStore, task: Task): void {
   throw new Error(
     `the parent ${parent.issueKey} of ${task.issueKey} has not landed; land the parent first, then run tasker update-branch ${task.issueKey}`,
   );
+}
+
+// Refuses a command that judges or builds a stacked task while its parent has landed, because the branch of a landed
+// parent is no base for the work. The task must first move onto the base of the parent. A cancelled parent does not
+// stop the command.
+export function assertBaseMoved(store: TaskStore, task: Task): void {
+  const parent = parentOf(store, task);
+  if (parent !== undefined && hasLanded(parent)) throw landedParentError(parent, task);
 }
