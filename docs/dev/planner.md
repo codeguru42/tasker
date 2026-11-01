@@ -30,12 +30,13 @@ says.
 - The initial planner works with the user directly, as [The operator](working-with-the-user.md#the-operator) of
   working-with-the-user.md says. It sends no item to the operator.
 - When the user says that the initial planning is done, the initial planner posts each approved draft. Then it runs
-  `/session-review`. Then it tells `operator-<slug>` with `SendMessage` that the initial planning is done. Then it ends
-  its work.
+  `/session-review`. Then it tells [its operator](../operator.md) with `SendMessage` that the initial planning is done.
+  Then it ends its work.
 - The follow-up planner takes lessons, session review findings and proposed issues from `orchestrator-<slug>` and from
-  `operator-<slug>`.
+  [its operator](../operator.md).
 - The follow-up planner sends each question, each report and each draft that waits for a decision of the user to
-  `operator-<slug>` as an item, in the form of [The form of an item](operator-items.md#the-form-of-an-item).
+  [its operator](../operator.md) as an item, in the form of
+  [The form of an item](operator-items.md#the-form-of-an-item).
   [The review loop of a draft](#the-review-loop-of-a-draft) says which drafts wait.
 - Each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner puts the path in the
   item, not the draft.
@@ -134,7 +135,7 @@ After each post or drop, the follow-up planner tells the user in a short report.
 the source, and each finding that the planner dismissed, with its reason. The report also gives the command and the
 result of each test of a fact about an outside tool, as [The body of an issue](#the-body-of-an-issue) says. The
 follow-up planner also tells the session that sent the lesson or the proposed issue, if that session is not
-`operator-<slug>`.
+[the operator of the follow-up planner](../operator.md).
 
 ### The escape hatch
 
