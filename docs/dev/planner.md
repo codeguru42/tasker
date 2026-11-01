@@ -1,7 +1,9 @@
 # Planner
 
 This page gives the rules for a planner. A planner is the assistant session that plans a milestone and writes its issues
-on GitHub. The [user](../sessions.md) works with the planner. The readers of this page are the planner and its user.
+on GitHub. The [user](../sessions.md) works with the planner. The readers of this page are the planner and its user. A
+session that [Before a post](issues.md#before-a-post) of issues.md sends to
+[The blocked-by links](#the-blocked-by-links) also reads that section.
 
 The page does not cover the work of the orchestrator and of the agents of the tickets.
 [The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines the
@@ -462,6 +464,10 @@ that it dismissed. The initial planner posts only after the approval of the user
   [rules.md](rules.md#commits) is the home of the commit rules.
 
 ## The blocked-by links
+
+A session that posts an issue and is not a planner also follows the rules of this section, as
+[Before a post](issues.md#before-a-post) of issues.md says. That session also follows the first two bullets, which name
+the planner.
 
 - The planner links two issues when one issue needs the code or the docs that the other issue makes.
 - The planner also links two issues that will likely edit the same file, so that they do not cause a merge conflict.

@@ -2,9 +2,11 @@
 
 This page gives the steps and the GitHub facts to file issues, blocked-by links and milestones on GitHub.
 [Before a post](#before-a-post) covers each session that posts an issue, except where a sentence names the planner.
-[A recurrence](#a-recurrence) covers each session. The rest of the page is for the planner. [planner.md](planner.md)
-defines the terms "planner" and "blocked-by link", and [docs/sessions.md](../sessions.md) defines the term "user".
-planner.md also holds the rules for what an issue says and where it goes. This page holds only how to do it on GitHub.
+[A recurrence](#a-recurrence) covers each session. The rest of the page is for the planner, but
+[The blocked-by links](#the-blocked-by-links) also serves each session that decides links before a post.
+[planner.md](planner.md) defines the terms "planner" and "blocked-by link", and [docs/sessions.md](../sessions.md)
+defines the term "user". planner.md also holds the rules for what an issue says and where it goes. This page holds only
+how to do it on GitHub.
 
 ## Before a post
 
@@ -29,6 +31,15 @@ planner.md also holds the rules for what an issue says and where it goes. This p
   (its body or its links) instead of a new issue. That session tells the user what each draft has that the other one
   does not have. For a match of the follow-up planner,
   [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md gives the steps.
+- Each session that posts an issue and is not a planner, also a session with no role, decides the blocked-by links of
+  its draft. The session finds the open issues and the tasks in flight that edit the same files as the draft. The
+  session also finds the issues that the draft needs. The session uses the rules of
+  [The blocked-by links](planner.md#the-blocked-by-links) of planner.md.
+
+  The session shows the result with the draft: each link to add and its reason, or the words "no links" and the reason.
+  The session names each file of the check. After the post, the session adds each approved link, as
+  [The blocked-by links](#the-blocked-by-links) and [The read in the write call](#the-read-in-the-write-call) say.
+
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md. Before a session shows a
   draft to the user, the session runs the self-check of the simple-english skill over the file of the draft. A planner
   runs the check over its draft file before the first loop of
