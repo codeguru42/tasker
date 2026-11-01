@@ -109,9 +109,10 @@ describe("readCodexStream usage", () => {
     const previous = { ...CODEX_PLAIN_USAGE, inputTokens: 999_999, outputTokens: 999_999 };
 
     expect(readCodexStream(codexSampleEvents("plain"), previous).usage).toEqual({
-      ...CODEX_PLAIN_USAGE,
       inputTokens: 0,
       outputTokens: 0,
+      cacheCreationInputTokens: 0,
+      cacheReadInputTokens: 0,
     });
   });
 
