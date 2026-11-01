@@ -23,7 +23,7 @@ import { requireBaseRevision } from "../../src/tasks/task-state.js";
 import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
-import { realCommandPath } from "../helpers/fake-commands.js";
+import { moveOrigin, pushBranch, pushScript, shell, signalTasker } from "../helpers/remote-push.js";
 import { gitProvider } from "../helpers/git.js";
 import {
   argAfter,
@@ -210,11 +210,6 @@ const eventTypes = (fixture: ExecuteFixture, types: string[]) =>
   eventsOf(fixture.config.dataRoot, fixture.started.key).filter((event) => types.includes(event.type));
 
 const doneStream = turnResultStream("done");
-
-const shell = (script: string) => [realCommandPath("sh"), "-c", script];
-
-// The script of a fake turn that sends signal to tasker, while the run of the turn holds the signal listeners.
-const signalTasker = (signal: NodeJS.Signals) => `kill -s ${signal.slice(3)} ${process.pid}`;
 
 describe("executeTask turns", () => {
   it("puts the local base of the task in the commit rules of the first turn", async () => {
@@ -659,13 +654,6 @@ describe("executeTask deadline", { timeout: 20_000 }, () => {
 describe("executeTask push guard", () => {
   // The fake claude is made before the origin is known, so its exec finds the origin in the cwd of the run:
   // the worktree is on the task branch, and its remote origin is the origin folder.
-  const git = realCommandPath("git");
-  const originOf = `o=$(${git} config remote.origin.url)`;
-  // Makes the task branch on the origin at main, as a push from the session would.
-  const pushScript = `${originOf}; ${git} --git-dir "$o" branch "$(${git} branch --show-current)" main`;
-  const pushBranch = shell(pushScript);
-  // Moves the origin folder away, so that the remote cannot be read.
-  const moveOrigin = shell(`${originOf}; ${realCommandPath("mv")} "$o" "$o-gone"`);
 
   const pushMessage = async (fixture: ExecuteFixture): Promise<string> => {
     const sha = await fixture.started.origin.branchHead("main");

@@ -27,8 +27,7 @@ import { executeTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
 import { type ExecuteFixTurn, type TaskStore } from "../store/store.js";
-import { type RemoteTip, vcsForRepo } from "../vcs/provider.js";
-import { tipMoved } from "../vcs/remote-tip.js";
+import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
 import {
   applyRunOutcome,
@@ -40,6 +39,7 @@ import {
 import { assertSessionModel } from "./session-model.js";
 import { assertBaseMoved } from "./parent.js";
 import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
+import { startTipGuard } from "./tip-guard.js";
 
 type PlanTodo = PlanAnswer["todos"][number];
 
@@ -89,12 +89,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   const baseRevision = requireBaseRevision(vcs, task);
   const branch = requireBranch(task);
-  let before: RemoteTip;
-  try {
-    before = await vcs.remoteTaskRefTip(ctx, { taskRef: branch });
-  } catch (error) {
-    throw new Error(`cannot read the remote before the run: ${errorMessage(error)}`, { cause: error });
-  }
+  const tipGuard = await startTipGuard(vcs, ctx, branch);
   const stored = store.executeSession(task.id, version);
   if (stored) await assertSessionModel(stored, env, `the execute session of ${task.issueKey}`);
   const prepared = await prepareTaskExecuteRun({
@@ -223,15 +218,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
           }
         }
         recordSandboxCleanup(store, task, outcome);
-        // Layer 3 of the push guard: the tip of the task branch on the remote must not move. A push wins over
-        // every outcome, a quota stop included.
-        let pushed: string | undefined;
-        try {
-          const moved = tipMoved(before, await vcs.remoteTaskRefTip(ctx, { taskRef: branch }));
-          if (moved !== undefined) pushed = `push detected on ${branch}: ${moved}`;
-        } catch (error) {
-          pushed = `cannot read the remote after the run: ${errorMessage(error)}`;
-        }
+        const pushed = await tipGuard.tipFailure();
         if (pushed !== undefined) return fail(pushed);
         if (outcome.kind === "interrupted") io.stdout(interruptedLine("executing", outcome.signal, task.issueKey));
         if ("exitCode" in result) return result;

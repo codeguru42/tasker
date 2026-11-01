@@ -46,10 +46,15 @@ export function recordSandboxCleanup(store: TaskStore, task: Task, outcome: RunO
   }
 }
 
+// The one home of the usage event.
+export function recordUsage(store: TaskStore, task: Task, outcome: RunOutcome): void {
+  store.appendEvent(task.id, "usage", { usage: outcome.usage });
+}
+
 // Records the usage of the run, then moves the task for an outcome that is not success.
 export function applyRunOutcome(request: RunOutcomeRequest): RunOutcomeResult {
   const { store, task, phase, io, outcome } = request;
-  store.appendEvent(task.id, "usage", { usage: outcome.usage });
+  recordUsage(store, task, outcome);
   switch (outcome.kind) {
     case "success": {
       const warning = quotaWarningOf(request.quota, outcome);
