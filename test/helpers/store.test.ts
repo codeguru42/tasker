@@ -663,9 +663,7 @@ describe("sessionValuesOf", () => {
     withStoreFile(path, (store) => {
       const task = store.createTask(newTask);
       seedPlanSession(store, task.id, { sessionId: "s-1" });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       store.setProviderSessionId(task.id, "s-1", "thread-1");
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       store.setSessionUsageTotal(task.id, "s-1", usage);
     });
 

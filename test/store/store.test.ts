@@ -689,28 +689,21 @@ describe("task store", () => {
 
     it("gives undefined for a new row and for a row that does not exist", () => {
       const id = record();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(store.providerSessionId(id, "s-1")).toBeUndefined();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(store.providerSessionId(id, "other")).toBeUndefined();
     });
 
     it("sets the value, and a second write leaves the first id", () => {
       const id = record();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       store.setProviderSessionId(id, "s-1", "thread-1");
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(store.providerSessionId(id, "s-1")).toBe("thread-1");
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       store.setProviderSessionId(id, "s-1", "thread-2");
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(store.providerSessionId(id, "s-1")).toBe("thread-1");
       expect(sessionValuesOf(dbPath, "s-1")?.provider_session_id).toBe("thread-1");
     });
 
     it("changes no row for an unknown session id", () => {
       const id = record();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       store.setProviderSessionId(id, "other", "thread-1");
       expect(sessionValuesOf(dbPath, "s-1")).toEqual(NO_SESSION_VALUES);
       expect(sessionValuesOf(dbPath, "other")).toBeUndefined();
@@ -728,28 +721,21 @@ describe("task store", () => {
 
     it("gives undefined for a new row and for a row that does not exist", () => {
       const id = record();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(store.sessionUsageTotal(id, "s-1")).toBeUndefined();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(store.sessionUsageTotal(id, "other")).toBeUndefined();
     });
 
     it("sets the four counters, and a second write replaces them", () => {
       const id = record();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       store.setSessionUsageTotal(id, "s-1", first);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(store.sessionUsageTotal(id, "s-1")).toEqual(first);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       store.setSessionUsageTotal(id, "s-1", second);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       expect(store.sessionUsageTotal(id, "s-1")).toEqual(second);
       expect(sessionValuesOf(dbPath, "s-1")).toMatchObject({ usage_total_input_tokens: 10 });
     });
 
     it("changes no row for an unknown session id", () => {
       const id = record();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       store.setSessionUsageTotal(id, "other", first);
       expect(sessionValuesOf(dbPath, "s-1")).toEqual(NO_SESSION_VALUES);
       expect(sessionValuesOf(dbPath, "other")).toBeUndefined();

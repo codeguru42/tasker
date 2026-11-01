@@ -152,4 +152,9 @@ UPDATE tasks SET tracker_marked = EXISTS (
     AND json_extract(events.data, '$.action') = 'in_progress'
     AND json_extract(events.data, '$.result') = 'ok'
 );`,
+  `ALTER TABLE sessions ADD COLUMN provider_session_id TEXT;
+ALTER TABLE sessions ADD COLUMN usage_total_input_tokens INTEGER;
+ALTER TABLE sessions ADD COLUMN usage_total_output_tokens INTEGER;
+ALTER TABLE sessions ADD COLUMN usage_total_cache_creation_input_tokens INTEGER;
+ALTER TABLE sessions ADD COLUMN usage_total_cache_read_input_tokens INTEGER;`,
 ];

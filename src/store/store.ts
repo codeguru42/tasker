@@ -1,5 +1,11 @@
 import { DatabaseSync, type StatementSync } from "node:sqlite";
-import type { AssistantEvent, AssistantProviderId, Effort, RecordedSession } from "../assistant/provider.js";
+import type {
+  AssistantEvent,
+  AssistantProviderId,
+  Effort,
+  RecordedSession,
+  TokenUsage,
+} from "../assistant/provider.js";
 import type { PlanAnswer } from "../plan/answer.js";
 import type { Finding } from "../review/answer.js";
 import type { FindingEntry } from "../review/findings-text.js";
@@ -389,6 +395,15 @@ export interface TaskStore extends LockStore {
   // Records the plan session of a task once, before the run. The same id again writes nothing and
   // gives the stored session. Another id is an error that names both ids.
   recordPlanSession(taskId: number, session: NewSession): StoredSession;
+  // The id that a provider gave to a session, or undefined when none is stored or the session has no row.
+  providerSessionId(taskId: number, sessionId: string): string | undefined;
+  // Stores the id that a provider gave to a session, only when the column is NULL. Else, and for a
+  // session with no row, it changes nothing.
+  setProviderSessionId(taskId: number, sessionId: string, id: string): void;
+  // The last usage total of a session, or undefined when none is stored or the session has no row.
+  sessionUsageTotal(taskId: number, sessionId: string): TokenUsage | undefined;
+  // Replaces the last usage total of a session in one statement. A session with no row changes nothing.
+  setSessionUsageTotal(taskId: number, sessionId: string, total: TokenUsage): void;
   // The plan session of a task, or undefined when the task has none.
   planSession(taskId: number): StoredSession | undefined;
   // Records the execute session of a plan revision once, before the run. The same id again writes
@@ -745,6 +760,23 @@ function setUp(db: DatabaseSync) {
        FROM sessions JOIN tasks ON tasks.id = sessions.task_id
        WHERE sessions.task_id = ? AND sessions.role = ? AND sessions.plan_version IS ?
          AND sessions.review_number IS ?`,
+    ),
+    selectProviderSessionId: db.prepare(
+      "SELECT provider_session_id FROM sessions WHERE task_id = ? AND session_id = ?",
+    ),
+    updateProviderSessionId: db.prepare(
+      `UPDATE sessions SET provider_session_id = ?
+       WHERE task_id = ? AND session_id = ? AND provider_session_id IS NULL`,
+    ),
+    selectSessionUsageTotal: db.prepare(
+      `SELECT usage_total_input_tokens, usage_total_output_tokens, usage_total_cache_creation_input_tokens,
+              usage_total_cache_read_input_tokens
+       FROM sessions WHERE task_id = ? AND session_id = ?`,
+    ),
+    updateSessionUsageTotal: db.prepare(
+      `UPDATE sessions SET usage_total_input_tokens = ?, usage_total_output_tokens = ?,
+              usage_total_cache_creation_input_tokens = ?, usage_total_cache_read_input_tokens = ?
+       WHERE task_id = ? AND session_id = ?`,
     ),
     deleteSession: db.prepare(
       "DELETE FROM sessions WHERE task_id = ? AND role = ? AND plan_version IS ? AND review_number IS ?",
@@ -1432,6 +1464,45 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     recordPlanSession(taskId, session) {
       return recordSession(taskId, { role: "plan" }, session);
+    },
+
+    providerSessionId(taskId, sessionId) {
+      const row = statements.selectProviderSessionId.get(taskId, sessionId) as
+        { provider_session_id: string | null } | undefined;
+      return row?.provider_session_id ?? undefined;
+    },
+
+    setProviderSessionId(taskId, sessionId, id) {
+      statements.updateProviderSessionId.run(id, taskId, sessionId);
+    },
+
+    sessionUsageTotal(taskId, sessionId) {
+      const row = statements.selectSessionUsageTotal.get(taskId, sessionId) as
+        | {
+            usage_total_input_tokens: number | null;
+            usage_total_output_tokens: number;
+            usage_total_cache_creation_input_tokens: number;
+            usage_total_cache_read_input_tokens: number;
+          }
+        | undefined;
+      if (row?.usage_total_input_tokens == null) return undefined;
+      return {
+        inputTokens: row.usage_total_input_tokens,
+        outputTokens: row.usage_total_output_tokens,
+        cacheCreationInputTokens: row.usage_total_cache_creation_input_tokens,
+        cacheReadInputTokens: row.usage_total_cache_read_input_tokens,
+      };
+    },
+
+    setSessionUsageTotal(taskId, sessionId, total) {
+      statements.updateSessionUsageTotal.run(
+        total.inputTokens,
+        total.outputTokens,
+        total.cacheCreationInputTokens,
+        total.cacheReadInputTokens,
+        taskId,
+        sessionId,
+      );
     },
 
     planSession(taskId) {
