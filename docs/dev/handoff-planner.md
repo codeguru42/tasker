@@ -45,8 +45,9 @@ The handoff file of the planner holds the items of
 handoff file:
 
 - The prompt names the milestone, the session name `planner-<slug>` and the first free item id. The first step of the
-  prompt is a read of `AGENTS.md` and `docs/planner.md`. The prompt names no other doc for the start reads. The second
-  step of the prompt is [The start of the new planner](#the-start-of-the-new-planner).
+  prompt is the prompt read of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The prompt names
+  no other doc for the start reads. The second step of the prompt is
+  [The start of the new planner](#the-start-of-the-new-planner).
 - The path of each open draft, not its text, its source, and the decision of the user that it waits for, if any.
 - Each lesson, measured fact or proposed issue that another session sent or that the old planner found, and that has no
   draft yet. Each entry names its sender, its facts and its sources.
