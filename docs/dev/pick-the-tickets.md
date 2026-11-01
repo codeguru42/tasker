@@ -597,9 +597,10 @@ The orchestrator writes the prompt of each agent.
   posts the issue, as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The
   orchestrator drafts and files no issue itself. The one exception is the issue of step 1 of
   [A failed CI run](ci-wait.md#a-failed-ci-run), which the orchestrator files itself. If `SendMessage` fails, for
-  example because no planner runs, the orchestrator sends the lesson to `operator-<slug>` as an item. A refused message
-  counts as a failed `SendMessage`. The orchestrator waits for no answer from the planner. A missing answer is out of
-  scope. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue draft to the planner.
+  example because no planner runs, the orchestrator sends the lesson to [its operator](../operator.md) as an item. A
+  refused message counts as a failed `SendMessage`. The orchestrator waits for no answer from the planner. A missing
+  answer is out of scope. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue
+  draft to the planner.
 
   A request of [the user](../sessions.md) to draft an issue, or to change the title or the body of an issue, is a
   proposed issue of this bullet. [The orchestrator](../orchestrator.md) sends it to `planner-<slug>` with no question to
