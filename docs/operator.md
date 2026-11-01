@@ -43,7 +43,7 @@ operator in the place of the orchestrator. When the operator gets a notice, the 
 The operator pages are `docs/operator.md` and the pages of this list, "The pages":
 
 - [docs/dev/operator-start.md](dev/operator-start.md): "The order of a milestone", "Start a session", "The start
-  prompts", "Stop a session", "A handoff" and "A blocked session".
+  prompts", "Stop a session", "The close of a milestone", "A handoff" and "A blocked session".
 - [docs/dev/operator-items.md](dev/operator-items.md): "The form of an item", "The open items", "The answer" and "The
   states of an item".
 - [docs/dev/operator-conversations.md](dev/operator-conversations.md): "A side conversation" and "The word of the user".
