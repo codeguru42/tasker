@@ -403,6 +403,11 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   [the doc-search rule](rules.md#docs). On #133, a new shared read helper changed an error text, and the diff read found
   two doc sentences that it made false. On #132, the helper-name search of
   [the diff read](run-one-ticket.md#the-diff-read) found a copied test helper after a review with no findings.
+- A ticket can add a new case, for example a new tracker, and leave some features out of that case. Ask the plan to
+  search `docs/config.md`, `skills/` and `README.md` for the sentences on each such feature. The search follows
+  [the doc-search rule](rules.md#docs). For each hit, the plan tests the sentence for the new case. Then the plan says
+  whether the text changes or why it stays. The reason: a sentence can still describe only the old case, and a review
+  then finds it at the cost of a loop.
 - A ticket can add a reason for a command to demote a task or to refuse. Then ask the plan to search `src/`, `docs/`,
   `skills/` and `README.md` for each form of the old condition. The search of `src/` covers the code comments and the
   help text, and each other search follows [the doc-search rule](rules.md#docs). For each hit, the plan says whether the
