@@ -35,6 +35,8 @@ import {
   newReview,
   newVerifyRun,
   readRunMarker,
+  NO_SESSION_VALUES,
+  sessionValuesOf,
   seedReview,
   tableNames,
   tableRowCount,
@@ -651,6 +653,109 @@ describe("task store", () => {
     });
   });
 
+  describe("upgrade from version 17", () => {
+    it("keeps the old sessions and leaves the five new columns NULL", () => {
+      const oldPath = join(dir, "old17.db");
+      makeOldDatabase(oldPath, 17);
+      withRawDatabase(oldPath, (raw) => {
+        raw
+          .prepare(
+            "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES ('a/b#1', 'tasker', 'executed', 't', 't')",
+          )
+          .run();
+        raw
+          .prepare(
+            "INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at) VALUES (1, 'plan', 's-old', 'codex', 'm', 'low', 't')",
+          )
+          .run();
+      });
+      withStoreFile(oldPath, () => {}, { now });
+      const rows = withRawDatabase(oldPath, (raw) =>
+        raw.prepare("SELECT task_id, role, session_id, provider, model, effort FROM sessions").all(),
+      );
+      expect(rows.map((row) => ({ ...row }))).toEqual([
+        { task_id: 1, role: "plan", session_id: "s-old", provider: "codex", model: "m", effort: "low" },
+      ]);
+      expect(sessionValuesOf(oldPath, "s-old")).toEqual(NO_SESSION_VALUES);
+    });
+  });
+
+  describe("provider session id", () => {
+    const record = () => {
+      const task = store.createTask(newTask);
+      seedPlanSession(store, task.id, { sessionId: "s-1" });
+      return task.id;
+    };
+
+    it("gives undefined for a new row and for a row that does not exist", () => {
+      const id = record();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(store.providerSessionId(id, "s-1")).toBeUndefined();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(store.providerSessionId(id, "other")).toBeUndefined();
+    });
+
+    it("sets the value, and a second write leaves the first id", () => {
+      const id = record();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      store.setProviderSessionId(id, "s-1", "thread-1");
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(store.providerSessionId(id, "s-1")).toBe("thread-1");
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      store.setProviderSessionId(id, "s-1", "thread-2");
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(store.providerSessionId(id, "s-1")).toBe("thread-1");
+      expect(sessionValuesOf(dbPath, "s-1")?.provider_session_id).toBe("thread-1");
+    });
+
+    it("changes no row for an unknown session id", () => {
+      const id = record();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      store.setProviderSessionId(id, "other", "thread-1");
+      expect(sessionValuesOf(dbPath, "s-1")).toEqual(NO_SESSION_VALUES);
+      expect(sessionValuesOf(dbPath, "other")).toBeUndefined();
+    });
+  });
+
+  describe("session usage total", () => {
+    const first = { inputTokens: 1, outputTokens: 2, cacheCreationInputTokens: 3, cacheReadInputTokens: 4 };
+    const second = { inputTokens: 10, outputTokens: 20, cacheCreationInputTokens: 30, cacheReadInputTokens: 40 };
+    const record = () => {
+      const task = store.createTask(newTask);
+      seedPlanSession(store, task.id, { sessionId: "s-1" });
+      return task.id;
+    };
+
+    it("gives undefined for a new row and for a row that does not exist", () => {
+      const id = record();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(store.sessionUsageTotal(id, "s-1")).toBeUndefined();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(store.sessionUsageTotal(id, "other")).toBeUndefined();
+    });
+
+    it("sets the four counters, and a second write replaces them", () => {
+      const id = record();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      store.setSessionUsageTotal(id, "s-1", first);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(store.sessionUsageTotal(id, "s-1")).toEqual(first);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      store.setSessionUsageTotal(id, "s-1", second);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(store.sessionUsageTotal(id, "s-1")).toEqual(second);
+      expect(sessionValuesOf(dbPath, "s-1")).toMatchObject({ usage_total_input_tokens: 10 });
+    });
+
+    it("changes no row for an unknown session id", () => {
+      const id = record();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      store.setSessionUsageTotal(id, "other", first);
+      expect(sessionValuesOf(dbPath, "s-1")).toEqual(NO_SESSION_VALUES);
+      expect(sessionValuesOf(dbPath, "other")).toBeUndefined();
+    });
+  });
+
   describe("upgrade from version 3", () => {
     it("gives old rows attempt 1 and null fields", () => {
       const oldPath = join(dir, "old3.db");
@@ -901,7 +1006,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(17);
+        expect(migrations.length).toBe(18);
       });
     });
   });
@@ -2012,6 +2117,7 @@ describe("task store", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           plan_version: null,
           review_number: null,
+          ...NO_SESSION_VALUES,
         },
       ]);
     });
@@ -2089,6 +2195,7 @@ describe("task store", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           plan_version: 1,
           review_number: null,
+          ...NO_SESSION_VALUES,
         },
       ]);
     });
@@ -2187,6 +2294,7 @@ describe("task store", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           plan_version: null,
           review_number: 1,
+          ...NO_SESSION_VALUES,
         },
       ]);
     });

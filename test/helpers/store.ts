@@ -131,6 +131,36 @@ export function readRunMarker(dbPath: string, taskId: number) {
   );
 }
 
+// The five columns of a session row that hold the values of a provider.
+export interface SessionValues {
+  provider_session_id: string | null;
+  usage_total_input_tokens: number | null;
+  usage_total_output_tokens: number | null;
+  usage_total_cache_creation_input_tokens: number | null;
+  usage_total_cache_read_input_tokens: number | null;
+}
+
+// The five columns of a session row that no provider has written.
+export const NO_SESSION_VALUES: SessionValues = {
+  provider_session_id: null,
+  usage_total_input_tokens: null,
+  usage_total_output_tokens: null,
+  usage_total_cache_creation_input_tokens: null,
+  usage_total_cache_read_input_tokens: null,
+};
+
+// The raw values of a session in the database file at path, or undefined when the session has no row.
+export function sessionValuesOf(dbPath: string, sessionId: string): SessionValues | undefined {
+  return withRawDatabase(dbPath, (db) => {
+    const row = db
+      .prepare(
+        "SELECT provider_session_id, usage_total_input_tokens, usage_total_output_tokens, usage_total_cache_creation_input_tokens, usage_total_cache_read_input_tokens FROM sessions WHERE session_id = ?",
+      )
+      .get(sessionId);
+    return row === undefined ? undefined : ({ ...row } as unknown as SessionValues);
+  });
+}
+
 // Writes a raw run marker row for a task in the database file at path. The marker holds no check of the state.
 export function writeRunMarker(
   dbPath: string,

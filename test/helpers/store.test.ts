@@ -40,6 +40,8 @@ import {
   newVerifyRun,
   quotaEventsOf,
   readRunMarker,
+  NO_SESSION_VALUES,
+  sessionValuesOf,
   refuseBranchUpdated,
   reviewSessionRows,
   seedCreditsApproval,
@@ -640,6 +642,47 @@ describe("readRunMarker", () => {
     const id = withStoreFile(path, (store) => store.createTask(newTask).id);
 
     expect(readRunMarker(path, id)).toBeUndefined();
+  });
+});
+
+describe("sessionValuesOf", () => {
+  const newTask = { issueKey: "codeguru42/tasker#6", repoKey: "tasker", state: "approved" } as const;
+  const usage = { inputTokens: 1, outputTokens: 2, cacheCreationInputTokens: 3, cacheReadInputTokens: 4 };
+
+  it("gives NO_SESSION_VALUES for a new row", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    withStoreFile(path, (store) => {
+      seedPlanSession(store, store.createTask(newTask).id, { sessionId: "s-1" });
+    });
+
+    expect(sessionValuesOf(path, "s-1")).toEqual(NO_SESSION_VALUES);
+  });
+
+  it("gives the stored values after the two writes of the store", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    withStoreFile(path, (store) => {
+      const task = store.createTask(newTask);
+      seedPlanSession(store, task.id, { sessionId: "s-1" });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      store.setProviderSessionId(task.id, "s-1", "thread-1");
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      store.setSessionUsageTotal(task.id, "s-1", usage);
+    });
+
+    expect(sessionValuesOf(path, "s-1")).toEqual({
+      provider_session_id: "thread-1",
+      usage_total_input_tokens: 1,
+      usage_total_output_tokens: 2,
+      usage_total_cache_creation_input_tokens: 3,
+      usage_total_cache_read_input_tokens: 4,
+    });
+  });
+
+  it("gives undefined for a session id with no row", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    withStoreFile(path, () => {});
+
+    expect(sessionValuesOf(path, "missing")).toBeUndefined();
   });
 });
 
