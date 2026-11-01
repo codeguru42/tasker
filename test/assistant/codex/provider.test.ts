@@ -569,6 +569,28 @@ describe("createCodexProvider run: the execute role", () => {
       expect(failureOutcomeOf(outcome).sandboxCleanup).toEqual({ removed: NAMES });
     });
 
+    it.skipIf(process.getuid?.() === 0)(
+      "gives a failure outcome with no spawn when the cwd cannot be searched",
+      async () => {
+        const parent = useTempDir("tasker-codex-parent-");
+        const cwd = join(parent, "cwd");
+        mkdirSync(cwd);
+        const onSpawn = vi.fn();
+        chmodSync(parent, 0o000);
+
+        try {
+          const { outcome, fake } = await executeRun({ stream: codexSample("plain") }, { cwd, onSpawn });
+
+          expect(failureOutcomeOf(outcome)).toMatchObject({ exitCode: null, signal: null });
+          expect(outcome).not.toHaveProperty("sandboxCleanup");
+          expect(fake.calls()).toEqual([]);
+          expect(onSpawn).not.toHaveBeenCalled();
+        } finally {
+          chmodSync(parent, 0o755);
+        }
+      },
+    );
+
     it("sets no sandboxCleanup when the run was refused", async () => {
       const hookScript = join(useTempDir("tasker-codex-hook-"), "missing.js");
       const setup = setUp({ stream: codexSample("plain") }, { access: "workspace-write", sandbox: sandboxLimits() });
