@@ -9,7 +9,8 @@ import { planRevisionPath, planTranscriptPath } from "../store/layout.js";
 import { PlanFileWriteError, recordPlanRevision } from "../store/plan-file.js";
 import type { PlanRevisionSource, Task, TaskStore } from "../store/store.js";
 import type { PreparedPlanModeRun } from "./assistant-run.js";
-import { applyRunOutcome, failRun, pauseForQuotaApproval, recordSandboxCleanup } from "./run-outcome.js";
+import { applyRunOutcome, failRun, pauseForQuotaApproval, recordSandboxCleanup, recordUsage } from "./run-outcome.js";
+import type { TipGuard } from "./tip-guard.js";
 
 export interface PlannedRevision {
   version: number;
@@ -32,6 +33,8 @@ export interface PlanRunRequest {
   archived: { version: string; path: string };
   version: number;
   prepared: PreparedPlanModeRun;
+  // Layer 3 of the push guard, started before the run.
+  tipGuard: TipGuard;
   source: PlanRevisionSource;
   feedback?: string;
 }
@@ -48,6 +51,8 @@ export interface PlanModeAnswerRequest<A, R> {
   // The user feedback of a refine. The move into the phase records it.
   feedback?: string;
   prepared: PreparedPlanModeRun;
+  // Layer 3 of the push guard, started before the run.
+  tipGuard: TipGuard;
   transcriptPath: string;
   jsonSchema: Record<string, unknown>;
   check: (output: unknown) => { ok: true; answer: A } | { ok: false; problems: string[] };
@@ -69,6 +74,7 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
     prompt,
     feedback,
     prepared,
+    tipGuard,
     transcriptPath,
     jsonSchema,
     check,
@@ -92,6 +98,12 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
     }
     recordSandboxCleanup(store, task, outcome);
     const endedAt = new Date().toISOString();
+    // A push wins over every outcome, a quota stop included. The usage of the run is still recorded.
+    const pushed = await tipGuard.tipFailure();
+    if (pushed !== undefined) {
+      recordUsage(store, task, outcome);
+      return failRun(store, task, io, pushed);
+    }
     const result = applyRunOutcome({
       store,
       task,
@@ -122,7 +134,7 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
 
 // Runs the assistant in plan mode and records the plan revision. The caller holds the task lock.
 export function runPlanRevision(request: PlanRunRequest): Promise<PlanResult> {
-  const { store, config, task, io, phase, prompt, archived, version, prepared, source, feedback } = request;
+  const { store, config, task, io, phase, prompt, archived, version, prepared, tipGuard, source, feedback } = request;
   return runPlanModeAnswer({
     store,
     config,
@@ -132,6 +144,7 @@ export function runPlanRevision(request: PlanRunRequest): Promise<PlanResult> {
     prompt,
     feedback,
     prepared,
+    tipGuard,
     transcriptPath: planTranscriptPath(config.dataRoot, task, version),
     jsonSchema: planAnswerJsonSchema(),
     check: checkPlanAnswer,

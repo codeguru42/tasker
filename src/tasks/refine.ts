@@ -21,6 +21,7 @@ import { runPlanRevision, type PlanResult } from "./plan-run.js";
 import { assertSessionModel } from "./session-model.js";
 import { assertBaseMoved } from "./parent.js";
 import { requireBaseRevision, requireBranch, taskInState } from "./task-state.js";
+import { startTipGuard } from "./tip-guard.js";
 
 export interface RefineRequest {
   config: Config;
@@ -111,6 +112,7 @@ export async function runRefine(store: TaskStore, run: RefineRun): Promise<PlanR
   const baseRevision = requireBaseRevision(vcs, task);
   const branch = requireBranch(task);
   const branchCommits = await vcs.ownCommits(ctx, { taskRef: branch, baseRevision });
+  const tipGuard = await startTipGuard(vcs, ctx, branch);
   const prompt = fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, {
     CURRENT_PLAN: currentPlan,
     BRANCH_COMMITS: branchCommits,
@@ -140,6 +142,7 @@ export async function runRefine(store: TaskStore, run: RefineRun): Promise<PlanR
     archived,
     version,
     prepared,
+    tipGuard,
     source,
     feedback,
   });

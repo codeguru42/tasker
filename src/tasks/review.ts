@@ -15,6 +15,7 @@ import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanModeAnswer } from "./plan-run.js";
 import { assertBaseMoved } from "./parent.js";
 import { requireBaseRevision, requireBranch, requireWorktree, taskInState } from "./task-state.js";
+import { startTipGuard } from "./tip-guard.js";
 
 export interface ReviewRequest {
   config: Config;
@@ -52,6 +53,7 @@ async function reviewLocked(store: TaskStore, request: ReviewRequest): Promise<R
   const baseRevision = requireBaseRevision(vcs, task);
   const revision = await vcs.taskRefRevision(ctx, { taskRef: branch });
   const branchCommits = await vcs.ownCommits(ctx, { taskRef: branch, baseRevision });
+  const tipGuard = await startTipGuard(vcs, ctx, branch);
   const earlier = earlierReviewsText(store.listReviews(task.id), store.listPlanRevisions(task.id));
   const prompt = fillTemplate(REVIEW_PROMPT_NAME, REVIEW_PROMPT, {
     EARLIER_REVIEWS: earlier,
@@ -83,6 +85,7 @@ async function reviewLocked(store: TaskStore, request: ReviewRequest): Promise<R
     phase: "reviewing",
     prompt,
     prepared,
+    tipGuard,
     transcriptPath,
     jsonSchema: reviewAnswerJsonSchema(),
     check: checkReviewAnswer,

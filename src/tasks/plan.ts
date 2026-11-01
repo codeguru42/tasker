@@ -8,9 +8,11 @@ import { fillTemplate } from "../prompts/template.js";
 import { approvedResetsAtOf } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
+import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
-import { taskInState } from "./task-state.js";
+import { requireBranch, taskInState } from "./task-state.js";
+import { startTipGuard } from "./tip-guard.js";
 
 export interface PlanRequest {
   config: Config;
@@ -30,6 +32,8 @@ async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanR
   const { config, ref, env, io } = request;
   const task = taskInState(store, request.taskId, "plan");
   const issue = await issueProviderFor(config, ref.repoKey).fetchIssue(ref, env);
+  const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
+  const tipGuard = await startTipGuard(vcs, ctx, requireBranch(task));
   const prompt = fillTemplate(PLAN_PROMPT_NAME, PLAN_PROMPT, {
     ISSUE_TEXT: planIssueText({ key: task.issueKey, title: issue.title, body: issue.body }),
     ISSUE_COMMENTS: planIssueComments(issue.comments),
@@ -62,6 +66,7 @@ async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanR
     archived,
     version,
     prepared,
+    tipGuard,
     source: "plan",
   });
 }
