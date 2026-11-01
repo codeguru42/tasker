@@ -47,6 +47,13 @@ commands and their results to the list of files that it sends after `tasker appr
 [Run one ticket](run-one-ticket.md#run-one-ticket). The reason: the plan session cannot do a test that reads outside the
 worktree, because [the repo-files rule](#the-repo-files-rule) bans such a command.
 
+A fact test of a limit on output entries uses a count over the expected limit, because a smaller count can hide it. The
+expected limit comes from a doc of the tool, a page size, a field such as `maxResults` or an earlier measure. A fact
+test that a read gives all entries is also such a fact test. If no source gives a limit, the session picks the count,
+and this choice is open on purpose. The result then names the highest count, and it says that no one measured a higher
+count. On #550 (2026-10-31), `acli jira workitem view` gave all 60 of 60 comments, but only the newest 100 entries of
+1,010.
+
 Each session that runs a fact test follows this rule: an agent, the orchestrator and the planner. In a fact test, the
 session starts each shell command that works in a scratch folder with `cd <folder> || exit 1`. If the command also makes
 the folder, the session starts it with `mkdir -p <folder> && cd <folder> || exit 1`.
