@@ -437,6 +437,23 @@ approve case apply. If the ticket has one, and the user approves, the ticket has
 most one is open, as [the stacking rule](#the-stacking-rule) says. Then the stacking rule applies to the blocker that
 stays open.
 
+### The open-question rule
+
+Before the start of a ticket, the orchestrator reads the issue with `gh issue view <number> --json body,comments`. In
+the comments, only a comment of the account of the orchestrator counts, as
+[the issue check](plan-review.md#the-issue-check) says. If the command fails,
+[the failure rule](limits.md#the-failure-rule) applies, and that ticket does not start.
+
+An issue can hold an open question that stops its start. The note of
+[the change-of-scope comment](plan-review.md#the-change-of-scope-comment) that starts
+`## Open question after the change of scope` is one form. For the order of the priority rule, the orchestrator counts
+such a ticket as a ticket that can start. If that ticket is the next ticket for a free agent, the orchestrator asks the
+user about the question. Before that, the orchestrator does not ask, also with a free agent. On 2026-10-31, #635 held
+such a question.
+
+While the answer waits, the ticket after it takes the free agent. After the answer, and after each body edit that the
+issue asks for, the ticket can start.
+
 ### The defer rule
 
 To defer a ticket means that the user moves its issue to a later milestone, for example "Future". This rule covers a
