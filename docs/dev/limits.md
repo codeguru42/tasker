@@ -175,8 +175,11 @@ The local task branch holds no commit of its own, with two exceptions. The first
 [the manual fix](verify-failures.md#the-manual-fix), from its step 2 to step 11 of rebase-conflicts.md. The second is
 rebase-conflicts.md after a rebase conflict of `tasker update-branch`, from step 7 (the rebase) to step 11
 (`--take-remote`). In that time, the agent does not run the update rule. If the agent [stops](#the-answer-wait-rule) in
-that time, for example after a failed push at step 10, the worktree and the local branch stay. After step 11, tasker
-holds the local tip (`<taken>`), and the rule ends. The manual fix and rebase-conflicts.md link to this rule.
+that time, for example after a failed push at step 10, the worktree and the local branch stay. The rule ends at each
+step 11 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure), except at the new conflict of that step. At
+that new conflict, the rule holds with no break through the loop of that step. After each other step 11 of that page,
+tasker holds the local tip ([`<taken>`](rebase-conflicts.md#procedure)), and the rule ends. The manual fix and
+rebase-conflicts.md link to this rule.
 
 ### The shared-clone rule
 
