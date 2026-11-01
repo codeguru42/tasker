@@ -418,9 +418,9 @@ continued session.
   `src/assistant/codex/sockets.ts` gives the socket paths from the env before the child filter. Every role gets them. A
   deny key under a write key holds.
 - Two facts of the table hold for every key. A key must not be a symbolic link, because the run then fails at the start.
-  So a link becomes its target, and a link that cannot resolve is left out. A path under another key of the table must
-  not exist as a key, because an existing path under a denied folder makes the run fail at the start. So the table
-  leaves it out. A path that does not exist stays.
+  So a link becomes its target, and a link that cannot resolve is left out. An existing path under another deny key must
+  not be a key, because the run then fails at the start. So the table leaves it out. A deny key under a write key holds,
+  and the table keeps it. A path that does not exist stays.
 - Under `workspace-write`, `-c hooks.PreToolUse=[...]` and `--dangerously-bypass-hook-trust` follow the network line.
   `codexHookArgs()` builds them. The matcher is `^apply_patch$`, the command is a TOML string, and the timeout is 10
   seconds. A continued session gets the same arguments.
@@ -454,11 +454,12 @@ The rules differ from `claude-code` in these points.
 - `permissionDenials` is always `[]`. A command that the sandbox blocks is a normal `command_execution` item with the
   shell error in `aggregated_output`.
 
-A `read-only` run sets no `sandboxCleanup`. A normal `workspace-write` run leaves the empty folders `.agents`, `.aws`
-and `.codex` in the worktree. After each run that reached the spawn step, also after a kill or a failure, the provider
-removes them with `removePlaceholders()`. `absentPlaceholders()` in `src/assistant/codex/placeholders.ts` names only the
-folders that did not exist before the spawn. A folder with an entry, a file and a link stay. A failed removal gives an
-`error` in `sandboxCleanup` and never changes the kind of the outcome.
+A `read-only` run sets no `sandboxCleanup`. A `workspace-write` run can leave the empty folders `.agents`, `.aws` and
+`.codex` in the worktree. The sandbox makes them as mount points during the run, and it does not always remove them.
+After each run that reached the spawn step, also after a kill or a failure, the provider removes them with
+`removePlaceholders()`. `absentPlaceholders()` in `src/assistant/codex/placeholders.ts` names only the folders that did
+not exist before the spawn. A folder with an entry, a file and a link stay. A failed removal gives an `error` in
+`sandboxCleanup` and never changes the kind of the outcome.
 
 A deny of the hook adds no event, so `permissionDenials` stays `[]`.
 
@@ -493,11 +494,12 @@ add a file there too. A `PreToolUse` hook of tasker closes this gap for `apply_p
 the hook, and `editHookAnswer()` decides. A deny is one line of JSON with exit code 0. An allow prints nothing. The hook
 reads each `*** Add File:`, `*** Update File:`, `*** Delete File:` and `*** Move to:` header. It denies a patch that it
 cannot read, a path with a `..` part, a denied path, a symbolic link in the path, a path that it cannot read and a path
-outside the worktree. It writes no file.
+outside the worktree. It writes no file. An indented `***` line that matches no header is a context line of a hunk. A
+`***` line with no indent that matches no header is a patch that the hook cannot read.
 
-The hook denies an `apply_patch` path outside the worktree that no entry names. This is a decision that the first design
-did not state. The reason is the limit of the `claude` provider, which allows `Edit` and `Write` only in the worktree.
-The shell can still write the temp folder.
+The hook denies an `apply_patch` path outside the worktree that no entry names. This is a decision that the issue did
+not state. The reason is the limit of the `claude` provider, which allows `Edit` and `Write` only in the worktree. The
+shell can still write the temp folder.
 
 Codex lets the patch pass when the hook fails. A crash, output that is not JSON, a timeout and a `command` that names a
 missing file all allow the patch. Three guards follow. The main script runs everything in one `try`, loads the hook with
@@ -505,13 +507,13 @@ a dynamic `import()`, and prints a literal deny line in the `catch`. The provide
 before the spawn, and gives a `failure` outcome if not. The timeout is 10 seconds, and the hook is fast. A timeout of
 the hook allows the patch.
 
-| Limit                 | `claude-code`                          | `codex`                                           |
-| --------------------- | -------------------------------------- | ------------------------------------------------- |
-| Edit of a denied path | The deny rules of the edit tools       | The hook, for `apply_patch` only                  |
-| `deniedCommands`      | Deny rules (layer 1 of the push guard) | No rule. The sandbox is the only limit            |
-| Denied edit           | An entry in `permissionDenials`        | No event. `permissionDenials` is `[]`             |
-| Hooks of the user     | Not changed by this version            | Run, because of `--dangerously-bypass-hook-trust` |
-| Cleanup               | The placeholders of the sandbox        | The empty folders `.agents`, `.aws` and `.codex`  |
+| Limit                 | `claude-code`                          | `codex`                                                                     |
+| --------------------- | -------------------------------------- | --------------------------------------------------------------------------- |
+| Edit of a denied path | The deny rules of the edit tools       | The hook, for `apply_patch` only                                            |
+| `deniedCommands`      | Deny rules (layer 1 of the push guard) | No rule. The sandbox is the only limit                                      |
+| Denied edit           | An entry in `permissionDenials`        | No event. `permissionDenials` is `[]`                                       |
+| Hooks of the user     | The provider passes no flag for them   | Run, because of `--dangerously-bypass-hook-trust`                           |
+| Cleanup               | The placeholders of the sandbox        | The empty folders `.agents`, `.aws` and `.codex` that the sandbox can leave |
 
 ### The doctor checks
 
@@ -577,9 +579,11 @@ run on macOS or Windows is unmeasured.
   items to the stream, and the reader ignores them.
 - Hooks of the user (2026-11-01): the hook in `~/.codex/hooks.json` does not run under `--ignore-user-config`. With
   `--dangerously-bypass-hook-trust` it runs.
+- Hooks of the repo (2026-11-01): a `.codex/hooks.json` of an untrusted worktree did not run, also with
+  `--dangerously-bypass-hook-trust` and `--ignore-user-config`. A trusted worktree is unmeasured.
 - Placeholders: a `read-only` run leaves no file in the worktree, after a normal exit and after SIGKILL. A write run
-  (2026-11-01) leaves the empty folders `.agents`, `.aws` and `.codex` after a normal exit. The state after SIGKILL is
-  unmeasured.
+  (2026-11-01) makes the empty folders `.agents`, `.aws` and `.codex` during the run, and they stayed after the run in
+  some runs and not in others. The state after SIGKILL is unmeasured.
 - bwrap: not measured. The run cannot make the sandbox fail on the test host.
 - Other tools: web search stays on through an MCP tool unless `features.apps=false` is set. `--ignore-user-config`
   leaves out the MCP servers of the user.
@@ -589,7 +593,7 @@ run on macOS or Windows is unmeasured.
 
 Some measures are weaker. The measures of the profile, of the rules and of the configuration ran on the real Codex home
 of the user. A rules file of the user is not proven to load, because none existed. `--ignore-rules` rests on its help
-text. Nobody measured a host where the sandbox cannot start.
+text. Nobody measured a host where the sandbox cannot start. Nobody measured a hook of a trusted worktree.
 
 - `overageStop` has no effect.
 - A hook that crashes, times out or names a missing file lets the patch pass. The guards of "The limits of the execute
