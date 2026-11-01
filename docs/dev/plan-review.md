@@ -258,7 +258,8 @@ open-question note treated the milestone item of #427 as the last item of the li
 A design gap is a detail that the plan needs and that the issue does not give, in the first or the second case of the
 stop rule. If the gap has exactly one workable answer inside the intent of the issue, the orchestrator gives that answer
 to the agent. The orchestrator also tells the user the answer. If the gap has more than one workable answer, the
-orchestrator asks the user. A security gap (the third case) always goes to the user.
+orchestrator asks the user. A security gap (the third case) always goes to the user. If a stop for a design gap is also
+the fifth case of [the stop rule](#the-stop-rule), the stop rule says who answers.
 
 An answer of a design gap can name a rule or a hint that still applies to the case. Before the orchestrator gives such
 an answer, it searches each page of each rule or hint that the answer names. It searches for each other rule or hint on
