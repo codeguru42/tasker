@@ -1,7 +1,7 @@
 // The quota facts of the claude stream. Each rule of the rate-limit events has one function here.
 import { isObject } from "../../object.js";
 import type { AssistantEvent, OverageStop, QuotaApprovalWarning, RunOutcome } from "../provider.js";
-import { numberOf } from "./stream.js";
+import { numberOf } from "../event-line.js";
 
 // Whether the event is a rate_limit_event. It does not look at rate_limit_info, because tasker keeps each event as it came.
 export function isQuotaEvent(event: AssistantEvent): boolean {

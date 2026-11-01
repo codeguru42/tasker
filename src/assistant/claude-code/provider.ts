@@ -3,6 +3,7 @@ import { detailSuffix } from "../../detail-suffix.js";
 import { errorMessage } from "../../error-message.js";
 import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
+import { parseLine } from "../event-line.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
 import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
@@ -22,7 +23,7 @@ import {
   sandboxSocketFolder,
   sharedFolderRefusal,
 } from "./sandbox.js";
-import { parseLine, readStream, type StreamFacts } from "./stream.js";
+import { readStream, type StreamFacts } from "./stream.js";
 
 type Failure = Extract<RunOutcome, { kind: "failure" }>;
 
