@@ -70,7 +70,7 @@ async function abortJiraTask(
       config,
       ref: { ...jiraRefOf("TEST-5"), repoKey: started.repoKey },
       taskId: task.id,
-      env: options.env,
+      env: options.env ?? process.env,
       report: (line) => lines.push(line),
       trackerIo: { stdout: (text) => lines.push(text), stderr: (text) => lines.push(text) },
     });
