@@ -157,6 +157,57 @@ function test2With(changes: Record<string, unknown>): string {
   return JSON.stringify({ ...TEST_2, fields: Object.fromEntries(fields) });
 }
 
+// One entry of fields.comment.comments in the measured form, with no personal field.
+// A value of undefined in changes removes the key, as JSON.stringify() does.
+function commentEntry(n: number, changes: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    author: { displayName: "Measure User" },
+    body: {
+      content: [{ content: [{ text: `measure comment ${n} of 60`, type: "text" }], type: "paragraph" }],
+      type: "doc",
+      version: 1,
+    },
+    created: "2026-10-31T09:24:37.609-0600",
+    id: String(10000 + n - 1),
+    jsdPublic: true,
+    updateAuthor: { displayName: "Measure User" },
+    updated: "2026-10-31T09:24:37.609-0600",
+    ...changes,
+  };
+}
+
+// The value of fields.comment for the given entries. The total is the count of all comments of the issue.
+function commentField(entries: unknown[], total = entries.length): Record<string, unknown> {
+  return {
+    comments: entries,
+    maxResults: entries.length,
+    self: "https://jira-prod-us-63-5.prod.atl-paas.net/rest/api/3/issue/10013/comment",
+    startAt: total - entries.length,
+    total,
+  };
+}
+
+// The measured body of comment 3: a paragraph with bold text and a bullet list.
+const LIST_BODY = {
+  content: [
+    {
+      content: [
+        { text: "measure comment 3 of 60 ", type: "text" },
+        { marks: [{ type: "strong" }], text: "bold", type: "text" },
+      ],
+      type: "paragraph",
+    },
+    {
+      content: [{ content: [{ content: [{ text: "item one", type: "text" }], type: "paragraph" }], type: "listItem" }],
+      type: "bulletList",
+    },
+  ],
+  type: "doc",
+  version: 1,
+};
+
+const BAD_BODY = { type: "paragraph", content: [] };
+
 describe("readJiraIssue", () => {
   let dir: string;
 
@@ -320,5 +371,122 @@ describe("readJiraIssue", () => {
     expect(error.message).toBe(
       'the description of TEST-2 is not an ADF document: the ADF document is a node of the type "paragraph"',
     );
+  });
+
+  describe("comments", () => {
+    const readComments = (comment: unknown) => read("TEST-2", test2With({ comment }));
+
+    it("reads each comment in the order of the view", async () => {
+      const entries = [
+        commentEntry(1, { created: "2026-10-31T09:30:00.000-0600", author: { displayName: "Ann Example" } }),
+        commentEntry(2, { created: "2026-10-31T09:10:00.000-0600" }),
+        commentEntry(3, { created: "2026-10-31T09:20:00.000-0600" }),
+      ];
+
+      const issue = await readComments(commentField(entries));
+
+      expect(issue.comments).toEqual([
+        { author: "Ann Example", created: "2026-10-31T09:30:00.000-0600", body: "measure comment 1 of 60" },
+        { author: "Measure User", created: "2026-10-31T09:10:00.000-0600", body: "measure comment 2 of 60" },
+        { author: "Measure User", created: "2026-10-31T09:20:00.000-0600", body: "measure comment 3 of 60" },
+      ]);
+    });
+
+    it("reads a comment body with a bullet list", async () => {
+      const issue = await readComments(commentField([commentEntry(3, { body: LIST_BODY })]));
+
+      expect(issue.comments[0]?.body).toBe("measure comment 3 of 60 bold\n\n- item one");
+    });
+
+    it.each([
+      ["no author", undefined],
+      ["a null author", null],
+      ["a string author", "Measure User"],
+      ["an author with no displayName", {}],
+      ["an author with a number displayName", { displayName: 5 }],
+      ["an author with an empty displayName", { displayName: "" }],
+    ])("gives the author unknown for %s", async (_label, author) => {
+      const issue = await readComments(commentField([commentEntry(1, { author })]));
+
+      expect(issue.comments[0]?.author).toBe("unknown");
+    });
+
+    it("fails for comment 2 with a bad body", async () => {
+      const entries = [commentEntry(1), commentEntry(2, { body: BAD_BODY })];
+
+      const error = await failureOf(readComments(commentField(entries)), IssueReadError);
+
+      expect(error.message).toBe(
+        'comment 2 of TEST-2 is not an ADF document: the ADF document is a node of the type "paragraph"',
+      );
+    });
+
+    it.each([
+      ["no comment", undefined],
+      ["a null comment", null],
+      ["no comments", { ...commentField([]), comments: undefined }],
+      ["comments that are not an array", { ...commentField([]), comments: {} }],
+      ["no total", { ...commentField([]), total: undefined }],
+      ["a string total", { ...commentField([]), total: "0" }],
+      ["an entry that is not an object", commentField(["x"])],
+      ["no created", commentField([commentEntry(1, { created: undefined })])],
+      ["a number created", commentField([commentEntry(1, { created: 5 })])],
+      ["no body", commentField([commentEntry(1, { body: undefined })])],
+      ["a null body", commentField([commentEntry(1, { body: null })])],
+    ])("fails when the fields do not match for %s", async (_label, comment) => {
+      const error = await failureOf(readComments(comment), IssueReadError);
+
+      expect(error.message).toBe(BAD_FIELDS);
+    });
+
+    it("fails for the measured short list", async () => {
+      const entries = Array.from({ length: 100 }, (_, i) => commentEntry(i + 1));
+
+      const error = await failureOf(readComments(commentField(entries, 1010)), IssueReadError);
+
+      expect(error.message).toBe("acli gave 100 of 1010 comments for TEST-2");
+    });
+
+    it("fails for any short list", async () => {
+      const entries = [commentEntry(1), commentEntry(2)];
+
+      const error = await failureOf(readComments(commentField(entries, 3)), IssueReadError);
+
+      expect(error.message).toBe("acli gave 2 of 3 comments for TEST-2");
+    });
+
+    it("reads all the comments of a long list", async () => {
+      const entries = Array.from({ length: 150 }, (_, i) => commentEntry(i + 1));
+
+      const issue = await readComments(commentField(entries));
+
+      expect(issue.comments).toHaveLength(150);
+    });
+
+    it("keeps each entry of a list longer than total", async () => {
+      const entries = [commentEntry(1), commentEntry(2), commentEntry(3)];
+
+      const issue = await readComments(commentField(entries, 2));
+
+      expect(issue.comments).toHaveLength(3);
+    });
+
+    it("reports a short list before a bad comment body", async () => {
+      const entries = [commentEntry(1), commentEntry(2, { body: BAD_BODY })];
+
+      const error = await failureOf(readComments(commentField(entries, 3)), IssueReadError);
+
+      expect(error.message).toBe("acli gave 2 of 3 comments for TEST-2");
+    });
+
+    it("reports a bad description before a short list", async () => {
+      const stdout = test2With({ description: BAD_BODY, comment: commentField([commentEntry(1)], 2) });
+
+      const error = await failureOf(read("TEST-2", stdout), IssueReadError);
+
+      expect(error.message).toBe(
+        'the description of TEST-2 is not an ADF document: the ADF document is a node of the type "paragraph"',
+      );
+    });
   });
 });
