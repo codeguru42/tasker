@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { delimiter } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { permissionHookSettings } from "../../src/assistant/claude-code/permission-hook.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
