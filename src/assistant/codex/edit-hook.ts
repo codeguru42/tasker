@@ -31,9 +31,7 @@ export function patchPaths(patch: string): string[] | undefined {
   const lines = patch.split("\n").filter((line) => line.trim() !== "");
   const first = lines[0]?.trim();
   const last = lines[lines.length - 1]?.trim();
-  if (first !== "*** Begin Patch" || last !== "*** End Patch" || lines.length < 2) {
-    return undefined;
-  }
+  if (first !== "*** Begin Patch" || last !== "*** End Patch") return undefined;
   const paths: string[] = [];
   for (const raw of lines) {
     const line = raw.trim();
