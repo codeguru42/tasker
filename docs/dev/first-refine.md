@@ -365,11 +365,17 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   export `EFFORTS` in `src/config/schema.ts`, and the fix cost one loop.
 - If a docs todo asks for reasons, give the plan the reasons that the issue lists. Then the session writes the reason,
   not only the rule. On #131, the first plan gave only the rules, and the diff read had to ask for the reasons again.
-  Ask the plan to copy each reason text of the Docs section of the issue word for word. If such a reason text holds a
-  word that the simple-english skill bans, the hints that start "If the plan copies issue text" and "If the issue gives
-  a reason with a condition" still apply. On #425, review 1 had no findings, but the plan changed a reason into a
-  sentence with the banned modal "would" in `docs/dev/release.md`. [The diff read](run-one-ticket.md#the-diff-read)
-  found it, and the fix cost one loop of [the add-work rule](run-one-ticket.md#the-add-work-rule).
+
+  In the first refine, give each reason text of the Docs section of the issue as exact final text. The hint that starts
+  "If the issue gives the exact form of an entry" gives the rules of that text. If such a reason text holds a word that
+  the simple-english skill bans, the hints that start "If the plan copies issue text" and "If the issue gives a reason
+  with a condition" still apply.
+
+  On #425, review 1 had no findings, but the plan changed a reason into a sentence with the banned modal "would" in
+  `docs/dev/release.md`. [The diff read](run-one-ticket.md#the-diff-read) found it, and the fix cost one loop of
+  [the add-work rule](run-one-ticket.md#the-add-work-rule). On #546 (2026-10-31), the first refine asked for a
+  word-for-word copy. One reason still lost its quotes and joined the next sentence, and only the diff read found it.
+
 - If the issue gives a table that a doc gets, ask the plan to copy the table word for word. If a cell holds a word that
   the simple-english skill bans, the hint that starts "If the plan copies issue text" still applies.
   [The diff read](run-one-ticket.md#the-diff-read) compares that table with the issue cell by cell. On #473
