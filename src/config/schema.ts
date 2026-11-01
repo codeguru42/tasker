@@ -93,6 +93,7 @@ const IssueTrackerSchema = z.strictObject({
   updateOnFinish: z.boolean().default(false),
   doneLabel: nonEmpty.optional(),
   doneStatus: nonEmpty.optional(),
+  abortStatus: nonEmpty.optional(),
 });
 
 const TrackerDefinitionSchema = IssueTrackerSchema.omit({
@@ -234,6 +235,9 @@ function githubTrackerIssues(key: string, issueTracker: Record<string, unknown>)
     if (typeof value === "string" && value.includes(",")) {
       issues.push(issueLine(["repos", key, "issueTracker", name], "must not contain a comma for the github tracker"));
     }
+  }
+  if (issueTracker.abortStatus !== undefined) {
+    issues.push(issueLine(["repos", key, "issueTracker", "abortStatus"], "is not accepted for the github tracker"));
   }
   return issues;
 }
