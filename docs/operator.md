@@ -3,10 +3,16 @@
 [The operator pages](operator.md) give the rules for the operator. The operator is the assistant session where the user
 works.
 
-The start docs of the operator are `docs/operator.md`, the pages of the list "The pages" below,
-[docs/dev/working-with-the-user.md](dev/working-with-the-user.md), [docs/dev/rules.md](dev/rules.md) and
-[docs/sessions.md](sessions.md). The operator reads them at its start, as
-[the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
+The start docs of the operator are:
+
+1. `docs/operator.md`
+2. The pages of the list "The pages" below
+3. [docs/dev/working-with-the-user.md](dev/working-with-the-user.md)
+4. [docs/dev/rules.md](dev/rules.md)
+5. [docs/sessions.md](sessions.md)
+
+The operator reads them at its start, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
+[The form of a reply](dev/working-with-the-user.md#the-form-of-a-reply) gives the form of each reply to the user.
 
 Messages of the other sessions break into the conversation of the user, and open questions scroll out of view. A planner
 or an orchestrator sends each item that needs the user to the operator. Then the user reads the items in one place and
