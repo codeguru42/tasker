@@ -61,13 +61,13 @@ The operator does these things for the open items:
   shell. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the item stays open. A report
   still closes when the operator shows it.
 - This bullet covers an item that needs an answer, not a report. The operator can answer such an item in full with
-  answers of the operator. Then the line of the next bullet takes the place of the line "New item `<id>` from
+  answers of the operator. Then the show of the next bullet takes the place of the line "New item `<id>` from
   `<sender>`:", and the operator runs no `herdr notification show`. An item with a question for the user alone keeps
   that line and the notification.
-- In its next reply to the user, the operator shows each item that it answered. It gives the item in one line: "Answered
-  item `<id>` from `<sender>`:", then the first line of the item. The line then gives the answer that the operator sent
-  for each question, next to the number of the sender. The operator keeps a list of these items until it shows them. An
-  item with questions of both kinds gets this line and the line "New item `<id>` from `<sender>`:".
+- In its next reply to the user, the operator shows each item that it answered in short, with the answer that it sent.
+  It gives them as plain text after the list of open questions, with the id of each item, as for an answered question.
+  The operator keeps a list of these items until it shows them. An item with questions of both kinds gets this show and
+  the line "New item `<id>` from `<sender>`:".
 - When the user asks for the open items, the operator gives each open item with its full text, not only its id or a
   label. An open report gets only its arrival line, not its full text. This sentence wins over the bullet "When you list
   open items or proposed issues" of [A decision of the user](working-with-the-user.md#a-decision-of-the-user). The
