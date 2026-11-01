@@ -215,12 +215,14 @@ pass through unchanged.
 `src/issues/jira/write.ts` writes to Jira with two `acli` commands. tasker writes nothing else to Jira.
 
 - `assignJiraIssue()` runs `acli jira workitem assign --key <key> --assignee <assignee> --yes --json`.
-- `markJiraInProgress()` and `markJiraDone()` run
+- `markJiraInProgress()`, `markJiraDone()` and `markJiraAborted()` run
   `acli jira workitem transition --key <key> --status <status> --yes --json`.
 
 Each write runs [the site guard](#the-site-guard) first, so an error of the guard is never an `IssueWriteError`.
 `markJiraDone()` then makes sure that the status is set. With no status, it rejects with an `Error` that says
-`issueTracker.doneStatus is not set`, and the only `acli` call is `acli jira auth status`.
+`issueTracker.doneStatus is not set`, and the only `acli` call is `acli jira auth status`. `markJiraAborted()` uses the
+configuration key `issueTracker.abortStatus`. Its action text is
+`move <key> to the status "<status>" of issueTracker.abortStatus`.
 
 Each write has the flag `--json`, because `acli` exits with 0 for a refused write.
 [The measure of the writes](#the-measure-of-the-writes) shows this. tasker reads the JSON result of the write. A result
@@ -253,9 +255,17 @@ A transition to the status that the issue has now passes. So a second run of a w
 ## The in-progress clear
 
 The Jira tracker has no clear of the in-progress marker. A status has no "clear". The status after an abort depends on
-the workflow of the team. The abort of a Jira task runs no tracker step. The `clearInProgress` member of
-[the provider](#the-provider) rejects with the message `the jira tracker has no in-progress clear`. Nothing calls it in
-a run.
+the workflow of the team. The abort of a Jira task calls no clear. If `abortStatus` is set, it can move the issue, see
+[The abort write](#the-abort-write). The `clearInProgress` member of [the provider](#the-provider) rejects with the
+message `the jira tracker has no in-progress clear`. Nothing calls it in a run.
+
+## The abort write
+
+If `issueTracker.updateOnStart` is true, `issueTracker.abortStatus` is set and the task has `tracker_marked` set,
+`tasker abort` calls `markAborted` of [the provider](#the-provider). The call moves the issue to `abortStatus` with
+`markJiraAborted()`. The reason for the `tracker_marked` condition: another machine can work on an issue that this task
+did not mark, and its mark must stay. A failed move only warns, and the task still goes to `cancelled`. If one of the
+three conditions is false, the abort makes no `acli` call.
 
 ## The auth status
 
@@ -296,6 +306,7 @@ each Jira function that takes it. It runs no site guard itself, and it adds no b
 | `inProgressMarker` | `jiraInProgressMarker()` of `src/issues/jira/write.ts`                               |
 | `clearInProgress`  | A function that rejects with the `Error` `the jira tracker has no in-progress clear` |
 | `markDone`         | `markJiraDone()` of `src/issues/jira/write.ts`                                       |
+| `markAborted`      | `markJiraAborted()` of `src/issues/jira/write.ts`                                    |
 | `doctorChecks`     | `jiraDoctorChecks()` of `src/issues/jira/doctor.ts`                                  |
 
 ## The errors
