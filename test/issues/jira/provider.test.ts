@@ -47,6 +47,12 @@ const MEMBERS: Member[] = [
     args: transitionArgs("TEST-1", "In Progress"),
   },
   { name: "markDone", run: (p, env) => p.markDone(ref, "Done", env), args: transitionArgs("TEST-1", "Done") },
+  {
+    name: "markAborted",
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    run: (p, env) => p.markAborted(ref, "Cancelled", env),
+    args: transitionArgs("TEST-1", "Cancelled"),
+  },
 ];
 
 describe("createJiraProvider", () => {
@@ -62,6 +68,7 @@ describe("createJiraProvider", () => {
       { args: assignArgs("TEST-1", "@me"), stdout: acliWriteResult("SUCCESS", "assigned") },
       { args: transitionArgs("TEST-1", "In Progress"), stdout: acliWriteResult("SUCCESS", "moved") },
       { args: transitionArgs("TEST-1", "Done"), stdout: acliWriteResult("SUCCESS", "moved") },
+      { args: transitionArgs("TEST-1", "Cancelled"), stdout: acliWriteResult("SUCCESS", "moved") },
     ]);
   });
 

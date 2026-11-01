@@ -5,6 +5,7 @@ import { JiraLoginError, JiraSiteError } from "../../../src/issues/jira/site.js"
 import {
   assignJiraIssue,
   jiraInProgressMarker,
+  markJiraAborted,
   markJiraDone,
   markJiraInProgress,
 } from "../../../src/issues/jira/write.js";
@@ -93,6 +94,14 @@ describe("Jira writes", () => {
       passed: MOVED,
       write: (env: NodeJS.ProcessEnv, site?: string) =>
         markJiraDone(jiraRefOf("TEST-10"), "Awaiting deploy", site, env),
+    },
+    {
+      name: "markJiraAborted",
+      args: transitionArgs("TEST-10", "Cancelled"),
+      configKey: "issueTracker.abortStatus",
+      prefix: 'could not move TEST-10 to the status "Cancelled" of issueTracker.abortStatus',
+      passed: MOVED,
+      write: (env: NodeJS.ProcessEnv, site?: string) => markJiraAborted(jiraRefOf("TEST-10"), "Cancelled", site, env),
     },
   ];
 
