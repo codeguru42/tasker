@@ -405,3 +405,38 @@ describe("createCodexProvider run: the usage", () => {
     expect(existsSync(codexUsagePath(setup.sessionDir, TEST_SESSION_ID))).toBe(true);
   });
 });
+
+describe("createCodexProvider run: the execute role", () => {
+  const REFUSAL = "the codex assistant cannot run the execute role in this version";
+  const sandbox = { allowWrite: [], denyRead: [], trackedPaths: async () => [], sharedFolder: "/shared" };
+
+  it("refuses access workspace-write before the spawn", async () => {
+    const onSpawn = vi.fn();
+
+    const { outcome, fake } = await run(
+      { stream: codexSample("plain") },
+      { access: "workspace-write", onSpawn, sandbox },
+    );
+
+    expect(outcome).toEqual({
+      kind: "failure",
+      sessionId: TEST_SESSION_ID,
+      events: [],
+      permissionDenials: [],
+      usage: "unavailable",
+      exitCode: null,
+      signal: null,
+      reason: REFUSAL,
+    });
+    expect(outcome).not.toHaveProperty("sandboxCleanup");
+    expect(fake.calls()).toEqual([]);
+    expect(onSpawn).not.toHaveBeenCalled();
+  });
+
+  it("refuses the execute role before it looks for the thread id file", async () => {
+    const { outcome, fake } = await run({ stream: codexSample("plain") }, { access: "workspace-write", resume: true });
+
+    expect(failureOf(outcome).reason).toBe(REFUSAL);
+    expect(fake.calls()).toEqual([]);
+  });
+});
