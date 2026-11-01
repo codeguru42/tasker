@@ -4,11 +4,12 @@ import { errorMessage } from "../../error-message.js";
 import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
 import { parseLine } from "../event-line.js";
+import { removePlaceholders } from "../placeholders.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
 import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
 import { permissionHookSettings } from "./permission-hook.js";
-import { removePlaceholders } from "./placeholders.js";
+import { CLAUDE_PLACEHOLDERS } from "./placeholders.js";
 import {
   detectQuotaApprovalWarning,
   isQuotaEvent,
@@ -132,7 +133,10 @@ export function createClaudeCodeProvider(
       const finish = async (outcome: RunOutcome): Promise<RunOutcome> =>
         sandbox === undefined
           ? outcome
-          : { ...outcome, sandboxCleanup: await removePlaceholders(input.cwd, sandbox.trackedPaths) };
+          : {
+              ...outcome,
+              sandboxCleanup: await removePlaceholders(input.cwd, CLAUDE_PLACEHOLDERS, sandbox.trackedPaths),
+            };
       const events: AssistantEvent[] = [];
       const stop = new AbortController();
       let overage: { resetsAt?: number } | undefined;

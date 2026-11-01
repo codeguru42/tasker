@@ -11,9 +11,14 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { removePlaceholders } from "../../../src/assistant/claude-code/placeholders.js";
-import { writePlaceholder } from "../../helpers/fake-claude.js";
-import { useTempDir } from "../../helpers/temp.js";
+import { CLAUDE_PLACEHOLDERS } from "../../src/assistant/claude-code/placeholders.js";
+import { type PlaceholderList, removePlaceholders as removeFrom } from "../../src/assistant/placeholders.js";
+import { writePlaceholder } from "../helpers/fake-claude.js";
+import { useTempDir } from "../helpers/temp.js";
+
+function removePlaceholders(cwd: string, trackedPaths: (paths: readonly string[]) => Promise<string[]>) {
+  return removeFrom(cwd, CLAUDE_PLACEHOLDERS, trackedPaths);
+}
 
 const none = async () => [] as string[];
 
@@ -235,5 +240,26 @@ describe("removePlaceholders", () => {
 
     expect(tracked).toHaveBeenCalledTimes(1);
     expect(tracked.mock.calls[0][0].filter((path) => path.startsWith(".claude/"))).toEqual([]);
+  });
+
+  it("removes the entries of another folder name, then the folder", async () => {
+    const cwd = setUp();
+    const list: PlaceholderList = {
+      rootFiles: [],
+      folder: {
+        name: ".other",
+        entries: [
+          { name: "a.json", kind: "file" },
+          { name: "sub", kind: "folder" },
+        ],
+      },
+    };
+    writePlaceholder(cwd, ".other/a.json");
+    mkdirSync(join(cwd, ".other", "sub"));
+
+    const result = await removeFrom(cwd, list, none);
+
+    expect(result).toEqual({ removed: [".other", ".other/a.json", ".other/sub"] });
+    expect(existsSync(join(cwd, ".other"))).toBe(false);
   });
 });
