@@ -1,4 +1,7 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { AssistantEvent } from "../../src/assistant/provider.js";
 import {
   answerChecks,
   type FakeAnswer,
@@ -7,6 +10,7 @@ import {
   readFakeCalls,
   writeFakeCommand,
 } from "./fake-commands.js";
+import { type FakeClaude, type FakeClaudeControl, useFakeAssistant } from "./fake-claude.js";
 import { useTempDir } from "./temp.js";
 
 // The arguments of the version call.
@@ -37,4 +41,23 @@ export function useFakeCodex(answers: readonly FakeAnswer[], logEnv: readonly st
     env: { PATH: bin, HOME: dir },
     calls: () => readFakeCalls(logPath, 0, logEnv).map((call) => ({ args: call.args, env: call.env })),
   };
+}
+
+// A fake codex that plays a stream, under the program name codex. It logs argv and stdin of each call.
+// Call it inside a test.
+export function useFakeCodexRun(control: FakeClaudeControl): FakeClaude {
+  return useFakeAssistant("codex", control);
+}
+
+// The lines of test/fixtures/codex-streams/<name>.jsonl, with no empty last item.
+export function codexSample(name: string): string[] {
+  const path = fileURLToPath(new URL(`../fixtures/codex-streams/${name}.jsonl`, import.meta.url));
+  return readFileSync(path, "utf8")
+    .split("\n")
+    .filter((line) => line !== "");
+}
+
+// Each line of a sample, parsed. Each call parses again, so each call gives new objects.
+export function codexSampleEvents(name: string): AssistantEvent[] {
+  return codexSample(name).map((line) => JSON.parse(line) as AssistantEvent);
 }

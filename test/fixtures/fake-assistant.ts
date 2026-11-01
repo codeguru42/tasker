@@ -1,4 +1,4 @@
-// A fake claude. argv is <controlPath> ...args. It logs each call and then plays back the control file.
+// A fake assistant (claude or codex). argv is <controlPath> ...args. It logs each call and then plays back the control file.
 import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import type { FakeClaudeControl } from "../helpers/fake-claude.js";
@@ -62,7 +62,7 @@ if (!isVersion && turn.exec !== undefined) {
   const [program, ...programArgs] = turn.exec;
   const ran = spawnSync(program, programArgs, { cwd: process.cwd(), stdio: "ignore" });
   if (ran.status !== 0) {
-    await write(process.stderr, `fake claude: exec failed: ${ran.error?.message ?? `exit ${String(ran.status)}`}\n`);
+    await write(process.stderr, `fake assistant: exec failed: ${ran.error?.message ?? `exit ${String(ran.status)}`}\n`);
     process.exit(99);
   }
 }

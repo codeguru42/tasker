@@ -159,18 +159,23 @@ export function runInput(overrides: Partial<RunInput> = {}): RunInput {
 }
 
 // Makes a fake claude on a new temp folder, and removes it after the test. Call it inside a test.
-// The fake gets its control only from a file, because childEnv() drops every other control name.
 export function useFakeClaude(control: FakeClaudeControl): FakeClaude {
-  const dir = useTempDir("tasker-fake-claude-");
+  return useFakeAssistant("claude", control);
+}
+
+// Makes a fake assistant under the program name on a new temp folder, and removes it after the test. Call it inside
+// a test. The fake gets its control only from a file, because childEnv() drops every other control name.
+export function useFakeAssistant(program: string, control: FakeClaudeControl): FakeClaude {
+  const dir = useTempDir(`tasker-fake-${program}-`);
   const binDir = join(dir, "bin");
   const logPath = join(dir, "calls.log");
   const controlPath = join(dir, "control.json");
   writeFileSync(controlPath, JSON.stringify({ ...control, logPath }));
-  const fixture = fileURLToPath(new URL("../fixtures/fake-claude.ts", import.meta.url));
+  const fixture = fileURLToPath(new URL("../fixtures/fake-assistant.ts", import.meta.url));
   const loader = import.meta.resolve("tsx");
   writeFakeCommand(
     binDir,
-    "claude",
+    program,
     `exec ${[process.execPath, "--import", loader, fixture, controlPath].map(shellQuote).join(" ")} "$@"`,
   );
   return {

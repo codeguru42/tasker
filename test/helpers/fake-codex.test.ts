@@ -1,7 +1,15 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CODEX_LOGIN_STATUS_ARGS, CODEX_VERSION_ARGS, MEASURED_LOGGED_OUT, useFakeCodex } from "./fake-codex.js";
+import {
+  CODEX_LOGIN_STATUS_ARGS,
+  CODEX_VERSION_ARGS,
+  codexSample,
+  codexSampleEvents,
+  MEASURED_LOGGED_OUT,
+  useFakeCodex,
+  useFakeCodexRun,
+} from "./fake-codex.js";
 
 function runCodex(env: NodeJS.ProcessEnv, args: readonly string[]) {
   return spawnSync(join(env.PATH ?? "", "codex"), [...args], { env, encoding: "utf8" });
@@ -46,5 +54,39 @@ describe("useFakeCodex", () => {
 
     expect(fake.env.PATH.endsWith("/bin")).toBe(true);
     expect(fake.env.PATH).not.toContain(":");
+  });
+});
+
+describe("useFakeCodexRun", () => {
+  it("plays plain.jsonl under the name codex and logs argv and stdin", () => {
+    const fake = useFakeCodexRun({ stream: codexSample("plain") });
+
+    const run = spawnSync(join(fake.binDir, "codex"), ["exec", "--json", "-"], {
+      env: fake.env,
+      input: "say hello",
+      encoding: "utf8",
+    });
+
+    expect(run.status).toBe(0);
+    expect(run.stdout.split("\n").filter((line) => line !== "")).toEqual(codexSample("plain"));
+    expect(fake.calls().map((call) => [call.argv, call.stdin])).toEqual([[["exec", "--json", "-"], "say hello"]]);
+  });
+});
+
+describe("codexSampleEvents", () => {
+  it("parses each line of the sample", () => {
+    const events = codexSampleEvents("plain");
+
+    expect(events.map((event) => event.type)).toEqual([
+      "thread.started",
+      "turn.started",
+      "item.completed",
+      "turn.completed",
+    ]);
+    expect(events[0].thread_id).toBe("01a194bc-1d2f-77b2-a52d-5be299f7ea30");
+  });
+
+  it("gives new objects for each call", () => {
+    expect(codexSampleEvents("plain")[0]).not.toBe(codexSampleEvents("plain")[0]);
   });
 });
