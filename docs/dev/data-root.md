@@ -70,6 +70,12 @@ The columns `undo_before_head`, `undo_after_head` and `undo_synced_base_tip` hol
 `undo_synced_base_tip` is the synced base tip before the run, or NULL. Schema version 16 adds them. The migration writes
 no value, so the rows that exist hold NULL.
 
+The column `tracker_marked` is 1 when the task marked the issue in progress on the tracker, and 0 if not. A passed
+`in_progress` write sets it in the same transaction as its `tracker_update` event, so the two agree. Nothing clears it.
+`tasker abort` reads it to decide if it moves a Jira issue to `issueTracker.abortStatus`. Schema version 17 adds it. The
+migration fills it once for each row that exists: it is 1 when the task has a `tracker_update` event with the action
+`in_progress` and the result `ok`. Code reads the column and never the event, as the rule of the `events` table says.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 
