@@ -408,8 +408,8 @@ continued session.
   Together with `-c features.apps=false` it does.
 - `-c default_permissions="tasker"` names a permission profile that the run defines with
   `-c permissions.tasker.filesystem={...}`. The table grants read of `"/"`. A smaller grant makes each command fail.
-  `filesystemTable()` builds the table in a `Map`, so a path has one key and a later value wins. The key is
-  `JSON.stringify(path)`, so a dot, a space or a quote stays in one key.
+  `filesystemTable()` builds the table in a `Map`, so a path has one key. The key is `JSON.stringify(path)`, so a dot, a
+  space or a quote stays in one key.
 - Under `workspace-write`, the cwd, the temp folder and each path of `sandbox.allowWrite` are keys with the value
   `"write"`. The temp folder is `TMPDIR`, or `/tmp` when `TMPDIR` is not set. A `read-only` run has no write key and
   does not read `sandbox.allowWrite`.
@@ -418,10 +418,10 @@ continued session.
   `src/assistant/codex/sockets.ts` gives the socket paths from the env before the child filter. Every role gets them. A
   deny key under a write key holds.
 - Two facts of the table hold for every key. A key must not be a symbolic link, because the run then fails at the start.
-  So a link becomes its target, and a link that cannot resolve is left out. An existing path under another deny key must
-  not be a key, because the run then fails at the start. So the table leaves it out. A deny key under a write key holds,
-  and the table keeps it. A write key under a deny key reopens that path, and the table keeps it. A path on the deny
-  list is never a write key. A path that does not exist stays.
+  So a link becomes its target, and a link that cannot resolve is left out. Both lists use real paths, with a link
+  resolved in every part. An existing path under another deny key must not be a key, because the run then fails at the
+  start. So the table leaves it out. A deny path wins over a write path. A write key that is on or under a deny path is
+  dropped. A deny key under a write key stays. A path that does not exist stays.
 - Under `workspace-write`, `-c hooks.PreToolUse=[...]` and `--dangerously-bypass-hook-trust` follow the network line.
   `codexHookArgs()` builds them. The matcher is `^apply_patch$`, the command is a TOML string, and the timeout is 10
   seconds. A continued session gets the same arguments.
@@ -565,7 +565,8 @@ run on macOS or Windows is unmeasured.
 - Keys of the table (2026-11-01): a key that is a symbolic link makes the start fail with
   `bwrap: Can't mount on symlink destination`. An existing path under a denied folder makes the start fail with
   `bwrap: Can't create file ...: Read-only file system`. A missing path under a denied folder is fine. A deny key under
-  a write key holds. A write key under a deny key reopens the path: the run started, and a write to it worked.
+  a write key holds. A write key under a deny key reopens the path: the run started, and a write to it worked. The
+  provider never builds such a table: it drops the write key.
 - Write profile (2026-11-01): plain keys with `write` for the worktree, the temp folder and the clone paths give the
   same results as `extends=":workspace"`. `git commit` works in a linked worktree of a bare clone, and `<clone>/logs`
   must exist. The line about `packed-refs.lock` on stderr is known.
