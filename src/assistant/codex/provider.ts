@@ -8,6 +8,7 @@ import { parseLine } from "../event-line.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome, TokenUsage } from "../provider.js";
 import { codexArgs } from "./args.js";
 import { CODEX_NOT_INSTALLED, codexLoginCheck, codexVersionCheck } from "./doctor.js";
+import { EDIT_HOOK_SCRIPT, editHookCommand, editHookRefusal } from "./edit-hook.js";
 import { readThreadId, readUsageTotal, writeThreadId, writeUsageTotal } from "./session.js";
 import { type CodexStreamFacts, readCodexStream, threadIdOf, usageTotalOf } from "./stream.js";
 
@@ -72,15 +73,21 @@ function codexOutcomeOf(
   }
 }
 
-// The provider runs codex for the plan and the review roles, and gives the doctor checks of Codex.
-// The role execute is refused, because the profile has no write grant. The sandbox is the only limit on
-// deniedCommands, and it does not block every entry. overageStop has no effect.
-export function createCodexProvider(): AssistantProvider {
+// The provider runs codex for each role, and gives the doctor checks of Codex. A run with workspace-write
+// access gets write keys and the PreToolUse hook of apply_patch, which holds deniedEditPaths. The sandbox is
+// the only limit on deniedCommands, and it does not block every entry. overageStop has no effect.
+// hookScript is for tests. The default is EDIT_HOOK_SCRIPT.
+export function createCodexProvider(options: { hookScript?: string } = {}): AssistantProvider {
+  const hookScript = options.hookScript ?? EDIT_HOOK_SCRIPT;
   return {
     id: "codex",
     async run(input) {
+      let hookCommand: string | undefined;
       if (input.access === "workspace-write") {
-        return failureWithNoExit(input, "the codex assistant cannot run the execute role in this version");
+        // Codex lets each patch pass when the file of the hook command is missing.
+        const refusal = editHookRefusal(hookScript);
+        if (refusal !== undefined) return failureWithNoExit(input, refusal);
+        hookCommand = editHookCommand(hookScript, input.cwd, input.deniedEditPaths);
       }
       let threadId: string | undefined;
       let previous: TokenUsage | undefined;
@@ -110,7 +117,7 @@ export function createCodexProvider(): AssistantProvider {
       const events: AssistantEvent[] = [];
       let run: AssistantResult;
       try {
-        run = await runAssistant("codex", codexArgs(input, { threadId, schemaPath }), {
+        run = await runAssistant("codex", codexArgs(input, { threadId, schemaPath, hookCommand }), {
           cwd: input.cwd,
           env: childEnv(input.env, []),
           prompt: input.prompt,
