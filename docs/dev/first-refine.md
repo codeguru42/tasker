@@ -409,6 +409,13 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   text changes or why it stays. On #233 (2026-10-30), the old condition was that the head moved, and the texts gave it
   as "only when the head moved", "a moved head" and "worktree moved". Review 3 found three such texts, and the fix cost
   one loop.
+- A new doc sentence can give the next command or the place of a check in a command. For a next command, ask the plan to
+  test the sentence against each outcome of the step before that command. For a check, ask the plan to read the order of
+  the checks in the code. If `tasker update-branch` demotes the task, "run the next command" is false, so ask the plan
+  to write "read the state and the `next:` or `commands:` line". A check right after `taskInState()` is not "first" or
+  "before every other check", so ask the plan to write "right after the check of the state". On #600 (2026-10-31),
+  review 1 found the first case in `skills/tasker/references/recovery.md`, and
+  [the diff read](run-one-ticket.md#the-diff-read) found the second case in `docs/dev/tasks.md`.
 - In [the diff read](run-one-ticket.md#the-diff-read), read each sentence that starts with "The reason:" together with
   the sentence before it. Make sure that the reason argues for that sentence, not against it. On #422 (2026-10-25), the
   diff read found a reason that the diff of #422 itself put in [the overlap rule](land-the-work.md#the-overlap-rule) of
