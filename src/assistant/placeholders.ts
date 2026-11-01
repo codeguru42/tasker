@@ -10,6 +10,8 @@ export type PlaceholderKind = "file" | "file-or-folder" | "folder";
 // The folder is one folder at the root, with its entries. The entries count only when lstat shows a real folder.
 export interface PlaceholderList {
   rootFiles: readonly string[];
+  // Folders at the root. Each one is removed only when it is an empty folder.
+  rootFolders?: readonly string[];
   folder?: { name: string; entries: readonly { name: string; kind: PlaceholderKind }[] };
 }
 
@@ -32,6 +34,7 @@ function candidates(cwd: string, list: PlaceholderList): { path: string; kind: P
   const folderIsReal = folder !== undefined && statOrNothing(join(cwd, folder.name))?.isDirectory() === true;
   return [
     ...list.rootFiles.map((path) => ({ path, kind: "file" as const })),
+    ...(list.rootFolders ?? []).map((path) => ({ path, kind: "folder" as const })),
     ...(folder !== undefined && folderIsReal
       ? folder.entries.map((entry) => ({ path: `${folder.name}/${entry.name}`, kind: entry.kind }))
       : []),

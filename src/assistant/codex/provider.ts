@@ -8,6 +8,8 @@ import { parseLine } from "../event-line.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome, TokenUsage } from "../provider.js";
 import { codexArgs } from "./args.js";
 import { CODEX_NOT_INSTALLED, codexLoginCheck, codexVersionCheck } from "./doctor.js";
+import { removePlaceholders } from "../placeholders.js";
+import { absentPlaceholders } from "./placeholders.js";
 import { EDIT_HOOK_SCRIPT, editHookCommand, editHookRefusal } from "./edit-hook.js";
 import { readThreadId, readUsageTotal, writeThreadId, writeUsageTotal } from "./session.js";
 import { type CodexStreamFacts, readCodexStream, threadIdOf, usageTotalOf } from "./stream.js";
@@ -115,6 +117,19 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
         }
       }
       const events: AssistantEvent[] = [];
+      // A write run leaves empty folders in the cwd. The list names the ones that do not exist before the spawn.
+      const placeholders = input.access === "workspace-write" ? absentPlaceholders(input.cwd) : undefined;
+      const finish = async (outcome: RunOutcome): Promise<RunOutcome> =>
+        placeholders === undefined
+          ? outcome
+          : {
+              ...outcome,
+              sandboxCleanup: await removePlaceholders(
+                input.cwd,
+                placeholders,
+                input.sandbox?.trackedPaths ?? (async () => []),
+              ),
+            };
       let run: AssistantResult;
       try {
         run = await runAssistant("codex", codexArgs(input, { threadId, schemaPath, hookCommand }), {
@@ -147,12 +162,12 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
           onSpawn: input.onSpawn ?? (() => {}),
         });
       } catch (error) {
-        return failureWithNoExit(input, errorMessage(error), events);
+        return finish(failureWithNoExit(input, errorMessage(error), events));
       }
       if (!run.started) {
-        return failureWithNoExit(input, run.notFound ? CODEX_NOT_INSTALLED : run.error, events);
+        return finish(failureWithNoExit(input, run.notFound ? CODEX_NOT_INSTALLED : run.error, events));
       }
-      return codexOutcomeOf(input, run, events, readCodexStream(events, previous));
+      return finish(codexOutcomeOf(input, run, events, readCodexStream(events, previous)));
     },
     doctorChecks: (repos) => (repos.length === 0 ? [] : [codexVersionCheck(), codexLoginCheck()]),
     modelChecks: () => [],
