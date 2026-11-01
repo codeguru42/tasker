@@ -128,7 +128,7 @@ After the start, the old orchestrator does these steps:
 3. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round
    finds nothing new. The user asked for this rule on 2026-10-17. Then write the handoff file, as
    [The handoff file](handoff.md#the-handoff-file) says.
-4. Send the path of the handoff file to `operator-<slug>` as an item, as
+4. Send the path of the handoff file to [the operator of the session](../operator.md) as an item, as
    [The form of an item](operator-items.md#the-form-of-an-item) of operator-items.md says.
 
 The handoff ends in the operator, as [The end of a handoff](handoff.md#the-end-of-a-handoff) and
