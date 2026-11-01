@@ -111,3 +111,18 @@ export function executeTranscriptPath(
 export function doctorProbePath(dataRoot: string): string {
   return join(dataRoot, `.doctor-probe-${process.pid}-${randomUUID()}`);
 }
+
+// The file that holds the thread id of a Codex session. Codex gives the thread id, and a continued run needs it.
+export function codexThreadIdPath(sessionDir: string, sessionId: string): string {
+  return join(sessionDir, `${sessionId}.codex-thread`);
+}
+
+// The file that holds the last usage total of a Codex thread. The usage of a Codex run is a total for the thread.
+export function codexUsagePath(sessionDir: string, sessionId: string): string {
+  return join(sessionDir, `${sessionId}.codex-usage`);
+}
+
+// The file that holds the JSON schema of a Codex run, for --output-schema.
+export function codexSchemaPath(sessionDir: string, sessionId: string): string {
+  return join(sessionDir, `${sessionId}.schema.json`);
+}
