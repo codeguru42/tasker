@@ -521,10 +521,13 @@ that it dismissed. The initial planner posts only after the approval of the user
 ## The blocked-by links
 
 A session that posts an issue and is not a planner also follows the rules of this section, as
-[Before a post](issues.md#before-a-post) of issues.md says. That session also follows the first two bullets, which name
-the planner.
+[Before a post](issues.md#before-a-post) of issues.md says. That session also follows the bullet that starts "The
+planner links two issues when one issue needs" and the bullet that starts "The planner also links two issues that will
+likely edit the same file", which name the planner.
 
 - The planner links two issues when one issue needs the code or the docs that the other issue makes.
+- A manual-steps issue gets its links as [What goes in a ticket](#what-goes-in-a-ticket) says, with no need of code or
+  docs and no shared file.
 - The planner also links two issues that will likely edit the same file, so that they do not cause a merge conflict.
   Examples are `skills/tasker/SKILL.md`, `docs/config.md`, `package.json`, the configuration schema,
   `docs/dev/code-conventions.md`, and a provider file with its dev doc.
@@ -604,6 +607,16 @@ the planner.
 - What goes together in one ticket depends on logic, never on size. Two pieces of work never go together only because
   they are small. If they are not logically related, they go in two separate tickets. One large piece of work can be
   split into smaller, coherent tickets. Each smaller ticket must still hold work that is logically connected.
+- A milestone can need manual steps of the user before its work, for example an install or a login. Then the initial
+  planner files a manual-steps issue for them. Whether a step needs this issue is a judgment. The judgment is open on
+  purpose, and the initial planner makes it.
+
+  The body of a manual-steps issue says that the user does it and that no agent runs it. It gives each step and the test
+  of each step. A root issue is an issue with no open blocker in its milestone. The manual-steps issue is a root issue,
+  and it blocks each other root issue of its milestone. The reason: an agent cannot do these steps, so a step inside
+  another ticket stops that ticket at its start. [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says what the
+  orchestrator does with the issue.
+
 - [Core features first](working-with-the-user.md#core-features-first) gives the rules for the core features, an edge
   case, a security gap, containers, UTF-8 and a collision of derived names.
 - If the user states a design fact or a rule, the planner puts it in a doc of the repo through a ticket: in the plan of

@@ -33,6 +33,17 @@ The orchestrator does all the steps of this section.
 - Start a ticket only as [the stacking rule](#the-stacking-rule) says. No orchestrator that knows of an open broken-test
   issue starts a ticket, except that issue itself (see the broken-test rule in
   [A failed CI run](ci-wait.md#a-failed-ci-run)).
+- A manual-steps issue is an issue whose body says that no agent runs it.
+  [What goes in a ticket](planner.md#what-goes-in-a-ticket) gives its form. The orchestrator starts no task for it and
+  runs no `tasker show` for it. Each ticket that it blocks waits until it closes. While it is open, its milestone is not
+  done. The earlier-blocker offer does not cover such an issue.
+
+  For an open issue of this kind, the orchestrator of its milestone sends one item. If an open item or the handoff file
+  of the orchestrator already asks for these steps, the orchestrator sends no item. The item asks the user to do the
+  steps, to close the issue and then to answer the item. After the answer, the orchestrator reads the board. If the
+  issue is still open, the orchestrator tells the user that its tickets wait. If the read fails,
+  [the failure rule](limits.md#the-failure-rule) applies.
+
 - The priority rule: among the tickets that can start, the orchestrator starts a ticket with `priority: high` first.
   Then it starts a ticket with `priority: medium`, then a ticket with no priority label, then a ticket with
   `priority: low`. Two tickets of the same priority have no order. To read the labels, run
