@@ -25,7 +25,7 @@ recommendation."
 
 After the start, the old operator does these steps:
 
-1. Start and stop no session. Send each sender of the slug a hold message with `SendMessage`, as
+1. Send each sender of the slug a hold message with `SendMessage`, as
    [The hold of the items](handoff.md#the-hold-of-the-items) says. Then tell the user one time that the hold stops the
    items. Name each sender of the slug that holds. Say that the hold ends when the new operator is ready or when the
    user [ends the hold](handoff.md#the-end-of-the-hold-by-the-user).
@@ -36,19 +36,17 @@ After the start, the old operator does these steps:
    [the failure rule](limits.md#the-failure-rule) applies, and the rounds end. This sentence wins over the words "until
    a round finds nothing new". Then write the handoff file, as [The handoff file](handoff.md#the-handoff-file) says. If
    the write or the `date` command fails, [the failure rule](limits.md#the-failure-rule) applies.
-3. Give the path of the file to the user in the reply.
+3. Do the steps of the old operator in [The start of the new operator](#the-start-of-the-new-operator).
 
-After step 2, each change of the open items gives a new handoff file. A change is one of these events:
+No wait follows the write of the file. After the write of the file, the old operator shows no report and sends no
+answer. If an item arrives after the write, the old operator sends a message to the sender with `SendMessage`. The
+message tells the sender to send the item again after the ready message of the new operator.
 
-- An arrival
-- A close
-- The send of a partial answer
-- A judgment that the words of the user do not fully settle a question
-- A send of the words of the user as information
+The reason: on 2026-10-25, the user said: "If you start a handoff and write the doc but then wait for my approval, it
+may be minutes or hours before I see the request. Then the handoff doc is stale, so you have to redraft the whole thing
+again. This costs unnecessary tokens."
 
-For each change, the old operator writes a new handoff file with the time of that write and gives the new path to the
-user. If the write fails, [the failure rule](limits.md#the-failure-rule) applies. Then
-[The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder) by the new operator finds the newest file.
+A handoff that the user asks for has the same steps as a handoff after a suggestion.
 
 ## The handoff file of the operator
 
@@ -72,6 +70,9 @@ handoff file:
   [The start of the new operator](#the-start-of-the-new-operator).
 - Each entry of [the tab list](../operator.md) of the old operator. So the file holds the tabs that the old operator
   started and the tabs that it took over.
+- The tab id and the pane id of the old operator. The tab id is `$HERDR_TAB_ID`, and the pane id is `$HERDR_PANE_ID`.
+  The old operator gets the two ids before it writes the file. If it cannot get the pane id, the file says so. The close
+  of step 4 of [The start of the new operator](#the-start-of-the-new-operator) uses the same ids.
 
 The operator sends no item, so its file gives no last item id.
 
