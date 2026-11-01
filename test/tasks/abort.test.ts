@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
+import type { Task, TaskStore } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { canonicalPath } from "../../src/real-path.js";
-import { abortTask } from "../../src/tasks/abort.js";
+import { abortTask, type AbortRequest } from "../../src/tasks/abort.js";
 import { startTask } from "../../src/tasks/start.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
@@ -20,8 +21,62 @@ import {
   readRunMarker,
   withDataRootStore,
 } from "../helpers/store.js";
-import { taskWorkspaceState, useStartFixture, useStartedTask } from "../helpers/task-fixtures.js";
+import { taskWorkspaceState, useStartFixture, useStartedTask, type StartedTask } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
+
+// Calls abortTask() with the defaults of a test. The values of request win.
+function abortWith(
+  store: TaskStore,
+  request: Pick<AbortRequest, "config" | "ref" | "taskId"> & Partial<AbortRequest>,
+): Promise<Task> {
+  return abortTask(store, {
+    force: false,
+    env: process.env,
+    repoLockWaitMs: 300,
+    report: () => {},
+    trackerIo: { stdout: () => {}, stderr: () => {} },
+    ...request,
+  });
+}
+
+// Aborts a new task TEST-5 of a Jira repo. options.keys add to the keys of issueTracker.
+async function abortJiraTask(
+  started: StartedTask,
+  options: { keys?: Record<string, unknown>; env?: NodeJS.ProcessEnv; marked?: boolean } = {},
+): Promise<{ cancelled: Task; lines: string[] }> {
+  const repo = started.config.repos[started.repoKey];
+  const config = {
+    ...started.config,
+    repos: {
+      ...started.config.repos,
+      [started.repoKey]: {
+        ...repo,
+        issueTracker: {
+          ...repo.issueTracker,
+          provider: "jira" as const,
+          project: "TEST",
+          updateOnStart: true,
+          inProgressStatus: "In Progress",
+          ...options.keys,
+        },
+      },
+    },
+  };
+  const lines: string[] = [];
+  const cancelled = await withDataRootStore(started.dataRoot, (store) => {
+    const task = store.createTask({ issueKey: "TEST-5", repoKey: started.repoKey, state: "workspace_ready" });
+    if (options.marked === true) store.recordTrackerMark(task.id);
+    return abortWith(store, {
+      config,
+      ref: { ...jiraRefOf("TEST-5"), repoKey: started.repoKey },
+      taskId: task.id,
+      env: options.env,
+      report: (line) => lines.push(line),
+      trackerIo: { stdout: (text) => lines.push(text), stderr: (text) => lines.push(text) },
+    });
+  });
+  return { cancelled, lines };
+}
 
 describe("abortTask", () => {
   it("removes the worktree when the data root goes through a symlink", async () => {
@@ -43,16 +98,7 @@ describe("abortTask", () => {
         trackerIo: { stdout: () => {}, stderr: () => {} },
       });
       const worktree = started.task.worktreePath!;
-      const cancelled = await abortTask(store, {
-        config,
-        ref,
-        taskId: started.task.id,
-        force: false,
-        env: process.env,
-        repoLockWaitMs: 300,
-        report: () => {},
-        trackerIo: { stdout: () => {}, stderr: () => {} },
-      });
+      const cancelled = await abortWith(store, { config, ref, taskId: started.task.id });
       return { cancelled, worktree };
     });
 
@@ -73,16 +119,7 @@ describe("abortTask", () => {
     const ref = { key: started.key, repoKey: started.repoKey, shortRef: githubShortRef("5") };
 
     const error = await withDataRootStore(started.dataRoot, (store) =>
-      abortTask(store, {
-        config: started.config,
-        ref,
-        taskId,
-        force: false,
-        env: process.env,
-        repoLockWaitMs: 300,
-        report: () => {},
-        trackerIo: { stdout: () => {}, stderr: () => {} },
-      }).catch((caught: unknown) => caught),
+      abortWith(store, { config: started.config, ref, taskId }).catch((caught: unknown) => caught),
     );
 
     expect((error as Error).message).toBe(
@@ -102,15 +139,10 @@ describe("abortTask", () => {
     const ref = { key: started.key, repoKey: started.repoKey, shortRef: githubShortRef("5") };
 
     const error = await withDataRootStore(started.dataRoot, (store) =>
-      abortTask(store, {
+      abortWith(store, {
         config: started.config,
         ref,
         taskId: store.findLatestTask(started.repoKey, started.key)!.id,
-        force: false,
-        env: process.env,
-        repoLockWaitMs: 300,
-        report: () => {},
-        trackerIo: { stdout: () => {}, stderr: () => {} },
       }).catch((caught: unknown) => caught),
     );
 
@@ -122,40 +154,8 @@ describe("abortTask", () => {
 
   it("runs no tracker step for a Jira task when abortStatus is not set", async () => {
     const started = await useStartedTask();
-    const repo = started.config.repos[started.repoKey];
-    const config = {
-      ...started.config,
-      repos: {
-        ...started.config.repos,
-        [started.repoKey]: {
-          ...repo,
-          issueTracker: {
-            ...repo.issueTracker,
-            provider: "jira" as const,
-            project: "TEST",
-            updateOnStart: true,
-            inProgressStatus: "In Progress",
-          },
-        },
-      },
-    };
-    const lines: string[] = [];
-    const task = withDataRootStore(started.dataRoot, (store) =>
-      store.createTask({ issueKey: "TEST-5", repoKey: started.repoKey, state: "workspace_ready" }),
-    );
 
-    const cancelled = await withDataRootStore(started.dataRoot, (store) =>
-      abortTask(store, {
-        config,
-        ref: { ...jiraRefOf("TEST-5"), repoKey: started.repoKey },
-        taskId: task.id,
-        force: false,
-        env: process.env,
-        repoLockWaitMs: 300,
-        report: (line) => lines.push(line),
-        trackerIo: { stdout: (text) => lines.push(text), stderr: (text) => lines.push(text) },
-      }),
-    );
+    const { cancelled, lines } = await abortJiraTask(started);
 
     expect(cancelled.state).toBe("cancelled");
     expect(lines).toEqual([]);
@@ -165,40 +165,11 @@ describe("abortTask", () => {
   describe("with abortStatus", () => {
     async function abortJira(options: { marked: boolean; site?: string }) {
       const started = await useStartedTask();
-      const repo = started.config.repos[started.repoKey];
-      const config = {
-        ...started.config,
-        repos: {
-          ...started.config.repos,
-          [started.repoKey]: {
-            ...repo,
-            issueTracker: {
-              ...repo.issueTracker,
-              provider: "jira" as const,
-              project: "TEST",
-              updateOnStart: true,
-              inProgressStatus: "In Progress",
-              abortStatus: "Cancelled",
-              site: options.site,
-            },
-          },
-        },
-      };
-      const lines: string[] = [];
       const acli = fakeAcli(useTempDir("tasker-jira-"), {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
-      const cancelled = await withDataRootStore(started.dataRoot, (store) => {
-        const task = store.createTask({ issueKey: "TEST-5", repoKey: started.repoKey, state: "workspace_ready" });
-        if (options.marked) store.recordTrackerMark(task.id);
-        return abortTask(store, {
-          config,
-          ref: { ...jiraRefOf("TEST-5"), repoKey: started.repoKey },
-          taskId: task.id,
-          force: false,
-          env: { ...process.env, ...acli.env },
-          repoLockWaitMs: 300,
-          report: (line) => lines.push(line),
-          trackerIo: { stdout: (text) => lines.push(text), stderr: (text) => lines.push(text) },
-        });
+      const { cancelled, lines } = await abortJiraTask(started, {
+        keys: { abortStatus: "Cancelled", site: options.site },
+        env: { ...process.env, ...acli.env },
+        marked: options.marked,
       });
       return { started, acli, lines, cancelled };
     }
