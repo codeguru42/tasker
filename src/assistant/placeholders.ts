@@ -17,7 +17,7 @@ export interface PlaceholderList {
 
 // ENOTDIR counts as missing too: a regular file in the place of a parent folder, such as a .claude file,
 // or a .claude that changes after the parent check.
-function statOrNothing(path: string) {
+export function statOrNothing(path: string) {
   try {
     return lstatSync(path);
   } catch (error) {
