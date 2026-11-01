@@ -1009,8 +1009,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   trigger sentences, because the Out of scope section kept "the list of the findings". Review 1 found the conflict, and
   the user changed the scope.
 - If an issue limits a rule to one session, for example "the session that got it", the first refine compares that limit
-  with [the items of a handoff file](handoff.md#the-items-of-a-handoff-file) before the plan. The handoff file carries
-  each decision of the user to the new session. On #375, the issue limited
+  with [the items of a handoff file](handoff.md#the-items-of-a-handoff-file) before the plan. The handoff file carries a
+  decision of the user to the new session while no doc and no open issue holds it. On #375, the issue limited
   [the recommendation mode](working-with-the-user.md#a-decision-of-the-user) to the session that got it. Review 1 found
   the conflict with the handoff, and the fix cost a change of scope.
 - A new check of a fact, next to an old check of the same fact, draws a "two checks can disagree" finding. In the first

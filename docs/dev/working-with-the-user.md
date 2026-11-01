@@ -78,11 +78,12 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   line. In that line, the session says that the two answers differ and names both answers. Then the session gives the
   options. The bullet also covers an answer that the user gave an earlier session of the same role. That answer counts
   when the [handoff file](handoff.md#the-items-of-a-handoff-file) that the session works from lists it under the
-  decisions of the user. Then, in the first line of its question, the session names that handoff file as the source of
-  that answer. For example, the user tells the Docs orchestrator "land ticket X first", the handoff file lists that
-  answer, and then, after the handoff, orchestrator-m13 relays "land ticket Y first". In one case (2026-10-17), the
-  session started the question with the relay. The user read the question as a confirmation of the earlier answer and
-  asked "I already told you to land #182, right?".
+  decisions of the user. The answer also counts when the file gives it through the number of an open issue. The session
+  then reads that issue. After the issue lands, the file no longer lists the answer. In the first line of its question,
+  the session names that handoff file as the source of that answer. For example, the user tells the Docs orchestrator
+  "land ticket X first", the handoff file lists that answer, and then, after the handoff, orchestrator-m13 relays "land
+  ticket Y first". In one case (2026-10-17), the session started the question with the relay. The user read the question
+  as a confirmation of the earlier answer and asked "I already told you to land #182, right?".
 - When the session reminds the user of a decision that still waits, the session gives the question again in short, with
   its choices. A line such as "A or B still waits" is not enough. In one case (2026-10-18), a reminder of
   orchestrator-m13 said only "still waits for your choice: A or B", and the user asked "what are the open questions?"
