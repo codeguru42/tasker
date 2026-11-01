@@ -43,6 +43,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   ask about an issue outside your milestone or topic, say why your work cares about it. If your work has no such reason,
   say so.
 - Define each term that the user did not see before, at its first use. An example is a label convention.
+- A question to the user about rules or data in the code says where they live, for example the file. If a word of the
+  question can also mean another thing of the repo, the question names that other thing. The question says that it does
+  not mean that thing. The reason: a word with two meanings in the repo can lead the user to answer another question.
 - Say what the code does. Do not write "by hand" or "manually" about code. This rule covers text about code. It does not
   cover an action of a person or a session, for example a change by hand to a clone. In one case, "the test opens the
   store by hand" read as if a session opened the files of tasker, which is not allowed. Write "the test writes the open
