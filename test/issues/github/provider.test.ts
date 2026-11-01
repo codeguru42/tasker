@@ -186,7 +186,6 @@ describe("createGithubProvider", () => {
 
   it("rejects markAborted and makes no gh call", async () => {
     const fake = fakeGh(dir, {}, []);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const error = await failureOf(provider().markAborted(ref, "Cancelled", fake.env), Error);
     expect(error.message).toBe("the github tracker has no abortStatus");
     expect(fake.calls()).toEqual([]);

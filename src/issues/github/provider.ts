@@ -22,6 +22,7 @@ export function createGithubProvider({ account }: { account: string }): IssuePro
     inProgressMarker,
     clearInProgress: (ref, target, env) => clearGithubInProgress(ref, target, account, env),
     markDone: (ref, target, env) => markGithubDone(ref, target, account, env),
+    markAborted: () => Promise.reject(new Error("the github tracker has no abortStatus")),
     doctorChecks: githubDoctorChecks,
   };
 }

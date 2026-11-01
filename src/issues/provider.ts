@@ -73,6 +73,9 @@ export interface IssueProvider {
   // closes as completed. For jira, the issue moves to the status. The caller reads
   // issueTracker.updateOnFinish to decide if it calls this write at all.
   markDone(ref: IssueRef, target: string | undefined, env: NodeJS.ProcessEnv): Promise<void>;
+  // Moves the issue to the abort status. status is issueTracker.abortStatus. The caller decides if it
+  // calls this write at all. For github, it rejects, because tasker refuses that key at load.
+  markAborted(ref: IssueRef, status: string, env: NodeJS.ProcessEnv): Promise<void>;
   // The doctor checks of the provider for the repos in the list. Each repo names its own
   // account or site. issueDoctorChecks() calls it once with all the repos of the id, so a check
   // that runs once runs once. The checks do not run until the caller runs them.

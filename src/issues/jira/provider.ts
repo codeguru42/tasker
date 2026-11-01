@@ -4,7 +4,7 @@ import { authStatus } from "./auth.js";
 import { readJiraBlockers } from "./blockers.js";
 import { jiraDoctorChecks } from "./doctor.js";
 import { readJiraIssue } from "./issue.js";
-import { assignJiraIssue, jiraInProgressMarker, markJiraDone, markJiraInProgress } from "./write.js";
+import { assignJiraIssue, jiraInProgressMarker, markJiraAborted, markJiraDone, markJiraInProgress } from "./write.js";
 
 // Maps the neutral names of IssueProvider to the Jira functions. It adds no behavior.
 // Each Jira function runs the site guard itself.
@@ -22,6 +22,7 @@ export function createJiraProvider({ site }: { site: string | undefined }): Issu
     inProgressMarker: jiraInProgressMarker,
     clearInProgress: () => Promise.reject(new Error("the jira tracker has no in-progress clear")),
     markDone: (ref, target, env) => markJiraDone(ref, target, site, env),
+    markAborted: (ref, status, env) => markJiraAborted(ref, status, site, env),
     doctorChecks: jiraDoctorChecks,
   };
 }
