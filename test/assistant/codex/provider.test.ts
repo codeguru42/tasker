@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createCodexProvider } from "../../../src/assistant/codex/provider.js";
@@ -435,7 +435,7 @@ describe("createCodexProvider run: the execute role", () => {
     return { ...setup, hookScript, hookCommand, cwd, outcome };
   }
 
-  const write = (cwd: string) => [cwd, "/tmp", "/c/objects"];
+  const write = (cwd: string) => [realpathSync(cwd), "/tmp", "/c/objects"];
 
   it("runs workspace-write and passes the expected arguments", async () => {
     const { fake, cwd, hookCommand, outcome } = await executeRun({ stream: codexSample("plain") });

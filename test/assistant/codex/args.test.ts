@@ -158,6 +158,14 @@ describe("codexArgs: the keys of the deny table", () => {
     expect(deny([join(dir, "link"), "/h/.ssh"])).toEqual(expected(["/h/.ssh"]));
   });
 
+  it("writes the real path for a deny path through a parent link", () => {
+    const dir = realTempDir();
+    mkdirSync(join(dir, "real", "p"), { recursive: true });
+    symlinkSync(join(dir, "real"), join(dir, "link"));
+
+    expect(deny([join(dir, "link", "p")])).toEqual(expected([join(dir, "real", "p")]));
+  });
+
   it("keeps a missing deny path", () => {
     expect(deny(["/tasker-no-such/path"])).toEqual(expected(["/tasker-no-such/path"]));
   });
@@ -301,15 +309,60 @@ describe("codexArgs: the write profile", () => {
     );
   });
 
-  it("keeps the write key of a path under a deny folder when the path is not denied", () => {
+  it("gives no write key for a path under a deny folder, even when the path is not denied itself", () => {
     const sandbox = sandboxLimits({ allowWrite: ["/p/y"], denyRead: ["/p"] });
 
     expect(writeArgs({ sandbox })).toEqual(
       expectedCodexArgs({
         model: "haiku",
         effort: "low",
-        writePaths: ["/work", "/tmp", "/p/y"],
+        writePaths: ["/work", "/tmp"],
         denyRead: ["/p"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("gives no write key for a path above a deny path that lies under a deny folder", () => {
+    const sandbox = sandboxLimits({ allowWrite: ["/p/x"], denyRead: ["/p", "/p/x/secret"] });
+
+    expect(writeArgs({ sandbox })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp"],
+        denyRead: ["/p"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("keeps the write key and the deny key of a deny path under a write path", () => {
+    const sandbox = sandboxLimits({ allowWrite: ["/p"], denyRead: ["/p/x"] });
+
+    expect(writeArgs({ sandbox })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp", "/p"],
+        denyRead: ["/p/x"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("gives no write key when a write path and a deny path name one folder through a parent link", () => {
+    const dir = realpathSync(useTempDir("tasker-codex-write-"));
+    mkdirSync(join(dir, "real", "p"), { recursive: true });
+    symlinkSync(join(dir, "real"), join(dir, "link"));
+    const sandbox = sandboxLimits({ allowWrite: [join(dir, "link", "p")], denyRead: [join(dir, "real", "p")] });
+
+    expect(writeArgs({ sandbox })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp"],
+        denyRead: [join(dir, "real", "p")],
         hookCommand: HOOK,
       }),
     );
