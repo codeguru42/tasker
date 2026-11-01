@@ -1026,7 +1026,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   [the verify-failure rule](verify-failures.md#the-verify-failure-rule) before the first refine. On #366, review 1 found
   that the rule sent such a failure to a retry and a stop. The user then added a sentence in a change of scope.
 - If a rule or a design-gap answer reads a value from a source, for example the `based on` note of `tasker start`, ask
-  for the case when the source is missing. On #344, review 3 found this gap, and it cost one loop.
+  for the case when the source is missing. On #344, review 3 found this gap, and it cost one loop. If a rule or a
+  definition gives a default, ask the plan to test each case that uses the default. On #498 (2026-10-31), if the old
+  session of [a topic handoff](handoff.md#a-topic-handoff) was the operator and the prompt named no operator,
+  `planner-npm` got the default `operator-npm`. No session had that name, and the gap cost one stop before
+  `tasker approve`.
 - If a ticket lets an orchestrator run a ticket of another milestone, ask the plan to list each rule that finds the
   orchestrator of a task by the milestone of its issue, for example the bullet on a change to an issue in flight and the
   overlap rule. On #368, the review found such a rule after the plan.
