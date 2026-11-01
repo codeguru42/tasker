@@ -479,6 +479,10 @@ that it dismissed. The initial planner posts only after the approval of the user
   user). A fact that the issue copies from a ticket stays under the bullet "A fact that an issue copies from a ticket
   can be true in only one case". On #413 (2026-10-25), the reason about the hook at `/clear` was false, and the fix cost
   a change of scope.
+- An issue can rest on a fact of an outside tool that no session can measure before an earlier ticket lands. Then the
+  issue lists the measures of the tool and says when the agent runs them. The issue also gives the outcome of each
+  failed measure, for example a stop for a [design gap](plan-review.md#the-design-gap-rule) or a refusal of the run. The
+  reason: with no outcome, the plan makes the design choice itself.
 - An issue can let a session decide choices that other rules send to the user. Then the issue also names the rules that
   keep an action for the user alone, for example "Only the user changes a landing order of the overlap rule" (see
   [Land the work](land-the-work.md#land-the-work)). The issue says that the new rule does not cover them. On #375,
