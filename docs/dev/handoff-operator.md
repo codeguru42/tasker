@@ -110,9 +110,10 @@ The handoff file of the operator holds the items of
 [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The old operator also puts these items in the
 handoff file:
 
-- The prompt names the slug and the session name `operator-<slug>`. The first step of the prompt is a read of
-  `AGENTS.md` and `docs/operator.md`. The prompt names no other doc for the start reads. The second step of the prompt
-  is steps 7 to 10 of [The start of the new operator](#the-start-of-the-new-operator).
+- The prompt names the slug and the session name `operator-<slug>`. The first step of the prompt is the prompt read of
+  [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The prompt names no other doc for the start
+  reads. The second step of the prompt is steps 7 to 10 of
+  [The start of the new operator](#the-start-of-the-new-operator).
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
 - The kind of each planner, initial or follow-up.
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)). The
