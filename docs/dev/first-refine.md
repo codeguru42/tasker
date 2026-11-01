@@ -747,6 +747,18 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - A remediation names only the cause that it fixes.
 - Name the timeout rules of [the shared wrapper](doctor.md#the-shared-wrapper) for each check.
 
+## A ticket that builds an assistant provider
+
+- The plan session and the execute session do not run the program of the provider. After `tasker execute`, the agent
+  runs one real run with the final arguments, in [the diff read](run-one-ticket.md#the-diff-read). A fake program in the
+  tests cannot show that the real program takes these arguments.
+- A measure can ask the model to run a command. A `$?` in a prompt on the command line expands in the outer shell. So
+  the agent asks the model to run a script file that prints `$?`. The agent reads the command items of the JSON stream,
+  because a model can invent a result.
+- A measure can need a test home of the program with a login. The classifier of Claude Code can deny a copy of the login
+  file. So, before the measures, the agent asks the orchestrator. The orchestrator asks the user if the agent uses the
+  real home or a copy that the user makes.
+
 ## A ticket that adds an interface
 
 - Give the full export map and a table of the neutral names.
