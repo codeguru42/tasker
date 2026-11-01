@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { IssueRef } from "../../issue-key/ref.js";
 import { isObject } from "../../object.js";
-import { type Issue, IssueReadError } from "../issue.js";
+import { type Issue, type IssueComment, IssueReadError } from "../issue.js";
 import { AdfError, adfToText } from "./adf.js";
 import { siteGuard } from "./site.js";
 import { stateOfStatus, viewWorkitem } from "./view.js";
@@ -17,8 +17,46 @@ const ViewSchema = z.object({
     labels: z.array(z.unknown()).nullish(),
     components: z.array(z.unknown()).nullish(),
     status: z.unknown().optional(),
+    comment: z.object({
+      comments: z.array(
+        z.object({
+          created: z.string(),
+          body: z.unknown().refine((value) => value != null),
+          author: z.unknown().optional(),
+        }),
+      ),
+      total: z.number(),
+    }),
   }),
 });
+
+type ViewComment = z.infer<typeof ViewSchema>["fields"]["comment"];
+
+// Maps the comments of the view, in the order of the view. The view gives no older comments than its own list,
+// so a list that is shorter than the total fails. The first bad comment body stops the read.
+function commentsOfView(key: string, comment: ViewComment): IssueComment[] {
+  const { comments, total } = comment;
+  if (comments.length < total) {
+    throw new IssueReadError(key, `acli gave ${comments.length} of ${total} comments for ${key}`);
+  }
+  return comments.map((entry, index) => {
+    const name = isObject(entry.author) ? entry.author.displayName : undefined;
+    let body: string;
+    try {
+      body = adfToText(entry.body);
+    } catch (error) {
+      if (error instanceof AdfError) {
+        throw new IssueReadError(key, `comment ${index + 1} of ${key} is not an ADF document: ${error.message}`);
+      }
+      throw error;
+    }
+    return {
+      author: typeof name === "string" && name !== "" ? name : "unknown",
+      created: entry.created,
+      body,
+    };
+  });
+}
 
 // Reads one Jira issue. The site guard runs first. Each error that this function does not name passes through.
 export async function readJiraIssue(ref: IssueRef, site: string | undefined, env: NodeJS.ProcessEnv): Promise<Issue> {
@@ -35,6 +73,8 @@ export async function readJiraIssue(ref: IssueRef, site: string | undefined, env
     throw error;
   }
 
+  const comments = commentsOfView(ref.key, fields.comment);
+
   const status = isObject(fields.status) ? fields.status : undefined;
   const statusName = typeof status?.name === "string" ? status.name : undefined;
 
@@ -49,6 +89,6 @@ export async function readJiraIssue(ref: IssueRef, site: string | undefined, env
     ),
     ...(statusName === undefined ? {} : { status: statusName }),
     state: stateOfStatus(status),
-    comments: [],
+    comments,
   };
 }
