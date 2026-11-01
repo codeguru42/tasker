@@ -130,7 +130,7 @@ reason: "Count your item ids on from planner-docs-5" can read as "start at plann
 
 The new session does this check right after the prompt read, before each other step of the prompt.
 [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the order of that
-session. It lists the folder `$HOME/Documents/tasker/handoff/` with `ls`.
+session. The new session lists the folder `$HOME/Documents/tasker/handoff/` with `ls`.
 
 The files of its role are the files whose names [The handoff file](#the-handoff-file) gives for that role. A file with a
 later date and time in its name is newer.
