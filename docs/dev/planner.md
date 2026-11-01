@@ -150,9 +150,22 @@ These posts also give a message to an orchestrator:
 - A post that changes the blocked-by links of an open issue.
 - A post that moves an issue into a milestone.
 
-After such a post, the follow-up planner tells `orchestrator-<milestone>` of the milestone of the issue after the post,
-with `SendMessage`. [The notice rule](doc-reads.md#the-notice-rule) gives the form of the name. The message names the
-issue and the change. A move from one milestone to another gives one message, only to the orchestrator of the target
+The follow-up planner sends the message after the post is complete. A post is complete after these steps:
+
+- The follow-up planner runs each link command of the post, as [The blocked-by links](issues.md#the-blocked-by-links) of
+  issues.md says.
+- For a new issue or an issue moved into a milestone, the follow-up planner reads the column of the card with the
+  command of [the defer rule](pick-the-tickets.md#the-defer-rule). If the output is not `Todo`, it reads again after one
+  minute, because [the workflow of the board](issues.md#the-project-board) adds a new issue within a minute.
+
+If a link command fails, [the failure rule](limits.md#the-failure-rule) applies to the follow-up planner, and the
+message names the failed link. If a read of the column fails, the failure rule also applies. If the second read does not
+print `Todo`, the follow-up planner tells the user the output, as the failure rule says. In these two cases, the message
+says that the card is not in Todo.
+
+Then the follow-up planner tells `orchestrator-<milestone>` of the milestone of the issue after the post, with
+`SendMessage`. [The notice rule](doc-reads.md#the-notice-rule) gives the form of the name. The message names the issue
+and the change. A move from one milestone to another gives one message, only to the orchestrator of the target
 milestone. The orchestrator then reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
 
 Before the message, the follow-up planner makes sure that the session list of the tools, for example `ListAgents`, has
