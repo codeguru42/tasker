@@ -75,6 +75,8 @@ history of the session, the closed items or the measured facts. The rule is the 
 - Each open item with its id, as [The form of an item](operator-items.md#the-form-of-an-item) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
+- Each note for later that a message carried and that the session still keeps, with its trigger, as
+  [A note for later](working-with-the-user.md#a-note-for-later) says.
 - Each decision of the user that still applies and that no doc and no open issue holds. This covers the old session and
   the earlier handoff file of the role. As a result, such a decision survives more than one handoff.
 - For a decision that an open issue holds, the file gives only the number of that issue. After the issue lands, the
