@@ -65,7 +65,7 @@ of the handoff.
 The old session puts these items in the handoff file:
 
 - The prompt for the new session, in a code block. The first message of the new session always names the path of the
-  handoff file.
+  handoff file. If the old session is not the operator, the prompt also names the operator of the old session.
 - Each open item with its id, as [The form of an item](operator-items.md#the-form-of-an-item) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
@@ -168,10 +168,10 @@ does [The check of the handoff folder](#the-check-of-the-handoff-folder).
 
 The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name.
 [docs/sessions.md](../sessions.md) gives the form of the own name of a session. The old session puts this name in the
-item and in the prompt of the handoff file. The prompt also names `operator-<slug>` of the old session as the operator
-that the new session works with.
+item and in the prompt of the handoff file. The prompt also names [the operator of the old session](../operator.md) as
+the operator that the new session works with.
 
-The old session sends the path of the file to `operator-<slug>` as an item, as
+The old session sends the path of the file to [its operator](../operator.md) as an item, as
 [The form of an item](operator-items.md#the-form-of-an-item) says. The operator starts the new session with the prompt
 of the file as its first message, as [Start a session](operator-start.md#start-a-session) says. The operator does not
 stop the old session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and the stop of
