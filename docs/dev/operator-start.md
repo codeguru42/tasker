@@ -44,15 +44,19 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
    ```
 
    The operator keeps `.sessions.kind` and the entry of `.sessions.models.<role>` of the output. `<role>` is the role of
-   the new session: `planner` or `orchestrator`. If the command fails, the operator tells the user the command and the
-   error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do steps 2 and 3. No tab exists,
-   so no entry goes into [the tab list](../operator.md).
+   the new session: `planner`, `orchestrator` or, in a handoff of the operator, `operator`. As a result, the new
+   operator starts with the model and the effort of `sessions.models.operator`. If the command fails, the operator tells
+   the user the command and the error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do
+   steps 2 and 3. No tab exists, so no entry goes into [the tab list](../operator.md).
 
 2. The operator runs `herdr tab create` in its shell. The folder of `--cwd` is the local clone.
 
    ```sh
    herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd <local clone> --label <name> --no-focus
    ```
+
+   In a handoff of the operator, the operator leaves out `--no-focus`, as
+   [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator) says.
 
    The operator keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. If the command works, the
    operator puts the tab id and the session name into the tab list. If the command fails, the operator tells the user
@@ -68,6 +72,10 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
    herdr agent start <name> --kind <kind> --pane <pane id> -- -n <name> <model flags> "<prompt>"
    ```
 
+   In a handoff of the operator, the herdr agent name and the session name differ. The herdr agent name is
+   `operator-<slug>-<time>`, and `-n` takes the session name `operator-<slug>`. "The start of the new operator" gives
+   the command.
+
    `<kind>` is `sessions.kind`. `<model flags>` is the model flag and the effort flag of the kind in
    [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), with the model and the effort of the entry of
    the role. If `sessions.models` has no entry for the role, the operator leaves out `<model flags>`.
@@ -79,7 +87,8 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
    After one of these errors, the operator first looks for the new session in `ListAgents`, or it runs
    `herdr pane read <pane id>` in its shell. The pane id is the one that step 2 kept. If the session runs, the start
    worked. If `ListAgents` does not list the new session, or `herdr pane read` fails or shows no running session, the
-   failure case that follows applies.
+   failure case that follows applies. In a handoff of the operator, step 3 of "The start of the new operator" wins over
+   the first sentence of this paragraph.
 
    operator-docs saw the timeout on 2026-10-24, in the handoff of planner-docs, and the session ran. operator-docs saw
    the error "named agent orchestrator-docs no longer owns the target terminal" (`agent_name_not_found`) on 2026-10-24,
@@ -141,6 +150,13 @@ rule of the user of 2026-10-25 in [The end of a handoff](handoff.md#the-end-of-a
 [A handoff](#a-handoff). The operator closes only a tab that it opened in its own session, or a tab that an earlier
 operator of its slug opened. In a handoff, the operator also stops a session in a tab that it did not open, for example
 a tab that the user opened.
+
+In a handoff of the operator, the old operator closes its own tab with no request of the user. This sentence wins over
+two rules for the own tab of the old operator. The first rule is "The operator closes only a tab that it opened in its
+own session, or a tab that an earlier operator of its slug opened." The second rule is the sentence of the intro of the
+operator index that says "The tab list is the list of the tabs that an operator can close." That index is
+[docs/operator.md](../operator.md). [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator)
+gives the steps.
 
 Outside a handoff, the operator takes the tab id of each session from [the tab list](../operator.md), also of its own
 sessions. If the tab list gives no tab id for the session, the operator tells the user and closes nothing. In a handoff,
