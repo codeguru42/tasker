@@ -53,17 +53,18 @@ function withoutNested(paths: readonly string[]): string[] {
 // Each path is a TOML key written with JSON.stringify. A TOML table must not name one key twice, so the table
 // is a Map and a path has one key, and a later value wins. A run with workspace-write access gets write keys
 // for the cwd, the temp folder and each path of sandbox.allowWrite. A read-only run gets no write key.
-// The deny keys are the paths of sandbox.denyRead and the socket paths. They come last, so a path that is
-// both written and denied gets deny.
+// The deny keys are the paths of sandbox.denyRead and the socket paths. A path on the deny list is never a
+// write key, also when a deny folder above it hides its own deny key. A write key under a deny folder stays
+// when the path itself is not on the deny list. That key reopens its path.
 function filesystemTable(input: RunInput): string {
   const table = new Map<string, string>([["/", "read"]]);
+  const denied = realKeys([...(input.sandbox?.denyRead ?? []), ...codexSocketDenyPaths(input.env)]);
   if (input.access === "workspace-write") {
     const temp = isSet(input.env.TMPDIR) ? resolve(input.env.TMPDIR) : "/tmp";
     for (const path of realKeys([input.cwd, temp, ...(input.sandbox?.allowWrite ?? [])])) {
-      table.set(path, "write");
+      if (!denied.includes(path)) table.set(path, "write");
     }
   }
-  const denied = realKeys([...(input.sandbox?.denyRead ?? []), ...codexSocketDenyPaths(input.env)]);
   for (const path of withoutNested(denied)) table.set(path, "deny");
   const keys = [...table].map(([path, access]) => `${JSON.stringify(path)}=${JSON.stringify(access)}`);
   return `{${keys.join(", ")}}`;
