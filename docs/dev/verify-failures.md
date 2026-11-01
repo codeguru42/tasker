@@ -130,9 +130,9 @@ task branch of tasker, and `origin` keeps the pushed commits. The fix of a broke
 its cause commit. On #201, the next `tasker update-branch` worked again only after the old task branch on `origin` was
 deleted with a lease. The agent does the rule after a step 11 of that page that records a
 [`<taken>`](rebase-conflicts.md#procedure). The rule does not run in [the loop](rebase-conflicts.md#procedure) of step
-11 of that page. It does the rule before each later `tasker update-branch` of the task, until step 21 of that page ends.
-The `tasker update-branch <issue> --take-remote` of step 11 is not a command of the rule. The rule applies to each
-change of the pushed commits, whatever its cause.
+11 of that page. The agent does the rule before each later `tasker update-branch` of the task, until step 21 of that
+page ends. The `tasker update-branch <issue> --take-remote` of step 11 is not a command of the rule. The rule applies to
+each change of the pushed commits, whatever its cause.
 
 The agent of the ticket does each step in the local clone of the orchestrator. No step runs in the tasker clone or in a
 worktree of tasker. The git commands change no task, for example a task in `awaiting_work_review`, `reviewed`,
