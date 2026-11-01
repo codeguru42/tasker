@@ -220,9 +220,7 @@ pass through unchanged.
 
 Each write runs [the site guard](#the-site-guard) first, so an error of the guard is never an `IssueWriteError`.
 `markJiraDone()` then makes sure that the status is set. With no status, it rejects with an `Error` that says
-`issueTracker.doneStatus is not set`, and the only `acli` call is `acli jira auth status`. `markJiraAborted()` uses the
-configuration key `issueTracker.abortStatus`. Its action text is
-`move <key> to the status "<status>" of issueTracker.abortStatus`.
+`issueTracker.doneStatus is not set`, and the only `acli` call is `acli jira auth status`.
 
 Each write has the flag `--json`, because `acli` exits with 0 for a refused write.
 [The measure of the writes](#the-measure-of-the-writes) shows this. tasker reads the JSON result of the write. A result
@@ -235,6 +233,7 @@ A failed write is an `IssueWriteError` with the key of the issue and the configu
 - `assign <key> to "<assignee>"`, with the configuration key `issueTracker.assignee`.
 - `move <key> to the status "<status>" of issueTracker.inProgressStatus`.
 - `move <key> to the status "<status>" of issueTracker.doneStatus`.
+- `move <key> to the status "<status>" of issueTracker.abortStatus`.
 
 The assignee and the status are in `JSON.stringify()` form. The text after `: ` has three cases:
 
@@ -266,6 +265,10 @@ If `issueTracker.updateOnStart` is true, `issueTracker.abortStatus` is set and t
 `markJiraAborted()`. The reason for the `tracker_marked` condition: another machine can work on an issue that this task
 did not mark, and its mark must stay. A failed move only warns, and the task still goes to `cancelled`. If one of the
 three conditions is false, the abort makes no `acli` call.
+
+If `abortStatus` is a status of the category `done`, tasker reads the aborted issue as closed. The `state` row of
+[The read of an issue](#the-read-of-an-issue) and [The blockers of an issue](#the-blockers-of-an-issue) give that rule.
+[The row of `abortStatus`](../config.md#issuetracker) gives the result for a user.
 
 ## The auth status
 
