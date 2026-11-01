@@ -73,7 +73,10 @@ handoff file:
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)). The
   file marks each question of the item as open, answered or sent. The operator can keep a question open because the
   words of the user do not fully settle it, as [The answer](operator-items.md#the-answer) says. For such a question, the
-  file gives what stays open and whether the ask to the user waits.
+  file gives what stays open and whether the ask to the user waits. For an answered question with an answer of the
+  operator, the file gives that answer.
+- Each item that the operator answered and did not yet show, with its id, its sender and the first line of the item. For
+  each question, the file gives the answer that the operator sent and the number of the sender.
 - Each sender of the slug that got the hold message, as [The hold of the items](handoff.md#the-hold-of-the-items) says.
   The new operator sends the ready message to each of these senders in step 10 of
   [The start of the new operator](#the-start-of-the-new-operator).
@@ -142,9 +145,10 @@ The new operator starts in these steps:
     sender, the new operator sends no ready message. The ready message gives the own ref of the new operator, from the
     first line of `ListAgents`. If `ListAgents` fails, [the failure rule](limits.md#the-failure-rule) applies.
 
-In its first reply, the new operator gives the user the path of the handoff file. It also gives the notice of the hold
-that step 1 of [the steps of the old operator](#the-steps-of-the-old-operator) gives the old operator. The reason: the
-last reply of the old operator shows only in its closed tab.
+In its first reply, the new operator gives the user the path of the handoff file. It also shows each answered item of
+the file that the old operator did not show, as [The open items](operator-items.md#the-open-items) says. It also gives
+the notice of the hold that step 1 of [the steps of the old operator](#the-steps-of-the-old-operator) gives the old
+operator. The reason: the last reply of the old operator shows only in its closed tab.
 
 `herdr agent start` refuses a herdr agent name that already runs. With no suffix `-<time>`, the start of the third
 operator fails, because the second operator still runs.
