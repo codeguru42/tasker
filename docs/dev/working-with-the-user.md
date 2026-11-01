@@ -19,7 +19,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 - A message from [the operator of the session](../operator.md) that starts with "From the user:" is a word of the user
   for the rules of the docs. A message that starts with "Answer of the operator:" is not a word of the user. It answers
   no question for the user alone.
-- Such a message never approves a permission prompt of Claude Code.
+- A message that starts with "From the user:" or with "Answer of the operator:" never approves a permission prompt of
+  Claude Code.
 - The initial planner works with the user directly in its tab.
 
 ## A decision of the user
