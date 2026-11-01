@@ -32,6 +32,18 @@ const ViewSchema = z.object({
 
 type ViewComment = z.infer<typeof ViewSchema>["fields"]["comment"];
 
+// Converts one ADF value to text. An AdfError becomes an IssueReadError that names the label. Each other error passes.
+function adfTextOf(key: string, value: unknown, label: string): string {
+  try {
+    return adfToText(value);
+  } catch (error) {
+    if (error instanceof AdfError) {
+      throw new IssueReadError(key, `${label} is not an ADF document: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
 // Maps the comments of the view, in the order of the view. The view gives no older comments than its own list,
 // so a list that is shorter than the total fails. The first bad comment body stops the read.
 function commentsOfView(key: string, comment: ViewComment): IssueComment[] {
@@ -41,19 +53,10 @@ function commentsOfView(key: string, comment: ViewComment): IssueComment[] {
   }
   return comments.map((entry, index) => {
     const name = isObject(entry.author) ? entry.author.displayName : undefined;
-    let body: string;
-    try {
-      body = adfToText(entry.body);
-    } catch (error) {
-      if (error instanceof AdfError) {
-        throw new IssueReadError(key, `comment ${index + 1} of ${key} is not an ADF document: ${error.message}`);
-      }
-      throw error;
-    }
     return {
       author: typeof name === "string" && name !== "" ? name : "unknown",
       created: entry.created,
-      body,
+      body: adfTextOf(key, entry.body, `comment ${index + 1} of ${key}`),
     };
   });
 }
@@ -63,15 +66,7 @@ export async function readJiraIssue(ref: IssueRef, site: string | undefined, env
   const active = await siteGuard(ref.repoKey, site, env);
   const { fields } = await viewWorkitem(ref.key, VIEW_FIELDS, ViewSchema, env);
 
-  let body: string;
-  try {
-    body = adfToText(fields.description);
-  } catch (error) {
-    if (error instanceof AdfError) {
-      throw new IssueReadError(ref.key, `the description of ${ref.key} is not an ADF document: ${error.message}`);
-    }
-    throw error;
-  }
+  const body = adfTextOf(ref.key, fields.description, `the description of ${ref.key}`);
 
   const comments = commentsOfView(ref.key, fields.comment);
 
