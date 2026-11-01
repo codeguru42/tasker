@@ -52,7 +52,7 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
    - (b) Do not do the open work in this step. Do not answer a question for the user.
    - (c) The session can drop moot work, as [A decision of the user](../../../docs/dev/working-with-the-user.md#a-decision-of-the-user) says. Step 8 names the drop.
    - (d) If the session works through the operator, send a new open question as an item. [The operator](../../../docs/dev/working-with-the-user.md#the-operator) gives this rule. An open question that already went to the operator as an item stays open with its id. Do not send that question again. Give its id in the list of step 8.
-   - (e) An item that an earlier round of the same session listed is not a new finding. A round that lists only such items finds nothing new, so it can end the rounds. Open work with no answer does not keep the rounds running.
+   - (e) A list entry that an earlier round of the same session listed is not a new finding. A round that lists only such list entries finds nothing new, so it can end the rounds. Open work with no answer does not keep the rounds running.
    - (f) Do not write the open work to memory, because it is the state of the session.
 
    On 2026-10-30, a session asked "Do you want me to find out why #537 closed?". Then it ran two rounds of `/session-review`, and neither round named the question. On 2026-10-31, the user asked: "Does session review include a rule for checking for unanswered open questions or unfinished work?"
