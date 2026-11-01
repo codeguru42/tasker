@@ -75,6 +75,8 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   that [the Check rule](rules.md#check) wins over those prompts. On #158, the plan asked about the conflict as an open
   question, and the answer cost an extra refine. The Check rule also wins for `npm run format:check`. On #417, plan v2
   left out `npm run format:check` with the reason "a todo runs no check of the whole repo", and it cost one more refine.
+  In the first refine, give this format-check text, which worked on #577 (2026-11-01) after a refusal: "Each todo runs
+  `npm run format`, then `npm run format:check`, with the pass condition exit code 0."
 - In a docs ticket, ask the plan to run `npm run format:check`, not `npx prettier` ([the Check rule](rules.md#check)).
   The plans of #245 and #254 used `npx prettier`. A plan that runs `npm run format` and then `npm run format:check` is
   fine. On #266, plan v1 already used `npm run format`.
