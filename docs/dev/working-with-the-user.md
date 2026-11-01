@@ -38,7 +38,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   had to take the claim back.
 - Do not ask with a popup that holds only a short summary. In one case, the user rejected such a popup and wrote "I need
   more context. What is happening?".
-- When you list open items or proposed issues, give each item what happened, why it matters and a recommendation.
+- When you list open items or proposed issues, give each item what happened, why it matters and a recommendation. If you
+  ask about an issue outside your milestone or topic, say why your work cares about it. If your work has no such reason,
+  say so.
 - Define each term that the user did not see before, at its first use. An example is a label convention.
 - Say what the code does. Do not write "by hand" or "manually" about code. This rule covers text about code. It does not
   cover an action of a person or a session, for example a change by hand to a clone. In one case, "the test opens the
