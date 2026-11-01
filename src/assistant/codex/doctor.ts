@@ -1,7 +1,7 @@
 import type { Check } from "../../doctor/check.js";
 import { programCheck, programVersionCheck } from "../program-check.js";
 
-const CODEX_NOT_INSTALLED = "codex is not installed or not on PATH";
+export const CODEX_NOT_INSTALLED = "codex is not installed or not on PATH";
 const CODEX_INSTALL_FIX = "Install Codex and put codex on PATH.";
 
 // The exit code and the stderr text of `codex login status` with no login.
