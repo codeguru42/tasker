@@ -482,6 +482,16 @@ that it dismissed. The initial planner posts only after the approval of the user
   user). A fact that the issue copies from a ticket stays under the bullet "A fact that an issue copies from a ticket
   can be true in only one case". On #413 (2026-10-25), the reason about the hook at `/clear` was false, and the fix cost
   a change of scope.
+- An issue can name a read of an outside tool and use fields of its output. Before the post, the planner runs that read
+  one time with [the fact test](plan-review.md#the-fact-test), on a small case that holds a value of each such field.
+  The planner picks the case, and this choice is open on purpose. The planner makes sure that the output gives each
+  field that the issue uses, in the form that the issue uses. If a field is missing or has another form, the planner
+  changes the issue before the post. The bullet before this one covers a read that the planner cannot run.
+
+  An earlier measure of the same tool version with a value of each field takes the place of this run. On #550
+  (2026-10-31), the issue gave only a measure with no comments. `acli jira workitem comment list` then gave no `created`
+  field and a flat `body`, and the fix cost one stop and three decisions of the user.
+
 - An issue can rest on a fact of an outside tool that no session can measure before an earlier ticket lands. Then the
   issue lists the measures of the tool and says when the agent runs them. The issue also gives the outcome of each
   failed measure, for example a stop for a [design gap](plan-review.md#the-design-gap-rule) or a refusal of the run. The
