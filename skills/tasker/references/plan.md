@@ -22,6 +22,11 @@ After these lines, the command can print [the overlap warning](#the-overlap-warn
 
 The assistant reads the title, the body and the comments of the issue.
 
+Before the run and after it, the command reads the tip of the task branch on the remote. A push from the session fails
+the task. The error is `push detected on <branch>: the tip of the branch on the remote moved from <old> to <new>`. A
+push wins over every other result of the run, a quota stop included. The command cannot see a push that moves the tip
+and then moves it back within the run.
+
 The command stops with exit code 1 and prints the error on stderr in these cases.
 
 These errors leave the task in its state. The command writes nothing. The shared errors of
@@ -30,6 +35,8 @@ These errors leave the task in its state. The command writes nothing. The shared
 - The issue has no task. The error names the issue and the repo. Run `tasker start` first.
 - The issue cannot be read. Fix the cause (for example the gh login), then run the command again. A Jira issue with more
   comments than `acli` gives has no fix. The error is `acli gave <n> of <total> comments for <key>`.
+- The task has no branch. The error is `the task of <issue key> has no branch`.
+- The remote cannot be read before the run. The error is `cannot read the remote before the run: <error>`.
 
 These errors move the task to the state `failed`. The shared quota stop, the shared signal stop and the shared quota
 pause are the exceptions:
@@ -40,6 +47,8 @@ pause are the exceptions:
   `planning failed: <error>`.
 - The assistant returns a plan that tasker refuses. The error lists each problem.
 - The plan file cannot be written. The error is `cannot write the plan file of revision v1: <error>`.
+- The tip of the branch moved, or the remote cannot be read after the run. The error is the push error above or
+  `cannot read the remote after the run: <error>`.
 
 For a task in `failed`, run `tasker retry <issue>`. For a task in `quota_blocked` or in `interrupted` after a signal,
 run `tasker resume <issue>`. For a task in `awaiting_quota_approval`, run `tasker approve-credits <issue>` (see
@@ -103,6 +112,9 @@ On success, the command prints the same lines as `tasker plan`, but the first li
 `refined <issue> as revision v<N>`. Then it prints [the overlap warning](#the-overlap-warning) after its lines, with the
 same last line.
 
+Before the run and after it, the command reads the tip of the task branch on the remote, as
+[`tasker plan`](#tasker-plan) says.
+
 The command stops with exit code 1 and prints the error on stderr in these cases.
 
 These errors leave the task in its state. The command writes nothing. The shared errors of no task, of the wrong state,
@@ -125,6 +137,7 @@ of the task lock and of the prompt archive belong to this group:
 - The plan file of the newest revision cannot be read. The error is
   `cannot read the plan file <path> of revision v<N>: <error>`. Restore the file, then run the command again.
 - The task has no base revision or no branch, or the commits of the branch cannot be read. The error says which.
+- The remote cannot be read before the run. The error is `cannot read the remote before the run: <error>`.
 
 A refused check leaves the task, the files and the events as they were. Fix the cause, then run the same command again.
 
@@ -135,6 +148,8 @@ pause are the exceptions. The shared unexpected error belongs to this group:
   `refining timed out after <n> min`.
 - The assistant returns a plan that tasker refuses. The error lists each problem.
 - The plan file cannot be written. The error is `cannot write the plan file of revision v<N>: <error>`.
+- The tip of the branch moved, or the remote cannot be read after the run. The error is the push error of
+  [`tasker plan`](#tasker-plan) or `cannot read the remote after the run: <error>`.
 
 If you press Ctrl-C, the assistant stops and the task goes to the state `interrupted`. See the shared signal stop in
 [Shared errors](../SKILL.md#shared-errors).

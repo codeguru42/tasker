@@ -26,6 +26,9 @@ task branch does not count, as for [`tasker accept`](#tasker-accept).
 Each review gets a number. The first review of a task is review 1, and a later review gets the next number. tasker
 records the session of each review. No command continues it yet.
 
+Before the run and after it, the command reads the tip of the task branch on the remote, as
+[`tasker plan`](plan.md#tasker-plan) says.
+
 On success, the command prints these lines on stdout:
 
 - `reviewed <issue key>: review <N>, <count>`. The count is `no findings`, `1 finding` or `<n> findings`.
@@ -49,6 +52,7 @@ of no task, of [the wrong state](../SKILL.md#shared-errors) and of the task lock
 - The clone has no such task branch, or git cannot read the tip of the branch. The error is
   `cannot resolve the task branch: <branch>` or the error of git.
 - The commits of the branch cannot be read. The error is the error of git.
+- The remote cannot be read before the run. The error is `cannot read the remote before the run: <error>`.
 - The prompt cannot be archived. A prompt that tasker archived before the failure stays in the prompt archive.
 
 These errors move the task to the state `failed`. The shared quota stop, the shared signal stop and the shared quota
@@ -58,6 +62,8 @@ pause are the exceptions. The shared unexpected error belongs to this group:
   `reviewing timed out after <n> min`.
 - The answer is not valid. The error is `the assistant returned findings that tasker refuses:`, then one line for each
   problem.
+- The tip of the branch moved, or the remote cannot be read after the run. The error is the push error of
+  [`tasker plan`](plan.md#tasker-plan) or `cannot read the remote after the run: <error>`.
 
 If you press Ctrl-C, the assistant stops and the task goes to the state `interrupted`. See the shared signal stop in
 [Shared errors](../SKILL.md#shared-errors).
@@ -93,6 +99,8 @@ The command stops with exit code 1 and prints the error on stderr in these cases
   [`tasker update-branch`](keeping-current.md#errors).
 - The task has no worktree, no branch or no base revision, or the clone has no such task branch. The errors are the
   branch errors of the automated review above.
+- The remote cannot be read before the run. The error is `cannot read the remote before the run: <error>`. The task
+  stays in its state.
 - The run step fails. The errors are those of [`tasker refine`](plan.md#tasker-refine), and the exit code of a failed
   run is the exit code of a failed review.
 
