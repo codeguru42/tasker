@@ -420,8 +420,8 @@ continued session.
 - Two facts of the table hold for every key. A key must not be a symbolic link, because the run then fails at the start.
   So a link becomes its target, and a link that cannot resolve is left out. An existing path under another deny key must
   not be a key, because the run then fails at the start. So the table leaves it out. A deny key under a write key holds,
-  and the table keeps it. A write key under a deny key reopens that path, and the table keeps it. A path that does not
-  exist stays.
+  and the table keeps it. A write key under a deny key reopens that path, and the table keeps it. A path on the deny
+  list is never a write key. A path that does not exist stays.
 - Under `workspace-write`, `-c hooks.PreToolUse=[...]` and `--dangerously-bypass-hook-trust` follow the network line.
   `codexHookArgs()` builds them. The matcher is `^apply_patch$`, the command is a TOML string, and the timeout is 10
   seconds. A continued session gets the same arguments.
