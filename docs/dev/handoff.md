@@ -39,7 +39,7 @@ used 6%.
 The count starts at 0 at the start of the session. The count lives until the session ends.
 
 In each list of open questions or open items that the old session gives the user, the old session also gives a handoff
-recommendation. [A decision of the user](working-with-the-user.md#a-decision-of-the-user) and
+recommendation. [The form of a reply](working-with-the-user.md#the-form-of-a-reply) and
 [The open items](operator-items.md#the-open-items) give the form of these lists. The recommendation says "hand off now"
 or "not yet", with its reason. The reason gives the count of the session and the count of a suggestion of the role page
 of the session. The count of the session is [the landing count](handoff-orchestrator.md#the-landing-count) of the
