@@ -38,8 +38,17 @@ export interface PermissionDenial {
 export interface RunInput {
   // Tasker makes the session id before the run. A provider never makes one.
   sessionId: string;
-  // The only difference between a new and a continued run.
+  // Whether the run continues the session. A continued run can also need providerSessionId and usageTotal.
   resume: boolean;
+  // The values that a provider gives for a session. A provider with no such value ignores all four.
+  // The id that the provider gave in an earlier run, for a continued run.
+  providerSessionId?: string;
+  // The last usage total that the provider gave for the session, for a continued run.
+  usageTotal?: TokenUsage;
+  // Called with the id that the provider gives for the session. The provider drops a throw.
+  onProviderSessionId?: (id: string) => void;
+  // Called with each new usage total that the provider gives for the session. The provider drops a throw.
+  onUsageTotal?: (total: TokenUsage) => void;
   // Goes to stdin, never to argv.
   prompt: string;
   cwd: string;

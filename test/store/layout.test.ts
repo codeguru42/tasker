@@ -3,8 +3,6 @@ import { basename, dirname, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   codexSchemaPath,
-  codexThreadIdPath,
-  codexUsagePath,
   createDataRoot,
   dataRootLayout,
   doctorProbePath,
@@ -253,14 +251,6 @@ describe("doctorProbePath", () => {
 });
 
 describe("the files of a Codex session", () => {
-  it("puts the thread id file in the session folder", () => {
-    expect(codexThreadIdPath("/s", "id")).toBe(join("/s", "id.codex-thread"));
-  });
-
-  it("puts the usage file in the session folder", () => {
-    expect(codexUsagePath("/s", "id")).toBe(join("/s", "id.codex-usage"));
-  });
-
   it("puts the schema file in the session folder", () => {
     expect(codexSchemaPath("/s", "id")).toBe(join("/s", "id.schema.json"));
   });

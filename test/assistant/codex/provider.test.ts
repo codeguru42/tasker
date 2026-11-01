@@ -276,10 +276,10 @@ describe("createCodexProvider run: the thread id", () => {
     const onProviderSessionId = vi.fn();
 
     const first = await run({ stream: codexSample("plain") }, { sessionDir, onProviderSessionId });
+    expect(onProviderSessionId.mock.calls).toEqual([[THREAD_ID]]);
     const second = await codexProvider().run({ ...first.input, resume: true, providerSessionId: THREAD_ID });
 
     expect(first.outcome.kind).toBe("success");
-    expect(onProviderSessionId.mock.calls).toEqual([[THREAD_ID]]);
     expect(second.kind).toBe("success");
     expect(first.fake.calls()).toHaveLength(2);
   });

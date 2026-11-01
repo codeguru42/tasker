@@ -5,13 +5,12 @@ import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
 import { codexSchemaPath } from "../../store/layout.js";
 import { parseLine } from "../event-line.js";
-import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome, TokenUsage } from "../provider.js";
+import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { codexArgs } from "./args.js";
 import { CODEX_NOT_INSTALLED, codexLoginCheck, codexVersionCheck } from "./doctor.js";
 import { type PlaceholderList, removePlaceholders } from "../placeholders.js";
 import { absentPlaceholders } from "./placeholders.js";
 import { EDIT_HOOK_SCRIPT, editHookCommand, editHookRefusal } from "./edit-hook.js";
-import { readThreadId, readUsageTotal, writeThreadId, writeUsageTotal } from "./session.js";
 import { type CodexStreamFacts, readCodexStream, threadIdOf, usageTotalOf } from "./stream.js";
 
 type Failure = Extract<RunOutcome, { kind: "failure" }>;
@@ -92,20 +91,16 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
         hookCommand = editHookCommand(hookScript, input.cwd, input.deniedEditPaths);
       }
       let threadId: string | undefined;
-      let previous: TokenUsage | undefined;
+      let previous: RunInput["usageTotal"];
       if (input.resume) {
-        try {
-          threadId = readThreadId(input.sessionDir, input.sessionId);
-        } catch (error) {
-          return failureWithNoExit(input, errorMessage(error));
-        }
+        threadId = input.providerSessionId;
         if (threadId === undefined) {
           return failureWithNoExit(
             input,
             `the codex session ${input.sessionId} has no thread id, so the run cannot continue it`,
           );
         }
-        previous = readUsageTotal(input.sessionDir, input.sessionId);
+        previous = input.usageTotal;
       }
       let schemaPath: string | undefined;
       if (input.jsonSchema !== undefined) {
@@ -150,13 +145,13 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
             events.push(event);
             try {
               const id = threadIdOf(event);
-              if (id !== undefined) writeThreadId(input.sessionDir, input.sessionId, id);
+              if (id !== undefined) input.onProviderSessionId?.(id);
             } catch {
               // A failed write only means that a later continued run fails.
             }
             try {
               const total = usageTotalOf(event);
-              if (total !== undefined) writeUsageTotal(input.sessionDir, input.sessionId, total);
+              if (total !== undefined) input.onUsageTotal?.(total);
             } catch {
               // A failed write only means that the next run counts too much.
             }

@@ -25,7 +25,7 @@ export type AssistantSessionRequest =
 // The input that both entry points take.
 export interface TaskRunRequest {
   config: Config;
-  // Holds the run marker of the task.
+  // Holds the run marker of the task and the values that a provider gives for a session.
   store: TaskStore;
   // The worktreePath of the task must be set.
   task: Task;
@@ -137,6 +137,10 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
         jsonSchema: input.jsonSchema,
         sessionId,
         resume,
+        providerSessionId: store.providerSessionId(task.id, sessionId),
+        usageTotal: store.sessionUsageTotal(task.id, sessionId),
+        onProviderSessionId: (id) => store.setProviderSessionId(task.id, sessionId, id),
+        onUsageTotal: (total) => store.setSessionUsageTotal(task.id, sessionId, total),
         model: selected.model,
         effort: selected.effort,
         sessionDir,
