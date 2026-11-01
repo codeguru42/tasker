@@ -53,6 +53,11 @@ says.
 
 On 2026-10-24, the user asked planner-docs to keep a handoff recommendation in each list of open questions.
 
+If the user says that no more handoffs come, each session of the slug suggests no handoff. This rule lasts until the
+session ends or the user says otherwise. It wins over each rule that makes a session suggest a handoff. Each
+recommendation of a handoff is then "not yet", and its reason is the words of the user. A request of the user for a
+handoff still works, and a handoff that already started goes on.
+
 ## The handoff file
 
 The old session writes the handoff file `$HOME/Documents/tasker/handoff/<date>-<time>-<role>.md`, for example
