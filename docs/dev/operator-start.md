@@ -36,6 +36,12 @@ If a stop or a start fails, the failure cases of "Stop a session" and "Start a s
 
 ## Start a session
 
+Each time that the operator does this section, it first reads `docs/dev/operator-start.md` again, as
+[the doc-read rule](doc-reads.md#the-doc-read-rule) says. Then it does the steps of the text that it read. The reason: a
+notice can be lost, and a start or a stop from an old text acts on a real session. A section keeps the text that it read
+until the section ends. A new text that lands in the middle of the section applies from the next read. A section keeps
+this text also when a notice arrives in the middle of it, and the notice applies to the next section.
+
 1. The operator runs `tasker show-config --repo <key>` in its shell. `<key>` is the repo key of the repo of the local
    clone, for example `codeguru42/tasker`.
 
@@ -145,6 +151,10 @@ You are the orchestrator of <milestone>. Read AGENTS.md and docs/orchestrator.md
 
 ## Stop a session
 
+Each time that the operator does this section, it first reads `docs/dev/operator-start.md` again, as
+[the doc-read rule](doc-reads.md#the-doc-read-rule) says. Then it does the steps of the text that it read.
+[Start a session](#start-a-session) gives the reason and the rule of the new text.
+
 The operator stops a session only on a request of the user. In a handoff of an orchestrator or a follow-up planner, the
 rule of the user of 2026-10-25 in [The end of a handoff](handoff.md#the-end-of-a-handoff) is that request, for step 4 of
 [A handoff](#a-handoff). The operator closes only a tab that it opened in its own session, or a tab that an earlier
@@ -218,6 +228,11 @@ After each other end of this section, the entry stays in the tab list. Examples 
 wait, a `blocked` session and a failed `herdr tab close`.
 
 ## A handoff
+
+Each time that the operator does this section, it first reads `docs/dev/operator-start.md` again, as
+[the doc-read rule](doc-reads.md#the-doc-read-rule) says. Then it does the steps of the text that it read.
+[Start a session](#start-a-session) gives the reason and the rule of the new text. In steps 4 and 5, "Stop a session"
+and "Start a session" each read the file again, because these steps can run hours after step 1.
 
 The operator does these steps for each handoff of an orchestrator or a follow-up planner. This also covers a session
 that the user started in a tab of the user. The old session is the orchestrator or the follow-up planner that hands off
