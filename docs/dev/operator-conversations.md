@@ -31,6 +31,12 @@ hold to its own orchestrator.
 The message starts with "From the user:" and gives the words of the user. If the send fails,
 [the failure rule](limits.md#the-failure-rule) applies.
 
+A word of the user can belong to a session of another slug, for example the confirmation of a landing order of that
+slug. Then the operator sends the word with `SendMessage` to the operator of that slug, with the same start. The message
+asks that operator to pass the word to that session. If `ListAgents` shows no operator of that slug, the operator tells
+the user. The operator asks the user first only when the word is not clear. The operator does not ask the user to relay
+a word that it can send.
+
 The paragraph of [A side conversation](#a-side-conversation) that starts "The message gives only what its source says"
 also covers each such message and each answer of the user. The paragraph after it does not. On 2026-10-30, operator-m26
 relayed an answer to orchestrator-m26 and added its own reading as if the user said it. Then it sent a correction.
