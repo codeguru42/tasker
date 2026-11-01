@@ -13,8 +13,9 @@ operator knows the step of the milestone, the kind of each planner and its open 
 The old operator counts the items that it closes. An item closes as [The answer](operator-items.md#the-answer) says. The
 send of a partial answer that leaves a question not sent is not a close, so the old operator does not count it. A report
 closes as [The open items](operator-items.md#the-open-items) says, and each report that the operator closes counts as
-one close. The reason: the count stands in for a read of the context use, and each report that the operator shows also
-fills its context.
+one close. The reason: the count stands in for a read of the context use, and the text of each report enters the context
+of the operator when the report arrives. This also holds when the operator shows only the arrival line. A reply with the
+full text on request is not a close and does not count.
 
 At a count of 15, the old operator suggests a handoff in the reply in which it closes the item. The suggestion starts
 the handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. On 2026-10-25, the user
