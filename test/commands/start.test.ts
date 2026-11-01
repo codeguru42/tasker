@@ -620,6 +620,44 @@ describe("start", () => {
       ]);
     });
 
+    it("sets trackerMarked after a passed in_progress write", async () => {
+      const fixture = await useStartFixture({
+        repo: trackerRepo({ updateOnStart: true, inProgressLabel: "in progress" }),
+        ghAnswers: [fixtureTrackerAnswer("assign"), fixtureTrackerAnswer("inProgress")],
+      });
+
+      await runCommand(start, "start", KEY);
+
+      expect(latestTaskOf(fixture.dataRoot, KEY).trackerMarked).toBe(true);
+      const events = eventDataOf(fixture.dataRoot, KEY, "tracker_update") as { action: string }[];
+      expect(events.filter((event) => event.action === "in_progress")).toHaveLength(1);
+    });
+
+    it("leaves trackerMarked false after a failed in_progress write", async () => {
+      const fixture = await useStartFixture({
+        repo: trackerRepo({ updateOnStart: true, inProgressLabel: "in progress" }),
+        ghAnswers: [
+          fixtureTrackerAnswer("assign"),
+          fixtureTrackerAnswer("inProgress", { stderr: "cannot label\n", exitCode: 1 }),
+        ],
+      });
+
+      await runCommand(start, "start", KEY);
+
+      expect(latestTaskOf(fixture.dataRoot, KEY).trackerMarked).toBe(false);
+    });
+
+    it("leaves trackerMarked false when only the assign write passed", async () => {
+      const fixture = await useStartFixture({
+        repo: trackerRepo({ updateOnStart: true }),
+        ghAnswers: [fixtureTrackerAnswer("assign")],
+      });
+
+      await runCommand(start, "start", KEY);
+
+      expect(latestTaskOf(fixture.dataRoot, KEY).trackerMarked).toBe(false);
+    });
+
     it("only assigns the issue when there is no in-progress label", async () => {
       const fixture = await useStartFixture({
         repo: trackerRepo({ updateOnStart: true }),

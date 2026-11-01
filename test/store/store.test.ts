@@ -208,6 +208,7 @@ describe("task store", () => {
       undoAfterHead: null,
       undoSyncedBaseTip: null,
       acceptedRevision: null,
+      trackerMarked: false,
       parentTaskId: null,
       attempt: 1,
       createdAt: "2026-01-01T00:00:00.000Z",
@@ -621,6 +622,35 @@ describe("task store", () => {
     });
   });
 
+  describe("upgrade from version 16", () => {
+    it("fills tracker_marked from the in_progress events with the result ok", () => {
+      const oldPath = join(dir, "old16.db");
+      makeOldDatabase(oldPath, 16);
+      withRawDatabase(oldPath, (raw) => {
+        for (let id = 1; id <= 5; id += 1) {
+          raw
+            .prepare(
+              "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES (?, 'tasker', 'executed', 't', 't')",
+            )
+            .run(`a/b#${id}`);
+        }
+        const event = raw.prepare("INSERT INTO events (task_id, type, data, created_at) VALUES (?, ?, ?, 't')");
+        const update = (action: string, result: string) => JSON.stringify({ action, result });
+        event.run(1, "tracker_update", update("in_progress", "ok"));
+        event.run(2, "tracker_update", update("in_progress", "failed"));
+        event.run(3, "tracker_update", update("assign", "ok"));
+        event.run(5, "transition", null);
+        event.run(5, "tracker_update", update("in_progress", "failed"));
+        event.run(5, "tracker_update", update("in_progress", "ok"));
+      });
+      withStoreFile(oldPath, () => {}, { now });
+      const rows = withRawDatabase(oldPath, (raw) =>
+        raw.prepare("SELECT id, tracker_marked FROM tasks ORDER BY id").all(),
+      );
+      expect(rows.map((row) => row.tracker_marked)).toEqual([1, 0, 0, 0, 1]);
+    });
+  });
+
   describe("upgrade from version 3", () => {
     it("gives old rows attempt 1 and null fields", () => {
       const oldPath = join(dir, "old3.db");
@@ -660,6 +690,16 @@ describe("task store", () => {
         expect(tableRowCount(check, "tasks")).toBe(2);
       });
     });
+  });
+
+  it("recordTrackerMark sets trackerMarked and records one in_progress event", () => {
+    const task = store.createTask(newTask);
+    expect(store.getTask(task.id)?.trackerMarked).toBe(false);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    store.recordTrackerMark(task.id);
+    expect(store.getTask(task.id)?.trackerMarked).toBe(true);
+    const events = store.listEvents(task.id).filter((event) => event.type === "tracker_update");
+    expect(events.map((event) => event.data)).toEqual([{ action: "in_progress", result: "ok" }]);
   });
 
   it("reads a task back, and returns undefined for a missing id", () => {
@@ -862,7 +902,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(16);
+        expect(migrations.length).toBe(17);
       });
     });
   });
