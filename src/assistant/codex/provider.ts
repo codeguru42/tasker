@@ -8,7 +8,7 @@ import { parseLine } from "../event-line.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome, TokenUsage } from "../provider.js";
 import { codexArgs } from "./args.js";
 import { CODEX_NOT_INSTALLED, codexLoginCheck, codexVersionCheck } from "./doctor.js";
-import { removePlaceholders } from "../placeholders.js";
+import { type PlaceholderList, removePlaceholders } from "../placeholders.js";
 import { absentPlaceholders } from "./placeholders.js";
 import { EDIT_HOOK_SCRIPT, editHookCommand, editHookRefusal } from "./edit-hook.js";
 import { readThreadId, readUsageTotal, writeThreadId, writeUsageTotal } from "./session.js";
@@ -118,7 +118,14 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
       }
       const events: AssistantEvent[] = [];
       // A write run leaves empty folders in the cwd. The list names the ones that do not exist before the spawn.
-      const placeholders = input.access === "workspace-write" ? absentPlaceholders(input.cwd) : undefined;
+      let placeholders: PlaceholderList | undefined;
+      if (input.access === "workspace-write") {
+        try {
+          placeholders = absentPlaceholders(input.cwd);
+        } catch (error) {
+          return failureWithNoExit(input, errorMessage(error));
+        }
+      }
       const finish = async (outcome: RunOutcome): Promise<RunOutcome> =>
         placeholders === undefined
           ? outcome
