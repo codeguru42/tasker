@@ -158,14 +158,13 @@ The follow-up planner sends the message after the post is complete. A post is co
   command of [the defer rule](pick-the-tickets.md#the-defer-rule). If the output is not `Todo`, it reads again after one
   minute, because [the workflow of the board](issues.md#the-project-board) adds a new issue within a minute.
 
-If a link command fails, [the failure rule](limits.md#the-failure-rule) applies to the follow-up planner, and the
-message names the failed link. If a read of the column fails, the failure rule also applies. If the second read does not
-print `Todo`, the follow-up planner tells the user the output, as the failure rule says. In these two cases, the message
-says that the card is not in Todo.
+If a link command fails, a read of the column fails, or the second read does not print `Todo`, the post is not complete.
+Then [the failure rule](limits.md#the-failure-rule) applies to the follow-up planner, and it sends no message. The
+orchestrator finds the change at its next read of the board.
 
-Then the follow-up planner tells `orchestrator-<milestone>` of the milestone of the issue after the post, with
-`SendMessage`. [The notice rule](doc-reads.md#the-notice-rule) gives the form of the name. The message names the issue
-and the change. A move from one milestone to another gives one message, only to the orchestrator of the target
+After a complete post, the follow-up planner tells `orchestrator-<milestone>` of the milestone of the issue after the
+post, with `SendMessage`. [The notice rule](doc-reads.md#the-notice-rule) gives the form of the name. The message names
+the issue and the change. A move from one milestone to another gives one message, only to the orchestrator of the target
 milestone. The orchestrator then reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
 
 Before the message, the follow-up planner makes sure that the session list of the tools, for example `ListAgents`, has
