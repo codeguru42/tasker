@@ -15,8 +15,8 @@ The planner pages are `docs/planner.md` and the pages of this list, "The pages":
 - [docs/dev/issues.md](dev/issues.md): the rules of each session that posts an issue, "A recurrence", and the steps of
   the planner for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](dev/working-with-the-user.md): how an assistant session works with the user: the
-  operator, a decision of the user, the form of a reply, a question of the user, the issue-link rule, core features
-  first and the work that waits, simplify over special rules, and the tools of a session.
+  operator, a decision of the user, the form of a reply, a question of the user, a note for later, the issue-link rule,
+  core features first and the work that waits, simplify over special rules, and the tools of a session.
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
   topic handoff" and "The hold of the items".

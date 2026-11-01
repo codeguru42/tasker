@@ -176,6 +176,27 @@ user asked "why are 3-6 repeated?".
   planning session read "link" as a blocked-by link and drafted a wrong issue. The user said "no, you misunderstood. By
   'links' here I mean the URL for an issue.", and the rule was the heading [The issue-link rule](#the-issue-link-rule).
 
+## A note for later
+
+A note for later is a text for another session that asks for an action at a later time. A session can read a message as
+a request to act now. The trigger of a note is an event that the reader can test, for example the start of a ticket.
+Words such as "when you reach #635" give no trigger. This section does not cover an item, a message of
+[the request rule](../orchestrator.md#the-request-rule) or another message with its own rule. Examples are a doc notice,
+a landing order and each other message that the intro of [docs/orchestrator.md](../orchestrator.md) lists.
+
+- A note for later about an issue goes in that issue, as a comment or in the body. The issue keeps the note through a
+  handoff. [Before a post](issues.md#before-a-post) says who approves the text.
+- If no issue fits, a message can carry a note for later. The note goes in its own message. The message starts with "No
+  action now." and names the trigger. The reader keeps the note in its handoff file until the trigger.
+- A message can name a later time with no trigger that the reader can test. The reader then asks the sender for the
+  trigger. Until the sender answers, the reader takes no action on that message and sends no item on it. If the send
+  fails, or no session of that name runs, [the failure rule](limits.md#the-failure-rule) applies. The reader still takes
+  no action on the message.
+
+On 2026-10-31, planner-m26 wrote to orchestrator-m22: "When you reach #635, ask the user through your operator." The
+user meant a note for later. orchestrator-m22 read it as "now", and it sent an item on a question that was not needed
+yet.
+
 ## The issue-link rule
 
 In each text that the user reads, the session writes each mention of an issue as a markdown link. The link target is the
