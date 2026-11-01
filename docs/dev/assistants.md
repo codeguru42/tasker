@@ -420,7 +420,8 @@ continued session.
 - Two facts of the table hold for every key. A key must not be a symbolic link, because the run then fails at the start.
   So a link becomes its target, and a link that cannot resolve is left out. An existing path under another deny key must
   not be a key, because the run then fails at the start. So the table leaves it out. A deny key under a write key holds,
-  and the table keeps it. A path that does not exist stays.
+  and the table keeps it. A write key under a deny key reopens that path, and the table keeps it. A path that does not
+  exist stays.
 - Under `workspace-write`, `-c hooks.PreToolUse=[...]` and `--dangerously-bypass-hook-trust` follow the network line.
   `codexHookArgs()` builds them. The matcher is `^apply_patch$`, the command is a TOML string, and the timeout is 10
   seconds. A continued session gets the same arguments.
@@ -564,7 +565,7 @@ run on macOS or Windows is unmeasured.
 - Keys of the table (2026-11-01): a key that is a symbolic link makes the start fail with
   `bwrap: Can't mount on symlink destination`. An existing path under a denied folder makes the start fail with
   `bwrap: Can't create file ...: Read-only file system`. A missing path under a denied folder is fine. A deny key under
-  a write key holds.
+  a write key holds. A write key under a deny key reopens the path: the run started, and a write to it worked.
 - Write profile (2026-11-01): plain keys with `write` for the worktree, the temp folder and the clone paths give the
   same results as `extends=":workspace"`. `git commit` works in a linked worktree of a bare clone, and `<clone>/logs`
   must exist. The line about `packed-refs.lock` on stderr is known.
@@ -575,15 +576,18 @@ run on macOS or Windows is unmeasured.
 - Hook (2026-11-01): the inline `-c hooks.PreToolUse=[...]` form needs no file in the Codex home. It runs only with
   `--dangerously-bypass-hook-trust`, in `codex exec` and in `codex exec resume`. `tool_name` is `apply_patch`, and
   `tool_input.command` holds the bare patch text. A deny line with exit 0, or exit 2 with the reason on stderr, blocks
-  the call. A crash, output that is not JSON, a timeout and a missing script allow the patch. The flag adds two `error`
-  items to the stream, and the reader ignores them.
+  the call. A crash, output that is not JSON, a timeout and a missing script allow the patch. The unit of the hook
+  timeout is seconds: a hook with `timeout=2` that sleeps 15 seconds let the patch pass, and the real hook with
+  `timeout=10` ran in about a second and denied the patch. The flag adds two `error` items to the stream, and the reader
+  ignores them.
 - Hooks of the user (2026-11-01): the hook in `~/.codex/hooks.json` does not run under `--ignore-user-config`. With
   `--dangerously-bypass-hook-trust` it runs.
 - Hooks of the repo (2026-11-01): a `.codex/hooks.json` of an untrusted worktree did not run, also with
   `--dangerously-bypass-hook-trust` and `--ignore-user-config`. A trusted worktree is unmeasured.
 - Placeholders: a `read-only` run leaves no file in the worktree, after a normal exit and after SIGKILL. A write run
   (2026-11-01) makes the empty folders `.agents`, `.aws` and `.codex` during the run, and they stayed after the run in
-  some runs and not in others. The state after SIGKILL is unmeasured.
+  some runs and not in others. In a real provider run, the cleanup removed the folders that were still there after the
+  run, and `sandboxCleanup.removed` listed them. The state after SIGKILL is unmeasured.
 - bwrap: not measured. The run cannot make the sandbox fail on the test host.
 - Other tools: web search stays on through an MCP tool unless `features.apps=false` is set. `--ignore-user-config`
   leaves out the MCP servers of the user.
