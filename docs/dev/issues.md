@@ -141,3 +141,8 @@ planner closes a milestone only when the user says so. Then it runs
 `gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`.
 [Pick the tickets](pick-the-tickets.md#pick-the-tickets) of pick-the-tickets.md gives the report of an orchestrator when
 its milestone is done.
+
+Before the command, the planner reads the open issues of the milestone. If the read or the command fails, the planner
+tells the user, and the milestone stays open. If the milestone has an open issue, the planner tells the user. It then
+runs the command only on a new word of the user. After the command, the planner deletes each memory note whose delete
+condition is the close of that milestone. Then the planner tells the user the result.
