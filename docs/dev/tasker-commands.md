@@ -62,9 +62,10 @@ The classifier of auto mode can deny a `gh` write of a follow-up planner or an o
 operator an item with the exact command, the folder and the exact text of the denial. The operator gives the user the
 exact command and the folder, with the `!` prefix of Claude Code.
 
-The answer of the operator gives the output of the command, or says that the command did not run. The output goes with
-the words of the user, and this paragraph wins over [The answer](operator-items.md#the-answer). If the command ran, the
-session goes on with its work. If it did not run, the step stays open, and the session runs the action in no other form.
+The message of the operator to that session gives the output of the command, or says that the command did not run. The
+output goes with the words of the user, and this paragraph wins over [The answer](operator-items.md#the-answer). If the
+command ran, the session goes on with its work. If it did not run, the step stays open, and the session runs the action
+in no other form.
 
 An initial planner gives the user the command directly. A check failure keeps its own bullets. On 2026-10-30, the
 classifier denied `gh issue comment` and `gh issue edit` of planner-m26, and the user ran each command.
