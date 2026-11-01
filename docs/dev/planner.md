@@ -203,6 +203,12 @@ that it dismissed. The initial planner posts only after the approval of the user
   `revision` of the `base` event is the base tip, a commit id. The code stores a ref, `refs/remotes/origin/<base>`, and
   resolves it after each fetch. A commit id freezes the base tip. The agent stopped under the fifth case of
   [the stop rule](plan-review.md#the-stop-rule), and the user changed the scope with a comment.
+- An issue can ask for work on a command of tasker. Before the post, the planner runs `git fetch origin` and makes sure
+  that `src/commands/index.ts` of `origin/main` holds the command. If the file does not hold it, the issue adds the
+  command, or the issue gets a blocked-by link to the issue that adds it. The issue can also omit the command, and a
+  separate issue adds it. If the bullet "An issue of an earlier milestone never waits ..." bans the link, the issue
+  takes this choice. On #233 (2026-10-30), the issue named `tasker push`, no such command existed, and the fix cost one
+  stop and one change of scope.
 - An issue that stores a value that code reads back puts it in a column, as
   [the rule of the `events` table](data-root.md#events-table) in `docs/dev/data-root.md` says. On #391 (2026-10-25), a
   revision of the body kept the [parent](pick-the-tickets.md#the-stacked-ticket-rule) tip in the `workspace` and `base`
