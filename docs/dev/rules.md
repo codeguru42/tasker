@@ -65,7 +65,8 @@ These rules apply to the code in `src/` and in `test/`. The one-home rule also a
 - If an error of tasker names a next step, that step works in each run that gives the error. If some runs need another
   step, the error names the step of each kind of run. If a run has no such step, the error names no step for it. A run
   that breaks a documented contract, for example [the own-worktree rule](limits.md#the-own-worktree-rule), is outside
-  this rule. On #233, the user asked: "Why are we giving a path that might not work?"
+  this rule. If tasker finds such a break, the error points toward the fix, and tasker leaves the fix to the user. On
+  #233, the user asked: "Why are we giving a path that might not work?"
 - A name says what its members have in common, not how many members it has. This rule covers the name of a constant, a
   type or a helper. Do not put a count in a name, for example "both", "two" or "all three". A count in a name becomes
   false when a later ticket adds or removes a member. For example, the constant `BOTH_PAUSES` in `src/tasks/resume.ts`
