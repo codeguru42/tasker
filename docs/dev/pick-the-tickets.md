@@ -411,9 +411,12 @@ The orchestrator offers the user a link: the ticket is blocked by the issue of t
   the shared-file bullet. [The stacked-ticket rule](#the-stacked-ticket-rule) then sets the landing order, with the task
   first.
 - If `gh issue edit` fails, [the failure rule](limits.md#the-failure-rule) applies. The ticket has no new link.
-- If the call skips the write because `tasker status` or the read of the state fails, the ticket has no new link.
+- If `tasker status`, the read of the state or a read of the walk fails, the ticket has no new link.
   [The failure rule](limits.md#the-failure-rule) applies, with the command and the error. Then the bullet that starts
   "If the user declines, or if `gh issue edit` fails" applies, as for a failed `gh issue edit`. As a result, the
+  orchestrator makes no new offer for that ticket and that task.
+- If the session skips the write because the walk finds a cycle, the ticket has no new link. The bullet that starts "If
+  the user declines, or if `gh issue edit` fails" applies, as for a failed `gh issue edit`. As a result, the
   orchestrator makes no new offer for that ticket and that task.
 - If the call skips the write because the ticket is in flight or closed, the link offer ends for the ticket. The
   shared-file bullet does not apply to it. The orchestrator tells the user, as The read in the write call says. The
