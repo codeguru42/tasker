@@ -501,6 +501,29 @@ task. [The overlap rule](land-the-work.md#the-overlap-rule), the move rule and t
 When the ticket comes back to the current milestone, the orchestrator starts a new agent for it, as
 [Pick the tickets](#pick-the-tickets) says. The agent follows [the comeback rule](run-one-ticket.md#the-comeback-rule).
 
+### A ticket on hold
+
+A ticket on hold is an open ticket with the label `on hold`. Only a word of the user puts a ticket on hold or ends the
+hold. The orchestrator adds the label with `gh issue edit <number> --add-label "on hold"`, and it removes the label with
+`gh issue edit <number> --remove-label "on hold"`. The issue stays in its milestone. At each read of the board and
+before each start, the orchestrator runs `gh issue list --state open --label "on hold" --limit 1000 --json number`. If
+the read fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket and makes
+no offer until the read works.
+
+If the ticket has a task in flight, the orchestrator does the steps of [the defer rule](#the-defer-rule), with two
+changes. Step 4 adds the label, and the milestone stays. Step 7 lists each open issue that the ticket blocks, also in
+its milestone. The task of a ticket on hold is a parked task. For each ticket on hold, with or without a task, the
+orchestrator lists each open issue that the ticket blocks. The user says which links to remove.
+
+Each rule of the orchestration pages leaves out a ticket on hold and its task, as if they are outside the milestone.
+This covers the start of a ticket, an empty Todo column, the shared-file bullet, the link offer and the earlier-blocker
+offer. A ticket that a ticket on hold blocks waits while the link stays, and it never stacks on the task of a ticket on
+hold. A rule that names a parked task or a postponed ticket still applies, for example the bullet "If the user postpones
+the parent" of the stacked-ticket rule. The report of a done milestone names each ticket on hold.
+
+When a hold ends, a ticket with a task in flight comes back as the last paragraph of the defer rule says. A ticket with
+no task starts as any other ticket. The reason for the label: a card in Todo looks like a ticket that can start.
+
 ## The prompt of an agent
 
 The orchestrator writes the prompt of each agent.
