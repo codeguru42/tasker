@@ -77,6 +77,11 @@ history of the session, the closed items or the measured facts. The rule is the 
   - The prompt holds only the facts of this handoff, for example the path of the file, the session name and the first
     free item id. The first message of the new session always names the path of the handoff file.
   - If the old session is not the operator, the prompt also names the operator of the old session by its name only.
+  - The first step of the prompt is the prompt read, in these words:
+    `Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:<role index>.` The old
+    session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`. This
+    sub-bullet wins over the sentences "The prompt holds only the facts of this handoff" and "The old session puts no
+    rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
 - Each open item with its id, as [The form of an item](operator-items.md#the-form-of-an-item) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
@@ -123,8 +128,9 @@ reason: "Count your item ids on from planner-docs-5" can read as "start at plann
 
 ## The check of the handoff folder
 
-The new session does this check before any other step of the prompt. It lists the folder
-`$HOME/Documents/tasker/handoff/` with `ls`.
+The new session does this check right after the prompt read, before each other step of the prompt.
+[The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the order of that
+session. It lists the folder `$HOME/Documents/tasker/handoff/` with `ls`.
 
 The files of its role are the files whose names [The handoff file](#the-handoff-file) gives for that role. A file with a
 later date and time in its name is newer.
