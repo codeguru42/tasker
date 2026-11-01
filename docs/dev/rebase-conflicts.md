@@ -75,7 +75,7 @@ Run each git command in the clone of the driver or in its worktree.
    Then push the task branch to `origin` with a normal push: `git push -u origin <task branch>`. Do not force-push. The
    upstream of the task branch can be `tasker/<task branch>`, or it can be unset. As a result, a plain `git push` goes
    to the `tasker` remote and fails, or it fails for no upstream, so the driver must name `origin`. If the push passes,
-   keep the printed hash as `<pushed>`.
+   keep the hash that the read of the first paragraph printed as `<pushed>`.
 
 10. If the normal push of step 9 fails and `origin` has the task branch, do these steps.
 
