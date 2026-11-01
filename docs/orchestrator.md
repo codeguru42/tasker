@@ -46,7 +46,8 @@ the PATH from a global install. The installed `tasker` is a build of this repo, 
 
 The start docs of the orchestrator are `docs/orchestrator.md`, the pages of the list "The pages" below,
 [docs/dev/rules.md](dev/rules.md), [docs/dev/working-with-the-user.md](dev/working-with-the-user.md) and
-[docs/sessions.md](sessions.md). The orchestrator reads them at its start.
+[docs/sessions.md](sessions.md). The orchestrator reads them at its start, as
+[the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
 
 The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages":
 
