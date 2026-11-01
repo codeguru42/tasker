@@ -144,6 +144,24 @@ result of each test of a fact about an outside tool, as [The body of an issue](#
 follow-up planner also tells the session that sent the lesson or the proposed issue, if that session is not
 [the operator of the follow-up planner](../operator.md).
 
+These posts also give a message to an orchestrator:
+
+- A post that adds an issue.
+- A post that changes the blocked-by links of an open issue.
+- A post that moves an issue into a milestone.
+
+After such a post, the follow-up planner tells `orchestrator-<milestone>` of the milestone of the issue after the post,
+with `SendMessage`. [The notice rule](doc-reads.md#the-notice-rule) gives the form of the name. The message names the
+issue and the change. A move from one milestone to another gives one message, only to the orchestrator of the target
+milestone. The orchestrator then reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
+
+Before the message, the follow-up planner makes sure that the session list of the tools, for example `ListAgents`, has
+`orchestrator-<milestone>`. If the list has no such session, the follow-up planner sends nothing. No such session is an
+answer, not a failure. If the list or the send fails, [the failure rule](limits.md#the-failure-rule) applies to the
+follow-up planner. Then the orchestrator finds the change at its next read of the board.
+
+If the session that sent the lesson or the proposed issue is that `orchestrator-<milestone>`, one message covers both.
+
 ### The escape hatch
 
 When a draft needs one of these decisions, the follow-up planner asks the user before the post, as
