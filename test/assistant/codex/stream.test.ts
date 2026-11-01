@@ -21,6 +21,15 @@ describe("threadIdOf", () => {
   it("gives undefined when thread_id is not a string", () => {
     expect(threadIdOf({ type: "thread.started", thread_id: 3 })).toBeUndefined();
   });
+
+  it("gives undefined for an empty id and for a blank id", () => {
+    expect(threadIdOf({ type: "thread.started", thread_id: "" })).toBeUndefined();
+    expect(threadIdOf({ type: "thread.started", thread_id: " \t\n" })).toBeUndefined();
+  });
+
+  it("gives the trimmed id for an id with spaces around it", () => {
+    expect(threadIdOf({ type: "thread.started", thread_id: "  abc-1 \n" })).toBe("abc-1");
+  });
 });
 
 describe("usageTotalOf", () => {
