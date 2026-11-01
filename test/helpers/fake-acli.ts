@@ -115,7 +115,15 @@ export function acliWriteResult(status: string, message: string): string {
 
 // The call of readJiraIssue(). The field list is a literal, so that the test checks the call on its own.
 export function issueViewArgs(key: string): string[] {
-  return ["jira", "workitem", "view", key, "--json", "--fields", "summary,description,labels,status,components"];
+  return [
+    "jira",
+    "workitem",
+    "view",
+    key,
+    "--json",
+    "--fields",
+    "summary,description,labels,status,components,comment",
+  ];
 }
 
 // The call of readJiraBlockers(). The field list is a literal, so that the test checks the call on its own.
@@ -133,6 +141,15 @@ export function transitionArgs(key: string, status: string): string[] {
   return ["jira", "workitem", "transition", "--key", key, "--status", status, "--yes", "--json"];
 }
 
+// The measured value of the field comment for an issue with no comments (TEST-3, acli 1.3.39-stable, 2026-10-31).
+export const NO_COMMENTS_FIELD = {
+  comments: [],
+  maxResults: 0,
+  self: "https://jira-prod-us-63-5.prod.atl-paas.net/rest/api/3/issue/10005/comment",
+  startAt: 0,
+  total: 0,
+};
+
 // The stdout of the view call for an issue in the status Backlog.
 export const BACKLOG_ISSUE_VIEW = JSON.stringify({
   fields: {
@@ -140,6 +157,7 @@ export const BACKLOG_ISSUE_VIEW = JSON.stringify({
     description: null,
     labels: [],
     components: [],
+    comment: NO_COMMENTS_FIELD,
     status: { name: "Backlog", statusCategory: { key: "new" } },
   },
 });

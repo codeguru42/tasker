@@ -12,17 +12,20 @@ import {
   fakeAcliView,
   issueViewArgs,
   jiraRefOf,
+  NO_COMMENTS_FIELD,
   MEASURED_NOT_FOUND,
 } from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
 
-// The output of `acli jira workitem view <key> --json --fields summary,description,labels,status,components`
+// The output of `acli jira workitem view <key> --json --fields summary,description,labels,status,components,comment`
 // for three issues of the project TEST, as measured with acli 1.3.39-stable on 2026-10-25.
+// The value of comment is the measured value of TEST-3 from 2026-10-31.
 const TEST_2 = {
   changelog: null,
   editmeta: null,
   expand: "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
   fields: {
+    comment: NO_COMMENTS_FIELD,
     components: [
       {
         id: "10000",
@@ -75,6 +78,7 @@ const TEST_3 = {
   editmeta: null,
   expand: "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
   fields: {
+    comment: NO_COMMENTS_FIELD,
     components: [],
     description: null,
     labels: [],
@@ -112,6 +116,7 @@ const TEST_4 = {
   editmeta: null,
   expand: "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
   fields: {
+    comment: NO_COMMENTS_FIELD,
     components: [],
     description: null,
     labels: [],

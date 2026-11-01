@@ -7,7 +7,7 @@ import { siteGuard } from "./site.js";
 import { stateOfStatus, viewWorkitem } from "./view.js";
 
 // The call names these fields because --fields replaces the default field list of acli.
-const VIEW_FIELDS = "summary,description,labels,status,components";
+const VIEW_FIELDS = "summary,description,labels,status,components,comment";
 
 // Not strict: a new field from acli passes. z.unknown() needs .optional() for a key that can be missing.
 const ViewSchema = z.object({

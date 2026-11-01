@@ -16,6 +16,7 @@ import {
   linksViewArgs,
   MEASURED_AUTH_STATUS,
   MEASURED_NOT_FOUND,
+  NO_COMMENTS_FIELD,
   NO_LINKS_VIEW,
   transitionArgs,
   writeFakeAcli,
@@ -141,7 +142,7 @@ describe("issueViewArgs", () => {
       "TEST-3",
       "--json",
       "--fields",
-      "summary,description,labels,status,components",
+      "summary,description,labels,status,components,comment",
     ]);
   });
 });
@@ -187,6 +188,16 @@ describe("transitionArgs", () => {
 describe("BACKLOG_ISSUE_VIEW", () => {
   it("holds an issue in the status Backlog", () => {
     expect(JSON.parse(BACKLOG_ISSUE_VIEW).fields.status.name).toBe("Backlog");
+  });
+
+  it("holds no comments", () => {
+    expect(JSON.parse(BACKLOG_ISSUE_VIEW).fields.comment).toEqual(NO_COMMENTS_FIELD);
+  });
+});
+
+describe("NO_COMMENTS_FIELD", () => {
+  it("is the measured comment field of an issue with no comments", () => {
+    expect(NO_COMMENTS_FIELD).toMatchObject({ comments: [], total: 0, startAt: 0, maxResults: 0 });
   });
 });
 
