@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { refine } from "../../src/commands/refine.js";
@@ -60,6 +60,7 @@ import {
 } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import { refinedLine } from "../helpers/command-output.js";
+import { moveBranch, moveOrigin, pushBranch, pushMessageExpected } from "../helpers/remote-push.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -296,6 +297,62 @@ describe.each(STARTS)("$name", ({ start, feedback, from }) => {
         ["tasker does not refuse. Decide before you approve."],
       ),
     );
+  });
+
+  describe("the push guard", () => {
+    it("fails the task when the branch appears on the remote", async () => {
+      const fixture = await start({ stream: answerStream(V2_ANSWER), exec: pushBranch });
+      const { dataRoot, origin, branch } = fixture.started;
+
+      const result = await runRefine(feedback);
+
+      const mainHead = await origin.branchHead("main");
+      expect(result.code).toBe(1);
+      expect(result.err).toBe(`${pushMessageExpected(branch, "absent", String(mainHead))}\n`);
+      expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
+      expect(eventDataOf(dataRoot, KEY, "usage")).toHaveLength(1);
+    });
+
+    it("fails the task when a push moves the tip", async () => {
+      const fixture = await start({ stream: answerStream(V2_ANSWER), exec: moveBranch });
+      const { dataRoot, origin, branch } = fixture.started;
+      await origin.createBranch(branch);
+      await origin.createBranch("pushed");
+      const moved = await origin.addCommit("pushed");
+      const mainHead = await origin.branchHead("main");
+
+      const result = await runRefine(feedback);
+
+      expect(result.code).toBe(1);
+      expect(result.err).toBe(`${pushMessageExpected(branch, String(mainHead), moved)}\n`);
+      expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
+      expect(eventDataOf(dataRoot, KEY, "usage")).toHaveLength(1);
+    });
+
+    it("leaves the task in its state when the remote cannot be read before the run", async () => {
+      const fixture = await start({ stream: answerStream(V2_ANSWER) });
+      const { dataRoot, origin } = fixture.started;
+      const before = eventsOf(dataRoot, KEY);
+      renameSync(origin.path, `${origin.path}-moved`);
+
+      const result = await runRefine(feedback);
+
+      expect(result.code).toBe(1);
+      expect(result.err.startsWith("cannot read the remote before the run: ")).toBe(true);
+      expectNoWrite(fixture, fixture.task, before, from);
+    });
+
+    it("fails the task when the remote cannot be read after the run", async () => {
+      const fixture = await start({ stream: answerStream(V2_ANSWER), exec: moveOrigin });
+      const { dataRoot } = fixture.started;
+
+      const result = await runRefine(feedback);
+
+      expect(result.code).toBe(1);
+      expect(result.err.startsWith("cannot read the remote after the run: ")).toBe(true);
+      expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
+      expect(eventDataOf(dataRoot, KEY, "usage")).toHaveLength(1);
+    });
   });
 
   describe("a failure before the run", () => {

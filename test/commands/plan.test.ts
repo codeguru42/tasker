@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { plan } from "../../src/commands/plan.js";
@@ -57,6 +57,15 @@ import {
 import { wrongStateError } from "../helpers/state-commands.js";
 import { writeFileWithParents } from "../helpers/temp.js";
 import { plannedLine } from "../helpers/command-output.js";
+import {
+  moveBranch,
+  moveOrigin,
+  pushBranch,
+  pushMessageExpected,
+  pushScript,
+  shell,
+  signalTasker,
+} from "../helpers/remote-push.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -753,6 +762,124 @@ describe("plan with a quota warning", () => {
   it("gives the approved window to the overage stop under decline", async () => {
     const fixture = await usePlanFixture({ stream: withEventFirst(claudeOverageEvent(), answer()) });
     seedCreditsApprovalIn(fixture.started.dataRoot, latestTaskOf(fixture.started.dataRoot, KEY).id, RESETS_AT);
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("awaiting_plan_review");
+  });
+});
+
+describe("plan push guard", () => {
+  const stream = answerStream(validPlanAnswer());
+
+  it("fails the task when the branch appears on the remote", async () => {
+    const fixture = await usePlanFixture({ stream, exec: pushBranch });
+    const { dataRoot, origin, branch } = fixture.started;
+
+    const result = await runPlan();
+
+    const mainHead = await origin.branchHead("main");
+    expect(result.code).toBe(1);
+    expect(result.err).toBe(`${pushMessageExpected(branch, "absent", String(mainHead))}\n`);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
+    expect(eventDataOf(dataRoot, KEY, "usage")).toHaveLength(1);
+  });
+
+  it("fails the task when a push moves the tip", async () => {
+    const fixture = await usePlanFixture({ stream, exec: moveBranch });
+    const { dataRoot, origin, branch } = fixture.started;
+    await origin.createBranch(branch);
+    await origin.createBranch("pushed");
+    const moved = await origin.addCommit("pushed");
+    const mainHead = await origin.branchHead("main");
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toBe(`${pushMessageExpected(branch, String(mainHead), moved)}\n`);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
+    expect(eventDataOf(dataRoot, KEY, "usage")).toHaveLength(1);
+  });
+
+  it("leaves the task in its state when the remote cannot be read before the run", async () => {
+    const fixture = await usePlanFixture({ stream });
+    const { origin, dataRoot } = fixture.started;
+    renameSync(origin.path, `${origin.path}-moved`);
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(1);
+    expect(result.err.startsWith("cannot read the remote before the run: ")).toBe(true);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("workspace_ready");
+    expectNoRun(fixture);
+  });
+
+  it("fails the task when the remote cannot be read after the run", async () => {
+    const fixture = await usePlanFixture({ stream, exec: moveOrigin });
+    const { dataRoot } = fixture.started;
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(1);
+    expect(result.err.startsWith("cannot read the remote after the run: ")).toBe(true);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
+    expect(eventDataOf(dataRoot, KEY, "usage")).toHaveLength(1);
+  });
+
+  it("lets a push win over a quota stop", async () => {
+    const fixture = await usePlanFixture({ stream: claudeSample("quota-stop"), exitCode: 1, exec: pushBranch });
+    const { dataRoot, origin, branch } = fixture.started;
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(1);
+    expect(result.out).not.toContain("stopped by a quota limit");
+    expect(result.err).toBe(`${pushMessageExpected(branch, "absent", String(await origin.branchHead("main")))}\n`);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
+    expect(eventDataOf(dataRoot, KEY, "usage")).toHaveLength(1);
+  });
+
+  it("lets a push win over an interrupted run", async () => {
+    const fixture = await usePlanFixture({
+      stream,
+      exec: shell(`${pushScript}; ${signalTasker("SIGINT")}`),
+      untilStopped: true,
+    });
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(1);
+    expect(result.out).not.toContain("run tasker resume");
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
+  });
+
+  it("lets a push win over a quota warning", async () => {
+    const fixture = await usePlanFixture(
+      { stream: withEventBeforeResult(claudeApprovalWarningEvent(), stream), exec: pushBranch },
+      { repo: { overagePolicy: "ask" } },
+    );
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("push detected on ");
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
+  });
+
+  it("lets a push win over an answer that tasker refuses", async () => {
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer({ todos: [] })), exec: pushBranch });
+    const { origin, branch } = fixture.started;
+
+    const result = await runPlan();
+
+    expect(result.err).toBe(`${pushMessageExpected(branch, "absent", String(await origin.branchHead("main")))}\n`);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
+  });
+
+  it("does not fail a branch on the remote that does not move", async () => {
+    const fixture = await usePlanFixture({ stream });
+    await fixture.started.origin.createBranch(fixture.started.branch);
 
     const result = await runPlan();
 

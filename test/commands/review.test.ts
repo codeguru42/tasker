@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, renameSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { review } from "../../src/commands/review.js";
 import { planRevisionPath, planTranscriptPath, reviewTranscriptPath } from "../../src/store/layout.js";
@@ -51,6 +51,7 @@ import {
 } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import { refinedLine } from "../helpers/command-output.js";
+import { moveBranch, moveOrigin, pushBranch, pushMessageExpected } from "../helpers/remote-push.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -566,5 +567,75 @@ describe("review with feedback and a quota warning", () => {
       data: { from: "refining", to: "awaiting_quota_approval", utilization: 0.95, resetsAt: RESETS_AT },
     });
     expect(planRevisionOf(dataRoot, fixture.task.id, 2)).toBeUndefined();
+  });
+});
+
+describe("review push guard", () => {
+  const stream = () => answerStream(validReviewAnswer());
+
+  it("fails the task when the branch appears on the remote", async () => {
+    const work = await useReviewFixture({ stream: stream(), exec: pushBranch });
+    const branch = work.task.branch!;
+
+    const result = await runReview();
+
+    const mainHead = await work.origin.branchHead("main");
+    expect(result.code).toBe(1);
+    expect(result.err).toBe(`${pushMessageExpected(branch, "absent", String(mainHead))}\n`);
+    expect(latestTaskOf(work.dataRoot, KEY).state).toBe("failed");
+    expect(eventDataOf(work.dataRoot, KEY, "usage")).toHaveLength(1);
+  });
+
+  it("fails the task when a push moves the tip", async () => {
+    const work = await useReviewFixture({ stream: stream(), exec: moveBranch });
+    const branch = work.task.branch!;
+    await work.origin.createBranch(branch);
+    await work.origin.createBranch("pushed");
+    const moved = await work.origin.addCommit("pushed");
+    const mainHead = await work.origin.branchHead("main");
+
+    const result = await runReview();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toBe(`${pushMessageExpected(branch, String(mainHead), moved)}\n`);
+    expect(latestTaskOf(work.dataRoot, KEY).state).toBe("failed");
+    expect(eventDataOf(work.dataRoot, KEY, "usage")).toHaveLength(1);
+  });
+
+  it("leaves the task in its state when the remote cannot be read before the run", async () => {
+    const work = await useReviewFixture({ stream: stream() });
+    const task = latestTaskOf(work.dataRoot, KEY);
+    renameSync(work.origin.path, `${work.origin.path}-moved`);
+
+    const result = await runReview();
+
+    expect(result.code).toBe(1);
+    expect(result.err.startsWith("cannot read the remote before the run: ")).toBe(true);
+    expect(latestTaskOf(work.dataRoot, KEY).state).toBe("awaiting_work_review");
+    expect(reviewSessionRows(work.dataRoot, task.id)).toEqual([]);
+    expect(existsSync(reviewTranscriptPath(work.dataRoot, task, 1))).toBe(false);
+    expectNoAssistantRun({ claude: work.claude, started: { dataRoot: work.dataRoot } });
+  });
+
+  it("fails the task when the remote cannot be read after the run", async () => {
+    const work = await useReviewFixture({ stream: stream(), exec: moveOrigin });
+
+    const result = await runReview();
+
+    expect(result.code).toBe(1);
+    expect(result.err.startsWith("cannot read the remote after the run: ")).toBe(true);
+    expect(latestTaskOf(work.dataRoot, KEY).state).toBe("failed");
+    expect(eventDataOf(work.dataRoot, KEY, "usage")).toHaveLength(1);
+  });
+
+  it("fails the task when a push happens in a review with feedback", async () => {
+    const fixture = await startFeedback({ stream: answerStream(V2_ANSWER), exec: pushBranch });
+    const { dataRoot, origin, branch } = fixture.started;
+
+    const result = await runReviewFeedback(FEEDBACK);
+
+    const mainHead = await origin.branchHead("main");
+    expect(result.err).toBe(`${pushMessageExpected(branch, "absent", String(mainHead))}\n`);
+    expect(latestTaskOf(dataRoot, KEY).state).toBe("failed");
   });
 });

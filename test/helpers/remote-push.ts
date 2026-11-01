@@ -17,3 +17,12 @@ export const pushBranch = shell(pushScript);
 
 // Moves the origin folder away, so that the remote cannot be read.
 export const moveOrigin = shell(`${originOf}; ${realCommandPath("mv")} "$o" "$o-gone"`);
+
+// Moves the task branch on the origin to the origin branch pushed, as a push of new commits would.
+export const moveBranch = shell(
+  `${originOf}; ${git} --git-dir "$o" branch -f "$(${git} branch --show-current)" pushed`,
+);
+
+// The error that the push guard gives when the tip of the branch moved from one revision to another.
+export const pushMessageExpected = (branch: string, from: string, to: string) =>
+  `push detected on ${branch}: the tip of the branch on the remote moved from ${from} to ${to}`;

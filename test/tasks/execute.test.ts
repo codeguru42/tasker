@@ -23,7 +23,14 @@ import { requireBaseRevision } from "../../src/tasks/task-state.js";
 import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
-import { moveOrigin, pushBranch, pushScript, shell, signalTasker } from "../helpers/remote-push.js";
+import {
+  moveOrigin,
+  pushBranch,
+  pushMessageExpected,
+  pushScript,
+  shell,
+  signalTasker,
+} from "../helpers/remote-push.js";
 import { gitProvider } from "../helpers/git.js";
 import {
   argAfter,
@@ -657,7 +664,7 @@ describe("executeTask push guard", () => {
 
   const pushMessage = async (fixture: ExecuteFixture): Promise<string> => {
     const sha = await fixture.started.origin.branchHead("main");
-    return `push detected on ${fixture.started.branch}: the tip of the branch on the remote moved from absent to ${String(sha)}`;
+    return pushMessageExpected(fixture.started.branch, "absent", String(sha));
   };
 
   it("fails the task and keeps the todo done when the tip moved after a done turn", async () => {
