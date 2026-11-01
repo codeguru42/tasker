@@ -14,9 +14,11 @@ export interface CodexStreamFacts {
 
 const NO_MESSAGE = "the assistant ended with an error";
 
-// The thread id of a thread.started event.
+// The trimmed thread id of a thread.started event, or undefined when the id is empty after the trim.
 export function threadIdOf(event: AssistantEvent): string | undefined {
-  return event.type === "thread.started" && typeof event.thread_id === "string" ? event.thread_id : undefined;
+  if (event.type !== "thread.started" || typeof event.thread_id !== "string") return undefined;
+  const id = event.thread_id.trim();
+  return id === "" ? undefined : id;
 }
 
 // The total of a turn.completed event. It is a total for the whole thread. input_tokens includes the cached
