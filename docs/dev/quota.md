@@ -17,7 +17,8 @@ job.
   time. A one-shot job fires one time and then deletes itself. A job fires only while the orchestrator is idle. A job
   lives only in the session of the orchestrator. The board watch job of a long-running orchestrator is not a job of
   these rules (see [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator)).
-- The five-hour job is the job for the five-hour reset time. The seven-day job is the job for the seven-day reset time.
+- The five-hour job is the job for the five-hour reset time, or the job of
+  [the interrupted rule](#when-there-is-no-reset-time-yet). The seven-day job is the job for the seven-day reset time.
   On [the orchestration pages](../orchestrator.md), "an agent has a job", "has no job" and "an agent without a job" mean
   the five-hour job. With no five-hour window (see the bullet below that starts "The case of the account"), a seven-day
   job that has not fired also counts as the job. In the other two cases, a seven-day job alone does not count.
@@ -105,17 +106,18 @@ agent for that reset. The delays prevent a resume of all the agents at the same 
    it has a job.
 
 - The future-time rule: right before each CronCreate, the orchestrator reads the current time with `date`. The rule
-  covers each schedule of a five-hour job or a seven-day job (each job is a one-shot job). The six places are step 2 of
-  this section, [the schedule-all rule](#when-there-is-no-reset-time-yet), [the seven-day rule](#the-seven-day-rule),
-  [the earlier-reset rule](#when-there-is-no-reset-time-yet), the case of [When the job fires](#when-the-job-fires) for
-  a task in `quota_blocked` whose `resets at:` time is in the future, and [The next job](#the-next-job). If the job time
-  is later than the current time, the orchestrator schedules the job. If the job time is not later than the current
-  time, the orchestrator schedules no job. Instead, it does the step that read the reset time again, one time: a new
-  `tasker show-quota`, and [Terms](#terms) for the new reading. In the second run, each job time that is not later than
-  the current time means "no reset time yet" for that five-hour job, or "no seven-day reset time yet" for that seven-day
-  job. The step has no third run. The rules of that case apply, as each place says. The rule acts on one job at a time.
-  The other jobs of the step that have a job time in the future get their job. If the second `tasker show-quota` fails,
-  [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator schedules no further job of that step.
+  covers each schedule of a five-hour job or a seven-day job (each job is a one-shot job). The seven places are step 2
+  of this section, [the schedule-all rule](#when-there-is-no-reset-time-yet), [the seven-day rule](#the-seven-day-rule),
+  [the earlier-reset rule](#when-there-is-no-reset-time-yet), [the interrupted rule](#when-there-is-no-reset-time-yet),
+  the case of [When the job fires](#when-the-job-fires) for a task in `quota_blocked` whose `resets at:` time is in the
+  future, and [The next job](#the-next-job). If the job time is later than the current time, the orchestrator schedules
+  the job. If the job time is not later than the current time, the orchestrator schedules no job. Instead, it does the
+  step that read the reset time again, one time: a new `tasker show-quota`, and [Terms](#terms) for the new reading. In
+  the second run, each job time that is not later than the current time means "no reset time yet" for that five-hour
+  job, or "no seven-day reset time yet" for that seven-day job. The step has no third run. The rules of that case apply,
+  as each place says. The rule acts on one job at a time. The other jobs of the step that have a job time in the future
+  get their job. If the second `tasker show-quota` fails, [the failure rule](limits.md#the-failure-rule) applies, and
+  the orchestrator schedules no further job of that step.
 - The step that read the reset time is one of three. The first is step 1 of this section, with steps 2 to 4. The second
   is the read of [The next job](#the-next-job) and the schedules after it, not the resume rule and not the CronDelete
   paragraph before it. The third is a read of [When there is no reset time yet](#when-there-is-no-reset-time-yet) after
@@ -123,11 +125,12 @@ agent for that reset. The delays prevent a resume of all the agents at the same 
   made. Steps 3 and 4 run one time, after the last run of the step. Each job of the second run keeps the result that the
   future-time rule gives. A five-hour job gets "no reset time yet", and a seven-day job gets "no seven-day reset time
   yet". Then steps 3 and 4 test the job that the agent has at that time.
-- Three places have their own order. The `resets at:` case reads no reset time with `tasker show-quota`, so it has no
+- Four places have their own order. The `resets at:` case reads no reset time with `tasker show-quota`, so it has no
   second run. Instead, a job time that is not later than the current time means that the stop has already reset, as that
   case says. The earlier-reset rule takes its job time from the `resets at:` line, so it has no second run. A job time
-  that is not later than the current time means that the stop has already reset, as that rule says. In the replace path
-  of the seven-day rule, the check runs before the CronDelete of the old job, as that rule says.
+  that is not later than the current time means that the stop has already reset, as that rule says. The interrupted rule
+  takes its reset time from the `date` read of the future-time rule, so it has no second run. In the replace path of the
+  seven-day rule, the check runs before the CronDelete of the old job, as that rule says.
 - The reason for this rule: on 2026-10-24 at 18:01:22, the orchestrator scheduled the five-hour job of #416 for 18:01,
   and the job did not fire (#431).
 - When the orchestrator schedules a job, the prompt of the job must name the issue and the agent. The prompt must tell
@@ -173,7 +176,7 @@ The rule has three failure cases:
 
 - Each agent must tell the orchestrator each time a tasker run ends. If an agent has no job, the agent must also tell
   the orchestrator each time a tasker run starts. The runs are `tasker plan`, `tasker refine`, `tasker execute`,
-  `tasker review` and `tasker resume`.
+  `tasker review`, `tasker retry` and `tasker resume`.
 - If the orchestrator gets a run-start report and the ticket already has a job that has not fired, the orchestrator does
   not schedule another job.
 - While any agent has no job and the schedule-all rule does not leave it out, the orchestrator runs `tasker show-quota`
@@ -208,6 +211,17 @@ The rule has three failure cases:
     order. If the job time is not later than the current time, the stop has already reset. Then the orchestrator does
     the steps of the first case of "When the job fires": the resume message, then "The next job".
   - In each other case, nothing changes.
+- The interrupted rule applies to each report that a `tasker` command stopped in `interrupted`, while the seven-day job
+  of the agent counts as the job. The report can be the final answer that ends the turn of the agent. The orchestrator
+  runs `tasker show <issue>`. If `tasker show` fails, [the failure rule](limits.md#the-failure-rule) applies, and the
+  orchestrator goes on as if the task is in `interrupted`. If the task is not in `interrupted`, nothing changes. If the
+  ticket has a five-hour job that has not fired, the orchestrator schedules no second one.
+
+  In each other case, the orchestrator schedules a five-hour job. The reset time of this job is five hours after the
+  `date` read of the future-time rule. The job time comes from that time and the delay of the agent. The case of
+  `interrupted` in [When the job fires](#when-the-job-fires) then sends the resume message. A task in `interrupted`
+  waits for no reset. As a result, one five-hour job is enough.
+
 - A read can change the case of the account. If a read shows that the case changed from no five-hour window to a
   five-hour window, a seven-day job alone does not count any more. The orchestrator tells each agent with no five-hour
   job that it has no job. Then the schedule-all rule applies to the read.
