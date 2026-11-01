@@ -56,7 +56,7 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
    - (f) Do not write the open work to memory, because it is the state of the session.
 
    On 2026-10-30, a session asked "Do you want me to find out why #537 closed?". Then it ran two rounds of `/session-review`, and neither round named the question. On 2026-10-31, the user asked: "Does session review include a rule for checking for unanswered open questions or unfinished work?"
-8. Report a short summary: the memory entries that the session made, changed or removed, and each proposal with its target. Add the open work of step 7 to the summary. Give the open work in one numbered list, in the form of [A decision of the user](../../../docs/dev/working-with-the-user.md#a-decision-of-the-user). If the session finds no open work, say so. Name each drop of step 7 (c).
+8. Report a short summary: the memory entries that the session made, changed or removed, and each proposal with its target. Add the open work of step 7 to the summary. Give the open work in one numbered list, in the form of [The form of a reply](../../../docs/dev/working-with-the-user.md#the-form-of-a-reply). If the session finds no open work, say so. Name each drop of step 7 (c).
 
 ## Rules
 
