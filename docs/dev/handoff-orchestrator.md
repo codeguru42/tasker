@@ -48,11 +48,13 @@ The board watch rule has these parts:
   job expires. Before the first CronCreate, the orchestrator keeps no id and no time. When the list of CronList does not
   hold the kept id, the job ended, and the orchestrator drops the id and the time before it makes a new job.
 - If CronList or CronCreate fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator has no
-  board watch job. At each later landing, it tries again, CronList and then CronCreate, until it has a board watch job.
-  With no board watch job, it reads the board at the other moments that the docs give, for example after each landing.
+  board watch job. At each later read of the board, for any reason, it tries again, CronList and then CronCreate, until
+  it has a board watch job. The read of the board after a landing is one such read, as the bullet "Each time a ticket
+  lands, read the board again" of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. With no board watch
+  job, it reads the board at the other moments that the docs give, for example after each landing.
 - When the job fires 6 days or more after the kept time, the orchestrator deletes it with CronDelete. Then it makes a
-  new job, with CronList first. If CronDelete fails, the failure rule applies, and the retry after a failure makes a new
-  job after the old job expires.
+  new job, with CronList first. If CronDelete fails, the failure rule applies, and the retry after a failure that the
+  bullet "If CronList or CronCreate fails" gives makes a new job after the old job expires.
 - At the start of a handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says, the
   orchestrator deletes the job with CronDelete, before step 1 of The steps of the old orchestrator. If CronDelete fails,
   the failure rule applies. The new orchestrator makes its own job. A session that ends with no handoff loses the job
