@@ -175,6 +175,18 @@ user asked "why are 3-6 repeated?".
   when the request is not a question. On 2026-10-18, the user asked to make "the issue-link rule" general, but the
   planning session read "link" as a blocked-by link and drafted a wrong issue. The user said "no, you misunderstood. By
   'links' here I mean the URL for an issue.", and the rule was the heading [The issue-link rule](#the-issue-link-rule).
+- When the user asks for the status of an orchestrator, the session gives only the tasks that the orchestrator owns. An
+  issue with no task in `tasker status` has no owner. If no fact says that the orchestrator owns a task, the session
+  does not name the task. The facts are the milestone of the issue and a decision of the user. A decision of the user
+  wins over the milestone. The session does not guess the owner of a task.
+
+  The reply gives the owned tasks in one table, and it holds no other table. If the orchestrator owns no task, the reply
+  says so. This rule covers only a reply about the status of an orchestrator.
+
+  On 2026-10-30, the operator showed all eight tasks of `tasker status` and guessed the owner of each task. The user
+  said: "when I ask about a status check from an orchestrator, you must only return the tasks that orchestrator owns",
+  "don't care 'who likely runs it'. Don't speculate", "'no task yet' means the orchestrator doesn't own it yet" and "the
+  only table I want is the ones currently owned by the orchestrator".
 
 ## A note for later
 
