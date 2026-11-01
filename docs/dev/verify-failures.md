@@ -128,9 +128,11 @@ The pushed-branch rule covers a task whose task branch was pushed to `origin` at
 [docs/dev/rebase-conflicts.md](rebase-conflicts.md). After that push, a fixup commit and an autosquash rebase change the
 task branch of tasker, and `origin` keeps the pushed commits. The fix of a broken commit under the tip still goes into
 its cause commit. On #201, the next `tasker update-branch` worked again only after the old task branch on `origin` was
-deleted with a lease. The agent does the rule after step 11 of that page. It does the rule before each later
-`tasker update-branch` of the task, until step 21 of that page ends. The `tasker update-branch <issue> --take-remote` of
-step 11 is not a command of the rule. The rule applies to each change of the pushed commits, whatever its cause.
+deleted with a lease. The agent does the rule after a step 11 of that page that records a
+[`<taken>`](rebase-conflicts.md#procedure). The rule does not run in [the loop](rebase-conflicts.md#procedure) of step
+11 of that page. It does the rule before each later `tasker update-branch` of the task, until step 21 of that page ends.
+The `tasker update-branch <issue> --take-remote` of step 11 is not a command of the rule. The rule applies to each
+change of the pushed commits, whatever its cause.
 
 The agent of the ticket does each step in the local clone of the orchestrator. No step runs in the tasker clone or in a
 worktree of tasker. The git commands change no task, for example a task in `awaiting_work_review`, `reviewed`,
@@ -146,8 +148,15 @@ worktree of tasker. The git commands change no task, for example a task in `awai
 4. Run `git merge-base --is-ancestor <commit> <current>`. If the exit code is 0, the task branch of tasker contains the
    pushed commits. Go to step 7. If the exit code is 1, tasker changed the pushed commits. Go on with step 5. If the
    exit code is another code, stop. Nothing changes.
-5. Make sure that `<commit>` is the same hash as the `<taken>` of the last step 11 of rebase-conflicts.md. If that step
-   recorded no `<taken>`, stop. If the two hashes differ, stop. Nothing changes.
+5. Make sure that `<commit>` is a hash that the agent holds as the driver of
+   [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure). These hashes are the `<taken>` of the last step 11 of
+   that page and a [`<pushed>`](rebase-conflicts.md#procedure) of a take. A `<pushed>` of a new conflict does not count.
+   If the agent holds neither hash, stop. If `<commit>` differs from each hash that the agent holds, stop. Nothing
+   changes.
+
+   On #460 (2026-10-25), the push was d4704974, and `<taken>` was dc153ce9. The orchestrator approved a delete with a
+   lease at the pushed tip.
+
 6. Delete the task branch on `origin` with a lease:
    `git push --force-with-lease=refs/heads/<task branch>:<commit> origin --delete <task branch>`. If the push fails, for
    any reason, stop. [Step 10 of "Run one ticket"](run-one-ticket.md#run-one-ticket) gives two examples: a stale lease,
