@@ -78,9 +78,9 @@ history of the session, the closed items or the measured facts. The rule is the 
 - Each decision of the user that still applies and that no doc and no open issue holds. This covers the old session and
   the earlier handoff file of the role. As a result, such a decision survives more than one handoff.
 - For a decision that an open issue holds, the file gives only the number of that issue. After the issue lands, the
-  decision leaves the next handoff file.
-- The bullet of a relayed decision in [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses
-  these decisions.
+  decision leaves the next handoff file. The bullet of a relayed decision in
+  [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses the decisions of this entry and of the
+  entry before it.
 
 The reason: the old session puts the full text of each open question in the file, because the new session has no other
 source for it.
@@ -94,11 +94,11 @@ because [its role page](handoff-planner.md#the-handoff-file-of-the-planner) keep
 fails, also because no session has that name, the old session sends them to its operator as an item. The old operator
 has no operator, so [the failure rule](limits.md#the-failure-rule) applies to it.
 
-The handoff file names each session other than the new session by its name only, also in the prompt. It gives no
-[session ref and no socket address](../sessions.md) of such a session. In a handoff of the operator, the file names the
-old operator by its name, its tab id and its pane id, as
-[the role page](handoff-operator.md#the-handoff-file-of-the-operator) says. `ListAgents` gives the current name and
-session ref of each session. For example, the prompt of `2026-10-25-1713-m22-planner.md` named
+The handoff file names each session other than the new session by its name, also in the prompt. It gives no
+[session ref and no socket address](../sessions.md) of such a session. The tab list of the file of the operator keeps
+the tab id of each entry. In a handoff of the operator, the file names the old operator by its name, its tab id and its
+pane id, as [the role page](handoff-operator.md#the-handoff-file-of-the-operator) says. `ListAgents` gives the current
+name and session ref of each session. For example, the prompt of `2026-10-25-1713-m22-planner.md` named
 `orchestrator-m22 [bc2d80]` and `operator-m22 [8e3ea5]`, each with its socket address, but both sessions handed off, so
 these values were stale.
 

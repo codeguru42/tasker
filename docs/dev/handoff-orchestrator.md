@@ -142,7 +142,7 @@ The handoff file of the orchestrator holds the parts of
 [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The old orchestrator also puts these parts in the
 handoff file:
 
-- The prompt names the path of the file, the session name, the first free item id and
+- The prompt names the milestone, the path of the file, the session name, the first free item id and
   [The start of the new orchestrator](#the-start-of-the-new-orchestrator). The prompt also names each extra doc. An
   extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
   [the re-read rule](doc-reads.md#the-re-read-rule) does not hold.
