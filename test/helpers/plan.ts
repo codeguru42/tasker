@@ -90,14 +90,14 @@ export function answerStream(answer: unknown): string[] {
   return structuredOutputStream(answer);
 }
 
-// The stdout lines of a fake claude run that succeeds with a turn result. With no reason, the result has no reason key.
+// The stdout lines of a fake claude run that succeeds with a turn result. With no reason, the result gives null as its reason.
 // With edit, it changes the result event of the stream, for example to add permission_denials.
 export function turnResultStream(
   result: "done" | "blocked",
   reason?: string,
   edit?: (event: AssistantEvent) => void,
 ): string[] {
-  return structuredOutputStream(reason === undefined ? { result } : { result, reason }, edit);
+  return structuredOutputStream({ result, reason: reason ?? null }, edit);
 }
 
 // The next plan revision of the task: a valid plan answer, unless change gives other values.

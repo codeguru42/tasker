@@ -2,7 +2,7 @@ import { z } from "zod";
 import { formatIssues } from "../zod-issues.js";
 import { jsonSchemaOf } from "../json-schema.js";
 
-const turnResultSchema = z.strictObject({ result: z.enum(["done", "blocked"]), reason: z.string().optional() });
+const turnResultSchema = z.strictObject({ result: z.enum(["done", "blocked"]), reason: z.string().nullable() });
 
 export function turnResultJsonSchema(): Record<string, unknown> {
   return jsonSchemaOf(turnResultSchema);
