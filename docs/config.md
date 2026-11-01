@@ -159,13 +159,13 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 
 ## `assistant`
 
-| Key                 | Type                                              | Default  | Notes                                                                                                                                                                                                                     |
-| ------------------- | ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `provider`          | `"claude-code"`, `"copilot"`, `"pi"` or `"codex"` | required | The assistant to run. The loader accepts `copilot` and `pi`, but they are not available in this version. The loader also accepts `codex`. `codex` runs the plan and review steps. A task with an execute step refuses it. |
-| `models`            | object                                            | required | Has the keys `plan`, `execute` and `review`. All three are required.                                                                                                                                                      |
-| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust.                                                                                                                                                                              |
-| `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                                                                                       |
-| `correctiveTurns`   | integer, 0 or more                                | `1`      | How many corrective turns the assistant can take.                                                                                                                                                                         |
+| Key                 | Type                                              | Default  | Notes                                                                                                                                                             |
+| ------------------- | ------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `provider`          | `"claude-code"`, `"copilot"`, `"pi"` or `"codex"` | required | The assistant to run. The loader accepts `copilot` and `pi`, but they are not available in this version. The loader also accepts `codex`. `codex` runs each step. |
+| `models`            | object                                            | required | Has the keys `plan`, `execute` and `review`. All three are required.                                                                                              |
+| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust.                                                                                                                      |
+| `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                               |
+| `correctiveTurns`   | integer, 0 or more                                | `1`      | How many corrective turns the assistant can take.                                                                                                                 |
 
 Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"`
 or `"high"`).

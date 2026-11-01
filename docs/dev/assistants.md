@@ -387,26 +387,43 @@ The model check of a continued session uses the model forms of the configuration
 
 ## The codex provider
 
-The provider lets a repo name `codex` in `assistant.provider`. It runs the plan and review roles, and it gives the
-doctor checks of Codex. A run is read-only. It starts `codex exec`, or `codex exec resume` for a continued session. It
-reads the JSON events from stdout. The prompt goes on stdin, and the last argument is `-`. A run with `access` of
-`"workspace-write"` (the execute role) gets a `failure` outcome before the spawn.
+The provider lets a repo name `codex` in `assistant.provider`. It runs each role, and it gives the doctor checks of
+Codex. It starts `codex exec`, or `codex exec resume` for a continued session. It reads the JSON events from stdout. The
+prompt goes on stdin, and the last argument is `-`. A run with `access` of `"workspace-write"` (the execute role) gets
+write keys and a hook. A run with `access` of `"read-only"` gets neither.
+
+The hooks of the user run in each execute run. The argument `--dangerously-bypass-hook-trust` runs them, also under
+`--ignore-user-config`. The provider adds no way around this.
 
 ### The arguments
 
 `codexArgs()` in `src/assistant/codex/args.ts` builds the list. The same `-c` values go to a new session and to a
 continued session.
 
-- `--ignore-user-config` and `--ignore-rules` leave out the configuration, the rules and the hooks of the user and of
-  the worktree. A `.codex/config.toml` in the worktree loads without `--ignore-user-config`.
+- `--ignore-user-config` and `--ignore-rules` leave out the configuration and the rules of the user and of the worktree.
+  They do not leave out the hooks of the user (see "Measures and limits"). A `.codex/config.toml` in the worktree loads
+  without `--ignore-user-config`.
 - `-c approval_policy="never"`: the run asks no question, because nobody answers.
 - `-c web_search="disabled"` alone does not turn off web search, because the model can still search through an MCP tool.
   Together with `-c features.apps=false` it does.
 - `-c default_permissions="tasker"` names a permission profile that the run defines with
   `-c permissions.tasker.filesystem={...}`. The table grants read of `"/"`. A smaller grant makes each command fail.
-  Each path of `sandbox.denyRead` is a key with the value `"deny"`. The key is `JSON.stringify(path)`, so a dot, a space
-  or a quote stays in one key. A repeated path counts once, because a TOML table must not name a key twice.
-- The profile has no write grant. `sandbox.allowWrite` is never read.
+  `filesystemTable()` builds the table in a `Map`, so a path has one key and a later value wins. The key is
+  `JSON.stringify(path)`, so a dot, a space or a quote stays in one key.
+- Under `workspace-write`, the cwd, the temp folder and each path of `sandbox.allowWrite` are keys with the value
+  `"write"`. The temp folder is `TMPDIR`, or `/tmp` when `TMPDIR` is not set. A `read-only` run has no write key and
+  does not read `sandbox.allowWrite`.
+- Each path of `sandbox.denyRead` is a key with the value `"deny"`. So are the folder `herdr` under `XDG_CONFIG_HOME`
+  (or under `HOME/.config`) and the real path of the file that `SSH_AUTH_SOCK` names. `codexSocketDenyPaths()` in
+  `src/assistant/codex/sockets.ts` gives the socket paths from the env before the child filter. Every role gets them. A
+  deny key under a write key holds.
+- Two facts of the table hold for every key. A key must not be a symbolic link, because the run then fails at the start.
+  So a link becomes its target, and a link that cannot resolve is left out. A path under another key of the table must
+  not exist as a key, because an existing path under a denied folder makes the run fail at the start. So the table
+  leaves it out. A path that does not exist stays.
+- Under `workspace-write`, `-c hooks.PreToolUse=[...]` and `--dangerously-bypass-hook-trust` follow the network line.
+  `codexHookArgs()` builds them. The matcher is `^apply_patch$`, the command is a TOML string, and the timeout is 10
+  seconds. A continued session gets the same arguments.
 - `-c permissions.tasker.network.enabled=true`: without it, a command cannot resolve a host.
 - Never use `-s`, `--sandbox` or `sandbox_mode`, because a profile does not compose with them. Never use `--ephemeral`,
   because an ephemeral session cannot be continued.
@@ -437,7 +454,13 @@ The rules differ from `claude-code` in these points.
 - `permissionDenials` is always `[]`. A command that the sandbox blocks is a normal `command_execution` item with the
   shell error in `aggregated_output`.
 
-The provider sets no `sandboxCleanup`. The sandbox leaves no placeholder in the worktree.
+A `read-only` run sets no `sandboxCleanup`. A normal `workspace-write` run leaves the empty folders `.agents`, `.aws`
+and `.codex` in the worktree. After each run that reached the spawn step, also after a kill or a failure, the provider
+removes them with `removePlaceholders()`. `absentPlaceholders()` in `src/assistant/codex/placeholders.ts` names only the
+folders that did not exist before the spawn. A folder with an entry, a file and a link stay. A failed removal gives an
+`error` in `sandboxCleanup` and never changes the kind of the outcome.
+
+A deny of the hook adds no event, so `permissionDenials` stays `[]`.
 
 ### What the sandbox blocks and what stays open
 
@@ -446,11 +469,49 @@ from a trusted worktree, and `--ignore-user-config` drops the trust. `--ignore-r
 tested no form that passes a rule, because no rule exists. The sandbox is the only limit on `deniedCommands`, and it
 does not block every entry.
 
-The sandbox blocks the socket of herdr, the socket of the ssh agent, each write and each path of `denyRead`.
+The sockets of herdr and of the ssh agent work when the network is on. So the table denies the herdr folder and the file
+of `SSH_AUTH_SOCK` in every role. A herdr socket at a custom path (`HERDR_SOCKET_PATH` outside the default folder) and a
+ssh agent that `SSH_AUTH_SOCK` does not name stay open. The sandbox blocks each path of `denyRead`. In a `read-only` run
+it blocks each write. In an execute run it blocks each write outside the write keys.
 
-`git push` over https, or over ssh with a key file, stays open, because the network is open. A plan, refine or review
-run of `codex` has layer 2 and layer 3 of the push guard, and no layer 1. See
-[Push guard](version-control.md#push-guard).
+`git push` over https, or over ssh with a key file, stays open, because the network is open. A run of `codex` in the
+plan, refine and review roles has layer 2 and layer 3 of the push guard, and no layer 1. An execute run has the same
+layers. See [Push guard](version-control.md#push-guard).
+
+### The limits of the execute role
+
+The execute role writes the worktree, the temp folder and each path of `sandbox.allowWrite`. The sandbox protects
+`<worktree>/.git`, `.codex`, `.agents` and `.aws` by itself. A repo that tracks a file under `.codex/` or `.agents/`
+cannot edit it in an execute run.
+
+The sandbox cannot tell `apply_patch` from a `git commit`, because both run as the same run. A `git commit` must write
+under `<clone>/refs`, `objects`, `logs` and `worktrees/<name>`, so these are write paths. As a result, `apply_patch` can
+add a file there too. A `PreToolUse` hook of tasker closes this gap for `apply_patch`. It gets `deniedEditPaths`
+(`<worktree>/.git`, `<worktree>/.git/**` and `<clone>/**`).
+
+`src/assistant/codex/edit-hook-main.ts` runs as `node edit-hook-main.js <worktree> <denied...>`. It reads the stdin of
+the hook, and `editHookAnswer()` decides. A deny is one line of JSON with exit code 0. An allow prints nothing. The hook
+reads each `*** Add File:`, `*** Update File:`, `*** Delete File:` and `*** Move to:` header. It denies a patch that it
+cannot read, a path with a `..` part, a denied path, a symbolic link in the path, a path that it cannot read and a path
+outside the worktree. It writes no file.
+
+The hook denies an `apply_patch` path outside the worktree that no entry names. This is a decision that the first design
+did not state. The reason is the limit of the `claude` provider, which allows `Edit` and `Write` only in the worktree.
+The shell can still write the temp folder.
+
+Codex lets the patch pass when the hook fails. A crash, output that is not JSON, a timeout and a `command` that names a
+missing file all allow the patch. Three guards follow. The main script runs everything in one `try`, loads the hook with
+a dynamic `import()`, and prints a literal deny line in the `catch`. The provider makes sure that the script is a file
+before the spawn, and gives a `failure` outcome if not. The timeout is 10 seconds, and the hook is fast. A timeout of
+the hook allows the patch.
+
+| Limit                 | `claude-code`                          | `codex`                                           |
+| --------------------- | -------------------------------------- | ------------------------------------------------- |
+| Edit of a denied path | The deny rules of the edit tools       | The hook, for `apply_patch` only                  |
+| `deniedCommands`      | Deny rules (layer 1 of the push guard) | No rule. The sandbox is the only limit            |
+| Denied edit           | An entry in `permissionDenials`        | No event. `permissionDenials` is `[]`             |
+| Hooks of the user     | Not changed by this version            | Run, because of `--dangerously-bypass-hook-trust` |
+| Cleanup               | The placeholders of the sandbox        | The empty folders `.agents`, `.aws` and `.codex`  |
 
 ### The doctor checks
 
@@ -465,8 +526,8 @@ configuration of the child.
 
 ### Measures and limits
 
-Each measure below ran on `codex-cli 0.166.0` on 2026-10-31. All measures ran on Linux. A run on macOS or Windows is
-unmeasured.
+Each measure below ran on `codex-cli 0.166.0` on 2026-10-31, unless it names 2026-11-01. All measures ran on Linux. A
+run on macOS or Windows is unmeasured.
 
 - Prompt: `codex exec -` and `codex exec resume <id> -` read the prompt from stdin.
 - Session id: the `thread.started` event gives `thread_id`. `codex exec resume <thread_id>` continues the session and
@@ -493,21 +554,48 @@ unmeasured.
 - Other rules: a rules file in a trusted worktree loads without the two flags. `--ignore-rules` drops it.
 - Usage: `input_tokens` includes `cached_input_tokens`, and `output_tokens` includes the reasoning tokens.
   `turn.completed` gives a total for the whole thread.
-- herdr: `herdr agent list` and `sh -c 'herdr agent list'` both fail in the run with `Operation not permitted`.
-- Placeholders: the sandbox leaves no file in the worktree, after a normal exit and after SIGKILL.
-- ssh agent: a command cannot reach the socket of the ssh agent.
+- herdr (2026-11-01): with the network on, `herdr agent list` and `sh -c 'herdr agent list'` work, also with only
+  `"/"="read"` in the table. With the network off they fail with `Operation not permitted`. With a deny key for
+  `<home>/.config/herdr`, both fail with `Permission denied`, and the run still finishes.
+- ssh agent (2026-11-01): with the network on, `ssh-add -l` and a connect to `SSH_AUTH_SOCK` work. With a deny key for
+  the real path of the socket, both fail with `Permission denied`.
+- Keys of the table (2026-11-01): a key that is a symbolic link makes the start fail with
+  `bwrap: Can't mount on symlink destination`. An existing path under a denied folder makes the start fail with
+  `bwrap: Can't create file ...: Read-only file system`. A missing path under a denied folder is fine. A deny key under
+  a write key holds.
+- Write profile (2026-11-01): plain keys with `write` for the worktree, the temp folder and the clone paths give the
+  same results as `extends=":workspace"`. `git commit` works in a linked worktree of a bare clone, and `<clone>/logs`
+  must exist. The line about `packed-refs.lock` on stderr is known.
+- Edit of denied paths (2026-11-01): `apply_patch` cannot change `<worktree>/.git`, `<clone>/description` or
+  `<clone>/hooks/*`. It can add files under `<clone>/refs`, `objects`, `logs` and `worktrees/<name>`. A patch path
+  `sub/../x.txt` writes `x.txt`. The shell has no `apply_patch`.
+- Config folders (2026-11-01): `apply_patch` and the shell cannot write `<worktree>/.codex/` and `<worktree>/.agents/`.
+- Hook (2026-11-01): the inline `-c hooks.PreToolUse=[...]` form needs no file in the Codex home. It runs only with
+  `--dangerously-bypass-hook-trust`, in `codex exec` and in `codex exec resume`. `tool_name` is `apply_patch`, and
+  `tool_input.command` holds the bare patch text. A deny line with exit 0, or exit 2 with the reason on stderr, blocks
+  the call. A crash, output that is not JSON, a timeout and a missing script allow the patch. The flag adds two `error`
+  items to the stream, and the reader ignores them.
+- Hooks of the user (2026-11-01): the hook in `~/.codex/hooks.json` does not run under `--ignore-user-config`. With
+  `--dangerously-bypass-hook-trust` it runs.
+- Placeholders: a `read-only` run leaves no file in the worktree, after a normal exit and after SIGKILL. A write run
+  (2026-11-01) leaves the empty folders `.agents`, `.aws` and `.codex` after a normal exit. The state after SIGKILL is
+  unmeasured.
 - bwrap: not measured. The run cannot make the sandbox fail on the test host.
 - Other tools: web search stays on through an MCP tool unless `features.apps=false` is set. `--ignore-user-config`
   leaves out the MCP servers of the user.
 - Configuration: `--ignore-user-config` leaves out `config.toml` of the user. A `.codex/config.toml` of a trusted
-  worktree loads without the flag and not with it. Hooks did not run in `codex exec`.
+  worktree loads without the flag and not with it. Hooks did not run in `codex exec` without
+  `--dangerously-bypass-hook-trust`.
 
 Some measures are weaker. The measures of the profile, of the rules and of the configuration ran on the real Codex home
 of the user. A rules file of the user is not proven to load, because none existed. `--ignore-rules` rests on its help
-text. A trusted hook is not tested. Nobody measured a host where the sandbox cannot start.
+text. Nobody measured a host where the sandbox cannot start.
 
 - `overageStop` has no effect.
-- The roles have no write path. This is stricter than [the plan and review roles](#the-plan-and-review-roles) say.
+- A hook that crashes, times out or names a missing file lets the patch pass. The guards of "The limits of the execute
+  role" reduce this.
+- A tool path that skips the hook skips `deniedEditPaths`. The sandbox still limits it to the write paths.
+- macOS and Windows are unmeasured.
 - A sandboxed command can outlive a SIGKILL of `codex`.
 
 ## The plan answer and the prompts
