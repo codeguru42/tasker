@@ -7,6 +7,7 @@ import {
   codexSample,
   CODEX_PLAIN_USAGE,
   CODEX_RESUME_USAGE,
+  CODEX_THREAD_ID,
   codexSampleEvents,
   expectedCodexArgs,
   MEASURED_LOGGED_OUT,
@@ -86,11 +87,19 @@ describe("codexSampleEvents", () => {
       "item.completed",
       "turn.completed",
     ]);
-    expect(events[0].thread_id).toBe("01a194bc-1d2f-77b2-a52d-5be299f7ea30");
+    expect(events[0].thread_id).toBe(CODEX_THREAD_ID);
   });
 
   it("gives new objects for each call", () => {
     expect(codexSampleEvents("plain")[0]).not.toBe(codexSampleEvents("plain")[0]);
+  });
+});
+
+describe("CODEX_THREAD_ID", () => {
+  it.each(["plain", "resume"])("is the thread id of %s.jsonl", (name) => {
+    const started = codexSampleEvents(name).find((event) => event.type === "thread.started");
+
+    expect(started?.thread_id).toBe(CODEX_THREAD_ID);
   });
 });
 

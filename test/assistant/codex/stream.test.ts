@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readCodexStream, threadIdOf, usageTotalOf } from "../../../src/assistant/codex/stream.js";
 import type { AssistantEvent } from "../../../src/assistant/provider.js";
-import { CODEX_PLAIN_USAGE, CODEX_RESUME_USAGE, codexSampleEvents } from "../../helpers/fake-codex.js";
+import { CODEX_PLAIN_USAGE, CODEX_RESUME_USAGE, CODEX_THREAD_ID, codexSampleEvents } from "../../helpers/fake-codex.js";
 
 const NO_MESSAGE = "the assistant ended with an error";
 
@@ -11,7 +11,7 @@ function withoutType(events: AssistantEvent[], type: string): AssistantEvent[] {
 
 describe("threadIdOf", () => {
   it("gives the thread id of thread.started", () => {
-    expect(threadIdOf(codexSampleEvents("plain")[0])).toBe("01a194bc-1d2f-77b2-a52d-5be299f7ea30");
+    expect(threadIdOf(codexSampleEvents("plain")[0])).toBe(CODEX_THREAD_ID);
   });
 
   it("gives undefined for each other event", () => {

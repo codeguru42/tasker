@@ -117,6 +117,9 @@ export function expectedCodexArgs(expected: ExpectedCodexArgs): string[] {
   ];
 }
 
+// The thread id of plain.jsonl and resume.jsonl.
+export const CODEX_THREAD_ID = "01a194bc-1d2f-77b2-a52d-5be299f7ea30";
+
 // The usage of plain.jsonl, and the stored total before resume.jsonl.
 export const CODEX_PLAIN_USAGE: TokenUsage = {
   inputTokens: 7889,

@@ -17,6 +17,7 @@ import {
 import {
   CODEX_PLAIN_USAGE,
   CODEX_RESUME_USAGE,
+  CODEX_THREAD_ID,
   codexSample,
   codexSampleEvents,
   expectedCodexArgs,
@@ -72,7 +73,6 @@ describe("createCodexProvider", () => {
   });
 });
 
-const THREAD_ID = "01a194bc-1d2f-77b2-a52d-5be299f7ea30";
 const NO_THREAD = `the codex session ${TEST_SESSION_ID} has no thread id, so the run cannot continue it`;
 
 interface Setup {
@@ -230,7 +230,7 @@ describe("createCodexProvider run: the thread id", () => {
 
     await run({ stream: codexSample("plain") }, { onProviderSessionId });
 
-    expect(onProviderSessionId.mock.calls).toEqual([[THREAD_ID]]);
+    expect(onProviderSessionId.mock.calls).toEqual([[CODEX_THREAD_ID]]);
   });
 
   it("passes the stored id to a continued run", async () => {
@@ -267,7 +267,7 @@ describe("createCodexProvider run: the thread id", () => {
       const { outcome } = await run(control);
 
       expect(outcome.sessionId).toBe(TEST_SESSION_ID);
-      expect(JSON.stringify({ ...outcome, events: [] })).not.toContain(THREAD_ID);
+      expect(JSON.stringify({ ...outcome, events: [] })).not.toContain(CODEX_THREAD_ID);
     }
   });
 
@@ -276,8 +276,8 @@ describe("createCodexProvider run: the thread id", () => {
     const onProviderSessionId = vi.fn();
 
     const first = await run({ stream: codexSample("plain") }, { sessionDir, onProviderSessionId });
-    expect(onProviderSessionId.mock.calls).toEqual([[THREAD_ID]]);
-    const second = await codexProvider().run({ ...first.input, resume: true, providerSessionId: THREAD_ID });
+    expect(onProviderSessionId.mock.calls).toEqual([[CODEX_THREAD_ID]]);
+    const second = await codexProvider().run({ ...first.input, resume: true, providerSessionId: CODEX_THREAD_ID });
 
     expect(first.outcome.kind).toBe("success");
     expect(second.kind).toBe("success");
@@ -413,13 +413,17 @@ describe("createCodexProvider run: the usage", () => {
   });
 
   it("subtracts the stored total in a continued run", async () => {
-    const { outcome } = await run({ stream: codexSample("resume") }, { usageTotal: CODEX_PLAIN_USAGE }, THREAD_ID);
+    const { outcome } = await run(
+      { stream: codexSample("resume") },
+      { usageTotal: CODEX_PLAIN_USAGE },
+      CODEX_THREAD_ID,
+    );
 
     expect(outcome.usage).toEqual(CODEX_RESUME_USAGE);
   });
 
   it("counts a missing stored total as zero", async () => {
-    const { outcome } = await run({ stream: codexSample("plain") }, {}, THREAD_ID);
+    const { outcome } = await run({ stream: codexSample("plain") }, {}, CODEX_THREAD_ID);
 
     expect(outcome.usage).toEqual(CODEX_PLAIN_USAGE);
   });
@@ -430,7 +434,7 @@ describe("createCodexProvider run: the usage", () => {
     const { outcome } = await run(
       { stream: codexSample("plain").slice(0, 3) },
       { usageTotal: CODEX_PLAIN_USAGE, onUsageTotal },
-      THREAD_ID,
+      CODEX_THREAD_ID,
     );
 
     expect(outcome.usage).toBe("unavailable");
@@ -485,7 +489,7 @@ describe("createCodexProvider run: the execute role", () => {
   });
 
   it("continues a workspace-write session with the thread id and the same hook", async () => {
-    const { fake, cwd, hookCommand } = await executeRun({ stream: codexSample("resume") }, {}, THREAD_ID);
+    const { fake, cwd, hookCommand } = await executeRun({ stream: codexSample("resume") }, {}, CODEX_THREAD_ID);
 
     expect(fake.calls()[0].argv).toEqual(
       expectedCodexArgs({
@@ -494,7 +498,7 @@ describe("createCodexProvider run: the execute role", () => {
         writePaths: write(cwd),
         denyRead: [herdrFolder(fake)],
         hookCommand,
-        threadId: THREAD_ID,
+        threadId: CODEX_THREAD_ID,
       }),
     );
   });

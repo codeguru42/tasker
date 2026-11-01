@@ -26,7 +26,13 @@ import {
   type FakeClaudeControl,
   withEventFirst,
 } from "../helpers/fake-claude.js";
-import { CODEX_PLAIN_USAGE, CODEX_RESUME_USAGE, codexSample, useFakeCodexRun } from "../helpers/fake-codex.js";
+import {
+  CODEX_PLAIN_USAGE,
+  CODEX_RESUME_USAGE,
+  CODEX_THREAD_ID,
+  codexSample,
+  useFakeCodexRun,
+} from "../helpers/fake-codex.js";
 import { seedPlanSession, turnResultStream } from "../helpers/plan.js";
 import {
   databasePathOf,
@@ -44,8 +50,6 @@ vi.mock("../../src/assistant/codex/edit-hook.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../src/assistant/codex/edit-hook.js")>()),
   EDIT_HOOK_SCRIPT: process.execPath,
 }));
-
-const THREAD_ID = "01a194bc-1d2f-77b2-a52d-5be299f7ea30";
 
 // The arguments of argv that follow flag, up to the next flag.
 function flagValues(argv: string[], flag: string): string[] | undefined {
@@ -832,7 +836,7 @@ describe("the values of a session in an execute run", () => {
     const [first, second] = codex!.calls();
     expect(first.argv).not.toContain("resume");
     expect(second.argv).toContain("resume");
-    expect(second.argv).toContain(THREAD_ID);
+    expect(second.argv).toContain(CODEX_THREAD_ID);
     expect(outcomes[0].usage).toEqual(CODEX_PLAIN_USAGE);
     expect(outcomes[1].usage).toEqual({
       inputTokens: 0,
@@ -850,13 +854,13 @@ describe("the values of a session in an execute run", () => {
         session: { resume: true, sessionId: TEST_EXECUTE_SESSION_ID, recorded: codexRecorded },
         beforeStart: (store) => {
           seedPlanSession(store, 1, { sessionId: TEST_EXECUTE_SESSION_ID, provider: "codex" });
-          store.setProviderSessionId(1, TEST_EXECUTE_SESSION_ID, THREAD_ID);
+          store.setProviderSessionId(1, TEST_EXECUTE_SESSION_ID, CODEX_THREAD_ID);
           store.setSessionUsageTotal(1, TEST_EXECUTE_SESSION_ID, CODEX_PLAIN_USAGE);
         },
       },
     );
 
-    expect(codex!.calls()[0].argv).toContain(THREAD_ID);
+    expect(codex!.calls()[0].argv).toContain(CODEX_THREAD_ID);
     expect(outcome.usage).toEqual(CODEX_RESUME_USAGE);
   });
 
