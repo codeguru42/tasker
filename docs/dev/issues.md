@@ -69,6 +69,14 @@ A link can still land on a task that started between the read and the write. The
 command of [The blocked-by links](#the-blocked-by-links). The session tells the user that the link was a race. In that
 case, the orchestrator did not skip a blocker.
 
+For a blocked-by link, the skip of an issue in flight covers only a soft blocker. A soft blocker is a link with no need
+of the work of the other ticket, for example for two tickets that edit one file. A hard blocker is a link for a ticket
+that needs the work of the other ticket. The session adds a hard blocker to an issue in flight, and it tells the user. A
+direct word of the user to add a soft blocker overrides the skip for that link. The session does not remove a hard
+blocker or a link of such a word as a race.
+
+The paragraph before this one does not cover a closed issue, a failed read or a change of a title or a body.
+
 ## A recurrence
 
 A recurrence is a problem that shows again while an open issue already covers its fix. A recurrence comment is a comment

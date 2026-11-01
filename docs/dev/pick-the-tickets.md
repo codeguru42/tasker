@@ -363,8 +363,10 @@ a task of another milestone is out of scope. [The overlap rule](land-the-work.md
 If the user told the orchestrator that a planner of the milestone adds the blocked-by links, the orchestrator makes no
 link offer. The orchestrator also adds no blocked-by link itself. The user can still ask the orchestrator for a link, as
 the decline bullet below says. Then the orchestrator does the steps of the approve bullet, and the bullets for a failed
-`gh issue edit` and for a skipped write also apply. If the ticket is open, is not in flight and has no link, the
-orchestrator follows the shared-file bullet of [Pick the tickets](#pick-the-tickets).
+`gh issue edit` and for a skipped write also apply. For a ticket in flight,
+[The read in the write call](issues.md#the-read-in-the-write-call) gives the override by a word of the user. If the
+ticket is open, is not in flight and has no link, the orchestrator follows the shared-file bullet of
+[Pick the tickets](#pick-the-tickets).
 
 The orchestrator counts a new link of the planner at its next read of the states of
 [the stacking rule](#the-stacking-rule). Two of these reads come before each start and each time the orchestrator reads
