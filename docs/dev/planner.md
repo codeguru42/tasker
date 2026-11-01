@@ -45,6 +45,9 @@ says.
   [its operator](../operator.md) as an item, in the form of
   [The form of an item](operator-items.md#the-form-of-an-item).
   [The review loop of a draft](#the-review-loop-of-a-draft) says which drafts wait.
+- At the end of a milestone, the follow-up planner does steps 4 and 5 of
+  [The close of a milestone](operator-start.md#the-close-of-a-milestone). [Its operator](../operator.md) tells it when
+  each step starts. After the stop of the orchestrator, the follow-up planner tells that session nothing.
 - Each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner puts the path in the
   item, not the draft.
 - For a draft that waits for a decision of the user, [The escape hatch](#the-escape-hatch) says what the answer of the
