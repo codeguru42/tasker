@@ -116,8 +116,8 @@ and do not change it.
 - Never wrap a `tasker` command in `timeout`. At the end of the time, `timeout` sends SIGTERM, and tasker moves the task
   to `interrupted`. On 2026-10-13, `timeout 595 tasker execute` stopped an execute run this way, and `tasker resume` had
   to continue it.
-- Run a long `tasker` command in the background. The long commands include `plan`, `refine`, `execute`, `review` and
-  `resume`. The agent sets the `run_in_background` option of its Bash tool. The call keeps the plain form.
+- Run a long `tasker` command in the background. The long commands include `plan`, `refine`, `execute`, `verify`,
+  `review` and `resume`. The agent sets the `run_in_background` option of its Bash tool. The call keeps the plain form.
 - To wait for the end of a long command, wait for the report of the Bash tool that the background job of the command
   ended. Do not wait with a loop that reads the state in `tasker status`. Such a loop is not reliable. For example, a
   review run can end in `awaiting_work_review` or in `reviewed`, so a loop that waits while the state is `reviewing`
@@ -216,6 +216,8 @@ usual run times. The times come from the tickets of this repo.
 - `tasker plan`: about 1 to 2 minutes for a small issue, and about 4 to 6 minutes for a large issue.
 - `tasker refine`: about 1 to 4 minutes.
 - `tasker execute`: about 1 to 2 minutes for 2 to 4 todos, and about 8 to 15 minutes for 20 to 30 todos.
-- `tasker verify` (`npm run check`): seconds.
+- `tasker verify` (`npm run check`): more than 2 minutes on a local run. On #508 (2026-11-01), a local run passed
+  [the default limit of one Bash call](ci-wait.md#the-ci-wait). In the `Check` workflow, the same command takes about 3
+  to 4 minutes.
 - `tasker review`: about 25 seconds to 2 minutes.
 - A docs ticket: about 1 to 2 minutes for each of plan, refine and execute.

@@ -39,12 +39,12 @@ steps:
    refreshes its output every 3 seconds, so a long wait gives a long output. This step reads only the exit code, so
    `tail` keeps only the end of the output. `set -o pipefail` keeps the exit code of `timeout` and `gh run watch`, not
    the exit code of `tail`. `2>&1` keeps an error of `gh` in the end of the output. `tail` reads its whole input, so the
-   pipe gives no exit code 141. A `Check` run takes about 2 minutes, but it can take longer than one tool call of the
-   agent. The agent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means that the run passed.
-   Exit code 124 means that the run is still in progress. In that case, run the same command again. The 30-minute limit
-   counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a run is not complete
-   when the 30 minutes end, stop. Any other exit code means that the run failed, or that `gh` failed. In that case, go
-   to step 6 of the CI wait.
+   pipe gives no exit code 141. A `Check` run takes about 3 to 5 minutes, but it can take longer than one tool call of
+   the agent. The agent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means that the run
+   passed. Exit code 124 means that the run is still in progress. In that case, run the same command again. The
+   30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a run
+   is not complete when the 30 minutes end, stop. Any other exit code means that the run failed, or that `gh` failed. In
+   that case, go to step 6 of the CI wait.
 6. Run `gh run view <run id> --json status,conclusion,url,jobs`. If the command fails, stop and report the error. If
    `status` is `completed` and `conclusion` is `success`, the run passed. If `status` is not `completed`, `gh run watch`
    failed and the run is still in progress. In that case, do step 5 of the CI wait again. If `status` is `completed` and
