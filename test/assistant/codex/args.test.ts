@@ -1,8 +1,11 @@
+import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { codexArgs } from "../../../src/assistant/codex/args.js";
 import type { Effort, RunInput } from "../../../src/assistant/provider.js";
 import { expectedCodexArgs } from "../../helpers/fake-codex.js";
 import { runInput, sandboxLimits } from "../../helpers/fake-claude.js";
+import { useTempDir } from "../../helpers/temp.js";
 
 function argsOf(overrides: Partial<RunInput> = {}, files: { threadId?: string; schemaPath?: string } = {}) {
   return codexArgs(runInput(overrides), files);
@@ -71,5 +74,84 @@ describe("codexArgs", () => {
     expect(args).not.toContain("--sandbox");
     expect(args).not.toContain("--ephemeral");
     expect(args.join("\n")).not.toContain("sandbox_mode");
+  });
+});
+
+describe("codexArgs: the keys of the deny table", () => {
+  function expected(denyRead: string[]) {
+    return expectedCodexArgs({ model: "haiku", effort: "low", denyRead });
+  }
+
+  function deny(denyRead: string[], env: NodeJS.ProcessEnv = {}) {
+    return argsOf({ env, sandbox: sandboxLimits({ denyRead }) });
+  }
+
+  function realTempDir(): string {
+    return realpathSync(useTempDir("tasker-codex-table-"));
+  }
+
+  it("writes the target for a deny key that is a link", () => {
+    const dir = realTempDir();
+    mkdirSync(join(dir, "real"));
+    symlinkSync(join(dir, "real"), join(dir, "link"));
+
+    expect(deny([join(dir, "link")])).toEqual(expected([join(dir, "real")]));
+  });
+
+  it("leaves out a dangling link", () => {
+    const dir = realTempDir();
+    symlinkSync(join(dir, "missing"), join(dir, "dangling"));
+
+    expect(deny([join(dir, "dangling"), "/h/.ssh"])).toEqual(expected(["/h/.ssh"]));
+  });
+
+  it("gives one key when a link and its target are both on the list", () => {
+    const dir = realTempDir();
+    writeFileSync(join(dir, "file"), "");
+    symlinkSync(join(dir, "file"), join(dir, "link"));
+
+    expect(deny([join(dir, "link"), join(dir, "file")])).toEqual(expected([join(dir, "file")]));
+    expect(deny([join(dir, "file"), join(dir, "link")])).toEqual(expected([join(dir, "file")]));
+  });
+
+  it("leaves out an entry under another deny entry, also a path that exists, in each order", () => {
+    const dir = realTempDir();
+    mkdirSync(join(dir, "d"));
+    writeFileSync(join(dir, "d", "key"), "");
+
+    expect(deny([join(dir, "d"), join(dir, "d", "key")])).toEqual(expected([join(dir, "d")]));
+    expect(deny([join(dir, "d", "key"), join(dir, "d")])).toEqual(expected([join(dir, "d")]));
+    expect(deny(["/a/b", "/a/b/c/d"])).toEqual(expected(["/a/b"]));
+  });
+
+  it("keeps /a/bc beside /a/b", () => {
+    expect(deny(["/a/b", "/a/bc"])).toEqual(expected(["/a/b", "/a/bc"]));
+  });
+
+  it("keeps a missing deny path", () => {
+    expect(deny(["/tasker-no-such/path"])).toEqual(expected(["/tasker-no-such/path"]));
+  });
+
+  it("gives one key for a path that repeats", () => {
+    expect(deny(["/h/x", "/h/x"])).toEqual(expected(["/h/x"]));
+  });
+
+  it("adds the herdr folder and the ssh socket for a read-only run", () => {
+    const dir = realTempDir();
+    writeFileSync(join(dir, "agent"), "");
+    symlinkSync(join(dir, "agent"), join(dir, "agent.link"));
+
+    expect(deny(["/h/.ssh"], { HOME: "/h", SSH_AUTH_SOCK: join(dir, "agent.link") })).toEqual(
+      expected(["/h/.ssh", "/h/.config/herdr", join(dir, "agent")]),
+    );
+    expect(deny([], { HOME: "/h", XDG_CONFIG_HOME: "/x" })).toEqual(expected(["/x/herdr"]));
+  });
+
+  it("adds the herdr folder with no sandbox limits", () => {
+    expect(argsOf({ env: { HOME: "/h" } })).toEqual(expected(["/h/.config/herdr"]));
+  });
+
+  it("leaves out the herdr folder when a denied folder holds it", () => {
+    expect(deny(["/h/.config"], { HOME: "/h" })).toEqual(expected(["/h/.config"]));
   });
 });

@@ -97,6 +97,11 @@ function setUp(control: FakeClaudeControl, overrides: Partial<RunInput> = {}, th
   return { fake, sessionDir, input };
 }
 
+// The herdr folder that the socket deny names for the HOME of the fake.
+function herdrFolder(fake: FakeClaude): string {
+  return join(fake.env.HOME, ".config", "herdr");
+}
+
 async function run(control: FakeClaudeControl, overrides: Partial<RunInput> = {}, threadId?: string) {
   const setup = setUp(control, overrides, threadId);
   const outcome = await codexProvider().run(setup.input);
@@ -231,7 +236,9 @@ describe("createCodexProvider run: the thread id", () => {
   it("passes the id from the file to a continued run", async () => {
     const { fake } = await run({ stream: codexSample("plain") }, {}, "T-from-file");
 
-    expect(fake.calls()[0].argv).toEqual(expectedCodexArgs({ model: "haiku", effort: "low", threadId: "T-from-file" }));
+    expect(fake.calls()[0].argv).toEqual(
+      expectedCodexArgs({ model: "haiku", effort: "low", denyRead: [herdrFolder(fake)], threadId: "T-from-file" }),
+    );
   });
 
   it("fails with no call when a continued run has no thread id file", async () => {
@@ -275,7 +282,9 @@ describe("createCodexProvider run: the arguments and the env", () => {
   it("passes the arguments of a new session", async () => {
     const { fake } = await run({ stream: codexSample("plain") });
 
-    expect(fake.calls()[0].argv).toEqual(expectedCodexArgs({ model: "haiku", effort: "low" }));
+    expect(fake.calls()[0].argv).toEqual(
+      expectedCodexArgs({ model: "haiku", effort: "low", denyRead: [herdrFolder(fake)] }),
+    );
   });
 
   it("passes the arguments of a new session with a schema", async () => {
@@ -285,6 +294,7 @@ describe("createCodexProvider run: the arguments and the env", () => {
       expectedCodexArgs({
         model: "haiku",
         effort: "low",
+        denyRead: [herdrFolder(fake)],
         schemaPath: codexSchemaPath(sessionDir, TEST_SESSION_ID),
       }),
     );
@@ -295,7 +305,9 @@ describe("createCodexProvider run: the arguments and the env", () => {
 
     const { fake } = await run({ stream: codexSample("plain") }, { sandbox });
 
-    expect(fake.calls()[0].argv).toEqual(expectedCodexArgs({ model: "haiku", effort: "low", denyRead: ["/h/.ssh"] }));
+    expect(fake.calls()[0].argv).toEqual(
+      expectedCodexArgs({ model: "haiku", effort: "low", denyRead: ["/h/.ssh", herdrFolder(fake)] }),
+    );
   });
 
   it("sends the prompt on stdin", async () => {
