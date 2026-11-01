@@ -45,8 +45,8 @@ session follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-re
   session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the CI wait and "A failed CI run".
 - [docs/dev/review-findings.md](docs/dev/review-findings.md): "Review findings".
-- [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold
-  rule and the stuck-task rule.
+- [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the section
+  rule, the hold rule and the stuck-task rule.
 - [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each agent", "Schedule a job when an agent
   starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What the agent
   does", "Delete the job" and "Do not use these".

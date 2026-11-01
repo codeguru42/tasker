@@ -242,6 +242,9 @@ its own agent the landing order, also when its ticket lands first. For a stacked
 [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over the sentence "A ticket of an earlier
 milestone lands first".
 
+For a shared doc that two tickets edit in different sections, [the section rule](#the-section-rule) applies in place of
+a landing order.
+
 ### The Docs rule
 
 This rule covers only a shared file between a ticket of the milestone "Docs" and a ticket of a numbered milestone. For
@@ -266,6 +269,50 @@ that the orchestrator knew of. On 2026-10-24, the prompt of #401 named the Docs 
 tasks started after the prompt. Each time, the agent stopped under the fourth case, and the answer was the Docs rule.
 For a stacked ticket and its parent, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over
 this rule.
+
+### The section rule
+
+This rule covers two tickets that edit different sections of a shared doc. A shared doc is a Markdown file under `docs/`
+that both tickets change. A section is the text under one heading of any level, up to the next heading. The text before
+the first heading is also a section. A new heading starts a new section, and a change of a heading line is an edit of
+its section. A moving ticket of [the move rule](pick-the-tickets.md#pick-the-tickets) and a ticket that changes the
+layout of a whole doc edit each section.
+
+For the shared doc, the orchestrator of each ticket sets no landing order, and it sends none to the other orchestrator.
+A landing order for another shared file stays. If the two tickets have no landing order at all, each ticket lands as
+soon as it is ready. The list of [the Docs rule](#the-docs-rule) applies to the shared doc. For the shared doc, this
+rule wins over the second sentence of the bullet "If the edit of a shared file is not required". The first sentence of
+that bullet still applies.
+
+The orchestrator that does the compare of [the overlap rule](#the-overlap-rule) also names the sections of each shared
+doc. Before the start of a ticket, it takes them from the items and the hints that the shared-file bullet of
+[Pick the tickets](pick-the-tickets.md#pick-the-tickets) counts. For a task in flight, it takes them from the plan, with
+`tasker show-plan <issue>`.
+
+For a task in flight, the orchestrator also runs `git fetch --multiple tasker origin`, and then
+`git diff -U100000 origin/<base branch>...tasker/<task branch> -- <docs>`. `<docs>` is each shared doc of the task. This
+read is a step of its own, so it uses each ref in one command. The large context shows each heading, because a hunk
+header shows no heading of a Markdown file.
+
+If the two tickets share a section, the overlap rule sets the landing order. If the orchestrator cannot name the
+sections of a ticket, the overlap rule also sets the landing order. A failed fetch, a failed read of the plan and a
+failed diff are such cases. If a later compare finds a shared section, the overlap rule sets the landing order at that
+compare.
+
+In each of these cases, the orchestrator that sets the landing order tells the other orchestrator with `SendMessage`.
+The other orchestrator tells its own agent. A landing order that already exists stays, and
+[Land the work](#land-the-work) says who changes it.
+
+For a ticket of the milestone "Docs" and a ticket of a numbered milestone, [the Docs rule](#the-docs-rule) applies
+instead. For a stacked ticket and its parent, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule)
+wins over this rule.
+
+If an agent stops under the fourth case of [the stop rule](plan-review.md#the-stop-rule) for a shared doc, the
+orchestrator does this compare for that doc. If this rule covers the doc, the orchestrator tells the agent.
+
+The user decided this rule on 2026-10-31. The reason: a relayed change of a landing order waits for the user, and that
+wait can cost more than the rebase that it prevents. The cost: a clash of meaning between two sections shows late, in
+the review or the diff read of the ticket that lands second.
 
 ### The hold rule
 

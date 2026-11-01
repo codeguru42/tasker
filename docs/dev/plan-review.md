@@ -136,9 +136,10 @@ agent [stops](limits.md#the-answer-wait-rule) in each of these cases:
 - The plan makes a design choice that the issue does not make.
 - The plan has a security gap.
 - The plan changes a file that the issue does not name, and another task in progress also changes that file. For
-  example, `tasker refine` prints a warning for such a file (see ["Land the work"](land-the-work.md#land-the-work)).
-  This case does not apply when the orchestrator already set a landing order for that file. For each task of the overlap
-  warning, the agent reads the milestone of its issue with
+  example, `tasker refine` prints a warning for such a file (see ["Land the work"](land-the-work.md#land-the-work)). If
+  the orchestrator already set a landing order for that file, or told the agent that
+  [the section rule](land-the-work.md#the-section-rule) covers it, this case does not apply. For each task of the
+  overlap warning, the agent reads the milestone of its issue with
   `gh issue view <issue> --json milestone -q '.milestone.title'`. `<issue>` is the number of the issue key on the line
   of the task in the warning. The agent knows the milestone of its own ticket from its prompt (see
   [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent)). This case does not count a task of the other
