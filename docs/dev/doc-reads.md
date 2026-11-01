@@ -141,9 +141,27 @@ named docs again before its next read of the state. The limit of the wait does n
 
 An agent can also wait with its turn ended. Examples are a wait for an answer under
 [the answer-wait rule](limits.md#the-answer-wait-rule) of `docs/dev/limits.md`, and a wait in `quota_blocked` or
-`interrupted`, as ["What the agent does"](quota.md#what-the-agent-does) of `docs/dev/quota.md` says. Such an agent reads
-the named docs again. Then it ends its turn with an [interim final answer](limits.md#the-answer-wait-rule). It sends no
-`SendMessage` and does not repeat its question or its report.
+`interrupted`, as ["What the agent does"](quota.md#what-the-agent-does) of `docs/dev/quota.md` says.
+
+If the last report of the agent is an interim final answer, the agent waits with its turn ended. If the orchestrator
+sent an answer, a next step or a resume message after that report, this wait ended. In each other case, the orchestrator
+sends the agent notice.
+
+For such a wait, the orchestrator sends no agent notice, because each message starts the agent again. It keeps each
+landed commit and each changed section of each doc of that agent. It puts them in the next message that it sends to that
+agent, for example the answer or the resume message. Each section stands one time in that message. The paragraphs of
+this wait win over each other sentence of this section on the send of an agent notice.
+
+After the send of that message works, the orchestrator drops the kept sections. If that message fails, the orchestrator
+keeps them for the next message. When the agent is no longer in flight, the orchestrator also drops them. When a new
+session takes its ticket, the orchestrator also drops them. The limit: the kept sections live in the context of the
+orchestrator, so a compaction can lose them.
+
+The agent treats the sections of that message as an agent notice. An agent notice can still reach an agent that ended
+its turn, because the notice left before its interim final answer. A message can also leave the agent in its wait, for
+example a hold of the parent-hold rule. Such an agent reads the named docs again. Then it ends its turn with an
+[interim final answer](limits.md#the-answer-wait-rule). It sends no `SendMessage` and does not repeat its question or
+its report.
 
 The first line of that interim final answer says that the answer is not the final report and names what the agent still
 waits for. The orchestrator treats it as no answer and no next step, and the wait does not change. For the orchestrator,
