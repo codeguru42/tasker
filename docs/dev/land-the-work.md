@@ -75,6 +75,9 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   that its user confirmed. Otherwise the two agents follow opposite orders for a time. If the user of the orchestrator
   that gets the relay rejects the change, that orchestrator tells the other orchestrator with `SendMessage`. Then the
   old order stays for both orchestrators.
+
+  [The set rule](#the-set-rule) gives the case where one confirmation covers a relayed change.
+
 - If the orchestrator tells the later agent to wait again, or to start the wait under the hold rule, the later agent
   starts a new wait as in the "To wait" bullet. The new limit is 60 minutes from the new first read. The task stays in
   `awaiting_work_review`.
@@ -245,6 +248,9 @@ milestone lands first".
 For a shared doc that two tickets edit in different sections, [the section rule](#the-section-rule) applies in place of
 a landing order.
 
+For a pair of a named set, [the set rule](#the-set-rule) wins over the sentence "A ticket of an earlier milestone lands
+first".
+
 ### The Docs rule
 
 This rule covers only a shared file between a ticket of the milestone "Docs" and a ticket of a numbered milestone. For
@@ -313,6 +319,52 @@ orchestrator does this compare for that doc. If this rule covers the doc, the or
 The user decided this rule on 2026-10-31. The reason: a relayed change of a landing order waits for the user, and that
 wait can cost more than the rebase that it prevents. The cost: a clash of meaning between two sections shows late, in
 the review or the diff read of the ticket that lands second.
+
+### The set rule
+
+This rule covers a landing order of the overlap rule. One confirmation of the user can cover a named set of tickets. An
+orchestrator that asks the user under the bullet "Only the user changes a landing order of the overlap rule" can name a
+set in its question. The question or the word of the user names each ticket of the set. That text also gives the landing
+order between tickets of two orchestrators. A landing order between two tickets of one orchestrator stays a choice of
+that orchestrator.
+
+An answer that names no ticket covers the set of the question. An answer that names tickets covers only these tickets.
+The order that the user accepts or gives is the confirmed order. If the user rejects or drops the set, the old order
+stays, as that bullet says. While the question waits, the old order also stays. A relayed change of a ticket of the set
+waits for the same answer.
+
+When the answer or the word of the user reaches an orchestrator through its own operator, that orchestrator keeps the
+set. That operator passes the answer or the word to the operator of each other orchestrator of the set, as
+[The word of the user](operator-conversations.md#the-word-of-the-user) says. The named set stands in the item of the
+confirmation or in the word of the user, not in a tracked doc. The
+[handoff file](handoff.md#the-items-of-a-handoff-file) of the orchestrator lists each set under the decisions of the
+user. A new orchestrator keeps each set that its handoff file lists.
+
+The confirmed order applies only to a pair of the set that the overlap rule covers. For such a pair, it wins over the
+sentence "A ticket of an earlier milestone lands first". For a stacked ticket and its parent,
+[the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over a confirmed order. When a compare of
+the overlap rule finds a pair of the set, an orchestrator that keeps the set uses the confirmed order. If this order
+differs from the order of the overlap rule, it tells the other orchestrator with `SendMessage`. That message is a
+relayed change.
+
+If a relayed change has only tickets of the set and follows the confirmed order, it needs no new question. This case
+covers an orchestrator that keeps the set. For this change, the set wins over the sentence of that bullet that starts
+"Then the orchestrator that gets the relay asks its own user". The other sentences of that bullet stay. The orchestrator
+tells its agent the order, and it tells the other orchestrator that its user confirmed.
+
+The orchestrator asks the user, as the bullet "Only the user changes a landing order of the overlap rule" says, in each
+of these cases:
+
+- The relayed change has a ticket outside the set.
+- The relayed change gives another order between tickets of two orchestrators.
+- The orchestrator keeps no set, or it finds no record of the set.
+
+A later word of the user about the landing order of a ticket of the set wins over the set. An example is a swap under
+[the stuck-task rule](#the-stuck-task-rule). That ticket then leaves the set. After a ticket lands, it also leaves the
+set.
+
+The user decided this rule on 2026-10-31. The reason: each new pair of the set otherwise asks the user the same
+question. The cost: a change of the facts of a ticket can make a confirmed order stale.
 
 ### The hold rule
 
