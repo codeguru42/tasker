@@ -68,6 +68,16 @@ Run each git command in the clone of the driver or in its worktree.
    [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds. At the new conflict of step
    11, the rule holds with no break through the loop.
 
+   A conflict in the migration array of `src/store/migrations.ts` has one fix. Keep all the migrations. Put the
+   migrations of the base first, in their order, then the migrations of the task. Each number of a migration of the task
+   goes up by the count of the new migrations of the base. This holds in the tests and in `docs/dev/data-root.md`.
+
+   Examples of the forms are `migrations[N]`, `migrations.slice(0, N)`, `makeOldDatabase(<path>, N)` and
+   `schemaVersion(...)` with `.toBe(N)`. A check of `migrations.length` holds the new total of the migrations. The
+   reason is in [Schema versions](data-root.md#schema-versions): a migration never changes its place after it lands. If
+   step 8 then fails, for example because two migrations add the same column, stop. A person decides the next step, as
+   step 10 describes.
+
 8. In the worktree, run `npm run check`. The command must pass.
 9. In the worktree, run `git rev-parse --verify <task branch>`. If the read fails, stop before the push. A person
    decides the next step, as step 10 describes.

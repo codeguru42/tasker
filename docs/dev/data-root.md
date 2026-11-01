@@ -345,6 +345,8 @@ If the file has a newer version than tasker knows, tasker refuses it and does no
 To add a version, append one migration. Never edit a migration that exists, because databases that already ran it do not
 run it again.
 
+For a conflict in the migration array in a rebase, see [step 7 of the procedure](rebase-conflicts.md#procedure).
+
 ## Writes from more than one process
 
 Two tasker processes can use the same database at once. A busy timeout makes a process that finds the database locked
