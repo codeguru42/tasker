@@ -153,6 +153,13 @@ These rules hold:
 - The record is written once. A second record with the same id writes nothing, also when the model or the effort differ.
   A second record with another id is an error that names both ids. A second id hides the conversation that the task must
   continue.
+- The column `provider_session_id` holds the id that a provider gives to a session. It is NULL until a provider gives an
+  id. tasker stores no such id for `claude-code`, so the column stays NULL in each of its rows. A run sets this column
+  once, after the record. The rule of the record covers the columns of the record. Schema version 18 adds it, and the
+  migration fills no row.
+- The `usage_total_` columns hold the last usage total of a session, in the four counters of `TokenUsage`. They are NULL
+  until a provider gives a total. tasker stores no total for `claude-code`, so they stay NULL in each of its rows. Each
+  new total replaces them. Schema version 18 adds them, and the migration fills no row.
 - A task has one plan session at most.
 - A task has one execute session at most for each version of its plan. The execute runs of the pinned revision work in
   that session.

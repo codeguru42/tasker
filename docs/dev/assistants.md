@@ -4,6 +4,11 @@ An assistant is a coding-agent program. Tasker starts it in the worktree of a ta
 The assistant interface lets tasker run each assistant program in the same way. A command never imports the module of
 one assistant.
 
+tasker stores a value that an assistant gives for a session in one form for each provider. The code that stores and
+passes the value has no case for one provider. Each provider turns the report of its program into that form, and a
+provider with no such value leaves it NULL. An example is the `usage` event, which holds the four counters of
+`TokenUsage` for one run or `"unavailable"`, for each provider. A name of a column names no provider.
+
 ## Refuse, never drop
 
 A provider that cannot enforce a limit that tasker asks for (`access`, `deniedCommands`, `deniedEditPaths` or `sandbox`)
@@ -17,7 +22,8 @@ because the list is not empty. The sandbox is the only limit, and it blocks only
 ## The session id
 
 The caller must make the session id and must record it before the run. As a result, a crash, a timeout or a quota stop
-still leaves an id to continue. No provider has to report an id.
+still leaves an id to continue. No provider has to report an id. A provider can still report the id that its program
+makes. A continued `codex` run needs that id.
 
 ## The outcome of an interrupted run
 
@@ -429,21 +435,22 @@ continued session.
 - Never use `-s`, `--sandbox` or `sandbox_mode`, because a profile does not compose with them. Never use `--ephemeral`,
   because an ephemeral session cannot be continued.
 
-### The session files
+### The values of a session
 
-Codex gives the thread id in the `thread.started` event. A continued run needs it. The provider keeps these files for
-each session id under `sessionDir`. Their paths come from `src/store/layout.ts`.
+Codex gives the thread id in the `thread.started` event. A continued run needs it. tasker stores the id in
+`provider_session_id` of the `sessions` table. A continued run with no id gets a `failure` outcome before the spawn. A
+failed write does not stop the run.
 
-- `<sessionId>.codex-thread` holds the thread id. The provider writes it at each `thread.started`. A continued run with
-  no such file gets a `failure` outcome before the spawn. A failed write does not stop the run.
-- `<sessionId>.codex-usage` holds the last usage total of the thread as JSON. The `usage` of `turn.completed` is a total
-  for the whole thread, not for the run. So the usage of a run is the total of the run minus the stored total, never
-  below 0. A missing or bad file counts as zero. A run with no `turn.completed` gives `"unavailable"` and leaves the
-  file as it is.
-- `<sessionId>.schema.json` holds `jsonSchema` for `--output-schema`.
+The `usage` of `turn.completed` is a total for the whole thread, not for the run. tasker stores the last total in the
+`usage_total_` columns of the `sessions` table. The usage of a run is the total of the run minus the stored total, never
+below 0. NULL counts as zero. A run with no `turn.completed` gives `"unavailable"` and leaves these columns as they are.
+A failed write does not stop the run, and the next run then counts too much.
 
 `input_tokens` includes the cached tokens, so `inputTokens` is `input_tokens` minus `cached_input_tokens`.
 `output_tokens` includes the reasoning tokens.
+
+The provider keeps `<sessionId>.schema.json` under `sessionDir`, with `jsonSchema` for `--output-schema`. Its path comes
+from `src/store/layout.ts`.
 
 ### The outcome
 
