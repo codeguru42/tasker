@@ -59,9 +59,14 @@ Run each git command in the clone of the driver or in its worktree.
    onto `origin/<base branch>` also replays the old commits of the parent. On #182, the 16 commits of the task replayed
    with one conflict, in `docs/dev/tasks.md`.
 
+   In the loop of step 11, run a plain rebase onto `origin/<base branch>`, also for a stacked task. Step 4 goes on only
+   for a parent that landed. As a result, the local task branch is already on the base branch. The `<start base>` of
+   this step is old. In the loop, this step needs no start base, and its stop for no start base does not apply.
+
    If the driver holds no start base, stop. A person decides the next step, as step 10 describes. The worktree and the
    local task branch stay. Fix the conflicts. From here to step 11,
-   [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds.
+   [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds. At the new conflict of step
+   11, the rule holds with no break through the loop.
 
 8. In the worktree, run `npm run check`. The command must pass.
 9. In the worktree, run `git rev-parse --verify <task branch>`. If the read fails, stop before the push. A person
@@ -113,14 +118,47 @@ Run each git command in the clone of the driver or in its worktree.
     second `tasker update-branch` stopped on a conflict. The agent fixed the branch as 526e9e5b, and the normal push
     failed. The user said: "go ahead with the delete, no need to ask next time".
 
-11. Run `tasker update-branch <issue> --take-remote`. tasker resets its task branch to the task branch on `origin`.
-    Then, before step 12, the driver records `<taken>` in the clone of the driver, not in the worktree. Run
-    `git fetch tasker`. Then run `git rev-parse --verify tasker/<task branch>`. Keep the printed hash as `<taken>` until
-    step 21 ends. [The take check](#the-take-check), step 10 of ["Run one ticket"](run-one-ticket.md#run-one-ticket),
-    which step 21 runs, and the pushed-branch rule of
-    [the broken-commit steps](verify-failures.md#the-broken-commit-steps), which runs after this step, use it. If one of
-    the two commands fails, step 11 records no `<taken>`. Continue with step 12. [The take check](#the-take-check) then
-    fails. As a result, the worktree, the local task branch and the task branch on `origin` stay.
+11. Run `tasker update-branch <issue> --take-remote`. tasker resets its task branch to the task branch on `origin`. Then
+    tasker rebases or merges that branch onto the newest base branch.
+
+    A new conflict of this step has these signs:
+
+    - The command exits with 1
+    - A line of its stderr starts with `the rebase onto ` or `the merge onto `
+    - That line holds `stopped on conflicts:`
+
+    tasker moves its task branch back to its old head. At a new conflict, do not run the fetch and the read of `<taken>`
+    of this step. The driver holds no `<taken>`. The driver keeps `<pushed>` as a `<pushed>` of a new conflict.
+
+    In the worktree, run `git fetch origin`. If the fetch fails, stop. Otherwise, go back to step 7 in the same
+    worktree. Do not do step 6, because the update rule there drops the fix that only the local task branch holds. This
+    return from step 11 to step 7 is the loop.
+
+    On #460 (2026-10-25), the agent rebased onto 20ad87bc and pushed e7b9d58e at step 9. Then `main` moved to 4554ff97,
+    and step 11 exited with 1 on a new conflict. The local task branch held the work of e7b9d58e. The orchestrator
+    ordered a delete with a lease at e7b9d58e and the same steps again.
+
+    The case of a new conflict covers no other failure of this step. One such failure prints a line that starts with
+    `updating branch failed: `, and the task goes to `failed`. That line can also hold `stopped on conflicts:`.
+
+    In each other case, the driver records `<taken>` before step 12. The driver records it in the clone of the driver,
+    not in the worktree. Run `git fetch tasker`. Then run `git rev-parse --verify tasker/<task branch>`. Keep the
+    printed hash as `<taken>` until step 21 ends. [The take check](#the-take-check), step 10 of
+    ["Run one ticket"](run-one-ticket.md#run-one-ticket), which step 21 runs, and the pushed-branch rule of
+    [the broken-commit steps](verify-failures.md#the-broken-commit-steps), which runs after this step, use it.
+    `<pushed>` has two users: step 10 of this page and step 5 of the pushed-branch rule. If one of the two commands
+    fails, step 11 records no `<taken>`. Continue with step 12. [The take check](#the-take-check) then fails. As a
+    result, the worktree, the local task branch and the task branch on `origin` stay.
+
+    If this step records a `<taken>`, read its stdout for one of these lines:
+
+    - `synced <task branch> from origin/<task branch> at <pushed> by take-remote`
+    - `synced <task branch> from origin/<task branch> at <pushed> by fast-forward`
+
+    If stdout holds one of these lines, keep `<pushed>` as a `<pushed>` of a take. That line shows that tasker took
+    `<pushed>`. The tip of tasker can then be a rebase of `<pushed>`. Each other step 11 ends `<pushed>`. If no `synced`
+    line prints, `<pushed>` ends. tasker can already hold it, and then `<pushed>` ends too.
+
 12. Run `tasker show <issue>`. It prints the state of the task and the next valid commands.
 13. If the task is in `executed`, run `tasker verify` and `tasker review` again. Then land the work as usual.
 14. If the task is in another state, follow the commands that `tasker show` prints.
