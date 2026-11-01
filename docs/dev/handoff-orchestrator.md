@@ -35,10 +35,8 @@ The board watch rule has these parts:
   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
 - When the job fires, the orchestrator reads the board as the prompt says. It starts each ticket that the rules of Pick
   the tickets allow. The job changes none of these rules.
-- A read by the job is a read of the board. It counts for each rule of Pick the tickets that acts "at its next read of
-  the board" or "each time it reads the board". The priority rule applies to each start of the job. A read by the job is
-  not a landing. As a result, it does not count for a read that a rule ties to a landing. An example is the read of the
-  state of the parent issue in [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule).
+- A read by the job is a read of the board that does not come at a landing. The general rule of the bullet "Each time a
+  ticket lands, read the board again" of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) applies to it.
 - Each rule that stops a start wins over the job. Examples are the ban of [A failed CI run](ci-wait.md#a-failed-ci-run),
   a hold of the user and step 1 of [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator). Another
   example is the ban on a new ticket after the suggestion of a handoff in [The landing count](#the-landing-count). While
