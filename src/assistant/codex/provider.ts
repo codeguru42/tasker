@@ -73,8 +73,8 @@ function codexOutcomeOf(
 }
 
 // The provider runs codex for the plan and the review roles, and gives the doctor checks of Codex.
-// The role execute is refused, because the profile has no write grant. The sandbox alone enforces
-// deniedCommands. overageStop has no effect.
+// The role execute is refused, because the profile has no write grant. The sandbox is the only limit on
+// deniedCommands, and it does not block every entry. overageStop has no effect.
 export function createCodexProvider(): AssistantProvider {
   return {
     id: "codex",

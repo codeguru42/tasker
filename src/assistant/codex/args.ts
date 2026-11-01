@@ -20,7 +20,8 @@ function filesystemTable(input: RunInput): string {
 
 // The arguments of one codex run. The prompt goes on stdin (the last argument is -).
 // Never use -s, --sandbox, sandbox_mode or --ephemeral: profiles do not compose with a sandbox mode,
-// and an ephemeral session cannot be continued. deniedCommands has no rule here: the sandbox alone enforces it.
+// and an ephemeral session cannot be continued. deniedCommands has no rule here: the sandbox is the only
+// limit, and it does not block every entry.
 export function codexArgs(input: RunInput, files: CodexFiles): string[] {
   const resume = files.threadId !== undefined;
   return [

@@ -10,8 +10,9 @@ A provider that cannot enforce a limit that tasker asks for (`access`, `deniedCo
 must refuse the run before it starts the program. A run with less confinement than tasker asked for can write or read
 outside the limits that the user relies on. The doc comment of the interface holds the rule for the code.
 
-There is one exception. For `codex`, the sandbox alone enforces `deniedCommands`. The provider writes no rule for these
-commands, and it does not refuse a run because the list is not empty.
+There is one exception. For `codex`, the provider writes no rule for `deniedCommands`, and it does not refuse a run
+because the list is not empty. The sandbox is the only limit, and it blocks only some commands of the list.
+[The codex provider](#the-codex-provider) says which commands stay open.
 
 ## The session id
 
@@ -442,7 +443,8 @@ The provider sets no `sandboxCleanup`. The sandbox leaves no placeholder in the 
 
 No `-c` key and no flag gives one run a `forbidden` rule. A rules file loads only from the Codex home of the user or
 from a trusted worktree, and `--ignore-user-config` drops the trust. `--ignore-rules` drops each rule. So the agent
-tested no form that passes a rule, because no rule exists. The sandbox alone enforces `deniedCommands`.
+tested no form that passes a rule, because no rule exists. The sandbox is the only limit on `deniedCommands`, and it
+does not block every entry.
 
 The sandbox blocks the socket of herdr, the socket of the ssh agent, each write and each path of `denyRead`.
 

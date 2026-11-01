@@ -128,8 +128,9 @@ export interface RecordedSession extends ModelChoice {
  *
  * Refuse, never drop: a provider that cannot enforce a limit of a run (access, deniedCommands,
  * deniedEditPaths or sandbox) gives a "failure" outcome before the spawn. It never runs with
- * less confinement than tasker asked for. One exception: for codex, the sandbox alone enforces
- * deniedCommands, and the provider does not refuse a run because the list is not empty.
+ * less confinement than tasker asked for. One exception: for codex, the provider writes no rule
+ * for deniedCommands and does not refuse a run because the list is not empty. The sandbox is the only limit, and it
+ * does not block every entry (for example git push over https stays open).
  */
 export interface AssistantProvider {
   readonly id: AssistantProviderId;
