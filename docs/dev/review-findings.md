@@ -61,14 +61,18 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   first text id belongs to the update right after it. A read of the second patch id or the second text id belongs to the
   update right before it. The fetch before a read belongs to the same update as that read. The agent never sends a read
   and a `tasker update-branch` as parallel calls of one message. A read that belongs to the update right after it ends
-  before that update starts. A read that belongs to the update right before it starts after that update ends. The review
-  after the update of a denial counts as a loop, as the bullet "The review after `tasker update-branch` counts as a
-  loop" says for a failed command. This holds also when the agent runs that update after the answer of the orchestrator.
-  A denial covers only the update of the denial. At each later `tasker update-branch`, the agent runs all the reads
-  again, also the denied read. If the answer of the orchestrator says otherwise, the answer wins. On #290, the
-  classifier denied the second patch-id read once, the agent skipped the reads at the next update, and two reviews
-  counted as loops. On #374, the diff read ran its first `tasker update-branch` with no first patch id, and the agent
-  sent a read and an update in parallel.
+  before that update starts. A read that belongs to the update right before it starts after that update ends. The agent
+  also runs the reads of this rule one after the other, never as parallel calls of one message. Each read starts after
+  the read before it ends. A read of this rule and the read of the start base after an update also run one after the
+  other. The review after the update of a denial counts as a loop, as the bullet "The review after
+  `tasker update-branch` counts as a loop" says for a failed command. This holds also when the agent runs that update
+  after the answer of the orchestrator. A denial covers only the update of the denial. At each later
+  `tasker update-branch`, the agent runs all the reads again, also the denied read. If the answer of the orchestrator
+  says otherwise, the answer wins. On #290, the classifier denied the second patch-id read once, the agent skipped the
+  reads at the next update, and two reviews counted as loops. On #374, the diff read ran its first
+  `tasker update-branch` with no first patch id, and the agent sent a read and an update in parallel. On #443
+  (2026-10-25), the agent sent the patch-id read and the text-id read, each with its fetch, as parallel calls of one
+  message.
 
 - The same-text compare: the patch id depends on more than the text of the changed lines, for example on the context
   lines of the hunks. On #229 and #231, the patch ids differed after the move onto `main` (7a499ce5 and 327f92ce on
