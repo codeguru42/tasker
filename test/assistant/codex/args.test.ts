@@ -1,12 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { codexArgs } from "../../../src/assistant/codex/args.js";
-import type { Effort, RunInput, SandboxLimits } from "../../../src/assistant/provider.js";
+import type { Effort, RunInput } from "../../../src/assistant/provider.js";
 import { expectedCodexArgs } from "../../helpers/fake-codex.js";
-import { runInput } from "../../helpers/fake-claude.js";
-
-function sandboxOf(denyRead: string[], allowWrite: string[] = []): SandboxLimits {
-  return { allowWrite, denyRead, trackedPaths: async () => [], sharedFolder: "/shared" };
-}
+import { runInput, sandboxLimits } from "../../helpers/fake-claude.js";
 
 function argsOf(overrides: Partial<RunInput> = {}, files: { threadId?: string; schemaPath?: string } = {}) {
   return codexArgs(runInput(overrides), files);
@@ -20,7 +16,7 @@ describe("codexArgs", () => {
   it("writes one key for each denied path with JSON.stringify", () => {
     const denyRead = ["/h/.ssh", "/h/a b", '/h/q"t'];
 
-    expect(argsOf({ sandbox: sandboxOf(denyRead) })).toEqual(
+    expect(argsOf({ sandbox: sandboxLimits({ denyRead }) })).toEqual(
       expectedCodexArgs({ model: "haiku", effort: "low", denyRead }),
     );
   });
@@ -44,14 +40,16 @@ describe("codexArgs", () => {
   });
 
   it("gives one key for a path that repeats", () => {
-    const args = argsOf({ sandbox: sandboxOf(["/h/.ssh", "/h/.ssh"]) });
+    const args = argsOf({ sandbox: sandboxLimits({ denyRead: ["/h/.ssh", "/h/.ssh"] }) });
 
     expect(args).toEqual(expectedCodexArgs({ model: "haiku", effort: "low", denyRead: ["/h/.ssh"] }));
     expect(args.join("\n").split('"/h/.ssh"').length - 1).toBe(1);
   });
 
   it("does not read allowWrite", () => {
-    expect(argsOf({ sandbox: sandboxOf([], ["/w", "/x"]) })).toEqual(argsOf({ sandbox: sandboxOf([]) }));
+    expect(argsOf({ sandbox: sandboxLimits({ allowWrite: ["/w", "/x"] }) })).toEqual(
+      argsOf({ sandbox: sandboxLimits() }),
+    );
   });
 
   it("does not read deniedCommands", () => {
@@ -67,7 +65,7 @@ describe("codexArgs", () => {
   });
 
   it("holds no sandbox flag and no ephemeral flag", () => {
-    const args = argsOf({ sandbox: sandboxOf(["/a"]) }, { threadId: "T1", schemaPath: "/s" });
+    const args = argsOf({ sandbox: sandboxLimits({ denyRead: ["/a"] }) }, { threadId: "T1", schemaPath: "/s" });
 
     expect(args).not.toContain("-s");
     expect(args).not.toContain("--sandbox");

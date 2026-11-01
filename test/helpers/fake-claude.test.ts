@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
 import { isOnPath } from "../../src/assistant/claude-code/sandbox.js";
 import { createClaudeCodeProvider } from "../../src/assistant/claude-code/provider.js";
-import type { AssistantEvent } from "../../src/assistant/provider.js";
+import type { AssistantEvent, RunOutcome } from "../../src/assistant/provider.js";
 import {
   argAfter,
   claudeApprovalWarningEvent,
@@ -14,8 +14,10 @@ import {
   claudeSample,
   claudeSampleEvents,
   claudeSampleWithResult,
+  failureOutcomeOf,
   noResetsAt,
   runInput,
+  sandboxLimits,
   TEST_SESSION_ID,
   useFakeClaude,
   useFakeClaudeOnPath,
@@ -89,6 +91,43 @@ describe("runInput", () => {
 
     expect(runInput().prompt).toBe("say hello");
     expect(runInput().env).toEqual({});
+  });
+});
+
+describe("failureOutcomeOf", () => {
+  it("gives the same outcome for a failure outcome", () => {
+    const outcome: RunOutcome = {
+      kind: "failure",
+      reason: "x",
+      exitCode: 1,
+      signal: null,
+      permissionDenials: [],
+    } as unknown as RunOutcome;
+
+    expect(failureOutcomeOf(outcome)).toBe(outcome);
+  });
+
+  it("throws for a success outcome", () => {
+    const outcome = { kind: "success" } as unknown as RunOutcome;
+
+    expect(() => failureOutcomeOf(outcome)).toThrow();
+  });
+});
+
+describe("sandboxLimits", () => {
+  it("gives the defaults, and its trackedPaths gives an empty list", async () => {
+    const limits = sandboxLimits();
+
+    expect(limits).toMatchObject({ allowWrite: [], denyRead: [], sharedFolder: "/shared" });
+    expect(await limits.trackedPaths(["a"])).toEqual([]);
+  });
+
+  it("lets an override win and keeps the other defaults", () => {
+    expect(sandboxLimits({ denyRead: ["/a"] })).toMatchObject({
+      allowWrite: [],
+      denyRead: ["/a"],
+      sharedFolder: "/shared",
+    });
   });
 });
 

@@ -1,7 +1,8 @@
+import { expect } from "vitest";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { AssistantEvent, RunInput } from "../../src/assistant/provider.js";
+import type { AssistantEvent, RunInput, RunOutcome, SandboxLimits } from "../../src/assistant/provider.js";
 import { shellQuote } from "../../src/shell-quote.js";
 import { useFakeSandboxBin, writeFakeCommand } from "./fake-commands.js";
 import { useProcessEnv, useTempDir, useTempHome } from "./temp.js";
@@ -156,6 +157,17 @@ export function runInput(overrides: Partial<RunInput> = {}): RunInput {
     deniedEditPaths: [],
     ...overrides,
   };
+}
+
+// Checks that an outcome is a failure, and gives it with the failure type.
+export function failureOutcomeOf(outcome: RunOutcome): Extract<RunOutcome, { kind: "failure" }> {
+  expect(outcome.kind).toBe("failure");
+  return outcome as Extract<RunOutcome, { kind: "failure" }>;
+}
+
+// Sandbox limits with empty lists and a shared folder, new for each call.
+export function sandboxLimits(overrides: Partial<SandboxLimits> = {}): SandboxLimits {
+  return { allowWrite: [], denyRead: [], trackedPaths: async () => [], sharedFolder: "/shared", ...overrides };
 }
 
 // Makes a fake claude on a new temp folder, and removes it after the test. Call it inside a test.

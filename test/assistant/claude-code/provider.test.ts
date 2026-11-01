@@ -11,6 +11,7 @@ import {
   claudeSample,
   claudeSampleEvents,
   claudeSampleWithResult,
+  failureOutcomeOf,
   runInput,
   type FakeClaude,
   type FakeClaudeControl,
@@ -43,11 +44,6 @@ const stopped = (event: AssistantEvent = claudeOverageEvent()): FakeClaudeContro
 });
 
 const lines = (events: AssistantEvent[]) => events.map((event) => JSON.stringify(event));
-
-function failureOf(outcome: RunOutcome): Extract<RunOutcome, { kind: "failure" }> {
-  expect(outcome.kind).toBe("failure");
-  return outcome as Extract<RunOutcome, { kind: "failure" }>;
-}
 
 describe("createClaudeCodeProvider isQuotaEvent", () => {
   it("names the rate limit event as a quota event and the result event as none", () => {
@@ -141,7 +137,7 @@ describe("createClaudeCodeProvider run", () => {
 
     const { outcome } = await run({ stream }, { jsonSchema: { type: "object" } });
 
-    expect(failureOf(outcome)).toMatchObject({
+    expect(failureOutcomeOf(outcome)).toMatchObject({
       reason: "the assistant gave no structured answer",
       exitCode: 0,
       signal: null,
@@ -158,7 +154,7 @@ describe("createClaudeCodeProvider run", () => {
   it("fails with no result when the result line is missing and the exit code is 0", async () => {
     const { outcome } = await run({ stream: claudeSample("plain").slice(0, 3) });
 
-    expect(failureOf(outcome)).toMatchObject({
+    expect(failureOutcomeOf(outcome)).toMatchObject({
       reason: "the assistant ended with no result",
       usage: "unavailable",
       exitCode: 0,
@@ -174,7 +170,7 @@ describe("createClaudeCodeProvider run", () => {
     const { outcome } = await run({ stream }, { onEvent: (event) => events.push(event) });
 
     expect(events).toHaveLength(3);
-    expect(failureOf(outcome)).toMatchObject({ reason: "the assistant ended with no result" });
+    expect(failureOutcomeOf(outcome)).toMatchObject({ reason: "the assistant ended with no result" });
     expect(outcome.events).toHaveLength(3);
   });
 
@@ -188,7 +184,7 @@ describe("createClaudeCodeProvider run", () => {
 
     const { outcome } = await run({ stream, exitCode: 1, stderr: "ignored" });
 
-    expect(failureOf(outcome)).toMatchObject({
+    expect(failureOutcomeOf(outcome)).toMatchObject({
       reason: "Credit balance is too low",
       exitCode: 1,
       signal: null,
@@ -206,7 +202,7 @@ describe("createClaudeCodeProvider run", () => {
 
     const { outcome } = await run({ stream, exitCode: 1 });
 
-    expect(failureOf(outcome).reason).toBe("the assistant ended with the error error_during_execution");
+    expect(failureOutcomeOf(outcome).reason).toBe("the assistant ended with the error error_during_execution");
   });
 
   it("falls back to a general text when an error result has no text and no subtype", async () => {
@@ -220,7 +216,7 @@ describe("createClaudeCodeProvider run", () => {
 
     const { outcome } = await run({ stream });
 
-    expect(failureOf(outcome).reason).toBe("the assistant ended with an error");
+    expect(failureOutcomeOf(outcome).reason).toBe("the assistant ended with an error");
   });
 
   it("gives the denials of a result that has is_error true", async () => {
@@ -232,7 +228,7 @@ describe("createClaudeCodeProvider run", () => {
 
     const { outcome } = await run({ stream });
 
-    expect(failureOf(outcome).permissionDenials).toEqual([
+    expect(failureOutcomeOf(outcome).permissionDenials).toEqual([
       { tool: "Write", input: { file_path: "/work/note.txt", content: "hi" } },
     ]);
   });
@@ -240,19 +236,19 @@ describe("createClaudeCodeProvider run", () => {
   it("fails with the exit code and the stderr tail", async () => {
     const { outcome } = await run({ stream: claudeSample("plain"), exitCode: 2, stderr: "boom\n" });
 
-    expect(failureOf(outcome)).toMatchObject({ reason: "claude exited 2: boom", exitCode: 2, signal: null });
+    expect(failureOutcomeOf(outcome)).toMatchObject({ reason: "claude exited 2: boom", exitCode: 2, signal: null });
   });
 
   it("fails with the exit code alone when stderr is empty", async () => {
     const { outcome } = await run({ stream: claudeSample("plain"), exitCode: 2 });
 
-    expect(failureOf(outcome).reason).toBe("claude exited 2");
+    expect(failureOutcomeOf(outcome).reason).toBe("claude exited 2");
   });
 
   it("fails when claude is killed by a signal", async () => {
     const { outcome } = await run({ stream: claudeSample("plain").slice(0, 2), killWith: "SIGKILL" });
 
-    expect(failureOf(outcome)).toMatchObject({
+    expect(failureOutcomeOf(outcome)).toMatchObject({
       reason: "claude was killed by SIGKILL",
       exitCode: null,
       signal: "SIGKILL",
@@ -290,7 +286,7 @@ describe("createClaudeCodeProvider run", () => {
 
     const outcome = await createClaudeCodeProvider().run(input(fake, { env: { PATH: emptyBin, HOME: emptyBin } }));
 
-    expect(failureOf(outcome)).toMatchObject({
+    expect(failureOutcomeOf(outcome)).toMatchObject({
       reason: "claude is not installed or not on PATH",
       exitCode: null,
       signal: null,
@@ -323,7 +319,7 @@ describe("createClaudeCodeProvider run", () => {
       },
     );
 
-    expect(failureOf(outcome)).toMatchObject({ reason: "spawn listener broke" });
+    expect(failureOutcomeOf(outcome)).toMatchObject({ reason: "spawn listener broke" });
   });
 });
 
@@ -342,7 +338,7 @@ describe("createClaudeCodeProvider run with a quota stop", () => {
   it("gives failure for a plain run that exits 1", async () => {
     const { outcome, fake } = await run({ stream: claudeSample("plain"), exitCode: 1 });
 
-    expect(failureOf(outcome).exitCode).toBe(1);
+    expect(failureOutcomeOf(outcome).exitCode).toBe(1);
     expect(fake.calls()).toHaveLength(1);
   });
 
@@ -606,7 +602,7 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
       killWith: "SIGKILL",
     });
 
-    const failure = failureOf(outcome);
+    const failure = failureOutcomeOf(outcome);
     expect(failure.signal).toBe("SIGKILL");
     expect(failure.sandboxCleanup).toEqual({ removed: [".bashrc", ".claude", ".claude/settings.json", ".zshrc"] });
     for (const name of [".zshrc", ".bashrc", ".claude"]) expect(existsSync(join(cwd, name))).toBe(false);
@@ -642,7 +638,7 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
   it("refuses when bwrap is missing, with no cleanup", async () => {
     const { outcome, fake } = await sandboxed({ stream: claudeSample("plain") }, { except: ["bwrap"] });
 
-    expect(failureOf(outcome).reason).toBe("the claude-code sandbox needs bwrap, and bwrap is not on PATH");
+    expect(failureOutcomeOf(outcome).reason).toBe("the claude-code sandbox needs bwrap, and bwrap is not on PATH");
     expect(outcome).not.toHaveProperty("sandboxCleanup");
     expect(fake.calls()).toEqual([]);
   });
@@ -653,7 +649,7 @@ describe("createClaudeCodeProvider run with a sandbox", () => {
       { sharedFolder: "/work/clones/x.git" },
     );
 
-    expect(failureOf(outcome).reason).toBe(
+    expect(failureOutcomeOf(outcome).reason).toBe(
       "the shared git folder of the worktree has a name that ends in .git, and claude then makes all of it writable",
     );
     expect(outcome).not.toHaveProperty("sandboxCleanup");

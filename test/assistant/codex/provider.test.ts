@@ -7,7 +7,14 @@ import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "..
 import { codexSchemaPath, codexUsagePath } from "../../../src/store/layout.js";
 import { parseConfig } from "../../../src/config/schema.js";
 import { validConfig } from "../../helpers/config.js";
-import { TEST_SESSION_ID, runInput, type FakeClaude, type FakeClaudeControl } from "../../helpers/fake-claude.js";
+import {
+  TEST_SESSION_ID,
+  failureOutcomeOf,
+  runInput,
+  sandboxLimits,
+  type FakeClaude,
+  type FakeClaudeControl,
+} from "../../helpers/fake-claude.js";
 import {
   CODEX_PLAIN_USAGE,
   CODEX_RESUME_USAGE,
@@ -96,11 +103,6 @@ async function run(control: FakeClaudeControl, overrides: Partial<RunInput> = {}
   return { ...setup, outcome };
 }
 
-function failureOf(outcome: RunOutcome): Extract<RunOutcome, { kind: "failure" }> {
-  expect(outcome.kind).toBe("failure");
-  return outcome as Extract<RunOutcome, { kind: "failure" }>;
-}
-
 describe("createCodexProvider run: the outcome rows", () => {
   it("fails when codex is not on PATH", async () => {
     const setup = setUp({ stream: codexSample("plain") });
@@ -109,7 +111,7 @@ describe("createCodexProvider run: the outcome rows", () => {
 
     const outcome = await codexProvider().run({ ...setup.input, env: { PATH: emptyBin, HOME: emptyBin } });
 
-    expect(failureOf(outcome)).toMatchObject({
+    expect(failureOutcomeOf(outcome)).toMatchObject({
       reason: "codex is not installed or not on PATH",
       exitCode: null,
       signal: null,
@@ -120,8 +122,8 @@ describe("createCodexProvider run: the outcome rows", () => {
   it("fails with the start error when the cwd does not exist", async () => {
     const { outcome, fake } = await run({ stream: codexSample("plain") }, { cwd: "/tasker-no-such-folder" });
 
-    expect(failureOf(outcome).reason).not.toBe("codex is not installed or not on PATH");
-    expect(failureOf(outcome).exitCode).toBeNull();
+    expect(failureOutcomeOf(outcome).reason).not.toBe("codex is not installed or not on PATH");
+    expect(failureOutcomeOf(outcome).exitCode).toBeNull();
     expect(fake.calls()).toEqual([]);
   });
 
@@ -147,7 +149,7 @@ describe("createCodexProvider run: the outcome rows", () => {
   it("fails when codex is killed by a signal", async () => {
     const { outcome } = await run({ stream: codexSample("plain").slice(0, 2), killWith: "SIGKILL" });
 
-    expect(failureOf(outcome)).toMatchObject({
+    expect(failureOutcomeOf(outcome)).toMatchObject({
       reason: "codex was killed by SIGKILL",
       exitCode: null,
       signal: "SIGKILL",
@@ -158,7 +160,7 @@ describe("createCodexProvider run: the outcome rows", () => {
     const { outcome } = await run({ stream: codexSample("turn-failed"), exitCode: 1 });
 
     const failed = codexSampleEvents("turn-failed").find((event) => event.type === "turn.failed")!;
-    expect(failureOf(outcome)).toMatchObject({
+    expect(failureOutcomeOf(outcome)).toMatchObject({
       reason: (failed.error as { message: string }).message,
       exitCode: 1,
     });
@@ -167,19 +169,19 @@ describe("createCodexProvider run: the outcome rows", () => {
   it("fails with the exit code and the end of stderr", async () => {
     const { outcome } = await run({ stream: codexSample("plain"), exitCode: 3, stderr: "boom\n" });
 
-    expect(failureOf(outcome)).toMatchObject({ reason: "codex exited 3: boom", exitCode: 3, signal: null });
+    expect(failureOutcomeOf(outcome)).toMatchObject({ reason: "codex exited 3: boom", exitCode: 3, signal: null });
   });
 
   it("fails when the stream has no turn.completed", async () => {
     const { outcome } = await run({ stream: codexSample("plain").slice(0, 3) });
 
-    expect(failureOf(outcome).reason).toBe("the assistant ended with no result");
+    expect(failureOutcomeOf(outcome).reason).toBe("the assistant ended with no result");
   });
 
   it("fails when a schema is set and the answer is not JSON", async () => {
     const { outcome } = await run({ stream: codexSample("plain") }, { jsonSchema: { type: "object" } });
 
-    expect(failureOf(outcome).reason).toBe("the assistant gave no structured answer");
+    expect(failureOutcomeOf(outcome).reason).toBe("the assistant gave no structured answer");
   });
 
   it("gives success for plain.jsonl, with the events and the pid", async () => {
@@ -214,7 +216,7 @@ describe("createCodexProvider run: the outcome rows", () => {
       { jsonSchema: { type: "object" }, sessionDir: join(useTempDir("tasker-codex-none-"), "missing") },
     );
 
-    expect(failureOf(outcome).exitCode).toBeNull();
+    expect(failureOutcomeOf(outcome).exitCode).toBeNull();
     expect(fake.calls()).toEqual([]);
   });
 });
@@ -235,7 +237,7 @@ describe("createCodexProvider run: the thread id", () => {
   it("fails with no call when a continued run has no thread id file", async () => {
     const { outcome, fake } = await run({ stream: codexSample("plain") }, { resume: true });
 
-    expect(failureOf(outcome).reason).toBe(NO_THREAD);
+    expect(failureOutcomeOf(outcome).reason).toBe(NO_THREAD);
     expect(fake.calls()).toEqual([]);
   });
 
@@ -244,7 +246,7 @@ describe("createCodexProvider run: the thread id", () => {
 
     expect(readThreadId(first.sessionDir, TEST_SESSION_ID)).toBeUndefined();
     const next = await codexProvider().run({ ...first.input, resume: true });
-    expect(failureOf(next).reason).toBe(NO_THREAD);
+    expect(failureOutcomeOf(next).reason).toBe(NO_THREAD);
     expect(first.fake.calls()).toHaveLength(1);
   });
 
@@ -264,7 +266,7 @@ describe("createCodexProvider run: the thread id", () => {
     const second = await codexProvider().run({ ...first.input, resume: true });
 
     expect(first.outcome.kind).toBe("success");
-    expect(failureOf(second).reason).toBe(NO_THREAD);
+    expect(failureOutcomeOf(second).reason).toBe(NO_THREAD);
     expect(first.fake.calls()).toHaveLength(1);
   });
 });
@@ -289,7 +291,7 @@ describe("createCodexProvider run: the arguments and the env", () => {
   });
 
   it("passes the denied read paths of the sandbox", async () => {
-    const sandbox = { allowWrite: [], denyRead: ["/h/.ssh"], trackedPaths: async () => [], sharedFolder: "/shared" };
+    const sandbox = sandboxLimits({ denyRead: ["/h/.ssh"] });
 
     const { fake } = await run({ stream: codexSample("plain") }, { sandbox });
 
@@ -325,7 +327,7 @@ describe("createCodexProvider run: the arguments and the env", () => {
   });
 
   it("sets no sandboxCleanup, also with a sandbox", async () => {
-    const sandbox = { allowWrite: [], denyRead: [], trackedPaths: async () => [], sharedFolder: "/shared" };
+    const sandbox = sandboxLimits();
 
     const plain = await run({ stream: codexSample("plain") });
     const sandboxed = await run({ stream: codexSample("plain") }, { sandbox });
@@ -408,7 +410,7 @@ describe("createCodexProvider run: the usage", () => {
 
 describe("createCodexProvider run: the execute role", () => {
   const REFUSAL = "the codex assistant cannot run the execute role in this version";
-  const sandbox = { allowWrite: [], denyRead: [], trackedPaths: async () => [], sharedFolder: "/shared" };
+  const sandbox = sandboxLimits();
 
   it("refuses access workspace-write before the spawn", async () => {
     const onSpawn = vi.fn();
@@ -436,7 +438,7 @@ describe("createCodexProvider run: the execute role", () => {
   it("refuses the execute role before it looks for the thread id file", async () => {
     const { outcome, fake } = await run({ stream: codexSample("plain") }, { access: "workspace-write", resume: true });
 
-    expect(failureOf(outcome).reason).toBe(REFUSAL);
+    expect(failureOutcomeOf(outcome).reason).toBe(REFUSAL);
     expect(fake.calls()).toEqual([]);
   });
 });
