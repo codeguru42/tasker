@@ -2,6 +2,7 @@ import { lstatSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { isSet } from "../../config/path.js";
 import { hasErrnoCode } from "../../errno.js";
+import { canonicalPath, isInside } from "../../real-path.js";
 import type { RunInput } from "../provider.js";
 import { codexSocketDenyPaths } from "./sockets.js";
 
@@ -16,8 +17,9 @@ export interface CodexFiles {
   hookCommand?: string;
 }
 
-// A key of the table must be a real path. A key that is a link makes bwrap fail at the start. A link becomes its
-// target, and a link that cannot resolve is left out. A path that does not exist stays.
+// A key of the table must have real path text, with a link resolved in every part. A key that is a link makes
+// bwrap fail at the start. A link becomes its target, and a link that cannot resolve is left out. Another path
+// gets a real parent folder. A path that does not exist, or lies under a file, keeps its text.
 function realKeys(paths: readonly string[]): string[] {
   const keys: string[] = [];
   for (const path of paths) {
@@ -26,17 +28,13 @@ function realKeys(paths: readonly string[]): string[] {
       isLink = lstatSync(path).isSymbolicLink();
     } catch (error) {
       if (!hasErrnoCode(error, ["ENOENT", "ENOTDIR"])) throw error;
-      keys.push(path);
-      continue;
-    }
-    if (!isLink) {
-      keys.push(path);
-      continue;
+      isLink = false;
     }
     try {
-      keys.push(realpathSync(path));
+      keys.push(isLink ? realpathSync(path) : canonicalPath(path));
     } catch (error) {
       if (!hasErrnoCode(error, ["ENOENT", "ENOTDIR"])) throw error;
+      if (!isLink) keys.push(path);
     }
   }
   return keys;
@@ -51,18 +49,17 @@ function withoutNested(paths: readonly string[]): string[] {
 
 // The table of the filesystem profile. "/" must be readable, because a smaller profile makes each command fail.
 // Each path is a TOML key written with JSON.stringify. A TOML table must not name one key twice, so the table
-// is a Map and a path has one key, and a later value wins. A run with workspace-write access gets write keys
-// for the cwd, the temp folder and each path of sandbox.allowWrite. A read-only run gets no write key.
-// The deny keys are the paths of sandbox.denyRead and the socket paths. A path on the deny list is never a
-// write key, also when a deny folder above it hides its own deny key. A write key under a deny folder stays
-// when the path itself is not on the deny list. That key reopens its path.
+// is a Map and a path has one key. A run with workspace-write access gets write keys for the cwd, the temp
+// folder and each path of sandbox.allowWrite. A read-only run gets no write key.
+// The deny keys are the paths of sandbox.denyRead and the socket paths. A deny path wins: a write key that is on
+// or under a deny path is dropped. A deny key under a write key stays.
 function filesystemTable(input: RunInput): string {
   const table = new Map<string, string>([["/", "read"]]);
   const denied = realKeys([...(input.sandbox?.denyRead ?? []), ...codexSocketDenyPaths(input.env)]);
   if (input.access === "workspace-write") {
     const temp = isSet(input.env.TMPDIR) ? resolve(input.env.TMPDIR) : "/tmp";
     for (const path of realKeys([input.cwd, temp, ...(input.sandbox?.allowWrite ?? [])])) {
-      if (!denied.includes(path)) table.set(path, "write");
+      if (!denied.some((deny) => isInside(path, deny))) table.set(path, "write");
     }
   }
   for (const path of withoutNested(denied)) table.set(path, "deny");
