@@ -598,9 +598,13 @@ interface ReviewFindingRow {
 }
 
 function toFindingEntry(row: ReviewFindingRow): FindingEntry {
-  const finding: Finding = { file: row.file, summary: row.summary, failure_scenario: row.failure_scenario };
-  if (row.line !== null) finding.line = row.line;
-  if (row.category !== null) finding.category = row.category;
+  const finding: Finding = {
+    file: row.file,
+    line: row.line,
+    category: row.category,
+    summary: row.summary,
+    failure_scenario: row.failure_scenario,
+  };
   const dismissed = row.dismissed_at === null ? null : { at: row.dismissed_at, reason: row.dismiss_reason! };
   return { position: row.position, finding, dismissed };
 }
@@ -1149,8 +1153,8 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         review.number,
         index + 1,
         finding.file,
-        finding.line ?? null,
-        finding.category ?? null,
+        finding.line,
+        finding.category,
         finding.summary,
         finding.failure_scenario,
       );

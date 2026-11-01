@@ -7,9 +7,9 @@ const text = z.string().min(1);
 
 const findingSchema = z.strictObject({
   file: text,
-  line: z.number().int().min(1).optional(),
+  line: z.number().int().min(1).nullable(),
   // The schema does not restrict the value, so a run with another word does not fail.
-  category: text.optional(),
+  category: text.nullable(),
   summary: text,
   failure_scenario: text,
 });

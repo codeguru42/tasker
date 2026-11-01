@@ -18,8 +18,8 @@ export function formatFindings(entries: readonly FindingEntry[]): string {
   if (entries.length === 0) return "no findings\n";
   return entries
     .map(({ position, finding, dismissed }) => {
-      const place = finding.line === undefined ? finding.file : `${finding.file}:${finding.line}`;
-      const category = finding.category === undefined ? "" : ` (${finding.category})`;
+      const place = finding.line === null ? finding.file : `${finding.file}:${finding.line}`;
+      const category = finding.category === null ? "" : ` (${finding.category})`;
       const status = dismissed === null ? "open" : `dismissed: ${dismissed.reason}`;
       const firstLine = `[${position}] ${place}${category}: ${finding.summary}`;
       // A line end in the first line keeps the indent of the block. The "- " takes the place of the first indent.
