@@ -5,7 +5,7 @@ works.
 
 The start docs of the operator are `docs/operator.md`, the pages of the list "The pages" below,
 [docs/dev/working-with-the-user.md](dev/working-with-the-user.md) and [docs/sessions.md](sessions.md). The operator
-reads them at its start.
+reads them at its start, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
 
 Messages of the other sessions break into the conversation of the user, and open questions scroll out of view. A planner
 or an orchestrator sends each item that needs the user to the operator. Then the user reads the items in one place and
