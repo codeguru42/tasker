@@ -452,9 +452,9 @@ The reasons for the design:
 - The fix prompt spells out the rule texts and does not point at rule numbers. A fix turn can be the first turn of a
   resumed session, and that session never saw an `execute-todo` prompt.
 
-The turn result is a strict object: `result` is `done` or `blocked`, and `reason` is optional. An extra key or an
-unknown value is no result, and it is never read as `done`. The read of a result never throws. A `blocked` result with
-no reason gets a fixed reason.
+The turn result is a strict object: `result` is `done` or `blocked`, and `reason` is a text or null. An extra key or an
+unknown value is no result, and it is never read as `done`. The read of a result never throws. A `blocked` result with a
+null or blank reason gets a fixed reason.
 
 The todos run in the order of their dependencies. The plan check refuses a dependency cycle, so a new plan holds none. A
 stored revision from before this check can hold a cycle, and for such a revision the function `orderTodos` throws. A
@@ -495,7 +495,9 @@ The reasons for the design:
   review.
 - The prompt spells out the four simplify checks, so that they run the same under every assistant.
 
-The schema does not restrict the value of `category`, so a run with another word does not fail.
+The schema does not restrict the value of `category`, so a run with another word does not fail. The schema lists each
+key of a finding in `required`, and `line` and `category` take null, because Codex refuses a schema with an optional
+key. The turn schema does the same for `reason`.
 
 Each command that prints findings uses the same text form.
 
