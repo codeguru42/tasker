@@ -64,10 +64,7 @@ handoff file:
 
 - The prompt names the slug and the session name `operator-<slug>`. The first step of the prompt is a read of
   `AGENTS.md` and `docs/operator.md`. The prompt names no other doc for the start reads. The second step of the prompt
-  is [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). The third step of the prompt is step
-  8 of [The start of the new operator](#the-start-of-the-new-operator), the read of the pane of the old operator. The
-  fourth step of the prompt is the ready message of step 10 of that section, as
-  [The hold of the items](handoff.md#the-hold-of-the-items) says.
+  is steps 7 to 10 of [The start of the new operator](#the-start-of-the-new-operator).
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
 - The kind of each planner, initial or follow-up.
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)). The
@@ -82,9 +79,10 @@ handoff file:
   [The start of the new operator](#the-start-of-the-new-operator).
 - Each entry of [the tab list](../operator.md) of the old operator. So the file holds the tabs that the old operator
   started and the tabs that it took over.
-- The tab id and the pane id of the old operator. The tab id is `$HERDR_TAB_ID`, and the pane id is `$HERDR_PANE_ID`.
-  The old operator gets the two ids before it writes the file. If it cannot get the pane id, the file says so. The close
-  of step 4 of [The start of the new operator](#the-start-of-the-new-operator) uses the same ids.
+- The name, the tab id and the pane id of the old operator. The tab id is `$HERDR_TAB_ID`, and the pane id is
+  `$HERDR_PANE_ID`. The old operator gets the two ids before it writes the file. If it cannot get the pane id, the file
+  says so. The close of step 4 of [The start of the new operator](#the-start-of-the-new-operator) uses the same ids. The
+  file gives no session ref of the old operator.
 
 The operator sends no item, so its file gives no last item id.
 

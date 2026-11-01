@@ -44,14 +44,15 @@ The handoff file of the planner holds the items of
 [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The old planner also puts these items in the
 handoff file:
 
-- The prompt names the milestone and the session name `planner-<slug>`. The first step of the prompt is a read of
-  `AGENTS.md` and `docs/planner.md`. The prompt names no other doc for the start reads. The second step of the prompt is
-  [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).
+- The prompt names the milestone, the session name `planner-<slug>` and the first free item id. The first step of the
+  prompt is a read of `AGENTS.md` and `docs/planner.md`. The prompt names no other doc for the start reads. The second
+  step of the prompt is [The start of the new planner](#the-start-of-the-new-planner).
 - The path of each open draft, not its text, its source, and the decision of the user that it waits for, if any.
-- Each lesson or proposed issue that another session sent and that has no draft yet. Each item names its sender, its
-  facts and its sources.
+- Each lesson, measured fact or proposed issue that another session sent or that the old planner found, and that has no
+  draft yet. Each entry names its sender, its facts and its sources.
 - The number of each issue that the old planner posted in its session.
 
 ## The start of the new planner
 
-The new planner is `planner-<slug>`. [The stop and the start](handoff.md#the-stop-and-the-start) applies.
+The new planner is `planner-<slug>`. [The stop and the start](handoff.md#the-stop-and-the-start) applies. The new
+planner does [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).
