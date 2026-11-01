@@ -659,9 +659,6 @@ describe("executeTask deadline", { timeout: 20_000 }, () => {
 });
 
 describe("executeTask push guard", () => {
-  // The fake claude is made before the origin is known, so its exec finds the origin in the cwd of the run:
-  // the worktree is on the task branch, and its remote origin is the origin folder.
-
   const pushMessage = async (fixture: ExecuteFixture): Promise<string> => {
     const sha = await fixture.started.origin.branchHead("main");
     return pushMessageExpected(fixture.started.branch, "absent", String(sha));
