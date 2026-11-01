@@ -267,7 +267,7 @@ These cases skip the hook:
 For `claude`, layer 1 and layer 3 cover these cases. A plan or review run of `codex` has no layer 1 and no layer 3, so
 these cases have no layer for such a run.
 
-The hook alone does not cover them. A caller that runs an assistant must apply the deny rule of layer 1.
+The hook alone does not cover them. For `claude`, a caller that runs the assistant must apply the deny rule of layer 1.
 `tasker execute` compares the tips of the task branch for layer 3, as [tasks.md](tasks.md#execute) says. The plan and
 review roles do not compare the tips yet, because they run in the plan mode.
 

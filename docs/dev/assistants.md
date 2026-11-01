@@ -64,8 +64,9 @@ two.
 ### The plan and review roles
 
 These roles run in the plan mode. Their shell runs in the sandbox of [the execute role](#the-execute-role), with the
-same write paths and the same read deny list. Their shell also gets two deny rules: one blocks `git push`, and one
-blocks each `herdr` command. The deadline is the plan deadline of the configuration.
+same write paths and the same read deny list. Under `claude-code`, their shell also gets two deny rules: one blocks
+`git push`, and one blocks each `herdr` command. Under `codex`, the run gets no deny rule (see
+[The codex provider](#the-codex-provider)). The deadline is the plan deadline of the configuration.
 
 The plan mode blocks `Edit` and `Write`, but it does not block a shell command that writes. A host test on `claude`
 2.1.300 showed this. The sandbox keeps the writes of the shell in the write paths of the sandbox. The provider refuses
@@ -411,8 +412,8 @@ continued session.
 
 ### The session files
 
-Codex gives the thread id in the `thread.started` event. A continued run needs it. The provider keeps two files for each
-session id under `sessionDir`. Their paths come from `src/store/layout.ts`.
+Codex gives the thread id in the `thread.started` event. A continued run needs it. The provider keeps these files for
+each session id under `sessionDir`. Their paths come from `src/store/layout.ts`.
 
 - `<sessionId>.codex-thread` holds the thread id. The provider writes it at each `thread.started`. A continued run with
   no such file gets a `failure` outcome before the spawn. A failed write does not stop the run.
@@ -427,7 +428,7 @@ session id under `sessionDir`. Their paths come from `src/store/layout.ts`.
 
 ### The outcome
 
-The rules differ from `claude-code` in three points.
+The rules differ from `claude-code` in these points.
 
 - There is no quota outcome. `overageStop` has no effect.
 - A top-level `error` or `turn.failed` event gives a `failure` outcome with its message. An `item.completed` event with
@@ -448,18 +449,7 @@ The sandbox blocks the socket of herdr, the socket of the ssh agent, each write 
 `git push` over https, or over ssh with a key file, stays open, because the network is open. This gap rests on the other
 layers of the push guard. See [Push guard](version-control.md#push-guard).
 
-### Measures and limits
-
-The agent ran the measures on `codex-cli 0.166.0` on 2026-10-31. All measures ran on Linux. A run on macOS or Windows is
-unmeasured.
-
-Some measures are weaker. The measures of the profile, of the rules and of the configuration ran on the real Codex home
-of the user. A rules file of the user is not proven to load, because none existed. `--ignore-rules` rests on its help
-text. A trusted hook is not tested. Nobody measured a host where the sandbox cannot start.
-
-- `overageStop` has no effect.
-- The roles have no write path. This is stricter than [the plan and review roles](#the-plan-and-review-roles) say.
-- A sandboxed command can outlive a SIGKILL of `codex`.
+### The doctor checks
 
 `doctorChecks()` gives the checks `codex version` and `codex login`. They run once for all repos of the provider.
 `codex version` makes sure that `codex` is on `PATH` and starts. `codex login` makes sure that `codex` has a login.
@@ -469,6 +459,53 @@ empty folder as `CODEX_HOME`, the exit code was 1 and stderr was `Not logged in`
 
 `CODEX_HOME` passes [the filter](phases.md#the-environment-of-a-phase) on purpose. It locates the credentials and the
 configuration of the child.
+
+### Measures and limits
+
+Each measure below ran on `codex-cli 0.166.0` on 2026-10-31. All measures ran on Linux. A run on macOS or Windows is
+unmeasured.
+
+- Prompt: `codex exec -` and `codex exec resume <id> -` read the prompt from stdin.
+- Session id: the `thread.started` event gives `thread_id`. `codex exec resume <thread_id>` continues the session and
+  prints the same id.
+- Flags of a continued session: `codex exec resume` takes `--json`, `-m`, `-c`, `--ignore-user-config`, `--ignore-rules`
+  and `--output-schema`. It takes no `-s`.
+- Structured answer: the answer is the text of the `item.completed` event whose item type is `agent_message`. The plan
+  schema and the review schema pass unchanged, because no key is optional (#681). A schema with an optional key fails
+  with `invalid_json_schema`.
+- Structured answer in a continued session: `codex exec resume` takes `--output-schema`, and the answer follows the
+  schema.
+- Effort: `low`, `medium`, `high` and `xhigh` work through `-c model_reasoning_effort`. Codex does not refuse another
+  value at the start. The model call fails, with an `error` event and a `turn.failed` event, and the exit code is 1.
+- One permission profile: the `-c` values of "The arguments" define a profile with no file of the Codex home. A write of
+  a command fails with `Read-only file system`. A profile that grants read to less than `"/"` makes each command fail.
+- Read deny: a path of `denyRead` gives `Permission denied` for a file and for a folder, also with a dot, a space or a
+  quote in the name. A path that does not exist is no error. The login still works with `auth.json` on the list.
+- Network: a command reaches the network only with `permissions.tasker.network.enabled=true`.
+- Denied command: no `-c` key and no flag gives one run a `forbidden` rule. A rules file loaded only from a trusted
+  worktree, and it held under `approval_policy="never"`. `--ignore-user-config` and `--ignore-rules` each drop it.
+- Blocked command in the stream: a command that a `forbidden` rule refuses gives no event, only an error line on stderr.
+  A command that the sandbox blocks is a normal `command_execution` item. A failed model call gives an `error` event and
+  a `turn.failed` event, and the exit code is 1.
+- Other rules: a rules file in a trusted worktree loads without the two flags. `--ignore-rules` drops it.
+- Usage: `input_tokens` includes `cached_input_tokens`, and `output_tokens` includes the reasoning tokens.
+  `turn.completed` gives a total for the whole thread.
+- herdr: `herdr agent list` and `sh -c 'herdr agent list'` both fail in the run with `Operation not permitted`.
+- Placeholders: the sandbox leaves no file in the worktree, after a normal exit and after SIGKILL.
+- ssh agent: a command cannot reach the socket of the ssh agent.
+- bwrap: not measured. The run cannot make the sandbox fail on the test host.
+- Other tools: web search stays on through an MCP tool unless `features.apps=false` is set. `--ignore-user-config`
+  leaves out the MCP servers of the user.
+- Configuration: `--ignore-user-config` leaves out `config.toml` of the user. A `.codex/config.toml` of a trusted
+  worktree loads without the flag and not with it. Hooks did not run in `codex exec`.
+
+Some measures are weaker. The measures of the profile, of the rules and of the configuration ran on the real Codex home
+of the user. A rules file of the user is not proven to load, because none existed. `--ignore-rules` rests on its help
+text. A trusted hook is not tested. Nobody measured a host where the sandbox cannot start.
+
+- `overageStop` has no effect.
+- The roles have no write path. This is stricter than [the plan and review roles](#the-plan-and-review-roles) say.
+- A sandboxed command can outlive a SIGKILL of `codex`.
 
 ## The plan answer and the prompts
 
