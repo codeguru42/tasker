@@ -634,7 +634,7 @@ describe("task store", () => {
             )
             .run(`a/b#${id}`);
         }
-        const event = raw.prepare("INSERT INTO events (task_id, type, data, created_at) VALUES (?, ?, ?, 't')");
+        const event = raw.prepare("INSERT INTO events (task_id, type, data, at) VALUES (?, ?, ?, 't')");
         const update = (action: string, result: string) => JSON.stringify({ action, result });
         event.run(1, "tracker_update", update("in_progress", "ok"));
         event.run(2, "tracker_update", update("in_progress", "failed"));
@@ -695,7 +695,6 @@ describe("task store", () => {
   it("recordTrackerMark sets trackerMarked and records one in_progress event", () => {
     const task = store.createTask(newTask);
     expect(store.getTask(task.id)?.trackerMarked).toBe(false);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     store.recordTrackerMark(task.id);
     expect(store.getTask(task.id)?.trackerMarked).toBe(true);
     const events = store.listEvents(task.id).filter((event) => event.type === "tracker_update");

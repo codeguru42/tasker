@@ -57,6 +57,7 @@ export interface Task {
   undoAfterHead: string | null;
   undoSyncedBaseTip: string | null;
   acceptedRevision: string | null;
+  trackerMarked: boolean;
   parentTaskId: number | null;
   attempt: number;
   createdAt: string;
@@ -94,6 +95,7 @@ export interface TaskChanges {
   undoAfterHead?: string | null;
   undoSyncedBaseTip?: string | null;
   acceptedRevision?: string | null;
+  trackerMarked?: boolean;
   parentTaskId?: number | null;
 }
 
@@ -282,6 +284,8 @@ export interface TaskStore extends LockStore {
   // Adds the pid of the child to the run marker of this process.
   setRunChildPid(id: number, childPid: number): void;
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
+  // Sets trackerMarked and appends the tracker_update event of a passed in_progress write, in one transaction.
+  recordTrackerMark(taskId: number): void;
   listEvents(taskId: number): TaskEvent[];
   // The version that the next revision of the task must have. The caller holds the task lock,
   // so the value stays valid until the insert.
@@ -473,6 +477,7 @@ interface TaskRow {
   undo_after_head: string | null;
   undo_synced_base_tip: string | null;
   accepted_revision: string | null;
+  tracker_marked: number;
   parent_task_id: number | null;
   attempt: number;
   created_at: string;
@@ -518,6 +523,7 @@ function rowToTask(row: TaskRow): Task {
     undoAfterHead: row.undo_after_head,
     undoSyncedBaseTip: row.undo_synced_base_tip,
     acceptedRevision: row.accepted_revision,
+    trackerMarked: row.tracker_marked === 1,
     parentTaskId: row.parent_task_id,
     attempt: row.attempt,
     createdAt: row.created_at,
@@ -702,7 +708,7 @@ function setUp(db: DatabaseSync) {
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
            synced_base_tip = ?, undo_before_head = ?, undo_after_head = ?, undo_synced_base_tip = ?,
-           accepted_revision = ?, parent_task_id = ?, updated_at = ?
+           accepted_revision = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -976,6 +982,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.undoAfterHead !== undefined) next.undoAfterHead = changes.undoAfterHead;
     if (changes.undoSyncedBaseTip !== undefined) next.undoSyncedBaseTip = changes.undoSyncedBaseTip;
     if (changes.acceptedRevision !== undefined) next.acceptedRevision = changes.acceptedRevision;
+    if (changes.trackerMarked !== undefined) next.trackerMarked = changes.trackerMarked;
     if (changes.parentTaskId !== undefined) next.parentTaskId = changes.parentTaskId;
     const row = statements.updateTask.get(
       next.state,
@@ -989,6 +996,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.undoAfterHead,
       next.undoSyncedBaseTip,
       next.acceptedRevision,
+      next.trackerMarked ? 1 : 0,
       next.parentTaskId,
       at,
       current.id,
@@ -1299,6 +1307,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     appendEvent(taskId, type, data) {
       return immediateTransaction(db, () => writeEvent(taskId, now().toISOString(), type, data));
+    },
+
+    recordTrackerMark(taskId) {
+      writeTask(taskId, { trackerMarked: true }, () => ({
+        type: "tracker_update",
+        data: { action: "in_progress", result: "ok" },
+      }));
     },
 
     listEvents(taskId) {

@@ -145,4 +145,11 @@ UPDATE tasks SET accepted_revision = (
   `ALTER TABLE tasks ADD COLUMN undo_before_head TEXT;
 ALTER TABLE tasks ADD COLUMN undo_after_head TEXT;
 ALTER TABLE tasks ADD COLUMN undo_synced_base_tip TEXT;`,
+  `ALTER TABLE tasks ADD COLUMN tracker_marked INTEGER NOT NULL DEFAULT 0;
+UPDATE tasks SET tracker_marked = EXISTS (
+  SELECT 1 FROM events
+  WHERE events.task_id = tasks.id AND events.type = 'tracker_update'
+    AND json_extract(events.data, '$.action') = 'in_progress'
+    AND json_extract(events.data, '$.result') = 'ok'
+);`,
 ];

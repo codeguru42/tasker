@@ -48,6 +48,8 @@ export async function runTrackerWrite(
     io.stderr(`warning: cannot ${write.text} on the tracker: ${message}\n`);
     return;
   }
-  store.appendEvent(taskId, "tracker_update", { action: write.action, result: "ok" });
+  // A passed in_progress write sets the column trackerMarked. Code reads that column, never the event.
+  if (write.action === "in_progress") store.recordTrackerMark(taskId);
+  else store.appendEvent(taskId, "tracker_update", { action: write.action, result: "ok" });
   io.stdout(`${write.success}\n`);
 }
