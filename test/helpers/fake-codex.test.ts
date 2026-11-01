@@ -5,6 +5,8 @@ import {
   CODEX_LOGIN_STATUS_ARGS,
   CODEX_VERSION_ARGS,
   codexSample,
+  CODEX_PLAIN_USAGE,
+  CODEX_RESUME_USAGE,
   codexSampleEvents,
   expectedCodexArgs,
   MEASURED_LOGGED_OUT,
@@ -129,5 +131,22 @@ describe("expectedCodexArgs", () => {
       "T1",
       "-",
     ]);
+  });
+});
+
+describe("the usage constants", () => {
+  it("add up to the raw totals of resume.jsonl", () => {
+    const raw = codexSampleEvents("resume")[3].usage as Record<string, number>;
+
+    expect(
+      CODEX_RESUME_USAGE.inputTokens +
+        CODEX_PLAIN_USAGE.inputTokens +
+        CODEX_RESUME_USAGE.cacheReadInputTokens +
+        CODEX_PLAIN_USAGE.cacheReadInputTokens,
+    ).toBe(raw.input_tokens);
+    expect(CODEX_PLAIN_USAGE.cacheReadInputTokens + CODEX_RESUME_USAGE.cacheReadInputTokens).toBe(
+      raw.cached_input_tokens,
+    );
+    expect(CODEX_RESUME_USAGE.outputTokens + CODEX_PLAIN_USAGE.outputTokens).toBe(raw.output_tokens);
   });
 });

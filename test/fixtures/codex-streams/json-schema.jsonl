@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a19553-b665-7211-a271-84fbb5e0ee5f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"findings\":[{\"file\":\"a.txt\",\"line\":3,\"category\":\"bug\",\"summary\":\"x\",\"failure_scenario\":\"y\"},{\"file\":\"b.txt\",\"line\":null,\"category\":null,\"summary\":\"x\",\"failure_scenario\":\"y\"}]}"}}
+{"type":"turn.completed","usage":{"input_tokens":21203,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":62,"reasoning_output_tokens":0}}

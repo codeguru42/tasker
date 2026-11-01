@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { AssistantEvent, Effort } from "../../src/assistant/provider.js";
+import type { AssistantEvent, Effort, TokenUsage } from "../../src/assistant/provider.js";
 import {
   answerChecks,
   type FakeAnswer,
@@ -102,3 +102,19 @@ export function expectedCodexArgs(expected: ExpectedCodexArgs): string[] {
     "-",
   ];
 }
+
+// The usage of plain.jsonl, and the stored total before resume.jsonl.
+export const CODEX_PLAIN_USAGE: TokenUsage = {
+  inputTokens: 7889,
+  outputTokens: 6,
+  cacheCreationInputTokens: 0,
+  cacheReadInputTokens: 13184,
+};
+
+// The usage of resume.jsonl after CODEX_PLAIN_USAGE: the total of that file minus the total of plain.jsonl.
+export const CODEX_RESUME_USAGE: TokenUsage = {
+  inputTokens: 26007,
+  outputTokens: 16,
+  cacheCreationInputTokens: 0,
+  cacheReadInputTokens: 0,
+};
