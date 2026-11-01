@@ -119,7 +119,7 @@ session that the user started.
 The rule of the user of 2026-10-25 is the request of the user for these steps: "Then stop the orchestrator and start a
 new one."
 
-In a handoff of the operator, the user ends the handoff, as
+In a handoff of the operator, the old operator ends the handoff with its close, as
 [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator) says. The user can also end the
 handoff at the old operator, as [The end of the hold by the user](#the-end-of-the-hold-by-the-user) says.
 
@@ -196,8 +196,7 @@ These terms apply in this section:
 
 On 2026-10-25, the user said: "when the operator starts a handoff, it should notify its planner and orchestrator to hold
 all messages until the handoff finishes. Then the new operator session notifies them to send when it is ready." Without
-the hold, each sender of the slug sends items during the handoff. The old operator then writes a new handoff file for
-each arrival.
+the hold, each sender of the slug sends items during the handoff.
 
 ### The start of the hold
 
@@ -224,16 +223,15 @@ As [The operator](working-with-the-user.md#the-operator) says, an orchestrator o
 through an item. So an orchestrator or a follow-up planner does not ask the user in its own tab. An initial planner
 still works with the user in its tab, as that section says.
 
-Each item that the old operator gets is in its newest handoff file, as the paragraph after
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) says. A sender of the slug does not
-send such an item again. If the user answers before the end of the session of the old operator, the old operator sends
-that answer. The new operator sends each other answer.
+If the user answers before the write of the handoff file, the old operator sends that answer. The new operator sends
+each other answer.
 
 ### The ready message
 
-In step 5 of [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator), the new operator sends
-a ready message with `SendMessage` to each sender of the slug that the handoff file names. After the ready message, each
-sender of the slug sends its held items to the new operator, in the order of their ids.
+In step 10 of [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator), the new operator sends
+a ready message with `SendMessage` to each sender of the slug that the handoff file names. The ready message gives the
+own ref of the new operator. After the ready message, each sender of the slug sends its held items to
+`operator-<slug> [<ref>]`, in the order of their ids.
 
 ### The end of the hold by the user
 
@@ -254,8 +252,7 @@ orchestrator-docs. The user started no new operator, and both sessions held all 
 [The failure rule](limits.md#the-failure-rule) applies to each failed message of the hold:
 
 - If a hold message fails, the failure rule applies to the old operator. The sender of the slug that got no hold message
-  keeps sending items. The old operator writes a new handoff file for each arrival, as the paragraph after the steps of
-  the old operator says.
+  keeps sending items.
 - If a ready message fails, the failure rule applies to the new operator. The sender of the slug keeps its held items
   until a ready message or an end message arrives. When the user tells it to, the new operator sends the ready message
   again.
@@ -267,14 +264,20 @@ orchestrator-docs. The user started no new operator, and both sessions held all 
 
 This table gives each change of the hold:
 
-| Change                                                  | Old operator                                                   | New operator                                  | Sender of the slug                                                       | Who tells whom                                                                                |
-| ------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| The handoff of the operator starts                      | Sends the hold message in step 1                               |                                               | Sends items as usual                                                     | The old operator tells each sender of the slug                                                |
-| The hold message arrives                                |                                                                |                                               | Holds its items, also an item that an agent waits for                    |                                                                                               |
-| An item arrives at the old operator during the hold     | Writes a new handoff file                                      |                                               | Sent the item before the hold message arrived, and holds its other items | The sender of the slug tells the old operator, with `SendMessage`                             |
-| The user starts the new operator                        |                                                                | Keeps the open items of the file              | Holds its items                                                          | The user ends the old operator and starts the new operator                                    |
-| The new operator is ready                               |                                                                | Sends the ready message                       | Holds its items                                                          | The new operator tells each sender of the slug                                                |
-| The ready message arrives                               |                                                                | Gets the held items                           | Sends its held items                                                     | Each sender of the slug tells the new operator                                                |
-| The user ends the hold at the old operator              | Sends the end message. The handoff ends                        |                                               | Holds its items                                                          | The user tells the old operator. The old operator tells each sender that got the hold message |
-| The end message arrives                                 | Gets the held items                                            |                                               | Sends its held items to the old operator                                 | Each sender of the slug tells the old operator                                                |
-| A hold message, a ready message or an end message fails | The failure rule applies, for a hold message or an end message | The failure rule applies, for a ready message | Keeps sending, or keeps holding                                          | The operator that sends it tells the user                                                     |
+| Change                                                              | Old operator                                                   | New operator                                                     | User                           | Sender of the slug                                    | Who tells whom                                                                                |
+| ------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| The handoff of the operator starts                                  | Sends the hold message in step 1, writes the file              |                                                                  |                                | Sends items as usual                                  | The old operator tells each sender of the slug                                                |
+| The hold message arrives                                            |                                                                |                                                                  |                                | Holds its items, also an item that an agent waits for |                                                                                               |
+| The start works                                                     | Reads the pane of the new operator                             | Starts with the prompt of the file                               |                                | Holds its items                                       |                                                                                               |
+| The new operator runs                                               | Closes its own tab or pane                                     | Does the check of the handoff folder                             |                                | Holds its items                                       |                                                                                               |
+| The start fails, or the new operator does not run                   | Closes nothing                                                 |                                                                  | Decides                        | Holds its items                                       | The old operator tells the user                                                               |
+| The close fails                                                     | Stays open                                                     | Runs                                                             | Decides                        | Holds its items                                       | The old operator tells the user                                                               |
+| The pane of the old operator is gone at the check of the close      | Ended                                                          | Says nothing about it, continues with its next steps             |                                | Holds its items                                       |                                                                                               |
+| The read fails, or the handoff file gives no pane id                | Unknown                                                        | Closes nothing, tells the user, continues with its next steps    | Decides on the old tab or pane | Holds its items                                       | The new operator tells the user                                                               |
+| The pane of the old operator still exists at the check of the close | Can still run its last steps, or its close failed              | Closes nothing, tells the user, continues with its next steps    | Decides on the old tab or pane | Holds its items                                       | The new operator tells the user                                                               |
+| An item arrives at the old operator after the write                 | Sends no answer, asks the sender to send the item again later  |                                                                  |                                | Holds the item                                        | The old operator tells the sender                                                             |
+| The new operator is ready                                           |                                                                | Sends the ready message with its ref, gives the path of the file |                                | Holds its items                                       | The new operator tells each sender and the user                                               |
+| The ready message arrives                                           |                                                                | Gets the held items                                              |                                | Sends its held items to the ref                       | Each sender of the slug tells the new operator                                                |
+| The user ends the hold at the old operator                          | Sends the end message. The handoff ends                        |                                                                  |                                | Holds its items                                       | The user tells the old operator. The old operator tells each sender that got the hold message |
+| The end message arrives                                             | Gets the held items                                            |                                                                  |                                | Sends its held items to the old operator              | Each sender of the slug tells the old operator                                                |
+| A hold message, a ready message or an end message fails             | The failure rule applies, for a hold message or an end message | The failure rule applies, for a ready message                    |                                | Keeps sending, or keeps holding                       | The operator that sends it tells the user                                                     |
