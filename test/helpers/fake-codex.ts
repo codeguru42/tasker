@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { AssistantEvent } from "../../src/assistant/provider.js";
+import type { AssistantEvent, Effort } from "../../src/assistant/provider.js";
 import {
   answerChecks,
   type FakeAnswer,
@@ -60,4 +60,45 @@ export function codexSample(name: string): string[] {
 // Each line of a sample, parsed. Each call parses again, so each call gives new objects.
 export function codexSampleEvents(name: string): AssistantEvent[] {
   return codexSample(name).map((line) => JSON.parse(line) as AssistantEvent);
+}
+
+export interface ExpectedCodexArgs {
+  model: string;
+  effort: Effort;
+  // The paths of the deny table. A repeated path gives one key.
+  denyRead?: readonly string[];
+  // With a thread id, the list is the list of a continued session.
+  threadId?: string;
+  schemaPath?: string;
+}
+
+// The argument list of one codex run, written out from literal text, never from codexArgs().
+export function expectedCodexArgs(expected: ExpectedCodexArgs): string[] {
+  const keys = [`"/"="read"`, ...[...new Set(expected.denyRead ?? [])].map((path) => `${JSON.stringify(path)}="deny"`)];
+  return [
+    "exec",
+    ...(expected.threadId === undefined ? [] : ["resume"]),
+    "--json",
+    "--ignore-user-config",
+    "--ignore-rules",
+    "-m",
+    expected.model,
+    "-c",
+    `model_reasoning_effort="${expected.effort}"`,
+    "-c",
+    `approval_policy="never"`,
+    "-c",
+    `web_search="disabled"`,
+    "-c",
+    "features.apps=false",
+    "-c",
+    `default_permissions="tasker"`,
+    "-c",
+    `permissions.tasker.filesystem={${keys.join(", ")}}`,
+    "-c",
+    "permissions.tasker.network.enabled=true",
+    ...(expected.schemaPath === undefined ? [] : ["--output-schema", expected.schemaPath]),
+    ...(expected.threadId === undefined ? [] : [expected.threadId]),
+    "-",
+  ];
 }

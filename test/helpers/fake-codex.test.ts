@@ -6,6 +6,7 @@ import {
   CODEX_VERSION_ARGS,
   codexSample,
   codexSampleEvents,
+  expectedCodexArgs,
   MEASURED_LOGGED_OUT,
   useFakeCodex,
   useFakeCodexRun,
@@ -88,5 +89,45 @@ describe("codexSampleEvents", () => {
 
   it("gives new objects for each call", () => {
     expect(codexSampleEvents("plain")[0]).not.toBe(codexSampleEvents("plain")[0]);
+  });
+});
+
+describe("expectedCodexArgs", () => {
+  it("gives the whole list of a continued session with a schema and two denied paths", () => {
+    expect(
+      expectedCodexArgs({
+        model: "gpt-x",
+        effort: "high",
+        denyRead: ["/h/.ssh", "/h/.ssh", "/h/a b"],
+        threadId: "T1",
+        schemaPath: "/s/id.schema.json",
+      }),
+    ).toEqual([
+      "exec",
+      "resume",
+      "--json",
+      "--ignore-user-config",
+      "--ignore-rules",
+      "-m",
+      "gpt-x",
+      "-c",
+      'model_reasoning_effort="high"',
+      "-c",
+      'approval_policy="never"',
+      "-c",
+      'web_search="disabled"',
+      "-c",
+      "features.apps=false",
+      "-c",
+      'default_permissions="tasker"',
+      "-c",
+      'permissions.tasker.filesystem={"/"="read", "/h/.ssh"="deny", "/h/a b"="deny"}',
+      "-c",
+      "permissions.tasker.network.enabled=true",
+      "--output-schema",
+      "/s/id.schema.json",
+      "T1",
+      "-",
+    ]);
   });
 });
