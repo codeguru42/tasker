@@ -567,7 +567,8 @@ The orchestrator writes the prompt of each agent.
 
   - `AGENTS.md`
   - `docs/orchestrator.md` and the pages of its list "The pages". These are
-    [the orchestration pages](../orchestrator.md).
+    [the orchestration pages](../orchestrator.md). The base list leaves out `docs/dev/handoff.md` and
+    `docs/dev/handoff-orchestrator.md`.
   - `docs/sessions.md`
   - `docs/dev/rules.md`
   - `docs/dev/first-refine.md`
