@@ -229,12 +229,6 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   Each sentence of a numbered step of a procedure doc has the limit of Rule 5.1 of the simple-english skill
   ([rules.md](rules.md#docs)). Ask the plan to count the words of each new step sentence. On #487 (2026-10-25), two new
   step sentences went over the limit of Rule 5.1.
-- If a refine asks for counts of words or sentences, ask only for these counts. Ask for the word count of each new
-  sentence and the sentence count of each paragraph. In that request, do not name the simple-english skill or its rules,
-  also when this page names them. The skill file is outside the worktree, so
-  [the quote check](plan-review.md#the-quote-check) can cover a plan that cites that file. On #630 (2026-10-31), the
-  first refine asked the plan to count words "as the simple-english skill counts them". Plan v2 cited rule numbers of
-  the skill, and the fix cost one refine.
 - In a doc step, ask the plan to write a function name without its arguments, for example `doctorChecks()`, not
   `doctorChecks(repos)`. [rules.md](rules.md#docs) counts the arguments of a function as a repeat of the code. On #266,
   the trim of the sentences that repeat the code found such a step.

@@ -318,6 +318,12 @@ session. The exception covers only the output that the feedback text gives, and 
 such a command. On #560 (2026-10-25), plan v2 repeated the output `ctx:72%` of the fact test from the feedback text, and
 the agent judged it no quote.
 
+A plan or a finding can also give a rule of the simple-english skill, for example a limit, a rule number or a banned
+word. It can also say that it read the skill. Such a plan or finding does not count like a quote of a file outside the
+worktree. The reason: [rules.md](rules.md#docs) makes the skill the home of the text rules, so a rule of the skill is no
+outside source of fact. This exception wins over [the repo-files rule](#the-repo-files-rule) for the skill only. On #630
+(2026-10-31) and #700 (2026-11-01), each such plan cost one refine.
+
 If a plan or a finding quotes a file outside the worktree, the agent tells the orchestrator. Then the orchestrator tells
 the user. After this report, the agent can still do the steps that come before `tasker approve` or `tasker accept`. For
 example, it can run a refine of step 4 or step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket), or dismiss a
