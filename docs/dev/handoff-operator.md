@@ -21,6 +21,13 @@ the handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-han
 said: "I think we are handing off too often. Bump the required operator count to 15 before making a handoff
 recommendation."
 
+When the count reaches 15, the user can still discuss a topic. Then the old operator suggests the handoff in the reply
+that ends that topic. This rule wins over the sentence of this section that says "suggests a handoff in the reply in
+which it closes the item". It also wins over the sentence of
+[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) that makes the recommendation "hand off now" at
+the count of a suggestion. The old operator judges when the topic ends, and this judgment is open on purpose. On
+2026-10-30, the user said: "I am still discussing how to resolve a question."
+
 ## The steps of the old operator
 
 After the start, the old operator does these steps:
