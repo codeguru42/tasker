@@ -62,21 +62,48 @@ of the handoff.
 
 ## The items of a handoff file
 
-The old session puts these items in the handoff file:
+The handoff file holds only the parts of this list and the parts of the role page. It holds no other part, for example a
+history of the session, the closed items or the measured facts. The rule is the list, not these examples:
 
-- The prompt for the new session, in a code block. The first message of the new session always names the path of the
-  handoff file. If the old session is not the operator, the prompt also names the operator of the old session.
+- The prompt for the new session, in a code block.
+  - The prompt names the section of the role page for its start, for example
+    [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator). It does not copy the
+    steps of that section.
+  - The prompt holds only the facts of this handoff, for example the path of the file, the session name and the first
+    free item id. The first message of the new session always names the path of the handoff file.
+  - If the old session is not the operator, the prompt also names the operator of the old session by its name only.
 - Each open item with its id, as [The form of an item](operator-items.md#the-form-of-an-item) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
-- Each decision of the user from the old session. The handoff file also keeps each decision of the user from the earlier
-  handoff file of the role that still applies. As a result, a decision survives more than one handoff. The bullet of a
-  relayed decision in [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses these decisions.
+- Each decision of the user that still applies and that no doc and no open issue holds. This covers the old session and
+  the earlier handoff file of the role. As a result, such a decision survives more than one handoff.
+- For a decision that an open issue holds, the file gives only the number of that issue. After the issue lands, the
+  decision leaves the next handoff file.
+- The bullet of a relayed decision in [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses
+  these decisions.
 
 The reason: the old session puts the full text of each open question in the file, because the new session has no other
 source for it.
 
 The old session puts no rule in the handoff file. The rules stay in the docs, and the prompt points to them.
+
+Before it writes the file, the old session sends each fact that it measured and each lesson to `planner-<slug>` with
+`SendMessage`. The slug comes from the own name of the old session. The planner sends a fact to a doc of the repo
+through a ticket, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) says. The old planner sends nothing,
+because [its role page](handoff-planner.md#the-handoff-file-of-the-planner) keeps these facts and lessons. If the send
+fails, also because no session has that name, the old session sends them to its operator as an item. The old operator
+has no operator, so [the failure rule](limits.md#the-failure-rule) applies to it.
+
+The handoff file names each session other than the new session by its name only, also in the prompt. It gives no
+[session ref and no socket address](../sessions.md) of such a session. In a handoff of the operator, the file names the
+old operator by its name, its tab id and its pane id, as
+[the role page](handoff-operator.md#the-handoff-file-of-the-operator) says. `ListAgents` gives the current name and
+session ref of each session. For example, the prompt of `2026-10-25-1713-m22-planner.md` named
+`orchestrator-m22 [bc2d80]` and `operator-m22 [8e3ea5]`, each with its socket address, but both sessions handed off, so
+these values were stale.
+
+The reason for the rules of this section: each part of the file costs tokens at the write, at the read and at each later
+turn of the new session.
 
 ## The last item id
 
@@ -160,7 +187,9 @@ The handoff file holds only these parts of the topic:
 The file does not hold the state of the milestone, the other sessions, the review findings or the table of open issues,
 unless the topic needs them. The other items of [The items of a handoff file](#the-items-of-a-handoff-file) and
 [The last item id](#the-last-item-id) do not apply. The rule of
-[The items of a handoff file](#the-items-of-a-handoff-file) that the file holds no rule does apply.
+[The items of a handoff file](#the-items-of-a-handoff-file) that the file holds no rule does apply. It also covers the
+rule of the names. The prompt names [The check of the handoff folder](#the-check-of-the-handoff-folder), not the start
+section of a role page.
 
 The file goes in the folder of [The handoff file](#the-handoff-file), with the name form of that section. The role part
 is the role of the new session with the topic as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session
