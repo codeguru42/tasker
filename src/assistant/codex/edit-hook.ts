@@ -28,22 +28,27 @@ const HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to):(.*)$/;
 
 // The paths that a patch names, in order. It gives undefined when the text is not a patch that it can read.
 export function patchPaths(patch: string): string[] | undefined {
-  const lines = patch
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "");
-  if (lines[0] !== "*** Begin Patch" || lines[lines.length - 1] !== "*** End Patch" || lines.length < 2) {
+  const lines = patch.split("\n").filter((line) => line.trim() !== "");
+  const first = lines[0]?.trim();
+  const last = lines[lines.length - 1]?.trim();
+  if (first !== "*** Begin Patch" || last !== "*** End Patch" || lines.length < 2) {
     return undefined;
   }
   const paths: string[] = [];
-  for (const line of lines) {
+  for (const raw of lines) {
+    const line = raw.trim();
     if (line.startsWith("+") || line.startsWith("-") || !line.startsWith("***")) continue;
     if (line === "*** Begin Patch" || line === "*** End Patch" || line === "*** End of File") continue;
     const header = HEADER.exec(line);
-    if (header === null) return undefined;
-    const path = (header[1] ?? "").trim();
-    if (path === "") return undefined;
-    paths.push(path);
+    if (header !== null) {
+      const path = (header[1] ?? "").trim();
+      if (path === "") return undefined;
+      paths.push(path);
+      continue;
+    }
+    // An indented line that matches no header is a context line of a hunk.
+    if (raw.startsWith(" ") || raw.startsWith("\t")) continue;
+    return undefined;
   }
   return paths;
 }
