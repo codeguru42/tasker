@@ -606,6 +606,9 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   `test/helpers/<name>.test.ts`. In the first refine, name the test file of each helper that the plan changes. On #273,
   the session changed the expected rows in `test/helpers/state-commands.ts` and left the literal expectations in its
   test file. As a result, six tests failed at each implementation commit.
+- A ticket can add several rules that refuse input, in pairs of a `test:` commit and a `feat:` commit. Ask the plan to
+  give each new test data that passes the rules of the later commits. Otherwise a later rule refuses that data, and the
+  `toEqual` of an earlier test fails. On #548 (2026-10-31), refine 1 asked for a valid `project` in each new test.
 - If a shared step prints a next command, for example "run tasker resume", ask the plan to print it after the last check
   of the caller that can still change the state of the task. On #173, the shared result step printed "run tasker resume
   <issue key> to continue", and then the push guard of `tasker execute` moved the task to `failed`, where resume
