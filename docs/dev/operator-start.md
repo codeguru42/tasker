@@ -135,19 +135,19 @@ The operator puts the milestone title in place of `<milestone>`. Each prompt is 
 The initial planner:
 
 ```text
-You are the planner of <milestone>. Read AGENTS.md and docs/planner.md. This is the initial planning: the user works with you in this tab.
+You are the planner of <milestone>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/planner.md. This is the initial planning: the user works with you in this tab.
 ```
 
 The follow-up planner:
 
 ```text
-You are the planner of <milestone>. This is not the initial planning. Read AGENTS.md and docs/planner.md.
+You are the planner of <milestone>. This is not the initial planning. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/planner.md.
 ```
 
 The orchestrator:
 
 ```text
-You are the orchestrator of <milestone>. Read AGENTS.md and docs/orchestrator.md, then start.
+You are the orchestrator of <milestone>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/orchestrator.md. Then start.
 ```
 
 ## Stop a session
