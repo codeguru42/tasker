@@ -46,15 +46,26 @@ The orchestrator does all the steps of this section.
   [The landing count](handoff-orchestrator.md#the-landing-count), step 1 of
   [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) or a hold of the user.
   The ticket of a parked task that comes back to Todo of the current milestone takes its place by its label (see
-  [the defer rule](#the-defer-rule)). When the orchestrator reads the board again after a landing, it applies the rule
-  again. Then a ticket with `priority: high` or `priority: medium` that joined the milestone and can start takes the
-  next free agent before the tickets with no label.
+  [the defer rule](#the-defer-rule)). Each time the orchestrator reads the board, it applies the rule again. Then a
+  ticket with `priority: high` or `priority: medium` that joined the milestone and can start takes the next free agent
+  before the tickets with no label.
 - Each time a ticket lands, read the board again: the open issues of the milestone and the issues that block them. A new
-  issue can join a milestone while a run is in progress. In one milestone, a new issue stayed in Todo for hours, because
-  the orchestrator read the board only at the start. The bullet "When the final report of the agent of a ticket says
-  that the ticket landed" of [Land the work](land-the-work.md#land-the-work) gives the place of this read among the
-  landing steps. A long-running orchestrator also reads the board with its board watch job, as
-  [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says.
+  issue can join a milestone while a run is in progress. An open issue can also lose its last open blocker while no
+  ticket lands. In one milestone, a new issue stayed in Todo for hours, because the orchestrator read the board only at
+  the start. On 2026-10-25, #495 and three new issues had no open blocker, and two slots of orchestrator-m22 stayed free
+  for about an hour. The bullet "When the final report of the agent of a ticket says that the ticket landed" of
+  [Land the work](land-the-work.md#land-the-work) gives the place of this read among the landing steps. The orchestrator
+  also reads the board when a message of another session names one of these changes: a new issue in the milestone of the
+  orchestrator, an added or a removed blocked-by link of an open issue of that milestone, or a move of an issue into
+  that milestone. This covers a message of each session on purpose. Today the follow-up planner sends such messages, as
+  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running orchestrator
+  also reads the board with its board watch job, as
+  [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says. Each read of the board that does
+  not come at a landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts
+  "at its next read of the board" or "each time it reads the board". So the priority rule applies to each start after
+  such a read. It does not count for a read that a rule ties to a landing, for example the read of the parent issue in
+  [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins, for example the ban of
+  [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
 - Run at most 3 agents at the same time, one ticket for each agent.
 - A ticket that closes a live security gap goes first. A live security gap is a
   [security gap](review-findings.md#review-findings) that exists now on `origin/main` or on the machine. Whether a gap
