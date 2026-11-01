@@ -238,6 +238,9 @@ The operator does these steps for each handoff of an orchestrator or a follow-up
 that the user started in a tab of the user. The old session is the orchestrator or the follow-up planner that hands off
 its work. The new session takes the work, with the same name as the old session.
 
+If a handoff of an orchestrator or a follow-up planner is in progress at the start of a handoff of the operator, step 1
+of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) says what each operator does.
+
 1. A recommendation "hand off now" of the old session arrives. This recommendation is a suggestion of a handoff, as
    [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. The operator sends the go to the session
    at once with `SendMessage`, with no question to the user. The go is a word of the operator, not a word of the user,
