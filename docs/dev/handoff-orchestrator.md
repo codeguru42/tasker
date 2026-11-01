@@ -97,9 +97,9 @@ says. It can also come in an item to the operator, as
 The ban on a new ticket holds until the start of the handoff, as
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. From the start, step 1 of
 [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) and the paragraph after the steps hold. The
-reason for this ban: each task in flight must land before the handoff file, as step 2 of "The steps of the old
-orchestrator" says. So a new ticket delays the handoff. On 2026-10-25, orchestrator-docs sent the suggestion at the
-landing count of 12 and started no new ticket until the go.
+reason for this ban: each task in flight, except a parked task, must land before the handoff file, as step 2 of "The
+steps of the old orchestrator" says. So a new ticket delays the handoff. On 2026-10-25, orchestrator-docs sent the
+suggestion at the landing count of 12 and started no new ticket until the go.
 
 The reason that the ban starts at the count of 12: the steps of a landing can read the board before the landing report
 goes out. So a ban that starts with the reply comes too late. On 2026-10-25, review 1 of #530 found that the landing of
@@ -122,12 +122,13 @@ a handoff only when the suggestion is relevant to that question. In a list of op
 After the start, the old orchestrator does these steps:
 
 1. Start no new ticket.
-2. Wait until each task in flight lands. For each landing, do the usual steps: delete the jobs (see
-   [Delete the job](quota.md#delete-the-job)), do [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step
-   of the bullet "When the final report of the agent of a ticket says that the ticket landed" of
-   [Land the work](land-the-work.md#land-the-work), do [the notice rule](doc-reads.md#the-notice-rule) and do
-   [the agent notice](doc-reads.md#the-agent-notice). The reason: a job lives only in the session of the orchestrator
-   (see [Terms](quota.md#terms)). If a task is still in flight at the handoff, nobody resumes it after a quota stop.
+2. Wait until each task in flight lands. This step leaves out a parked task. For each landing, do the usual steps:
+   delete the jobs (see [Delete the job](quota.md#delete-the-job)), do
+   [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step of the bullet "When the final report of the
+   agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work), do
+   [the notice rule](doc-reads.md#the-notice-rule) and do [the agent notice](doc-reads.md#the-agent-notice). The reason:
+   a job lives only in the session of the orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task
+   is still in flight at the handoff, nobody resumes it after a quota stop.
 3. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round
    finds nothing new. The user asked for this rule on 2026-10-17. Then write the handoff file, as
    [The handoff file](handoff.md#the-handoff-file) says.
