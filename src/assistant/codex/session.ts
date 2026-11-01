@@ -1,25 +1,19 @@
-import { readFileSync } from "node:fs";
-import { hasErrnoCode } from "../../errno.js";
 import { isObject } from "../../object.js";
+import { readTextFile } from "../../read-text-file.js";
 import { replaceFile } from "../../replace-file.js";
 import { codexThreadIdPath, codexUsagePath } from "../../store/layout.js";
 import { numberOf } from "../event-line.js";
 import type { TokenUsage } from "../provider.js";
 
-// The text of a file, or undefined when the file is missing. Another read error throws.
-function textOrUndefined(path: string): string | undefined {
-  try {
-    return readFileSync(path, "utf8");
-  } catch (error) {
-    if (hasErrnoCode(error, ["ENOENT"])) return undefined;
-    throw error;
-  }
-}
-
 // The thread id of a session. A missing file and an empty file give undefined. Another read error throws.
 export function readThreadId(sessionDir: string, sessionId: string): string | undefined {
-  const id = textOrUndefined(codexThreadIdPath(sessionDir, sessionId))?.trim();
-  return id === undefined || id === "" ? undefined : id;
+  const file = readTextFile(codexThreadIdPath(sessionDir, sessionId));
+  if (file.text === undefined) {
+    if (file.missing) return undefined;
+    throw file.cause;
+  }
+  const id = file.text.trim();
+  return id === "" ? undefined : id;
 }
 
 // Throws on a write error. The caller decides what a failed write means.
@@ -30,11 +24,11 @@ export function writeThreadId(sessionDir: string, sessionId: string, threadId: s
 // The last usage total of a thread. A missing file, a read error and a bad text all give undefined,
 // and the caller counts that as zero.
 export function readUsageTotal(sessionDir: string, sessionId: string): TokenUsage | undefined {
+  const file = readTextFile(codexUsagePath(sessionDir, sessionId));
+  if (file.text === undefined) return undefined;
   let value: unknown;
   try {
-    const text = textOrUndefined(codexUsagePath(sessionDir, sessionId));
-    if (text === undefined) return undefined;
-    value = JSON.parse(text);
+    value = JSON.parse(file.text);
   } catch {
     return undefined;
   }
