@@ -56,6 +56,15 @@ The orchestrator does all the steps of this section.
   landing steps. A long-running orchestrator also reads the board with its board watch job, as
   [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says.
 - Run at most 3 agents at the same time, one ticket for each agent.
+- A ticket that closes a live security gap goes first. A live security gap is a
+  [security gap](review-findings.md#review-findings) that exists now on `origin/main` or on the machine. Whether a gap
+  is live is a judgment. The judgment is open on purpose, and the session that orders the tickets makes it.
+
+  This order holds among the tickets of the milestone that can start. It wins over the priority rule and over
+  [the link offer](#the-link-offer). When the next bullet lets only one ticket run, this ticket takes the slot. No
+  blocked-by link puts it behind a ticket that it does not need. If a task in flight already holds the shared file, the
+  orchestrator asks the user what to do with that task.
+
 - Do not run two tickets at the same time when both edit the same shared file, for example a file under `test/helpers/`
   or `docs/dev/code-conventions.md`. Start the second ticket after the first one lands. In this bullet, to change a file
   also means to add, move or delete it. This bullet and [the link offer](#the-link-offer) count two kinds of files of a

@@ -500,6 +500,8 @@ that it dismissed. The initial planner posts only after the approval of the user
   bullet "An issue of an earlier milestone never waits ..." also wins. The reason: an older issue most often holds the
   older decision, and a later issue builds on it. On 2026-10-17, the planner first ordered the chain of the Docs
   milestone by impact, and then the user chose the order by issue number, oldest first.
+- A ticket that closes a live security gap goes first in its chain, ahead of each ticket that it does not need, as
+  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. This bullet wins over the order by issue number.
 - An edit of a file under `test/helpers/` alone gets no blocked-by link.
 - Before the planner drafts the issues of a milestone, it makes a table of the needs and the likely files of each issue.
   It adds the links from the table when it posts the issues.

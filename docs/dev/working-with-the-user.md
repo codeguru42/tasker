@@ -175,8 +175,9 @@ link to open an issue from a reply.
   [the installed tasker](../orchestrator.md): each command of the installed tasker, with its core features. A feature
   that the installed tasker does not have also waits until later, as an edge case does.
 - Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at
-  once. [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the
-  steps for a finding of a review.
+  once. Say when the gap starts, from the code on `origin/main` and from the machine.
+  [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the steps for
+  a finding of a review.
 - Each piece of work that waits becomes an issue in its later milestone, as
   [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md says. [issues.md](issues.md) gives the
   steps to file the issue.
