@@ -10,6 +10,9 @@ A provider that cannot enforce a limit that tasker asks for (`access`, `deniedCo
 must refuse the run before it starts the program. A run with less confinement than tasker asked for can write or read
 outside the limits that the user relies on. The doc comment of the interface holds the rule for the code.
 
+There is one exception. For `codex`, the sandbox alone enforces `deniedCommands`. The provider writes no rule for these
+commands, and it does not refuse a run because the list is not empty.
+
 ## The session id
 
 The caller must make the session id and must record it before the run. As a result, a crash, a timeout or a quota stop
@@ -382,8 +385,81 @@ The model check of a continued session uses the model forms of the configuration
 
 ## The codex provider
 
-The provider lets a repo name `codex` in `assistant.provider`, and it gives the doctor checks of Codex. The provider
-starts no child. Its `run()` gives a `failure` outcome, because a later ticket builds the run of a task under Codex.
+The provider lets a repo name `codex` in `assistant.provider`. It runs the plan and review roles, and it gives the
+doctor checks of Codex. A run is read-only. It starts `codex exec`, or `codex exec resume` for a continued session. It
+reads the JSON events from stdout. The prompt goes on stdin, and the last argument is `-`. A run with `access` of
+`"workspace-write"` (the execute role) gets a `failure` outcome before the spawn.
+
+### The arguments
+
+`codexArgs()` in `src/assistant/codex/args.ts` builds the list. The same `-c` values go to a new session and to a
+continued session.
+
+- `--ignore-user-config` and `--ignore-rules` leave out the configuration, the rules and the hooks of the user and of
+  the worktree. A `.codex/config.toml` in the worktree loads without `--ignore-user-config`.
+- `-c approval_policy="never"`: the run asks no question, because nobody answers.
+- `-c web_search="disabled"` alone does not turn off web search, because the model can still search through an MCP tool.
+  Together with `-c features.apps=false` it does.
+- `-c default_permissions="tasker"` names a permission profile that the run defines with
+  `-c permissions.tasker.filesystem={...}`. The table grants read of `"/"`. A smaller grant makes each command fail.
+  Each path of `sandbox.denyRead` is a key with the value `"deny"`. The key is `JSON.stringify(path)`, so a dot, a space
+  or a quote stays in one key. A repeated path counts once, because a TOML table must not name a key twice.
+- The profile has no write grant. `sandbox.allowWrite` is never read.
+- `-c permissions.tasker.network.enabled=true`: without it, a command cannot resolve a host.
+- Never use `-s`, `--sandbox` or `sandbox_mode`, because a profile does not compose with them. Never use `--ephemeral`,
+  because an ephemeral session cannot be continued.
+
+### The session files
+
+Codex gives the thread id in the `thread.started` event. A continued run needs it. The provider keeps two files for each
+session id under `sessionDir`. Their paths come from `src/store/layout.ts`.
+
+- `<sessionId>.codex-thread` holds the thread id. The provider writes it at each `thread.started`. A continued run with
+  no such file gets a `failure` outcome before the spawn. A failed write does not stop the run.
+- `<sessionId>.codex-usage` holds the last usage total of the thread as JSON. The `usage` of `turn.completed` is a total
+  for the whole thread, not for the run. So the usage of a run is the total of the run minus the stored total, never
+  below 0. A missing or bad file counts as zero. A run with no `turn.completed` gives `"unavailable"` and leaves the
+  file as it is.
+- `<sessionId>.schema.json` holds `jsonSchema` for `--output-schema`.
+
+`input_tokens` includes the cached tokens, so `inputTokens` is `input_tokens` minus `cached_input_tokens`.
+`output_tokens` includes the reasoning tokens.
+
+### The outcome
+
+The rules differ from `claude-code` in three points.
+
+- There is no quota outcome. `overageStop` has no effect.
+- A top-level `error` or `turn.failed` event gives a `failure` outcome with its message. An `item.completed` event with
+  item type `error` is a warning, and the reader ignores it.
+- `permissionDenials` is always `[]`. A command that the sandbox blocks is a normal `command_execution` item with the
+  shell error in `aggregated_output`.
+
+The provider sets no `sandboxCleanup`. The sandbox leaves no placeholder in the worktree.
+
+### What the sandbox blocks and what stays open
+
+No `-c` key and no flag gives one run a `forbidden` rule. A rules file loads only from the Codex home of the user or
+from a trusted worktree, and `--ignore-user-config` drops the trust. `--ignore-rules` drops each rule. So the agent
+tested no form that passes a rule, because no rule exists. The sandbox alone enforces `deniedCommands`.
+
+The sandbox blocks the socket of herdr, the socket of the ssh agent, each write and each path of `denyRead`.
+
+`git push` over https, or over ssh with a key file, stays open, because the network is open. This gap rests on the other
+layers of the push guard. See [Push guard](version-control.md#push-guard).
+
+### Measures and limits
+
+The agent ran the measures on `codex-cli 0.166.0` on 2026-10-31. All measures ran on Linux. A run on macOS or Windows is
+unmeasured.
+
+Some measures are weaker. The measures of the profile, of the rules and of the configuration ran on the real Codex home
+of the user. A rules file of the user is not proven to load, because none existed. `--ignore-rules` rests on its help
+text. A trusted hook is not tested. Nobody measured a host where the sandbox cannot start.
+
+- `overageStop` has no effect.
+- The roles have no write path. This is stricter than [the plan and review roles](#the-plan-and-review-roles) say.
+- A sandboxed command can outlive a SIGKILL of `codex`.
 
 `doctorChecks()` gives the checks `codex version` and `codex login`. They run once for all repos of the provider.
 `codex version` makes sure that `codex` is on `PATH` and starts. `codex login` makes sure that `codex` has a login.

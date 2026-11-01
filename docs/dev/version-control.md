@@ -236,6 +236,9 @@ The push guard has three layers:
 Layer 3 cannot see a push that moves the tip and then moves it back within one turn, because it compares only the tips
 before and after.
 
+A run of `codex` has no deny rule for `git push`, so layer 1 does not hold for `codex`. See
+[The codex provider](assistants.md#the-codex-provider).
+
 ### The hook
 
 Provision writes the hook on each run, through a `.tmp` file and a rename. A deleted or edited hook comes back at the
@@ -261,7 +264,8 @@ These cases skip the hook:
 - A write by the assistant to the clone. It can edit the hook or the configuration. The next provision writes the hook
   and `core.hooksPath` again.
 
-Layer 1 and layer 3 cover these cases.
+For `claude`, layer 1 and layer 3 cover these cases. A plan or review run of `codex` has no layer 1 and no layer 3, so
+these cases have no layer for such a run.
 
 The hook alone does not cover them. A caller that runs an assistant must apply the deny rule of layer 1.
 `tasker execute` compares the tips of the task branch for layer 3, as [tasks.md](tasks.md#execute) says. The plan and
