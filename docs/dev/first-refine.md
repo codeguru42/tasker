@@ -896,9 +896,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   [name the hash one time](limits.md#the-shared-clone-rule). Ask it to use that name in each sentence of the check, also
   in its pass sentence. On #231, review 2 found the pass sentence with the old name.
 - In a ticket that changes the quota rules, give in the first refine [the fact test](plan-review.md#the-fact-test) that
-  the quota event gives only the windows `five_hour` and `seven_day`, for example with
-  `tasker show-quota | jq 'max_by(.receivedAt).event.rate_limit_info.unifiedWindows | keys'`. On #232, this fact settled
-  two review findings.
+  the quota event gives only the windows `five_hour` and `seven_day`, and that it can give only `seven_day` (#648). For
+  the safe command, see [Terms](quota.md#terms). On #232, this fact settled two review findings.
 - If a rule runs at each read of a value, ask the plan to put the rule right after the read, not inside a branch such as
   "If there is a reset time". On #232, review 1 found that a stale five-hour time gave no
   [seven-day job](quota.md#terms).
