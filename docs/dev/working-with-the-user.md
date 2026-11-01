@@ -97,11 +97,11 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   does an action, for example "Only the user changes a landing order of the overlap rule" (see
   [Land the work](land-the-work.md#land-the-work)). Some kinds of choice still go to the user first: a security gap, a
   change of scope, a landing order across milestones, an extra review loop, a request of
-  [the request rule](../orchestrator.md#the-request-rule) and a [tool block](tasker-commands.md#the-tool-block-rule).
-  The mode holds for the session that got it, until the user ends it. The mode also passes through a handoff. The old
-  session lists the mode as a decision of the user in its [handoff file](handoff.md#the-items-of-a-handoff-file). The
-  new session then holds the mode until the user ends it. On 2026-10-18, the user told orchestrator-docs: "Default to
-  your evaluation and recommendation from here on."
+  [the request rule](../orchestrator.md#the-request-rule), a [tool block](tasker-commands.md#the-tool-block-rule), a
+  read of a file of the data folder and a run of `tasker abort`. The mode holds for the session that got it, until the
+  user ends it. The mode also passes through a handoff. The old session lists the mode as a decision of the user in its
+  [handoff file](handoff.md#the-items-of-a-handoff-file). The new session then holds the mode until the user ends it. On
+  2026-10-18, the user told orchestrator-docs: "Default to your evaluation and recommendation from here on."
 - Pending work is moot after a fact that the session read removes the purpose of the work. For example, a closed issue
   makes an edit of its body moot. Whether the purpose of the work is gone is a judgment. The judgment is open on
   purpose, and the session makes it.
