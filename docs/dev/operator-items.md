@@ -20,11 +20,33 @@ The sender sends each [item](../sessions.md) to the operator with `SendMessage`.
 
 This page uses these terms for the questions of an item that needs an answer:
 
-- A partial answer is an answer of the user to some questions of an item, but not to each question.
-- An open question is a question of an open item with no answer of the user. A question is also an open question when
-  the operator judges that the words of the user do not fully settle it. It stays open until the user says that the
-  sender decides, picks a choice or fully settles the question. [The answer](#the-answer) gives these steps.
-- An answered question is a question with an answer of the user that the operator did not send yet.
+- An answer of the operator is an answer that the operator sends with its own recommendation, with no wait for the user.
+  The message starts with "Answer of the operator:". The message of
+  [the tool-block rule](tasker-commands.md#the-tool-block-rule) that gives the output of a command is not such an
+  answer. A tool block is a question for the user alone.
+- A question for the user alone is a question of one of these kinds:
+  - A kind of choice of the list in the bullet that starts "The user can let the session decide open choices by its own
+    recommendation" of [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
+  - The request of [the request rule](../orchestrator.md#the-request-rule).
+  - A choice of [The rules for the user alone](planner.md#the-rules-for-the-user-alone).
+  - A choice of the fifth case of [the stop rule](plan-review.md#the-stop-rule).
+  - A choice of the security report of [Review findings](review-findings.md#review-findings).
+  - A choice of the earlier-blocker offer in [Pick the tickets](pick-the-tickets.md#pick-the-tickets): the orchestrator
+    runs a blocker of an earlier milestone only on the word of the user.
+  - A choice of the state `awaiting_quota_approval` in [Quota](quota.md#quota).
+  - A choice of a hold of [the hold rule](land-the-work.md#the-hold-rule) that stays until the user decides.
+  - A choice of the bullet "Only the user changes a landing order of the overlap rule" of
+    [Land the work](land-the-work.md#land-the-work), with its relay confirm.
+  - A choice of [the stuck-task rule](land-the-work.md#the-stuck-task-rule).
+  - A choice of each other rule that says that only the user does an action.
+- A partial answer is an answer to some questions of an item, but not to each question. It is an answer of the user or
+  an answer of the operator.
+- An open question is a question of an open item with no answer of the user and no answer of the operator. A question is
+  also an open question when the operator judges that the words of the user do not fully settle it. It stays open until
+  the user says that the sender decides, picks a choice or fully settles the question. [The answer](#the-answer) gives
+  these steps.
+- An answered question is a question with an answer of the user or an answer of the operator that the operator did not
+  send yet.
 - A sent question is a question with an answer that the operator sent.
 
 The operator does these things for the open items:
@@ -38,6 +60,14 @@ The operator does these things for the open items:
 - For each new item, the operator runs `herdr notification show "<operator name>: new item <id>" --sound request` in its
   shell. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the item stays open. A report
   still closes when the operator shows it.
+- This bullet covers an item that needs an answer, not a report. The operator can answer such an item in full with
+  answers of the operator. Then the line of the next bullet takes the place of the line "New item `<id>` from
+  `<sender>`:", and the operator runs no `herdr notification show`. An item with a question for the user alone keeps
+  that line and the notification.
+- In its next reply to the user, the operator shows each item that it answered. It gives the item in one line: "Answered
+  item `<id>` from `<sender>`:", then the first line of the item. The line then gives the answer that the operator sent
+  for each question, next to the number of the sender. The operator keeps a list of these items until it shows them. An
+  item with questions of both kinds gets this line and the line "New item `<id>` from `<sender>`:".
 - When the user asks for the open items, the operator gives each open item with its full text, not only its id or a
   label. An open report gets only its arrival line, not its full text. This sentence wins over the bullet "When you list
   open items or proposed issues" of [A decision of the user](working-with-the-user.md#a-decision-of-the-user). The
@@ -48,7 +78,8 @@ The operator does these things for the open items:
   Each open question gets its own number in the one list of the operator, from 1. The id of its item stands next to that
   number. The operator numbers the questions again for its list, and it keeps the number of the sender for the later
   send. An answered question gets no number, because the user has nothing to answer. The operator gives it after the
-  list, with the id of its item and the words of the user. The choices of a question stay a nested list with letters.
+  list, with the id of its item and the words of the user or the answer of the operator. The choices of a question stay
+  a nested list with letters.
 
 - When the operator shows an item to the user, it writes each issue key of the item as a link, as
   [the issue-link rule](working-with-the-user.md#the-issue-link-rule) says. A key inside a code span or a code block
@@ -60,9 +91,8 @@ The operator does these things for the open items:
   shows an item to the user, it writes each issue key of the item as a link" also covers the full text of a report on
   request. If the operator no longer has the text of the report, the operator says so in its reply. The reply names the
   sender and the id of the report, so that the user can ask the sender. An example is a report that closed before a
-  handoff of the operator, because the handoff file of the operator keeps only the open items. The reason: the user
-  reads the full text of a report only on request, so a reply of the operator holds no text that the user did not ask
-  for.
+  handoff of the operator, because the handoff file of the operator keeps no closed report. The reason: the user reads
+  the full text of a report only on request, so a reply of the operator holds no text that the user did not ask for.
 
 ## The answer
 
@@ -97,21 +127,55 @@ The operator does these things for the open items:
   as information. The message names the question as open, by the number of the sender, and gives the words. This form
   also holds when no question of the item has an answer. The sender continues its other work and does not act on the
   open question. If the send fails, [the failure rule](limits.md#the-failure-rule) applies, as for a partial answer.
+- An item that needs an answer can arrive from `planner-<slug>` or `orchestrator-<slug>`. Then the operator sends an
+  answer of the operator for each question that is not a question for the user alone. The operator judges whether a
+  question is a question for the user alone. The operator sends the answer at once with `SendMessage`.
+- The message names the id of the item. It starts with "Answer of the operator:", not with "From the user:". For each
+  question, it gives the number that the sender gave, the choice of the operator and one line with the reason. The
+  message also names each open question of the item by the number of the sender.
+- The recommendation is the own recommendation of the operator. It can be the recommendation of the sender. If the
+  question gives choices, the operator picks one choice or writes its own recommendation.
+- For each rule of the sender that waits for the answer of an item, an answer of the operator counts as that answer.
+  This covers each such rule that is not a rule of a question for the user alone. It also covers such a rule that this
+  page does not name.
+- An answer of the operator is not a word of the user, as [The operator](working-with-the-user.md#the-operator) says.
+  Each question for the user alone waits for the user. The bullets of this section for an answered question and a sent
+  question also apply to an answer of the operator.
+- The user can change an answer of the operator. Then the operator sends the new word of the user to the sender, as
+  [The word of the user](operator-conversations.md#the-word-of-the-user) says. If the sender already acted on the answer
+  of the operator, the sender tells the user the cost of the change in a report. After the report, the sender does what
+  the new word of the user says, with no other wait. Each rule for the user alone still applies to that act, for example
+  the approval of a comment on an issue.
+- The bullets on an answer of the operator do not cover a report, because a report needs no answer. They also do not
+  cover the recommendation mode of one session in
+  [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
+- The reason: on 2026-10-25, the user answered planner-docs-58 with "send your recommendations". Earlier, the user
+  answered planner-docs-35 and planner-docs-38 with "Answer the rest with your recommendations". Then the user said:
+  "file an issue to update the operator rules to automatically send its own recommendations for planner and orchestrator
+  feedback".
 
 ## The states of an item
 
 The table gives each change of an item. An empty cell means that the page gives no state for that actor.
 
-| Change                                                                                 | Sender                                                        | Operator                                                                                                                                                            | User | Who tells whom                                                                                                                                                                                            |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The item arrives                                                                       | Continues its other work                                      | The item is open                                                                                                                                                    |      | The sender tells the operator, with `SendMessage`                                                                                                                                                         |
-| The operator shows an item that needs an answer                                        |                                                               | The item is open                                                                                                                                                    |      | The operator tells the user, with the reply line and the herdr notification                                                                                                                               |
-| The operator shows a report                                                            |                                                               | The report is closed                                                                                                                                                |      | The operator tells the user, with the arrival line of the report in the reply. The operator sends no answer to the sender                                                                                 |
-| The user asks for a report                                                             |                                                               | The report stays closed                                                                                                                                             |      | The user tells the operator. Then the operator tells the user, with the full text of the report in the reply. If the operator no longer has the text, the reply names the sender and the id of the report |
-| The user answers, also with a partial answer                                           |                                                               | The item is open. Each question that the words of the user fully settle is an answered question. Each other open question stays open. Each sent question stays sent |      | The user tells the operator                                                                                                                                                                               |
-| The operator judges that the words of the user do not fully settle a question          |                                                               | The item is open. The question stays open. The other questions of the item keep their states: open, answered or sent                                                |      | The operator tells the user what stays open and asks whether the sender decides                                                                                                                           |
-| The user says that the sender decides, picks a choice or fully settles the question    |                                                               | The item is open. The question becomes an answered question. The other questions of the item keep their states: open, answered or sent                              |      | The user tells the operator                                                                                                                                                                               |
-| The reply of the user does neither                                                     | The sender continues its other work                           | The item is open. The question stays open. The operator sends the words as information. The other questions of the item keep their states: open, answered or sent   |      | The operator tells the sender, with `SendMessage`                                                                                                                                                         |
-| The send of a partial answer works                                                     | The answer starts the sender again for the answered questions | The item stays open with its open questions. Each answered question of the send is a sent question                                                                  |      | The operator tells the sender, with `SendMessage`                                                                                                                                                         |
-| The send of an answer works, and after it each question of the item is a sent question | The answer starts the sender again                            | The item is closed. No question is open or answered                                                                                                                 |      | The operator tells the sender, with `SendMessage`                                                                                                                                                         |
-| The send of the answer fails, also of a partial answer or of the words as information  |                                                               | The item stays open. Each answered question of the send stays an answered question. Each open question stays open. Each sent question stays sent                    |      | The operator tells the user, as the failure rule says                                                                                                                                                     |
+| Change                                                                                                              | Sender                                                        | Operator                                                                                                                                                            | User              | Who tells whom                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The item arrives                                                                                                    | Continues its other work                                      | The item is open. For an item that needs an answer, the next rows give the decision of the operator                                                                 |                   | The sender tells the operator, with `SendMessage`                                                                                                                                                         |
+| The operator shows an item with a question for the user alone                                                       |                                                               | The item is open                                                                                                                                                    |                   | The operator tells the user, with the reply line and the herdr notification                                                                                                                               |
+| An item with no question for the user alone arrives                                                                 | Continues its other work                                      | Sends an answer of the operator. The item closes                                                                                                                    |                   | The operator tells the sender                                                                                                                                                                             |
+| An item with questions of both kinds arrives                                                                        | Continues its other work                                      | Sends an answer of the operator for the other questions. The item stays open                                                                                        |                   | The operator tells the sender                                                                                                                                                                             |
+| An item with only questions for the user alone arrives                                                              | Continues its other work                                      | Sends nothing. The item stays open                                                                                                                                  |                   | The operator tells the user, with the arrival line and the notification                                                                                                                                   |
+| The operator answers a question that gives choices                                                                  |                                                               | Picks one choice or writes its own recommendation. The message gives the choice and one line with the reason                                                        |                   | The operator tells the sender                                                                                                                                                                             |
+| The operator gives its next reply                                                                                   |                                                               | Shows each answered item with its answer                                                                                                                            | Reads the answers | The operator tells the user                                                                                                                                                                               |
+| A handoff of the operator comes before that reply                                                                   |                                                               | The new operator shows the items of the file in its first reply                                                                                                     | Reads the answers | The new operator tells the user                                                                                                                                                                           |
+| The user changes an answer of the operator, before the sender acted                                                 | Acts on the new answer                                        | Sends the new word of the user                                                                                                                                      |                   | The operator tells the sender                                                                                                                                                                             |
+| The user changes an answer of the operator, after the sender acted                                                  | Reports the cost, then does what the new word says            | Sends the new word of the user                                                                                                                                      |                   | The operator tells the sender. The sender tells the user                                                                                                                                                  |
+| The operator shows a report                                                                                         |                                                               | The report is closed                                                                                                                                                |                   | The operator tells the user, with the arrival line of the report in the reply. The operator sends no answer to the sender                                                                                 |
+| The user asks for a report                                                                                          |                                                               | The report stays closed                                                                                                                                             |                   | The user tells the operator. Then the operator tells the user, with the full text of the report in the reply. If the operator no longer has the text, the reply names the sender and the id of the report |
+| The user answers, also with a partial answer                                                                        |                                                               | The item is open. Each question that the words of the user fully settle is an answered question. Each other open question stays open. Each sent question stays sent |                   | The user tells the operator                                                                                                                                                                               |
+| The operator judges that the words of the user do not fully settle a question                                       |                                                               | The item is open. The question stays open. The other questions of the item keep their states: open, answered or sent                                                |                   | The operator tells the user what stays open and asks whether the sender decides                                                                                                                           |
+| The user says that the sender decides, picks a choice or fully settles the question                                 |                                                               | The item is open. The question becomes an answered question. The other questions of the item keep their states: open, answered or sent                              |                   | The user tells the operator                                                                                                                                                                               |
+| The reply of the user does neither                                                                                  | The sender continues its other work                           | The item is open. The question stays open. The operator sends the words as information. The other questions of the item keep their states: open, answered or sent   |                   | The operator tells the sender, with `SendMessage`                                                                                                                                                         |
+| The send of a partial answer works                                                                                  | The answer starts the sender again for the answered questions | The item stays open with its open questions. Each answered question of the send is a sent question                                                                  |                   | The operator tells the sender, with `SendMessage`                                                                                                                                                         |
+| The send of an answer works, and after it each question of the item is a sent question                              | The answer starts the sender again                            | The item is closed. No question is open or answered                                                                                                                 |                   | The operator tells the sender, with `SendMessage`                                                                                                                                                         |
+| The send of the answer fails, also of a partial answer, of an answer of the operator or of the words as information |                                                               | The item stays open. Each answered question of the send stays an answered question. Each open question stays open. Each sent question stays sent                    |                   | The operator tells the user, as the failure rule says                                                                                                                                                     |
