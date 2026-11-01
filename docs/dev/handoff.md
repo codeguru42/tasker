@@ -172,17 +172,22 @@ item and in the prompt of the handoff file. The prompt also names [the operator 
 the operator that the new session works with.
 
 The old session sends the path of the file to [its operator](../operator.md) as an item, as
-[The form of an item](operator-items.md#the-form-of-an-item) says. The operator starts the new session with the prompt
-of the file as its first message, as [Start a session](operator-start.md#start-a-session) says. The operator does not
-stop the old session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and the stop of
-[The stop and the start](#the-stop-and-the-start) do not apply.
+[The form of an item](operator-items.md#the-form-of-an-item) says. The operator gives the path of the file to the user.
+When the user asks for the start, the operator starts the new session with the prompt of the file as its first message,
+as [Start a session](operator-start.md#start-a-session) says. The operator does not stop the old session. The steps of
+the role page, [The end of a handoff](#the-end-of-a-handoff) and [The stop and the start](#the-stop-and-the-start) do
+not apply.
 
-When the old session is the operator, it starts the new session itself, as
-[Start a session](operator-start.md#start-a-session) says, and it sends no item.
+When the old session is the operator, it sends no item. It gives the path of the file to the user. When the user asks
+for the start, it starts the new session itself, as [Start a session](operator-start.md#start-a-session) says.
 
 On 2026-10-25, the user asked orchestrator-m21 for "a handoff for a new session to plan publishing to NPM". The session
 first wrote the full orchestrator handoff. The user said: "we don't need to handoff this entire session. Just include
 what is necessary to continue a session for planning NPM publish."
+
+On 2026-10-25, the user asked operator-docs about the store of messages and items, and called it "a larger planning
+session". Then the user said "yes, write a handoff". operator-docs wrote the file and started planner-messages at once.
+The user said: "I said "write a handoff". That does not imply "start a new session with the handoff you wrote"".
 
 ## The hold of the items
 
