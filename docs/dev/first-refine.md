@@ -583,6 +583,9 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - If the issue puts a command out of scope, ask the plan not to edit the docs of that command. On #159, the plan
   narrowed a reason sentence in the "Retry" section of [tasks.md](tasks.md#retry). Review 1 read the new sentence as a
   promise of a case that the ticket did not build.
+- If the Out of scope section of an issue limits a new rule, ask the plan to state that limit in the doc text. A reader
+  of the doc does not see the issue, so a review can find the rule too wide. On #500, review 2 found that no doc gave
+  such a limit, and the fix cost one loop.
 - A link must support the exact sentence that holds it. Ask the plan to compare each link sentence with its target, for
   example "X says that Y". The target must say Y. On #159, a link sentence claimed more than its target doc says.
   [The diff read](run-one-ticket.md#the-diff-read) found it after execute. On #212, the compare found a real gap before
