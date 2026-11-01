@@ -49,7 +49,7 @@ function codexOutcomeOf(
     permissionDenials: [],
     usage: facts.usage,
   };
-  if (run.passedSignal !== null && run.passedSignal !== undefined) {
+  if (run.passedSignal !== null) {
     return { ...base, kind: "interrupted", signal: run.passedSignal };
   }
   if (run.timedOut) return { ...base, kind: "timeout" };
