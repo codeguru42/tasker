@@ -209,6 +209,10 @@ is 1.
 
 A failed run also spends tokens, so the usage is recorded for a failure too. The record of usage must be complete.
 
+Plan, refine and review read the tip of the task branch on the remote before this step. If the tip moved or the read
+fails, this step does not run. The run step of these commands then records the usage itself and fails the task.
+[Execute](#execute) gives the reasons, and [the push guard](version-control.md#push-guard) gives the layers.
+
 The answer of a plan, refine or review run is text, and tasker records nothing before the pause. As a result, the pause
 drops the answer, and the next run asks again. The commits of an execute turn are already on the branch. As a result,
 the todo of that turn counts as done, and the next run starts at the next todo.
@@ -239,15 +243,19 @@ revision. The task goes to `planning`, then to `awaiting_plan_review`.
 The steps run in this order.
 
 1. The command also makes its reads before the first write. A failure in this part leaves the task in `workspace_ready`.
+   These reads include the tip of the task branch on the remote, which is layer 3 of
+   [the push guard](version-control.md#push-guard).
 2. The command records the session of the plan before it starts the assistant.
    [The session id](assistants.md#the-session-id) gives the reason. A task that already has a plan session continues it.
 3. The command moves the task to `planning` and runs the assistant. It appends each event of the run to the transcript
    of the revision. If the outcome of the run holds a sandbox cleanup, the command then writes one `sandbox_cleanup`
    event with it, before it acts on the outcome.
-4. The command acts on the outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says. A plan
+4. The command reads the tip again. If the tip moved or the read fails, the command writes the `usage` event and moves
+   the task to `failed`. The next steps then do not run. [Execute](#execute) gives the reasons.
+5. The command acts on the outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says. A plan
    that tasker refuses also moves the task to `failed`, and the error lists each problem.
-5. The command writes the plan file before it adds the row. [Plan files](data-root.md#plan-files) gives the reason.
-6. The row, its event and the move to `awaiting_plan_review` share one transaction.
+6. The command writes the plan file before it adds the row. [Plan files](data-root.md#plan-files) gives the reason.
+7. The row, its event and the move to `awaiting_plan_review` share one transaction.
    [The plan_revisions table](data-root.md#plan_revisions-table) gives the rule.
 
 An error after the start of the run also moves the task to `failed`, with the prefix `planning failed:`. A failed write
@@ -300,7 +308,8 @@ The steps run in this order.
    nothing, as the intro says, so the user can fix the cause and run the same command again. The branch of a landed
    parent is no base for a new plan (see [Stacked task](workspaces.md#stacked-task)).
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base
-   revision and the commits of the task branch.
+   revision and the commits of the task branch. It then reads the tip of the task branch on the remote, which is layer 3
+   of [the push guard](version-control.md#push-guard).
 3. The command fills the prompt, with the open findings in the context block for a promotion, archives the template and
    continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for
    the recorded model. The session is already recorded, so refine records no session.
@@ -308,7 +317,8 @@ The steps run in this order.
    event, as `{ feedback, from, to }`, so that `tasker resume` can run the same refine again (see [Resume](#resume)). A
    promotion with no feedback records no `feedback` key. The run step is the one that `tasker plan` uses, with the
    prefix `refining failed:` for an error. As in `tasker plan`, the run step writes one `sandbox_cleanup` event when the
-   outcome of the run holds a sandbox cleanup.
+   outcome of the run holds a sandbox cleanup. The run step then reads the tip again. A moved tip or a failed read fails
+   the task, as in `tasker plan`.
 
 [The refine prompt](assistants.md#the-refine-prompt) says what the prompt asks for. The new revision is a complete plan.
 A question that it leaves out counts as answered by the feedback, and the store computes this. A promotion with no
@@ -441,11 +451,14 @@ rules:
 `tasker review` reviews the committed work of a task in `awaiting_work_review`. It runs in this order:
 
 1. Check the task: its state, the moved-base guard, its worktree, its branch and its base revision.
-2. Read the tip of the task branch and the commits of the branch.
+2. Read the tip of the task branch and the commits of the branch. Then read the tip of the task branch on the remote.
+   This read is layer 3 of [the push guard](version-control.md#push-guard).
 3. Build the text of the earlier reviews, and archive the prompt.
 4. Prepare a new session, and record it with the next review number.
 5. Move the task to `reviewing`, which writes the run marker. Run the assistant, and write its events to the transcript.
-6. Check the answer. Record the review, its findings and the `review` event, and move the task.
+6. Read the tip on the remote again. If the tip moved or the read fails, write the `usage` event and move the task to
+   `failed`. Then skip step 7.
+7. Check the answer. Record the review, its findings and the `review` event, and move the task.
 
 The command writes one `transition` event into `reviewing`, one `sandbox_cleanup` event, one `usage` event, one `review`
 event with the data `{ number, revision, findings }`, and one `transition` event out of `reviewing`. The

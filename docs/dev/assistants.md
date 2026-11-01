@@ -448,8 +448,9 @@ does not block every entry.
 
 The sandbox blocks the socket of herdr, the socket of the ssh agent, each write and each path of `denyRead`.
 
-`git push` over https, or over ssh with a key file, stays open, because the network is open. This gap rests on the other
-layers of the push guard. See [Push guard](version-control.md#push-guard).
+`git push` over https, or over ssh with a key file, stays open, because the network is open. A plan, refine or review
+run of `codex` has layer 2 and layer 3 of the push guard, and no layer 1. See
+[Push guard](version-control.md#push-guard).
 
 ### The doctor checks
 
