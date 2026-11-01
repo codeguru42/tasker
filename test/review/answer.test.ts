@@ -28,12 +28,9 @@ describe("checkReviewAnswer: valid answers", () => {
     expect(check(validReviewAnswer())).toEqual({ ok: true, answer: validReviewAnswer() });
   });
 
-  it("passes a finding without line and without category", () => {
-    const output = answerOf(reviewFindingWithout("line", "category"));
-    const result = check(output);
-    expect(result).toEqual({ ok: true, answer: output });
-    if (result.ok)
-      expect(Object.keys(result.answer.findings[0] ?? {}).sort()).toEqual(["failure_scenario", "file", "summary"]);
+  it("passes a finding with null in line and in category", () => {
+    const output = validReviewAnswer({ findings: [reviewFinding({ line: null, category: null })] });
+    expect(check(output)).toEqual({ ok: true, answer: output });
   });
 
   it("passes a category of another word", () => {
@@ -63,6 +60,24 @@ describe("checkReviewAnswer: the schema", () => {
   it("gives a problem for a missing summary", () => {
     expect(problemsOf(answerOf(reviewFindingWithout("summary")))).toEqual([
       "findings.0.summary: Invalid input: expected string, received undefined",
+    ]);
+  });
+
+  it("gives a problem for a missing line", () => {
+    expect(problemsOf(answerOf(reviewFindingWithout("line")))).toEqual([
+      "findings.0.line: Invalid input: expected number, received undefined",
+    ]);
+  });
+
+  it("gives a problem for a missing category", () => {
+    expect(problemsOf(answerOf(reviewFindingWithout("category")))).toEqual([
+      "findings.0.category: Invalid input: expected string, received undefined",
+    ]);
+  });
+
+  it("gives a problem for an empty category", () => {
+    expect(problemsOf(answerOf(reviewFinding({ category: "" })))).toEqual([
+      "findings.0.category: Too small: expected string to have >=1 characters",
     ]);
   });
 
@@ -133,5 +148,13 @@ describe("reviewAnswerJsonSchema", () => {
     const schema = reviewAnswerJsonSchema();
     expect(schema).not.toHaveProperty("$schema");
     expect(schema).toMatchObject({ additionalProperties: false, required: ["findings"] });
+  });
+
+  it("lists each key of a finding as required", () => {
+    expect(reviewAnswerJsonSchema()).toMatchObject({
+      properties: {
+        findings: { items: { required: ["file", "line", "category", "summary", "failure_scenario"] } },
+      },
+    });
   });
 });

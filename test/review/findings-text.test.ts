@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type FindingEntry, findingCountText, formatFindings } from "../../src/review/findings-text.js";
-import { findingText, reviewFinding, reviewFindingWithout } from "../helpers/review.js";
+import { findingText, reviewFinding } from "../helpers/review.js";
 
 function format(entries: readonly FindingEntry[]): string {
   return formatFindings(entries);
@@ -20,13 +20,13 @@ describe("formatFindings", () => {
   });
 
   it("leaves out the line when the finding has none", () => {
-    expect(format([entry({ finding: reviewFindingWithout("line") })]).split("\n")[0]).toBe(
+    expect(format([entry({ finding: reviewFinding({ line: null }) })]).split("\n")[0]).toBe(
       "- [1] src/a.ts (correctness): The loop skips the last item.",
     );
   });
 
   it("leaves out the category when the finding has none", () => {
-    expect(format([entry({ finding: reviewFindingWithout("category") })]).split("\n")[0]).toBe(
+    expect(format([entry({ finding: reviewFinding({ category: null }) })]).split("\n")[0]).toBe(
       "- [1] src/a.ts:3: The loop skips the last item.",
     );
   });

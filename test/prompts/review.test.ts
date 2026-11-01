@@ -28,6 +28,15 @@ describe("REVIEW_PROMPT", () => {
     expect(REVIEW_PROMPT).not.toMatch(/\boperator\b/i);
   });
 
+  it("says that line and category take null", () => {
+    expect(REVIEW_PROMPT).toContain(
+      "   - `line`: the line of the finding, a whole number of 1 or more, or null if the finding has no line.",
+    );
+    expect(REVIEW_PROMPT).toContain(
+      "   - `category`: one of `correctness`, `reuse`, `simplification`, `efficiency` or `altitude`, or null if none fits.",
+    );
+  });
+
   it.each([
     ["EARLIER_REVIEWS", "earlier-reviews"],
     ["BRANCH_COMMITS", "branch-commits"],

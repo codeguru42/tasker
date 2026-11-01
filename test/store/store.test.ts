@@ -21,7 +21,7 @@ import { createDataRoot } from "../../src/store/layout.js";
 import { TERMINAL_STATES } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
 import { claudeRateLimitEvent } from "../helpers/fake-claude.js";
-import { findingEntries, reviewFindingWithout } from "../helpers/review.js";
+import { findingEntries, reviewFinding } from "../helpers/review.js";
 import {
   seedExecuteSession,
   seedExecuteTodoStates,
@@ -1064,14 +1064,12 @@ describe("task store", () => {
       });
     });
 
-    it("gives a finding without line and category with no such keys", () => {
+    it("gives a finding with null line and category back with null in both", () => {
       const task = runningTask("reviewing");
-      const finding = reviewFindingWithout("line", "category");
+      const finding = reviewFinding({ line: null, category: null });
       addReview(task.id, newReview(1, { findings: [finding] }), "reviewed");
       const stored = getReview(task.id, 1)?.findings[0]?.finding;
       expect(stored).toEqual(finding);
-      expect(Object.keys(stored ?? {})).not.toContain("line");
-      expect(Object.keys(stored ?? {})).not.toContain("category");
     });
 
     it("stores a review with no findings", () => {
