@@ -125,10 +125,10 @@ The start follows the check-before-write rule in the [intro](#the-task-commands)
 A dirty worktree needs `--force`, because the abort cannot bring the work back. A refused abort also leaves the worktree
 and the branch as they were.
 
-The abort removes the in-progress marker of the issue on the tracker. The reason: the marker protects an issue against
-two machines, and after an abort no machine works on the issue. [The tracker writes](#the-tracker-writes) gives the rule
-for a failed write. The abort of a Jira task moves the issue to `abortStatus` only if this task marked the issue. See
-[The abort write](jira.md#the-abort-write).
+The abort of a GitHub task removes the in-progress marker of the issue on the tracker. The reason: the marker protects
+an issue against two machines, and after an abort no machine works on the issue.
+[The tracker writes](#the-tracker-writes) gives the rule for a failed write. The abort of a Jira task moves the issue to
+`abortStatus` only if this task marked the issue. See [The abort write](jira.md#the-abort-write).
 
 A task that is `finished` or `cancelled` is an error, because it has nothing to abort.
 
