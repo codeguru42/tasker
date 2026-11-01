@@ -190,8 +190,8 @@ When a draft needs one of these decisions, the follow-up planner asks the user b
 
 For a draft that waits for such a decision, the follow-up planner posts nothing. The follow-up planner sends the draft
 as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed.
-The answer of the item is the decision of the user. The follow-up planner posts nothing for a draft item until each
-question of the item has an answer.
+The answer of the item is the decision of the user or an [answer of the operator](operator-items.md#the-answer). The
+follow-up planner posts nothing for a draft item until each question of the item has an answer.
 
 - If the answer rejects the draft or says to drop it, the follow-up planner drops the draft and reports the drop, as
   [The post of the follow-up planner](#the-post-of-the-follow-up-planner) says. A
