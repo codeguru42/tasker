@@ -29,9 +29,16 @@ says.
 
 - The initial planner works with the user directly, as [The operator](working-with-the-user.md#the-operator) of
   working-with-the-user.md says. It sends no item to the operator.
-- When the user says that the initial planning is done, the initial planner posts each approved draft. Then it runs
-  `/session-review`. Then it tells [its operator](../operator.md) with `SendMessage` that the initial planning is done.
+- When the user says that the initial planning is done, the initial planner posts each approved draft. Then it runs the
+  rounds of `/session-review`. A round and the end of the rounds work as the bullet that starts "When the Todo column of
+  the milestone is empty" of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says for the orchestrator. Only
+  after the last round does it tell [its operator](../operator.md) with `SendMessage` that the initial planning is done.
   Then it ends its work.
+
+  For the initial planner, a finding of a round is handled when it is posted as an issue, or added to an open issue. It
+  is also handled when it is written to memory, or when the user decided to drop it. A finding that the user wants
+  posted is a draft of [The initial planner](#the-initial-planner).
+
 - The follow-up planner takes lessons, session review findings and proposed issues from `orchestrator-<slug>` and from
   [its operator](../operator.md).
 - The follow-up planner sends each question, each report and each draft that waits for a decision of the user to
