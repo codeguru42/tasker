@@ -273,14 +273,15 @@ bullet on the report", and two bullets of the new text of [the tool-block rule](
 matched it.
 
 The orchestrator posts each answer of a design gap as a comment on the issue. The comment starts with `## Design gap`.
-It gives the gap, the answer, and who answered: the orchestrator or the user. Then the orchestrator sends the link of
-the comment to the agent. The agent copies the full text of the comment with the copy step of
+It gives the gap, the answer, and who answered: the orchestrator, the operator or the user. Then the orchestrator sends
+the link of the comment to the agent. The agent copies the full text of the comment with the copy step of
 [the change-of-scope comment](#the-change-of-scope-comment). As a result, the plan session and the review see the answer
 in the issue.
 
-The user can change the answer before `tasker approve`. In that case, the orchestrator posts a new `## Design gap`
-comment and sends its link. The new comment gives the gap and the new answer, and it says that it replaces the earlier
-answer for that gap. The agent copies the new comment, and it does not copy the earlier comment again.
+The user can change the answer before `tasker approve`, also an [answer of the operator](operator-items.md#the-answer).
+In that case, the orchestrator posts a new `## Design gap` comment and sends its link. The new comment gives the gap and
+the new answer, and it says that it replaces the earlier answer for that gap. The agent copies the new comment, and it
+does not copy the earlier comment again.
 
 A `## Design gap` comment is not a change of scope. As a result, the fifth case of [the stop rule](#the-stop-rule), the
 security report of ["Review findings"](review-findings.md#review-findings) and the open-question note of
