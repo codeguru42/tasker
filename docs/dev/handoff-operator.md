@@ -56,8 +56,9 @@ handoff file:
 
 - The prompt names the slug and the session name `operator-<slug>`. The first step of the prompt is a read of
   `AGENTS.md` and `docs/operator.md`. The prompt names no other doc for the start reads. The second step of the prompt
-  is [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). The third step of the prompt is the
-  ready message of step 5 of [The start of the new operator](#the-start-of-the-new-operator), as
+  is [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). The third step of the prompt is step
+  8 of [The start of the new operator](#the-start-of-the-new-operator), the read of the pane of the old operator. The
+  fourth step of the prompt is the ready message of step 10 of that section, as
   [The hold of the items](handoff.md#the-hold-of-the-items) says.
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
 - The kind of each planner, initial or follow-up.
@@ -66,7 +67,7 @@ handoff file:
   words of the user do not fully settle it, as [The answer](operator-items.md#the-answer) says. For such a question, the
   file gives what stays open and whether the ask to the user waits.
 - Each sender of the slug that got the hold message, as [The hold of the items](handoff.md#the-hold-of-the-items) says.
-  The new operator sends the ready message to each of these senders in step 5 of
+  The new operator sends the ready message to each of these senders in step 10 of
   [The start of the new operator](#the-start-of-the-new-operator).
 - Each entry of [the tab list](../operator.md) of the old operator. So the file holds the tabs that the old operator
   started and the tabs that it took over.
@@ -80,16 +81,81 @@ The operator sends no item, so its file gives no last item id.
 
 The new operator starts in these steps:
 
-1. The user ends the old operator session.
-2. The user starts the new operator, as step 2 of [The order of a milestone](operator-start.md#the-order-of-a-milestone)
-   says. Step 2 holds its failure case. The prompt of the handoff file is the first message.
-3. The new operator does [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). That section
+1. The old operator starts the new operator, as [Start a session](operator-start.md#start-a-session) says. The role is
+   `operator`. The label of the tab and the session name are `operator-<slug>`. The first message is the prompt of the
+   handoff file. Step 2 of "Start a session" runs `herdr tab create` with no `--no-focus`, so that the user sees the new
+   operator.
+2. The herdr agent name is `operator-<slug>-<time>`. `<time>` is the time part of the name of the handoff file, for
+   example `1530`. So the command of step 3 of "Start a session" is:
+
+   ```sh
+   herdr agent start operator-<slug>-<time> --kind <kind> --pane <pane id> -- -n operator-<slug> <model flags> "<prompt>"
+   ```
+
+   The error text of that step names the herdr agent name.
+
+3. The old operator makes sure that the new operator runs. It runs `herdr pane read <pane id>` with the pane id that
+   step 2 of "Start a session" kept. It does not look in `ListAgents` by the name, because two sessions have the name.
+   In a handoff of the operator, this step wins over the sentence of step 3 of "Start a session" that starts "After one
+   of these errors, the operator first looks for the new session in `ListAgents`".
+4. If the new operator runs, the old operator runs `herdr tab get "$HERDR_TAB_ID"` in its shell. If
+   `.result.tab.pane_count` is 1, it runs `herdr tab close "$HERDR_TAB_ID"`. If the count is more than 1, it closes only
+   its own pane with `herdr pane close "$HERDR_PANE_ID"`. This close is its last action.
+5. The old operator closes nothing and tells the user in each of these cases:
+
+   - (a) `HERDR_TAB_ID` is not set.
+   - (b) `HERDR_PANE_ID` is not set, so the old operator cannot get the id of its own pane.
+   - (c) `herdr tab get`, `herdr tab close` or `herdr pane close` fails.
+
+6. If the new operator does not run, or a step of "Start a session" fails, the old operator closes nothing. It tells the
+   user, as the failure case of "Start a session" says.
+7. The new operator does [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). That section
    holds its cases and its failure case.
-4. The new operator keeps the open items of the file as its list of [the open items](operator-items.md#the-open-items).
+8. The new operator reads one time whether the pane of the old operator still exists. It runs `herdr pane get <pane id>`
+   in its shell. The pane id comes from the handoff file. The read covers a close of the tab and a close of the pane
+   alone. The reason: the pane is gone after each of them. The new operator does one of these cases:
+
+   - (a) If the command exits with 1 and the error code `pane_not_found`, the pane is gone. The new operator says
+     nothing about it and continues with its next steps.
+   - (b) If the command exits with 0, the pane still exists. The old operator can still run its last steps, or its close
+     failed. The new operator closes nothing and reads no second time. It tells the user in its first reply. The reply
+     gives the tab id, the pane id and the output of the command. Then it continues with its next steps.
+   - (c) A read fails when the command gives another exit code, another error code or no JSON. If the read fails,
+     [the failure rule](limits.md#the-failure-rule) applies. If the handoff file gives no pane id, the new operator
+     tells the user. In both cases, the new operator closes nothing and tells the user in its first reply. Then it
+     continues with its next steps.
+
+   The new operator does not close the old tab or pane. The user closes it in herdr.
+
+9. The new operator keeps the open items of the file as its list of [the open items](operator-items.md#the-open-items).
    It also keeps each entry of the tab list of the file. These entries start the tab list of the new operator.
-5. The new operator sends a ready message with `SendMessage` to each sender that the handoff file names.
-   [The hold of the items](handoff.md#the-hold-of-the-items) gives the rules of the ready message. If the file names no
-   sender, the new operator sends no ready message.
+10. The new operator sends a ready message with `SendMessage` to each sender that the handoff file names.
+    [The hold of the items](handoff.md#the-hold-of-the-items) gives the rules of the ready message. If the file names no
+    sender, the new operator sends no ready message. The ready message gives the own ref of the new operator, from the
+    first line of `ListAgents`. If `ListAgents` fails, [the failure rule](limits.md#the-failure-rule) applies.
+
+In its first reply, the new operator gives the user the path of the handoff file. It also gives the notice of the hold
+that step 1 of [the steps of the old operator](#the-steps-of-the-old-operator) gives the old operator. The reason: the
+last reply of the old operator shows only in its closed tab.
+
+`herdr agent start` refuses a herdr agent name that already runs. With no suffix `-<time>`, the start of the third
+operator fails, because the second operator still runs.
+
+On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, a test session in tab `wB:tG` ran
+`herdr tab close "$HERDR_TAB_ID"`, and `herdr tab get wB:tG` then returned `tab_not_found`. In a first test (tab
+`wB:tF`), the session closed before Claude Code wrote its assistant turn to the transcript.
+
+The old operator cannot make sure that its close worked, because the close ends it. In the handoff of 16:03 on
+2026-10-25, the old tab still existed at the check of the close, for an unknown cause.
+
+The old and the new operator have the same name, and for two rows with one name,
+[Stop a session](operator-start.md#stop-a-session) closes nothing.
+
+These rules still apply, and the rule of this section does not cover them:
+
+- "The operator does not close the tab without the user", in the failure case of
+  [Start a session](operator-start.md#start-a-session)
+- "Only the user answers a prompt of a session in `blocked`"
 
 The new operator closes a tab of an earlier operator only as [Stop a session](operator-start.md#stop-a-session) says.
 The tab list gives the tab id of that tab.
