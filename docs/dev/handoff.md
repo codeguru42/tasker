@@ -155,6 +155,9 @@ Until the end, the old session starts no new work. The role page names that work
 [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and
 [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator).
 
+In a handoff of the operator, the go and the handoffs of a sender that step 1 of
+[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) gives are not new work.
+
 ## The stop and the start
 
 In a handoff of an orchestrator or a follow-up planner, the operator stops the old session and starts the new session,
@@ -162,7 +165,9 @@ as [A handoff](operator-start.md#a-handoff) says. This step covers each old orch
 also one that the user started. The first message of the new session is the prompt of the handoff file. The first
 message names the path of the handoff file.
 
-The item with the path of the handoff file starts the stop and the start by the operator, with no answer of the user.
+The item with the path of the handoff file starts the stop and the start by the operator, with no answer of the user. If
+this item arrives in a handoff of the operator before the hold messages, the old operator does the stop and the start,
+and step 1 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) gives the rest.
 
 In a handoff of the operator, [the start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives
 the end of the handoff. [The end of the hold by the user](#the-end-of-the-hold-by-the-user) gives a second end.
@@ -238,6 +243,9 @@ In step 1 of [the steps of the old operator](handoff-operator.md#the-steps-of-th
 each sender of the slug a hold message with `SendMessage`. As a result, the hold starts before the old operator writes
 the handoff file in step 2. The hold message names this section. The old operator sends no hold message to a session
 that does not run.
+
+The table in step 1 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) gives each
+state of a handoff of a sender at the hold messages.
 
 Right after the hold messages, the old operator tells the user one time that the hold stops the items. The old operator
 names each sender of the slug that holds. The old operator also says that the hold ends when the new operator is ready
