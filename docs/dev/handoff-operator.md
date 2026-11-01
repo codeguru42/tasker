@@ -165,4 +165,3 @@ These rules still apply, and the rule of this section does not cover them:
 - "Only the user answers a prompt of a session in `blocked`"
 
 The new operator closes a tab of an earlier operator only as [Stop a session](operator-start.md#stop-a-session) says.
-The tab list gives the tab id of that tab.
