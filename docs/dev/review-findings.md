@@ -42,19 +42,20 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
 
   After a `tasker update-branch` that reports a rebase conflict, the start base of the last read stays. The first patch
   id of a stacked task and the case of step 7 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) use the
-  start base of the last read. On #262, the agent ran `tasker update-branch` one time before the parent landed. The
-  right start base was then the tip of the parent under the task branch, not the commit of the start. If a command of a
-  read of the start base fails, the agent holds no start base. For the first patch id, that is a failed command of this
-  rule, as the bullet "The review after `tasker update-branch` counts as a loop" says. The second patch id: after
-  `tasker update-branch`, while the task is in `executed` and before `tasker verify`, the agent runs the same two
-  commands again. The three dots diff against the merge base. As a result, the first patch id uses the old base, and the
-  second patch id uses the new base. The agent must run the fetch before each read. The reads of this rule are each read
-  of a patch id and each read of a text id of the same-text compare. The fetch before each such read is also a read of
-  this rule. The reads are a new step at each `tasker update-branch`. The agent runs each read in its plain form: one
-  read alone in its own Bash call, as [the plain-form rule](tasker-commands.md#the-plain-form-rule) asks for a `tasker`
-  command. No `cd` comes before the read, and no other command is in the same call. Each git command of the read has the
-  form [`git -C <local clone>`](tasker-commands.md#the-tool-block-rule), as the tool-block rule gives for a git command
-  in the local clone. The `set -o pipefail;` and the pipe of a read are part of that one read. A denial of a read is a
+  start base of the last read. The loop of step 11 is the exception for step 7 of that page. On #262, the agent ran
+  `tasker update-branch` one time before the parent landed. The right start base was then the tip of the parent under
+  the task branch, not the commit of the start. If a command of a read of the start base fails, the agent holds no start
+  base. For the first patch id, that is a failed command of this rule, as the bullet "The review after
+  `tasker update-branch` counts as a loop" says. The second patch id: after `tasker update-branch`, while the task is in
+  `executed` and before `tasker verify`, the agent runs the same two commands again. The three dots diff against the
+  merge base. As a result, the first patch id uses the old base, and the second patch id uses the new base. The agent
+  must run the fetch before each read. The reads of this rule are each read of a patch id and each read of a text id of
+  the same-text compare. The fetch before each such read is also a read of this rule. The reads are a new step at each
+  `tasker update-branch`. The agent runs each read in its plain form: one read alone in its own Bash call, as
+  [the plain-form rule](tasker-commands.md#the-plain-form-rule) asks for a `tasker` command. No `cd` comes before the
+  read, and no other command is in the same call. Each git command of the read has the form
+  [`git -C <local clone>`](tasker-commands.md#the-tool-block-rule), as the tool-block rule gives for a git command in
+  the local clone. The `set -o pipefail;` and the pipe of a read are part of that one read. A denial of a read is a
   [tool block](tasker-commands.md#the-tool-block-rule). After a denial, the agent follows the tool-block rule. The
   update of a denial is the `tasker update-branch` that the denied read belongs to. A read of the first patch id or the
   first text id belongs to the update right after it. A read of the second patch id or the second text id belongs to the
