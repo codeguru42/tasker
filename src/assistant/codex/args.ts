@@ -1,7 +1,7 @@
 import { lstatSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { isSet } from "../../config/path.js";
-import { errnoCode } from "../../errno.js";
+import { hasErrnoCode } from "../../errno.js";
 import type { RunInput } from "../provider.js";
 import { codexSocketDenyPaths } from "./sockets.js";
 
@@ -25,7 +25,7 @@ function realKeys(paths: readonly string[]): string[] {
     try {
       isLink = lstatSync(path).isSymbolicLink();
     } catch (error) {
-      if (errnoCode(error) !== "ENOENT") throw error;
+      if (!hasErrnoCode(error, ["ENOENT", "ENOTDIR"])) throw error;
       keys.push(path);
       continue;
     }
@@ -36,7 +36,7 @@ function realKeys(paths: readonly string[]): string[] {
     try {
       keys.push(realpathSync(path));
     } catch (error) {
-      if (errnoCode(error) !== "ENOENT") throw error;
+      if (!hasErrnoCode(error, ["ENOENT", "ENOTDIR"])) throw error;
     }
   }
   return keys;
