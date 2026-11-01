@@ -34,6 +34,9 @@ bullet "A hint of the orchestrator can resolve a conflict" of
   repeated default, for example `failingCommand: null` for a failed run. On #220, a first refine read the ban on a
   repeat of the steps of the shared helper too widely. The fix cost an extra refine. Before a ticket adds a second test
   file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
+- If a plan stores a value that code reads back, the agent compares the plan with
+  [the rule of the `events` table](data-root.md#events-table). The value lives in a column of a table. If the plan keeps
+  the value in another place, for example a file, the first refine asks for a column.
 - Ask the plan for the side effects of each fix before `tasker approve`. A fix can cause a new finding about its own
   side effect.
 - If a ticket adds a small exported helper, ask the plan for each place that does the same job
