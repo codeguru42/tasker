@@ -47,7 +47,16 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 
    On 2026-10-25, the user said: "and we need to update session-review to include a step to check for memories that need to be in tracked docs".
 6. If a candidate belongs in a tracked doc of the repo, make a proposal. A proposal names the file and the change. Find the docs of the repo from the index in `AGENTS.md`. Send each proposal to the target that these docs give for the role of the session. If the docs give no target for the role of the session, give each proposal to the user in the reply. For a recurrence, follow [A recurrence](../../../docs/dev/issues.md#a-recurrence) of `docs/dev/issues.md`.
-7. Report a short summary: the memory entries that the session made, changed or removed, and each proposal with its target.
+7. Find the open work of the session in the transcript. The open work has two kinds. An open question is a question or an offer of the session to the user that has no answer. Unfinished work is work that the session started or said that it will do. The session neither finished that work nor dropped it.
+   - (a) Do not list work that an issue already holds. Do not list the work of another session.
+   - (b) Do not do the open work in this step. Do not answer a question for the user.
+   - (c) The session can drop moot work, as [A decision of the user](../../../docs/dev/working-with-the-user.md#a-decision-of-the-user) says. Step 8 names the drop.
+   - (d) If the session works through the operator, send a new open question as an item. [The operator](../../../docs/dev/working-with-the-user.md#the-operator) gives this rule. An open question that already went to the operator as an item stays open with its id. Do not send that question again. Give its id in the list of step 8.
+   - (e) An item that an earlier round of the same session listed is not a new finding. A round that lists only such items finds nothing new, so it can end the rounds. Open work with no answer does not keep the rounds running.
+   - (f) Do not write the open work to memory, because it is the state of the session.
+
+   On 2026-10-30, a session asked "Do you want me to find out why #537 closed?". Then it ran two rounds of `/session-review`, and neither round named the question. On 2026-10-31, the user asked: "Does session review include a rule for checking for unanswered open questions or unfinished work?"
+8. Report a short summary: the memory entries that the session made, changed or removed, and each proposal with its target. Add the open work of step 7 to the summary. Give the open work in one numbered list, in the form of [A decision of the user](../../../docs/dev/working-with-the-user.md#a-decision-of-the-user). If the session finds no open work, say so. Name each drop of step 7 (c).
 
 ## Rules
 
@@ -65,3 +74,4 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 | The session writes the status of an issue in a memory note, for example "#537 landed". | Name the issue number only as a delete condition or as a source, as step 3 says. Read the status from GitHub. |
 | The session tries to start the skill from a hook. | Run the skill only on a request, as "When to use" says. |
 | The session keeps a proposal only in its reply, but the docs give a target for its role. | Send the proposal to that target, as step 6 says. |
+| The session ends the review, but a question or an offer of the session still has no answer. | List the open work, as steps 7 and 8 say. |
