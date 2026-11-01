@@ -142,8 +142,8 @@ The new operator starts in these steps:
    It also keeps each entry of the tab list of the file. These entries start the tab list of the new operator.
 10. The new operator sends a ready message with `SendMessage` to each sender that the handoff file names.
     [The hold of the items](handoff.md#the-hold-of-the-items) gives the rules of the ready message. If the file names no
-    sender, the new operator sends no ready message. The ready message gives the own ref of the new operator, from the
-    first line of `ListAgents`. If `ListAgents` fails, [the failure rule](limits.md#the-failure-rule) applies.
+    sender, the new operator sends no ready message. The ready message gives the own session ref of the new operator,
+    from the first line of `ListAgents`. If `ListAgents` fails, [the failure rule](limits.md#the-failure-rule) applies.
 
 In its first reply, the new operator gives the user the path of the handoff file. It also shows each answered item of
 the file that the old operator did not show, as [The open items](operator-items.md#the-open-items) says. It also gives

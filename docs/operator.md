@@ -11,12 +11,12 @@ Messages of the other sessions break into the conversation of the user, and open
 or an orchestrator sends each item that needs the user to the operator. Then the user reads the items in one place and
 answers the questions for the user alone.
 
-[docs/sessions.md](sessions.md) defines the user, the slug, the sessions of a slug, an item and the own name of a
-session. The operator is named `operator-<slug>`. The operator of a session is the operator that the first message of
-the session names. If the first message names no operator, the operator of the session is `operator-<slug>` of its own
-slug. The reason: the name of the session of a topic handoff gives a slug that no operator has, so the first message
-carries the operator. This definition covers only the operator. A sentence that names `planner-<slug>` or
-`orchestrator-<slug>` still takes the slug of the own name of the session.
+[docs/sessions.md](sessions.md) defines the user, the slug, the sessions of a slug, an item, the own name of a session,
+the session ref and the socket address. The operator is named `operator-<slug>`. The operator of a session is the
+operator that the first message of the session names. If the first message names no operator, the operator of the
+session is `operator-<slug>` of its own slug. The reason: the name of the session of a topic handoff gives a slug that
+no operator has, so the first message carries the operator. This definition covers only the operator. A sentence that
+names `planner-<slug>` or `orchestrator-<slug>` still takes the slug of the own name of the session.
 [The hold of the items](dev/handoff.md#the-hold-of-the-items) keeps its own terms.
 
 The tab list is the list of the tabs that an operator can close. Each entry gives the tab id and the session name of one
