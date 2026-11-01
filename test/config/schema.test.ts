@@ -29,6 +29,15 @@ function expectIssueAt(issues: string[], path: string): void {
   expect(issues).toContainEqual(expect.stringMatching(new RegExp(`^${path.replace(/\./g, "\\.")}: `)));
 }
 
+const acme = { provider: "jira", updateOnStart: true, inProgressStatus: "In Progress" };
+
+function withTracker(issueTracker: Record<string, unknown>, trackers: unknown = { acme }): Record<string, unknown> {
+  const raw = validConfig();
+  raw.trackers = trackers;
+  raw.repos.tasker.issueTracker = issueTracker;
+  return raw;
+}
+
 describe("parseConfig top level", () => {
   it("fills in the defaults", () => {
     const config = parseConfig(validConfig(), {}, home);
@@ -805,15 +814,6 @@ describe.each(["verify", "bootstrap"])("parseConfig %s.env", (phase) => {
 });
 
 describe("parseConfig named trackers", () => {
-  const acme = { provider: "jira", updateOnStart: true, inProgressStatus: "In Progress" };
-
-  function withTracker(issueTracker: Record<string, unknown>, trackers: unknown = { acme }): Record<string, unknown> {
-    const raw = validConfig();
-    raw.trackers = trackers;
-    raw.repos.tasker.issueTracker = issueTracker;
-    return raw;
-  }
-
   it("merges the definition into the repo", () => {
     const raw = withTracker({ tracker: "acme", project: "CIR" });
     expect(parsedRepo(raw).issueTracker).toMatchObject({
@@ -1007,17 +1007,9 @@ describe("parseConfig named trackers", () => {
 
 describe("parseConfig abortStatus", () => {
   const hub = { provider: "github" };
-  const acme = { provider: "jira", updateOnStart: true, inProgressStatus: "In Progress" };
 
   function githubLine(key = "tasker"): string {
     return `repos.${key}.issueTracker.abortStatus: is not accepted for the github tracker`;
-  }
-
-  function withTracker(issueTracker: Record<string, unknown>, trackers: unknown): Record<string, unknown> {
-    const raw = validConfig();
-    raw.trackers = trackers;
-    raw.repos.tasker.issueTracker = issueTracker;
-    return raw;
   }
 
   function twoRepos(raw: Record<string, unknown>, other: Record<string, unknown>): void {
