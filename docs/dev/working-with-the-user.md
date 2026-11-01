@@ -53,20 +53,6 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   cover an action of a person or a session, for example a change by hand to a clone. In one case, "the test opens the
   store by hand" read as if a session opened the files of tasker, which is not allowed. Write "the test writes the open
   and close steps itself instead of calling the helper".
-- When you list the decisions that the user must make, give each question its own number in the main list. This also
-  applies when two questions are about the same issue. Do not put a second question inside an item of another question.
-  A reply that gives open questions gives all of them in one numbered list. The list holds each question that is still
-  open, also each question of an earlier reply that the user did not answer. The list numbers from 1 in each reply. A
-  short answer of the user, such as "3. yes", refers to the last list that the session gave. A reply to the user uses no
-  unordered list, because the user cannot name an item of an unordered list in an answer. The questions of the list use
-  numbers. Each nested list uses letters (a, b, c), for example the choices of a question or the proposed steps. A draft
-  that has a numbered list goes above the list of open questions, under its own heading, not inside a question. Each
-  question says whether it is new or continues an earlier question or answer. A continued question names the earlier
-  question or answer by its content, as the bullet "When the session reminds the user of a decision that still waits"
-  says. For example, it gives the words of the user. In one case (2026-10-15), a question about the link commands of
-  #117 sat in a sub-bullet of the scope question of #117, and the user answered only the scope question. On 2026-10-24,
-  a reply of planner-m14 numbered its answers 3 and 6 by the items of the user, and then gave open questions 1 to 6. It
-  also gave a code block with proposed steps 3 to 6, and the user asked "why are 3-6 repeated?".
 - When the session asks the user about a landing order, the session gives each ticket of the order one line. In that
   line, the session gives the state of the task of the ticket and its distance from landing, in time, for example "in
   `accepted`, minutes from its merge". The session does not give only a phrase such as "close to landing". In one case
@@ -128,6 +114,39 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   it does not treat the decision as wrong unless the user says so. On 2026-10-30, a session dropped seven planned edits
   of issue bodies after #536 landed. Then the user asked why, and the session said that the drop needed a question. The
   user said: "no, deciding without me is fine. I am just making sure I understand the reasoning."
+
+## The form of a reply
+
+These rules hold for each reply to the user:
+
+- A reply uses no unordered list, because the user cannot name an item of an unordered list in an answer.
+- Each nested list uses letters (a, b, c), for example the choices of a question or the proposed steps.
+
+These rules hold for each list of the decisions that the user must make, and for each reply that gives open questions:
+
+- A reply gives all open questions in one numbered list.
+- The list holds each question that is still open, also each question of an earlier reply that the user did not answer.
+- Each question has its own number, also when two questions are about the same issue.
+- Do not put a second question inside an item of another question.
+- The list numbers from 1 in each reply. A short answer of the user, such as "3. yes", refers to the last list that the
+  session gave.
+- A draft that has a numbered list goes above the list of open questions, under its own heading, not inside a question.
+- Each question says whether it is new or continues an earlier question or answer. A continued question names the
+  earlier question or answer by its content. The bullet "When the session reminds the user of a decision that still
+  waits" gives this rule. For example, it gives the words of the user.
+
+An example:
+
+```text
+1. New question: do you accept the draft?
+   a. Post it (recommended).
+   b. Drop it.
+```
+
+In one case (2026-10-15), a question about the link commands of #117 sat in a sub-bullet of the scope question of #117.
+The user answered only the scope question. On 2026-10-24, a reply of planner-m14 numbered its answers 3 and 6 by the
+items of the user. Then it gave open questions 1 to 6. It also gave a code block with proposed steps 3 to 6, and the
+user asked "why are 3-6 repeated?".
 
 ## A question of the user
 
