@@ -8,8 +8,9 @@ The start docs of the operator are `docs/operator.md`, the pages of the list "Th
 reads them at its start.
 
 Messages of the other sessions break into the conversation of the user, and open questions scroll out of view. A planner
-or an orchestrator sends each item that needs the user to the operator. Then the user reads and answers the items in one
-place.
+or an orchestrator sends each item that needs the user to the operator. Then the user reads the items in one place. An
+item that needs an answer gets its answer from the user or the operator, as
+[The answer](dev/operator-items.md#the-answer) says.
 
 [docs/sessions.md](sessions.md) defines the user, the slug, the sessions of a slug, an item and the own name of a
 session. The operator is named `operator-<slug>`. The operator of a session is the operator that the first message of
