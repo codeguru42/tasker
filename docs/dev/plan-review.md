@@ -41,6 +41,12 @@ tests each fact that a plan question asks about, and it answers the question in 
 commands and their results in the feedback text. A fact test that runs the code of the repo runs in the task worktree,
 after [the update rule](limits.md#the-update-rule).
 
+If no refine runs before the first `tasker approve`, the agent does the fact test before it. The agent then adds the
+commands and their results to the list of files that it sends after `tasker approve`, as
+[Land the work](land-the-work.md#land-the-work) says. It also puts them in the comment of step 11 of
+[Run one ticket](run-one-ticket.md#run-one-ticket). The reason: the plan session cannot do a test that reads outside the
+worktree, because [the repo-files rule](#the-repo-files-rule) bans such a command.
+
 Each session that runs a fact test follows this rule: an agent, the orchestrator and the planner. In a fact test, the
 session starts each shell command that works in a scratch folder with `cd <folder> || exit 1`. If the command also makes
 the folder, the session starts it with `mkdir -p <folder> && cd <folder> || exit 1`.

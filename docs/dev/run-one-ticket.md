@@ -33,7 +33,8 @@ The agent of the ticket runs steps 1 to 11. Each step gives the state of the tas
    [the repo-files rule](plan-review.md#the-repo-files-rule) to the feedback text. Before the first refine, do
    [the fact test](plan-review.md#the-fact-test) and [the issue check](plan-review.md#the-issue-check). The task goes to
    `awaiting_plan_review` again. Then do steps 3 and 4 again until the plan needs no changes. Put the answers to the
-   plan questions in the feedback text. `tasker plan` takes no feedback.
+   plan questions in the feedback text. `tasker plan` takes no feedback. If no refine runs before the first
+   `tasker approve`, do the fact test and the issue check before it.
 5. Run `tasker approve`. The task goes to `approved`. Run `tasker execute`. The task goes to `executed`. Run
    `tasker verify`. If the verify commands pass, the task goes to `awaiting_work_review`. If they fail, follow
    [the verify-failure rule](verify-failures.md#the-verify-failure-rule). Run `tasker review`. When the review has
