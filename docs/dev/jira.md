@@ -415,7 +415,8 @@ and `"total": 1010`. The ids are 10910 to 11009, oldest first of those 100. The 
 
 Nobody measured a count between 60 and 1,010. The expected limit is 100 entries, and the code does not hold it. As a
 result, tasker cannot read an issue with more comments than the view gives, and `tasker start` and `tasker plan` fail
-for it. The user chose this behavior, because older comments are not needed.
+for it. The read fails for a short list, so that a plan never runs on a part of the comments without a word. The user
+chose this failure, because an issue with that many comments is unlikely.
 
 Each entry has `author`, `body`, `created`, `id`, `jsdPublic`, `self`, `updateAuthor` and `updated`. `author` is an
 object, and its `displayName` is the name. `body` is a full ADF document. The `author` object also holds personal
