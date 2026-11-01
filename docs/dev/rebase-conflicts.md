@@ -64,27 +64,45 @@ Run each git command in the clone of the driver or in its worktree.
    [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds.
 
 8. In the worktree, run `npm run check`. The command must pass.
-9. Push the task branch to `origin` with a normal push: `git push -u origin <task branch>`. Do not force-push. The
+9. In the worktree, run `git rev-parse --verify <task branch>`. If the read fails, stop before the push. A person
+   decides the next step, as step 10 describes.
+
+   Then push the task branch to `origin` with a normal push: `git push -u origin <task branch>`. Do not force-push. The
    upstream of the task branch can be `tasker/<task branch>`, or it can be unset. As a result, a plain `git push` goes
-   to the `tasker` remote and fails, or it fails for no upstream, so the driver must name `origin`.
+   to the `tasker` remote and fails, or it fails for no upstream, so the driver must name `origin`. If the push passes,
+   keep the printed hash as `<pushed>`.
+
 10. If the normal push of step 9 fails and `origin` has the task branch, do these steps.
 
-    1. If the driver holds no `<taken>` of the last step 11, stop.
-    2. Run `git rev-parse --verify origin/<task branch>`. The fetch of step 5 already got this ref. Keep the printed
-       hash as `<origin tip>` until step 10 ends. If the read fails, stop.
-    3. If `<origin tip>` differs from `<taken>`, stop.
-    4. Delete the task branch on `origin` with a lease:
-       `git push --force-with-lease=refs/heads/<task branch>:<taken> origin --delete <task branch>`. If the delete
+    1. If the driver holds neither the `<taken>` of the last step 11 nor a `<pushed>`, stop.
+    2. Run `git rev-parse --verify origin/<task branch>`. The last fetch or the last push got this ref. A push with `-u`
+       also moves `origin/<task branch>`. Keep the printed hash as `<origin tip>` until step 10 ends. If the read fails,
+       stop.
+    3. If `<origin tip>` differs from each hash that the driver holds, stop.
+    4. Delete the task branch on `origin` with a lease at the hash that is the same as `<origin tip>`:
+       `git push --force-with-lease=refs/heads/<task branch>:<origin tip> origin --delete <task branch>`. If the delete
        fails, stop. The task branch on `origin` can still exist.
-    5. Do step 9 again. If this push fails, stop. The task branch on `origin` can be gone, or it can hold another
-       commit.
+    5. Do step 9 again. This push records `<pushed>` in the same way. If the read or this push fails, stop. The task
+       branch on `origin` can be gone, or it can hold another commit.
     6. Do steps 11 to 14.
 
     The `<taken>` of the last step 11 lives until the next step 11 runs. That step records a new `<taken>`, or it
-    records no `<taken>` when one of its two commands fails. After the next step 11, the old `<taken>` is gone. The
-    delete gives no `<deleted>` of the pushed-branch rule of
+    records no `<taken>`. It records no `<taken>` when one of its two commands fails, or at a new conflict. After the
+    next step 11, the old `<taken>` is gone. The delete gives no `<deleted>` of the pushed-branch rule of
     [the broken-commit steps](verify-failures.md#the-broken-commit-steps) in `docs/dev/verify-failures.md`, because the
-    push of step 9 comes right after it.
+    push of step 9 comes right after it. This holds for a delete at `<pushed>` too.
+
+    These events end a `<pushed>`:
+
+    - A later push of step 9 that passes and replaces it
+    - A step 11 that does not keep it, as step 11 says
+    - A stop of this procedure
+    - A stop of the pushed-branch rule
+    - The end of step 21
+    - A run of the update rule, for a `<pushed>` of a new conflict
+
+    Until one of these events, `<pushed>` carries into the next run of this procedure, as `<taken>` does. The update
+    rule does not end a `<pushed>` of a take. After a take, tasker holds the work of `<pushed>`.
 
     If the normal push of step 9 fails in another case, stop. Do not force-push in this step. The delete with a lease of
     item 4 is the only exception. In each stop of this step, a person decides the next step. If the driver is a person,
