@@ -763,6 +763,13 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - A measure can need a test home of the program with a login. The classifier of Claude Code can deny a copy of the login
   file. So, before the measures, the agent asks the orchestrator. The orchestrator asks the user if the agent uses the
   real home or a copy that the user makes.
+- A ticket can build or change a table of paths with write keys and deny keys, for example the filesystem table of a
+  sandbox. The agent then asks the plan to state that a deny path wins over a write path, as
+  [The arguments](assistants.md#the-arguments) gives it for `codex`. The plan also states that each key of the table is
+  a real path, with a symbolic link resolved in every part. The plan also states that the table drops a write key on or
+  under a deny path. On #661 (2026-11-01), the fix of each loop drew a new edge case of the table, and reviews 3 and 4
+  found these cases. The agent then stopped under the case "Two reviews in a row" of
+  [the stop rule](plan-review.md#the-stop-rule).
 
 ## A ticket that adds an interface
 
