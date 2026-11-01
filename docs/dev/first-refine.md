@@ -135,9 +135,12 @@ bullet "A hint of the orchestrator can resolve a conflict" of
 - If tests wait in a loop, ask for one shared wait helper.
 - For a test on fake timers, ask for `vi.runAllTimersAsync()` and not a helper that moves the clock a fixed amount. On
   #223, such a helper drew a finding about a false comment.
-- If the tests compare the literal text of a default fixture, ask the plan for one shared expected-text helper in
-  `test/helpers/`. On #157, [the diff read](run-one-ticket.md#the-diff-read) found the text of the default review
-  findings copied in 4 test files, after a review with no findings.
+- If two test files need one expected value, ask the plan to put the value in `test/helpers/`
+  ([the one-home rule](rules.md#code)). Ask the plan to make each test file import it, also the existing test file.
+  Examples are the literal text of a default fixture, the arguments of a call and an error message. On #157,
+  [the diff read](run-one-ticket.md#the-diff-read) found the text of the default review findings copied in 4 test files,
+  after a review with no findings. On #547 (2026-10-31), the new test files copied `statusCalls` and `loginMessage` of
+  `test/issues/jira/site.test.ts`. A review with all findings dismissed left the copy, and the diff read found it.
 - If a ticket adds a store table that more than one test reads, ask the plan for a shared read helper in
   `test/helpers/store.ts`, as `eventsOf` and `quotaEventsOf` do. On #28, a review with no findings left a repeated read
   of the new `quota_events` table in several test files:
