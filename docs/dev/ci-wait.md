@@ -34,17 +34,17 @@ steps:
    run, because GitHub can record one push twice and start a run for each record. Take the runs in the order of the
    list. For each run, do step 5 of the CI wait. When step 5 or step 6 finds that the run passed, do step 5 for the next
    run of the list.
-5. Wait for the run: `set -o pipefail; timeout 580 gh run watch <run id> --exit-status 2>&1 | tail -n 20`. Set the
-   `timeout` option of the Bash tool to 600000 for this call, as step 3 of the CI wait says. `gh run watch` refreshes
-   its output every 3 seconds, so a long wait gives a long output. This step reads only the exit code, so `tail` keeps
-   only the end of the output. `set -o pipefail` keeps the exit code of `timeout` and `gh run watch`, not the exit code
-   of `tail`. `2>&1` keeps an error of `gh` in the end of the output. `tail` reads its whole input, so the pipe gives no
-   exit code 141. A `Check` run takes about 2 minutes, but it can take longer than one tool call of the agent. The agent
-   cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means that the run passed. Exit code 124
-   means that the run is still in progress. In that case, run the same command again. The 30-minute limit counts from
-   the first `gh run watch` of the CI wait, for all the runs of the list together. If a run is not complete when the 30
-   minutes end, stop. Any other exit code means that the run failed, or that `gh` failed. In that case, go to step 6 of
-   the CI wait.
+5. Wait for the run: `set -o pipefail; timeout --foreground 170 gh run watch <run id> --exit-status 2>&1 | tail -n 20`.
+   Set the `timeout` option of the Bash tool to 600000 for this call, as step 3 of the CI wait says. `gh run watch`
+   refreshes its output every 3 seconds, so a long wait gives a long output. This step reads only the exit code, so
+   `tail` keeps only the end of the output. `set -o pipefail` keeps the exit code of `timeout` and `gh run watch`, not
+   the exit code of `tail`. `2>&1` keeps an error of `gh` in the end of the output. `tail` reads its whole input, so the
+   pipe gives no exit code 141. A `Check` run takes about 2 minutes, but it can take longer than one tool call of the
+   agent. The agent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means that the run passed.
+   Exit code 124 means that the run is still in progress. In that case, run the same command again. The 30-minute limit
+   counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a run is not complete
+   when the 30 minutes end, stop. Any other exit code means that the run failed, or that `gh` failed. In that case, go
+   to step 6 of the CI wait.
 6. Run `gh run view <run id> --json status,conclusion,url,jobs`. If the command fails, stop and report the error. If
    `status` is `completed` and `conclusion` is `success`, the run passed. If `status` is not `completed`, `gh run watch`
    failed and the run is still in progress. In that case, do step 5 of the CI wait again. If `status` is `completed` and
@@ -86,7 +86,11 @@ steps:
     the verdict and the new issue.
 
 The Bash tool can still move a long call to the background, also with the `timeout` option at 600000. On #493 and #565
-(2026-10-30), it moved step 5 after 180 seconds, with Claude Code 2.1.310 and 2.1.314.
+(2026-10-30), it moved step 5 after 180 seconds, with Claude Code 2.1.310 and 2.1.314. Step 5 waits for 170 seconds,
+because the tool moved calls of step 5 after 180 seconds. In a background session of the Agent tool, a call of this form
+stayed in the foreground (Claude Code 2.1.316, measured on 2026-10-31). Step 5 uses `--foreground`, so that `timeout`
+signals only `gh run watch`. With no flag, the signal also stops `tail` in the Bash tool, and the pipe gives exit code
+143 (measured on 2026-10-31).
 
 If the tool moves a call of step 5, wait for the report of the Bash tool. Until the report, start no second copy of the
 call and no other long wait. While you wait, run only the short wait of the bullet "To wait for the end of a long
