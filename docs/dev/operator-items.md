@@ -8,7 +8,8 @@ The sender sends each [item](../sessions.md) to the operator with `SendMessage`.
 - Then the id follows, in the form `<sender name>-<n>`. The number `<n>` counts from 1 in the session of the sender.
   After a handoff, the number starts at the first free item id of the handoff file, as
   [The last item id](handoff.md#the-last-item-id) says.
-- Then the text follows the rules of [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
+- Then the text follows the rules of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) and
+  [The form of a reply](working-with-the-user.md#the-form-of-a-reply).
 - An item about a draft gives a summary of the draft and the path of the draft file, not the draft. The path is
   `/tmp/tasker/<slug>/drafts/<file>.md`.
 - A report is an item that gives the user a fact and needs no answer.
@@ -75,9 +76,9 @@ The operator does these things for the open items:
 - When the user asks for the open items, the operator gives each open item with its full text, not only its id or a
   label. An open report gets only its arrival line, not its full text. This sentence wins over the bullet "When you list
   open items or proposed issues" of [A decision of the user](working-with-the-user.md#a-decision-of-the-user). The
-  operator gives the open items in the form that the bullet "When you list the decisions that the user must make" of
-  [A decision of the user](working-with-the-user.md#a-decision-of-the-user) gives. The list shows each open question and
-  each answered question of an item. The operator leaves out each sent question.
+  operator gives the open items in the form that [The form of a reply](working-with-the-user.md#the-form-of-a-reply)
+  gives. The list shows each open question and each answered question of an item. The operator leaves out each sent
+  question.
 
   Each open question gets its own number in the one list of the operator, from 1. The id of its item stands next to that
   number. The operator numbers the questions again for its list, and it keeps the number of the sender for the later
