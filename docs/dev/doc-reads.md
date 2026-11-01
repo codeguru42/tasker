@@ -1,6 +1,6 @@
 # Doc reads
 
-The readers of this page are the orchestrator, the agents, and the operator for the notice rule.
+The readers of this page are the orchestrator, the agents, and the operator for the notice rule and the doc-read rule.
 
 ## The re-read rule
 
@@ -163,7 +163,7 @@ The agent notice is information. The agent takes each rule from the doc, not fro
 The local clone holds the checkout of the user, for example a commit of a pre-release. The docs of the orchestration
 come from `origin/main`, not from that checkout.
 
-1. Before the orchestrator or an agent reads a doc, it runs `git -C <local clone> fetch origin`.
+1. Before the orchestrator, the operator or an agent reads a doc, it runs `git -C <local clone> fetch origin`.
 2. Then it reads each doc with `git -C <local clone> show origin/main:<path>`, in a Bash call. `<path>` is the path of
    the doc from the root of the repo, for example `docs/dev/limits.md`.
 
@@ -190,4 +190,7 @@ Each doc read uses `origin/main` in one command, so [the shared-clone rule](limi
 hash read for it. A fetch of another session between two reads can give a newer doc of `origin/main`.
 
 If the fetch fails, an agent [stops](limits.md#the-answer-wait-rule) and reports the error. For the orchestrator,
-[the re-read rule](#the-re-read-rule) gives the failure path.
+[the re-read rule](#the-re-read-rule) gives the failure path. If the fetch of the doc-read rule fails for the operator,
+[the failure rule](limits.md#the-failure-rule) of `docs/dev/limits.md` applies. Then the operator reads the doc with
+`git -C <local clone> show origin/main:<path>`. The read uses the `origin/main` of the last fetch that worked. Then the
+operator continues its work.
