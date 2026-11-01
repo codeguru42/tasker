@@ -1005,6 +1005,94 @@ describe("parseConfig named trackers", () => {
   });
 });
 
+describe("parseConfig abortStatus", () => {
+  const hub = { provider: "github" };
+  const acme = { provider: "jira", updateOnStart: true, inProgressStatus: "In Progress" };
+
+  function githubLine(key = "tasker"): string {
+    return `repos.${key}.issueTracker.abortStatus: is not accepted for the github tracker`;
+  }
+
+  function withTracker(issueTracker: Record<string, unknown>, trackers: unknown): Record<string, unknown> {
+    const raw = validConfig();
+    raw.trackers = trackers;
+    raw.repos.tasker.issueTracker = issueTracker;
+    return raw;
+  }
+
+  function twoRepos(raw: Record<string, unknown>, other: Record<string, unknown>): void {
+    const repos = raw.repos as Record<string, { issueTracker: unknown }>;
+    raw.repos = { tasker: repos.tasker, other: { ...repos.tasker, issueTracker: other } };
+  }
+
+  it("refuses abortStatus on a github repo", () => {
+    const raw = validConfig();
+    Object.assign(raw.repos.tasker.issueTracker, { abortStatus: "Cancelled" });
+    expect(issuesOf(raw)).toEqual([githubLine()]);
+  });
+
+  it("refuses abortStatus that comes from a github definition", () => {
+    const raw = withTracker({ tracker: "hub", account: "codeguru42" }, { hub: { ...hub, abortStatus: "Cancelled" } });
+    expect(issuesOf(raw)).toEqual([githubLine()]);
+  });
+
+  it("refuses abortStatus that the repo sets next to a github tracker name", () => {
+    const raw = withTracker({ tracker: "hub", account: "codeguru42", abortStatus: "Cancelled" }, { hub });
+    expect(issuesOf(raw)).toEqual([githubLine()]);
+  });
+
+  it("reports abortStatus of a definition once for each repo that uses it", () => {
+    const raw = withTracker({ tracker: "hub", account: "codeguru42" }, { hub: { ...hub, abortStatus: "Cancelled" } });
+    twoRepos(raw, { tracker: "hub", account: "codeguru42" });
+    expect(issuesOf(raw).sort()).toEqual([githubLine("other"), githubLine()].sort());
+  });
+
+  it("reports abortStatus together with another error in one run", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "github", abortStatus: "Cancelled" };
+    expect(issuesOf(raw).sort()).toEqual(
+      [githubLine(), "repos.tasker.issueTracker.account: is required for the github tracker"].sort(),
+    );
+  });
+
+  it("reports only the undefined tracker name when abortStatus sits next to it", () => {
+    const raw = withTracker({ tracker: "missing", abortStatus: "Cancelled" }, { hub });
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatch(/^repos\.tasker\.issueTracker\.tracker: names tracker 'missing'/);
+  });
+
+  it("reports no abortStatus line for a bad definition", () => {
+    const raw = withTracker({ tracker: "hub", abortStatus: "Cancelled" }, { hub: { provider: "gitlab" } });
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(1);
+    expectIssueAt(issues, "trackers.hub.provider");
+  });
+
+  it("reports nothing for a github definition that no repo uses", () => {
+    const raw = validConfig();
+    raw.trackers = { hub: { ...hub, abortStatus: "Cancelled" } };
+    expect(() => parseConfig(raw, {}, home)).not.toThrow();
+  });
+
+  it("keeps abortStatus on a jira repo", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", abortStatus: "Cancelled" };
+    expect(parsedRepo(raw).issueTracker.abortStatus).toBe("Cancelled");
+  });
+
+  it("keeps abortStatus that comes from a jira definition", () => {
+    const raw = withTracker({ tracker: "acme", project: "TEST" }, { acme: { ...acme, abortStatus: "Cancelled" } });
+    expect(parsedRepo(raw).issueTracker.abortStatus).toBe("Cancelled");
+  });
+
+  it("rejects an empty abortStatus", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", abortStatus: "" };
+    expectIssueAt(issuesOf(raw), "repos.tasker.issueTracker.abortStatus");
+  });
+});
+
 describe("parseConfig jira tracker", () => {
   function jiraConfig(keys: Record<string, unknown>): Record<string, unknown> {
     const raw = validConfig();
