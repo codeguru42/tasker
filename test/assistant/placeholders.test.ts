@@ -263,3 +263,43 @@ describe("removePlaceholders", () => {
     expect(existsSync(join(cwd, ".other"))).toBe(false);
   });
 });
+
+describe("removePlaceholders: rootFolders", () => {
+  const list: PlaceholderList = { rootFiles: [], rootFolders: [".agents", ".aws"] };
+
+  it("removes an empty folder of rootFolders", async () => {
+    const cwd = setUp();
+    mkdirSync(join(cwd, ".agents"));
+    mkdirSync(join(cwd, ".aws"));
+
+    expect(await removeFrom(cwd, list, none)).toEqual({ removed: [".agents", ".aws"] });
+    expect(existsSync(join(cwd, ".agents"))).toBe(false);
+  });
+
+  it("keeps a file of that name", async () => {
+    const cwd = setUp();
+    writeFileSync(join(cwd, ".agents"), "");
+
+    expect(await removeFrom(cwd, list, none)).toEqual({ removed: [] });
+    expect(existsSync(join(cwd, ".agents"))).toBe(true);
+  });
+
+  it("keeps a link of that name", async () => {
+    const cwd = setUp();
+    const target = useTempDir("tasker-placeholders-target-");
+    symlinkSync(target, join(cwd, ".agents"));
+
+    expect(await removeFrom(cwd, list, none)).toEqual({ removed: [] });
+    expect(lstatSync(join(cwd, ".agents")).isSymbolicLink()).toBe(true);
+    expect(existsSync(target)).toBe(true);
+  });
+
+  it("keeps a folder with an entry", async () => {
+    const cwd = setUp();
+    mkdirSync(join(cwd, ".agents"));
+    writeFileSync(join(cwd, ".agents", "x"), "");
+
+    expect(await removeFrom(cwd, list, none)).toEqual({ removed: [] });
+    expect(existsSync(join(cwd, ".agents", "x"))).toBe(true);
+  });
+});

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createCodexProvider } from "../../../src/assistant/codex/provider.js";
@@ -511,5 +511,71 @@ describe("createCodexProvider run: the execute role", () => {
     const { outcome } = await executeRun({ stream: codexSample("hook-flag") });
 
     expect(outcome.kind).toBe("success");
+  });
+
+  describe("the cleanup of the empty folders", () => {
+    const NAMES = [".agents", ".aws", ".codex"];
+
+    // A program for the exec field of the fake. It runs in the cwd of the fake, and the source is JavaScript.
+    const node = (source: string) => [process.execPath, "-e", source];
+    const makeFolders =
+      "for (const n of ['.agents', '.aws', '.codex']) require('fs').mkdirSync(n, { recursive: true });";
+
+    it("removes the folders that the fake made, and gives them in sandboxCleanup.removed", async () => {
+      const { outcome, cwd } = await executeRun({ stream: codexSample("plain"), exec: node(makeFolders) });
+
+      expect(outcome).toMatchObject({ kind: "success", sandboxCleanup: { removed: NAMES } });
+      expect(readdirSync(cwd)).toEqual([]);
+    });
+
+    it("keeps a folder that existed before", async () => {
+      const cwd = useTempDir("tasker-codex-cwd-");
+      mkdirSync(join(cwd, ".aws"));
+
+      const { outcome } = await executeRun({ stream: codexSample("plain"), exec: node(makeFolders) }, { cwd });
+
+      expect(outcome).toMatchObject({ sandboxCleanup: { removed: [".agents", ".codex"] } });
+      expect(existsSync(join(cwd, ".aws"))).toBe(true);
+    });
+
+    it("keeps a folder that is not empty", async () => {
+      const exec = node(`${makeFolders} require('fs').writeFileSync('.codex/keep', '');`);
+
+      const { outcome, cwd } = await executeRun({ stream: codexSample("plain"), exec });
+
+      expect(outcome).toMatchObject({ sandboxCleanup: { removed: [".agents", ".aws"] } });
+      expect(existsSync(join(cwd, ".codex", "keep"))).toBe(true);
+    });
+
+    it.skipIf(process.getuid?.() === 0)("gives the error of a failed rmdir, and the kind stays success", async () => {
+      const cwd = useTempDir("tasker-codex-cwd-");
+      const exec = node("require('fs').mkdirSync('.aws'); require('fs').chmodSync(process.cwd(), 0o555);");
+
+      try {
+        const { outcome } = await executeRun({ stream: codexSample("plain"), exec }, { cwd });
+
+        expect(outcome).toMatchObject({
+          kind: "success",
+          sandboxCleanup: { error: "cannot remove the sandbox placeholders: EACCES" },
+        });
+      } finally {
+        chmodSync(cwd, 0o755);
+      }
+    });
+
+    it("runs the cleanup after a killed run", async () => {
+      const { outcome } = await executeRun({ stream: [], killWith: "SIGKILL", exec: node(makeFolders) });
+
+      expect(failureOutcomeOf(outcome).sandboxCleanup).toEqual({ removed: NAMES });
+    });
+
+    it("sets no sandboxCleanup when the run was refused", async () => {
+      const hookScript = join(useTempDir("tasker-codex-hook-"), "missing.js");
+      const setup = setUp({ stream: codexSample("plain") }, { access: "workspace-write", sandbox: sandboxLimits() });
+
+      const outcome = await createCodexProvider({ hookScript }).run(setup.input);
+
+      expect(outcome).not.toHaveProperty("sandboxCleanup");
+    });
   });
 });
