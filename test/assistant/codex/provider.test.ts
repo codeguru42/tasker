@@ -23,7 +23,7 @@ import {
   expectedCodexArgs,
   useFakeCodexRun,
 } from "../../helpers/fake-codex.js";
-import { useTempDir } from "../../helpers/temp.js";
+import { useTempDir, useTempFile } from "../../helpers/temp.js";
 
 function codexProvider(): AssistantProvider {
   return createCodexProvider();
@@ -421,36 +421,95 @@ describe("createCodexProvider run: the usage", () => {
 });
 
 describe("createCodexProvider run: the execute role", () => {
-  const REFUSAL = "the codex assistant cannot run the execute role in this version";
-  const sandbox = sandboxLimits();
+  async function executeRun(control: FakeClaudeControl, overrides: Partial<RunInput> = {}, threadId?: string) {
+    const hookScript = useTempFile("tasker-codex-hook-", "edit-hook-main.js", "");
+    const setup = setUp(
+      control,
+      { access: "workspace-write", sandbox: sandboxLimits({ allowWrite: ["/c/objects"] }), ...overrides },
+      threadId,
+    );
+    const denied = [`${setup.input.cwd}/.git`, `${setup.input.cwd}/.git/**`];
+    const outcome = await createCodexProvider({ hookScript }).run({ ...setup.input, deniedEditPaths: denied });
+    const cwd = setup.input.cwd;
+    const hookCommand = `'${process.execPath}' '${hookScript}' '${cwd}' '${denied[0]}' '${denied[1]}'`;
+    return { ...setup, hookScript, hookCommand, cwd, outcome };
+  }
 
-  it("refuses access workspace-write before the spawn", async () => {
+  const write = (cwd: string) => [cwd, "/tmp", "/c/objects"];
+
+  it("runs workspace-write and passes the expected arguments", async () => {
+    const { fake, cwd, hookCommand, outcome } = await executeRun({ stream: codexSample("plain") });
+
+    expect(outcome.kind).toBe("success");
+    expect(fake.calls()[0].argv).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: write(cwd),
+        denyRead: [herdrFolder(fake)],
+        hookCommand,
+      }),
+    );
+  });
+
+  it("continues a workspace-write session with the thread id and the same hook", async () => {
+    const { fake, cwd, hookCommand } = await executeRun({ stream: codexSample("resume") }, {}, THREAD_ID);
+
+    expect(fake.calls()[0].argv).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: write(cwd),
+        denyRead: [herdrFolder(fake)],
+        hookCommand,
+        threadId: THREAD_ID,
+      }),
+    );
+  });
+
+  it("passes the prompt on stdin and gives success", async () => {
+    const { fake, outcome } = await executeRun({ stream: codexSample("plain") }, { prompt: "write it" });
+
+    expect(fake.calls()[0].stdin).toBe("write it");
+    expect(outcome.kind).toBe("success");
+  });
+
+  it("writes no file under CODEX_HOME", async () => {
+    const codexHome = useTempDir("tasker-codex-home-");
+
+    await executeRun({ stream: codexSample("plain") }, { env: { ...useFakeCodexRun({}).env, CODEX_HOME: codexHome } });
+
+    expect(readdirSync(codexHome)).toEqual([]);
+  });
+
+  it("gives permissionDenials of []", async () => {
+    const { outcome } = await executeRun({ stream: codexSample("hook-flag") });
+
+    expect(outcome.permissionDenials).toEqual([]);
+  });
+
+  it("fails with no call and no onSpawn when the hook script is missing", async () => {
     const onSpawn = vi.fn();
-
-    const { outcome, fake } = await run(
+    const hookScript = join(useTempDir("tasker-codex-hook-"), "missing.js");
+    const setup = setUp(
       { stream: codexSample("plain") },
-      { access: "workspace-write", onSpawn, sandbox },
+      { access: "workspace-write", sandbox: sandboxLimits(), onSpawn },
     );
 
-    expect(outcome).toEqual({
-      kind: "failure",
-      sessionId: TEST_SESSION_ID,
-      events: [],
-      permissionDenials: [],
-      usage: "unavailable",
+    const outcome = await createCodexProvider({ hookScript }).run(setup.input);
+
+    expect(failureOutcomeOf(outcome)).toMatchObject({
+      reason: `the codex edit hook is missing: ${hookScript}`,
       exitCode: null,
       signal: null,
-      reason: REFUSAL,
     });
-    expect(outcome).not.toHaveProperty("sandboxCleanup");
-    expect(fake.calls()).toEqual([]);
+    expect(setup.fake.calls()).toEqual([]);
     expect(onSpawn).not.toHaveBeenCalled();
   });
 
-  it("refuses the execute role before it looks for the thread id file", async () => {
-    const { outcome, fake } = await run({ stream: codexSample("plain") }, { access: "workspace-write", resume: true });
+  it("gives success for the stream of the hook trust flag", async () => {
+    const { outcome } = await executeRun({ stream: codexSample("hook-flag") });
 
-    expect(failureOutcomeOf(outcome).reason).toBe(REFUSAL);
-    expect(fake.calls()).toEqual([]);
+    expect(outcome.kind).toBe("success");
   });
 });

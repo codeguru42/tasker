@@ -65,6 +65,14 @@ describe("readCodexStream completion and failure", () => {
     expect(readCodexStream([{ type: "error" }], undefined).failureReason).toBe(NO_MESSAGE);
   });
 
+  it("is completed with no failure reason for the stream of a run with the hook trust flag", () => {
+    const facts = readCodexStream(codexSampleEvents("hook-flag"), undefined);
+
+    expect(facts.failureReason).toBeUndefined();
+    expect(facts.completed).toBe(true);
+    expect(facts.answerText).toBe("DONE");
+  });
+
   it("gives no failure reason for a warning item of type error", () => {
     const events: AssistantEvent[] = [
       { type: "item.completed", item: { id: "item_0", type: "error", message: "model mismatch" } },
