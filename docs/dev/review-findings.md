@@ -183,3 +183,52 @@ later, the fix goes to the first place of this list that applies:
    body.
 3. If no such ticket exists, the orchestrator sends the finding to the planner, as the planner bullet of
    [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) says.
+
+### The docs-only update
+
+This rule covers the `tasker update-branch` of step 9 of [Run one ticket](run-one-ticket.md#run-one-ticket) and of
+[the diff read](run-one-ticket.md#the-diff-read). If the same-patch rule of [Review findings](#review-findings) does not
+cover such an update, this rule does not cover it. The `base:` line of `tasker show <issue>` must have a plain name at
+both of its reads. A stacked task stays under the bullets of that section, because its base moves with its parent. A
+docs-only update is a `tasker update-branch` that meets each condition of the list below. The skip is a choice that is
+open on purpose, and the agent makes it.
+
+Right after the first text id, the agent reads the `base:` line. Then it reads the first base with
+`git -C <local clone> merge-base origin/<base branch> tasker/<task branch>`. Right after the second text id, it reads
+the `base:` line again, and it reads `<task hash>` with `git -C <local clone> rev-parse --verify tasker/<task branch>`.
+Then it reads the second base with `git -C <local clone> merge-base origin/<base branch> <task hash>`. The moved files
+are the output of `git -C <local clone> log --no-renames --format= --name-only <first base>..<second base>`. The files
+of the task are the output of `git -C <local clone> diff --no-renames --name-only <second base> <task hash>`.
+
+The reads of this rule are the two reads of the `base:` line, the two base reads and the read of `<task hash>`. The read
+of the moved files and the read of the files of the task are also reads of this rule. These reads need no fetch of their
+own. The `--no-renames` flag prints both names of a renamed file. Each read has the plain form of the same-patch rule.
+No read of this rule goes as a parallel call with `tasker update-branch` or with another read.
+
+A denial of a read is a [tool block](tasker-commands.md#the-tool-block-rule). After the answer of the orchestrator, the
+agent skips nothing at that update, unless the answer says otherwise. Another failed read does not stop the agent. The
+agent then also skips nothing at that update. A denial or a failed read does not change the count of a loop. At each
+later update, the agent runs all the reads again.
+
+If each of these conditions is true, the agent can skip `tasker review` and each step of the diff read except the last
+fetch and `git merge-base --is-ancestor`:
+
+- `tasker update-branch` reported no rebase conflict.
+- The two patch ids of the same-patch rule are the same.
+- The moved files hold at least one file, and each one is a Markdown file under `docs/`.
+- No moved file is a file of the task.
+- A `tasker review` left no open finding, and the agent did the diff read. Both came after the last commit that changed
+  the work and after the last update with no skip.
+
+The agent still runs `tasker verify`. If `tasker verify` fails, this rule ends, and
+[the verify-failure rule](verify-failures.md#the-verify-failure-rule) applies. If it passes, the agent does the last
+fetch and `git merge-base --is-ancestor`, as the diff read says. The measure and each real run of the last diff read
+stand. The agent names each skip in the comment of step 11 of [Run one ticket](run-one-ticket.md#run-one-ticket) and in
+its final report, with the two bases. After a decision of the user that the ticket lands, this rule also applies to the
+update of the no-loop-left rule.
+
+The reason: the update changed no file of the task, so the diff and the whole files of the task stay the same. The cost:
+the review does not see a rule that a moved doc changed. If the moved doc is a doc of the agent,
+[the agent notice](doc-reads.md#the-agent-notice) names the changed section. That notice can arrive after
+`tasker accept`. The user decided this rule on 2026-11-01. On #550, docs-only commits moved `main` four times in about
+15 minutes, and each cycle cost one review run with the same patch id.

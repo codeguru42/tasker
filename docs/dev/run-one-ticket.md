@@ -51,24 +51,25 @@ The agent of the ticket runs steps 1 to 11. Each step gives the state of the tas
    ["Review findings"](review-findings.md#review-findings) section limits the number of loops.
 9. Run each `tasker` command of this step as [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. The
    rule also covers the `tasker` commands that change a task in the other steps. Before each `tasker accept` of this
-   step, also the one after `tasker update-branch`, do [the diff read](#the-diff-read). Run `tasker accept`. The task
-   goes to `accepted`. `tasker accept` refuses when the branch does not contain the tip of `origin/main`. In that case,
-   run `tasker update-branch`. The task goes to `executed`. Then run `tasker verify` and `tasker review` again as in
-   step 5. If `tasker verify` fails, follow the verify-failure rule. If that review has findings, go to step 6.
-   Otherwise, run `tasker accept` again. Right after `tasker accept`, run `tasker merge`. The task goes to `landed`. If
-   `tasker merge` fails, the task goes to `failed` from `merging`, and nothing lands. `tasker show <issue>` then prints
-   `tasker retry` as the next command. To find the cause, run `git fetch --multiple tasker origin`. Then run
+   step, also the one after `tasker update-branch`, do [the diff read](#the-diff-read), except after
+   [the docs-only update](review-findings.md#the-docs-only-update). Run `tasker accept`. The task goes to `accepted`.
+   `tasker accept` refuses when the branch does not contain the tip of `origin/main`. In that case, run
+   `tasker update-branch`. The task goes to `executed`. Then run `tasker verify` and `tasker review` again as in step 5,
+   except that the agent can skip `tasker review` after [the docs-only update](review-findings.md#the-docs-only-update).
+   If `tasker verify` fails, follow the verify-failure rule. If that review has findings, go to step 6. Otherwise, run
+   `tasker accept` again. Right after `tasker accept`, run `tasker merge`. The task goes to `landed`. If `tasker merge`
+   fails, the task goes to `failed` from `merging`, and nothing lands. `tasker show <issue>` then prints `tasker retry`
+   as the next command. To find the cause, run `git fetch --multiple tasker origin`. Then run
    `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. If the exit code is 1, the base branch
    moved. In that case, do not run `tasker retry`, because the land fails again on the moved base. Before
    `tasker update-branch`, do each read of [the same-patch rule](review-findings.md#review-findings) that belongs to
    that update, for example the first patch id. Run `tasker update-branch`. The task goes to `executed`. Then continue
-   this step as it says after the first `tasker update-branch`: `tasker verify`, `tasker review`, the diff read,
-   `tasker accept` and `tasker merge`. On #286 (2026-10-18), #283 landed between `tasker accept` and `tasker merge`, so
-   `origin` refused the push as non-fast-forward, and the task went to `failed`. If the exit code is 0, `tasker merge`
-   failed for another reason. In that case, follow the paragraph "If a command fails" of
-   [the verify-failure rule](verify-failures.md#the-verify-failure-rule). If `git fetch` or `git merge-base` fails, or
-   the exit code is not 0 and not 1, [stop](limits.md#the-answer-wait-rule). This stop does not cover the reads of the
-   same-patch rule. That rule gives the result of a failed read. After a `tasker merge` that succeeds, do
+   this step as it says after the first `tasker update-branch`. On #286 (2026-10-18), #283 landed between
+   `tasker accept` and `tasker merge`, so `origin` refused the push as non-fast-forward, and the task went to `failed`.
+   If the exit code is 0, `tasker merge` failed for another reason. In that case, follow the paragraph "If a command
+   fails" of [the verify-failure rule](verify-failures.md#the-verify-failure-rule). If `git fetch` or `git merge-base`
+   fails, or the exit code is not 0 and not 1, [stop](limits.md#the-answer-wait-rule). This stop does not cover the
+   reads of the same-patch rule. That rule gives the result of a failed read. After a `tasker merge` that succeeds, do
    [the CI wait](ci-wait.md#the-ci-wait). The task stays in `landed`. If the CI wait passes, run `tasker finish`. The
    task goes to `finished`, and the issue closes. If a run failed, step 12 of the CI wait runs `tasker finish`. If the
    CI wait stops, do not run `tasker finish`, and do not do steps 10 and 11.
@@ -241,10 +242,10 @@ steps 5 to 8 again, starting with `tasker approve`.
 
 ### The diff read
 
-Each time before the agent runs `tasker accept` in step 9, the agent reads the full diff of the task branch against the
-base branch. The agent does this also after a review with no findings. In one milestone, this read found real
-duplication and false doc text on four tickets where the review found nothing. In the local clone of the orchestrator,
-the agent does the remote setup. The remote setup is steps 1 to 5 of
+Before each `tasker accept` of step 9, the agent reads the full diff of the task branch against the base branch, unless
+[the docs-only update](review-findings.md#the-docs-only-update) applies. The agent does this also after a review with no
+findings. In one milestone, this read found real duplication and false doc text on four tickets where the review found
+nothing. In the local clone of the orchestrator, the agent does the remote setup. The remote setup is steps 1 to 5 of
 [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure). The clone gets the read-only `tasker` remote, and the
 agent reads the base branch. The fetch of step 5 fetches both remotes. It reads the tasker clone through the read-only
 `tasker` remote, and it changes nothing there. Then the agent does [the update rule](limits.md#the-update-rule) in the
@@ -259,7 +260,8 @@ the `branch:` line of `tasker show <issue>`. The agent reads the full diff.
 A same patch id or a [same-patch review](review-findings.md#review-findings) does not replace this read. The patch id
 covers only the diff of the task. The diff read also reads whole files of the task after the update and searches each
 test file. On #543 (2026-10-30), the agent did not read the full diff again before its last `tasker accept`, because the
-patch id stayed the same.
+patch id stayed the same. [The docs-only update](review-findings.md#the-docs-only-update) gives the one case where the
+agent can skip this read.
 
 If the full diff is too large for one context, the agent can split the read. This choice is open on purpose, and the
 agent makes it. The mechanical files of a commit are the files that the agent names as files with a change of form only.
