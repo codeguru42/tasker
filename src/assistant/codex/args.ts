@@ -1,4 +1,7 @@
+import { lstatSync, realpathSync } from "node:fs";
+import { errnoCode } from "../../errno.js";
 import type { RunInput } from "../provider.js";
+import { codexSocketDenyPaths } from "./sockets.js";
 
 // The name of the permission profile that every run defines for itself.
 const PROFILE = "tasker";
@@ -9,12 +12,48 @@ export interface CodexFiles {
   schemaPath?: string;
 }
 
+// A key of the table must be a real path. A key that is a link makes bwrap fail at the start. A link becomes its
+// target, and a link that cannot resolve is left out. A path that does not exist stays.
+function realKeys(paths: readonly string[]): string[] {
+  const keys: string[] = [];
+  for (const path of paths) {
+    let isLink: boolean;
+    try {
+      isLink = lstatSync(path).isSymbolicLink();
+    } catch (error) {
+      if (errnoCode(error) !== "ENOENT") throw error;
+      keys.push(path);
+      continue;
+    }
+    if (!isLink) {
+      keys.push(path);
+      continue;
+    }
+    try {
+      keys.push(realpathSync(path));
+    } catch (error) {
+      if (errnoCode(error) !== "ENOENT") throw error;
+    }
+  }
+  return keys;
+}
+
+// Leaves out each repeat and each path under another path of the list. An existing path under a denied folder
+// makes bwrap fail at the start.
+function withoutNested(paths: readonly string[]): string[] {
+  const unique = [...new Set(paths)];
+  return unique.filter((path) => !unique.some((other) => other !== path && path.startsWith(`${other}/`)));
+}
+
 // The table of the filesystem profile. "/" must be readable, because a smaller profile makes each command fail.
-// Each path is a TOML key written with JSON.stringify. A TOML table must not name one key twice, so a repeated
-// path counts once. sandbox.allowWrite is never read: the profile has no write grant.
+// Each path is a TOML key written with JSON.stringify. A TOML table must not name one key twice, so the table
+// is a Map and a path has one key. The deny keys are the paths of sandbox.denyRead and the socket paths.
+// sandbox.allowWrite is not read yet: the profile has no write grant.
 function filesystemTable(input: RunInput): string {
-  const denied = [...new Set(input.sandbox?.denyRead ?? [])];
-  const keys = [`"/"="read"`, ...denied.map((path) => `${JSON.stringify(path)}="deny"`)];
+  const table = new Map<string, string>([["/", "read"]]);
+  const denied = realKeys([...(input.sandbox?.denyRead ?? []), ...codexSocketDenyPaths(input.env)]);
+  for (const path of withoutNested(denied)) table.set(path, "deny");
+  const keys = [...table].map(([path, access]) => `${JSON.stringify(path)}=${JSON.stringify(access)}`);
   return `{${keys.join(", ")}}`;
 }
 
