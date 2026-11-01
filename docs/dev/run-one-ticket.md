@@ -59,14 +59,16 @@ The agent of the ticket runs steps 1 to 11. Each step gives the state of the tas
    `tasker merge` fails, the task goes to `failed` from `merging`, and nothing lands. `tasker show <issue>` then prints
    `tasker retry` as the next command. To find the cause, run `git fetch --multiple tasker origin`. Then run
    `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. If the exit code is 1, the base branch
-   moved. In that case, do not run `tasker retry`, because the land fails again on the moved base. Run
-   `tasker update-branch`. The task goes to `executed`. Then continue this step as it says after the first
-   `tasker update-branch`: `tasker verify`, `tasker review`, the diff read, `tasker accept` and `tasker merge`. On #286
-   (2026-10-18), #283 landed between `tasker accept` and `tasker merge`, so `origin` refused the push as
-   non-fast-forward, and the task went to `failed`. If the exit code is 0, `tasker merge` failed for another reason. In
-   that case, follow the paragraph "If a command fails" of
+   moved. In that case, do not run `tasker retry`, because the land fails again on the moved base. Before
+   `tasker update-branch`, do each read of [the same-patch rule](review-findings.md#review-findings) that belongs to
+   that update, for example the first patch id. Run `tasker update-branch`. The task goes to `executed`. Then continue
+   this step as it says after the first `tasker update-branch`: `tasker verify`, `tasker review`, the diff read,
+   `tasker accept` and `tasker merge`. On #286 (2026-10-18), #283 landed between `tasker accept` and `tasker merge`, so
+   `origin` refused the push as non-fast-forward, and the task went to `failed`. If the exit code is 0, `tasker merge`
+   failed for another reason. In that case, follow the paragraph "If a command fails" of
    [the verify-failure rule](verify-failures.md#the-verify-failure-rule). If `git fetch` or `git merge-base` fails, or
-   the exit code is not 0 and not 1, [stop](limits.md#the-answer-wait-rule). After a `tasker merge` that succeeds, do
+   the exit code is not 0 and not 1, [stop](limits.md#the-answer-wait-rule). This stop does not cover the reads of the
+   same-patch rule. That rule gives the result of a failed read. After a `tasker merge` that succeeds, do
    [the CI wait](ci-wait.md#the-ci-wait). The task stays in `landed`. If the CI wait passes, run `tasker finish`. The
    task goes to `finished`, and the issue closes. If a run failed, step 12 of the CI wait runs `tasker finish`. If the
    CI wait stops, do not run `tasker finish`, and do not do steps 10 and 11.

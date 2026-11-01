@@ -7,18 +7,25 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
 
 - One loop is one `tasker review` and the work on its findings. The agent runs at most 5 review loops.
 - The same-patch rule: this rule covers a task in `awaiting_work_review` when the agent of the ticket runs
-  `tasker update-branch`. The agent reads two patch ids in the local clone of the orchestrator, with the remotes of
+  `tasker update-branch`. It also covers a task in `failed` after each failed `tasker merge`. It covers the
+  `tasker update-branch` that step 9 of ["Run one ticket"](run-one-ticket.md#run-one-ticket) runs because the base
+  branch moved: the update of step 9 from `failed`. The reason: without this case, the review after the update from
+  `failed` counts as a loop, also with the same patch. A base that moves often can make `tasker merge` fail more than
+  once. The other cases of `tasker update-branch` from `failed` stay outside this rule. Examples are an update after a
+  failed `tasker verify` and an update of [the comeback rule](run-one-ticket.md#the-comeback-rule) from `failed`. The
+  agent reads two patch ids in the local clone of the orchestrator, with the remotes of
   [the diff read](run-one-ticket.md#the-diff-read). A patch id is the first field of the output of
   `git patch-id --stable` for the diff of the task branch against its base. The output has the form
   `<patch id> 0000000000000000000000000000000000000000`. The first patch id: while the task is in
-  `awaiting_work_review`, right before `tasker update-branch`, the agent runs `git fetch --multiple tasker origin`. Then
-  it runs `set -o pipefail; git diff origin/<base branch>...tasker/<task branch> | git patch-id --stable`. For a stacked
-  task, the first patch id always uses the start base of the last read in place of `tasker/<parent branch>`. The reason:
-  the parent ref can move after the start, for example after a rewrite or a rebase of the parent. Then the three-dot
-  diff against it holds the old commits of the parent, and the patch id covers more than the work of the task. On #182,
-  the parent #172 rewrote its commits in a fix round after the start of #182. The start base of a task is the commit
-  that the task branch pointed to right after `tasker start`. For a stacked task, it is the tip of the parent branch at
-  that time.
+  `awaiting_work_review`, or in `failed` for the update of step 9, right before `tasker update-branch`, the agent runs
+  `git fetch --multiple tasker origin`. Then it runs
+  `set -o pipefail; git diff origin/<base branch>...tasker/<task branch> | git patch-id --stable`. For a stacked task,
+  the first patch id always uses the start base of the last read in place of `tasker/<parent branch>`. The reason: the
+  parent ref can move after the start, for example after a rewrite or a rebase of the parent. Then the three-dot diff
+  against it holds the old commits of the parent, and the patch id covers more than the work of the task. On #182, the
+  parent #172 rewrote its commits in a fix round after the start of #182. The start base of a task is the commit that
+  the task branch pointed to right after `tasker start`. For a stacked task, it is the tip of the parent branch at that
+  time.
 
   Right after `tasker start`, the agent reads it from the field `synced base tip` of `tasker show <issue>`. In two
   cases, the agent reads it with the commands of the base-commit hint of [All tickets](first-refine.md#all-tickets)
@@ -88,11 +95,13 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   text id changes nothing.
 - The same-patch review is the first `tasker review` after that `tasker update-branch` when the two patch ids are the
   same, or when the two patch ids differ and the two text ids are the same. A same-patch review does not count as a
-  loop, also when it has findings. For this one review, the same-patch rule wins over the loop definition of the first
-  bullet. If the same-patch review has no findings, the task stays in `awaiting_work_review`. If it has findings, the
-  task goes to `reviewed`, and the agent works on them with steps 6 to 8 of
-  ["Run one ticket"](run-one-ticket.md#run-one-ticket). After the 5th loop, the bullet "After the 5th loop" wins. If a
-  real finding of a same-patch review is still open, the agent [stops](limits.md#the-answer-wait-rule) as that bullet
+  loop, also when it has findings. For the update of step 9 from `failed`, the same-patch review is also the first
+  `tasker review` after that update, with the same cases. The bullet "The review after `tasker update-branch` counts as
+  a loop" also applies to that update, with each of its cases. For this one review, the same-patch rule wins over the
+  loop definition of the first bullet. If the same-patch review has no findings, the task stays in
+  `awaiting_work_review`. If it has findings, the task goes to `reviewed`, and the agent works on them with steps 6 to 8
+  of ["Run one ticket"](run-one-ticket.md#run-one-ticket). After the 5th loop, the bullet "After the 5th loop" wins. If
+  a real finding of a same-patch review is still open, the agent [stops](limits.md#the-answer-wait-rule) as that bullet
   says. If the agent dismisses all the findings in step 7 of [Run one ticket](run-one-ticket.md#run-one-ticket), the
   task goes to `awaiting_work_review`. In each case, the agent then continues as the place that ran
   `tasker update-branch` says. Work can follow the same-patch review, for example the refine of step 8 or the work of
@@ -123,16 +132,18 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   as that bullet says. Without the early update, the update runs later from `awaiting_work_review`, and there a review
   after a rebase conflict counts as a loop. On #129, such a review was loop 5, so a finding in it got no fix.
 - The no-loop-left rule: this rule covers a task in `awaiting_work_review` after the 5th loop, when a step needs
-  `tasker update-branch`, for any reason. The agent stops before `tasker update-branch`. The orchestrator asks the user.
-  This rule wins over each step that runs `tasker update-branch` from `awaiting_work_review`, for example step 9 and
+  `tasker update-branch`, for any reason. It also covers a task in `failed` after the 5th loop, when `tasker merge`
+  failed on a moved base branch. The agent stops before `tasker update-branch`. The orchestrator asks the user. This
+  rule wins over each step that runs `tasker update-branch` from `awaiting_work_review`, for example step 9 and
   [the diff read](run-one-ticket.md#the-diff-read), and the bullet "When the issue of the earlier ticket is closed" of
-  "Land the work". A same-patch review costs no loop (the same-patch rule of this section). For example, if the patch
-  ids differ and the text ids differ, or the rebase has a conflict, the review counts as a loop (the bullet "The review
-  after `tasker update-branch` counts as a loop"). As a result, after the 5th loop, such a review is over the limit. A
-  decision of the user that the ticket lands covers each `tasker update-branch` that the landing then needs. For such an
-  update, the decision wins over the stop of this rule. The agent runs the update with no new report, and the review
-  after it follows the same-patch rule of this section. The bullet "After the 5th loop" still applies to that review. On
-  #302 (2026-10-18), the user decided that the ticket lands after loop 7, and then `main` moved.
+  "Land the work", and over the update of step 9 from `failed`. A same-patch review costs no loop (the same-patch rule
+  of this section). For example, if the patch ids differ and the text ids differ, or the rebase has a conflict, the
+  review counts as a loop (the bullet "The review after `tasker update-branch` counts as a loop"). As a result, after
+  the 5th loop, such a review is over the limit. A decision of the user that the ticket lands covers each
+  `tasker update-branch` that the landing then needs, also the update of step 9 from `failed`. For such an update, the
+  decision wins over the stop of this rule. The agent runs the update with no new report, and the review after it
+  follows the same-patch rule of this section. The bullet "After the 5th loop" still applies to that review. On #302
+  (2026-10-18), the user decided that the ticket lands after loop 7, and then `main` moved.
 - After the 5th loop, if a real finding is still open, or the diff read finds work, the agent stops. The orchestrator
   reports to the user.
 - On the 5th loop, the agent dismisses cosmetic findings with a reason.
