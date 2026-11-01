@@ -31,6 +31,7 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    after this message. The word of the user to the initial planner in step 5 is the request of the user for this stop.
    Then the operator closes the tab of the initial planner, as "Stop a session" says.
 7. The operator starts the follow-up planner and the orchestrator, as "Start a session" says.
+8. At the end of the milestone, [The close of a milestone](#the-close-of-a-milestone) applies.
 
 If a stop or a start fails, the failure cases of "Stop a session" and "Start a session" apply.
 
@@ -226,6 +227,34 @@ operator follows "A blocked session" and closes nothing. Without `--until`, the 
 
 After each other end of this section, the entry stays in the tab list. Examples are a failed `SendMessage`, a failed
 wait, a `blocked` session and a failed `herdr tab close`.
+
+## The close of a milestone
+
+This section gives the order of the end of a milestone. A round and the end of the rounds work as the bullet that starts
+"When the Todo column of the milestone is empty" of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. If no
+orchestrator runs, steps 1 and 2 do not apply.
+
+1. The orchestrator runs its rounds, as that bullet says.
+2. When the orchestrator reports that the milestone is done, the operator stops the orchestrator, as "Stop a session"
+   says. The decision of the user of 2026-10-31 is the request of the user for this stop. A long-running orchestrator
+   that moves to the next milestone does not stop.
+3. The operator runs its own rounds. It can start them at the same time as step 1. It sends each finding that proposes a
+   change of the docs to the follow-up planner. If no follow-up planner runs, it gives the finding to the user. When its
+   rounds end, it tells the follow-up planner.
+4. The follow-up planner finishes each draft in its review loops. Then it handles each finding: it posts the finding,
+   drops it or writes it to memory. Then it runs its rounds. It handles the findings of its own rounds in the same way.
+   The operator runs no new round for them. After its last round, the follow-up planner sends a report to the operator.
+5. When the user says to close the milestone, the operator relays this word to the follow-up planner. The follow-up
+   planner closes the milestone, as [Milestones](issues.md#milestones) says. If no follow-up planner runs, the operator
+   tells the user and closes nothing.
+6. When the user says to stop the follow-up planner, the operator stops it, as "Stop a session" says. If step 5 did not
+   run, or the follow-up planner has an open item, the operator first tells the user. It then stops the session only on
+   a new word of the user.
+7. The operator ends last, and only on the word of the user. The user closes the tab of the operator.
+
+If a round or a send of steps 3 and 4 fails, [the failure rule](limits.md#the-failure-rule) applies to that session. Its
+rounds end. The operator does not wait in a loop for a report. If a report does not come, the operator tells the user,
+and the word of the user decides.
 
 ## A handoff
 
