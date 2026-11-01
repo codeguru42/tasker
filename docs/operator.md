@@ -15,7 +15,8 @@ place.
 session. The operator is named `operator-<slug>`.
 
 The tab list is the list of the tabs that an operator can close. Each entry gives the tab id and the session name of one
-tab.
+tab. In a handoff of the operator, the old operator also closes its own tab, as
+[Stop a session](dev/operator-start.md#stop-a-session) says.
 
 The operator runs only these `tasker` commands: `show-config`, `show-quota`, `show`, `show-bootstrap`, `show-plan`,
 `show-questions`, `show-verify`, `show-review`, `status` and `doctor`. It runs no other `tasker` command and starts no

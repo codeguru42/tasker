@@ -190,9 +190,10 @@ end at the end of the file. It does not write the defaults. The command has two 
 
 ## `sessions`
 
-The user starts the operator. The operator starts the planner and the orchestrator of a milestone. The key `sessions`
-gives the agent kind of these sessions and the model and the effort of each role. It is separate from `assistant`,
-because `assistant` configures the runs that tasker starts.
+The user starts the first operator of a slug. In a handoff of the operator, the old operator starts the new operator.
+The operator starts the planner and the orchestrator of a milestone. The key `sessions` gives the agent kind of these
+sessions and the model and the effort of each role. It is separate from `assistant`, because `assistant` configures the
+runs that tasker starts.
 
 A session role is one of `operator`, `planner` and `orchestrator`. The agent kind is the program of a session, in the
 form that herdr names it in `herdr agent start --kind`.
