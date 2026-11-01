@@ -28,9 +28,9 @@ The description of the CronCreate tool of Claude Code 2.1.310 (read by planner-d
 The board watch rule has these parts:
 
 - The orchestrator makes the board watch job with CronCreate at the start of its session. On a start from the start
-  prompt, it does this after the first doc read. On a start after a handoff, it does this after the check of the handoff
-  folder, as [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says. The job fires two times each
-  hour, for example with the cron `7,37 * * * *`.
+  prompt, it does this after the first doc read of the re-read rule. On a start after a handoff, it does this after the
+  check of the handoff folder, as [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says. The job
+  fires two times each hour, for example with the cron `7,37 * * * *`.
 - The prompt of the job starts with "Board watch:". The rest of the prompt says: read the board, as
   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
 - When the job fires, the orchestrator reads the board as the prompt says. It starts each ticket that the rules of Pick
@@ -146,8 +146,9 @@ The handoff file of the orchestrator holds the parts of
 handoff file:
 
 - The prompt names the milestone, the path of the file, the session name, the first free item id and
-  [The start of the new orchestrator](#the-start-of-the-new-orchestrator). The prompt also names each extra doc. An
-  extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
+  [The start of the new orchestrator](#the-start-of-the-new-orchestrator). The first step of the prompt is the prompt
+  read of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The prompt also names each extra doc.
+  An extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
   [the re-read rule](doc-reads.md#the-re-read-rule) does not hold.
 - The number of each open broken-test issue that the old orchestrator knows of (see the broken-test rule in
   [A failed CI run](ci-wait.md#a-failed-ci-run)).
@@ -158,7 +159,8 @@ handoff file:
 ## The start of the new orchestrator
 
 The new orchestrator is `orchestrator-<slug>`. [The stop and the start](handoff.md#the-stop-and-the-start) applies. The
-new orchestrator then starts with the re-read rule. Right after the first doc read, the new orchestrator does the check
-of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). After that check, it reads the tasks
-in flight with `tasker status`, also [the parked tasks](pick-the-tickets.md#the-defer-rule). It reads the other sessions
-with `ListAgents`. Then it makes its board watch job, as [the board watch rule](#the-long-running-orchestrator) says.
+new orchestrator then starts with the re-read rule. Right after the first doc read of the re-read rule, the new
+orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). After that
+check, it reads the tasks in flight with `tasker status`, also [the parked tasks](pick-the-tickets.md#the-defer-rule).
+It reads the other sessions with `ListAgents`. Then it makes its board watch job, as
+[the board watch rule](#the-long-running-orchestrator) says.
