@@ -20,13 +20,13 @@ and each other item that needs the user to that session, in the form of
 [The operator](dev/working-with-the-user.md#the-operator) of working-with-the-user.md says how "tell the user" or "ask
 the user" reads. A report or a question to the user that a rule of the orchestration pages calls a reply is also an
 item. When a rule waits for the user, the answer of the question that the rule waits for ends the wait, as
-[The answer](dev/operator-items.md#the-answer) of operator-items.md says. The orchestrator sends each lesson, each
-finding of a session review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the
-planner bullet of [The prompt of an agent](dev/pick-the-tickets.md#the-prompt-of-an-agent) says. The messages between
-orchestrators that go straight are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the
-broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the messages of
-[the hold rule](dev/land-the-work.md#the-hold-rule), a landing order of
-[the overlap rule](dev/land-the-work.md#the-overlap-rule), a change to an issue in flight
+[The answer](dev/operator-items.md#the-answer) of operator-items.md says. An answer of the operator also ends the wait,
+unless the question is a question for the user alone. The orchestrator sends each lesson, each finding of a session
+review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the planner bullet of
+[The prompt of an agent](dev/pick-the-tickets.md#the-prompt-of-an-agent) says. The messages between orchestrators that
+go straight are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the broken-test notice of
+[A failed CI run](dev/ci-wait.md#a-failed-ci-run), the messages of [the hold rule](dev/land-the-work.md#the-hold-rule),
+a landing order of [the overlap rule](dev/land-the-work.md#the-overlap-rule), a change to an issue in flight
 ([Land the work](dev/land-the-work.md#land-the-work)) and the messages of
 [the hold before an install](dev/release.md#the-hold-before-an-install). [The request rule](#the-request-rule) covers
 each other request between orchestrators that needs a decision of the user.
