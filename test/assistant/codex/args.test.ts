@@ -135,6 +135,29 @@ describe("codexArgs: the keys of the deny table", () => {
     expect(deny(["/a/b", "/a/bc"])).toEqual(expected(["/a/b", "/a/bc"]));
   });
 
+  it("keeps a deny path under a file, for a read-only run", () => {
+    const dir = realTempDir();
+    writeFileSync(join(dir, "file"), "");
+    const path = join(dir, "file", "key");
+
+    expect(deny([path])).toEqual(expected([path]));
+  });
+
+  it("gives the table with a HOME that is a file", () => {
+    const dir = realTempDir();
+    writeFileSync(join(dir, "home"), "");
+
+    expect(deny([], { HOME: join(dir, "home") })).toEqual(expected([join(dir, "home", ".config", "herdr")]));
+  });
+
+  it("leaves out a link whose target stands under a file", () => {
+    const dir = realTempDir();
+    writeFileSync(join(dir, "file"), "");
+    symlinkSync(join(dir, "file", "x"), join(dir, "link"));
+
+    expect(deny([join(dir, "link"), "/h/.ssh"])).toEqual(expected(["/h/.ssh"]));
+  });
+
   it("keeps a missing deny path", () => {
     expect(deny(["/tasker-no-such/path"])).toEqual(expected(["/tasker-no-such/path"]));
   });
@@ -256,6 +279,22 @@ describe("codexArgs: the write profile", () => {
         effort: "low",
         writePaths: ["/work", "/tmp"],
         denyRead: ["/work/secret"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("keeps a deny path under a file, for a write run", () => {
+    const dir = realpathSync(useTempDir("tasker-codex-write-"));
+    writeFileSync(join(dir, "file"), "");
+    const path = join(dir, "file", "key");
+
+    expect(writeArgs({ sandbox: sandboxLimits({ denyRead: [path] }) })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp"],
+        denyRead: [path],
         hookCommand: HOOK,
       }),
     );
