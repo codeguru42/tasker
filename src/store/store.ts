@@ -1473,7 +1473,9 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     setProviderSessionId(taskId, sessionId, id) {
-      statements.updateProviderSessionId.run(id, taskId, sessionId);
+      immediateTransaction(db, () => {
+        statements.updateProviderSessionId.run(id, taskId, sessionId);
+      });
     },
 
     sessionUsageTotal(taskId, sessionId) {
@@ -1495,14 +1497,16 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     setSessionUsageTotal(taskId, sessionId, total) {
-      statements.updateSessionUsageTotal.run(
-        total.inputTokens,
-        total.outputTokens,
-        total.cacheCreationInputTokens,
-        total.cacheReadInputTokens,
-        taskId,
-        sessionId,
-      );
+      immediateTransaction(db, () => {
+        statements.updateSessionUsageTotal.run(
+          total.inputTokens,
+          total.outputTokens,
+          total.cacheCreationInputTokens,
+          total.cacheReadInputTokens,
+          taskId,
+          sessionId,
+        );
+      });
     },
 
     planSession(taskId) {
