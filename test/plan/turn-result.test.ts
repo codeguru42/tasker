@@ -7,7 +7,7 @@ function read(output: unknown) {
 
 describe("readTurnResult", () => {
   it("reads done", () => {
-    expect(read({ result: "done" })).toEqual({ kind: "done" });
+    expect(read({ result: "done", reason: null })).toEqual({ kind: "done" });
   });
 
   it("ignores a reason that comes with done", () => {
@@ -18,8 +18,8 @@ describe("readTurnResult", () => {
     expect(read({ result: "blocked", reason: "No disk." })).toEqual({ kind: "blocked", reason: "No disk." });
   });
 
-  it("gives a fixed reason for blocked without a reason", () => {
-    expect(read({ result: "blocked" })).toEqual({ kind: "blocked", reason: "(no reason given)" });
+  it("gives a fixed reason for blocked with a null reason", () => {
+    expect(read({ result: "blocked", reason: null })).toEqual({ kind: "blocked", reason: "(no reason given)" });
   });
 
   it("gives a fixed reason for blocked with a blank reason", () => {
@@ -27,7 +27,10 @@ describe("readTurnResult", () => {
   });
 
   it("reads an extra key as no result, never as done", () => {
-    expect(read({ result: "done", extra: 1 })).toEqual({ kind: "none", detail: "extra: unrecognized key" });
+    expect(read({ result: "done", reason: null, extra: 1 })).toEqual({
+      kind: "none",
+      detail: "extra: unrecognized key",
+    });
   });
 
   it("reads a wrong result value as no result", () => {
@@ -35,6 +38,13 @@ describe("readTurnResult", () => {
 
     expect(turn.kind).toBe("none");
     expect(turn).toMatchObject({ detail: expect.stringMatching(/^result: /) });
+  });
+
+  it("reads a missing reason as no result, never as done", () => {
+    expect(read({ result: "done" })).toEqual({
+      kind: "none",
+      detail: "reason: Invalid input: expected string, received undefined",
+    });
   });
 
   it.each([undefined, null])("reads %s as no result", (output) => {
@@ -47,10 +57,10 @@ describe("readTurnResult", () => {
 });
 
 describe("turnResultJsonSchema", () => {
-  it("has no $schema, refuses extra keys and requires result", () => {
+  it("has no $schema, refuses extra keys and requires result and reason", () => {
     const schema = turnResultJsonSchema();
 
     expect(schema).not.toHaveProperty("$schema");
-    expect(schema).toMatchObject({ additionalProperties: false, required: ["result"] });
+    expect(schema).toMatchObject({ additionalProperties: false, required: ["result", "reason"] });
   });
 });

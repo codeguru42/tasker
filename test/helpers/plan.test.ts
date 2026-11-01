@@ -441,10 +441,10 @@ describe("turnResultStream", () => {
     expect(JSON.parse(lines.at(-1)!).structured_output).toEqual({ result: "blocked", reason: "No disk." });
   });
 
-  it("gives a done result with no reason key", () => {
+  it("gives a done result with null as its reason", () => {
     const lines = turnResultStream("done");
 
-    expect(JSON.parse(lines.at(-1)!).structured_output).toStrictEqual({ result: "done" });
+    expect(JSON.parse(lines.at(-1)!).structured_output).toStrictEqual({ result: "done", reason: null });
   });
 
   it("applies the edit to the result event and keeps the structured output", () => {
@@ -456,8 +456,8 @@ describe("turnResultStream", () => {
 
     const last = JSON.parse(lines.at(-1)!);
     expect(last.permission_denials).toEqual(denials);
-    expect(last.structured_output).toStrictEqual({ result: "done" });
-    expect(last.result).toBe(JSON.stringify({ result: "done" }));
+    expect(last.structured_output).toStrictEqual({ result: "done", reason: null });
+    expect(last.result).toBe(JSON.stringify({ result: "done", reason: null }));
   });
 });
 
