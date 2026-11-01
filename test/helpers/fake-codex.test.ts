@@ -150,3 +150,45 @@ describe("the usage constants", () => {
     expect(CODEX_RESUME_USAGE.outputTokens + CODEX_PLAIN_USAGE.outputTokens).toBe(raw.output_tokens);
   });
 });
+
+describe("expectedCodexArgs", () => {
+  it("writes the write keys before the deny keys, and the hook arguments after the network line", () => {
+    expect(
+      expectedCodexArgs({
+        model: "m",
+        effort: "low",
+        writePaths: ["/w", "/p"],
+        denyRead: ["/p", "/d"],
+        hookCommand: "node 'h.js'",
+        threadId: "T1",
+      }),
+    ).toEqual([
+      "exec",
+      "resume",
+      "--json",
+      "--ignore-user-config",
+      "--ignore-rules",
+      "-m",
+      "m",
+      "-c",
+      'model_reasoning_effort="low"',
+      "-c",
+      'approval_policy="never"',
+      "-c",
+      'web_search="disabled"',
+      "-c",
+      "features.apps=false",
+      "-c",
+      'default_permissions="tasker"',
+      "-c",
+      'permissions.tasker.filesystem={"/"="read", "/w"="write", "/p"="deny", "/d"="deny"}',
+      "-c",
+      "permissions.tasker.network.enabled=true",
+      "-c",
+      'hooks.PreToolUse=[{matcher="^apply_patch$", hooks=[{type="command", command="node \'h.js\'", timeout=10}]}]',
+      "--dangerously-bypass-hook-trust",
+      "T1",
+      "-",
+    ]);
+  });
+});

@@ -65,8 +65,12 @@ export function codexSampleEvents(name: string): AssistantEvent[] {
 export interface ExpectedCodexArgs {
   model: string;
   effort: Effort;
+  // The paths of the write keys, before the deny keys. A path that is also denied gives one key, with deny.
+  writePaths?: readonly string[];
   // The paths of the deny table. A repeated path gives one key.
   denyRead?: readonly string[];
+  // The command of the PreToolUse hook. Without it, the list has no hook arguments.
+  hookCommand?: string;
   // With a thread id, the list is the list of a continued session.
   threadId?: string;
   schemaPath?: string;
@@ -74,7 +78,10 @@ export interface ExpectedCodexArgs {
 
 // The argument list of one codex run, written out from literal text, never from codexArgs().
 export function expectedCodexArgs(expected: ExpectedCodexArgs): string[] {
-  const keys = [`"/"="read"`, ...[...new Set(expected.denyRead ?? [])].map((path) => `${JSON.stringify(path)}="deny"`)];
+  const table = new Map<string, string>([["/", "read"]]);
+  for (const path of expected.writePaths ?? []) table.set(path, "write");
+  for (const path of expected.denyRead ?? []) table.set(path, "deny");
+  const keys = [...table].map(([path, access]) => `${JSON.stringify(path)}="${access}"`);
   return [
     "exec",
     ...(expected.threadId === undefined ? [] : ["resume"]),
@@ -97,6 +104,13 @@ export function expectedCodexArgs(expected: ExpectedCodexArgs): string[] {
     `permissions.tasker.filesystem={${keys.join(", ")}}`,
     "-c",
     "permissions.tasker.network.enabled=true",
+    ...(expected.hookCommand === undefined
+      ? []
+      : [
+          "-c",
+          `hooks.PreToolUse=[{matcher="^apply_patch$", hooks=[{type="command", command=${JSON.stringify(expected.hookCommand)}, timeout=10}]}]`,
+          "--dangerously-bypass-hook-trust",
+        ]),
     ...(expected.schemaPath === undefined ? [] : ["--output-schema", expected.schemaPath]),
     ...(expected.threadId === undefined ? [] : [expected.threadId]),
     "-",

@@ -7,7 +7,10 @@ import { expectedCodexArgs } from "../../helpers/fake-codex.js";
 import { runInput, sandboxLimits } from "../../helpers/fake-claude.js";
 import { useTempDir } from "../../helpers/temp.js";
 
-function argsOf(overrides: Partial<RunInput> = {}, files: { threadId?: string; schemaPath?: string } = {}) {
+function argsOf(
+  overrides: Partial<RunInput> = {},
+  files: { threadId?: string; schemaPath?: string; hookCommand?: string } = {},
+) {
   return codexArgs(runInput(overrides), files);
 }
 
@@ -49,10 +52,11 @@ describe("codexArgs", () => {
     expect(args.join("\n").split('"/h/.ssh"').length - 1).toBe(1);
   });
 
-  it("does not read allowWrite", () => {
-    expect(argsOf({ sandbox: sandboxLimits({ allowWrite: ["/w", "/x"] }) })).toEqual(
-      argsOf({ sandbox: sandboxLimits() }),
-    );
+  it("gives no write key for read-only, also with allowWrite set", () => {
+    const args = argsOf({ sandbox: sandboxLimits({ allowWrite: ["/w", "/x"] }) }, { hookCommand: undefined });
+
+    expect(args).toEqual(expectedCodexArgs({ model: "haiku", effort: "low" }));
+    expect(args.join("\n")).not.toContain('"write"');
   });
 
   it("does not read deniedCommands", () => {
@@ -67,8 +71,11 @@ describe("codexArgs", () => {
     expect(argsOf({ effort })).toContain(`model_reasoning_effort="${effort}"`);
   });
 
-  it("holds no sandbox flag and no ephemeral flag", () => {
-    const args = argsOf({ sandbox: sandboxLimits({ denyRead: ["/a"] }) }, { threadId: "T1", schemaPath: "/s" });
+  it.each(["read-only", "workspace-write"] as const)("holds no sandbox flag and no ephemeral flag for %s", (access) => {
+    const args = argsOf(
+      { access, sandbox: sandboxLimits({ denyRead: ["/a"] }) },
+      { threadId: "T1", schemaPath: "/s", hookCommand: "h" },
+    );
 
     expect(args).not.toContain("-s");
     expect(args).not.toContain("--sandbox");
@@ -153,5 +160,129 @@ describe("codexArgs: the keys of the deny table", () => {
 
   it("leaves out the herdr folder when a denied folder holds it", () => {
     expect(deny(["/h/.config"], { HOME: "/h" })).toEqual(expected(["/h/.config"]));
+  });
+});
+
+describe("codexArgs: the write profile", () => {
+  const HOOK = "node '/h/main.js' '/work' '/work/.git'";
+
+  function writeArgs(overrides: Partial<RunInput> = {}, files: Parameters<typeof argsOf>[1] = {}) {
+    return argsOf({ access: "workspace-write", ...overrides }, { hookCommand: HOOK, ...files });
+  }
+
+  it("gives the exact list of a new write session", () => {
+    const sandbox = sandboxLimits({ allowWrite: ["/c/objects", "/c/refs"], denyRead: ["/h/.ssh"] });
+
+    expect(writeArgs({ env: { TMPDIR: "/t" }, sandbox }, { schemaPath: "/s/a.schema.json" })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/t", "/c/objects", "/c/refs"],
+        denyRead: ["/h/.ssh"],
+        hookCommand: HOOK,
+        schemaPath: "/s/a.schema.json",
+      }),
+    );
+  });
+
+  it("gives the exact list of a continued write session", () => {
+    expect(writeArgs({ resume: true, env: { TMPDIR: "/t" } }, { threadId: "T1" })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/t"],
+        hookCommand: HOOK,
+        threadId: "T1",
+      }),
+    );
+  });
+
+  it("gives a write key for /tmp when TMPDIR is not set", () => {
+    expect(writeArgs()).toEqual(
+      expectedCodexArgs({ model: "haiku", effort: "low", writePaths: ["/work", "/tmp"], hookCommand: HOOK }),
+    );
+  });
+
+  it("gives a write key for a blank TMPDIR as /tmp", () => {
+    expect(writeArgs({ env: { TMPDIR: " " } })).toEqual(writeArgs());
+  });
+
+  it("gives one deny key for a path in allowWrite and denyRead", () => {
+    const sandbox = sandboxLimits({ allowWrite: ["/p"], denyRead: ["/p"] });
+
+    expect(writeArgs({ sandbox })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp", "/p"],
+        denyRead: ["/p"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("gives one key for a repeated path, and for a path of allowWrite that is the cwd", () => {
+    const sandbox = sandboxLimits({ allowWrite: ["/work", "/x", "/x"] });
+
+    expect(writeArgs({ sandbox })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp", "/x"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("writes the target for a write key that is a link", () => {
+    const dir = realpathSync(useTempDir("tasker-codex-write-"));
+    mkdirSync(join(dir, "real"));
+    symlinkSync(join(dir, "real"), join(dir, "link"));
+
+    expect(writeArgs({ sandbox: sandboxLimits({ allowWrite: [join(dir, "link")] }) })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp", join(dir, "real")],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("keeps a deny key under a write key", () => {
+    expect(writeArgs({ sandbox: sandboxLimits({ denyRead: ["/work/secret"] }) })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp"],
+        denyRead: ["/work/secret"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("adds the herdr folder for a write run", () => {
+    expect(writeArgs({ env: { HOME: "/h" } })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work", "/tmp"],
+        denyRead: ["/h/.config/herdr"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("gives the hook arguments only with hookCommand", () => {
+    expect(argsOf({ access: "workspace-write" })).not.toContain("--dangerously-bypass-hook-trust");
+    expect(writeArgs()).toContain("--dangerously-bypass-hook-trust");
+  });
+
+  it("writes a command with a quote as a valid TOML string", () => {
+    const command = `node 'a"b' \\x`;
+    const hook = writeArgs({}, { hookCommand: command }).find((arg) => arg.startsWith("hooks.PreToolUse="));
+
+    expect(hook).toContain(`command=${JSON.stringify(command)}, timeout=10`);
+    expect(JSON.parse(JSON.stringify(command))).toBe(command);
   });
 });
