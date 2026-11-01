@@ -1,11 +1,12 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { delimiter } from "node:path";
+import { describe, expect, it, vi } from "vitest";
 import { permissionHookSettings } from "../../src/assistant/claude-code/permission-hook.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
-import type { Task } from "../../src/store/store.js";
+import type { Task, TaskStore } from "../../src/store/store.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { type AssistantSurface, vcsForRepo } from "../../src/vcs/provider.js";
 import {
@@ -13,6 +14,7 @@ import {
   sandboxReadDenyPaths,
   prepareTaskExecuteRun,
   prepareTaskPlanModeRun,
+  type PreparedExecuteRun,
   type RepoReadDenyPaths,
 } from "../../src/tasks/assistant-run.js";
 import {
@@ -22,12 +24,29 @@ import {
   claudeRateLimitEvent,
   claudeSample,
   claudeSampleEvents,
+  type FakeClaudeControl,
   withEventFirst,
 } from "../helpers/fake-claude.js";
-import { turnResultStream } from "../helpers/plan.js";
-import { quotaEventsOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
+import { CODEX_PLAIN_USAGE, CODEX_RESUME_USAGE, codexSample, useFakeCodexRun } from "../helpers/fake-codex.js";
+import { seedPlanSession, turnResultStream } from "../helpers/plan.js";
+import {
+  databasePathOf,
+  NO_SESSION_VALUES,
+  quotaEventsOf,
+  readRunMarker,
+  sessionValuesOf,
+  withDataRootStore,
+} from "../helpers/store.js";
 import { type AssistantRunFixture, useAssistantRunFixture } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
+
+// The codex edit hook script has no built file under vitest, so the execute role of codex would refuse to run.
+vi.mock("../../src/assistant/codex/edit-hook.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../src/assistant/codex/edit-hook.js")>()),
+  EDIT_HOOK_SCRIPT: process.execPath,
+}));
+
+const THREAD_ID = "01a194bc-1d2f-77b2-a52d-5be299f7ea30";
 
 // The arguments of argv that follow flag, up to the next flag.
 function flagValues(argv: string[], flag: string): string[] | undefined {
@@ -110,6 +129,8 @@ type ExecuteStart = Parameters<Awaited<ReturnType<typeof prepareTaskExecuteRun>>
 // The call helper of prepareTaskExecuteRun(): the fixture in the executing state, the prepare, the starts
 // (one start { prompt: "p" } unless run.starts gives others), and the surface of the task repo.
 // run.session changes the session request, and run.env edits the env of the fixture.
+// run.codex makes a fake codex, puts it first on PATH and sets the provider of the task repo to codex.
+// run.beforeStart runs after the prepare and before the first start, for example to record the session row.
 const prepareAndStartExecute = async (
   options: Parameters<typeof useAssistantRunFixture>[0],
   run: {
@@ -117,11 +138,25 @@ const prepareAndStartExecute = async (
     env?: (env: NodeJS.ProcessEnv) => NodeJS.ProcessEnv;
     starts?: ExecuteStart[];
     approvedResetsAt?: number;
+    codex?: FakeClaudeControl;
+    beforeStart?: (store: TaskStore, prepared: PreparedExecuteRun) => void;
   } = {},
 ) => {
   const fixture = await useAssistantRunFixture({ state: "executing", ...options });
-  const { config, task, started } = fixture;
-  const env = run.env ? run.env({ ...fixture.env }) : fixture.env;
+  const { task, started } = fixture;
+  const codex = run.codex ? useFakeCodexRun(run.codex) : undefined;
+  const taskRepo = fixture.config.repos[started.repoKey];
+  const config = codex
+    ? {
+        ...fixture.config,
+        repos: {
+          ...fixture.config.repos,
+          [started.repoKey]: { ...taskRepo, assistant: { ...taskRepo.assistant, provider: "codex" as const } },
+        },
+      }
+    : fixture.config;
+  const baseEnv = codex ? { ...fixture.env, PATH: [codex.binDir, fixture.env.PATH].join(delimiter) } : fixture.env;
+  const env = run.env ? run.env({ ...baseEnv }) : baseEnv;
   const result = await withDataRootStore(started.dataRoot, async (store) => {
     const prepared = await prepareTaskExecuteRun({
       config,
@@ -131,11 +166,20 @@ const prepareAndStartExecute = async (
       env,
       approvedResetsAt: run.approvedResetsAt,
     });
+    run.beforeStart?.(store, prepared);
     const outcomes = [];
     for (const input of run.starts ?? [{ prompt: "p" }]) outcomes.push(await prepared.start(input));
     return { prepared, outcomes, outcome: outcomes[0] };
   });
-  return { ...fixture, env, ...result, surface: surfaceOf(fixture, env), models: modelsOf(fixture) };
+  return {
+    ...fixture,
+    config,
+    codex,
+    env,
+    ...result,
+    surface: surfaceOf({ ...fixture, config }, env),
+    models: modelsOf(fixture),
+  };
 };
 
 describe("sandboxReadDenyPaths", () => {
@@ -768,5 +812,65 @@ describe("the quota event record of a run", () => {
     await runPlanMode(fixture);
 
     expect(quotaEventsOf(fixture.started.dataRoot)).toEqual([]);
+  });
+});
+
+describe("the values of a session in an execute run", () => {
+  const codexRecorded = { repoKey: "codeguru42/tasker", provider: "codex", model: "haiku", effort: "low" } as const;
+
+  it("stores the thread id and the total of the first start, and the second start continues from them", async () => {
+    const { codex, outcomes } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain") } },
+      {
+        codex: { stream: codexSample("plain") },
+        starts: [{ prompt: "p" }, { prompt: "q" }],
+        beforeStart: (store, prepared) => {
+          seedPlanSession(store, 1, { sessionId: prepared.sessionId, provider: "codex" });
+        },
+      },
+    );
+
+    const [first, second] = codex!.calls();
+    expect(first.argv).not.toContain("resume");
+    expect(second.argv).toContain("resume");
+    expect(second.argv).toContain(THREAD_ID);
+    expect(outcomes[0].usage).toEqual(CODEX_PLAIN_USAGE);
+    expect(outcomes[1].usage).toEqual({
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheCreationInputTokens: 0,
+      cacheReadInputTokens: 0,
+    });
+  });
+
+  it("passes the stored id and total to a continued run of codex", async () => {
+    const { codex, outcome } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain") } },
+      {
+        codex: { stream: codexSample("resume") },
+        session: { resume: true, sessionId: TEST_EXECUTE_SESSION_ID, recorded: codexRecorded },
+        beforeStart: (store) => {
+          seedPlanSession(store, 1, { sessionId: TEST_EXECUTE_SESSION_ID, provider: "codex" });
+          store.setProviderSessionId(1, TEST_EXECUTE_SESSION_ID, THREAD_ID);
+          store.setSessionUsageTotal(1, TEST_EXECUTE_SESSION_ID, CODEX_PLAIN_USAGE);
+        },
+      },
+    );
+
+    expect(codex!.calls()[0].argv).toContain(THREAD_ID);
+    expect(outcome.usage).toEqual(CODEX_RESUME_USAGE);
+  });
+
+  it("leaves the five columns NULL for a claude-code run", async () => {
+    const { started, prepared } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain") } },
+      {
+        beforeStart: (store, prepared) => {
+          seedPlanSession(store, 1, { sessionId: prepared.sessionId });
+        },
+      },
+    );
+
+    expect(sessionValuesOf(databasePathOf(started.dataRoot), prepared.sessionId)).toEqual(NO_SESSION_VALUES);
   });
 });

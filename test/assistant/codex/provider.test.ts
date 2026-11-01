@@ -1,10 +1,9 @@
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createCodexProvider } from "../../../src/assistant/codex/provider.js";
-import { readThreadId, readUsageTotal, writeThreadId, writeUsageTotal } from "../../../src/assistant/codex/session.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
-import { codexSchemaPath, codexUsagePath } from "../../../src/store/layout.js";
+import { codexSchemaPath } from "../../../src/store/layout.js";
 import { parseConfig } from "../../../src/config/schema.js";
 import { validConfig } from "../../helpers/config.js";
 import {
@@ -82,17 +81,16 @@ interface Setup {
   input: RunInput;
 }
 
-// A fake codex, a temp cwd and a temp sessionDir. A continued run gets its thread id file first.
+// A fake codex, a temp cwd and a temp sessionDir. A continued run gets threadId as its providerSessionId.
 function setUp(control: FakeClaudeControl, overrides: Partial<RunInput> = {}, threadId?: string): Setup {
   const fake = useFakeCodexRun(control);
   const sessionDir = useTempDir("tasker-codex-sessions-");
-  if (threadId !== undefined) writeThreadId(sessionDir, TEST_SESSION_ID, threadId);
   const input = runInput({
     cwd: useTempDir("tasker-codex-cwd-"),
     env: fake.env,
     sessionDir,
     ...overrides,
-    ...(threadId === undefined ? {} : { resume: true }),
+    ...(threadId === undefined ? {} : { resume: true, providerSessionId: threadId }),
   });
   return { fake, sessionDir, input };
 }
@@ -227,33 +225,40 @@ describe("createCodexProvider run: the outcome rows", () => {
 });
 
 describe("createCodexProvider run: the thread id", () => {
-  it("writes the thread id file at thread.started", async () => {
-    const { sessionDir } = await run({ stream: codexSample("plain") });
+  it("gives the thread id to onProviderSessionId once, at thread.started", async () => {
+    const onProviderSessionId = vi.fn();
 
-    expect(readThreadId(sessionDir, TEST_SESSION_ID)).toBe(THREAD_ID);
+    await run({ stream: codexSample("plain") }, { onProviderSessionId });
+
+    expect(onProviderSessionId.mock.calls).toEqual([[THREAD_ID]]);
   });
 
-  it("passes the id from the file to a continued run", async () => {
-    const { fake } = await run({ stream: codexSample("plain") }, {}, "T-from-file");
+  it("passes the stored id to a continued run", async () => {
+    const { fake } = await run({ stream: codexSample("plain") }, {}, "T-stored");
 
     expect(fake.calls()[0].argv).toEqual(
-      expectedCodexArgs({ model: "haiku", effort: "low", denyRead: [herdrFolder(fake)], threadId: "T-from-file" }),
+      expectedCodexArgs({ model: "haiku", effort: "low", denyRead: [herdrFolder(fake)], threadId: "T-stored" }),
     );
   });
 
-  it("fails with no call when a continued run has no thread id file", async () => {
-    const { outcome, fake } = await run({ stream: codexSample("plain") }, { resume: true });
+  it("fails with no call when a continued run has no providerSessionId", async () => {
+    const onProviderSessionId = vi.fn();
+
+    const { outcome, fake } = await run({ stream: codexSample("plain") }, { resume: true, onProviderSessionId });
 
     expect(failureOutcomeOf(outcome).reason).toBe(NO_THREAD);
     expect(fake.calls()).toEqual([]);
+    expect(onProviderSessionId).not.toHaveBeenCalled();
   });
 
-  it("leaves no file after a killed run before thread.started, and the next run starts no child", async () => {
-    const first = await run({ stream: [], killWith: "SIGKILL" });
+  it("calls no callback after a killed run before thread.started, and the next run starts no child", async () => {
+    const onProviderSessionId = vi.fn();
+    const first = await run({ stream: [], killWith: "SIGKILL" }, { onProviderSessionId });
 
-    expect(readThreadId(first.sessionDir, TEST_SESSION_ID)).toBeUndefined();
+    expect(onProviderSessionId).not.toHaveBeenCalled();
     const next = await codexProvider().run({ ...first.input, resume: true });
     expect(failureOutcomeOf(next).reason).toBe(NO_THREAD);
+    expect(onProviderSessionId).not.toHaveBeenCalled();
     expect(first.fake.calls()).toHaveLength(1);
   });
 
@@ -266,15 +271,30 @@ describe("createCodexProvider run: the thread id", () => {
     }
   });
 
-  it("gives its normal success with a sessionDir that does not exist, and a later continued run fails", async () => {
+  it("gives its normal success with a sessionDir that does not exist, and a later continued run starts", async () => {
     const sessionDir = join(useTempDir("tasker-codex-none-"), "missing");
+    const onProviderSessionId = vi.fn();
 
-    const first = await run({ stream: codexSample("plain") }, { sessionDir });
-    const second = await codexProvider().run({ ...first.input, resume: true });
+    const first = await run({ stream: codexSample("plain") }, { sessionDir, onProviderSessionId });
+    const second = await codexProvider().run({ ...first.input, resume: true, providerSessionId: THREAD_ID });
 
     expect(first.outcome.kind).toBe("success");
-    expect(failureOutcomeOf(second).reason).toBe(NO_THREAD);
-    expect(first.fake.calls()).toHaveLength(1);
+    expect(onProviderSessionId.mock.calls).toEqual([[THREAD_ID]]);
+    expect(second.kind).toBe("success");
+    expect(first.fake.calls()).toHaveLength(2);
+  });
+
+  it("gives the same outcome kind when onProviderSessionId throws", async () => {
+    const { outcome } = await run(
+      { stream: codexSample("plain") },
+      {
+        onProviderSessionId: () => {
+          throw new Error("write failed");
+        },
+      },
+    );
+
+    expect(outcome.kind).toBe("success");
   });
 });
 
@@ -383,40 +403,52 @@ describe("createCodexProvider run: the stream", () => {
 });
 
 describe("createCodexProvider run: the usage", () => {
-  it("gives the whole total of a new session and writes the usage file", async () => {
-    const { outcome, sessionDir } = await run({ stream: codexSample("plain") });
+  it("gives the whole total of a new session and gives it to onUsageTotal", async () => {
+    const onUsageTotal = vi.fn();
+
+    const { outcome } = await run({ stream: codexSample("plain") }, { onUsageTotal });
 
     expect(outcome.usage).toEqual(CODEX_PLAIN_USAGE);
-    expect(readUsageTotal(sessionDir, TEST_SESSION_ID)).toEqual(CODEX_PLAIN_USAGE);
+    expect(onUsageTotal.mock.calls).toEqual([[CODEX_PLAIN_USAGE]]);
   });
 
   it("subtracts the stored total in a continued run", async () => {
-    const setup = setUp({ stream: codexSample("resume") }, {}, THREAD_ID);
-    writeUsageTotal(setup.sessionDir, TEST_SESSION_ID, CODEX_PLAIN_USAGE);
-
-    const outcome = await codexProvider().run(setup.input);
+    const { outcome } = await run({ stream: codexSample("resume") }, { usageTotal: CODEX_PLAIN_USAGE }, THREAD_ID);
 
     expect(outcome.usage).toEqual(CODEX_RESUME_USAGE);
   });
 
-  it("counts a bad usage file as zero", async () => {
-    const setup = setUp({ stream: codexSample("plain") }, {}, THREAD_ID);
-    writeFileSync(codexUsagePath(setup.sessionDir, TEST_SESSION_ID), "not json");
-
-    const outcome = await codexProvider().run(setup.input);
+  it("counts a missing stored total as zero", async () => {
+    const { outcome } = await run({ stream: codexSample("plain") }, {}, THREAD_ID);
 
     expect(outcome.usage).toEqual(CODEX_PLAIN_USAGE);
   });
 
-  it("gives unavailable with no turn.completed and leaves the usage file", async () => {
-    const setup = setUp({ stream: codexSample("plain").slice(0, 3) }, {}, THREAD_ID);
-    writeUsageTotal(setup.sessionDir, TEST_SESSION_ID, CODEX_PLAIN_USAGE);
+  it("gives unavailable with no turn.completed and calls no onUsageTotal", async () => {
+    const onUsageTotal = vi.fn();
 
-    const outcome = await codexProvider().run(setup.input);
+    const { outcome } = await run(
+      { stream: codexSample("plain").slice(0, 3) },
+      { usageTotal: CODEX_PLAIN_USAGE, onUsageTotal },
+      THREAD_ID,
+    );
 
     expect(outcome.usage).toBe("unavailable");
-    expect(readUsageTotal(setup.sessionDir, TEST_SESSION_ID)).toEqual(CODEX_PLAIN_USAGE);
-    expect(existsSync(codexUsagePath(setup.sessionDir, TEST_SESSION_ID))).toBe(true);
+    expect(onUsageTotal).not.toHaveBeenCalled();
+  });
+
+  it("gives the same outcome kind and usage when onUsageTotal throws", async () => {
+    const { outcome } = await run(
+      { stream: codexSample("plain") },
+      {
+        onUsageTotal: () => {
+          throw new Error("write failed");
+        },
+      },
+    );
+
+    expect(outcome.kind).toBe("success");
+    expect(outcome.usage).toEqual(CODEX_PLAIN_USAGE);
   });
 });
 
