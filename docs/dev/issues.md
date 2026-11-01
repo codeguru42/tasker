@@ -73,9 +73,9 @@ call skips the write, and the session tells the user.
 
 Before this call for a new blocked-by link, the session does a walk of the open blockers. The walk starts at the blocker
 of the new link. The session reads the blockers of each issue with `--paginate` and the read command of
-[The blocked-by links](#the-blocked-by-links). It follows only open blockers, and it reads each issue one time. If the
-walk reaches the blocked issue of the new link, the link closes a cycle. A cycle is a chain of blocked-by links that
-comes back to its first issue.
+[The blocked-by links](#the-blocked-by-links). It follows only blockers with the `state` `open`, in lowercase, and it
+reads each issue one time. If the walk reaches the blocked issue of the new link, the link closes a cycle. A cycle is a
+chain of blocked-by links that comes back to its first issue.
 
 If the walk finds a cycle, the session skips the write. It tells the user each issue of the cycle. If a read of the walk
 fails, the session skips the write and tells the user. If the session reverses a link, it removes the old link before
