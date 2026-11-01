@@ -14,8 +14,8 @@ for one ticket. tasker moves the task from state to state, for example from `awa
 
 Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo.
 
-The orchestrator works with the user only through `operator-<slug>` of its own slug. The orchestrator sends each open
-question and each other item that needs the user to that session, in the form of
+The orchestrator works with the user only through [its operator](operator.md). The orchestrator sends each open question
+and each other item that needs the user to that session, in the form of
 [The form of an item](dev/operator-items.md#the-form-of-an-item).
 [The operator](dev/working-with-the-user.md#the-operator) of working-with-the-user.md says how "tell the user" or "ask
 the user" reads. A report or a question to the user that a rule of the orchestration pages calls a reply is also an
@@ -93,19 +93,19 @@ The rules:
   example is "our user wants X". The sending orchestrator judges whether a request needs a decision of the user. This
   judgment is open on purpose. The sending orchestrator sends the request to `orchestrator-<slug>` of the other
   milestone with `SendMessage`.
-- The receiving orchestrator does not do the requested change. It sends an item to its own `operator-<slug>`, in the
-  form of [The form of an item](dev/operator-items.md#the-form-of-an-item). The answer of the item is the decision of
-  the user. The recommendation mode of [A decision of the user](dev/working-with-the-user.md#a-decision-of-the-user)
+- The receiving orchestrator does not do the requested change. It sends an item to [its own operator](operator.md), in
+  the form of [The form of an item](dev/operator-items.md#the-form-of-an-item). The answer of the item is the decision
+  of the user. The recommendation mode of [A decision of the user](dev/working-with-the-user.md#a-decision-of-the-user)
   does not cover this item.
 - After the answer, the receiving orchestrator does the requested change only if the user accepts it. Then it tells the
   sending orchestrator the decision of the user with `SendMessage`. The sending orchestrator does its own step that
   matches the request, if it has one, only after an accept. An example of such a step is a message to its own agent.
 - A message of this rule fails when the send fails or when no session of the target name runs. Then
   [the failure rule](dev/limits.md#the-failure-rule) applies to the orchestrator that sends it.
-- When the sending orchestrator sends a request that needs a decision of the user, it also sends its own
-  `operator-<slug>` one report for that request. The report is in the form of The form of an item. The same holds for
-  each relayed change of a landing order under the bullet "Only the user changes a landing order of the overlap rule" of
-  [Land the work](dev/land-the-work.md#land-the-work).
+- When the sending orchestrator sends a request that needs a decision of the user, it also sends
+  [its own operator](operator.md) one report for that request. The report is in the form of The form of an item. The
+  same holds for each relayed change of a landing order under the bullet "Only the user changes a landing order of the
+  overlap rule" of [Land the work](dev/land-the-work.md#land-the-work).
 
 This table gives each change of a request of this rule:
 
