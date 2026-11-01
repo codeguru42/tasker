@@ -1,8 +1,9 @@
 import { lstatSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { relative, resolve, sep } from "node:path";
 import { errnoCode } from "../../errno.js";
 import { isObject } from "../../object.js";
+import { isInside } from "../../real-path.js";
 import { shellQuote } from "../../shell-quote.js";
 
 // The script that Codex runs as the PreToolUse hook of apply_patch. It does not exist under src/.
@@ -109,10 +110,7 @@ export function editHookAnswer(input: string, worktree: string, denied: readonly
       if (path.split(/[\\/]/).includes("..")) return deny(`a path with .. is not allowed: ${path}`);
       const full = resolve(worktree, path);
       if (isDenied(full, denied)) return deny(`the path is denied: ${path}`);
-      const rel = relative(worktree, full);
-      if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
-        return deny(`the path is outside the worktree: ${path}`);
-      }
+      if (!isInside(full, worktree)) return deny(`the path is outside the worktree: ${path}`);
       const linked = walk(worktree, full, path);
       if (linked !== undefined) return deny(linked);
     }

@@ -214,6 +214,11 @@ describe("editHookAnswer", () => {
     expect(answer(patch("*** Add File: file/a.txt", "+x"))).toBe(denyLine(UNREADABLE("file/a.txt")));
   });
 
+  it("allows a path equal to the worktree", () => {
+    const { answer } = setup();
+    expect(answer(patch("*** Add File: .", "+x"))).toBe("");
+  });
+
   it("denies a path outside the worktree", () => {
     const { answer } = setup();
     expect(answer(patch("*** Add File: /etc/x", "+x"))).toBe(denyLine(OUTSIDE("/etc/x")));
