@@ -10,19 +10,24 @@ import {
   BACKLOG_ISSUE_VIEW,
   fakeAcli,
   type FakeAcli,
+  type FakeAcliAnswer,
   issueViewArgs,
   linksViewArgs,
   MEASURED_AUTH_STATUS,
   NO_LINKS_VIEW,
   transitionArgs,
 } from "../helpers/fake-acli.js";
-import { eventDataOf, latestTaskOf, placeTask, withDataRootStore } from "../helpers/store.js";
+import { eventDataOf, eventsOf, latestTaskOf, placeTask, withDataRootStore } from "../helpers/store.js";
 import { useStartFixture } from "../helpers/task-fixtures.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
 // The setup of a test of a Jira repo: a start fixture with a jira tracker and a fake acli that answers the calls
-// of tasker start and tasker finish for TEST-5.
-async function useJiraTask(): Promise<{ dataRoot: string; acli: FakeAcli }> {
+// of tasker start and tasker finish for TEST-5. keys are extra keys of issueTracker. An answer in answers replaces
+// the default answer for the same args, or adds a new one.
+async function useJiraTask(
+  keys: Record<string, unknown> = {},
+  answers: readonly FakeAcliAnswer[] = [],
+): Promise<{ dataRoot: string; acli: FakeAcli }> {
   const fixture = await useStartFixture({
     repo: {
       issueTracker: {
@@ -32,17 +37,19 @@ async function useJiraTask(): Promise<{ dataRoot: string; acli: FakeAcli }> {
         updateOnFinish: true,
         inProgressStatus: "In Progress",
         doneStatus: "Done",
+        ...keys,
       },
     },
   });
-  const acli = fakeAcli(useTempDir("tasker-jira-"), {}, [
+  const defaults: FakeAcliAnswer[] = [
     { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
     { args: issueViewArgs("TEST-5"), stdout: BACKLOG_ISSUE_VIEW },
     { args: linksViewArgs("TEST-5"), stdout: NO_LINKS_VIEW },
     { args: assignArgs("TEST-5", "@me"), stdout: acliWriteResult("SUCCESS", "assigned") },
     { args: transitionArgs("TEST-5", "In Progress"), stdout: acliWriteResult("SUCCESS", "moved") },
     { args: transitionArgs("TEST-5", "Done"), stdout: acliWriteResult("SUCCESS", "moved") },
-  ]);
+  ].filter((answer) => !answers.some((extra) => JSON.stringify(extra.args) === JSON.stringify(answer.args)));
+  const acli = fakeAcli(useTempDir("tasker-jira-"), {}, [...defaults, ...answers]);
   useProcessEnv({ TASKER_ACLI_BIN: String(acli.env.TASKER_ACLI_BIN) });
   return { dataRoot: fixture.dataRoot, acli };
 }
@@ -88,7 +95,7 @@ describe("a Jira repo", () => {
     expect(updates.filter((data) => (data as { action: string }).action === "done")).toHaveLength(1);
   });
 
-  it("tasker abort makes no call to the tracker", async () => {
+  it("tasker abort makes no call to the tracker when abortStatus is not set", async () => {
     const { dataRoot, acli } = await useJiraTask();
     await runCommand(start, "start", "TEST-5");
     const before = acli.calls().length;
@@ -102,5 +109,107 @@ describe("a Jira repo", () => {
       { action: "assign", result: "ok" },
       { action: "in_progress", result: "ok" },
     ]);
+  });
+
+  describe("abortStatus", () => {
+    const CANCELLED = transitionArgs("TEST-5", "Cancelled");
+    const MOVED = acliWriteResult("SUCCESS", "moved");
+    const PREFIX =
+      'warning: cannot move TEST-5 to the status "Cancelled" on the tracker: could not move TEST-5 to the status "Cancelled" of issueTracker.abortStatus: ';
+
+    it("tasker abort moves a marked issue to abortStatus", async () => {
+      const { dataRoot, acli } = await useJiraTask({ abortStatus: "Cancelled" }, [{ args: CANCELLED, stdout: MOVED }]);
+      await runCommand(start, "start", "TEST-5");
+      const before = acli.calls().length;
+
+      const { code, out } = await runCommand(abort, "abort", "TEST-5");
+
+      expect(code).toBe(0);
+      expect(argsOf(acli).slice(before)).toEqual([AUTH_STATUS_ARGS, CANCELLED]);
+      expect(out).toContain('moved TEST-5 to the status "Cancelled" on the tracker\n');
+      expect(eventDataOf(dataRoot, "TEST-5", "tracker_update").at(-1)).toEqual({ action: "abort", result: "ok" });
+      expect(latestTaskOf(dataRoot, "TEST-5").state).toBe("cancelled");
+    });
+
+    it("ends the events of an abort with tracker_update and then transition", async () => {
+      const { dataRoot } = await useJiraTask({ abortStatus: "Cancelled" }, [{ args: CANCELLED, stdout: MOVED }]);
+      await runCommand(start, "start", "TEST-5");
+
+      await runCommand(abort, "abort", "TEST-5");
+
+      const types = eventsOf(dataRoot, "TEST-5").map((event) => event.type);
+      expect(types.slice(-2)).toEqual(["tracker_update", "transition"]);
+    });
+
+    it.each([
+      {
+        name: "a failed acli call",
+        answer: { stderr: "boom", exitCode: 1 },
+        failure: "acli jira workitem failed with exit code 1: boom",
+      },
+      {
+        name: "a FAILURE result with exit code 0",
+        answer: { stdout: acliWriteResult("FAILURE", "No allowed transitions found for given status") },
+        failure: "No allowed transitions found for given status",
+      },
+      {
+        name: "a result with no string message",
+        answer: { stdout: '{"results":[{"status":"FAILURE"}]}' },
+        failure: "acli gave no message",
+      },
+      { name: "bad output", answer: { stdout: "not json" }, failure: "acli gave bad output" },
+    ])("warns and still cancels the task for $name", async ({ answer, failure }) => {
+      const { dataRoot } = await useJiraTask({ abortStatus: "Cancelled" }, [{ args: CANCELLED, ...answer }]);
+      await runCommand(start, "start", "TEST-5");
+
+      const { code, out, err } = await runCommand(abort, "abort", "TEST-5");
+
+      expect(code).toBe(0);
+      expect(err).toBe(`${PREFIX}${failure}\n`);
+      expect(out).not.toContain("moved TEST-5");
+      expect(eventDataOf(dataRoot, "TEST-5", "tracker_update").at(-1)).toEqual({
+        action: "abort",
+        result: "failed",
+        error: `could not move TEST-5 to the status "Cancelled" of issueTracker.abortStatus: ${failure}`,
+      });
+      expect(latestTaskOf(dataRoot, "TEST-5").state).toBe("cancelled");
+    });
+
+    it("makes no call when the in_progress write of the start failed", async () => {
+      const { dataRoot, acli } = await useJiraTask({ abortStatus: "Cancelled" }, [
+        { args: transitionArgs("TEST-5", "In Progress"), stderr: "boom", exitCode: 1 },
+      ]);
+      await runCommand(start, "start", "TEST-5");
+      expect(latestTaskOf(dataRoot, "TEST-5").trackerMarked).toBe(false);
+      const before = acli.calls().length;
+
+      const { code } = await runCommand(abort, "abort", "TEST-5");
+
+      expect(code).toBe(0);
+      expect(acli.calls()).toHaveLength(before);
+      expect(latestTaskOf(dataRoot, "TEST-5").state).toBe("cancelled");
+    });
+
+    it("makes no call when the repo has no inProgressStatus", async () => {
+      const { dataRoot, acli } = await useJiraTask({ abortStatus: "Cancelled", inProgressStatus: undefined });
+      await runCommand(start, "start", "TEST-5");
+      const before = acli.calls().length;
+
+      await runCommand(abort, "abort", "TEST-5");
+
+      expect(acli.calls()).toHaveLength(before);
+      expect(latestTaskOf(dataRoot, "TEST-5").trackerMarked).toBe(false);
+    });
+
+    it("makes no call and no event when updateOnStart is false", async () => {
+      const { dataRoot, acli } = await useJiraTask({ abortStatus: "Cancelled", updateOnStart: false });
+      await runCommand(start, "start", "TEST-5");
+      const before = acli.calls().length;
+
+      await runCommand(abort, "abort", "TEST-5");
+
+      expect(acli.calls()).toHaveLength(before);
+      expect(eventDataOf(dataRoot, "TEST-5", "tracker_update")).toEqual([]);
+    });
   });
 });

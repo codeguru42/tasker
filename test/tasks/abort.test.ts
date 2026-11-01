@@ -10,7 +10,7 @@ import { abortTask } from "../../src/tasks/abort.js";
 import { startTask } from "../../src/tasks/start.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
-import { jiraRefOf } from "../helpers/fake-acli.js";
+import { AUTH_STATUS_ARGS, fakeAcli, jiraRefOf, MEASURED_AUTH_STATUS } from "../helpers/fake-acli.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -120,7 +120,7 @@ describe("abortTask", () => {
     expect(lockNames(started.dataRoot)).toEqual([repoLockName(started.repoKey)]);
   });
 
-  it("runs no tracker step for a Jira task", async () => {
+  it("runs no tracker step for a Jira task when abortStatus is not set", async () => {
     const started = await useStartedTask();
     const repo = started.config.repos[started.repoKey];
     const config = {
@@ -160,5 +160,68 @@ describe("abortTask", () => {
     expect(cancelled.state).toBe("cancelled");
     expect(lines).toEqual([]);
     expect(eventDataOf(started.dataRoot, "TEST-5", "tracker_update")).toEqual([]);
+  });
+
+  describe("with abortStatus", () => {
+    async function abortJira(options: { marked: boolean; site?: string }) {
+      const started = await useStartedTask();
+      const repo = started.config.repos[started.repoKey];
+      const config = {
+        ...started.config,
+        repos: {
+          ...started.config.repos,
+          [started.repoKey]: {
+            ...repo,
+            issueTracker: {
+              ...repo.issueTracker,
+              provider: "jira" as const,
+              project: "TEST",
+              updateOnStart: true,
+              inProgressStatus: "In Progress",
+              abortStatus: "Cancelled",
+              site: options.site,
+            },
+          },
+        },
+      };
+      const lines: string[] = [];
+      const acli = fakeAcli(useTempDir("tasker-jira-"), {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+      const cancelled = await withDataRootStore(started.dataRoot, (store) => {
+        const task = store.createTask({ issueKey: "TEST-5", repoKey: started.repoKey, state: "workspace_ready" });
+        if (options.marked) store.recordTrackerMark(task.id);
+        return abortTask(store, {
+          config,
+          ref: { ...jiraRefOf("TEST-5"), repoKey: started.repoKey },
+          taskId: task.id,
+          force: false,
+          env: { ...process.env, ...acli.env },
+          repoLockWaitMs: 300,
+          report: (line) => lines.push(line),
+          trackerIo: { stdout: (text) => lines.push(text), stderr: (text) => lines.push(text) },
+        });
+      });
+      return { started, acli, lines, cancelled };
+    }
+
+    it("warns and still cancels a marked task when the site guard fails", async () => {
+      const { started, acli, lines, cancelled } = await abortJira({ marked: true, site: "other.atlassian.net" });
+
+      expect(cancelled.state).toBe("cancelled");
+      expect(lines.join("")).toContain('warning: cannot move TEST-5 to the status "Cancelled" on the tracker: ');
+      expect(acli.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS]);
+      expect(eventDataOf(started.dataRoot, "TEST-5", "tracker_update").at(-1)).toMatchObject({
+        action: "abort",
+        result: "failed",
+      });
+    });
+
+    it("makes no acli call for a task that another machine marked", async () => {
+      const { started, acli, lines, cancelled } = await abortJira({ marked: false });
+
+      expect(cancelled.state).toBe("cancelled");
+      expect(acli.calls()).toEqual([]);
+      expect(lines).toEqual([]);
+      expect(eventDataOf(started.dataRoot, "TEST-5", "tracker_update")).toEqual([]);
+    });
   });
 });
