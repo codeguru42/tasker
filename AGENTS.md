@@ -86,10 +86,11 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 - [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code: the gh boundary, the gh token and
   environment, the gh and GitHub facts that the code guards against, and the doctor checks.
 - [docs/dev/jira.md](docs/dev/jira.md): the Jira tracker code: the Jira folder, `runAcli()`, the commands that tasker
-  never runs, `TASKER_ACLI_BIN`, the active site, the site guard, the conversion of ADF, the read of an issue, the
-  blockers of an issue, the writes, the in-progress check, the in-progress clear, the auth status, the doctor check, the
-  provider, the errors, the measure of a failed `acli` call, the measure of the login, the measure of an ADF
-  description, the measure of an issue read, the measure of the blockers and the measure of the writes.
+  never runs, `TASKER_ACLI_BIN`, the active site, the site guard, the conversion of ADF, the read of an issue and its
+  comments, the blockers of an issue, the writes, the in-progress check, the in-progress clear, the auth status, the
+  doctor check, the provider, the errors, the measure of a failed `acli` call, the measure of the login, the measure of
+  an ADF description, the measure of an issue read, the measure of the blockers, the measure of the comments and the
+  measure of the writes.
 - [docs/dev/issue-keys.md](docs/dev/issue-keys.md): the issue key forms, the short refs, the resolve of a key to its
   repo and the stored spelling.
 - [docs/dev/tasks.md](docs/dev/tasks.md): the task commands start, abort, plan, refine, approve, unapprove, execute,

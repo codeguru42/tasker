@@ -94,6 +94,8 @@ The error can span two lines. To finish the write, mark the issue on the tracker
 The command stops with exit code 1 and prints the error on stderr in these cases:
 
 - The configuration or the issue key is not valid. Fix it, then run the command again.
+- The issue is a Jira issue with more comments than `acli` gives. The error is
+  `acli gave <n> of <total> comments for <key>`. tasker cannot start this issue, and the command makes no task.
 - The issue does not exist, or it is closed and has no task. The error names the issue. Open the issue again or use
   another one.
 - The issue has no task, `issueTracker.updateOnStart` is `true`, you did not pass `--reclaim`, and the issue already has

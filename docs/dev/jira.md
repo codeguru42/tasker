@@ -71,10 +71,10 @@ only, and no test covers a switch between two sites.
 
 ## The conversion of ADF
 
-ADF (Atlassian Document Format) is the JSON tree that Jira Cloud uses for the description of an issue. `adfToText()` in
-`src/issues/jira/adf.ts` turns an ADF document into plain text. It starts no `acli` call. The text of `null` or
-`undefined` is `""`, and an issue with no description gives this input. Any other input must be a `doc` node with a
-`content` array. Otherwise, `adfToText()` throws `AdfError`.
+ADF (Atlassian Document Format) is the JSON tree that Jira Cloud uses for the description of an issue. It is also the
+form of the body of a comment. `adfToText()` in `src/issues/jira/adf.ts` turns an ADF document into plain text. It
+starts no `acli` call. The text of `null` or `undefined` is `""`, and an issue with no description gives this input. Any
+other input must be a `doc` node with a `content` array. Otherwise, `adfToText()` throws `AdfError`.
 
 Each node is inline or block:
 
@@ -115,10 +115,10 @@ removes the white space at the end of each line and the blank lines at the end o
 ## The read of an issue
 
 `readJiraIssue()` in `src/issues/jira/issue.ts` reads one issue. It runs the site guard first. Then it runs
-`acli jira workitem view <key> --json --fields summary,description,labels,status,components`.
+`acli jira workitem view <key> --json --fields summary,description,labels,status,components,comment`.
 
-The call names these five fields and no other field. The reason: `--fields` replaces the default field list of `acli`,
-and a field that the call does not name does not come back.
+The call names only these fields. The reason: `--fields` replaces the default field list of `acli`, and a field that the
+call does not name does not come back.
 
 The function builds the `Issue` as this table says:
 
@@ -132,7 +132,11 @@ The function builds the `Issue` as this table says:
 | `components`     | The string `name` of each entry in `fields.components`. The function drops an entry with no string `name`. |
 | `status`         | The string `fields.status.name`. For an issue with no such string: undefined.                              |
 | `state`          | For `fields.status.statusCategory.key` `"done"`: `"closed"`. For any other key, or no status: `"open"`.    |
-| `comments`       | `[]`. A later ticket reads the comments.                                                                   |
+| `comments`       | One entry for each item of `fields.comment.comments`, in the order of the view. See the rule below.        |
+
+Each comment has three strings. `author` is `author.displayName` when it is a non-empty string. Each other case gives
+`unknown`, for example a missing, `null` or non-object `author`. `created` is the time as the view gives it. `body` is
+`adfToText()` of the body. The function does not sort the comments. An issue with no comments gives `[]`.
 
 The reason for the `state` row: each team names its own statuses, but the category key `done` is fixed. `tasker start`
 refuses a closed issue.
@@ -150,8 +154,20 @@ The errors of the read:
 - `the fields do not match` covers a missing `fields` object and a `fields.summary` that is not a string. It also covers
   a `fields.labels` or `fields.components` that is there, is not `null` and is not an array. A missing or `null`
   `fields.labels` or `fields.components` gives `[]`.
+- `the fields do not match` also covers a missing or `null` `fields.comment`, a missing `comments` array or `total`, and
+  a `total` that is not a number. It covers an entry that is not an object, and an entry with no string `created`. It
+  also covers an entry with no body or a `null` body. The reason for the `null` body: `adfToText(null)` gives `""`, and
+  this hides bad output.
+- If `fields.comment.comments` holds fewer entries than `fields.comment.total`, the read gives `IssueReadError` with the
+  message `acli gave <n> of <total> comments for <key>`. The function keeps each entry of an array that is longer than
+  `total`. The code holds no fixed limit.
+- An `AdfError` for the body of a comment gives `IssueReadError` with the message
+  `comment <n> of <key> is not an ADF document: <message of the AdfError>`. `<n>` counts from 1. The first bad comment
+  stops the read.
 - An `AdfError` for the description gives `IssueReadError` with the message
   `the description of <key> is not an ADF document: <message of the AdfError>`.
+- The checks run in this order: the description, the count of the comments, the bodies of the comments. A bad
+  description wins over a short list, and a short list wins over a bad body.
 - Each other error passes through unchanged, for example an error of the site guard, a missing `acli` or another
   `AcliError`.
 
@@ -384,6 +400,35 @@ of [The measure of a failed call](#the-measure-of-a-failed-call). With no `--fie
 `--out A --in B --type Blocks` makes the link "B blocks A", but `acli` prints `A Blocks B`. `TEST-6` and `TEST-4` are in
 `inwardIssue` of `TEST-9`. The Jira search `issue in linkedIssues("TEST-9", "is blocked by")` also gave `TEST-6` and
 `TEST-4`.
+
+## The measure of the comments
+
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-31 on the issue
+`TEST-11`. The call is
+`acli jira workitem view TEST-11 --json --fields summary,description,labels,status,components,comment`. It gave exit
+code 0, one JSON object on stdout and an empty stderr.
+
+With 60 comments, `fields.comment` has 60 entries, `"maxResults": 60`, `"startAt": 0` and `"total": 60`. The ids are
+10000 to 10059, oldest first. With 1,010 comments, it has the newest 100 entries, `"maxResults": 100`, `"startAt": 910`
+and `"total": 1010`. The ids are 10910 to 11009, oldest first of those 100. The stdout of 100 comments had 320601 bytes.
+`--fields '*all'` gives the same 100 entries. Without `--fields`, the view gives no `comment` field.
+
+Nobody measured a count between 60 and 1,010. The expected limit is 100 entries, and the code does not hold it. As a
+result, tasker cannot read an issue with more comments than the view gives, and `tasker start` and `tasker plan` fail
+for it. The user chose this behavior, because older comments are not needed.
+
+Each entry has `author`, `body`, `created`, `id`, `jsdPublic`, `self`, `updateAuthor` and `updated`. `author` is an
+object, and its `displayName` is the name. `body` is a full ADF document. The `author` object also holds personal
+fields. Nobody measured a comment of a deleted user. The `displayName` of such an entry can be missing.
+
+`acli jira workitem comment list --key TEST-11 --json --paginate` gave all 1,010 comments in 22 JSON documents, one for
+each page, with a last empty page. Each entry has `author` (a string), `body` (a flat string), `id` and `visibility`. It
+has no `created`. The flat body of comment 3 lost its bullet list. For these reasons, tasker does not use
+`comment list`.
+
+`acli jira workitem search --jql "key = TEST-11" --fields comment --json` gives
+`✗ Error: field 'comment' is not allowed`. An issue with no comments gives
+`{"comments": [], "maxResults": 0, "startAt": 0, "total": 0}` for `fields.comment`.
 
 ## The measure of the writes
 

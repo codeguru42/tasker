@@ -28,7 +28,8 @@ These errors leave the task in its state. The command writes nothing. The shared
 [the wrong state](../SKILL.md#shared-errors), of the task lock and of the prompt archive belong to this group:
 
 - The issue has no task. The error names the issue and the repo. Run `tasker start` first.
-- The issue cannot be read. Fix the cause (for example the gh login), then run the command again.
+- The issue cannot be read. Fix the cause (for example the gh login), then run the command again. A Jira issue with more
+  comments than `acli` gives has no fix. The error is `acli gave <n> of <total> comments for <key>`.
 
 These errors move the task to the state `failed`. The shared quota stop, the shared signal stop and the shared quota
 pause are the exceptions:
