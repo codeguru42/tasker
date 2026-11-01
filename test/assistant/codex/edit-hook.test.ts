@@ -133,6 +133,34 @@ describe("editHookAnswer", () => {
     expect(answer(patch("  *** Add File: .git/x", "+y"))).toBe(denyLine(DENIED_PATH(".git/x")));
   });
 
+  it("allows ` ***` as a context line of an update hunk", () => {
+    const { answer } = setup();
+    expect(answer(patch("*** Update File: a.md", "@@", " text", " ***", "+x"))).toBe("");
+  });
+
+  it("allows ` ***bold*** text` as a context line of an update hunk", () => {
+    const { answer } = setup();
+    expect(answer(patch("*** Update File: a.md", "@@", " ***bold*** text", "+x"))).toBe("");
+  });
+
+  it("allows ` *** Foo`, and a tab before `*** Foo`, as a context line", () => {
+    const { answer } = setup();
+    expect(answer(patch("*** Update File: a.md", "@@", " *** Foo", "+x"))).toBe("");
+    expect(answer(patch("*** Update File: a.md", "@@", "\t*** Foo", "+x"))).toBe("");
+  });
+
+  it("denies an indented `*** Add File: .git` header", () => {
+    const { answer } = setup();
+    expect(answer(patch("*** Update File: a.md", "@@", " *** Add File: .git", "+x"))).toBe(
+      denyLine(DENIED_PATH(".git")),
+    );
+  });
+
+  it("denies an unindented `*** Foo` line", () => {
+    const { answer } = setup();
+    expect(answer(patch("*** Update File: a.md", "@@", "*** Foo", "+x"))).toBe(denyLine(NOT_PARSED));
+  });
+
   it("does not read a +*** Add File: .git line of a body as a path", () => {
     const { answer } = setup();
     expect(answer(patch("*** Add File: a.txt", "+*** Add File: .git/x", "-*** Delete File: .git/y"))).toBe("");
@@ -205,6 +233,11 @@ describe("patchPaths", () => {
     expect(
       patchPaths(patch("*** Update File: a", "*** Move to: b", "@@", "+x", "*** Delete File: c", "*** End of File")),
     ).toEqual(["a", "b", "c"]);
+  });
+
+  it("adds the path of an indented header and nothing for an indented unknown line", () => {
+    expect(patchPaths(patch("*** Update File: a", "@@", " *** Add File: x"))).toEqual(["a", "x"]);
+    expect(patchPaths(patch("*** Update File: a", "@@", " *** Foo"))).toEqual(["a"]);
   });
 });
 
