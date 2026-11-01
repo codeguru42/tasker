@@ -71,6 +71,20 @@ If the issue is in flight or closed, the call skips the write, and the session t
 when `tasker status` lists a task for the full key of the issue. If `tasker status` or the read of the state fails, the
 call skips the write, and the session tells the user.
 
+Before this call for a new blocked-by link, the session does a walk of the open blockers. The walk starts at the blocker
+of the new link. The session reads the blockers of each issue with `--paginate` and the read command of
+[The blocked-by links](#the-blocked-by-links). It follows only open blockers, and it reads each issue one time. If the
+walk reaches the blocked issue of the new link, the link closes a cycle. A cycle is a chain of blocked-by links that
+comes back to its first issue.
+
+If the walk finds a cycle, the session skips the write. It tells the user each issue of the cycle. If a read of the walk
+fails, the session skips the write and tells the user. If the session reverses a link, it removes the old link before
+the walk.
+
+While no ticket of a cycle is in flight, a cycle stops each ticket of the cycle and each ticket that waits for one of
+them. A walk in an earlier call can be old at the write, and this rule accepts that. On 2026-10-26, the link "#477 waits
+for #572" closed a cycle of four issues, and GitHub took the link.
+
 A read in an earlier call can be old, because a task can start or the issue can close between the read and the write. On
 2026-10-18, a new link of the relinked Docs chains landed on #302, which started after the planning session read the
 tasks in flight. The same day, a script changed the body of #288 after #288 closed, because its check covered only the
