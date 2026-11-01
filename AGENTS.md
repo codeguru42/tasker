@@ -70,8 +70,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 - [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, "A recurrence", and the steps
   of the planner for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user:
-  the operator, a decision of the user, a question of the user, the issue-link rule, core features first and the work
-  that waits, simplify over special rules, and the tools of a session.
+  the operator, a decision of the user, the form of a reply, a question of the user, the issue-link rule, core features
+  first and the work that waits, simplify over special rules, and the tools of a session.
 - [docs/dev/operator-start.md](docs/dev/operator-start.md): the order of a milestone, the start of a session, the start
   prompts, the stop of a session, a handoff and a blocked session.
 - [docs/dev/operator-items.md](docs/dev/operator-items.md): the form of an item, the open items, the answer and the
