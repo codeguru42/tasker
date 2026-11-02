@@ -1,5 +1,5 @@
-import { appendFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { appendFileSync } from "node:fs";
+import { makeParentFolders } from "../parent-folders.js";
 import { errorMessage } from "../error-message.js";
 import type { GroupResult } from "../process/run-group.js";
 import {
@@ -38,7 +38,7 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyResult> {
     // A command after the deadline does not start and gets no log, so the last log does not name the failing command.
     if (Date.now() >= deadline) return { status: "failed", index: i + 1, command, timedOut: true, started: false };
     const log = options.logPath(i + 1);
-    mkdirSync(dirname(log), { recursive: true });
+    makeParentFolders(log);
     let result: GroupResult;
     try {
       result = await runLoggedCommand(command, {

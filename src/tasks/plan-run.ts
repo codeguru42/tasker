@@ -1,5 +1,5 @@
-import { closeSync, mkdirSync, openSync, writeSync } from "node:fs";
-import { dirname } from "node:path";
+import { closeSync, openSync, writeSync } from "node:fs";
+import { makeParentFolders } from "../parent-folders.js";
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
@@ -84,7 +84,7 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
   transitionTask(store, task.id, phase, feedback === undefined ? undefined : { feedback });
   try {
     const startedAt = new Date().toISOString();
-    mkdirSync(dirname(transcriptPath), { recursive: true });
+    makeParentFolders(transcriptPath);
     const fd = openSync(transcriptPath, "a");
     let outcome;
     try {

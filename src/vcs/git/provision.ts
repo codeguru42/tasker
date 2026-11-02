@@ -1,5 +1,6 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { makeParentFolders } from "../../parent-folders.js";
 import { replaceFile } from "../../replace-file.js";
 import { fetchOrigin } from "./changes.js";
 import type { GitVcsConfig } from "./config.js";
@@ -64,7 +65,7 @@ export async function provisionClone(options: ProvisionOptions): Promise<void> {
   // The target is absolute, so the cwd of git init does not move the clone. A relative remote
   // names the same repo as in ls-remote, because remote add writes cloneUrl(remote).
   const target = resolve(clone);
-  mkdirSync(dirname(target), { recursive: true });
+  makeParentFolders(target);
   writeFileSync(marker, "");
   // git init and remote add make no local branch. git clone --bare copies each remote branch to
   // refs/heads/*, and these copies do not move on fetch. sha1, because tasker reads only 40-hex

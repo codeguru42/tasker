@@ -1,5 +1,5 @@
-import { closeSync, mkdirSync, openSync, writeSync } from "node:fs";
-import { dirname } from "node:path";
+import { closeSync, openSync, writeSync } from "node:fs";
+import { makeParentFolders } from "../parent-folders.js";
 import type { PermissionDenial } from "../assistant/provider.js";
 import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
@@ -160,7 +160,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   const transcriptPath = executeTranscriptPath(config.dataRoot, task, version);
   let fixTurnDone = false;
   try {
-    mkdirSync(dirname(transcriptPath), { recursive: true });
+    makeParentFolders(transcriptPath);
     const fd = openSync(transcriptPath, "a");
     try {
       const limitMin = config.limits.executeTimeoutMin;

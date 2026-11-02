@@ -1,5 +1,5 @@
-import { mkdirSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { readFileSync } from "node:fs";
+import { makeParentFolders } from "../parent-folders.js";
 import { errorMessage } from "../error-message.js";
 import { transitionWithPlanRevision, type TaskState } from "../state/machine.js";
 import { replaceFile } from "../replace-file.js";
@@ -22,7 +22,7 @@ export function readPlanFile(dataRoot: string, task: Pick<Task, "issueKey" | "at
 // Writes markdown as it is: no header and no added line end. replaceFile() needs the folder.
 function writePlanFile(dataRoot: string, task: Task, version: number, markdown: string): void {
   const path = planRevisionPath(dataRoot, task, version);
-  mkdirSync(dirname(path), { recursive: true });
+  makeParentFolders(path);
   replaceFile(path, markdown);
 }
 

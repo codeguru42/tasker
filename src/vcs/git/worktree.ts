@@ -1,5 +1,6 @@
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { makeParentFolders } from "../../parent-folders.js";
 import { errnoCode } from "../../errno.js";
 import { canonicalPath } from "../../real-path.js";
 import { pathSlug } from "../../issue-key/path-slug.js";
@@ -139,7 +140,7 @@ export async function createTaskWorktree(options: {
 }): Promise<"created" | "reused-branch" | "reused-worktree"> {
   const { clone, env, path, branch, baseRevision } = options;
   assertTaskBranchNameAndShape(branch);
-  mkdirSync(dirname(resolve(path)), { recursive: true });
+  makeParentFolders(resolve(path));
   const target = canonicalPath(path);
   const entries = await listWorktrees({ clone, env });
   const entry = entries.find((candidate) => candidate.path === target);
