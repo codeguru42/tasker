@@ -6,6 +6,7 @@ when one function serves several cases.
 ## Layout
 
 - `src/` holds the source of the `tasker` command.
+- `src/parent-folders.ts` holds the helper that makes the missing parent folders of a path.
 - `src/commands/` holds one file for each command. "Add a command" gives the steps.
 - `src/config/` holds the configuration loader, the edit of the configuration file and the grouping of the repos by
   provider. See [docs/config.md](../config.md).
