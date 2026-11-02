@@ -30,7 +30,8 @@ when one function serves several cases.
   findings. See [assistants.md](assistants.md).
 - `src/prompts/` holds the prompt templates, their fill, their version and the archive. See
   [assistants.md](assistants.md).
-- `AGENTS.md` is an index that links to the docs. It gives no rules itself. Each assistant session reads it first.
+- `AGENTS.md` is an index that links to the docs. [The section "AGENTS.md" of rules.md](rules.md#agentsmd) says which
+  rule text it holds. Each assistant session reads it first.
 - `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.
 - `docs/` holds the docs. `AGENTS.md` links to each of them.
 - `test/` holds the tests.
