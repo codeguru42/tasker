@@ -10,8 +10,8 @@ Makes a task for an issue and takes it to the state `workspace_ready`: `tasker s
 issue, makes the clone, resolves the base branch, makes the worktree and runs bootstrap.
 
 `--base <branch>` sets the base branch of this task only. Give a branch on origin, or `refs/heads/<branch>` for a local
-branch of the clone. With `--base`, the command does not read the `base:` label of the issue, so a bad label does not
-stop the start.
+branch of the clone. With `--base`, the command does not read the issue hint (the `base:` label, or the base branch
+field of a Jira issue), so a bad hint does not stop the start.
 
 On success, the command prints one line for each field, as `<field>: <value>`, in this order:
 
@@ -30,7 +30,7 @@ with no `base source`.
 The field `base source` names the source that gave the base:
 
 - `explicit`: the `--base` option, or the stored base of a second run.
-- `hint`: the `base:` label of an issue of a GitHub repo.
+- `hint`: the `base:` label of an issue of a GitHub repo, or the base branch field of an issue of a Jira repo.
 - `blocker`: the blocker step.
 - `learned`: the default that tasker learned for the repo.
 - `config`: the `defaultBaseBranch` of the repo.
@@ -38,16 +38,17 @@ The field `base source` names the source that gave the base:
 
 If a run stops before `workspace_ready`, run the same command again. The second run continues the same task. This holds
 for a task that failed in the steps of `tasker start`. The second run keeps the stored base. A `--base` option sets a
-new base. A `base:` label on an issue of a GitHub repo also sets a new base, but only when the run has no `--base`
-option. The task keeps the new base. A second run with no stored base runs the blocker step. If the blocker step
-refuses, the task stays as the run found it. A new base does not move a task branch that already exists.
+new base. An issue hint also sets a new base, but only when the run has no `--base` option. The task keeps the new base.
+A second run with no stored base runs the blocker step. If the blocker step refuses, the task stays as the run found it.
+A new base does not move a task branch that already exists.
 
 The command picks the base branch from the first source that has one:
 
 1. The `--base` option of this run.
 2. The `base:` label of the issue, for example `base: dev`. The prefix matches without regard to case, for example
-   `Base: dev`. The branch name after the prefix keeps its case. A Jira repo has no such source: tasker reads no `base:`
-   label of a Jira issue.
+   `Base: dev`. The branch name after the prefix keeps its case. tasker reads no `base:` label of a Jira issue. For a
+   Jira repo that sets `baseBranchFieldName`, the source is the string value of that field, as it is. A missing value,
+   `null` and a blank string give no hint. A value that is not a string stops the command with an error.
 3. The stored base of the task, on a second run.
 4. The blocker step: the branch of the task of an open blocker, in the form `refs/heads/<branch>`, when that task is
    ready to stack. A task is ready to stack in the states `awaiting_work_review`, `reviewing`, `reviewed`, `accepted`,

@@ -5,7 +5,8 @@ the errors that many commands share.
 
 ## `tasker show-config`
 
-Prints the configuration as JSON, with the defaults filled in.
+Prints the configuration as JSON, with the defaults filled in. It prints `"***"` in place of `apiToken` and `email` of
+each `issueTracker`.
 
 If the repo key of `--repo` does not exist, the command prints an error and exits with code 1.
 
@@ -23,7 +24,8 @@ The command runs these checks one at a time, in this order:
   repo, in the order of the configuration.
 - Once for each issue tracker that the configuration uses, in the order of first use: the checks of the tracker. For
   `github`, `gh version` runs once, `gh auth` runs once for each account, and the project and label checks run for each
-  repo. For `jira`, `acli auth` runs once.
+  repo. For `jira`, `acli auth` runs once, and `jira token: <repo key>` runs for each repo that sets
+  `baseBranchFieldName`.
 - Once for each assistant provider that the configuration uses, in the order of first use: the checks of the provider.
   For `claude-code`, this is `claude version`, and on Linux also `sandbox: bwrap` and `sandbox: socat`. For `codex`,
   these are `codex version` and `codex login`.
