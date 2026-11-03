@@ -25,12 +25,8 @@ const readSite = (env: NodeJS.ProcessEnv, signal?: AbortSignal) => activeSite(en
 const guard = (site: string | undefined, env: NodeJS.ProcessEnv, signal?: AbortSignal) =>
   siteGuard("work", site, env, { signal });
 
-const login = (env: NodeJS.ProcessEnv) =>
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  readLogin(env);
-const guardedOf = (site: string | undefined, env: NodeJS.ProcessEnv) =>
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  guardedLogin("work", site, env);
+const login = (env: NodeJS.ProcessEnv) => readLogin(env);
+const guardedOf = (site: string | undefined, env: NodeJS.ProcessEnv) => guardedLogin("work", site, env);
 
 describe("site", () => {
   let dir: string;
