@@ -1,11 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { issueDoctorChecks, issueProviderFor } from "../../src/issues/provider.js";
 import { configWithTrackers } from "../helpers/config.js";
+import {
+  AUTH_STATUS_ARGS,
+  BACKLOG_ISSUE_VIEW,
+  fakeAcli,
+  issueViewArgs,
+  MEASURED_AUTH_STATUS,
+} from "../helpers/fake-acli.js";
+import { fakeFetch } from "../helpers/fake-fetch.js";
+import { useTempDir } from "../helpers/temp.js";
 
 const github = (account: string) => ({ provider: "github", account });
 const jira = (site: string | undefined) => ({ provider: "jira", project: "TEST", site });
 
 describe("issueProviderFor", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("gives a github provider with the account of the repo", () => {
     const provider = issueProviderFor(configWithTrackers({ "a/b": github("x") }), "a/b");
     expect(provider.id).toBe("github");
@@ -65,6 +78,27 @@ describe("issueProviderFor", () => {
   it("gives a jira provider for a jira repo", () => {
     const config = configWithTrackers({ j: jira("one.atlassian.net") });
     expect(issueProviderFor(config, "j").id).toBe("jira");
+  });
+
+  it("gives the settings of each repo to the jira provider", async () => {
+    const config = configWithTrackers({
+      j: { ...jira("one.atlassian.net"), baseBranchFieldName: "Release Branch", apiToken: "test-token" },
+      k: jira("one.atlassian.net"),
+    });
+    const acli = fakeAcli(useTempDir("tasker-provider-"), {}, [
+      { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
+      { args: issueViewArgs("TEST-1"), stdout: BACKLOG_ISSUE_VIEW },
+    ]);
+    const fake = fakeFetch([]);
+    vi.stubGlobal("fetch", fake.fetch);
+    const provider = issueProviderFor(config, "j");
+    const ref = (repoKey: string) => ({ key: "TEST-1", repoKey, shortRef: "TEST-1" });
+
+    // The fake fetch has no route, so the lookup of j fails after one REST call. k makes none.
+    await provider.fetchIssue(ref("k"), acli.env).catch(() => undefined);
+    expect(fake.calls()).toEqual([]);
+    await provider.fetchIssue(ref("j"), acli.env).catch(() => undefined);
+    expect(fake.calls()).toHaveLength(1);
   });
 
   it("gives the same object for two jira repos with the same site", () => {
