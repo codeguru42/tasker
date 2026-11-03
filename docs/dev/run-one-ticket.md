@@ -160,7 +160,8 @@ gives these items:
   that the issue does not state. The bullet of the issue check covers a fact that the issue states.
 - Each task worktree or local task branch that stays, with its path.
   [The own-worktree rule](limits.md#the-own-worktree-rule) says when one stays.
-- The lessons.
+- The lessons. For each fact of a lesson, the report names the command or the read that measured it. The report marks
+  each cause or claim that nobody measured as not measured.
 
 The orchestrator sorts the lessons. A lesson that is a rule for the repo or for agents goes where the new-rule bullet of
 ["The prompt of an agent"](pick-the-tickets.md#the-prompt-of-an-agent) says.
