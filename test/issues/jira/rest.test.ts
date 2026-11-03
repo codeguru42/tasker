@@ -31,9 +31,10 @@ describe("jiraCredentials", () => {
   });
 
   it("throws JiraCredentialError when no token exists", () => {
-    const error = thrownBy(() => jiraCredentials({}, {}, "user@example.com"), JiraCredentialError);
+    const error = thrownBy(() => jiraCredentials({}, {}, "user@example.com"));
 
-    expect(error.message).toBe("no Jira API token: set TASKER_JIRA_TOKEN or issueTracker.apiToken");
+    expect(error).toBeInstanceOf(JiraCredentialError);
+    expect((error as Error).message).toBe("no Jira API token: set TASKER_JIRA_TOKEN or issueTracker.apiToken");
     expect((error as JiraCredentialError).missing).toBe("token");
   });
 
@@ -68,12 +69,10 @@ describe("jiraCredentials", () => {
   });
 
   it("throws JiraCredentialError when no source gives an email", () => {
-    const error = thrownBy(
-      () => jiraCredentials({}, { TASKER_JIRA_TOKEN: "test-token" }, undefined),
-      JiraCredentialError,
-    );
+    const error = thrownBy(() => jiraCredentials({}, { TASKER_JIRA_TOKEN: "test-token" }, undefined));
 
-    expect(error.message).toBe("no Jira email: set TASKER_JIRA_EMAIL or issueTracker.email");
+    expect(error).toBeInstanceOf(JiraCredentialError);
+    expect((error as Error).message).toBe("no Jira email: set TASKER_JIRA_EMAIL or issueTracker.email");
     expect((error as JiraCredentialError).missing).toBe("email");
   });
 });
