@@ -19,6 +19,9 @@ export interface Issue {
   status?: string; // the name of the status, as the tracker gives it
   state: "open" | "closed";
   comments: IssueComment[]; // from the oldest to the newest, from each author
+  // The id and the raw JSON value of the base branch field of a Jira issue. It is set only when the repo sets
+  // baseBranchFieldName. The value is undefined when the key is not in the fields. GitHub never sets it.
+  baseBranchField?: { id: string; value: unknown };
 }
 
 // One issue that blocks another issue.
