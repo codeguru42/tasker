@@ -207,8 +207,9 @@ No such key, or more than one, fails the lookup with an error that names the fie
 `tasker start` stops before the task exists, and `tasker plan` stops.
 
 The provider keeps the result of the first lookup of each repo, also a failure. As a result, the lookup runs at most one
-time for each repo in one process, and a second read of the same repo after a failure gives the same error. Nobody
-measured this REST call with tasker. The tests use a fake `fetch`.
+time for each repo in one process, and a second read of the same repo after a failure gives the same error.
+[The measure of a custom field](#the-measure-of-a-custom-field) gives the measured and the unmeasured facts of this
+call. The tests use a fake `fetch`.
 
 ## The blockers of an issue
 
@@ -543,3 +544,30 @@ More facts:
 
 The limit: the refused transitions used only names that the workflow of `TEST` does not offer. The agent found no status
 of that workflow that the workflow refuses.
+
+## The measure of a custom field
+
+The user measured these facts on a real Jira site on 2026-11-02, in a comment on #476:
+
+- The id of the field "Release Branch" was `customfield_10744` on that site. The id can differ on another site.
+- The value is a plain JSON string, for example a bare branch name of the form `release/<name>`.
+- A field with no value gives `null`, and the key of the field stays in `fields`.
+- `acli jira workitem view <key> --fields 'key,<field id>' --json` gives the value at `fields.<field id>`.
+  `--fields '*all'` also gives the field.
+- `acli` gives no field names. In the JSON of `workitem view`, `names` is `null` or empty, and `acli jira field` has no
+  list or view command.
+- `acli jira workitem search --fields 'key,<field id>'` fails with `field '<field id>' is not allowed`.
+- The Atlassian MCP tool `getJiraIssue` with `expand: names` and `fields: ["*all"]` gave a `names` map from each field
+  id to its name. The user read it on issues of three projects. The comment says that
+  `GET /rest/api/3/issue/<key>?expand=names` gives the same data.
+
+The agent of #476 measured `acli` version `1.3.39-stable` on the test site on 2026-11-03. It ran
+`acli jira field create --name "Release Branch" --type "com.atlassian.jira.plugin.system.customfieldtypes:textfield"`.
+The command made the field `customfield_10044`. The field did not show on `TEST-1`, `TEST-2` or `TEST-9`, also with
+`--fields '*all'`. `acli jira workitem edit` has no way to set a custom field.
+
+As a result, nobody measured the read of a value on the test site. Nobody measured the REST lookup of
+[The lookup of the base branch field](#the-lookup-of-the-base-branch-field) with tasker. Nobody measured whether a
+context or a screen of the field makes it show on an issue. Nobody measured whether the field `additionalAttributes` of
+`acli jira workitem create --from-json` sets a custom field.
+[The measure of an issue read](#the-measure-of-an-issue-read) gives that command for a component.
