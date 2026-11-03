@@ -28,8 +28,9 @@ The order follows what each step needs and what a failure can leave.
   closed issue leaves no task.
 - The blocker step runs before the task exists, so a refusal leaves no new task. On a second run, a refusal leaves the
   task as the run found it, with no error on record.
-- The `base:` label and `--base` win over the blocker step, because they come earlier in the source order of
-  [The resolve](workspaces.md#the-resolve). As a result, the step reads no blockers then.
+- The issue hint (a `base:` label, or the base branch field of a Jira issue) and `--base` win over the blocker step,
+  because they come earlier in the source order of [The resolve](workspaces.md#the-resolve). As a result, the step reads
+  no blockers then.
 - The blocker step writes no learned default. The learned default names a remote branch, because a hint, an answer and
   `defaultBaseBranch` must name a remote branch ([The resolve](workspaces.md#the-resolve), and [config.md](../config.md)
   for `defaultBaseBranch`). The blocker base is the local branch `refs/heads/<x>` of one task.
@@ -72,8 +73,8 @@ A second run continues a task that did not reach `workspace_ready`. It does not 
 - A failure in a clone step or in bootstrap moves the task to `failed` with the error. The next run moves it back and
   continues.
 - A task that is past this step is not changed. The command only prints it.
-- The stored base stays on a second run. A `--base` option or a `base:` label wins and is stored as the new base. A
-  second run with no stored base runs the blocker step.
+- The stored base stays on a second run. A `--base` option or an issue hint wins and is stored as the new base. A second
+  run with no stored base runs the blocker step.
 - Each run that writes the base also writes the column `parent_task_id` again, with the rule of
   [Stacked task](workspaces.md#stacked-task).
 - A second run that reuses a task branch or a worktree writes neither the column `synced_base_tip` nor the key

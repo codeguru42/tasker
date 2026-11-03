@@ -17,7 +17,8 @@ Each member of the provider maps to one function of its tracker, GitHub or Jira,
   them.
 - `parse` takes the project, because one provider object serves many repos. It is the key parser itself, not a wrapper.
   [Issue keys](issue-keys.md) gives the rules.
-- The Jira `baseBranchHint` gives `undefined`. #476 adds the hint.
+- The Jira `baseBranchHint` gives the value of the base branch field of the issue, as
+  [the base branch hint](jira.md#the-base-branch-hint) of jira.md says.
 
 The field `comments` of `Issue` gives each comment of the issue with its author, its time and its body, from the oldest
 to the newest.
