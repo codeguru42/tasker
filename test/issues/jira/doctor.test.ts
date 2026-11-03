@@ -1,8 +1,9 @@
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { jiraAuthCheck, jiraDoctorChecks } from "../../../src/issues/jira/doctor.js";
+import { jiraAuthCheck, jiraDoctorChecks, jiraTokenCheck } from "../../../src/issues/jira/doctor.js";
 import type { IssueDoctorRepo } from "../../../src/issues/provider.js";
 import { checkSummaries } from "../../helpers/doctor.js";
+import { fakeFetch } from "../../helpers/fake-fetch.js";
 import {
   AUTH_STATUS_ARGS,
   AUTH_STATUS_CALLS,
@@ -16,12 +17,19 @@ import { useTempDir } from "../../helpers/temp.js";
 const ACTIVE = "codeguru42.atlassian.net";
 const installRemediation = "Install acli, or fix TASKER_ACLI_BIN.";
 
-function repoOf(key: string, site?: string): IssueDoctorRepo {
+interface RepoExtras {
+  baseBranchFieldName?: string;
+  apiToken?: string;
+  email?: string;
+}
+
+function repoOf(key: string, site?: string, extras: RepoExtras = {}): IssueDoctorRepo {
   return {
     key,
     issueTracker: {
       provider: "jira",
       site,
+      ...extras,
       updateOnStart: false,
       assignee: "@me",
       updateOnFinish: false,
@@ -163,6 +171,161 @@ describe("jira doctor", () => {
       expect(result).toStrictEqual({ status: "error", detail: "the check did not finish in 200 ms" });
       expect(Date.now() - start).toBeLessThan(2000);
       expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
+    });
+  });
+
+  describe("jiraTokenCheck", () => {
+    const MYSELF = `https://${ACTIVE}/rest/api/3/myself`;
+    const FIELD_NAME = { baseBranchFieldName: "Release Branch" };
+    const tokenRepo = (extras: RepoExtras = {}) =>
+      repoOf("j", ACTIVE, { ...FIELD_NAME, email: "user@example.com", ...extras });
+    const withToken = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv => ({ ...env, TASKER_JIRA_TOKEN: "test-token" });
+    const NO_EMAIL_STATUS = `  Site: ${ACTIVE}\n  Authentication Type: oauth_global\n`;
+
+    function expectNoSecret(result: { detail: string; remediation?: string }): void {
+      const text = `${result.detail} ${result.remediation ?? ""}`;
+      expect(text).not.toContain("test-token");
+      expect(text).not.toContain("user@example.com");
+    }
+
+    it("has the name of the repo and is required", () => {
+      const check = jiraTokenCheck(tokenRepo(), fakeFetch([]).fetch);
+
+      expect(check.name).toBe("jira token: j");
+      expect(check.required).toBe(true);
+    });
+
+    it("gives ok for a 200", async () => {
+      const fake = fakeFetch([{ url: MYSELF, status: 200, body: {} }]);
+      const acli = fakeAcli(dir, {}, []);
+
+      expect(await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env))).toStrictEqual({
+        status: "ok",
+        detail: `the Jira API token works on ${ACTIVE}`,
+      });
+      expect(acli.calls()).toEqual([]);
+    });
+
+    it("gives the token remediation for a 401", async () => {
+      const fake = fakeFetch([{ url: MYSELF, status: 401, body: {} }]);
+      const acli = fakeAcli(dir, {}, []);
+
+      const result = await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env));
+
+      expect(result).toStrictEqual({
+        status: "error",
+        detail: `the Jira REST call for the token check on ${ACTIVE} failed with HTTP 401`,
+        remediation: "Set TASKER_JIRA_TOKEN or issueTracker.apiToken to an API token of the account of the email.",
+      });
+      expectNoSecret(result as { detail: string });
+    });
+
+    it("gives no remediation for a 500", async () => {
+      const fake = fakeFetch([{ url: MYSELF, status: 500, body: {} }]);
+      const acli = fakeAcli(dir, {}, []);
+
+      expect(await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env))).toStrictEqual({
+        status: "error",
+        detail: `the Jira REST call for the token check on ${ACTIVE} failed with HTTP 500`,
+      });
+    });
+
+    it("gives the token remediation when no token exists", async () => {
+      const fake = fakeFetch([]);
+      const acli = fakeAcli(dir, {}, []);
+
+      expect(await jiraTokenCheck(tokenRepo(), fake.fetch).run(acli.env)).toStrictEqual({
+        status: "error",
+        detail: "no Jira API token: set TASKER_JIRA_TOKEN or issueTracker.apiToken",
+        remediation: "Set TASKER_JIRA_TOKEN or issueTracker.apiToken.",
+      });
+      expect(fake.calls()).toEqual([]);
+    });
+
+    it("gives the email remediation when no source gives an email", async () => {
+      const fake = fakeFetch([]);
+      const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: NO_EMAIL_STATUS }]);
+
+      const result = await jiraTokenCheck(tokenRepo({ email: undefined }), fake.fetch).run(withToken(acli.env));
+
+      expect(result).toStrictEqual({
+        status: "error",
+        detail: "no Jira email: set TASKER_JIRA_EMAIL or issueTracker.email",
+        remediation: "Set TASKER_JIRA_EMAIL or issueTracker.email.",
+      });
+      expect(fake.calls()).toEqual([]);
+      expectNoSecret(result as { detail: string });
+    });
+
+    it("makes no acli call for a repo with a site and an email", async () => {
+      const fake = fakeFetch([{ url: MYSELF, status: 200, body: {} }]);
+      const acli = fakeAcli(dir, {}, []);
+
+      await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env));
+
+      expect(acli.calls()).toEqual([]);
+    });
+
+    it("uses the active site and the email of acli for a repo with no site", async () => {
+      const fake = fakeFetch([{ url: MYSELF, status: 200, body: {} }]);
+      const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+      const repo = repoOf("j", undefined, FIELD_NAME);
+
+      const result = await jiraTokenCheck(repo, fake.fetch).run(withToken(acli.env));
+
+      expect(result.status).toBe("ok");
+      expect(acli.calls()).toEqual(AUTH_STATUS_CALLS);
+      const basic = Buffer.from("user@example.com:test-token").toString("base64");
+      expect(fake.calls()[0].authorization).toBe(`Basic ${basic}`);
+    });
+
+    it("reads the email of acli when TASKER_JIRA_EMAIL is blank", async () => {
+      const fake = fakeFetch([{ url: MYSELF, status: 200, body: {} }]);
+      const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+      const repo = repoOf("j", ACTIVE, FIELD_NAME);
+
+      const result = await jiraTokenCheck(repo, fake.fetch).run({ ...withToken(acli.env), TASKER_JIRA_EMAIL: "  " });
+
+      expect(result.status).toBe("ok");
+      expect(acli.calls()).toEqual(AUTH_STATUS_CALLS);
+      const basic = Buffer.from("user@example.com:test-token").toString("base64");
+      expect(fake.calls()[0].authorization).toBe(`Basic ${basic}`);
+    });
+
+    it("gives the timeout result when the REST call does not end in time", async () => {
+      const acli = fakeAcli(dir, {}, []);
+      const waiting = ((_input: unknown, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason));
+        })) as typeof fetch;
+
+      const result = await jiraTokenCheck(tokenRepo(), waiting, 50).run(withToken(acli.env));
+
+      expect(result).toStrictEqual({ status: "error", detail: "the check did not finish in 50 ms" });
+    });
+
+    it("passes a signal to fetch", async () => {
+      const fake = fakeFetch([{ url: MYSELF, status: 200, body: {} }]);
+      const acli = fakeAcli(dir, {}, []);
+
+      await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env));
+
+      expect(fake.calls()[0].signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it("gives the check after acli auth for a repo that sets baseBranchFieldName", () => {
+      const repos = [repoOf("j", ACTIVE, FIELD_NAME), repoOf("k", ACTIVE)];
+
+      expect(jiraDoctorChecks(repos, fakeFetch([]).fetch).map((check) => check.name)).toEqual([
+        "acli auth",
+        "jira token: j",
+      ]);
+    });
+
+    it("gives only acli auth when no repo sets baseBranchFieldName", () => {
+      const repos = [repoOf("j", ACTIVE), repoOf("k", ACTIVE)];
+
+      expect(jiraDoctorChecks(repos, fakeFetch([]).fetch).map((check) => check.name)).toEqual(["acli auth"]);
     });
   });
 });
