@@ -5,7 +5,10 @@
 All code that starts `acli`, the command-line tool of Atlassian, is in `src/issues/jira/`. No file outside `src/issues/`
 imports from it. A [boundary test](code-conventions.md#tests) enforces both rules.
 
-tasker talks to Jira only through `acli`. It does not call the Jira REST API, and it stores no Jira credential.
+tasker talks to Jira through `acli`, with one exception. If a repo sets `issueTracker.baseBranchFieldName`, tasker calls
+the Jira REST API to look up the id of the field, and the doctor check of the token calls it too. The REST code is in
+`src/issues/jira/rest.ts` and `src/issues/jira/field-id.ts`. It uses the global `fetch` of Node. The REST call has its
+own token, because `acli` has no command that prints its token.
 
 ## runAcli
 
@@ -45,11 +48,32 @@ holds the rule:
 `TASKER_ACLI_BIN` does not pass to a child process of a phase. The rule for each `TASKER_` variable in
 `src/process/child-env.ts` covers it.
 
+## The Jira API token
+
+`jiraCredentials()` in `src/issues/jira/rest.ts` gives the token and the email of a REST call. It reads only the env
+that the caller passes, never `process.env`.
+
+- The token is `TASKER_JIRA_TOKEN` when it is set, else `issueTracker.apiToken`. An empty value or a value of only white
+  space counts as not set, by the rule of `isSet()` in `src/config/path.ts`. Without both, the call fails with
+  `no Jira API token: set TASKER_JIRA_TOKEN or issueTracker.apiToken`.
+- The email is `TASKER_JIRA_EMAIL` when it is set, by the same rule, else `issueTracker.email`, else the email of
+  `readLogin()`. Without all three, the call fails with `no Jira email: set TASKER_JIRA_EMAIL or issueTracker.email`.
+- In both cases, the lookup fails. `tasker start` stops before the task exists, and `tasker plan` stops.
+- The REST call uses the email and the token for basic auth.
+- tasker never writes the token or the email in a log, an event, an error message, a report or the doctor output. A
+  failed REST call gives the HTTP status, the site and the issue key, never the reply body.
+- `TASKER_JIRA_TOKEN` and `TASKER_JIRA_EMAIL` do not pass to a child process of a phase. The rule for each `TASKER_`
+  variable in `src/process/child-env.ts` covers them.
+
 ## The active site
 
 `acli` has no flag that picks a site for one call. Each call uses the active site of `acli`, which the user picks with
 `acli jira auth switch --site <site>`. `activeSite()` in `src/issues/jira/site.ts` reads the active site with
 `acli jira auth status`.
+
+`readLogin()` reads the site and the email in one `acli jira auth status` call. The email is the value of the first line
+that starts with `Email:` after any leading white space, with the white space around it removed. No such line, or an
+empty value, gives no email.
 
 The active site is the value of the first line of stdout that starts with `Site:` after any leading white space. tasker
 matches `Site:` with its exact case. tasker removes the white space around the value and folds it to lower case with
@@ -115,24 +139,27 @@ removes the white space at the end of each line and the blank lines at the end o
 ## The read of an issue
 
 `readJiraIssue()` in `src/issues/jira/issue.ts` reads one issue. It runs the site guard first. Then it runs
-`acli jira workitem view <key> --json --fields summary,description,labels,status,components,comment`.
+`acli jira workitem view <key> --json --fields summary,description,labels,status,components,comment`. If the repo sets
+`baseBranchFieldName`, the lookup of the field id runs after the site guard and before this call, and the call adds
+`,<field id>` to the list.
 
 The call names only these fields. The reason: `--fields` replaces the default field list of `acli`, and a field that the
-call does not name does not come back.
+call does not name does not come back. As a result, a custom field comes back only for a call that names it.
 
 The function builds the `Issue` as this table says:
 
-| Field of `Issue` | Value                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------- |
-| `ref`            | The `IssueRef` of the call.                                                                                |
-| `title`          | `fields.summary`.                                                                                          |
-| `body`           | `adfToText(fields.description)` of `src/issues/jira/adf.ts`.                                               |
-| `url`            | `https://<site>/browse/<key>`. `<site>` is the site that the site guard gives.                             |
-| `labels`         | Each string in `fields.labels`. The function drops a value that is not a string.                           |
-| `components`     | The string `name` of each entry in `fields.components`. The function drops an entry with no string `name`. |
-| `status`         | The string `fields.status.name`. For an issue with no such string: undefined.                              |
-| `state`          | For `fields.status.statusCategory.key` `"done"`: `"closed"`. For any other key, or no status: `"open"`.    |
-| `comments`       | One entry for each item of `fields.comment.comments`, in the order of the view. See the rule below.        |
+| Field of `Issue`  | Value                                                                                                                                                    |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ref`             | The `IssueRef` of the call.                                                                                                                              |
+| `title`           | `fields.summary`.                                                                                                                                        |
+| `body`            | `adfToText(fields.description)` of `src/issues/jira/adf.ts`.                                                                                             |
+| `url`             | `https://<site>/browse/<key>`. `<site>` is the site that the site guard gives.                                                                           |
+| `labels`          | Each string in `fields.labels`. The function drops a value that is not a string.                                                                         |
+| `components`      | The string `name` of each entry in `fields.components`. The function drops an entry with no string `name`.                                               |
+| `status`          | The string `fields.status.name`. For an issue with no such string: undefined.                                                                            |
+| `state`           | For `fields.status.statusCategory.key` `"done"`: `"closed"`. For any other key, or no status: `"open"`.                                                  |
+| `comments`        | One entry for each item of `fields.comment.comments`, in the order of the view. See the rule below.                                                      |
+| `baseBranchField` | With a field id: `{ id, value }`, where `value` is `fields.<field id>` as the view gives it, or `undefined` for a missing key. With no field id: no key. |
 
 Each comment has three strings. `author` is `author.displayName` when it is a non-empty string. Each other case gives
 `unknown`, for example a missing, `null` or non-object `author`. `created` is the time as the view gives it. `body` is
@@ -170,6 +197,18 @@ The errors of the read:
   description wins over a short list, and a short list wins over a bad body.
 - Each other error passes through unchanged, for example an error of the site guard, a missing `acli` or another
   `AcliError`.
+
+## The lookup of the base branch field
+
+`lookupFieldId()` in `src/issues/jira/field-id.ts` calls `GET https://<site>/rest/api/3/issue/<key>?expand=names`.
+`<site>` is `issueTracker.site`, or the active site of `acli` when the repo sets no site. The `names` map of the reply
+maps each field id to its name. The id is the one key whose name is equal to `baseBranchFieldName`, with the same case.
+No such key, or more than one, fails the lookup with an error that names the field name and the issue key. As a result,
+`tasker start` stops before the task exists, and `tasker plan` stops.
+
+The provider keeps the result of the first lookup of each repo, also a failure. As a result, the lookup runs at most one
+time for each repo in one process, and a second read of the same repo after a failure gives the same error. Nobody
+measured this REST call with tasker. The tests use a fake `fetch`.
 
 ## The blockers of an issue
 
@@ -251,6 +290,20 @@ A transition to the status that the issue has now passes. So a second run of a w
 `jiraInProgressMarker()` is true when the status of the issue and the configured in-progress status are equal after
 `asciiFold()`. It is false when either one is undefined. It makes no `acli` call.
 
+## The base branch hint
+
+`jiraBaseBranchHint()` in `src/issues/jira/hint.ts` gives the base branch hint of a Jira issue from `baseBranchField`.
+It makes no `acli` call and no REST call.
+
+- No field id, a missing key or `null` gives no hint.
+- An empty string or a string of white space only gives no hint.
+- Each other string is the hint, as it is. The function removes no white space, no `origin/` and no `refs/heads/`.
+- Each other value throws `BaseBranchFieldError`, a subclass of `BaseHintError`. Its message names the field id and the
+  issue key. `tasker start` handles it as it handles a bad `base:` label.
+
+The rules of [the resolve](workspaces.md#the-resolve) apply as they are: the hint must name a remote branch, the resolve
+fails for a branch that is not on `origin`, and tasker does not store the hint as the learned default.
+
 ## The in-progress clear
 
 The Jira tracker has no clear of the in-progress marker. A status has no "clear". The status after an abort depends on
@@ -290,27 +343,35 @@ the site of the first such repo.
 The detail shows no line of the output of `acli` other than the value of the `Site:` line. It never shows the email of
 the user. The reason: the output of `acli` holds the email of the user. The doctor output can go into a report.
 
+For each Jira repo that sets `baseBranchFieldName`, the required check `jira token: <repo key>` calls
+`GET https://<site>/rest/api/3/myself` with the token and the email. It reports `ok`, or `error` with the HTTP status. A
+missing token or a missing email gives `error` with the names of the variable and the key. The check reads the login of
+`acli` only when it needs the site or the email. It passes its signal to `fetch`. If the signal aborts, the error of
+`fetch` passes to the shared wrapper, so the check gives the timeout result.
+
 ## The provider
 
 `createJiraProvider()` in `src/issues/jira/provider.ts` gives the `IssueProvider` of a Jira repo. It passes `site` to
-each Jira function that takes it. It runs no site guard itself, and it adds no behavior.
+each Jira function that takes it. It runs no site guard itself. One provider serves all the Jira repos of one site. It
+reads `baseBranchFieldName`, `apiToken` and `email` of each repo with `settingsOf`. It keeps the result of the first
+lookup of the field id of each repo, also a failure.
 
-| Member             | Jira function                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| `id`               | `"jira"`                                                                             |
-| `account`          | `undefined`                                                                          |
-| `parse`            | `KEY_PARSERS.jira` of `src/issue-key/resolve.ts`                                     |
-| `fetchIssue`       | `readJiraIssue()` of `src/issues/jira/issue.ts`                                      |
-| `authStatus`       | `authStatus()` of `src/issues/jira/auth.ts`                                          |
-| `baseBranchHint`   | A function that gives `undefined`                                                    |
-| `blockingIssues`   | `readJiraBlockers()` of `src/issues/jira/blockers.ts`                                |
-| `assign`           | `assignJiraIssue()` of `src/issues/jira/write.ts`                                    |
-| `transitionStatus` | `markJiraInProgress()` of `src/issues/jira/write.ts`                                 |
-| `inProgressMarker` | `jiraInProgressMarker()` of `src/issues/jira/write.ts`                               |
-| `clearInProgress`  | A function that rejects with the `Error` `the jira tracker has no in-progress clear` |
-| `markDone`         | `markJiraDone()` of `src/issues/jira/write.ts`                                       |
-| `markAborted`      | `markJiraAborted()` of `src/issues/jira/write.ts`                                    |
-| `doctorChecks`     | `jiraDoctorChecks()` of `src/issues/jira/doctor.ts`                                  |
+| Member             | Jira function                                                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | `"jira"`                                                                                                                            |
+| `account`          | `undefined`                                                                                                                         |
+| `parse`            | `KEY_PARSERS.jira` of `src/issue-key/resolve.ts`                                                                                    |
+| `fetchIssue`       | `readJiraIssue()` of `src/issues/jira/issue.ts`, with the kept lookup of `lookupFieldId()` when the repo sets `baseBranchFieldName` |
+| `authStatus`       | `authStatus()` of `src/issues/jira/auth.ts`                                                                                         |
+| `baseBranchHint`   | `jiraBaseBranchHint()` of `src/issues/jira/hint.ts`                                                                                 |
+| `blockingIssues`   | `readJiraBlockers()` of `src/issues/jira/blockers.ts`                                                                               |
+| `assign`           | `assignJiraIssue()` of `src/issues/jira/write.ts`                                                                                   |
+| `transitionStatus` | `markJiraInProgress()` of `src/issues/jira/write.ts`                                                                                |
+| `inProgressMarker` | `jiraInProgressMarker()` of `src/issues/jira/write.ts`                                                                              |
+| `clearInProgress`  | A function that rejects with the `Error` `the jira tracker has no in-progress clear`                                                |
+| `markDone`         | `markJiraDone()` of `src/issues/jira/write.ts`                                                                                      |
+| `markAborted`      | `markJiraAborted()` of `src/issues/jira/write.ts`                                                                                   |
+| `doctorChecks`     | `jiraDoctorChecks()` of `src/issues/jira/doctor.ts`                                                                                 |
 
 ## The errors
 
@@ -324,6 +385,10 @@ each Jira function that takes it. It runs no site guard itself, and it adds no b
 - `JiraLoginError`: `acli` has no Jira login. `acli jira auth status` exited with a code other than 0, or its stdout has
   no `Site:` line or an empty value.
 - `JiraSiteError`: the site of the repo differs from the active site.
+- `JiraCredentialError`: no token or no email for a REST call. The message names the variable and the key.
+- `JiraRestError`: a REST call failed. It holds the HTTP status, or no status when no answer came. The message names the
+  site and the issue key or the check, never the reply body.
+- `JiraFieldError`: no field, or more than one field, of the issue has the name of `baseBranchFieldName`.
 - `IssueWriteError`: a write failed. [The writes](#the-writes) give the messages.
 - `IssueReadError`: the read of an issue or of its blockers failed. [The read of an issue](#the-read-of-an-issue) and
   [The blockers of an issue](#the-blockers-of-an-issue) give the messages.
