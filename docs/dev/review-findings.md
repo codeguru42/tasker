@@ -133,17 +133,34 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   after a rebase conflict counts as a loop. On #129, such a review was loop 5, so a finding in it got no fix.
 - The no-loop-left rule: this rule covers a task in `awaiting_work_review` after the 5th loop, when a step needs
   `tasker update-branch`, for any reason. It also covers a task in `failed` after the 5th loop, when `tasker merge`
-  failed on a moved base branch. The agent stops before `tasker update-branch`. The orchestrator asks the user. This
-  rule wins over each step that runs `tasker update-branch` from `awaiting_work_review`, for example step 9 and
-  [the diff read](run-one-ticket.md#the-diff-read), and the bullet "When the issue of the earlier ticket is closed" of
-  "Land the work", and over the update of step 9 from `failed`. A same-patch review costs no loop (the same-patch rule
-  of this section). For example, if the patch ids differ and the text ids differ, or the rebase has a conflict, the
-  review counts as a loop (the bullet "The review after `tasker update-branch` counts as a loop"). As a result, after
-  the 5th loop, such a review is over the limit. A decision of the user that the ticket lands covers each
-  `tasker update-branch` that the landing then needs, also the update of step 9 from `failed`. For such an update, the
-  decision wins over the stop of this rule. The agent runs the update with no new report, and the review after it
-  follows the same-patch rule of this section. The bullet "After the 5th loop" still applies to that review. On #302
-  (2026-10-18), the user decided that the ticket lands after loop 7, and then `main` moved.
+  failed on a moved base branch. This rule wins over each step that runs `tasker update-branch` from
+  `awaiting_work_review`, for example step 9 and [the diff read](run-one-ticket.md#the-diff-read). It also wins over the
+  bullet "When the issue of the earlier ticket is closed" of "Land the work". It also wins over the update of step 9
+  from `failed`.
+
+  The agent runs `tasker update-branch` with no stop. Before and after the update, it does each read of
+  [the same-patch rule](#review-findings) and of [the docs-only update](#the-docs-only-update) that belongs to the
+  update. If the update is a docs-only update, the agent goes on as that rule says, with no decision of the user. In
+  each other case, the agent stops after the reads that belong to the update, for example after a rebase conflict. After
+  a docs-only update, a failed `tasker verify` also stops the agent, before
+  [the verify-failure rule](verify-failures.md#the-verify-failure-rule). At a stop, the agent runs no review, no refine
+  and no step of [the rebase procedure](rebase-conflicts.md#procedure), and the orchestrator asks the user.
+
+  A same-patch review costs no loop (the same-patch rule of this section). In other cases, the review counts as a loop
+  (the bullet "The review after `tasker update-branch` counts as a loop"). Examples are a rebase conflict, or patch ids
+  and text ids that both differ. As a result, after the 5th loop, such a review is over the limit.
+
+  A decision of the user that the ticket lands covers each `tasker update-branch` that the landing then needs, also the
+  update of step 9 from `failed`. For such an update, the decision wins over the stop of this rule. The agent runs the
+  update with no new report, and the review after it follows the same-patch rule of this section. The decision also
+  covers the review after an update that ran before the stop. After a rebase conflict, the decision also covers
+  [the rebase procedure](rebase-conflicts.md#procedure). The bullet "After the 5th loop" still applies to such a review.
+
+  On #302 (2026-10-18), the user decided that the ticket lands after loop 7, and then `main` moved. On #476
+  (2026-11-03), docs-only commits moved `main` after loop 5. The user decided twice, and review 6 had the same patch id
+  and found nothing. On 2026-11-03, the user chose that a docs-only update after the 5th loop needs no decision of the
+  user.
+
 - After the 5th loop, if a real finding is still open, or the diff read finds work, the agent stops. The orchestrator
   reports to the user.
 - On the 5th loop, the agent dismisses cosmetic findings with a reason.
@@ -223,9 +240,12 @@ fetch and `git merge-base --is-ancestor`:
 The agent still runs `tasker verify`. If `tasker verify` fails, this rule ends, and
 [the verify-failure rule](verify-failures.md#the-verify-failure-rule) applies. If it passes, the agent does the last
 fetch and `git merge-base --is-ancestor`, as the diff read says. The measure and each real run of the last diff read
-stand. The agent names each skip in the comment of step 11 of [Run one ticket](run-one-ticket.md#run-one-ticket) and in
-its final report, with the two bases. After a decision of the user that the ticket lands, this rule also applies to the
-update of the no-loop-left rule.
+stand.
+
+The agent names each skip in the comment of step 11 of [Run one ticket](run-one-ticket.md#run-one-ticket) and in its
+final report, with the two bases. This rule also applies to the update of step 9 or of the diff read under the
+no-loop-left rule. It needs no decision of the user. Under that rule, a failed `tasker verify` stops the agent before
+the verify-failure rule.
 
 The reason: the update changed no file of the task, so the diff and the whole files of the task stay the same. The cost:
 the review does not see a rule that a moved doc changed. If the moved doc is a doc of the agent,
