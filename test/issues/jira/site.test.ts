@@ -1,7 +1,14 @@
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AcliBinError, AcliNotInstalledError } from "../../../src/issues/jira/run.js";
-import { activeSite, JiraLoginError, JiraSiteError, siteGuard } from "../../../src/issues/jira/site.js";
+import {
+  activeSite,
+  guardedLogin,
+  JiraLoginError,
+  JiraSiteError,
+  readLogin,
+  siteGuard,
+} from "../../../src/issues/jira/site.js";
 import { failureOf } from "../../helpers/errors.js";
 import {
   AUTH_STATUS_ARGS,
@@ -17,6 +24,13 @@ const KELVIN = String.fromCodePoint(0x212a);
 const readSite = (env: NodeJS.ProcessEnv, signal?: AbortSignal) => activeSite(env, { signal });
 const guard = (site: string | undefined, env: NodeJS.ProcessEnv, signal?: AbortSignal) =>
   siteGuard("work", site, env, { signal });
+
+const login = (env: NodeJS.ProcessEnv) =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  readLogin(env);
+const guardedOf = (site: string | undefined, env: NodeJS.ProcessEnv) =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  guardedLogin("work", site, env);
 
 describe("site", () => {
   let dir: string;
@@ -178,6 +192,53 @@ describe("site", () => {
       const error = await failureOf(guard(undefined, fake.env, AbortSignal.timeout(100)), Error);
 
       expect(error.name).toBe("AbortError");
+    });
+  });
+
+  describe("readLogin", () => {
+    it("reads the site and the email with one acli call", async () => {
+      const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+
+      expect(await login(fake.env)).toEqual({ site: "codeguru42.atlassian.net", email: "user@example.com" });
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
+    });
+
+    it("gives no email when there is no Email line", async () => {
+      const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: "  Site: foo.atlassian.net\n" }]);
+
+      expect(await login(fake.env)).toEqual({ site: "foo.atlassian.net", email: undefined });
+    });
+
+    it("gives no email when the Email value is empty", async () => {
+      const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: "  Site: foo.atlassian.net\n  Email:   \n" }]);
+
+      expect(await login(fake.env)).toEqual({ site: "foo.atlassian.net", email: undefined });
+    });
+  });
+
+  describe("guardedLogin", () => {
+    it("gives the login for the active site", async () => {
+      const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+
+      expect(await guardedOf("codeguru42.atlassian.net", fake.env)).toEqual({
+        site: "codeguru42.atlassian.net",
+        email: "user@example.com",
+      });
+    });
+
+    it("rejects with JiraSiteError for another site", async () => {
+      const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+
+      await failureOf(guardedOf("other.atlassian.net", fake.env), JiraSiteError);
+    });
+
+    it("gives the active site when the repo has no site", async () => {
+      const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
+
+      expect(await guardedOf(undefined, fake.env)).toEqual({
+        site: "codeguru42.atlassian.net",
+        email: "user@example.com",
+      });
     });
   });
 
