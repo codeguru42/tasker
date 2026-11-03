@@ -449,10 +449,10 @@ the comments, only a comment of the account of the orchestrator counts, as
 
 An issue can hold an open question that stops its start. The note of
 [the change-of-scope comment](plan-review.md#the-change-of-scope-comment) that starts
-`## Open question after the change of scope` is one form. For the order of the priority rule, the orchestrator counts
-such a ticket as a ticket that can start. If that ticket is the next ticket for a free agent, the orchestrator asks the
-user about the question. Before that, the orchestrator does not ask, also with a free agent. On 2026-10-31, #635 held
-such a question.
+`## Open question after the change of scope` and the hold comment of [A ticket on hold](#a-ticket-on-hold) are forms of
+such a question. For the order of the priority rule, the orchestrator counts such a ticket as a ticket that can start.
+If that ticket is the next ticket for a free agent, the orchestrator asks the user about the question. Before that, the
+orchestrator does not ask, also with a free agent. On 2026-10-31, #635 held such a question.
 
 While the answer waits, the ticket after it takes the free agent. After the answer, and after each body edit that the
 issue asks for, the ticket can start.
@@ -521,8 +521,39 @@ offer. A ticket that a ticket on hold blocks waits while the link stays, and it 
 hold. A rule that names a parked task or a postponed ticket still applies, for example the bullet "If the user postpones
 the parent" of the stacked-ticket rule. The report of a done milestone names each ticket on hold.
 
+A waiting question of a ticket on hold is a question of an item of the orchestrator about that ticket. No answer to it
+reached the orchestrator. Before the report of a done milestone, the orchestrator moves each waiting question to a hold
+comment on its ticket. A hold comment starts with `## Open question of a ticket on hold`. It gives the question and its
+choices word for word, as the item gave them, and the id of the item. It says that the orchestrator asks the question
+again at the end of the hold.
+
+The orchestrator posts each hold comment at once, with no approval of the user, as it posts the open-question note of
+[the change-of-scope comment](plan-review.md#the-change-of-scope-comment). This rule wins over the approval of a comment
+in [Before a post](issues.md#before-a-post). The report of a done milestone names each question that the orchestrator
+moved. It gives the id of the item and the link of the hold comment of each such question. If the post of a hold comment
+fails, [the failure rule](limits.md#the-failure-rule) applies, and the report names that question as still open in its
+item.
+
+An answer can reach the orchestrator after the post of the hold comment. Then the orchestrator acts on the answer and
+posts an answer comment at once, with no approval of the user, as for a hold comment. An answer comment starts with
+`## Answer to an open question of a ticket on hold`, and it gives the answer and the link of its hold comment. A hold
+comment with an answer comment no longer counts. If the post of an answer comment fails,
+[the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start until the post works.
+
 When a hold ends, a ticket with a task in flight comes back as the last paragraph of the defer rule says. A ticket with
 no task starts as any other ticket. The reason for the label: a card in Todo looks like a ticket that can start.
+
+At the end of the hold, the orchestrator reads the comments of the ticket with `gh issue view <number> --json comments`.
+Only a comment of the account of the orchestrator counts, as [the open-question rule](#the-open-question-rule) says.
+Before it starts any ticket after the word of the user, it asks the user, in a new item, the question of each hold
+comment with no answer comment. This ask wins over the time of the ask in the open-question rule, and other tickets can
+start while the answer waits. The open-question rule stops the start of the ticket until the answer. If the read of the
+comments fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket until the
+read works.
+
+If the milestone is open and no orchestrator of its slug runs, the operator removes the label and starts one, as
+[The close of a milestone](operator-start.md#the-close-of-a-milestone) says. If the label is already gone at the word of
+the user, the orchestrator skips its removal.
 
 ## The prompt of an agent
 
