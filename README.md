@@ -13,7 +13,8 @@ merge.
 - An issue tracker: for a GitHub tracker, tasker runs the `gh` command, as the
   [tracker configuration](docs/config.md#issuetracker) says. The `gh` login of the account of `issueTracker.account`
   needs the token scope `repo`, as the [token scopes](docs/config.md#token-scopes) say. For a Jira tracker, tasker runs
-  `acli`, as [the acli login](docs/config.md#the-acli-login) says.
+  `acli`, as [the acli login](docs/config.md#the-acli-login) says. A Jira repo that sets `baseBranchFieldName` also
+  needs a Jira API token, as [the Jira API token](docs/config.md#the-jira-api-token) says.
 
 ## Install
 
