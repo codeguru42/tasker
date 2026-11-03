@@ -54,7 +54,8 @@ export class IssueWriteError extends Error {
   }
 }
 
-// The base: labels of an issue give no usable base branch hint.
+// The issue hint gives no usable base branch: a bad `base:` label of GitHub, or a bad base branch field of Jira.
+// `labels` holds the `base:` labels, and is `[]` for the Jira field.
 export class BaseHintError extends Error {
   readonly labels: string[];
 
