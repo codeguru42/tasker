@@ -704,3 +704,9 @@ The orchestrator writes the prompt of each agent.
   user and the date, and [the ticket](../orchestrator.md) when one exists. On 2026-10-26, the user asked the
   orchestrator of #391 to draft the issues of a new milestone. The orchestrator drafted and posted 8 issues and 4
   changes itself, with no review loop. Review loop 1 later found from 9 to 14 findings in each draft.
+
+- The source bullet: a message of the planner bullet names the source of each fact of the message. Examples of a source
+  are the final report, a comment, a command and its output, a doc, or the words of the user. The message marks each
+  cause or claim that nobody measured as not measured. A claim of a final report with no command and no read is such a
+  claim. The reason: in M14, two claims that nobody measured reached the planner as facts. A guess can then go into a
+  tracked doc as a fact.
