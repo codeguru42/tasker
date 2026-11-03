@@ -1259,3 +1259,40 @@ describe("parseConfig skillsDirs", () => {
     expectIssueAt(issues, "dataRoot");
   });
 });
+
+describe("parseConfig base branch field keys", () => {
+  const fieldKeys = { baseBranchFieldName: "Release Branch", apiToken: "test-token", email: "user@example.com" };
+
+  it("accepts the three keys on a jira repo", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", ...fieldKeys };
+    expect(parsedRepo(raw).issueTracker).toMatchObject(fieldKeys);
+  });
+
+  it("accepts the three keys in a definition and gives them to a repo that names it", () => {
+    const raw = withTracker({ tracker: "acme", project: "TEST" }, { acme: { ...acme, ...fieldKeys } });
+    const config = parseConfig(raw, {}, home);
+    expect(config.trackers.acme).toMatchObject(fieldKeys);
+    expect(config.repos.tasker.issueTracker).toMatchObject(fieldKeys);
+  });
+
+  it.each(["baseBranchFieldName", "apiToken", "email"])("rejects an empty %s", (key) => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", [key]: "" };
+    expectIssueAt(issuesOf(raw), `repos.tasker.issueTracker.${key}`);
+  });
+
+  it("rejects releaseBranchFieldId on a repo", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", releaseBranchFieldId: "customfield_10001" };
+    expect(issuesOf(raw)).toContain("repos.tasker.issueTracker.releaseBranchFieldId: unrecognized key");
+  });
+
+  it("rejects releaseBranchFieldId in a definition", () => {
+    const raw = withTracker(
+      { tracker: "acme", project: "TEST" },
+      { acme: { ...acme, releaseBranchFieldId: "customfield_10001" } },
+    );
+    expect(issuesOf(raw)).toContain("trackers.acme.releaseBranchFieldId: unrecognized key");
+  });
+});
