@@ -114,7 +114,8 @@ export function acliWriteResult(status: string, message: string): string {
 }
 
 // The call of readJiraIssue(). The field list is a literal, so that the test checks the call on its own.
-export function issueViewArgs(key: string): string[] {
+// With a field id, the field list ends with that id.
+export function issueViewArgs(key: string, fieldId?: string): string[] {
   return [
     "jira",
     "workitem",
@@ -122,7 +123,7 @@ export function issueViewArgs(key: string): string[] {
     key,
     "--json",
     "--fields",
-    "summary,description,labels,status,components,comment",
+    "summary,description,labels,status,components,comment" + (fieldId === undefined ? "" : `,${fieldId}`),
   ];
 }
 

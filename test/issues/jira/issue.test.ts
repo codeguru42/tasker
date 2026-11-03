@@ -489,4 +489,78 @@ describe("readJiraIssue", () => {
       );
     });
   });
+
+  describe("the base branch field", () => {
+    const FIELD = "customfield_10001";
+    const lookup = async () => FIELD;
+
+    const readField = (
+      stdout: string,
+      fieldIdOf: (login: { site: string; email: string | undefined }) => Promise<string>,
+    ) => {
+      const fake = fakeAcliView(dir, issueViewArgs("TEST-2", FIELD), { stdout });
+      return { fake, result: readJiraIssue(jiraRefOf("TEST-2"), undefined, fake.env, fieldIdOf) };
+    };
+
+    it("names the field id in the view call", async () => {
+      const { fake, result } = readField(test2With({ [FIELD]: "release/1.2" }), lookup);
+
+      await result;
+
+      expect(fake.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS, issueViewArgs("TEST-2", FIELD)]);
+    });
+
+    it("keeps a string value", async () => {
+      const { result } = readField(test2With({ [FIELD]: "release/1.2" }), lookup);
+
+      expect((await result).baseBranchField).toEqual({ id: FIELD, value: "release/1.2" });
+    });
+
+    it("keeps null", async () => {
+      const { result } = readField(test2With({ [FIELD]: null }), lookup);
+
+      expect((await result).baseBranchField).toEqual({ id: FIELD, value: null });
+    });
+
+    it("gives value undefined for a missing key", async () => {
+      const { result } = readField(test2With({}), lookup);
+
+      const field = (await result).baseBranchField;
+      expect(field).toEqual({ id: FIELD, value: undefined });
+      expect(field?.id).toBe(FIELD);
+    });
+
+    it("gives the login to the lookup and runs it before the view call", async () => {
+      const seen: unknown[] = [];
+      let viewCalls = -1;
+      const { fake, result } = readField(test2With({ [FIELD]: "x" }), async (login) => {
+        seen.push(login);
+        viewCalls = fake.calls().length;
+        return FIELD;
+      });
+
+      await result;
+
+      expect(seen).toEqual([{ site: "codeguru42.atlassian.net", email: "user@example.com" }]);
+      expect(viewCalls).toBe(1);
+      expect(fake.calls().filter((call) => call.args[1] === "auth")).toEqual(AUTH_STATUS_CALLS);
+    });
+
+    it("rejects with the error of the lookup and makes no view call", async () => {
+      const failure = new Error("lookup failed");
+      const { fake, result } = readField(test2With({}), () => Promise.reject(failure));
+
+      expect(await failureOf(result, Error)).toBe(failure);
+      expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
+    });
+
+    it("makes no field list change and sets no key without a lookup", async () => {
+      const fake = fakeAcliView(dir, issueViewArgs("TEST-2"), { stdout: test2With({ [FIELD]: "x" }) });
+
+      const issue = await readJiraIssue(jiraRefOf("TEST-2"), undefined, fake.env);
+
+      expect(issue).not.toHaveProperty("baseBranchField");
+      expect(fake.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS, issueViewArgs("TEST-2")]);
+    });
+  });
 });
