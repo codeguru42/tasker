@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { type Issue, IssueWriteError } from "../../../src/issues/issue.js";
+import { IssueWriteError } from "../../../src/issues/issue.js";
 import { AcliNotInstalledError } from "../../../src/issues/jira/run.js";
 import { JiraLoginError, JiraSiteError } from "../../../src/issues/jira/site.js";
 import {
@@ -20,6 +20,7 @@ import {
   MEASURED_AUTH_STATUS,
   transitionArgs,
 } from "../../helpers/fake-acli.js";
+import { issueOf } from "../../helpers/issue.js";
 import { useTempDir } from "../../helpers/temp.js";
 import { FAKE_EMAIL } from "../../helpers/fake-credentials.js";
 
@@ -234,36 +235,26 @@ describe("Jira writes", () => {
   });
 
   describe("jiraInProgressMarker", () => {
-    const issueWith = (status?: string): Issue => ({
-      ref: jiraRefOf("TEST-10"),
-      title: "t",
-      body: "",
-      url: "https://example.atlassian.net/browse/TEST-10",
-      labels: [],
-      components: [],
-      ...(status === undefined ? {} : { status }),
-      state: "open",
-      comments: [],
-    });
+    const TEST_10 = { ref: jiraRefOf("TEST-10"), url: "https://example.atlassian.net/browse/TEST-10" };
 
     it.each(["In Progress", "IN PROGRESS", "in progress"])("is true for the status %j", (status) => {
-      expect(jiraInProgressMarker(issueWith(status), "In Progress")).toBe(true);
+      expect(jiraInProgressMarker(issueOf({ ...TEST_10, status: status }), "In Progress")).toBe(true);
     });
 
     it("is false for another status", () => {
-      expect(jiraInProgressMarker(issueWith("Backlog"), "In Progress")).toBe(false);
+      expect(jiraInProgressMarker(issueOf({ ...TEST_10, status: "Backlog" }), "In Progress")).toBe(false);
     });
 
     it("is false when the configured status is undefined", () => {
-      expect(jiraInProgressMarker(issueWith("In Progress"), undefined)).toBe(false);
+      expect(jiraInProgressMarker(issueOf({ ...TEST_10, status: "In Progress" }), undefined)).toBe(false);
     });
 
     it("is false for an issue with no status", () => {
-      expect(jiraInProgressMarker(issueWith(), "In Progress")).toBe(false);
+      expect(jiraInProgressMarker(issueOf({ ...TEST_10 }), "In Progress")).toBe(false);
     });
 
     it("does not fold the Kelvin sign to k", () => {
-      expect(jiraInProgressMarker(issueWith("\u212Aanban"), "kanban")).toBe(false);
+      expect(jiraInProgressMarker(issueOf({ ...TEST_10, status: "\u212Aanban" }), "kanban")).toBe(false);
     });
   });
 });

@@ -3,28 +3,17 @@ import { BaseHintError, type Issue } from "../../../src/issues/issue.js";
 import { BaseBranchFieldError, jiraBaseBranchHint } from "../../../src/issues/jira/hint.js";
 import { thrownBy } from "../../helpers/errors.js";
 import { jiraRefOf } from "../../helpers/fake-acli.js";
+import { issueOf } from "../../helpers/issue.js";
 
 const FIELD = "customfield_10001";
 
-function issueWith(baseBranchField?: Issue["baseBranchField"], labels: string[] = []): Issue {
-  return {
-    ref: jiraRefOf("TEST-1"),
-    title: "t",
-    body: "",
-    url: "https://example.atlassian.net/browse/TEST-1",
-    labels,
-    components: [],
-    state: "open",
-    comments: [],
-    ...(baseBranchField === undefined ? {} : { baseBranchField }),
-  };
-}
+const TEST_1 = { ref: jiraRefOf("TEST-1"), url: "https://example.atlassian.net/browse/TEST-1" };
 
-const withValue = (value: unknown): Issue => issueWith({ id: FIELD, value });
+const withValue = (value: unknown): Issue => issueOf({ ...TEST_1, baseBranchField: { id: FIELD, value } });
 
 describe("jiraBaseBranchHint", () => {
   it("gives no hint when the issue has no base branch field", () => {
-    expect(jiraBaseBranchHint(issueWith())).toBeUndefined();
+    expect(jiraBaseBranchHint(issueOf({ ...TEST_1 }))).toBeUndefined();
   });
 
   it.each([
@@ -41,7 +30,7 @@ describe("jiraBaseBranchHint", () => {
   });
 
   it("does not read a base: label", () => {
-    expect(jiraBaseBranchHint(issueWith(undefined, ["base:main"]))).toBeUndefined();
+    expect(jiraBaseBranchHint(issueOf({ ...TEST_1, labels: ["base:main"] }))).toBeUndefined();
   });
 
   it.each([{ value: "release/1.2" }, ["release/1.2"], 42, true])("throws for the value %j", (value) => {
