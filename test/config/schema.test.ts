@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ConfigError, parseConfig } from "../../src/config/schema.js";
 import { configWithTrackers, validConfig } from "../helpers/config.js";
 import { configIssuesOf } from "../helpers/errors.js";
+import { FAKE_EMAIL, FAKE_TOKEN } from "../helpers/fake-credentials.js";
 
 const home = "/home/me";
 
@@ -1261,7 +1262,7 @@ describe("parseConfig skillsDirs", () => {
 });
 
 describe("parseConfig base branch field keys", () => {
-  const fieldKeys = { baseBranchFieldName: "Release Branch", apiToken: "test-token", email: "user@example.com" };
+  const fieldKeys = { baseBranchFieldName: "Release Branch", apiToken: FAKE_TOKEN, email: FAKE_EMAIL };
 
   it("accepts the three keys on a jira repo", () => {
     const raw = validConfig();

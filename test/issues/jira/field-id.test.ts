@@ -3,10 +3,11 @@ import { JiraFieldError, lookupFieldId } from "../../../src/issues/jira/field-id
 import { JiraRestError, type JiraCredentials } from "../../../src/issues/jira/rest.js";
 import { failureOf } from "../../helpers/errors.js";
 import { fakeFetch } from "../../helpers/fake-fetch.js";
+import { FAKE_EMAIL, FAKE_TOKEN } from "../../helpers/fake-credentials.js";
 
 const SITE = "example.atlassian.net";
 const URL_ISSUE = `https://${SITE}/rest/api/3/issue/TEST-1?expand=names`;
-const credentials: JiraCredentials = { email: "user@example.com", token: "test-token" };
+const credentials: JiraCredentials = { email: FAKE_EMAIL, token: FAKE_TOKEN };
 
 function lookup(fieldName: string, status: number, body: unknown): Promise<string> {
   const fake = fakeFetch([{ url: URL_ISSUE, status, body }]);

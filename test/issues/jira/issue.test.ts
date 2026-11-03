@@ -16,6 +16,7 @@ import {
   MEASURED_NOT_FOUND,
 } from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
+import { FAKE_EMAIL } from "../../helpers/fake-credentials.js";
 
 // The output of `acli jira workitem view <key> --json --fields summary,description,labels,status,components,comment`
 // for three issues of the project TEST, as measured with acli 1.3.39-stable on 2026-10-25.
@@ -541,7 +542,7 @@ describe("readJiraIssue", () => {
 
       await result;
 
-      expect(seen).toEqual([{ site: "codeguru42.atlassian.net", email: "user@example.com" }]);
+      expect(seen).toEqual([{ site: "codeguru42.atlassian.net", email: FAKE_EMAIL }]);
       expect(viewCalls).toBe(1);
       expect(fake.calls().filter((call) => call.args[1] === "auth")).toEqual(AUTH_STATUS_CALLS);
     });

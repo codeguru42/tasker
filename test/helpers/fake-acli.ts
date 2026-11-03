@@ -9,6 +9,7 @@ import {
   readFakeCalls,
   writeFakeCommand,
 } from "./fake-commands.js";
+import { FAKE_EMAIL } from "./fake-credentials.js";
 
 // One canned answer of the fake acli. See FakeAnswer.
 export type FakeAcliAnswer = FakeAnswer;
@@ -86,7 +87,7 @@ export const JIRA_LOGIN_MESSAGE = "acli has no Jira login. Run `acli jira auth l
 export const MEASURED_AUTH_STATUS = [
   "✓ Authenticated",
   "  Site: codeguru42.atlassian.net",
-  "  Email: user@example.com",
+  `  Email: ${FAKE_EMAIL}`,
   "  Authentication Type: oauth_global",
   "",
 ].join("\n");

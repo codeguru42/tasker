@@ -6,6 +6,7 @@ import { loadConfig } from "../../src/config/load.js";
 import { captureIo } from "../helpers/cli.js";
 import { useConfigFile, validConfig } from "../helpers/config.js";
 import { useProcessEnv } from "../helpers/temp.js";
+import { expectNoFakeSecret, FAKE_EMAIL, FAKE_TOKEN } from "../helpers/fake-credentials.js";
 
 describe("show-config", () => {
   it("prints the configuration with the defaults filled in", async () => {
@@ -106,12 +107,7 @@ describe("show-config", () => {
   });
 
   describe("the mask of apiToken and email", () => {
-    const secrets = { apiToken: "test-token", email: "user@example.com" };
-
-    function expectNoSecret(text: string): void {
-      expect(text).not.toContain("test-token");
-      expect(text).not.toContain("user@example.com");
-    }
+    const secrets = { apiToken: FAKE_TOKEN, email: FAKE_EMAIL };
 
     it("prints *** in place of both keys of a repo", async () => {
       const raw = validConfig();
@@ -125,7 +121,7 @@ describe("show-config", () => {
       const printed = JSON.parse(io.out.join(""));
       expect(printed.repos.tasker.issueTracker.apiToken).toBe("***");
       expect(printed.repos.tasker.issueTracker.email).toBe("***");
-      expectNoSecret(io.out.join(""));
+      expectNoFakeSecret(io.out.join(""));
     });
 
     it("prints *** in place of both keys of a definition and of the repo that names it", async () => {
@@ -143,7 +139,7 @@ describe("show-config", () => {
       expect(printed.trackers.acme.email).toBe("***");
       expect(printed.repos.tasker.issueTracker.apiToken).toBe("***");
       expect(printed.repos.tasker.issueTracker.email).toBe("***");
-      expectNoSecret(io.out.join(""));
+      expectNoFakeSecret(io.out.join(""));
     });
 
     it("prints *** with --repo", async () => {
@@ -158,7 +154,7 @@ describe("show-config", () => {
       const printed = JSON.parse(io.out.join(""));
       expect(printed.issueTracker.apiToken).toBe("***");
       expect(printed.issueTracker.email).toBe("***");
-      expectNoSecret(io.out.join(""));
+      expectNoFakeSecret(io.out.join(""));
     });
 
     it("prints neither key when the configuration sets neither", async () => {

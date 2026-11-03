@@ -18,6 +18,7 @@ import {
   MEASURED_AUTH_STATUS,
 } from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
+import { FAKE_EMAIL } from "../../helpers/fake-credentials.js";
 
 const KELVIN = String.fromCodePoint(0x212a);
 
@@ -195,7 +196,7 @@ describe("site", () => {
     it("reads the site and the email with one acli call", async () => {
       const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
 
-      expect(await login(fake.env)).toEqual({ site: "codeguru42.atlassian.net", email: "user@example.com" });
+      expect(await login(fake.env)).toEqual({ site: "codeguru42.atlassian.net", email: FAKE_EMAIL });
       expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
 
@@ -218,7 +219,7 @@ describe("site", () => {
 
       expect(await guardedOf("codeguru42.atlassian.net", fake.env)).toEqual({
         site: "codeguru42.atlassian.net",
-        email: "user@example.com",
+        email: FAKE_EMAIL,
       });
     });
 
@@ -233,7 +234,7 @@ describe("site", () => {
 
       expect(await guardedOf(undefined, fake.env)).toEqual({
         site: "codeguru42.atlassian.net",
-        email: "user@example.com",
+        email: FAKE_EMAIL,
       });
     });
   });

@@ -13,6 +13,7 @@ import {
   MEASURED_NOT_FOUND,
 } from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
+import { expectNoFakeSecret, FAKE_BASIC_AUTH, FAKE_EMAIL, withFakeToken } from "../../helpers/fake-credentials.js";
 
 const ACTIVE = "codeguru42.atlassian.net";
 const installRemediation = "Install acli, or fix TASKER_ACLI_BIN.";
@@ -151,13 +152,13 @@ describe("jira doctor", () => {
     it.each([
       ["a wrong site", [repoOf("work", "other.atlassian.net")], MEASURED_AUTH_STATUS, undefined, 0],
       ["the active site", [repoOf("work", ACTIVE)], MEASURED_AUTH_STATUS, undefined, 0],
-      ["no login", [repoOf("work")], "", `${MEASURED_NOT_FOUND} user@example.com`, 1],
+      ["no login", [repoOf("work")], "", `${MEASURED_NOT_FOUND} ${FAKE_EMAIL}`, 1],
     ])("shows no email and no login type for %s", async (_name, repos, stdout, stderr, exitCode) => {
       const fake = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout, stderr, exitCode }]);
 
       const text = JSON.stringify(await runAuth(repos, fake.env));
 
-      expect(text).not.toContain("user@example.com");
+      expect(text).not.toContain(FAKE_EMAIL);
       expect(text).not.toContain("Authentication Type");
       expect(fake.calls()).toEqual(AUTH_STATUS_CALLS);
     });
@@ -177,16 +178,8 @@ describe("jira doctor", () => {
   describe("jiraTokenCheck", () => {
     const MYSELF = `https://${ACTIVE}/rest/api/3/myself`;
     const FIELD_NAME = { baseBranchFieldName: "Release Branch" };
-    const tokenRepo = (extras: RepoExtras = {}) =>
-      repoOf("j", ACTIVE, { ...FIELD_NAME, email: "user@example.com", ...extras });
-    const withToken = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv => ({ ...env, TASKER_JIRA_TOKEN: "test-token" });
+    const tokenRepo = (extras: RepoExtras = {}) => repoOf("j", ACTIVE, { ...FIELD_NAME, email: FAKE_EMAIL, ...extras });
     const NO_EMAIL_STATUS = `  Site: ${ACTIVE}\n  Authentication Type: oauth_global\n`;
-
-    function expectNoSecret(result: { detail: string; remediation?: string }): void {
-      const text = `${result.detail} ${result.remediation ?? ""}`;
-      expect(text).not.toContain("test-token");
-      expect(text).not.toContain("user@example.com");
-    }
 
     it("has the name of the repo and is required", () => {
       const check = jiraTokenCheck(tokenRepo(), fakeFetch([]).fetch);
@@ -199,7 +192,7 @@ describe("jira doctor", () => {
       const fake = fakeFetch([{ url: MYSELF, status: 200, body: {} }]);
       const acli = fakeAcli(dir, {}, []);
 
-      expect(await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env))).toStrictEqual({
+      expect(await jiraTokenCheck(tokenRepo(), fake.fetch).run(withFakeToken(acli.env))).toStrictEqual({
         status: "ok",
         detail: `the Jira API token works on ${ACTIVE}`,
       });
@@ -210,21 +203,21 @@ describe("jira doctor", () => {
       const fake = fakeFetch([{ url: MYSELF, status: 401, body: {} }]);
       const acli = fakeAcli(dir, {}, []);
 
-      const result = await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env));
+      const result = await jiraTokenCheck(tokenRepo(), fake.fetch).run(withFakeToken(acli.env));
 
       expect(result).toStrictEqual({
         status: "error",
         detail: `the Jira REST call for the token check on ${ACTIVE} failed with HTTP 401`,
         remediation: "Set TASKER_JIRA_TOKEN or issueTracker.apiToken to an API token of the account of the email.",
       });
-      expectNoSecret(result);
+      expectNoFakeSecret(`${result.detail} ${result.remediation ?? ""}`);
     });
 
     it("gives no remediation for a 500", async () => {
       const fake = fakeFetch([{ url: MYSELF, status: 500, body: {} }]);
       const acli = fakeAcli(dir, {}, []);
 
-      expect(await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env))).toStrictEqual({
+      expect(await jiraTokenCheck(tokenRepo(), fake.fetch).run(withFakeToken(acli.env))).toStrictEqual({
         status: "error",
         detail: `the Jira REST call for the token check on ${ACTIVE} failed with HTTP 500`,
       });
@@ -246,7 +239,7 @@ describe("jira doctor", () => {
       const fake = fakeFetch([]);
       const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: NO_EMAIL_STATUS }]);
 
-      const result = await jiraTokenCheck(tokenRepo({ email: undefined }), fake.fetch).run(withToken(acli.env));
+      const result = await jiraTokenCheck(tokenRepo({ email: undefined }), fake.fetch).run(withFakeToken(acli.env));
 
       expect(result).toStrictEqual({
         status: "error",
@@ -254,14 +247,14 @@ describe("jira doctor", () => {
         remediation: "Set TASKER_JIRA_EMAIL or issueTracker.email.",
       });
       expect(fake.calls()).toEqual([]);
-      expectNoSecret(result);
+      expectNoFakeSecret(`${result.detail} ${result.remediation ?? ""}`);
     });
 
     it("makes no acli call for a repo with a site and an email", async () => {
       const fake = fakeFetch([{ url: MYSELF, status: 200, body: {} }]);
       const acli = fakeAcli(dir, {}, []);
 
-      await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env));
+      await jiraTokenCheck(tokenRepo(), fake.fetch).run(withFakeToken(acli.env));
 
       expect(acli.calls()).toEqual([]);
     });
@@ -271,12 +264,11 @@ describe("jira doctor", () => {
       const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
       const repo = repoOf("j", undefined, FIELD_NAME);
 
-      const result = await jiraTokenCheck(repo, fake.fetch).run(withToken(acli.env));
+      const result = await jiraTokenCheck(repo, fake.fetch).run(withFakeToken(acli.env));
 
       expect(result.status).toBe("ok");
       expect(acli.calls()).toEqual(AUTH_STATUS_CALLS);
-      const basic = Buffer.from("user@example.com:test-token").toString("base64");
-      expect(fake.calls()[0].authorization).toBe(`Basic ${basic}`);
+      expect(fake.calls()[0].authorization).toBe(FAKE_BASIC_AUTH);
     });
 
     it("reads the email of acli when TASKER_JIRA_EMAIL is blank", async () => {
@@ -284,12 +276,14 @@ describe("jira doctor", () => {
       const acli = fakeAcli(dir, {}, [{ args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS }]);
       const repo = repoOf("j", ACTIVE, FIELD_NAME);
 
-      const result = await jiraTokenCheck(repo, fake.fetch).run({ ...withToken(acli.env), TASKER_JIRA_EMAIL: "  " });
+      const result = await jiraTokenCheck(repo, fake.fetch).run({
+        ...withFakeToken(acli.env),
+        TASKER_JIRA_EMAIL: "  ",
+      });
 
       expect(result.status).toBe("ok");
       expect(acli.calls()).toEqual(AUTH_STATUS_CALLS);
-      const basic = Buffer.from("user@example.com:test-token").toString("base64");
-      expect(fake.calls()[0].authorization).toBe(`Basic ${basic}`);
+      expect(fake.calls()[0].authorization).toBe(FAKE_BASIC_AUTH);
     });
 
     it("gives the timeout result when the REST call does not end in time", async () => {
@@ -299,7 +293,7 @@ describe("jira doctor", () => {
           init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason));
         })) as typeof fetch;
 
-      const result = await jiraTokenCheck(tokenRepo(), waiting, 50).run(withToken(acli.env));
+      const result = await jiraTokenCheck(tokenRepo(), waiting, 50).run(withFakeToken(acli.env));
 
       expect(result).toStrictEqual({ status: "error", detail: "the check did not finish in 50 ms" });
     });
@@ -308,7 +302,7 @@ describe("jira doctor", () => {
       const fake = fakeFetch([{ url: MYSELF, status: 200, body: {} }]);
       const acli = fakeAcli(dir, {}, []);
 
-      await jiraTokenCheck(tokenRepo(), fake.fetch).run(withToken(acli.env));
+      await jiraTokenCheck(tokenRepo(), fake.fetch).run(withFakeToken(acli.env));
 
       expect(fake.calls()[0].signal).toBeInstanceOf(AbortSignal);
     });

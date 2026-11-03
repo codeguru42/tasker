@@ -10,6 +10,7 @@ import {
 } from "../helpers/fake-acli.js";
 import { fakeFetch } from "../helpers/fake-fetch.js";
 import { useTempDir } from "../helpers/temp.js";
+import { FAKE_TOKEN } from "../helpers/fake-credentials.js";
 
 const github = (account: string) => ({ provider: "github", account });
 const jira = (site: string | undefined) => ({ provider: "jira", project: "TEST", site });
@@ -82,7 +83,7 @@ describe("issueProviderFor", () => {
 
   it("gives the settings of each repo to the jira provider", async () => {
     const config = configWithTrackers({
-      j: { ...jira("codeguru42.atlassian.net"), baseBranchFieldName: "Release Branch", apiToken: "test-token" },
+      j: { ...jira("codeguru42.atlassian.net"), baseBranchFieldName: "Release Branch", apiToken: FAKE_TOKEN },
       k: jira("codeguru42.atlassian.net"),
     });
     const acli = fakeAcli(useTempDir("tasker-provider-"), {}, [

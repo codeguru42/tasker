@@ -21,8 +21,9 @@ import {
   transitionArgs,
 } from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
+import { FAKE_EMAIL } from "../../helpers/fake-credentials.js";
 
-const ASSIGNED = "Work item TEST-10 has been successfully assigned to user@example.com";
+const ASSIGNED = `Work item TEST-10 has been successfully assigned to ${FAKE_EMAIL}`;
 
 const BAD_OUTPUTS = [
   "",

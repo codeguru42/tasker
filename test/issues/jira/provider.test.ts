@@ -26,6 +26,7 @@ import {
   transitionArgs,
 } from "../../helpers/fake-acli.js";
 import { useTempDir } from "../../helpers/temp.js";
+import { FAKE_BASIC_AUTH, withFakeToken } from "../../helpers/fake-credentials.js";
 
 // No default for site: a default parameter takes undefined as a missing argument.
 const providerFor = (site: string | undefined) => createJiraProvider({ site, settingsOf: () => ({}) });
@@ -114,7 +115,6 @@ describe("createJiraProvider", () => {
     const OTHER_FIELD = "customfield_10002";
     const ISSUE_URL = "https://codeguru42.atlassian.net/rest/api/3/issue/TEST-1?expand=names";
     const NAMES = { summary: "Summary", [FIELD]: "Release Branch", [OTHER_FIELD]: "Other Branch" };
-    const withToken = (): NodeJS.ProcessEnv => ({ ...acli.env, TASKER_JIRA_TOKEN: "test-token" });
     const otherRef = { ...ref, repoKey: "other" };
 
     beforeEach(() => {
@@ -144,10 +144,9 @@ describe("createJiraProvider", () => {
         { url: ISSUE_URL, status: 200, body: { names: NAMES } },
       ]);
 
-      await provider.fetchIssue(ref, withToken());
+      await provider.fetchIssue(ref, withFakeToken(acli.env));
 
-      const basic = Buffer.from("user@example.com:test-token").toString("base64");
-      expect(fake.calls().map((call) => [call.url, call.authorization])).toEqual([[ISSUE_URL, `Basic ${basic}`]]);
+      expect(fake.calls().map((call) => [call.url, call.authorization])).toEqual([[ISSUE_URL, FAKE_BASIC_AUTH]]);
       expect(acli.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS, issueViewArgs("TEST-1", FIELD)]);
     });
 
@@ -156,8 +155,8 @@ describe("createJiraProvider", () => {
         { url: ISSUE_URL, status: 200, body: { names: NAMES } },
       ]);
 
-      await provider.fetchIssue(ref, withToken());
-      await provider.fetchIssue(ref, withToken());
+      await provider.fetchIssue(ref, withFakeToken(acli.env));
+      await provider.fetchIssue(ref, withFakeToken(acli.env));
 
       expect(fake.calls()).toHaveLength(1);
     });
@@ -171,8 +170,8 @@ describe("createJiraProvider", () => {
         [{ url: ISSUE_URL, status: 200, body: { names: NAMES } }],
       );
 
-      const first = await provider.fetchIssue(ref, withToken());
-      const second = await provider.fetchIssue(otherRef, withToken());
+      const first = await provider.fetchIssue(ref, withFakeToken(acli.env));
+      const second = await provider.fetchIssue(otherRef, withFakeToken(acli.env));
 
       expect(fake.calls()).toHaveLength(2);
       expect(first.baseBranchField?.id).toBe(FIELD);
@@ -184,8 +183,8 @@ describe("createJiraProvider", () => {
         { url: ISSUE_URL, status: 404, body: {} },
       ]);
 
-      const first = await failureOf(provider.fetchIssue(ref, withToken()), JiraRestError);
-      const second = await failureOf(provider.fetchIssue(ref, withToken()), JiraRestError);
+      const first = await failureOf(provider.fetchIssue(ref, withFakeToken(acli.env)), JiraRestError);
+      const second = await failureOf(provider.fetchIssue(ref, withFakeToken(acli.env)), JiraRestError);
 
       expect(second).toBe(first);
       expect(fake.calls()).toHaveLength(1);
@@ -205,7 +204,7 @@ describe("createJiraProvider", () => {
     it("makes no REST call for a repo with no baseBranchFieldName", async () => {
       const { fake, provider } = providerWith({}, []);
 
-      const issue = await provider.fetchIssue(ref, withToken());
+      const issue = await provider.fetchIssue(ref, withFakeToken(acli.env));
 
       expect(fake.calls()).toEqual([]);
       expect(issue).not.toHaveProperty("baseBranchField");
