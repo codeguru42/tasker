@@ -108,7 +108,8 @@ function cachedProvider(
 
 // The only place that picks an issue provider. It reads issueTracker.provider. One configuration
 // object gives one provider object for each pair of the id and its identity: the account for github,
-// the site for jira. Another configuration object gets new providers.
+// the site for jira. A jira provider reads the settings of each repo of its site from the configuration object, and
+// keeps the lookup of the base branch field of each repo. Another configuration object gets new providers.
 export function issueProviderFor(config: Config, repoKey: string): IssueProvider {
   if (!Object.hasOwn(config.repos, repoKey)) {
     throw new Error(`unknown repo ${JSON.stringify(repoKey)}: no repo with this key is in the configuration`);
@@ -120,7 +121,9 @@ export function issueProviderFor(config: Config, repoKey: string): IssueProvider
       return cachedProvider(config, "github", account, () => createGithubProvider({ account }));
     }
     case "jira":
-      return cachedProvider(config, "jira", issueTracker.site, () => createJiraProvider({ site: issueTracker.site }));
+      return cachedProvider(config, "jira", issueTracker.site, () =>
+        createJiraProvider({ site: issueTracker.site, settingsOf: (key) => config.repos[key].issueTracker }),
+      );
   }
 }
 

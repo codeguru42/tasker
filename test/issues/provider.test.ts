@@ -82,8 +82,8 @@ describe("issueProviderFor", () => {
 
   it("gives the settings of each repo to the jira provider", async () => {
     const config = configWithTrackers({
-      j: { ...jira("one.atlassian.net"), baseBranchFieldName: "Release Branch", apiToken: "test-token" },
-      k: jira("one.atlassian.net"),
+      j: { ...jira("codeguru42.atlassian.net"), baseBranchFieldName: "Release Branch", apiToken: "test-token" },
+      k: jira("codeguru42.atlassian.net"),
     });
     const acli = fakeAcli(useTempDir("tasker-provider-"), {}, [
       { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
