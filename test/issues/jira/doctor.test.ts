@@ -217,7 +217,7 @@ describe("jira doctor", () => {
         detail: `the Jira REST call for the token check on ${ACTIVE} failed with HTTP 401`,
         remediation: "Set TASKER_JIRA_TOKEN or issueTracker.apiToken to an API token of the account of the email.",
       });
-      expectNoSecret(result as { detail: string });
+      expectNoSecret(result);
     });
 
     it("gives no remediation for a 500", async () => {
@@ -254,7 +254,7 @@ describe("jira doctor", () => {
         remediation: "Set TASKER_JIRA_EMAIL or issueTracker.email.",
       });
       expect(fake.calls()).toEqual([]);
-      expectNoSecret(result as { detail: string });
+      expectNoSecret(result);
     });
 
     it("makes no acli call for a repo with a site and an email", async () => {
