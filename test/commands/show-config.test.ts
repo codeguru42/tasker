@@ -104,4 +104,73 @@ describe("show-config", () => {
     expect(io.out).toEqual([]);
     expect(io.err.join("")).toBe(`config file not found: ${missing}\n`);
   });
+
+  describe("the mask of apiToken and email", () => {
+    const secrets = { apiToken: "test-token", email: "user@example.com" };
+
+    function expectNoSecret(text: string): void {
+      expect(text).not.toContain("test-token");
+      expect(text).not.toContain("user@example.com");
+    }
+
+    it("prints *** in place of both keys of a repo", async () => {
+      const raw = validConfig();
+      raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", ...secrets };
+      useConfigFile(() => JSON.stringify(raw));
+      const io = captureIo();
+
+      const code = await run(["show-config"], { commands: [showConfig], io });
+
+      expect(code).toBe(0);
+      const printed = JSON.parse(io.out.join(""));
+      expect(printed.repos.tasker.issueTracker.apiToken).toBe("***");
+      expect(printed.repos.tasker.issueTracker.email).toBe("***");
+      expectNoSecret(io.out.join(""));
+    });
+
+    it("prints *** in place of both keys of a definition and of the repo that names it", async () => {
+      const raw = validConfig();
+      raw.trackers = { acme: { provider: "jira", ...secrets } };
+      raw.repos.tasker.issueTracker = { tracker: "acme", project: "TEST" };
+      useConfigFile(() => JSON.stringify(raw));
+      const io = captureIo();
+
+      const code = await run(["show-config"], { commands: [showConfig], io });
+
+      expect(code).toBe(0);
+      const printed = JSON.parse(io.out.join(""));
+      expect(printed.trackers.acme.apiToken).toBe("***");
+      expect(printed.trackers.acme.email).toBe("***");
+      expect(printed.repos.tasker.issueTracker.apiToken).toBe("***");
+      expect(printed.repos.tasker.issueTracker.email).toBe("***");
+      expectNoSecret(io.out.join(""));
+    });
+
+    it("prints *** with --repo", async () => {
+      const raw = validConfig();
+      raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", ...secrets };
+      useConfigFile(() => JSON.stringify(raw));
+      const io = captureIo();
+
+      const code = await run(["show-config", "--repo", "tasker"], { commands: [showConfig], io });
+
+      expect(code).toBe(0);
+      const printed = JSON.parse(io.out.join(""));
+      expect(printed.issueTracker.apiToken).toBe("***");
+      expect(printed.issueTracker.email).toBe("***");
+      expectNoSecret(io.out.join(""));
+    });
+
+    it("prints neither key when the configuration sets neither", async () => {
+      useConfigFile(() => JSON.stringify(validConfig()));
+      const io = captureIo();
+
+      const code = await run(["show-config"], { commands: [showConfig], io });
+
+      expect(code).toBe(0);
+      const printed = JSON.parse(io.out.join(""));
+      expect(printed.repos.tasker.issueTracker).not.toHaveProperty("apiToken");
+      expect(printed.repos.tasker.issueTracker).not.toHaveProperty("email");
+    });
+  });
 });
