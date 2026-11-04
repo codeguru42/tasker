@@ -569,14 +569,18 @@ the user, the orchestrator skips its removal.
 
 The orchestrator writes the prompt of each task subagent.
 
-- The prompt gives only the context of its ticket: the issue key and milestone (see the fourth case of
-  [the stop rule](plan-review.md#the-stop-rule)). It names milestones that are off limits for the task subagent. It
-  gives the landing order (see ["Land the work"](land-the-work.md#land-the-work)) and, for a stacked ticket, its parent
-  (see [the stacked-ticket rule](#the-stacked-ticket-rule)). It gives the quota slot and whether the task subagent has a
-  job (see ["Quota"](quota.md#quota)). It gives the folder for the task subagent's files (see the folder bullet of
-  ["Limits"](limits.md#limits)). It links the change-of-scope and design-gap comments on the issue, as the bullet below
-  that starts "If the account of the orchestrator" says. It gives the first-refine hints and the task worktree path,
+- The prompt of each task subagent gives only the context of its ticket. The context is the issue key, the milestone of
+  its ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)). The milestones that are off limits
+  for the task subagent are part of the context. It gives the landing order (see
+  ["Land the work"](land-the-work.md#land-the-work)) and, for a stacked ticket, its parent (see
+  [the stacked-ticket rule](#the-stacked-ticket-rule)). It gives the quota slot and whether the task subagent has a job
+  (see ["Quota"](quota.md#quota)). It gives the folder of the task subagent for its files (see the folder bullet of
+  ["Limits"](limits.md#limits)).
+
+  It links the change-of-scope and design-gap comments of its issue (see the bullet below that starts "If the account of
+  the orchestrator"). It gives the hints for its first refine and the task worktree with its path,
   `../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
+
 - The prompt never tells the task subagent to take a path from the `worktree:` line of `tasker show`. The reason: that
   line prints the worktree of tasker, and [the own-worktree rule](limits.md#the-own-worktree-rule) bans each read and
   each run there. On 2026-10-24 and 2026-10-25, the prompts of orchestrator-m21 for #395, #425 and #418 said "Take your
@@ -665,10 +669,11 @@ The orchestrator writes the prompt of each task subagent.
 - Before the task subagent starts, the orchestrator makes its folder for its files (see the folder bullet of
   ["Limits"](limits.md#limits)). In one case, a background command of a task subagent wrote into a missing folder and
   failed.
-- The prompt limits the task subagent's writes to GitHub issues, labels and the project board. The task subagent can
-  post only the comment of step 11 of ["Run one ticket"](run-one-ticket.md#run-one-ticket), as
-  ["Limits"](limits.md#limits) says. In one case, a strong "never run a gh write" line in the prompt made the classifier
-  of auto mode block that comment (see [the tool-block rule](tasker-commands.md#the-tool-block-rule)).
+- The orchestrator writes in the prompt that the comment of step 11 of
+  ["Run one ticket"](run-one-ticket.md#run-one-ticket) is the only write of the task subagent on GitHub issues, labels
+  and the project board (see ["Limits"](limits.md#limits)). In one case, a strong "never run a gh write" line in the
+  prompt of a task subagent made the classifier of auto mode block the comment of step 11 (see
+  [the tool-block rule](tasker-commands.md#the-tool-block-rule)).
 - For all the rules, the prompt names the docs of this list, "the base list". The base list is the same for the task
   subagent of each milestone:
 

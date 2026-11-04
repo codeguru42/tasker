@@ -185,14 +185,14 @@ orchestrator.
   of the feedback "text that the user dictated", to keep a sentence over the word limit. On #439 (2026-10-25), a todo of
   plans v2 and v3 gave a false decision of the user about [the Check rule](rules.md#check) that no feedback gave. If
   neither the issue nor an answer of the orchestrator gives the source of a text, a feedback text names no source. It
-  says "the agent". On #520 (2026-10-25), refine 1 wrote "the user asked for these scripts" with no such word of the
-  user, and plan v2 copied it. This cost refine 2.
+  says "the task subagent". On #520 (2026-10-25), refine 1 wrote "the user asked for these scripts" with no such word of
+  the user, and plan v2 copied it. This cost refine 2.
 
   A first refine can give a fact that the task subagent measured, or a decision of the task subagent. Then the first
-  refine asks the plan to name no source for that fact or decision, or to say "the agent". It also says: "Do not name
-  the user as the source of this fact or decision." On #391 (2026-10-26), refine 1 said "the agent measured" for its
-  facts and named no source for its changes. Plan v2 still wrote "the user measured" and "the user decided", and this
-  cost refine 2. On #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
+  refine asks the plan to name no source for that fact or decision, or to say "the task subagent". It also says: "Do not
+  name the user as the source of this fact or decision." On #391 (2026-10-26), refine 1 said "the agent measured" for
+  its facts and named no source for its changes. Plan v2 still wrote "the user measured" and "the user decided", and
+  this cost refine 2. On #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
 
 - If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
   [The body of an issue](planner.md#the-body-of-an-issue) asks the planner for the same compare before the post. If no
