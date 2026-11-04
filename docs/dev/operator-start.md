@@ -229,9 +229,26 @@ sends no second message for the failed close. A close of the wrong pane stops th
 Outside a handoff, if the tab id of the row is not a tab id of the tab list, the operator tells the user and closes
 nothing. Steps 2 and 3 use the pane id and the tab id of the row.
 
-1. The operator sends "stop" to the session with the tool `SendMessage`, as a word of the user (see
-   [The word of the user](operator-conversations.md#the-word-of-the-user)). If `SendMessage` fails, the operator tells
-   the user and does not do steps 2 and 3. The tab stays open.
+Before the operator closes the pane of a session, the session runs the rounds of
+[Session-review rounds](session-review-rounds.md) and sends the report of the rounds. The operator does steps 2 and 3
+only after this report arrives. The wait of step 2 does not replace the report.
+
+After step 1, the operator tells the user one time that it waits for the report of the session. While it waits, it
+continues its other work and does not wait in a loop. If the user asks before the report arrives, the operator reads the
+state of the session and tells the user, as [A blocked session](#a-blocked-session) says. The word of the user then
+closes the pane with no report, keeps the wait, or ends the stop. After an end of the stop, the entry stays in the tab
+list.
+
+In step 1 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), the old operator waits
+for each such report before its hold messages. That report is the report again, because the old sender ran its rounds
+before its handoff file. If no report arrives, the old operator tells the user, and the word of the user decides. After
+the hold messages, the old operator starts no stop of a sender of the slug.
+[The hold of the items](handoff.md#the-hold-of-the-items) defines the hold messages and a sender of the slug.
+
+1. The operator sends this message to the session with the tool `SendMessage`: "Operator: stop. Run the rounds of
+   docs/dev/session-review-rounds.md, then report." The message is a word of the operator, not a word of the user, so it
+   does not start with "From the user:". If `SendMessage` fails, the operator tells the user and does not do steps 2
+   and 3. The tab stays open.
 2. The operator runs `herdr agent wait <pane id> --timeout 600000` in its shell. `herdr agent wait <session name>` exits
    with 1 and the code `agent_not_found` for each listed session (herdr 0.9.3, measured on 2026-10-24).
 3. If the wait ends in `idle` or `done`, the operator runs `herdr tab get <tab id>` in its shell. If
@@ -241,18 +258,19 @@ nothing. Steps 2 and 3 use the pane id and the tab id of the row.
    If the close works and the tab has an entry in the tab list, the operator takes that entry out. After
    `herdr pane close`, the tab stays open.
 
-A session at its input prompt runs no turn and is ready for the next input at its prompt, in the state `idle` or `done`.
-A session in `blocked` is not such a session, and [A blocked session](#a-blocked-session) covers it. For a session at
-its input prompt, the wait of step 2 ends at once, before the session reads "stop". Then the session can read "stop" in
-a new turn right after the wait, or it reads nothing before the close. In both cases, the operator still does the close
-of step 3 at once. It does not wait for a read of "stop", and it sends no message to the user for this case. The reason:
-the turn that "stop" starts only answers the stop, so a close that cuts it loses no work. On 2026-10-25, with herdr
-0.9.3 and Claude Code 2.1.310, the task subagent of #519 sent "stop" to a test session of its own in the state `done`.
-`herdr agent wait <pane id> --timeout 600000` returned `done` at once. About 0.5 seconds later, the message started a
-new turn, and the session answered the stop. On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, operator-docs sent
-"From the user: stop" to planner-messages, which waited for the input of the user.
-`herdr agent wait wB:p9 --timeout 600000` returned `idle` at once. `herdr pane read` showed "1 new message (ctrl+End)",
-so the stop was still unread. Then `herdr tab close` closed the session before it read the stop.
+The operator does step 2 only after the report of the rounds, so the session already read "stop". For a session at its
+input prompt, the wait of step 2 then ends at once, and the operator does step 3. For such a session, a wait right after
+the send of "stop" ends before the session reads it. The measures in the next paragraphs show this, and it is the reason
+for the wait for the report.
+
+On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, the task subagent of #519 sent "stop" to a test session of its
+own in the state `done`. `herdr agent wait <pane id> --timeout 600000` returned `done` at once. About 0.5 seconds later,
+the message started a new turn, and the session answered the stop.
+
+On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, operator-docs sent "From the user: stop" to planner-messages,
+which waited for the input of the user. `herdr agent wait wB:p9 --timeout 600000` returned `idle` at once.
+`herdr pane read` showed "1 new message (ctrl+End)", so the stop was still unread. Then `herdr tab close` closed the
+session before it read the stop.
 
 If the wait fails or times out, the operator tells the user and closes nothing. If the wait ends in `blocked`, the
 operator follows "A blocked session" and closes nothing. Without `--until`, the wait also ends in `blocked`.
@@ -262,32 +280,62 @@ wait, a `blocked` session and a failed `herdr tab close`.
 
 ## The close of a milestone
 
-This section gives the order of the end of a milestone. A round and the end of the rounds work as the bullet that starts
-"When the Todo column of the milestone is empty" of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. If no
-orchestrator runs, steps 1 and 2 do not apply.
+This section gives the close, the order of the end of a milestone in steps 1 to 4. Step 5, the close of the milestone on
+GitHub, comes after the close. A round and the end of the rounds work as
+[Session-review rounds](session-review-rounds.md) says. The close starts with no word of the user. It starts when the
+last ticket of the milestone closes and no task of the milestone is in flight. During the close, no session of the slug
+starts a handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
 
-1. The orchestrator runs its rounds, as that bullet says.
-2. When the orchestrator reports that the milestone is done, the operator stops the orchestrator, as "Stop a session"
-   says. The decision of the user of 2026-10-31 is the request of the user for this stop. A long-running orchestrator
-   that moves to the next milestone does not stop.
-3. The operator runs its own rounds. It can start them at the same time as step 1. It sends each finding that proposes a
-   change of the docs to the follow-up planner. If no follow-up planner runs, it gives the finding to the user. When its
-   rounds end, it tells the follow-up planner.
-4. The follow-up planner waits for the report of the ticket subagent of each draft. Then it handles each finding: it
-   posts the finding, drops it or writes it to memory. Then it runs its rounds. It handles the findings of its own
-   rounds in the same way. The operator runs no new round for them. After its last round, the follow-up planner sends a
-   report to the operator.
-5. When the user says to close the milestone, the operator relays this word to the follow-up planner. The follow-up
-   planner closes the milestone, as [Milestones](issues.md#milestones) says. If no follow-up planner runs, the operator
-   tells the user and closes nothing.
+The close ends with step 4, at the stop of the orchestrator. For a long-running orchestrator, the close starts only when
+it moves to the next milestone. It ends at a report of step 3 that names no issue of the milestone. If no orchestrator
+runs, steps 1 and 4 do not apply, and the operator starts step 2 on the word of the user. Then the close ends with the
+report of step 3.
+
+1. Before its first rounds of the close, the orchestrator tells the operator in a report that the close started. The
+   orchestrator runs its rounds before its report that the milestone is done, as
+   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
+2. When the report that the close started arrives, the operator tells the follow-up planner that the close started. With
+   no orchestrator, the operator tells it at the word of the user that starts step 2. This word also takes the place of
+   the report that the milestone is done.
+
+   After the report that the milestone is done, the operator runs its own rounds or gives the report again. It does this
+   as [Session-review rounds](session-review-rounds.md) says. It sends each finding to the follow-up planner. If no
+   follow-up planner runs, it gives the finding to the user. When its rounds end, it tells the follow-up planner.
+
+3. After this word of the operator, the follow-up planner waits for the report of the ticket subagent of each draft.
+   Then it handles each finding: it posts the finding, adds it to an open issue or drops it. Then it runs its rounds, or
+   gives the report again. It handles the findings of its own rounds in the same way. The operator runs no new round for
+   them.
+
+   When each ticket subagent of these findings reported, the follow-up planner sends the report of the rounds to the
+   operator. The report names each issue that the follow-up planner posted or moved into the milestone in this step. If
+   no operator runs, the user tells the follow-up planner that the close started and when to start step 3. Then the
+   follow-up planner gives the report to the user.
+
+4. Steps 1 to 3 are one pass. If the report of step 3 names an issue of the milestone, the orchestrator runs it, as
+   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The next report that the milestone is done starts the
+   next pass. In the next pass, a session that did no work after its rounds runs no new round, as
+   [Session-review rounds](session-review-rounds.md) says.
+
+   If the report of step 3 names no issue of the milestone, the operator stops the orchestrator, as "Stop a session"
+   says. If no follow-up planner runs, the end of the rounds of step 2 replaces the report of step 3. This step is the
+   request of the user for this stop. The operator needs no new word of the user.
+
+   A long-running orchestrator that moves to the next milestone does not stop. A draft that still waits for a decision
+   of the user does not hold this stop. [The milestone of an issue](planner.md#the-milestone-of-an-issue) gives the
+   milestone of its issue.
+
+5. The user says when to close the milestone on GitHub. After the end of the close, the operator relays this word to the
+   follow-up planner. If the word comes earlier, the operator tells the user that it waits for the end of the close. The
+   follow-up planner closes the milestone, as [Milestones](issues.md#milestones) says. If no follow-up planner runs, the
+   operator tells the user and closes nothing.
 6. When the user says to stop the follow-up planner, the operator stops it, as "Stop a session" says. If step 5 did not
    run, or the follow-up planner has an open item, the operator first tells the user. It then stops the session only on
    a new word of the user.
 7. The operator ends last, and only on the word of the user. The user closes the tab of the operator.
 
-If a round or a send of steps 3 and 4 fails, [the failure rule](limits.md#the-failure-rule) applies to that session. Its
-rounds end. The operator does not wait in a loop for a report. If a report does not come, the operator tells the user,
-and the word of the user decides.
+The operator does not wait in a loop for a report. If a report does not come, the operator tells the user, and the word
+of the user decides.
 
 The user can end the hold of a ticket on hold while its milestone is open and `ListAgents` shows no session
 `orchestrator-<slug>` of its slug. Then the operator of that slug removes the label with
@@ -337,15 +385,15 @@ In a handoff, these rules stay with the user:
 The table gives each change of a handoff. An empty cell means that the page gives no state for that actor. For the case
 of more than one row, the row "More than one row has the name" wins over the row "A close or a start fails".
 
-| Change                         | Old session                                                                                                                                  | Operator                                         | New session           | Who tells whom                                   |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------------------- | ------------------------------------------------ |
-| The recommendation arrives     | Waits for the go                                                                                                                             | Sends the go                                     |                       | The old session tells the operator               |
-| The go arrives                 | Finishes its tasks, writes the handoff file                                                                                                  |                                                  |                       | The operator tells the old session               |
-| The path arrives               | Waits                                                                                                                                        | Reads the handoff file                           |                       | The old session tells the operator, with an item |
-| The stop                       | If it runs a turn, it reads "stop" and ends the turn. At its input prompt, it can read "stop" in a new turn or read nothing. Its pane closes | Waits for `idle` or `done`, then closes the pane |                       | The operator tells the old session "stop"        |
-| The start                      |                                                                                                                                              | Starts the new session                           | Runs, from the prompt | The operator starts it with `herdr agent start`  |
-| A close or a start fails       |                                                                                                                                              | Tells the user                                   |                       | The operator tells the user                      |
-| More than one row has the name | Runs                                                                                                                                         | Closes nothing, tells the user                   | Not started           | The operator tells the user                      |
+| Change                         | Old session                                                                                                                                                     | Operator                                                              | New session           | Who tells whom                                                                                               |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| The recommendation arrives     | Waits for the go                                                                                                                                                | Sends the go                                                          |                       | The old session tells the operator                                                                           |
+| The go arrives                 | Finishes its tasks, writes the handoff file                                                                                                                     |                                                                       |                       | The operator tells the old session                                                                           |
+| The path arrives               | Waits                                                                                                                                                           | Reads the handoff file                                                |                       | The old session tells the operator, with an item                                                             |
+| The stop                       | It runs the rounds or gives the report again, as [Session-review rounds](session-review-rounds.md) says. It sends the report of the rounds, and its pane closes | Waits for the report, then for `idle` or `done`, then closes the pane |                       | The operator tells the old session "stop". The old session tells the operator, with the report of the rounds |
+| The start                      |                                                                                                                                                                 | Starts the new session                                                | Runs, from the prompt | The operator starts it with `herdr agent start`                                                              |
+| A close or a start fails       |                                                                                                                                                                 | Tells the user                                                        |                       | The operator tells the user                                                                                  |
+| More than one row has the name | Runs                                                                                                                                                            | Closes nothing, tells the user                                        | Not started           | The operator tells the user                                                                                  |
 
 ## A blocked session
 

@@ -23,8 +23,9 @@ says. An item has the form of [The form of an item](operator-items.md#the-form-o
 
 ## The word of the user
 
-The operator relays each instruction of the user to a session of its slug with `SendMessage`. Examples are a stop, a
-handoff and a landing order. An installing operator also sends
+The operator relays each instruction of the user to a session of its slug with `SendMessage`. Examples are a handoff and
+a landing order. A stop is not such a relay, even on a request of the user. For a stop, the operator sends the message
+of step 1 of [Stop a session](operator-start.md#stop-a-session). An installing operator also sends
 [the hold before an install](release.md#the-hold-before-an-install) to each other operator. An operator relays such a
 hold to its own orchestrator.
 
