@@ -1,9 +1,9 @@
 # First refine
 
 This page lists the hints for the first refine of a ticket, sorted by the kind of ticket.
-[orchestrator.md](../orchestrator.md) defines the terms "ticket" and "ticket subagent", and
-[Review findings](review-findings.md#review-findings) defines a loop. The first refine is the first `tasker refine` of
-step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket).
+[orchestrator.md](../orchestrator.md) defines the term "ticket". [sessions.md](../sessions.md) defines the term "task
+subagent". [Review findings](review-findings.md#review-findings) defines a loop. The first refine is the first
+`tasker refine` of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket).
 
 A hint states what to ask the plan for, and why. When the plan gets the hints in the first refine, the review does not
 have to find them one loop at a time.

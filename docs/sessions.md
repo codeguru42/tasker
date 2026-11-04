@@ -11,8 +11,9 @@ The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator
 
 An item is a message from a planner or an orchestrator to the operator about something that needs the user.
 
-A task subagent is a session that tasker starts to work on one ticket. A ticket subagent is an assistant session that an
-orchestrator starts for one ticket.
+A task subagent is a subagent that the orchestrator starts with the Agent tool for one ticket. A ticket subagent is a
+subagent that a planner starts with the Agent tool for the work on one draft of an issue. A review agent is not a ticket
+subagent.
 
 The own name of a session is in the first line of the output of `ListAgents`, in the form "This session is <name>". The
 role is the part of the name before the first `-`. The slug is the part after it.

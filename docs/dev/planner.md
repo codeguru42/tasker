@@ -5,9 +5,9 @@ on GitHub. The [user](../sessions.md) works with the planner. The readers of thi
 session that [Before a post](issues.md#before-a-post) of issues.md sends to
 [The blocked-by links](#the-blocked-by-links) also reads that section.
 
-The page does not cover the work of the orchestrator and of the ticket subagents.
-[The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines the
-terms "orchestrator", "ticket" and "ticket subagent".
+The page does not cover the work of the orchestrator and of the task subagents.
+[The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines
+"orchestrator" and "ticket". [sessions.md](../sessions.md) defines the terms "task subagent" and "ticket subagent".
 
 [issues.md](issues.md) gives the steps and the GitHub facts to file issues, blocked-by links and milestones, and the
 facts of the project board.

@@ -1,12 +1,12 @@
 # Orchestrator
 
 [The orchestration pages](orchestrator.md) give the rules for an orchestrator. The orchestrator is the assistant session
-that picks tickets and starts one ticket subagent for each ticket. It moves the cards, sets the landing order and writes
+that picks tickets and starts one task subagent for each ticket. It moves the cards, sets the landing order and writes
 memory.
 
-A ticket is an issue on the project board. For each ticket, the orchestrator starts a ticket subagent. The ticket
-subagent runs the steps of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the
-person who works with the sessions, as [sessions.md](sessions.md) says. The operator starts the orchestrator, as
+A ticket is an issue on the project board. A task subagent, as [sessions.md](sessions.md) defines it, runs the steps of
+["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for one ticket. The user is the person who works with the
+sessions, as [sessions.md](sessions.md) says. The operator starts the orchestrator, as
 [Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not type in the
 session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
 [A blocked session](dev/operator-start.md#a-blocked-session) says. The orchestrator reads its own name and its slug from
@@ -34,10 +34,10 @@ broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the mes
 each other request between orchestrators that needs a decision of the user.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
-task subagents, not ticket subagents, and they do not run the steps on [the orchestration pages](orchestrator.md).
+not task subagents. They do not run the steps on [the orchestration pages](orchestrator.md).
 
-The orchestrator and its ticket subagents run tasker from the local clone of the orchestrator. For one ticket, its
-ticket subagent is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names.
+The orchestrator and its task subagents run tasker from the local clone of the orchestrator. For one ticket, its task
+subagent is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names.
 
 Every `tasker` command on [the orchestration pages](orchestrator.md) is the installed `tasker`: the `tasker` command on
 the PATH from a global install. The installed `tasker` is a build of this repo, from a version that can be older than
