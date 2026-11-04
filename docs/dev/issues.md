@@ -41,8 +41,8 @@ how to do it on GitHub.
   [The blocked-by links](#the-blocked-by-links) and [The read in the write call](#the-read-in-the-write-call) say.
 
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md. Before a session shows a
-  draft to the user, the session runs the self-check of the simple-english skill over the file of the draft. A planner
-  runs the check over its draft file before the first loop of
+  draft to the user, the session runs the self-check of the simple-english skill over the file of the draft. The ticket
+  subagent of a planner runs the check over its draft file before the first loop of
   [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md. The check counts the words of each
   sentence. It also searches the draft for the banned words and for an `if` or a `when` inside a sentence. The session
   fixes each hit before it shows the draft. For example, on 2026-10-15, a draft had four sentences over the limit, and
