@@ -11,8 +11,8 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   `tasker update-branch` that step 9 of ["Run one ticket"](run-one-ticket.md#run-one-ticket) runs because the base
   branch moved: the update of step 9 from `failed`. The reason: without this case, the review after the update from
   `failed` counts as a loop, also with the same patch. A base that moves often can make `tasker merge` fail more than
-  once. The other cases of `tasker update-branch` from `failed` stay outside this rule. Examples are an update after a
-  failed `tasker verify` and an update of [the comeback rule](run-one-ticket.md#the-comeback-rule) from `failed`. The
+  once. The other cases of `tasker update-branch` from `failed` stay outside this rule. An example is an update after a
+  failed `tasker verify`. The
   agent reads two patch ids in the local clone of the orchestrator, with the remotes of
   [the diff read](run-one-ticket.md#the-diff-read). A patch id is the first field of the output of
   `git patch-id --stable` for the diff of the task branch against its base. The output has the form
@@ -80,6 +80,10 @@ The readers of this page are the agent of a ticket, and the orchestrator for the
   `tasker update-branch` with no first patch id, and the agent sent a read and an update in parallel. On #443
   (2026-10-25), the agent sent the patch-id read and the text-id read, each with its fetch, as parallel calls of one
   message.
+
+  The comeback update is the update of [the comeback rule](run-one-ticket.md#the-comeback-rule) from `failed` when the
+  line `failed in` of `tasker show <issue>` prints `merging`. In the bullets of this section, the comeback update
+  counts as the update of step 9 from `failed`. [The docs-only update](#the-docs-only-update) does not cover it.
 
 - The same-text compare: the patch id depends on more than the text of the changed lines, for example on the context
   lines of the hunks. On #229 and #231, the patch ids differed after the move onto `main` (7a499ce5 and 327f92ce on
