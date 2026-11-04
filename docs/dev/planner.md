@@ -5,7 +5,7 @@ on GitHub. The [user](../sessions.md) works with the planner. The readers of thi
 session that [Before a post](issues.md#before-a-post) of issues.md sends to
 [The blocked-by links](#the-blocked-by-links) also reads that section.
 
-The page does not cover the work of the orchestrator and of the task subagents.
+The page does not cover the work of the orchestrator and of the task subagents of the tickets.
 [The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines
 "orchestrator" and "ticket". [sessions.md](../sessions.md) defines the terms "task subagent" and "ticket subagent".
 
@@ -379,8 +379,8 @@ that it dismissed. The initial planner posts only after the approval of the user
 - If an issue adds a rule to an existing bullet on purpose, the issue says "in this bullet, not a new bullet". If a
   review finding asks for a new bullet, the task subagent dismisses the finding with the words of the issue.
   [Review findings](review-findings.md#review-findings) says this for a finding that contradicts an exact rule of the
-  issue. On #398 (2026-10-24), review 1 asked for a new bullet in an altitude finding. The task subagent dismissed the
-  finding with the words of the issue.
+  issue. On #398 (2026-10-24), review 1 asked for a new bullet in an altitude finding, and the task subagent dismissed
+  the finding with the words of the issue.
 - An issue can put new text in an existing paragraph or an existing bullet on purpose. For the limit of Rule 6.6 of the
   simple-english skill, a bullet with one paragraph counts as one paragraph. In a bullet with two or more paragraphs,
   each paragraph counts on its own. Before the post, the planner counts the sentences of the paragraph that gets the new

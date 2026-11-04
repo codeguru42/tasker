@@ -96,7 +96,7 @@ orchestrator.
   [the broken-commit steps](verify-failures.md#the-broken-commit-steps) say. The plan does not ask the execute session
   for `git merge-base` against a local branch in the worktree of tasker. On #419 (2026-10-25), the local `main` of the
   clone of tasker was an old commit, and plan v6 used the base commit 9ce3caa9 for this reason. If `origin` holds the
-  task branch from step 9 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md), the task subagent follows the
+  task branch from step 9 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md), the task subagent does the
   pushed-branch rule of [the broken-commit steps](verify-failures.md#the-broken-commit-steps) after step 11 of that
   page. It does this before each later `tasker update-branch`. The parent of a
   [stacked task](pick-the-tickets.md#the-stacked-ticket-rule) can land with changed commits before the task has a commit
@@ -258,8 +258,8 @@ orchestrator.
   permission mode, measure the fact and give it in the first refine with the command and its result
   ([the fact test](plan-review.md#the-fact-test)). On #128, the plan session tried to get such a fact itself, outside
   the worktree. Ask the plan to add no test that the issue or [Tests](rules.md#tests) of rules.md does not ask for. A
-  fact test is the task subagent's work. It runs in [the folder of the task subagent](limits.md#limits) or in the task
-  worktree, before the refine, and never as a todo of the plan. On #425, plan v1 added the guard test
+  fact test is the work of the task subagent. It runs in [the folder of the task subagent](limits.md#limits) or in the
+  task worktree, before the refine, and never a todo of the plan. On #425, plan v1 added the guard test
   `test/package-version.test.ts`, and it gave the execute session the fact test `npm pack` in the worktree of tasker.
   Refine 1 removed both.
 - If a ticket adds a security check of a path for an outside tool, the real path can disagree with the tool. An example
@@ -738,8 +738,8 @@ orchestrator.
   ref update inside the hook fails with `ref updates forbidden inside quarantine environment`. Use a git wrapper first
   on PATH that runs a command before each push. `test/helpers/git.ts` holds such a wrapper since #43. Each command
   inside the wrapper calls the real git by its path. A plain `git` inside the wrapper runs the wrapper again.
-- Before landing, the task subagent runs each test file for a command that makes git commits. Examples include a rebase
-  or a merge. The task subagent hides the global git configuration with
+- Before the landing, the task subagent runs each test file of a command that makes git commits. For example, it runs
+  these tests with a rebase or a merge, with the global git configuration hidden:
   `GIT_CONFIG_GLOBAL=/dev/null npm test -- <test file>`. Then the tests run with no global git identity, as on the
   GitHub runner ([Tests](code-conventions.md#tests)). On #273, 21 tests of `test/commands/update-branch.test.ts` passed
   on the local machine and failed on CI. #287 fixed them.
@@ -902,8 +902,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   wait for the two loops of [Simplify over special rules](working-with-the-user.md#simplify-over-special-rules). On
   #302, loops 2 to 4 each found a new edge case in the test, and the user dropped the exception.
 - If a ticket adds a rule that bans an action in the reply to the user, ask the plan for a scope bullet. Before
-  `tasker approve`, the task subagent checks whether the issue covers two cases. One case is a request in the form of a
-  question. The other is an offer that another doc requires. On #259, review 1 found both cases, and the task subagent
+  `tasker approve`, the task subagent decides whether the issue covers two cases: a request in the form of a question.
+  The other is an offer that another doc requires. On #259, review 1 found both cases, and the task subagent
   [dismissed them with the words of the issue](review-findings.md#review-findings).
 - If an issue names an example doc for a new rule, ask the plan to make the example sentence claim only the one fact
   that the rule needs. Also ask the plan to list the sentences of that doc that the rule still bans, so that the task
@@ -923,7 +923,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   [the design-gap rule](plan-review.md#the-design-gap-rule) made the next sentence read as a sentence about the other
   issue. The place needed a design-gap answer.
 - If one rule has two kinds of actor, for example the orchestrator and a task subagent, ask the plan to list each actor.
-  Ask it to list each sentence with that actor. Otherwise the review finds each failure path that names only one actor
+  Ask it to list each sentence with its actor. Otherwise the review finds each failure path that names only one actor
   (#135). If a rule lets a task subagent get something through the orchestrator, ask the plan to say who does the
   action. On #271, review loop 2 found that the text did not say who does the permitted read for a task subagent. The
   user decided that the orchestrator does the read and gives the fact to the task subagent as an answer.
@@ -994,12 +994,15 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   [the diff read](run-one-ticket.md#the-diff-read), which stops on each failed command. The plan said that these reads
   are not commands of the diff read, and that the same-patch rule gives the result of a failed read.
 - If a rule lets a task subagent skip a step, it names each later bullet that no longer applies. On #147, the early
-  update had to switch off the update of the bullet "When the issue of the earlier ticket is closed". If a rule takes
-  away a fact that a skipped step needs, the rule also names the task subagent that skips it. On #187, the rule took
-  away the landing order, but the fourth case of the stop rule still stopped the task subagent. Review 1 then asked for
-  a message to the task subagent. Such a rule can also replace a sentence in a bullet that runs at another moment. Then
-  ask the plan to say when the skip applies. On #192, loop 1 found that the words "gives the next step" can send the
-  task subagent past the refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket).
+  update had to switch off the update of the bullet "When the issue of the earlier ticket is closed". If the step that
+  the task subagent skips depends on a fact that the rule takes away, the rule also tells the task subagent. The task
+  subagent skips the step. On #187, the rule took away the landing order, but the fourth case of the stop rule still
+  stopped the task subagent.
+
+  Review 1 then asked for a message to the task subagent. Such a rule can also replace a sentence in a bullet that runs
+  at another moment. Then ask the plan to say when the skip applies. On #192, loop 1 found that the words "gives the
+  next step" can send the task subagent past the refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket).
+
 - If a rule adds a new path to an existing step, ask the plan to search the whole paragraph of that step for the words
   of the old path. Ask it to fix each such sentence in one commit. The search follows
   [the doc-search rule](rules.md#docs). On #198, three review loops found the words "in an answer", "that sends the
@@ -1012,9 +1015,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   review 1 found this gap.
 - If a rule offers the user a choice, ask the plan to say what happens to later offers after the user says no or the
   command fails. On #227, review 1 found that the same offer came back at each read of the board.
-- If a rule changes how a task subagent ends its turn, ask the plan to list each place where this happens. Also ask for
-  each place on the page where the task subagent gives a report. Ask for each place where the orchestrator reads the
-  last report. On #166, each fix drew a new case, and the work took 4 loops.
+- If a rule changes how a task subagent ends its turn, ask the plan to list each place on the page where the task
+  subagent ends its turn. Ask it also to list each place where the task subagent gives a report. Ask for each place
+  where the orchestrator reads the last report. On #166, each fix drew a new case, and the work took 4 loops.
 - If a ticket changes how a session numbers the questions of an [item](../sessions.md), ask the plan in the first refine
   for a list. The list names each place that reads those numbers or an answer to them. Examples of such a place are the
   send and the close of an item in [The answer](operator-items.md#the-answer) of `docs/dev/operator-items.md`. The plan
