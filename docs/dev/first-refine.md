@@ -571,9 +571,9 @@ orchestrator.
   helper, and review 1 found the copy. The fix cost one loop.
 - Ask the plan to write no claim about a count in new text, for example "two functions fetch". Such a claim becomes
   false with each new case. On #199, the fix of a count drew a new finding in the next loop.
-- If the issue gives a `gh issue list` command, ask the plan to add `--limit 1000`. By default, gh lists at most 30
-  issues (#200). [The priority rule](pick-the-tickets.md#pick-the-tickets) of `docs/dev/pick-the-tickets.md` holds such
-  a command.
+- If the issue gives a `gh issue list` or a `gh project item-list` command, ask the plan to add `--limit 1000`. By
+  default, gh lists at most 30 issues (#200). [The project board](issues.md#the-project-board) gives the limit of
+  `gh project item-list`, and [the priority rule](pick-the-tickets.md#pick-the-tickets) holds such a command.
 - If a page has two headings with the same name, the issue gives the exact anchor (#194).
 - If an issue asks for a heading "next to a bullet", ask the plan to put the heading after the bullet list, not inside
   it. On #230, the orchestrator gave this answer before `tasker approve`.
