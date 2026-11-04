@@ -263,6 +263,7 @@ describe("sandboxReadDenyPaths", () => {
       "/pi/custom/mcp-auth.json",
       "/pi/custom/models.json",
       "/p",
+      "/h/.config/tasker/config.json",
     ]);
   });
 
@@ -324,6 +325,7 @@ describe("sandboxReadDenyPaths", () => {
       "/pi/mcp-auth.json",
       "/pi/models.json",
       "/p",
+      "/h/.config/tasker/config.json",
     ]);
   });
 
