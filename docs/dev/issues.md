@@ -47,7 +47,8 @@ how to do it on GitHub.
   sentence. It also searches the draft for the banned words and for an `if` or a `when` inside a sentence. The session
   fixes each hit before it shows the draft. For example, on 2026-10-15, a draft had four sentences over the limit, and
   one search and one word count over the draft file found them.
-- For a priority label on an issue, see [The body of an issue](planner.md#the-body-of-an-issue) of planner.md.
+- For the priority of an issue, see [The body of an issue](planner.md#the-body-of-an-issue) of planner.md and
+  [The project board](#the-project-board).
 - Right after each post of the body of an issue, the session compares the posted body with the body of its draft file.
   The body of a draft file is the file with its title line and the blank line after it taken out. An example of the
   compare is `diff <(gh issue view <number> --json body -q .body) <body of the draft>`. The compare ignores blank lines
@@ -114,9 +115,8 @@ on that open issue that gives the new case. This section covers each session, al
 - The planner drafts the recurrence comment. The comment gives the ticket, the date and the facts of the new case. The
   planner shows the draft to the user, as [Before a post](#before-a-post) says. The planner posts the comment after the
   approval.
-- With the draft, the planner gives the user one recommendation for the issue: no change, a priority label, another
-  milestone, or new blocked-by links. The user decides. After the approval, the planner makes the change in the same
-  post round.
+- With the draft, the planner gives the user one recommendation for the issue: no change, a priority, another milestone,
+  or new blocked-by links. The user decides. After the approval, the planner makes the change in the same post round.
 - A change of the milestone follows [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md. A
   change of the links follows [The blocked-by links](planner.md#the-blocked-by-links) of planner.md, as for any issue.
   That also covers the read of `tasker status` before a link.
@@ -140,8 +140,22 @@ work with gh 2.101.0:
   `PVT_kwHOACGSlc4BmiTL`). It is linked to `codeguru42/tasker`.
 - The Status field has the id `PVTSSF_lAHOACGSlc4BmiTLzhlK7j4`. Its options are Todo (`f75ad846`), In progress
   (`47fc9ee4`) and Done (`98236657`).
+- The field `Priority` has the id `PVTSSF_lAHOACGSlc4BmiTLzhlK7oI`. Its options are `P0` (`79628723`), `P1` (`0a877460`)
+  and `P2` (`da944a9c`). `P0` is the highest priority, and `P2` is the lowest. The priority of an issue is the value of
+  this field on the card of the issue. A card with no value has no priority.
+- To read the item id of the card of an issue:
+  `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .content.number == <number>) | .id'`.
+  If the issue has no card, the command prints nothing.
+- To set the priority of an issue:
+  `gh project item-edit --project-id PVT_kwHOACGSlc4BmiTL --id <item id> --field-id PVTSSF_lAHOACGSlc4BmiTLzhlK7oI --single-select-option-id <option id>`.
+- To read the priority of an issue:
+  `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .content.number == <number>) | .priority'`.
+  The command prints the option, for example `P0`. If the card has no priority, it prints an empty line. If the issue
+  has no card, the command prints nothing.
+- `gh project item-list` lists at most 30 items by default. So each `gh project item-list` command of the docs gives
+  `--limit 1000`.
 - A workflow of the board adds each new issue with the status Todo within a minute. The planner does not run
-  `gh project item-add` for a new issue.
+  `gh project item-add` for a new issue. The workflow sets no priority, so a new issue has no priority.
 - The board moves an issue to Done when the issue closes. The board archives a closed item 7 days after its last update.
 - To move a card:
   `gh project item-edit --project-id PVT_kwHOACGSlc4BmiTL --id <item id> --field-id PVTSSF_lAHOACGSlc4BmiTLzhlK7j4 --single-select-option-id <option id>`.
