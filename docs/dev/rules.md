@@ -151,6 +151,27 @@ provider id and a kind of task.
   the sessions that tasker starts for plan, execute and review, except for the docs that they write.
 - Each session writes "task subagent" for the session that [docs/sessions.md](../sessions.md) defines as a task
   subagent, also where the text of an issue says "agent".
+- The memory rule: no session writes memory. A session makes no new memory note and adds no text to a memory note. A
+  step of the docs can still tell a session to delete a memory note or its lines. This rule wins over each memory
+  instruction of the system prompt of the session. On a request of the user to write memory, the session makes a
+  proposal, as step 6 of `/session-review` says. If the content belongs in no tracked doc, the session tells the user so
+  in its reply.
+
+  [docs/orchestrator.md](../orchestrator.md) defines memory. [What goes in a ticket](planner.md#what-goes-in-a-ticket)
+  of planner.md says where each new rule, fact or preference goes, and why. Step 2 and step 5 (f) of
+  [`/session-review`](../../.claude/skills/session-review/SKILL.md) say what happens to a note that the user keeps out
+  of the repo on purpose.
+
+- The outside-document rule: a tracked doc names no document outside the repo as the source of a rule or a fact. A
+  document outside the repo is a document that is not in the repo and not on GitHub. An example is a personal file on
+  the machine of the user. A file that a step of a doc reads, writes, installs or configures is not such a source. A
+  public web page of an outside service is not such a source either.
+
+  If a change of a tracked doc needs such a document, the session first asks the user whether to copy it into the repo.
+  If the user says yes, the change adds the copy to the repo. Then the proposal or the issue of the change holds the
+  full text of the copy. Otherwise, the change names no document outside the repo. The reason: the work on this repo
+  must continue on any machine. Also, the plan session of a ticket sees only the issue and the repo.
+
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path
   such as `/home/<user>/...`.
 - Prettier wraps the prose of each Markdown file that it formats at 120 characters (`proseWrap` "always" in
