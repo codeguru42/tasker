@@ -478,33 +478,34 @@ orchestrator.
 - The task subagent of a [stacked task](pick-the-tickets.md#the-stacked-ticket-rule) runs
   `git merge-base --is-ancestor tasker/<parent branch> tasker/<task branch>` before each command that depends on the
   parent. These commands are `tasker refine`, `tasker approve` and `tasker execute`, not only the first refine. Before
-  the check, the task subagent runs `git fetch tasker`. Exit code 1 means that the branch of the parent holds a commit
-  that the task branch does not hold. Then an update moves the head. [The base rule](run-one-ticket.md#the-base-rule)
-  says where the task subagent meets a landed parent at `tasker verify` and at `tasker refine`. The parent can land
-  while the task is in `approved`. If the check then exits with 1, the task subagent runs `tasker update-branch` from
-  `approved`, because `tasker execute` refuses a task whose parent landed
-  ([the stacked-task guards](workspaces.md#stacked-task)). An update that moves the head demotes the task to
-  `awaiting_plan_review` and costs a refine. The bullet of [Land the work](land-the-work.md#land-the-work) for a stacked
-  task in `approved` gives the case where the head does not move. On #347, lesson 1 of the final report gave the
+  the check, the task subagent runs `git fetch tasker`. The check uses the hash that
+  [steps 3 and 4 of the base rule](run-one-ticket.md#the-base-rule) give in place of `tasker/<parent branch>`. Exit code
+  1 means that the branch of the parent holds a commit that the task branch does not hold. Then an update moves the
+  head. [The base rule](run-one-ticket.md#the-base-rule) says where the task subagent meets a landed parent at
+  `tasker verify` and at `tasker refine`. The parent can land while the task is in `approved`. If the check then exits
+  with 1, the task subagent runs `tasker update-branch` from `approved`, because `tasker execute` refuses a task whose
+  parent landed ([the stacked-task guards](workspaces.md#stacked-task)). An update that moves the head demotes the task
+  to `awaiting_plan_review` and costs a refine. The bullet of [Land the work](land-the-work.md#land-the-work) for a
+  stacked task in `approved` gives the case where the head does not move. On #347, lesson 1 of the final report gave the
   demotion. On #346, the task subagent ran the update from `executed` after #47 landed. If the check exits with 1 in
   `awaiting_plan_review`, the task subagent runs `tasker update-branch` before the refine, because the update marks the
   plan as stale ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). If the
-  check exits with another code, for example 128 for a pruned parent ref, the task subagent
+  check exits with another code, for example 128 for a ref that does not exist, the task subagent
   [stops](limits.md#the-answer-wait-rule) and reports the error. On #356, review 2 asked for both cases. The sentence
   that starts "If the check exits with 1 in `awaiting_plan_review`" has an exception. A parent can move again and again
   in its own review loops before it lands. Right after the check before `tasker approve` exits with 1, the task subagent
-  runs `tasker show <full key of the parent>`. If the `state:` line is not `merging`, `landed`, `finishing` or
-  `finished`, the exception applies. Then the task subagent lists each file that the parent changed since the merge
-  base, with `git diff --name-only tasker/<task branch>...tasker/<parent branch>`. A rewrite of the parent adds more
-  files to this list. The plan files are the files that the last `tasker show-plan` changes, links to or quotes. If no
-  listed file is a plan file, the task subagent runs `tasker approve` and `tasker execute`, after the plan review of
-  [step 3 of "Run one ticket"](run-one-ticket.md#run-one-ticket). In this case, an exit 1 of the check before
-  `tasker execute` does not stop the execute. Then the task subagent runs `tasker update-branch` from `executed`. On
-  #460 (2026-10-25), the task stayed in `executed` after this update. If a listed file is a plan file, the task subagent
-  still runs `tasker update-branch` before the refine, as that sentence says. If the update from `executed` reports a
-  rebase conflict, the task subagent follows [the rebase-conflict procedure](rebase-conflicts.md#procedure). If another
-  command of this exception fails, the task subagent [stops](limits.md#the-answer-wait-rule) and reports the error. The
-  update from `executed` does not take the place of the update after the parent lands, which
+  runs `tasker show <full key of the parent>`. If the `state:` line is not `merging`, `landed`, `finishing`,
+  `cleanup_failed` or `finished`, the exception applies. Then the task subagent lists each file that the parent changed
+  since the merge base, with `git diff --name-only tasker/<task branch>...tasker/<parent branch>`. A rewrite of the
+  parent adds more files to this list. The plan files are the files that the last `tasker show-plan` changes, links to
+  or quotes. If no listed file is a plan file, the task subagent runs `tasker approve` and `tasker execute`, after the
+  plan review of [step 3 of "Run one ticket"](run-one-ticket.md#run-one-ticket). In this case, an exit 1 of the check
+  before `tasker execute` does not stop the execute. Then the task subagent runs `tasker update-branch` from `executed`.
+  On #460 (2026-10-25), the task stayed in `executed` after this update. If a listed file is a plan file, the task
+  subagent still runs `tasker update-branch` before the refine, as that sentence says. If the update from `executed`
+  reports a rebase conflict, the task subagent follows [the rebase-conflict procedure](rebase-conflicts.md#procedure).
+  If another command of this exception fails, the task subagent [stops](limits.md#the-answer-wait-rule) and reports the
+  error. The update from `executed` does not take the place of the update after the parent lands, which
   [Land the work](land-the-work.md#land-the-work) gives. This order has a cost: the parent can move again after the
   update. Then each later update of the task can cost a review loop, as
   [Review findings](review-findings.md#review-findings) says. On #460 (2026-10-25), this order saved the refines.
