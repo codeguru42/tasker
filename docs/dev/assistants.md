@@ -164,6 +164,7 @@ control. Its read deny list holds these paths:
 - The git credentials file and the `.netrc` file.
 - The credentials file of Claude Code.
 - The credentials file of Codex.
+- The files `auth.json`, `mcp-auth.json` and `models.json` in the agent folder of `pi`.
 - The folder of the publish tokens of every configured repo. The version control gives it.
 - The configuration of tasker.
 
@@ -637,6 +638,31 @@ text. Nobody measured a host where the sandbox cannot start. Nobody measured a h
 - An abstract socket and a socket at a path that no deny key covers stay open to a command.
 - macOS and Windows are unmeasured.
 - A sandboxed command can outlive a SIGKILL of `codex`.
+
+## The pi provider
+
+### The agent folder
+
+The agent folder of `pi` holds its credentials, its `settings.json` and its extensions. `pi` takes the folder from
+`PI_CODING_AGENT_DIR`, else from `.pi/agent` under the home folder. It expands a value of `~` or `~/...` with the home
+folder. It converts a `file://` URL to a path. It uses a relative value as it stands. A measure on `pi` 1.1.0 on
+2026-11-03 showed these facts.
+
+`piAgentDir()` in `src/assistant/config-folders.ts` is the one home of the agent folder in tasker. It follows the rules
+of `pi`, with three differences. A blank value counts as unset, as for each other variable of tasker. If `HOME` is not
+set, an unset value or a value that starts with `~` gives no folder. The reason: tasker never takes the home folder of
+the host from the system, but `pi` does when `HOME` is unset. For a `file://` URL that `pi` cannot convert, it gives the
+value as it stands, where `pi` throws.
+
+The read deny list holds three files of the agent folder: `auth.json`, `mcp-auth.json` and `models.json`. `auth.json`
+holds the saved API keys and OAuth credentials of `pi`. `mcp-auth.json` holds the OAuth tokens of its MCP servers.
+`models.json` can hold an API key of an endpoint as plain text. The shell and the read tools of a run need none of the
+three files.
+
+`PI_CODING_AGENT_DIR` and `PI_CODING_AGENT_SESSION_DIR` pass [the filter](phases.md#the-environment-of-a-phase) on
+purpose. `PI_CODING_AGENT_DIR` locates the credentials, `settings.json` and the extensions of a `pi` child. Without it,
+the child uses `$HOME/.pi/agent`, not the folder that the user set. `PI_CODING_AGENT_SESSION_DIR` locates the sessions
+of a `pi` command that names no `--session-dir`.
 
 ## The plan answer and the prompts
 
