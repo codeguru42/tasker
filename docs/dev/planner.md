@@ -74,6 +74,47 @@ system deletes them. The limit: a reboot deletes the open drafts, and the follow
   so it shows the draft to the user first. On #160, the Summary still named the latest review after the user removed the
   review from the requirements, and a comment recorded the fix.
 
+## The ticket subagent
+
+The planner gives the work on each draft to a ticket subagent, as [docs/sessions.md](../sessions.md) defines it. A
+ticket subagent works one time and ends. It does the steps of [The review loop of a draft](#the-review-loop-of-a-draft)
+and ends with a report. It edits only its draft file and its report file, and it posts nothing. The reason: the text of
+the draft and of its reviews stays out of the context of the planner.
+
+The prompt of a ticket subagent gives the source of the draft word for word, the milestone and the path of the draft
+file. It says whether the planner is the initial planner or the follow-up planner. It gives each decision of the user on
+the draft. It tells the ticket subagent to read this page, [Before a post](issues.md#before-a-post) and the
+simple-english skill. It bans each command that reads the login of the user and each write to GitHub. It asks for the
+report through the tool `SubagentHandback`.
+
+The ticket subagent also writes its report to the path of the draft file, with `-report.md` in place of `.md`. A rule of
+the planner pages that names a finding that the planner dismissed means a finding of this report. A rule of the planner
+pages that gives the planner a step before the post of a draft gives that step to the ticket subagent, except a step
+with the user.
+
+The report gives the path of the draft file, the title and a short summary of the draft. It also gives each finding that
+the ticket subagent dismissed, with its reason. It also gives each finding and each part of the draft of a kind of
+[the escape hatch](#the-escape-hatch). It also gives the blocked-by links with their reasons, and each command and
+result that a rule of the planner pages gives to the user.
+
+The planner then does each step after the review loops. Examples are a question to the user, an item, the post and the
+report of the post. When it posts, the planner adds the links. Links between drafts that are not posted yet stay with
+the planner, from its table of the needs and the likely files.
+
+A change of the draft after a report starts a new ticket subagent. An example is a change from an answer of the user.
+Another example is the change of the draft into a change of an open issue after the duplicate search. A change that
+comes while the ticket subagent of the draft runs waits for its report. The planner gives the new ticket subagent the
+draft file and the change. The new ticket subagent starts at step 2, and its count of loops starts at 1.
+
+A ticket subagent waits for the report of each review agent with a background `sleep`, again and again, until the report
+arrives. It does not end while a review agent runs. If a review agent ends with no report, the ticket subagent starts
+one new review agent for that loop. If that one also ends with no report, the ticket subagent ends, and its report says
+so. Then the planner tells the user before any post of that draft.
+
+If a ticket subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the planner. Then
+the planner starts one new ticket subagent for the draft. With a draft file, it starts at step 2, and with no draft
+file, at step 1. If that one also ends with no report, the planner tells the user.
+
 ## The review loop of a draft
 
 These terms apply in this section:
