@@ -44,22 +44,29 @@ The orchestrator does all the steps of this section.
   issue is still open, the orchestrator tells the user that its tickets wait. If the read fails,
   [the failure rule](limits.md#the-failure-rule) applies.
 
-- The priority rule: among the tickets that can start, the orchestrator starts a ticket with `priority: high` first.
-  Then it starts a ticket with `priority: medium`, then a ticket with no priority label, then a ticket with
-  `priority: low`. Two tickets of the same priority have no order. To read the labels, run
-  `gh issue list --milestone "<milestone>" --state open --label "priority: high" --limit 1000 --json number`. Run the
-  same command for the other labels. If a command fails, [the failure rule](limits.md#the-failure-rule) applies, and the
-  orchestrator starts no ticket until the read works. A ticket that is on none of the three lists has no priority label.
-  The rule covers the tickets of the milestone of the orchestrator. It changes no other rule of this section: a ticket
-  with a label still waits as [the stacking rule](#the-stacking-rule) says, and it still waits for the shared-file rule
-  and the move rule. A rule that stops a start still wins, for example the ban of
-  [A failed CI run](ci-wait.md#a-failed-ci-run), the ban on a new ticket after the suggestion of a handoff in
-  [The landing count](handoff-orchestrator.md#the-landing-count), step 1 of
-  [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) or a hold of the user.
-  The ticket of a parked task that comes back to Todo of the current milestone takes its place by its label (see
+- The priority rule: among the tickets that can start, the orchestrator starts a ticket with the priority `P0` first.
+  Then it starts a ticket with `P1`, then a ticket with no priority, then a ticket with `P2`. The priority of a ticket
+  is the value of the field `Priority` on its card, as [The project board](issues.md#the-project-board) says. Two
+  tickets of the same priority have no order. The rule covers the tickets of the milestone of the orchestrator.
+
+  To read the priorities, run
+  `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .milestone.title == "<milestone>" and .priority != null) | "\(.content.number) \(.priority)"'`.
+  Each line of the output gives the number of an issue and its priority, for example `587 P0`. A ticket with no line has
+  no priority. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts
+  no ticket until the read works.
+
+  The rule changes no other rule of this section. A ticket with a priority still waits as
+  [the stacking rule](#the-stacking-rule) says. It also still waits for the shared-file rule and the move rule. A rule
+  that stops a start still wins. Examples are the ban of [A failed CI run](ci-wait.md#a-failed-ci-run), and the ban on a
+  new ticket after the suggestion of a handoff in [The landing count](handoff-orchestrator.md#the-landing-count). Other
+  examples are step 1 of [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator)
+  and a hold of the user.
+
+  The ticket of a parked task that comes back to Todo of the current milestone takes its place by its priority (see
   [the defer rule](#the-defer-rule)). Each time the orchestrator reads the board, it applies the rule again. Then a
-  ticket with `priority: high` or `priority: medium` that joined the milestone and can start takes the next free agent
-  before the tickets with no label.
+  ticket with `P0` or `P1` that joined the milestone and can start takes the next free agent before the tickets with no
+  priority.
+
 - Each time a ticket lands, read the board again: the open issues of the milestone and the issues that block them. A new
   issue can join a milestone while a run is in progress. An open issue can also lose its last open blocker while no
   ticket lands. In one milestone, a new issue stayed in Todo for hours, because the orchestrator read the board only at
