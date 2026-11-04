@@ -1,6 +1,6 @@
 ---
 name: session-review
-description: Reviews the transcript of the session, saves what the session learned in memory, and sends each proposed change of a tracked doc to the target that the docs of the repo give. Start it with /session-review.
+description: Reviews the transcript of the session and each memory note. Sends each proposed change of a tracked doc to the target that the docs give. It writes no memory. Start it with /session-review.
 ---
 
 # session-review
@@ -16,13 +16,13 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 ## Steps
 
 1. Find the candidates in the transcript. A candidate is a decision, a correction or a confirmation of how to work, a settled design tradeoff, or a state that changed. Examples of a state are a deadline, an owner and an outside reference.
-2. Before the first write, read the memory index and each memory file. Then do these checks. The staleness check covers each existing entry: does each file, function or flag that it names still exist, and did a later decision of this session replace it? The duplicate check covers each new candidate: does an existing entry already hold it? The doc check covers each existing memory note, also a note that names no issue. Do the doc check with the items (a) to (i):
+2. First, read the memory index and each memory file. Then do these checks. The staleness check covers each existing note: does each file, function or flag that it names still exist, and did a later decision of this session replace it? The doc check covers each existing memory note, also a note that names no issue. Do the doc check with the items (a) to (i):
    - (a) Run `git -C <local clone> fetch origin` one time.
-   - (b) If the fetch fails, tell the user the command and the error. Then the doc check changes no note, and step 5 covers no note.
+   - (b) If the fetch fails, tell the user the command and the error. Then the doc check changes no note, and step 5 covers only the notes of its item (f).
    - (c) For each note, find each tracked doc of the repo that the note names. If the note names no tracked doc, it has nothing to compare. Keep the note.
    - (d) Read each doc that the note names with `git -C <local clone> show origin/main:<path>`.
    - (e) A doc that no longer exists is an answer, not a failure. [The doc-read rule](../../../docs/dev/doc-reads.md#the-doc-read-rule) gives the two error forms. Then the doc holds no line of the note.
-   - (f) If a read fails, tell the user the command and the error. Keep that note as it was. Step 5 does not cover the note. Go on with the next note.
+   - (f) If a read fails, tell the user the command and the error. Keep that note as it was. Step 5 covers the note only in its item (f). Go on with the next note.
    - (g) Compare each line of the note with those docs. The frontmatter and the links of the note are not lines to compare.
    - (h) If the compare leaves no line besides the frontmatter and the links, delete the note and its line in the memory index in step 4.
    - (i) If the docs hold some lines of the note, delete those lines in step 4. Keep the other lines.
