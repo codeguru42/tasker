@@ -274,8 +274,8 @@ orchestrator.
   Review loop 3 found that the text `..` and the kernel read of a symbolic link disagree. The user then changed the rule
   to a check on the text.
 - If a ticket depends on the loaded copy of a skill that the task subagent must not run, the task subagent measures
-  which copy loads. An example is a skill that writes memory, which [Limits](limits.md#limits) bans for a task subagent.
-  The task subagent uses a scratch run of `claude -p` in a scratch repo that starts no skill. The hint that starts "For
+  which copy loads. An example is `/session-review`, which [Limits](limits.md#limits) bans for a task subagent. The task
+  subagent uses a scratch run of `claude -p` in a scratch repo that starts no skill. The hint that starts "For
   [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder. The prompt asks the session to list
   the descriptions of its skills and to run no skill. The run uses
   `--model haiku --max-turns 1 --disallowedTools Bash Write Edit`. A control skill that only the scratch repo holds
