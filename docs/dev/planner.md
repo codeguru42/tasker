@@ -32,14 +32,12 @@ The operator starts the follow-up planner after the initial planning.
   issues at once. The prompt names no kinds of GitHub objects to make, so the initial planner still asks the user before
   a post, as [The order of the work](#the-order-of-the-work) says.
 - When the user says that the initial planning is done, the initial planner posts each approved draft. Then it runs the
-  rounds of `/session-review`. A round and the end of the rounds work as the bullet that starts "When the Todo column of
-  the milestone is empty" of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says for the orchestrator. Only
-  after the last round does it tell [its operator](../operator.md) with `SendMessage` that the initial planning is done.
-  Then it ends its work.
+  rounds of [Session-review rounds](session-review-rounds.md). Only after the last round does it tell
+  [its operator](../operator.md) with `SendMessage` that the initial planning is done. The message holds the report of
+  the rounds. Then it ends its work.
 
-  For the initial planner, a finding of a round is handled when it is posted as an issue, or added to an open issue. It
-  is also handled when it is written to memory, or when the user decided to drop it. A finding that the user wants
-  posted is a draft of [The initial planner](#the-initial-planner).
+  For the initial planner, a finding of a round that the user wants posted is a draft of
+  [The initial planner](#the-initial-planner).
 
 - The follow-up planner takes lessons, session review findings and proposed issues from `orchestrator-<slug>` and from
   [its operator](../operator.md).
@@ -47,7 +45,7 @@ The operator starts the follow-up planner after the initial planning.
   [its operator](../operator.md) as an item, in the form of
   [The form of an item](operator-items.md#the-form-of-an-item).
   [The review loop of a draft](#the-review-loop-of-a-draft) says which drafts wait.
-- At the end of a milestone, the follow-up planner does steps 4 and 5 of
+- At the end of a milestone, the follow-up planner does steps 3 and 5 of
   [The close of a milestone](operator-start.md#the-close-of-a-milestone). [Its operator](../operator.md) tells it when
   each step starts. After the stop of the orchestrator, the follow-up planner tells that session nothing.
 - The ticket subagent of each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner

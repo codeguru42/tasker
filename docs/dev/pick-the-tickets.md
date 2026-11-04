@@ -132,23 +132,23 @@ The orchestrator does all the steps of this section.
 - When a ticket starts, the orchestrator moves its card to In progress. `tasker start` does not move the card. The board
   moves the card to Done when `tasker finish` closes the issue.
 - When the Todo column of the milestone is empty, the orchestrator waits until the last ticket of the milestone closes
-  and no task of the milestone is in flight. Then the orchestrator runs `/session-review` before it stops and tells the
-  user. Do not write the issues of the next milestone. A round is one run of `/session-review`. The orchestrator runs
-  `/session-review` again after each round that found something. The rounds end when a round finds nothing new. A round
-  can find a lesson that an earlier round missed, or a new fact from the answers of the user. A finding is handled when
-  the orchestrator sent it to the planner, as the planner bullet of
-  [The prompt of a task subagent](#the-prompt-of-a-task-subagent) says. A finding is also handled when the planner filed
-  it as an issue or added it to an open issue. A finding is also handled when the orchestrator wrote it to memory, for a
-  fact that the rules keep out of the tracked docs. A finding is also handled when the user decided to drop it. A
-  finding that is not handled is open. When each finding is handled, the orchestrator tells the user one time that the
-  milestone is done, and it lists each finding with its state. The orchestrator does not ask the user to close the
-  milestone, and it does not bring the milestone up again in later replies. On 2026-10-25, orchestrator-m21 asked the
-  user several times whether to ask the planner to close M21, and the user said: "I will decide when to close M21". The
-  milestone closes only when the user says so, as [Milestones](issues.md#milestones) of issues.md says. The stop of this
-  bullet does not cover a long-running orchestrator (see
-  [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review rounds of this
-  bullet, the list of the findings and the report that the milestone is done cover a long-running orchestrator, before
-  it moves to the next milestone.
+  and no task of the milestone is in flight. If the orchestrator did not send the report that the close started yet, it
+  now sends this report to the operator, as step 1 of
+  [The close of a milestone](operator-start.md#the-close-of-a-milestone) says. Then the orchestrator runs the rounds of
+  [Session-review rounds](session-review-rounds.md), before it tells the user that the milestone is done and before it
+  stops. Do not write the issues of the next milestone. When the rounds end, the orchestrator tells the user one time
+  that the milestone is done, and it lists each finding with its state. If a pass of
+  [The close of a milestone](operator-start.md#the-close-of-a-milestone) adds an issue to the milestone, this bullet
+  applies again after the orchestrator runs that issue.
+
+  The orchestrator does not ask the user to close the milestone, and it does not bring the milestone up again in later
+  replies. On 2026-10-25, orchestrator-m21 asked the user several times whether to ask the planner to close M21, and the
+  user said: "I will decide when to close M21". The milestone closes only when the user says so, as
+  [Milestones](issues.md#milestones) of issues.md says. The stop of this bullet does not cover a long-running
+  orchestrator (see [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review
+  rounds of this bullet, the list of the findings and the report that the milestone is done cover a long-running
+  orchestrator, before it moves to the next milestone. A long-running orchestrator sends the report that the close
+  started only at its move to the next milestone, after its report that the milestone is done.
 
 ### The stacking rule
 
