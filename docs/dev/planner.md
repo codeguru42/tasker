@@ -107,14 +107,15 @@ Another example is the change of the draft into a change of an open issue after 
 comes while the ticket subagent of the draft runs waits for its report. The planner gives the new ticket subagent the
 draft file and the change. The new ticket subagent starts at step 2, and its count of loops starts at 1.
 
-A ticket subagent waits for the report of each review agent with a background `sleep`, again and again, until the report
-arrives. It does not end while a review agent runs. If a review agent ends with no report, the ticket subagent starts
-one new review agent for that loop. If that one also ends with no report, the ticket subagent ends, and its report says
-so. Then the planner tells the user before any post of that draft.
+A ticket subagent waits for the report of each review agent, as [The wait for a report](#the-wait-for-a-report) says. It
+does not end while a review agent runs. If a review agent ends with no report, the ticket subagent starts one new review
+agent for that loop. If that one also ends with no report, the ticket subagent ends, and its report says so. Then the
+planner tells the user before any post of that draft.
 
 If a ticket subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the planner. Then
-the planner starts one new ticket subagent for the draft. With a draft file, it starts at step 2, and with no draft
-file, at step 1. If that one also ends with no report, the planner tells the user.
+The planner judges this end with the harness notifications of [The wait for a report](#the-wait-for-a-report). Then the
+planner starts one new ticket subagent for the draft. With a draft file, it starts at step 2, and with no draft file, at
+step 1. If that one also ends with no report, the planner tells the user.
 
 The planner names each ticket subagent `<own name>-ticket-<file>-<count>`, with the `name` option of the Agent tool.
 `<own name>` is the own name of the planner, as [docs/sessions.md](../sessions.md) defines it. `<file>` is the name of
@@ -123,11 +124,130 @@ the session of the planner, from 1, so each name is new in that session. The tic
 `<ticket subagent name>-review-<loop>`, where `<loop>` is the number of the review loop, from 1. An example is
 `planner-m16-ticket-terms-2-review-1`.
 
+The second review agent of a loop gets the name `<ticket subagent name>-review-<loop>-2`.
+
 The planner gives each draft file a name of at most 24 characters, of lowercase letters, digits and `-`. The prompt of a
 ticket subagent gives the name of the ticket subagent. The Agent tool refuses a name of more than 64 characters, and
 other names, as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If the Agent
 tool refuses a name, the planner gives the draft file a shorter name. A subagent is not a session of a role, so its name
 gives no role and no slug in the sense of [docs/sessions.md](../sessions.md).
+
+### The wait for a report
+
+In this subsection, the starter is the ticket subagent or the planner that started an agent with the Agent tool. The
+agent is the review agent or the ticket subagent that the starter started. A harness notification is a
+`<task-notification>` block that Claude Code sends to the starter of an agent. Among other fields, it has the fields
+`<task-id>`, `<status>`, `<summary>`, `<note>` and `<result>`. The `<task-id>` of the harness notification of an agent
+is the agent id that the Agent tool gave at the start.
+
+A harness notification of an agent is of one of two kinds:
+
+- A wait notification has a `<summary>` that ends with "is waiting on its own background work". Its `<note>` starts with
+  "This agent stopped with background work of its own still running". The agent still runs, and it can report later.
+- An end notification is each harness notification of an agent that is not a wait notification. The agent has ended.
+
+Both kinds have the `<status>` `completed`. As a result, the starter never judges the end of an agent by the `<status>`
+alone. An agent can send more than one harness notification. A wait notification can also come after the report.
+
+A harness notification of a background command says nothing about the agent.
+
+The report of an agent is the text of its `SubagentHandback` call. Claude Code delivers it to the starter as a message
+that starts with `[Subagent hand-back]`. The message comes from the name of the agent. If the agent has no name, the
+message comes from its agent id. The `<result>` of a harness notification that comes after the report says that the
+report "was delivered to you as a message". The report of an agent ends the wait for that agent, and the starter ignores
+each later harness notification of that agent.
+
+An agent ended with no report when its end notification arrived and no report of the agent arrived. An end notification
+whose `<result>` says "was delivered to you as a message" is not an end with no report.
+
+No one tested an agent that ends with no `SubagentHandback` call. If an end notification holds the text of a report in
+its `<result>`, the starter takes that text as the report. If the Agent call fails, no agent runs. The failure counts as
+an end with no report.
+
+The starter never reads the output file of an agent to judge whether the agent runs. The output file is the transcript
+of the agent, and its last record does not show an end. The result of the Agent tool also says not to read the file. On
+2026-11-04, a ticket subagent read the transcript of its review agent 16 seconds after the start. It took the last
+record, an API request, as an end, and handed back with no review. The review agent reported about 5 minutes after its
+start.
+
+After step 4 of [The review loop of a draft](#the-review-loop-of-a-draft), the ticket subagent does these steps:
+
+1. Keep the agent id and the name of the review agent.
+2. End the turn with no other tool call.
+
+While it waits in step 2, the ticket subagent does the first item of this list that matches the event:
+
+- If the report of the review agent arrives, continue with step 5 of
+  [The review loop of a draft](#the-review-loop-of-a-draft).
+- If an extra report of the loop arrives, continue with step 5 of
+  [The review loop of a draft](#the-review-loop-of-a-draft). The extra report is the report of the loop.
+- If an extra report of an earlier loop arrives, keep its findings for step 5 of this loop. Then go to step 2.
+- If a wait notification of the review agent arrives, go to step 2.
+- If the end notification of the review agent arrives with no report, follow the paragraph that starts "A ticket
+  subagent waits for the report".
+- Otherwise, go to step 2.
+
+The ticket subagent starts no background `sleep` for the wait, and it reads no clock. The wait has no time limit. The
+planner also has no time limit for its ticket subagents. The harness starts the ticket subagent again with the report
+and with each harness notification.
+
+On 2026-11-04, planner-m16-ticket-pi-extensions-1 ended its turn while its review agents ran, and it got each report. On
+the same day, planner-m16-ticket-priority-field-1 stayed in its turn and judged the end from the transcript. It handed
+back with no review.
+
+An extra report is a report of a review agent of the draft that arrives before the hand-back of the ticket subagent. It
+is not the report of the review agent that the ticket subagent waits for at that time. No one saw an extra report. The
+guess is that the first review agent of a loop reports after its end notification, while the second review agent of that
+loop runs.
+
+The event list above says what the ticket subagent does with an extra report while it waits. If an extra report arrives
+while the ticket subagent waits for no review agent, the ticket subagent decides on its findings before its hand-back. A
+finding of an extra report or a late report can name text that a later loop already changed. The ticket subagent
+dismisses such a finding with that reason.
+
+The planner uses the same kinds of harness notification for each ticket subagent. While its review agent runs, a ticket
+subagent ends its turn in step 2 of the steps above. Then the planner gets a wait notification: the ticket subagent "is
+waiting on its own background work". This wait notification is not the end of the ticket subagent.
+
+The planner has no time limit for a ticket subagent. A ticket subagent can run three review loops, and a loop can have
+two review agents. A second report of the same ticket subagent gives a late report, as the next paragraphs say.
+
+A late report is a report of a review agent that arrives after the hand-back of its ticket subagent. On 2026-11-04, a
+late report started planner-m16-ticket-priority-field-1 again with its context, 2 minutes 43 seconds after its
+hand-back. Its background `sleep` commands still ran then.
+
+The ticket subagent that a late report starts again does these steps:
+
+1. Add the findings of the late report to the report file, under the heading
+   `## Late report of <name of the review agent>`.
+2. Change nothing in the draft.
+3. End with `SubagentHandback`. The report names the draft file, the review agent and the new section of the report
+   file.
+
+No one tested a ticket subagent with no background work left. Two facts support the start again: a `SendMessage` to an
+ended subagent starts it again. The answer-wait rule of [limits.md](limits.md#the-answer-wait-rule) records this for a
+`SendMessage` after a `SubagentHandback` call. This is a guess that no one tested: after the hand-back, a review agent
+that still runs counts as background work of the ticket subagent. If a late report does not start the ticket subagent
+again, the late report is lost, and the planner uses the first report of the ticket subagent alone.
+
+For a late report, the planner uses the first bullet of this list that matches:
+
+- If a ticket subagent of the draft runs, the late report waits for its report. Then the planner uses this list again
+  for the late report.
+- If the draft waits for the answer of an item, the late report waits for that answer. Then the planner uses this list
+  again for the late report. An answer that accepts the draft with no change makes the planner post the draft, so the
+  bullet "If the planner posted the draft" then applies.
+- If the planner dropped the draft, the planner drops the late report too.
+- If the planner did not post the draft, the planner starts a new ticket subagent with the draft file and the report
+  file. The new ticket subagent starts at step 5 of [The review loop of a draft](#the-review-loop-of-a-draft). The
+  findings of the late report are the findings of its loop 1. The initial planner shows the changed draft to the user
+  again.
+- If the planner posted the draft and the issue is open, the planner starts a new ticket subagent with the report file.
+  That ticket subagent turns the findings into a change of the open issue. [The escape hatch](#the-escape-hatch) still
+  applies, for example to a change of scope of an issue in flight.
+- If the planner posted the draft and the issue is closed, the planner starts a new ticket subagent with the report
+  file. That ticket subagent writes a follow-up issue from the findings, as
+  [The order of the work](#the-order-of-the-work) says.
 
 ## The review loop of a draft
 
