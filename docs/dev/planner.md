@@ -50,20 +50,21 @@ The operator starts the follow-up planner after the initial planning.
 - At the end of a milestone, the follow-up planner does steps 4 and 5 of
   [The close of a milestone](operator-start.md#the-close-of-a-milestone). [Its operator](../operator.md) tells it when
   each step starts. After the stop of the orchestrator, the follow-up planner tells that session nothing.
-- Each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner puts the path in the
-  item, not the draft.
+- The ticket subagent of each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner
+  puts the path in the item, not the draft.
 - For a draft that waits for a decision of the user, [The escape hatch](#the-escape-hatch) says what the answer of the
   item does.
 
 The reason for the folder: the drafts go in `/tmp`, so they do not fill the `Documents` folder of the user, and the
-system deletes them. The limit: a reboot deletes the open drafts, and the follow-up planner then writes them again.
+system deletes them. The limit: a reboot deletes the open drafts, and the follow-up planner then starts a new ticket
+subagent for each of them.
 
 ## The order of the work
 
 - The user decides when a milestone starts. The planner plans one milestone at a time. If the user asks, the planner
   writes the issues of the next milestone before the current milestone ends.
-- The initial planner first drafts all issues of the milestone, runs [the review loops](#the-review-loop-of-a-draft) of
-  each draft, and shows them to the user. It posts nothing before the user approves.
+- The initial planner first starts one ticket subagent for each issue of the milestone. Then it shows the drafts to the
+  user. It posts nothing before the user approves.
 - If the request does not say which kinds of GitHub objects to make (milestones, issues, project items), the planner
   asks the user before a post. In one case, "post everything" meant milestones only, and the session made more than 100
   unwanted issues.
@@ -618,8 +619,8 @@ likely edit the same file", which name the planner.
 - A ticket that closes a live security gap goes first in its chain, ahead of each ticket that it does not need, as
   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. This bullet wins over the order by issue number.
 - An edit of a file under `test/helpers/` alone gets no blocked-by link.
-- Before the planner drafts the issues of a milestone, it makes a table of the needs and the likely files of each issue.
-  It adds the links from the table when it posts the issues.
+- Before the planner starts the ticket subagents of a milestone, it makes a table of the needs and the likely files of
+  each issue. It adds the links from the table when it posts the issues.
 - A line of tickets that edit one provider and its dev doc is one chain. A ticket with its own folder runs in parallel
   and gets a blocked-by link only for a real need.
 - The planner gives each parallel line of work its own dev doc, so that the lines share no doc.
