@@ -44,10 +44,10 @@ These limits apply to the orchestrator and to the task subagents, except where a
 - Do not install `tasker` from a task worktree, also not with `npm link`. Install `tasker` with
   `npm run install:global`, as [the Install section of README.md](../../README.md#install) says. The install runs in the
   current clone, on the commit that is checked out. The installed `tasker` runs the tickets, and an install replaces it.
-- Only the orchestrator writes memory, so that two task subagents do not write the same file. Agents report what they
-  learn to the orchestrator in their final report (see [the final report](run-one-ticket.md#the-final-report)). For this
-  reason, a task subagent does not run a skill that writes memory, for example `/session-review`. The bullet "When the
-  final report of the task subagent of a ticket says that the ticket landed" of
+- Only the orchestrator writes memory, so that two task subagents do not write the same file. Task subagents report what
+  they learn to the orchestrator in their final report (see [the final report](run-one-ticket.md#the-final-report)). For
+  this reason, a task subagent does not run a skill that writes memory, for example `/session-review`. The bullet "When
+  the final report of the task subagent of a ticket says that the ticket landed" of
   [Land the work](land-the-work.md#land-the-work) says when the orchestrator deletes a note.
 - The orchestrator and each task subagent load the simple-english skill and follow the simple-english bullet of
   [Docs](rules.md#docs) of rules.md.

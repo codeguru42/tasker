@@ -112,14 +112,14 @@ provider id and a kind of task.
   newer base branch. A rebase can break a commit under the tip of the branch, also when the tip passes.
 - For example, an earlier ticket landed a new configuration rule. A later ticket rebased onto it with
   `tasker update-branch`. The test configurations of the later ticket did not obey the new rule, and `tasker verify`
-  failed. The agent fixed the tests in a new commit on top of the branch. As a result, the implementation commits under
-  that fix failed `npm run check` on the base branch.
+  failed. The task subagent fixed the tests in a new commit on top of the branch. As a result, the implementation
+  commits under that fix failed `npm run check` on the base branch.
 - A `docs:` commit has no rule for `npm run check`. Before a `docs:` commit, the session still runs `npm run check`, as
   [Check](#check) says. Only step 8 of [the commit check](verify-failures.md#the-commit-check) runs it on a `docs:`
   commit, and only at the tip of the task branch.
-- tasker does not check these rules. An agent checks each commit only after a failed `tasker verify`. When
+- tasker does not check these rules. A task subagent checks each commit only after a failed `tasker verify`. When
   `tasker verify` passes, nobody checks the commits under the tip. `docs/dev/verify-failures.md` gives the steps of the
-  agent, in [The broken-commit steps](verify-failures.md#the-broken-commit-steps).
+  task subagent, in [The broken-commit steps](verify-failures.md#the-broken-commit-steps).
 
 ## Docs
 
@@ -140,15 +140,15 @@ provider id and a kind of task.
 - Put a new command in the index `skills/tasker/SKILL.md`, in the reference file of its phase under
   `skills/tasker/references/`, and in the `--help` output.
 - Each session writes all its text with the simple-english skill. A session is an assistant session, for example the
-  orchestrator, an agent or the planner. The skill holds the rules of the text, for example the banned words and the
-  sentence limits. The text includes the docs and the text on GitHub: the titles, bodies, comments, milestone
+  orchestrator, a task subagent or the planner. The skill holds the rules of the text, for example the banned words and
+  the sentence limits. The text includes the docs and the text on GitHub: the titles, bodies, comments, milestone
   descriptions and the text of project fields. The text on GitHub also includes the title and the description of a pull
   request. Examples of the text on GitHub are the comment of step 11 of
   [Run one ticket](run-one-ticket.md#run-one-ticket) and the body of an issue. The text also includes the replies to the
   user, the reports and messages between sessions, and the feedback texts of `tasker refine` and of
-  `tasker review <issue> "<feedback>"`. Examples of the reports and messages are the final report of an agent to the
-  orchestrator and the messages of the orchestrator to an agent. This rule does not apply to the sessions that tasker
-  starts for plan, execute and review, except for the docs that they write.
+  `tasker review <issue> "<feedback>"`. A task subagent's final report to the orchestrator is one example. The
+  orchestrator's messages to a task subagent are another. This rule does not apply to the sessions that tasker starts
+  for plan, execute and review, except for the docs that they write.
 - Each session writes "task subagent" for the session that [docs/sessions.md](../sessions.md) defines as a task
   subagent, also where the text of an issue says "agent".
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path
@@ -172,11 +172,11 @@ provider id and a kind of task.
 ## The installed skill
 
 - Each assistant session never reads the files of `skills/tasker/` as instructions. Examples of a session are the
-  orchestrator, an agent, a planner, and the sessions that tasker starts for plan, execute and review.
+  orchestrator, a task subagent, a planner, and the sessions that tasker starts for plan, execute and review.
 - The instructions for tasker come from the installed skill. The installed skill is the copy that
   `tasker install-skills` of the installed tasker put in a folder of `skillsDirs`. The assistant loads it by itself.
 - A session reads the files of `skills/tasker/` only for a task that changes them.
-- This rule wins over "the files of the repo" in the bullet of the sources of the agent in the Limits list of
+- This rule wins over "the files of the repo" in the bullet of the sources of the task subagent in the Limits list of
   [docs/dev/limits.md](limits.md#limits).
 
 The reasons: the skill of the repo describes the tasker that this repo builds, and it can differ from the installed

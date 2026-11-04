@@ -233,7 +233,7 @@ that it dismissed. The initial planner posts only after the approval of the user
 
 - An issue is complete by itself. It gives the rules, the shapes, the signatures, the payloads, the lists, the edge
   cases, the states and the diagrams that the work needs.
-- The agent of a ticket uses no other source, as [the Limits of limits.md](limits.md#limits) say.
+- The task subagent of a ticket uses no other source, as [the Limits of limits.md](limits.md#limits) say.
   [The design-gap rule](plan-review.md#the-design-gap-rule) says who answers a gap.
 - An issue puts each table, list or diagram in its body. It does not say "as described elsewhere". The plan session that
   tasker starts for a ticket sees only the issue and the repo. A phrase such as "the diagrams of the design" with no
@@ -242,14 +242,14 @@ that it dismissed. The initial planner posts only after the approval of the user
   each state accepts. Before the post, the planner makes sure that each row or item matches what the code does. The
   planner gives the command that it used in the chat with the user, for example a `grep` of the calls. On #215, the
   first table claimed to hold the commands of today. But it left out six of them, for example `refine` from `reviewed`
-  and `finish` from `landed`. The agent found the gap with one `grep`, and the fix needed a stop and an edit of the
-  issue body.
+  and `finish` from `landed`. The task subagent found the gap with one `grep`, and the fix needed a stop and an edit of
+  the issue body.
 - An issue can give a value for a field of an existing event. Before the post, the planner compares each such value with
   the form that the code stores in that field today. Examples of a form are a ref and a commit id. The issue gives the
   stored form, or it states the change of the form as a requirement with its own reason. For the command of the compare,
   the bullet before this one applies. An example is a `grep` of the writes of the event. On #273, step 5 said that the
   `revision` of the `base` event is the base tip, a commit id. The code stores a ref, `refs/remotes/origin/<base>`, and
-  resolves it after each fetch. A commit id freezes the base tip. The agent stopped under the fifth case of
+  resolves it after each fetch. A commit id freezes the base tip. The task subagent stopped under the fifth case of
   [the stop rule](plan-review.md#the-stop-rule), and the user changed the scope with a comment.
 - An issue can ask for work on a command of tasker. Before the post, the planner runs `git fetch origin` and makes sure
   that `src/commands/index.ts` of `origin/main` holds the command. If the file does not hold it, the issue adds the
@@ -270,9 +270,9 @@ that it dismissed. The initial planner posts only after the approval of the user
   does in each state. On #440 (2026-10-25), the issue gave the states "still runs" and "has ended" of the orchestrator
   of a milestone, but it missed the state not started.
 - An issue that records an output of the installed tasker names the ticket and the date of the run that showed the
-  output. When the agent cannot measure the output itself with [the fact test](plan-review.md#the-fact-test), the ticket
-  and the date are its evidence for [the issue check](plan-review.md#the-issue-check). On #240, the agent was unable to
-  measure the output of `tasker dismiss-review`, because no task of its own was in `reviewed`.
+  output. When the task subagent cannot measure the output itself with [the fact test](plan-review.md#the-fact-test),
+  the ticket and the date are its evidence for [the issue check](plan-review.md#the-issue-check). On #240, the task
+  subagent was unable to measure the output of `tasker dismiss-review`, because no task of its own was in `reviewed`.
 - An issue dictates each requirement. A requirement says what the software does. An issue can say why, as the purpose of
   the requirement. It gives no justification for a requirement and does not say where the requirement came from.
 - Before the post, the planner compares each reason in an example of the issue with the docs. A reason that no doc
@@ -319,7 +319,7 @@ that it dismissed. The initial planner posts only after the approval of the user
   `git grep` finds no match, it exits with 1. Then the Docs section can say that no doc names the thing. On #428, the
   Docs section said "None. No doc names the `Write` deny rules." That was false. On `main` (8d154163),
   `docs/dev/assistants.md` said "The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and for
-  the shared git folder of the clone." The agent of #428 found the sentence at
+  the shared git folder of the clone." The task subagent of #428 found the sentence at
   [the issue check](plan-review.md#the-issue-check) with ``git grep -n 'blocks `Edit` and `Write`' 8d154163 -- docs``.
   The fix cost a stop before `tasker approve` and a change of scope
   (https://github.com/codeguru42/tasker/issues/428#issuecomment-6394115049).
@@ -329,7 +329,7 @@ that it dismissed. The initial planner posts only after the approval of the user
   software does" already stood in the same section.
 - An example in an issue names its ticket or tickets exactly. On #305, the issue said "the ticket" and then listed four
   tickets, #171, #172, #98 and #173. On #305, the case of this bullet and the case of the bullet before it each cost one
-  stop of the agent before `tasker approve`.
+  stop of the task subagent before `tasker approve`.
 - Before the post, the planner searches the files under `docs/` for a definition of each term of the draft that a doc
   can define. The planner chooses these terms, for example "tool block", and this choice is open on purpose. The search
   follows [the doc-search rule](rules.md#docs) and covers the forms of a definition, for example `<term> is`,
@@ -350,8 +350,8 @@ that it dismissed. The initial planner posts only after the approval of the user
   follows [the doc-search rule](rules.md#docs), and the planner gives the command and the hits in its message to the
   user. On #405 (2026-10-25), `docs/dev/planner.md` changed `planner-<milestone>` to `planner-<slug>`, and
   `docs/dev/pick-the-tickets.md` still named `planner-<milestone>` in the planner bullet of "The prompt of an agent".
-  Review 2 of #405 found it, and the agent dismissed the finding, because the issue did not name that doc. For the
-  rename of a doc, see the bullet "A ticket that renames a doc blocks each open issue whose body names that doc" in
+  Review 2 of #405 found it, and the task subagent dismissed the finding, because the issue did not name that doc. For
+  the rename of a doc, see the bullet "A ticket that renames a doc blocks each open issue whose body names that doc" in
   [The blocked-by links](#the-blocked-by-links).
 - An issue can add a section to a doc. Then the Docs section of the issue names each index that lists the sections of
   that doc. Examples are the entry of the doc in `AGENTS.md` and the list "The pages" of `docs/orchestrator.md` for an
@@ -373,14 +373,14 @@ that it dismissed. The initial planner posts only after the approval of the user
   `skills/tasker/references/setup.md`, and review 1 found the conflict.
 - If an issue gives a rule with a judgment word that has no test on purpose, for example "a decision that still
   applies", the issue says that the judgment is open on purpose, and who makes it. If a review finding asks for a test
-  of the word, the agent dismisses the finding with the words of the issue, as
-  [Review findings](review-findings.md#review-findings) says for a finding that contradicts an exact rule of the issue.
-  On #304 (2026-10-19), the rule "a decision that still applies" drew a finding that asked for a test.
+  of the word, the task subagent dismisses the finding with the words of the issue.
+  [Review findings](review-findings.md#review-findings) says this for a finding that contradicts an exact rule of the
+  issue. On #304 (2026-10-19), the rule "a decision that still applies" drew a finding that asked for a test.
 - If an issue adds a rule to an existing bullet on purpose, the issue says "in this bullet, not a new bullet". If a
-  review finding asks for a new bullet, the agent dismisses the finding with the words of the issue, as
-  [Review findings](review-findings.md#review-findings) says for a finding that contradicts an exact rule of the issue.
-  On #398 (2026-10-24), review 1 asked for a new bullet in an altitude finding, and the agent dismissed the finding with
-  the words of the issue.
+  review finding asks for a new bullet, the task subagent dismisses the finding with the words of the issue.
+  [Review findings](review-findings.md#review-findings) says this for a finding that contradicts an exact rule of the
+  issue. On #398 (2026-10-24), review 1 asked for a new bullet in an altitude finding. The task subagent dismissed the
+  finding with the words of the issue.
 - An issue can put new text in an existing paragraph or an existing bullet on purpose. For the limit of Rule 6.6 of the
   simple-english skill, a bullet with one paragraph counts as one paragraph. In a bullet with two or more paragraphs,
   each paragraph counts on its own. Before the post, the planner counts the sentences of the paragraph that gets the new
@@ -393,10 +393,10 @@ that it dismissed. The initial planner posts only after the approval of the user
   over six, the issue does not use them alone. With a new paragraph inside the bullet, the issue can still say "in this
   bullet, not a new bullet".
 
-  The reason: the agent of a ticket follows the exact words of the issue. So it keeps a paragraph or a bullet of more
-  than six sentences. On #534 (2026-10-25), the issue said "in this paragraph, not a new paragraph", and paragraph 1 of
-  "A side conversation" got 12 sentences. On #518 (2026-10-25), the issue said "at the end of this bullet, not in a new
-  bullet", and a hint of `docs/dev/first-refine.md` got 12 sentences.
+  The reason: the task subagent of a ticket follows the exact words of the issue. So it keeps a paragraph or a bullet of
+  more than six sentences. On #534 (2026-10-25), the issue said "in this paragraph, not a new paragraph", and paragraph
+  1 of "A side conversation" got 12 sentences. On #518 (2026-10-25), the issue said "at the end of this bullet, not in a
+  new bullet", and a hint of `docs/dev/first-refine.md` got 12 sentences.
 
 - The doc text of an issue is the text that the issue gives for a doc. It can be word for word, or content after words
   such as "The new bullet says:". Before the post, the planner counts the doc text as it will stand in the doc. The
@@ -412,20 +412,20 @@ that it dismissed. The initial planner posts only after the approval of the user
   sentences of each one. If a sentence is over its word limit, the issue gives it as two sentences. Then the planner
   counts the sentences of its paragraph again.
 
-  The reason: the agent also keeps a sentence over its word limit. The self-check of
+  The reason: the task subagent also keeps a sentence over its word limit. The self-check of
   [Before a post](issues.md#before-a-post) in `docs/dev/issues.md` does not count the doc text as it will stand in the
   doc. On #575 (2026-10-25), the issue gave a new bullet of `docs/dev/first-refine.md` with 7 sentences and two
   sentences of 26 words. The landed bullet kept the sentence that gives the source of the bullet, with 26 words.
 
 - An issue that adds a bullet to a section of a doc names the place of the bullet. The place is right after or right
   before a bullet that the issue names by its first words. The place can also be the start or the end of the section. On
-  #435 (2026-10-25), the issue said "add two bullets to the section", and the agent stopped before `tasker approve` for
-  a [design gap](plan-review.md#the-design-gap-rule).
+  #435 (2026-10-25), the issue said "add two bullets to the section", and the task subagent stopped before
+  `tasker approve` for a [design gap](plan-review.md#the-design-gap-rule).
 
   An issue that adds a sentence to an existing bullet also names the place of the sentence in the bullet. The place is
   right after or right before a sentence that the issue names by its first words. The place can also be the start or the
   end of a paragraph of the bullet. On #480 (2026-10-26), requirements 3 and 4 asked for "one sentence with a link" with
-  no place, and the agent stopped for a [design gap](plan-review.md#the-design-gap-rule).
+  no place, and the task subagent stopped for a [design gap](plan-review.md#the-design-gap-rule).
 
 - An issue that adds a command, a [trigger](first-refine.md#a-ticket-that-changes-a-procedure-doc) or a text names each
   list or gate that limits it. A gate is a rule that limits when a session does a step, or which reply or list of a
@@ -435,7 +435,7 @@ that it dismissed. The initial planner posts only after the approval of the user
     [`docs/operator.md`](../operator.md). An issue that adds a command to the steps of such a session compares the
     command with that list before the post. If the list does not hold the command, the issue also adds the command to
     the list, with its reason. Or the issue gives the steps in another form. On #408 (2026-10-25), the list was still
-    the old rule "runs no `tasker` command". The agent stopped under the fifth case of
+    the old rule "runs no `tasker` command". The task subagent stopped under the fifth case of
     [the stop rule](plan-review.md#the-stop-rule), and the user changed the scope.
   - An example of the first kind is the sentence of [Stop a session](operator-start.md#stop-a-session) that starts "The
     operator stops a session only". "The operator stops a session only on a request of the user." An issue that gives a
@@ -458,13 +458,13 @@ that it dismissed. The initial planner posts only after the approval of the user
 - An issue that adds hints to a page says, for each hint, which bullet of the page it extends, or that it goes in as a
   new bullet. The issue does not use the sentence "If a hint of the page already gives part of a hint above, extend that
   hint" without the name of the bullet. On #321, #355 and #356 (2026-10-24), each plan picked a bullet to extend, and
-  each agent stopped before `tasker approve` for a design gap. Each answer was a new bullet. The issue also marks each
-  'On #N' sentence that only gives the context of the ticket. The mark is the words 'Context, not for the doc:' at the
-  start of the sentence. Each 'On #N' sentence of a hint with no such mark goes into the doc with the hint. A marked
-  sentence is not a requirement, so the bullet that starts 'An issue dictates each requirement' does not cover it. On
-  #412 (2026-10-25), the agent left out the #389 and #419 sentences on the design-gap answers of the orchestrator. It
-  kept the #356 example of the moved hint about `docs/statemachine.md`. Both were choices of the agent. See
-  [the bullet that starts "An issue that adds a bullet to a section"](#the-body-of-an-issue).
+  each task subagent stopped before `tasker approve` for a design gap. Each answer was a new bullet. The issue also
+  marks each 'On #N' sentence that only gives the context of the ticket. The mark is the words 'Context, not for the
+  doc:' at the start of the sentence. Each 'On #N' sentence of a hint with no such mark goes into the doc with the hint.
+  A marked sentence is not a requirement, so the bullet that starts 'An issue dictates each requirement' does not cover
+  it. On #412 (2026-10-25), the task subagent left out the #389 and #419 sentences on the design-gap answers of the
+  orchestrator. It kept the #356 example of the moved hint about `docs/statemachine.md`. Both were choices of the task
+  subagent. See [the bullet that starts "An issue that adds a bullet to a section"](#the-body-of-an-issue).
 - An issue that names a git check gives the meaning and the action of each exit code, or it says that the other exit
   codes are out of scope. On #356, review 2 asked about the exit codes that the hint did not name.
 - An issue can give a rule that lets a session do a write only after a read. Examples are a read of `tasker status` and
@@ -475,8 +475,8 @@ that it dismissed. The initial planner posts only after the approval of the user
   no task list. Review 1 found the gap, and the fix cost one more review loop.
 - A fact that an issue copies from a ticket can be true in only one case. Before the post, the planner measures the
   fact, or it writes the fact with its case. On #369, the issue said that the format check fails after a fenced block.
-  The agent measured that the check fails only when indented text of the same step follows the block. A design gap then
-  changed the words to "can fail".
+  The task subagent measured that the check fails only when indented text of the same step follows the block. A design
+  gap then changed the words to "can fail".
 - Before the post, the planner tests each fact about an outside tool (for example Claude Code, herdr, git or gh) that it
   writes itself, also in the reason of a requirement. The planner does this with
   [the fact test](plan-review.md#the-fact-test), in the way that the second bullet of
@@ -498,9 +498,9 @@ that it dismissed. The initial planner posts only after the approval of the user
   field and a flat `body`, and the fix cost one stop and three decisions of the user.
 
 - An issue can rest on a fact of an outside tool that no session can measure before an earlier ticket lands. Then the
-  issue lists the measures of the tool and says when the agent runs them. The issue also gives the outcome of each
-  failed measure, for example a stop for a [design gap](plan-review.md#the-design-gap-rule) or a refusal of the run. The
-  reason: with no outcome, the plan makes the design choice itself.
+  issue lists the measures of the tool and says when the task subagent runs them. The issue also gives the outcome of
+  each failed measure, for example a stop for a [design gap](plan-review.md#the-design-gap-rule) or a refusal of the
+  run. The reason: with no outcome, the plan makes the design choice itself.
 - An issue can let a session decide choices that other rules send to the user. Then the issue also names the rules that
   keep an action for the user alone, for example "Only the user changes a landing order of the overlap rule" (see
   [Land the work](land-the-work.md#land-the-work)). The issue says that the new rule does not cover them. On #375,
@@ -557,8 +557,8 @@ likely edit the same file", which name the planner.
   doc. After the rename, such a body names a file that does not exist. Before the post of the rename ticket, the planner
   finds each open issue whose body names the old path. The planner adds each link and makes each body edit as
   [The read in the write call](issues.md#the-read-in-the-write-call) of issues.md says. An issue in flight gets no link
-  and no body edit, because the agent of the task already read the body. The orchestrator of the task decides. The
-  bullet "An issue of an earlier milestone never waits ..." wins for an issue of an earlier milestone. For such an
+  and no body edit, because the task subagent of the task already read the body. The orchestrator of the task decides.
+  The bullet "An issue of an earlier milestone never waits ..." wins for an issue of an earlier milestone. For such an
   issue, the planner adds no link and edits no body. It tells the user, as for an issue in flight. For each other issue,
   the planner drafts the changed lines and handles the draft as the first bullet of
   [Before a post](issues.md#before-a-post) of issues.md says. When that bullet permits the post, the planner edits the
