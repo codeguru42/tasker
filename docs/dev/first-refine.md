@@ -394,6 +394,11 @@ orchestrator.
   [The diff read](run-one-ticket.md#the-diff-read) compares that table with the issue cell by cell. On #473
   (2026-10-25), the plan asked for a word-for-word copy, but the execute session changed most cells, and review 1 found
   the false state "Keeps running".
+- If the issue changes a table row, ask the plan to compare each cell of that row with the issue. Also ask the plan to
+  change the old row in place, not to add a new row beside it. Then ask the plan to count the rows of the table before
+  and after the edit. The two counts differ only by the rows that the issue adds or removes. On #738 (2026-11-04), new
+  text went into the wrong column of a row with similar cells, and a cell lost the words "and starts the new sender". On
+  #739 (2026-11-04), a changed row of "Common mistakes" of the session-review skill became a new row beside the old row.
 - The red `test:` commit ([rules.md](rules.md#commits)) of a new store method changes only test files and fails the type
   check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
 - In a ticket that adds a method to an interface, tell the plan that the red `test:` commit
@@ -556,6 +561,15 @@ orchestrator.
   [A ticket that moves or trims a doc](#a-ticket-that-moves-or-trims-a-doc) that starts "If a refine replaces repeated
   text with a pointer". On #533 (2026-10-25), "such a skip" in a new last sentence also read as the open-file skip
   before it.
+
+  If a ticket edits doc text, ask the plan to read the sentences before and after each edited range. Prettier wraps the
+  docs, as [rules.md](rules.md#docs) says, so the first word of an edited sentence can end the line before the edited
+  range. An edit can keep that word as a stray word, and an edit can also remove a sentence right before the edited
+  range. A diff can show the line of a stray word as an unchanged line, so the read covers the file and the diff. On
+  #735 and #736 (2026-11-04), "The" and "Then" stayed as stray words in `docs/dev/ci-wait.md` and `docs/dev/planner.md`.
+  On #738 (2026-11-04), the execute session removed the two sentences right before an edited range of "Stop a session"
+  in `docs/dev/operator-start.md`.
+
 - If a refine removes a name from a list inside a sentence, ask the plan to fix the "and" of that sentence. Also ask it
   to search each doc for the same list. The search follows [the doc-search rule](rules.md#docs). On #20, a refine
   removed a name from a list, and the other docs with the same list kept the old "and".
