@@ -691,10 +691,11 @@ user with each finding that it dismissed. The initial planner posts only after t
   issue and the repo, and the installed tasker does not block these commands yet. On #557 (2026-10-25), plan v1 ran
   `herdr --version` and `herdr agent list` before any feedback. Plan v1 of #523 also ran `herdr --version`.
 - An issue body has no dependency text, for example no "Depends on" section. The blocked-by links hold the order.
-- A planned issue gets no priority label when the planner plans it. The blocked-by links hold the order of the work in a
-  milestone. Only an issue outside the plan, or a planned issue after a recurrence, gets a priority label. An example of
-  an issue outside the plan is an issue of a failed CI run, as [A failed CI run](ci-wait.md#a-failed-ci-run) of
-  ci-wait.md says. For a recurrence, see [A recurrence](issues.md#a-recurrence) of issues.md.
+- When the planner plans an issue, the issue gets no priority. The planner sets no value of the field `Priority` of
+  [the project board](issues.md#the-project-board) on its card. The blocked-by links hold the order of the work in a
+  milestone. Only an issue outside the plan, or a planned issue after a recurrence, gets a priority. An example of an
+  issue outside the plan is an issue of a failed CI run, as [A failed CI run](ci-wait.md#a-failed-ci-run) of ci-wait.md
+  says. For a recurrence, see [A recurrence](issues.md#a-recurrence) of issues.md.
 - An issue needs no line for commit style, because the prompts of the installed tasker already name it.
   [rules.md](rules.md#commits) is the home of the commit rules.
 
