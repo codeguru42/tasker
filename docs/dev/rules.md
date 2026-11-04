@@ -149,6 +149,8 @@ provider id and a kind of task.
   `tasker review <issue> "<feedback>"`. Examples of the reports and messages are the final report of an agent to the
   orchestrator and the messages of the orchestrator to an agent. This rule does not apply to the sessions that tasker
   starts for plan, execute and review, except for the docs that they write.
+- A task subagent follows the approved plan and todos in its prompt. It does not use the planning conversation as a
+  source.
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path
   such as `/home/<user>/...`.
 - Prettier wraps the prose of each Markdown file that it formats at 120 characters (`proseWrap` "always" in

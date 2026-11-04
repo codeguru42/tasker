@@ -5,9 +5,9 @@ on GitHub. The [user](../sessions.md) works with the planner. The readers of thi
 session that [Before a post](issues.md#before-a-post) of issues.md sends to
 [The blocked-by links](#the-blocked-by-links) also reads that section.
 
-The page does not cover the work of the orchestrator and of the agents of the tickets.
+The page does not cover the work of the orchestrator and of the ticket subagents.
 [The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines the
-terms "orchestrator", "ticket" and "agent".
+terms "orchestrator", "ticket" and "ticket subagent".
 
 [issues.md](issues.md) gives the steps and the GitHub facts to file issues, blocked-by links and milestones, and the
 facts of the project board.
@@ -621,11 +621,11 @@ likely edit the same file", which name the planner.
   planner files a manual-steps issue for them. Whether a step needs this issue is a judgment. The judgment is open on
   purpose, and the initial planner makes it.
 
-  The body of a manual-steps issue says that the user does it and that no agent runs it. It gives each step and the test
-  of each step. A root issue is an issue with no open blocker in its milestone. The manual-steps issue is a root issue,
-  and it blocks each other root issue of its milestone. The reason: an agent cannot do these steps, so a step inside
-  another ticket stops that ticket at its start. [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says what the
-  orchestrator does with the issue.
+  The body of a manual-steps issue says that the user does it and that no assistant session runs it. It gives each step
+  and the test of each step. A root issue is an issue with no open blocker in its milestone. The manual-steps issue is a
+  root issue, and it blocks each other root issue of its milestone. The reason: an assistant session cannot do these
+  steps, so a step inside another ticket stops that ticket at its start.
+  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says what the orchestrator does with the issue.
 
 - [Core features first](working-with-the-user.md#core-features-first) gives the rules for the core features, an edge
   case, a security gap, containers, UTF-8 and a collision of derived names.

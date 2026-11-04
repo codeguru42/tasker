@@ -15,7 +15,7 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 - [docs/operator.md](docs/operator.md): the role index of the operator, with the terms of the operator, the start docs
   of the operator and the index of the operator pages.
 - [docs/sessions.md](docs/sessions.md): the terms that each role uses: the user, the slug, the sessions of a slug, an
-  item, the own name of a session, the session ref and the socket address.
+  item, task subagent, ticket subagent, the own name of a session, the session ref and the socket address.
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo (the check, test first, the commits, the docs, the test
   helpers, the code rules, the simple-english skill, the installed skill and `AGENTS.md`).
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to start work as a contributor to tasker.

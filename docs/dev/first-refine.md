@@ -1,23 +1,23 @@
 # First refine
 
 This page lists the hints for the first refine of a ticket, sorted by the kind of ticket.
-[orchestrator.md](../orchestrator.md) defines the terms "ticket" and "agent", and
+[orchestrator.md](../orchestrator.md) defines the terms "ticket" and "ticket subagent", and
 [Review findings](review-findings.md#review-findings) defines a loop. The first refine is the first `tasker refine` of
 step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket).
 
 A hint states what to ask the plan for, and why. When the plan gets the hints in the first refine, the review does not
 have to find them one loop at a time.
 
-The agent gives each hint that fits its ticket in the first refine. The agent also gives each hint that fits a later
-refine in the feedback of that refine, for example in a fix of a review loop. On #342 and #344, a later refine broke the
-hint that starts "Ask the plan to write no claim about a count in new text". On #373, the fix of loop 1 moved the target
-of "Without that", which broke the hint that starts "If a refine puts a new sentence in the middle of a paragraph", and
-[the diff read](run-one-ticket.md#the-diff-read) found it. Each cost one loop. The drafter of an issue can put a hint in
-the issue body ([planner.md](planner.md#the-body-of-an-issue)).
+The task subagent gives each hint that fits its ticket in the first refine. The task subagent also gives each hint that
+fits a later refine in the feedback of that refine, for example in a fix of a review loop. On #342 and #344, a later
+refine broke the hint that starts "Ask the plan to write no claim about a count in new text". On #373, the fix of loop 1
+moved the target of "Without that", which broke the hint that starts "If a refine puts a new sentence in the middle of a
+paragraph", and [the diff read](run-one-ticket.md#the-diff-read) found it. Each cost one loop. The drafter of an issue
+can put a hint in the issue body ([planner.md](planner.md#the-body-of-an-issue)).
 
-Before the agent gives a hint, it compares the hint with the Out of scope section of the issue. If the Out of scope
-section excludes what the hint asks for, the agent does not give the hint, also when the hint fits its ticket. The
-bullet "A hint of the orchestrator can resolve a conflict" of
+Before the task subagent gives a hint, it compares the hint with the Out of scope section of the issue. If the Out of
+scope section excludes what the hint asks for, the task subagent does not give the hint, also when the hint fits its
+ticket. The bullet "A hint of the orchestrator can resolve a conflict" of
 ["The prompt of an agent"](pick-the-tickets.md#the-prompt-of-an-agent) gives the same compare for the orchestrator.
 
 ## All tickets

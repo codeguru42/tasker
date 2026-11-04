@@ -3,11 +3,11 @@
 [The orchestration pages](orchestrator.md) give the rules for an orchestrator. The orchestrator is the assistant session
 that picks tickets, starts one agent for each ticket, moves the cards, sets the landing order and writes memory.
 
-A ticket is an issue on the project board. An agent is an assistant session that the orchestrator starts for one ticket.
-The agent runs the steps of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the
-person who works with the sessions, as [sessions.md](sessions.md) says. The operator starts the orchestrator, as
-[Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not type in the
-session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
+A ticket is an issue on the project board. A ticket subagent is an assistant session that the orchestrator starts for
+one ticket. The ticket subagent runs the steps of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that
+ticket. The user is the person who works with the sessions, as [sessions.md](sessions.md) says. The operator starts the
+orchestrator, as [Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not
+type in the session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
 [A blocked session](dev/operator-start.md#a-blocked-session) says. The orchestrator reads its own name and its slug from
 the first line of the output of `ListAgents`, as [sessions.md](sessions.md) says. A task is the record that tasker keeps
 for one ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
