@@ -418,7 +418,7 @@ describe("codexArgs: the write profile", () => {
         expectedCodexArgs({
           model: "haiku",
           effort: "low",
-          ...(access === "workspace-write" ? { writePaths: ["/work", "/tmp"], hookCommand: HOOK } : {}),
+          ...(access === "workspace-write" ? { writePaths: ["/work", "/tmp"] } : {}),
           denyRead: [runtime],
         }),
       );

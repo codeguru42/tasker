@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { DOCKER_SOCKET_PATH } from "../../src/assistant/codex/sockets.js";
 import {
   CODEX_LOGIN_STATUS_ARGS,
   CODEX_VERSION_ARGS,
@@ -18,6 +19,14 @@ import {
 
 function runCodex(env: NodeJS.ProcessEnv, args: readonly string[]) {
   return spawnSync(join(env.PATH ?? "", "codex"), [...args], { env, encoding: "utf8" });
+}
+
+function hostDockerSuffix(): string {
+  try {
+    return `, ${JSON.stringify(realpathSync(DOCKER_SOCKET_PATH))}="deny"`;
+  } catch {
+    return "";
+  }
 }
 
 describe("useFakeCodex", () => {
@@ -108,7 +117,7 @@ describe("expectedCodexArgs", () => {
   it("adds the host Docker socket to the deny table when it resolves", () => {
     let docker: string | undefined;
     try {
-      docker = realpathSync("/var/run/docker.sock");
+      docker = realpathSync(DOCKER_SOCKET_PATH);
     } catch {
       /* The host has no Docker socket. */
     }
@@ -147,7 +156,7 @@ describe("expectedCodexArgs", () => {
       "-c",
       'default_permissions="tasker"',
       "-c",
-      'permissions.tasker.filesystem={"/"="read", "/h/.ssh"="deny", "/h/a b"="deny"}',
+      `permissions.tasker.filesystem={"/"="read", "/h/.ssh"="deny", "/h/a b"="deny"${hostDockerSuffix()}}`,
       "-c",
       "permissions.tasker.network.enabled=true",
       "--output-schema",
@@ -205,7 +214,7 @@ describe("expectedCodexArgs", () => {
       "-c",
       'default_permissions="tasker"',
       "-c",
-      'permissions.tasker.filesystem={"/"="read", "/w"="write", "/p"="deny", "/d"="deny"}',
+      `permissions.tasker.filesystem={"/"="read", "/w"="write", "/p"="deny", "/d"="deny"${hostDockerSuffix()}}`,
       "-c",
       "permissions.tasker.network.enabled=true",
       "-c",

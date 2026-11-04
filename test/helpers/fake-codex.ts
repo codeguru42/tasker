@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { realpathSync } from "node:fs";
+import { DOCKER_SOCKET_PATH } from "../../src/assistant/codex/sockets.js";
 import type { AssistantEvent, Effort, TokenUsage } from "../../src/assistant/provider.js";
 import {
   answerChecks,
@@ -76,11 +78,17 @@ export interface ExpectedCodexArgs {
   schemaPath?: string;
 }
 
-// The argument list of one codex run, written out from literal text, never from codexArgs().
+// The argument list of one codex run, written out from literal text, never from codexArgs(). The Docker key uses
+// the host path because the expected table changes when that socket exists.
 export function expectedCodexArgs(expected: ExpectedCodexArgs): string[] {
   const table = new Map<string, string>([["/", "read"]]);
   for (const path of expected.writePaths ?? []) table.set(path, "write");
   for (const path of expected.denyRead ?? []) table.set(path, "deny");
+  try {
+    table.set(realpathSync(DOCKER_SOCKET_PATH), "deny");
+  } catch {
+    // The host has no Docker socket.
+  }
   const keys = [...table].map(([path, access]) => `${JSON.stringify(path)}="${access}"`);
   return [
     "exec",
