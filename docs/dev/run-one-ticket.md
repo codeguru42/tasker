@@ -194,6 +194,10 @@ state that `tasker show <issue>` prints. After `tasker update-branch`, "Land the
 states that it names. For another state, for example `failed`, the agent follows the commands that `tasker show <issue>`
 prints.
 
+At each `tasker update-branch` of this rule that [the same-patch rule](review-findings.md#review-findings) covers, the
+agent does each read of that rule that belongs to the update. Examples are the first patch id before the update and the
+second patch id after it.
+
 ### The base rule
 
 This rule covers each command of [the orchestration pages](../orchestrator.md) that uses `origin/<base branch>`. A
