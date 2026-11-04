@@ -681,6 +681,19 @@ The orchestrator writes the prompt of each task subagent.
   and the project board (see ["Limits"](limits.md#limits)). In one case, a strong "never run a gh write" line in the
   prompt of a task subagent made the classifier of auto mode block the comment of step 11 (see
   [the tool-block rule](tasker-commands.md#the-tool-block-rule)).
+- The prompt tells the task subagent to run `tasker merge` of step 9 of
+  ["Run one ticket"](run-one-ticket.md#run-one-ticket) in [the plain form](tasker-commands.md#the-plain-form-rule), with
+  its issue key. An example is `tasker merge codeguru42/tasker#719`. The prompt says: no `cd`, no pipe and no `2>&1`.
+  The first bullet of this section limits the prompt to the context of its ticket, and this bullet wins over it.
+
+  The prompt also says: after a denial, the report gives the exact command and the exact text of the denial, in full.
+  [The tool-block rule](tasker-commands.md#the-tool-block-rule) gives this report and the other steps after a denial.
+
+  The reason: the classifier of auto mode denied three merge calls of task subagents, as
+  [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. On 2026-11-03, the report of the task subagent of
+  #563 called the denied call "plain form `tasker merge codeguru42/tasker#563`". The denied call had `2>&1 | tail-6`
+  after the command. The same report gave the text of the denial with "..." in place of its end.
+
 - For all the rules, the prompt names the docs of this list, "the base list". The base list is the same for the task
   subagent of each milestone:
 
