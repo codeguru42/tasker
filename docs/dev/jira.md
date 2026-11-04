@@ -571,3 +571,6 @@ As a result, nobody measured the read of a value on the test site. Nobody measur
 context or a screen of the field makes it show on an issue. Nobody measured whether the field `additionalAttributes` of
 `acli jira workitem create --from-json` sets a custom field.
 [The measure of an issue read](#the-measure-of-an-issue-read) gives that command for a component.
+
+The field `customfield_10044` ("Release Branch") stays on the test site by the choice of the user on 2026-11-03. No
+session asks the user again to delete the field. A later measure of a custom field on the test site can use the field.
