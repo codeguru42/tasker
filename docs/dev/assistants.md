@@ -420,9 +420,12 @@ continued session.
   `"write"`. The temp folder is `TMPDIR`, or `/tmp` when `TMPDIR` is not set. A `read-only` run has no write key and
   does not read `sandbox.allowWrite`.
 - Each path of `sandbox.denyRead` is a key with the value `"deny"`. So are the folder `herdr` under `XDG_CONFIG_HOME`
-  (or under `HOME/.config`) and the real path of the file that `SSH_AUTH_SOCK` names. `codexSocketDenyPaths()` in
-  `src/assistant/codex/sockets.ts` gives the socket paths from the env before the child filter. Every role gets them. A
-  deny key under a write key holds.
+  (or under `HOME/.config`), the real path of the file that `SSH_AUTH_SOCK` names, the real path of the folder that
+  `XDG_RUNTIME_DIR` names and the real path of `/var/run/docker.sock`. `codexSocketDenyPaths()` in
+  `src/assistant/codex/sockets.ts` gives the socket paths for every role, from the env before the child filter. It
+  leaves out `SSH_AUTH_SOCK` when its real path cannot be read. It leaves out the runtime folder or Docker socket when
+  its path is missing or passes through a non-directory. Another real-path error fails the run before spawn. A deny key
+  under a write key holds.
 - Two facts of the table hold for every key. A key must not be a symbolic link, because the run then fails at the start.
   So a link becomes its target, and a link that cannot resolve is left out. Both lists use real paths, with a link
   resolved in every part. An existing path under another deny key must not be a key, because the run then fails at the
@@ -478,10 +481,19 @@ from a trusted worktree, and `--ignore-user-config` drops the trust. `--ignore-r
 subagent tested no form that passes a rule, because no rule exists. The sandbox is the only limit on `deniedCommands`,
 and it does not block every entry.
 
-The sockets of herdr and of the ssh agent work when the network is on. So the table denies the herdr folder and the file
-of `SSH_AUTH_SOCK` in every role. A herdr socket at a custom path (`HERDR_SOCKET_PATH` outside the default folder) and a
-ssh agent that `SSH_AUTH_SOCK` does not name stay open. The sandbox blocks each path of `denyRead`. In a `read-only` run
-it blocks each write. In an execute run it blocks each write outside the write keys.
+A command can connect to each Unix socket at a path that no deny key covers, because the network is on. So the table
+denies the herdr folder, the file of `SSH_AUTH_SOCK`, the folder of `XDG_RUNTIME_DIR` and the Docker socket in every
+role. The Docker socket gives root on the host to each member of the group `docker`. The folder of `XDG_RUNTIME_DIR`
+holds the session bus. On a desktop host, it also holds other sockets of the user, for example of the keyring. A tool of
+a run that needs one of these sockets fails, for example `systemctl --user`.
+
+These sockets stay open: an abstract socket, a socket at another path, and a herdr socket at a custom path
+(`HERDR_SOCKET_PATH` outside the default folder). Examples of another path are a socket that `DOCKER_HOST` names, a bus
+outside `XDG_RUNTIME_DIR` and an ssh agent that `SSH_AUTH_SOCK` does not name. `/run/user/<uid>` for a run with no
+`XDG_RUNTIME_DIR` is another example. A later issue adds a seccomp filter that blocks them.
+
+The sandbox blocks each path of `denyRead`. In a `read-only` run it blocks each write. In an execute run it blocks each
+write outside the write keys. A `TMPDIR` under `XDG_RUNTIME_DIR` gets no write key, because a deny path wins.
 
 `git push` over https, or over ssh with a key file, stays open, because the network is open. A run of `codex` in the
 plan, refine and review roles has layer 2 and layer 3 of the push guard, and no layer 1. An execute run has the same
@@ -536,7 +548,7 @@ configuration of the child.
 
 ### Measures and limits
 
-Each measure below ran on `codex-cli 0.166.0` on 2026-10-31, unless it names 2026-11-01. All measures ran on Linux. A
+Each measure below ran on `codex-cli 0.166.0` on 2026-10-31, unless it names another date. All measures ran on Linux. A
 run on macOS or Windows is unmeasured.
 
 - Prompt: `codex exec -` and `codex exec resume <id> -` read the prompt from stdin.
@@ -569,6 +581,10 @@ run on macOS or Windows is unmeasured.
   `<home>/.config/herdr`, both fail with `Permission denied`, and the run still finishes.
 - ssh agent (2026-11-01): with the network on, `ssh-add -l` and a connect to `SSH_AUTH_SOCK` work. With a deny key for
   the real path of the socket, both fail with `Permission denied`.
+- Runtime folder and Docker (2026-11-04): with the network on and only `"/"="read"`, a connect to
+  `$XDG_RUNTIME_DIR/bus`, to `/var/run/docker.sock` and to `/run/docker.sock` works. With deny keys for the real paths
+  of `XDG_RUNTIME_DIR` and of `/var/run/docker.sock`, each connect fails with `Permission denied`. A connect to an
+  abstract socket still works.
 - Keys of the table (2026-11-01): a key that is a symbolic link makes the start fail with
   `bwrap: Can't mount on symlink destination`. An existing path under a denied folder makes the start fail with
   `bwrap: Can't create file ...: Read-only file system`. A missing path under a denied folder is fine. A deny key under
@@ -611,6 +627,7 @@ text. Nobody measured a host where the sandbox cannot start. Nobody measured a h
 - A hook that crashes, times out or names a missing file lets the patch pass. The guards of "The limits of the execute
   role" reduce this.
 - A tool path that skips the hook skips `deniedEditPaths`. The sandbox still limits it to the write paths.
+- An abstract socket and a socket at a path that no deny key covers stay open to a command.
 - macOS and Windows are unmeasured.
 - A sandboxed command can outlive a SIGKILL of `codex`.
 
