@@ -572,16 +572,13 @@ the user, the orchestrator skips its removal.
 The orchestrator writes the prompt of each task subagent.
 
 - The prompt of a task subagent gives only the context of its ticket. The context is the issue key, the milestone of its
-  ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)). The context includes the milestones
-  that are off limits for the task subagent. It gives the landing order (see
-  ["Land the work"](land-the-work.md#land-the-work)). For a stacked ticket, it gives its parent (see
-  [the stacked-ticket rule](#the-stacked-ticket-rule)). It gives the quota slot and whether the task subagent has a job
-  (see ["Quota"](quota.md#quota)). It gives the folder of the task subagent for its files (see the folder bullet of
-  ["Limits"](limits.md#limits)).
-
-  It gives the links of the change-of-scope and design-gap comments of its issue. See the bullet below that starts "If
-  the account of the orchestrator". It gives the hints for its first refine and the task worktree with its path,
-  `../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
+  ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)), the milestones that are off limits for
+  the task subagent, the landing order (see ["Land the work"](land-the-work.md#land-the-work)), for a stacked ticket,
+  its parent (see [the stacked-ticket rule](#the-stacked-ticket-rule)), the quota slot and whether the task subagent has
+  a job (see ["Quota"](quota.md#quota)), the folder of the task subagent for its files (see the folder bullet of
+  ["Limits"](limits.md#limits)), the links of the change-of-scope and design-gap comments of its issue (see the bullet
+  below that starts "If the account of the orchestrator"), the hints for its first refine, and the task worktree with
+  its path, `../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
 
 - The prompt never tells the task subagent to take a path from the `worktree:` line of `tasker show`. The reason: that
   line prints the worktree of tasker, and [the own-worktree rule](limits.md#the-own-worktree-rule) bans each read and
