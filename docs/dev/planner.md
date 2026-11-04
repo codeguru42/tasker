@@ -81,6 +81,15 @@ and ends with a report. It edits only its draft file, its report file and the fi
 [scratch folder](#the-state-of-the-user), and it posts nothing. The reason: the text of the draft and of its reviews
 stays out of the context of the planner.
 
+Before the follow-up planner starts the first ticket subagent for a lesson or a proposed issue, it decides on a drop, as
+[The post of the follow-up planner](#the-post-of-the-follow-up-planner) permits. First, it reads the docs for the rule
+that the lesson or the proposed issue asks for. Then it judges whether a case with a cost is on record, for example a
+stop or a change of scope. If neither such a case nor a real gap of the docs exists, the follow-up planner can drop the
+lesson or the proposed issue. The judgment is open on purpose, and the follow-up planner makes it.
+
+The reason: each review loop costs at least one review agent. On 2026-11-04, the review agents of drafts held a median
+of about 120,000 tokens of context.
+
 The prompt of a ticket subagent gives the source of the draft word for word, the milestone and the path of the draft
 file. It says whether the planner is the initial planner or the follow-up planner. It gives each decision of the user on
 the draft. It tells the ticket subagent to read this page, [Before a post](issues.md#before-a-post) and the
