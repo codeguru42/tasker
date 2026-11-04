@@ -96,9 +96,34 @@ the ticket subagent dismissed, with its reason. It also gives each finding and e
 [the escape hatch](#the-escape-hatch). It also gives the blocked-by links with their reasons, and each command and
 result that a rule of the planner pages gives to the user.
 
+The ticket subagent applies [Core features first](working-with-the-user.md#core-features-first) to each finding of a
+review agent and to each question of its own work. It decides each edge case as "later" and keeps the draft in its
+scope. For an edge case, it dismisses the finding or drops the question, with the reason "an edge case, later". It can
+also name a proposed later issue for the edge case in its report, with its milestone. Whether a case is an edge case,
+and whether it gets a proposed later issue, is a judgment of the ticket subagent, open on purpose. The report lists each
+such edge case in its own list, with its proposed later issue.
+
+The paragraph before this one does not cover a security gap or a bug in the core path, as Core features first says. The
+core path of a draft is the main use that the draft describes, as [Review findings](review-findings.md#review-findings)
+says for an issue. The ticket subagent changes the draft for a bug in the core path. A security gap stays a question for
+the user. The report gives a security gap first, with the time that the gap starts, as Core features first says.
+
+The report gives a question for the user only for a decision of a kind of [the escape hatch](#the-escape-hatch). It also
+gives a question for each kind of choice that still goes to the user first. The bullet of
+[A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "The user can let the session
+decide" lists these kinds. An edge case that the ticket subagent decided as "later" is not a question of the report.
+This also holds for an edge case about a behavior that a user sees. The list of the edge cases is not part of the
+dismissed findings or of the findings of a kind of the escape hatch.
+
 The planner then does each step after the review loops. Examples are a question to the user, an item, the post and the
 report of the post. When it posts, the planner adds the links. Links between drafts that are not posted yet stay with
 the planner, from its table of the needs and the likely files.
+
+Before the planner sends a question of a report to the user, it applies the paragraph that starts "The report gives a
+question for the user". A question about an edge case that is not a security gap or a bug in the core path does not go
+to the user. The planner decides it as "later" and adds it to the list of the edge cases of the report. The planner
+gives that list in each place where it gives the findings that it dismissed. Examples are the report of a post, an item
+of the escape hatch and a draft that the initial planner shows to the user.
 
 A change of the draft after a report starts a new ticket subagent. An example is a change from an answer of the user.
 Another example is the change of the draft into a change of an open issue after the duplicate search. A change that
@@ -378,6 +403,9 @@ When a draft needs one of these decisions, the follow-up planner asks the user b
 - A change of scope of an issue in flight.
 - A security gap.
 - A finding of one of these kinds that the ticket subagent does not resolve in its loops.
+
+An edge case that a ticket subagent decided as "later" needs none of these decisions, as
+[The ticket subagent](#the-ticket-subagent) says.
 
 For a draft that waits for such a decision, the follow-up planner posts nothing. The follow-up planner sends the draft
 as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed.
