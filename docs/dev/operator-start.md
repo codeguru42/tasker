@@ -273,9 +273,10 @@ orchestrator runs, steps 1 and 2 do not apply.
 3. The operator runs its own rounds. It can start them at the same time as step 1. It sends each finding that proposes a
    change of the docs to the follow-up planner. If no follow-up planner runs, it gives the finding to the user. When its
    rounds end, it tells the follow-up planner.
-4. The follow-up planner finishes each draft in its review loops. Then it handles each finding: it posts the finding,
-   drops it or writes it to memory. Then it runs its rounds. It handles the findings of its own rounds in the same way.
-   The operator runs no new round for them. After its last round, the follow-up planner sends a report to the operator.
+4. The follow-up planner waits for the report of the ticket subagent of each draft. Then it handles each finding: it
+   posts the finding, drops it or writes it to memory. Then it runs its rounds. It handles the findings of its own
+   rounds in the same way. The operator runs no new round for them. After its last round, the follow-up planner sends a
+   report to the operator.
 5. When the user says to close the milestone, the operator relays this word to the follow-up planner. The follow-up
    planner closes the milestone, as [Milestones](issues.md#milestones) says. If no follow-up planner runs, the operator
    tells the user and closes nothing.
