@@ -77,14 +77,15 @@ subagent for each of them.
 
 The planner gives the work on each draft to a ticket subagent, as [docs/sessions.md](../sessions.md) defines it. A
 ticket subagent works one time and ends. It does the steps of [The review loop of a draft](#the-review-loop-of-a-draft)
-and ends with a report. It edits only its draft file and its report file, and it posts nothing. The reason: the text of
-the draft and of its reviews stays out of the context of the planner.
+and ends with a report. It edits only its draft file, its report file and the files of a
+[scratch folder](#the-state-of-the-user), and it posts nothing. The reason: the text of the draft and of its reviews
+stays out of the context of the planner.
 
 The prompt of a ticket subagent gives the source of the draft word for word, the milestone and the path of the draft
 file. It says whether the planner is the initial planner or the follow-up planner. It gives each decision of the user on
 the draft. It tells the ticket subagent to read this page, [Before a post](issues.md#before-a-post) and the
-simple-english skill. It bans each command that reads the login of the user and each write to GitHub. It asks for the
-report through the tool `SubagentHandback`.
+simple-english skill. It bans each command that reads the login of the user, each write to GitHub and each change of
+[the state of the user](#the-state-of-the-user). It asks for the report through the tool `SubagentHandback`.
 
 The ticket subagent also writes its report to the path of the draft file, with `-report.md` in place of `.md`. A rule of
 the planner pages that names a finding that the planner dismissed means a finding of this report. A rule of the planner
@@ -94,7 +95,8 @@ with the user.
 The report gives the path of the draft file, the title and a short summary of the draft. It also gives each finding that
 the ticket subagent dismissed, with its reason. It also gives each finding and each part of the draft of a kind of
 [the escape hatch](#the-escape-hatch). It also gives the blocked-by links with their reasons, and each command and
-result that a rule of the planner pages gives to the user.
+result that a rule of the planner pages gives to the user. It also gives each open question of
+[the state of the user](#the-state-of-the-user), with its command.
 
 The ticket subagent applies [Core features first](working-with-the-user.md#core-features-first) to each finding of a
 review agent and to each question of its own work. It decides each edge case as "later" and keeps the draft in its
@@ -163,6 +165,58 @@ ticket subagent gives the name of the ticket subagent. The Agent tool refuses a 
 other names, as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If the Agent
 tool refuses a name, the planner gives the draft file a shorter name. A subagent is not a session of a role, so its name
 gives no role and no slug in the sense of [docs/sessions.md](../sessions.md).
+
+### The state of the user
+
+The state of the user is each file, setting, login and job of the user that a program reads or runs later, also at an
+outside service. Examples are the crontab, the systemd units of the user, a configuration file, the login of a tool and
+the credits of an OpenRouter account. A scratch folder of a ticket subagent is a new folder under `/tmp` that it makes
+for one measure. Its files are not such state. A read that changes nothing is not a change of the state of the user, for
+example `crontab -l`. The steps of the planner pages are also not such a change, for example `git fetch origin`.
+
+A ticket subagent changes no state of the user, unless the user approved the command of that change. The ban also covers
+a change that the ticket subagent undoes after the measure. The review agents of the ticket subagent follow the same
+ban, and they run no measure that writes a file. Whether a write changes the state of the user is a judgment. The
+judgment is open on purpose, and the ticket subagent or the review agent makes it. In doubt, that agent treats the write
+as a change of the state of the user.
+
+A measure that needs such a change becomes an open question in the report of the ticket subagent. A review agent gives
+such a measure as a finding with its command. If the draft needs the measure, the ticket subagent makes it an open
+question. The question gives the command and its undo step word for word, and what each one changes. It also says what
+the undo step changes beyond the measure. An example is `crontab -r`, which removes the whole crontab of the user, not
+only the test job.
+
+Until the answer, the draft says next to the fact of the measure that no one tested it. The bullet of
+[The body of an issue](#the-body-of-an-issue) that starts "Before the post, the planner tests each fact about an outside
+tool" gives these words. This subsection wins over that bullet and over the bullet that starts "An issue can name a read
+of an outside tool". The prompt of a ticket subagent asks for no measure that needs such a change, unless the user
+approved its command. Each measure that changes no state of the user still follows
+[the fact test](plan-review.md#the-fact-test).
+
+The initial planner asks the user in the chat. The follow-up planner sends the question to
+[its operator](../operator.md) as an item. The draft waits for the answer, as a draft of
+[the escape hatch](#the-escape-hatch) does. Only a word of the user approves a command, as
+[The rules for the user alone](#the-rules-for-the-user-alone) says. An answer of the operator and the recommendation
+mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) do not approve it. The answer of the
+user has one of these outcomes:
+
+- The user approves the command. Then the planner starts a new ticket subagent with the draft file, the approved command
+  and its undo step, word for word. That ticket subagent first runs only that command and its undo step. Then it changes
+  the draft with the result and starts at step 2 of [The review loop of a draft](#the-review-loop-of-a-draft). If the
+  command or the undo step fails, the ticket subagent runs nothing more and ends. Its report gives the state that stays,
+  and the planner tells the user.
+- The user runs the command and gives the result. Then the planner starts a new ticket subagent with the draft file and
+  the result. That ticket subagent changes the draft with the result and starts at step 2.
+- The user declines the measure. Words of the user that let the sender decide also count as a decline. Then the draft
+  keeps the words that no one tested the fact, and the measure is no longer an open question. For the follow-up planner,
+  the bullet of the escape hatch that starts "If the answer accepts the draft with no change" then applies.
+- The user rejects or drops the draft. Then the planner drops the draft, as the escape hatch says.
+
+On 2026-11-01, the user said that a test that writes to the real `$HOME/.codex` or to the data of the user waits for the
+user. On 2026-11-04, the ticket subagent of planner-m16 for #751 measured timers of `systemd-run --user` and a crontab
+with no approval of the user. It made test units, installed a test crontab and removed it with `crontab -r`. The crontab
+was empty before, and the ticket subagent removed each unit, so nothing was lost. The prompt of the ticket subagent
+asked it to measure the forms with harmless commands and to remove each test job.
 
 ### The wait for a report
 
@@ -306,9 +360,9 @@ The ticket subagent of a draft does these steps:
 2. Run the self-check of the simple-english skill over the draft file, as [Before a post](issues.md#before-a-post) says.
 3. Run `git fetch origin` in the local clone.
 4. Start a new review agent for this loop. Give it the path of the draft file, the tests below, and the source of the
-   draft word for word. Tell it to run no command that reads the login of the user. An example of a source is the lesson
-   of an orchestrator. Give it no opinion of the ticket subagent about the draft. Name it as
-   [The ticket subagent](#the-ticket-subagent) says.
+   draft word for word. Tell it to run no command that reads the login of the user or changes
+   [the state of the user](#the-state-of-the-user). An example of a source is the lesson of an orchestrator. Give it no
+   opinion of the ticket subagent about the draft. Name it as [The ticket subagent](#the-ticket-subagent) says.
 5. Decide on each finding of the review agent. Change the draft, or dismiss the finding and keep one line with the
    reason.
 6. If the loop changed the draft, run the next loop from step 3. Run at most 3 loops for one draft.
@@ -402,6 +456,7 @@ When a draft needs one of these decisions, the follow-up planner asks the user b
 - A choice between two or more designs, where each one has a real cost.
 - A change of scope of an issue in flight.
 - A security gap.
+- A measure that needs a change of [the state of the user](#the-state-of-the-user).
 - A finding of one of these kinds that the ticket subagent does not resolve in its loops.
 
 An edge case that a ticket subagent decided as "later" needs none of these decisions, as
@@ -437,6 +492,8 @@ The post with no approval of the user does not cover these rules:
   [The order of the work](#the-order-of-the-work). The escape hatch does not cover them. They stay with the user.
 - A comment on an issue. It is not a draft of this section, so it still needs the approval of the user.
 - A change of scope and a security gap. The escape hatch covers both.
+- The approval of a measure that changes [the state of the user](#the-state-of-the-user). The escape hatch covers the
+  wait of the draft, but only the user approves the measure.
 
 ### The initial planner
 
