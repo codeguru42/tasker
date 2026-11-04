@@ -806,10 +806,9 @@ likely edit the same file", which name the planner.
 - If the user states a design fact or a rule, the planner puts it in a doc of the repo through a ticket: in the plan of
   a ticket in progress (before `tasker approve` when possible), in the body of a ticket that has not started, or in a
   new issue.
-- The work on this repo must continue on any machine. For this reason, the notes of an assistant hold nothing that a
-  session on another machine needs. This includes the preferences of the user about how to work. Each new rule, fact or
-  preference goes to a doc of the repo, as the bullet before this one says. A note that holds a rule until an issue
-  lands names the number of that issue, so that the orchestrator finds the note when the issue lands.
+- The work on this repo must continue on any machine. Each new rule, fact or preference goes to a doc of the repo, as
+  the bullet before this one says. This includes the preferences of the user about how to work. No rule, fact or
+  preference goes to memory, as [the memory rule](rules.md#docs) of rules.md says.
 
 ## Working with the user
 
