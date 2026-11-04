@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createCodexProvider } from "../../../src/assistant/codex/provider.js";
@@ -105,6 +105,23 @@ async function run(control: FakeClaudeControl, overrides: Partial<RunInput> = {}
   const outcome = await codexProvider().run(setup.input);
   return { ...setup, outcome };
 }
+
+describe("createCodexProvider runtime path errors", () => {
+  it("fails before spawn when XDG_RUNTIME_DIR has an ELOOP", async () => {
+    const dir = useTempDir("tasker-runtime-loop-");
+    const loop = join(dir, "loop");
+    symlinkSync(loop, loop);
+    const onSpawn = vi.fn();
+    const setup = setUp({ stream: codexSample("plain") }, { onSpawn });
+    const outcome = await codexProvider().run({
+      ...setup.input,
+      env: { ...setup.input.env, XDG_RUNTIME_DIR: loop },
+    });
+    expect(failureOutcomeOf(outcome)).toMatchObject({ kind: "failure", exitCode: null, signal: null });
+    expect(setup.fake.calls()).toEqual([]);
+    expect(onSpawn).not.toHaveBeenCalled();
+  });
+});
 
 describe("createCodexProvider run: the outcome rows", () => {
   it("fails when codex is not on PATH", async () => {

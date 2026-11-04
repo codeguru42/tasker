@@ -7,6 +7,10 @@ import { expectedCodexArgs } from "../../helpers/fake-codex.js";
 import { runInput, sandboxLimits } from "../../helpers/fake-claude.js";
 import { useTempDir } from "../../helpers/temp.js";
 
+function realTempDir(): string {
+  return realpathSync(useTempDir("tasker-codex-table-"));
+}
+
 function argsOf(
   overrides: Partial<RunInput> = {},
   files: { threadId?: string; schemaPath?: string; hookCommand?: string } = {},
@@ -401,6 +405,39 @@ describe("codexArgs: the write profile", () => {
     );
   });
 
+  it.each(["read-only", "workspace-write"] as const)(
+    "deduplicates the SSH socket under XDG_RUNTIME_DIR for %s",
+    (access) => {
+      const dir = realTempDir();
+      const runtime = join(dir, "runtime");
+      mkdirSync(runtime);
+      const agent = join(runtime, "agent");
+      writeFileSync(agent, "");
+      const args = argsOf({ access, env: { XDG_RUNTIME_DIR: runtime, SSH_AUTH_SOCK: agent } });
+      expect(args).toEqual(
+        expectedCodexArgs({
+          model: "haiku",
+          effort: "low",
+          ...(access === "workspace-write" ? { writePaths: ["/work", "/tmp"], hookCommand: HOOK } : {}),
+          denyRead: [runtime],
+        }),
+      );
+      expect(args.join("\n").split(JSON.stringify(agent)).length - 1).toBe(0);
+    },
+  );
+
+  it("uses real paths for a runtime folder through a linked parent", () => {
+    const dir = realTempDir();
+    const realParent = join(dir, "real");
+    mkdirSync(realParent);
+    const link = join(dir, "parent.link");
+    symlinkSync(realParent, link);
+    mkdirSync(join(realParent, "runtime"));
+    const runtime = join(link, "runtime");
+    const args = argsOf({ env: { XDG_RUNTIME_DIR: runtime } });
+    expect(args).toEqual(expectedCodexArgs({ model: "haiku", effort: "low", denyRead: [join(realParent, "runtime")] }));
+  });
+
   it("adds the herdr folder for a write run", () => {
     expect(writeArgs({ env: { HOME: "/h" } })).toEqual(
       expectedCodexArgs({
@@ -408,6 +445,23 @@ describe("codexArgs: the write profile", () => {
         effort: "low",
         writePaths: ["/work", "/tmp"],
         denyRead: ["/h/.config/herdr"],
+        hookCommand: HOOK,
+      }),
+    );
+  });
+
+  it("gives no TMPDIR write key under the runtime deny folder", () => {
+    const dir = realTempDir();
+    const runtime = join(dir, "runtime");
+    mkdirSync(runtime);
+    const tmp = join(runtime, "tmp");
+    mkdirSync(tmp);
+    expect(writeArgs({ env: { XDG_RUNTIME_DIR: runtime, TMPDIR: tmp } })).toEqual(
+      expectedCodexArgs({
+        model: "haiku",
+        effort: "low",
+        writePaths: ["/work"],
+        denyRead: [runtime],
         hookCommand: HOOK,
       }),
     );

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -104,6 +105,20 @@ describe("CODEX_THREAD_ID", () => {
 });
 
 describe("expectedCodexArgs", () => {
+  it("adds the host Docker socket to the deny table when it resolves", () => {
+    let docker: string | undefined;
+    try {
+      docker = realpathSync("/var/run/docker.sock");
+    } catch {
+      /* The host has no Docker socket. */
+    }
+    const args = expectedCodexArgs({ model: "m", effort: "low" });
+    const table = args.find((arg) => arg.startsWith("permissions.tasker.filesystem="));
+    expect(table).toBe(
+      `permissions.tasker.filesystem={"/"="read"${docker === undefined ? "" : `, ${JSON.stringify(docker)}="deny"`}}`,
+    );
+  });
+
   it("gives the whole list of a continued session with a schema and two denied paths", () => {
     expect(
       expectedCodexArgs({
