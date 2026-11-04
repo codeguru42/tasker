@@ -124,6 +124,15 @@ the session of the planner, from 1, so each name is new in that session. The tic
 
 The second review agent of a loop gets the name `<ticket subagent name>-review-<loop>-2`.
 
+The ticket subagent passes the name of each review agent with the `name` option of the Agent tool. The fact of the first
+sentence of the bullet that starts "The list of the options of the Agent tool" in
+[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) also holds for the Agent tool of a
+ticket subagent. On 2026-11-04, planner-m16-ticket-name-option-1 passed
+`name: "planner-m16-ticket-name-option-1-review-1"`, and the report of the review agent came from that name. The prompt
+of a ticket subagent gives this rule and says that the tool accepts `name` but does not list it. On 2026-11-04, four
+ticket subagents of planner-m16 did not see `name` in the list of the options of their Agent tool. They put the name of
+each review agent only in the description and the prompt of the review agent.
+
 The planner gives each draft file a name of at most 24 characters, of lowercase letters, digits and `-`. The prompt of a
 ticket subagent gives the name of the ticket subagent. The Agent tool refuses a name of more than 64 characters, and
 other names, as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If the Agent
