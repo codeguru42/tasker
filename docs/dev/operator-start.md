@@ -258,10 +258,12 @@ the hold messages, the old operator starts no stop of a sender of the slug.
    If the close works and the tab has an entry in the tab list, the operator takes that entry out. After
    `herdr pane close`, the tab stays open.
 
-The operator does step 2 only after the report of the rounds, so the session already read "stop". For a session at its
-input prompt, the wait of step 2 then ends at once, and the operator does step 3. For such a session, a wait right after
-the send of "stop" ends before the session reads it. The measures in the next paragraphs show this, and it is the reason
-for the wait for the report.
+A session at its input prompt runs no turn and is ready for the next input at its prompt, in the state `idle` or `done`.
+A session in `blocked` is not such a session, and [A blocked session](#a-blocked-session) covers it. The operator does
+step 2 only after the report of the rounds, so the session already read "stop". For a session at its input prompt, the
+wait of step 2 then ends at once, and the operator does step 3. For such a session, a wait right after the send of
+"stop" ends before the session reads it. The measures in the next paragraphs show this, and it is the reason for the
+wait for the report.
 
 On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, the task subagent of #519 sent "stop" to a test session of its
 own in the state `done`. `herdr agent wait <pane id> --timeout 600000` returned `done` at once. About 0.5 seconds later,
