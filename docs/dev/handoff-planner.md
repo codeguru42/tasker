@@ -23,13 +23,14 @@ The planner counts the issues that it posts in its session. Each change of the b
 post. At a count of 12, the planner suggests a handoff to the user after that post. The follow-up planner tells the user
 each suggestion as [The operator](working-with-the-user.md#the-operator) of working-with-the-user.md says.
 
-The reason for the count: most of the context of a planner comes from the drafts of each issue and their rewrites.
+The reason for the count: most of the context of a planner comes from the work on each issue.
 
 ## The steps of the old planner
 
 After the start, the old planner does these steps:
 
-1. Post nothing new and start no new draft.
+1. Post nothing new and start no new draft. Start no new ticket subagent. Wait for the report of each ticket subagent
+   that runs.
 2. Write the handoff file, with the name and the time of [The handoff file](handoff.md#the-handoff-file). An example is
    `2026-10-24-1530-docs-planner.md`.
 3. Send the path of the handoff file to [the operator of the session](../operator.md) as an item, as
@@ -49,6 +50,7 @@ handoff file:
   no other doc for the start reads. The second step of the prompt is
   [The start of the new planner](#the-start-of-the-new-planner).
 - The path of each open draft, not its text, its source, and the decision of the user that it waits for, if any.
+- The path of the report file of each open draft.
 - Each lesson, measured fact or proposed issue that another session sent or that the old planner found, and that has no
   draft yet. Each entry names its sender, its facts and its sources.
 - The number of each issue that the old planner posted in its session.
