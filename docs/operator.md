@@ -54,3 +54,4 @@ The operator pages are `docs/operator.md` and the pages of this list, "The pages
   topic handoff" and "The hold of the items".
 - [docs/dev/handoff-operator.md](dev/handoff-operator.md): "The handoff of the operator", "The close count", "The steps
   of the old operator", "The handoff file of the operator" and "The start of the new operator".
+- [docs/dev/session-review-rounds.md](dev/session-review-rounds.md): the rounds of `/session-review` before a stop.

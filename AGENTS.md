@@ -79,6 +79,9 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   states of an item.
 - [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): a side conversation and the word of the
   user.
+- [docs/dev/session-review-rounds.md](docs/dev/session-review-rounds.md): the rounds of `/session-review` that a session
+  runs before it stops, and an orchestrator before its report that the milestone is done: a round, the end of the
+  rounds, a handled finding, the report of the rounds and the report again.
 - [docs/dev/first-refine.md](docs/dev/first-refine.md): the hints that a task subagent gives in the first refine of a
   ticket, sorted by the kind of ticket.
 - [docs/dev/workspaces.md](docs/dev/workspaces.md): the base branch and the workspace of a task: the forms, the source
