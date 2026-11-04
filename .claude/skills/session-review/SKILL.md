@@ -30,14 +30,14 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
    A note that the user keeps out of the repo on purpose stays in memory. The doc check deletes and trims no such note, and step 5 makes no proposal for it. The session finds these wishes of the user in its memory and in the instructions of the user. Whether a note is such a note is open on purpose, and the session judges it.
 
    On 2026-10-17, the user said: "if a memory contains the same note as a doc, then the memory should be deleted".
-3. Write each new candidate to memory. Follow the memory rules of the system prompt of the session: the types, the frontmatter, the line in the index and the list of what not to save.
+3. Write no candidate to memory. Make no new memory note, and add no text to a memory note. [The memory rule](../../../docs/dev/rules.md#docs) of `docs/dev/rules.md` gives this rule. Give each candidate that belongs in a tracked doc to step 6. Give each other candidate to the user in the summary of step 8. The user decides where such a candidate goes.
 
-   A memory note never holds the status of an issue. Examples of a status are open, closed and landed. GitHub holds the status of each issue, and a status in a note can be wrong or go stale. A note can name an issue number, but only as its delete condition or as a source. For example, a note can say "delete when #500 lands".
+   Whether a candidate belongs in a tracked doc is open on purpose, and the session judges it.
 
-   A session that needs the status of an issue reads it from GitHub, as step 5 (a) does. This rule covers each note that this skill writes or changes.
+   In the rounds of [Session-review rounds](../../../docs/dev/session-review-rounds.md), give such a candidate to the user, not to the planner. This step wins over the sentence of that page that sends each finding to the planner. The decision of the user on the candidate handles the finding, as a drop does. Until then, the finding stays open. Give it one time in the rounds of a session, not in each round.
 
-   On 2026-10-30, a new note said that #537 landed, but #537 closed as not planned. The user said: "Why are we tracking issue status in memory. Github is the source of truth."
-4. Update or remove each entry that step 2 found stale, wrong or duplicated. Also delete each note and trim each note, as the doc check of step 2 says.
+   On 2026-11-04, the user said: "I want to move away from using memory at all. Rules should only be kept in tracked docs."
+4. Delete each note, or each line of a note, that step 2 found stale or wrong. Write no new text in its place. If a note goes, also delete its line in the memory index. Also delete each note and trim each note, as the doc check of step 2 says. If a delete or a trim fails, tell the user the note and the error. Keep that note as it was.
 5. Do this step for each existing note that the doc check of step 2 keeps in full or in part. For each such note, decide whether it belongs in a tracked doc of the repo. The bullet "Each new rule, fact or preference goes to a doc of the repo" of [What goes in a ticket](../../../docs/dev/planner.md#what-goes-in-a-ticket) in `docs/dev/planner.md` guides this judgment. The judgment is open on purpose, and the session makes it.
    - (a) If the note names an open issue, make no proposal for it. Read the state with `gh issue view <number> --json state -q .state`.
    - (b) If that read fails, make no proposal for the note. Tell the user the error.
