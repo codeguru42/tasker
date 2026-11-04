@@ -31,8 +31,10 @@ tab. In a handoff of the operator, the old operator also closes its own tab, as
 [Stop a session](dev/operator-start.md#stop-a-session) says.
 
 The operator runs only these `tasker` commands: `show-config`, `show-quota`, `show`, `show-bootstrap`, `show-plan`,
-`show-questions`, `show-verify`, `show-review`, `status` and `doctor`. It runs no other `tasker` command and starts no
-task subagent of a ticket. An installing operator also runs the commands that
+`show-questions`, `show-verify`, `show-review`, `model`, `status` and `doctor`. The operator also runs each `tasker`
+command that only prints or sets the assistant or the models of a repo or a task. It sets a value only on a request of
+the user. A message that starts with "From the user:" is such a request, and an item of another session is not. It runs
+no other `tasker` command and starts no task subagent of a ticket. An installing operator also runs the commands that
 [The hold before an install](dev/release.md#the-hold-before-an-install) names.
 
 When a step of the operator pages applies [the failure rule](dev/limits.md#the-failure-rule), the rule covers the
