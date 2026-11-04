@@ -116,6 +116,19 @@ If a ticket subagent ends with no report, [the failure rule](limits.md#the-failu
 the planner starts one new ticket subagent for the draft. With a draft file, it starts at step 2, and with no draft
 file, at step 1. If that one also ends with no report, the planner tells the user.
 
+The planner names each ticket subagent `<own name>-ticket-<file>-<count>`, with the `name` option of the Agent tool.
+`<own name>` is the own name of the planner, as [docs/sessions.md](../sessions.md) defines it. `<file>` is the name of
+the draft file without `.md`, as in the path of the draft file. `<count>` counts the ticket subagents of that draft in
+the session of the planner, from 1, so each name is new in that session. The ticket subagent names each review agent
+`<ticket subagent name>-review-<loop>`, where `<loop>` is the number of the review loop, from 1. An example is
+`planner-m16-ticket-terms-2-review-1`.
+
+The planner gives each draft file a name of at most 24 characters, of lowercase letters, digits and `-`. The prompt of a
+ticket subagent gives the name of the ticket subagent. The Agent tool refuses a name of more than 64 characters, and
+other names, as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If the Agent
+tool refuses a name, the planner gives the draft file a shorter name. A subagent is not a session of a role, so its name
+gives no role and no slug in the sense of [docs/sessions.md](../sessions.md).
+
 ## The review loop of a draft
 
 These terms apply in this section:
@@ -138,7 +151,8 @@ The ticket subagent of a draft does these steps:
 3. Run `git fetch origin` in the local clone.
 4. Start a new review agent for this loop. Give it the path of the draft file, the tests below, and the source of the
    draft word for word. Tell it to run no command that reads the login of the user. An example of a source is the lesson
-   of an orchestrator. Give it no opinion of the ticket subagent about the draft.
+   of an orchestrator. Give it no opinion of the ticket subagent about the draft. Name it as
+   [The ticket subagent](#the-ticket-subagent) says.
 5. Decide on each finding of the review agent. Change the draft, or dismiss the finding and keep one line with the
    reason.
 6. If the loop changed the draft, run the next loop from step 3. Run at most 3 loops for one draft.
