@@ -232,8 +232,9 @@ The orchestrator that does the compare runs each git command of the compare in i
 that does the compare runs `git fetch --multiple tasker origin`. Right after the fetch, the orchestrator that does the
 compare runs `git diff --name-only origin/<base branch>...tasker/<task branch>` for each task in flight. The `branch:`
 line of `tasker show <issue>` gives the task branch, and [the base rule](run-one-ticket.md#the-base-rule) gives the
-base. Each diff uses each remote-tracking ref in only one command, so the diff needs no hash read, as
-[the shared-clone rule](limits.md#the-shared-clone-rule) says.
+base. Each diff uses each remote-tracking ref in only one command, so the diff needs no hash read of its own, as
+[the shared-clone rule](limits.md#the-shared-clone-rule) says. For a stacked task, steps 3 and 4 of the base rule
+already give the base as a hash.
 
 If `git diff` exits with 0, the output gives one path on each line. If the output is empty, the diff lists no file. Then
 the orchestrator that does the compare takes the files of the task from its plan, with `tasker show-plan <issue>`.
