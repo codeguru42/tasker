@@ -71,11 +71,11 @@ The old orchestrator counts the landings of its session. Each of these also coun
 - A new issue that the user asks the old orchestrator to send for drafting
 - A decision of the user that takes several question rounds
 
-An event adds to the count before any other step of that event. For a landing, the final report of the agent brings the
-count to 12 before the steps of the bullet "When the final report of the agent of a ticket says that the ticket landed"
-of [Land the work](land-the-work.md#land-the-work). So the read of the board of that landing starts no new ticket. For a
-decision of the user that takes several question rounds, the answer of the user that ends the decision brings the count
-up.
+An event adds to the count before any other step of that event. For a landing, the final report of the task subagent
+brings the count to 12. This happens before the landing steps. The bullet "When the final report of the task subagent of
+a ticket says that the ticket landed" in [Land the work](land-the-work.md#land-the-work) gives those steps. So the read
+of the board of that landing starts no new ticket. For a decision of the user that takes several question rounds, the
+answer of the user that ends the decision brings the count up.
 
 At a count of 12, the old orchestrator suggests a handoff to the user in its report of that landing. The report of a
 landing (a landing report) is the reply in which the old orchestrator tells the user that a ticket landed. If a counted
@@ -125,7 +125,7 @@ After the start, the old orchestrator does these steps:
 2. Wait until each task in flight lands. This step leaves out a parked task. For each landing, do the usual steps:
    delete the jobs (see [Delete the job](quota.md#delete-the-job)), do
    [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step of the bullet "When the final report of the
-   agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work), do
+   task subagent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work), do
    [the notice rule](doc-reads.md#the-notice-rule) and do
    [the task subagent notice](doc-reads.md#the-task-subagent-notice). The reason: a job lives only in the session of the
    orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task is still in flight at the handoff,

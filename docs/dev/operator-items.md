@@ -116,9 +116,9 @@ The operator does these things for the open items:
   gives the words of the user. It gives the number that the sender gave to each answered question, next to the words of
   the user. The message of a partial answer also names each open question of the item by the number of the sender.
 - The sender continues its other work and does not wait in a loop. The answer starts the sender again, as
-  [the answer-wait rule](limits.md#the-answer-wait-rule) says for an agent. A partial answer also starts the sender
-  again. The sender acts only on the answered questions. For the open questions, the sender continues its other work and
-  does not wait in a loop.
+  [the answer-wait rule](limits.md#the-answer-wait-rule) says for a task subagent. A partial answer also starts the
+  sender again. The sender acts only on the answered questions. For the open questions, the sender continues its other
+  work and does not wait in a loop.
 - After a send works, each answered question of the message is a sent question. An item closes only after each of its
   questions is a sent question or a moved question.
 - If a send fails, [the failure rule](limits.md#the-failure-rule) applies, and the item stays open. The questions of the

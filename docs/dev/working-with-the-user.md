@@ -74,11 +74,12 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   its choices. A line such as "A or B still waits" is not enough. In one case (2026-10-18), a reminder of
   orchestrator-m13 said only "still waits for your choice: A or B", and the user asked "what are the open questions?"
   and later "what is the question?". In a question or a reminder to the user, the session names each item by its
-  content. A label that only a report of an agent or a ticket defines is not enough, for example "the mode", "item 2" or
-  "finding 2". The session can give the label after the content. In one case (2026-10-24), orchestrator-docs reminded
-  the user of three open decisions with such labels: "Does the mode pass through a handoff file?", "B: one sentence that
-  says it does not" and "Does item 2 of #320 go in as written?". The user asked "what is "the mode"?", "What is the full
-  question?" and "What is item 2?". Only the reports of the agents of #375 and #320 defined those labels.
+  content. A label that only a report of a task subagent or a ticket defines is not enough, for example "the mode",
+  "item 2" or "finding 2". The session can give the label after the content. In one case (2026-10-24), orchestrator-docs
+  reminded the user of three open decisions with such labels: "Does the mode pass through a handoff file?", "B: one
+  sentence that says it does not" and "Does item 2 of #320 go in as written?". The user asked "what is "the mode"?",
+  "What is the full question?" and "What is item 2?". Only the reports of the task subagents of #375 and #320 defined
+  those labels.
 - A short reply of the user can refer to more than one open question. Then, before the session acts on the reply, it
   asks which question the reply answers. The session asks in one line and names each candidate question. On 2026-10-24,
   orchestrator-m21 had two open questions: gap A of #395 and the planner of a proposed issue. The user wrote "There is
@@ -86,8 +87,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   messages and took back both.
 - The session can ask the user to approve a plan or a change of scope. If the approval settles a choice that the session
   and the user discussed before, the question names each choice that the approval drops. An example is "this keeps the
-  release commit; the tag-only design drops out". On 2026-10-19, in the plan review of #377, the agent described a
-  tag-only release design, but on 2026-10-24, the user approved the commit design. No one named the tag-only design in
+  release commit; the tag-only design drops out". On 2026-10-19, in the plan review of #377, the task subagent described
+  a tag-only release design, but on 2026-10-24, the user approved the commit design. No one named the tag-only design in
   that approval, and later that day the user said "I thought we were using tags for the version and not updating nor
   committing a version in package.json" and chose tag only (#425).
 - The user can let the session decide open choices by its own recommendation. The session then tells the user each
@@ -253,7 +254,7 @@ link to open an issue from a reply.
   alphabet. We can introduce i10n concerns later."
 - A collision of derived names is not an issue. Examples are two repo keys or two [issue keys](issue-keys.md) that give
   the same slug, the same folder or the same task branch. Do not raise such a collision, and do not file an issue for
-  it. When an agent reports one, dismiss it with this reason.
+  it. When a task subagent reports one, dismiss it with this reason.
 
 ## Simplify over special rules
 
@@ -263,13 +264,13 @@ link to open an issue from a reply.
 - In one case, an exception for one more loop drew a new edge case in each of 4 loops. The user replaced all the special
   loop rules with one rule: "up to 5 loops, then report". [Review findings](review-findings.md#review-findings) of
   review-findings.md holds that rule.
-- When the orchestrator gives the user the simpler rule as a choice, the orchestrator also tells the agent of the ticket
-  to wait. The agent does not run its next `tasker approve` or `tasker accept` until the user decides. The agent waits
-  as [the answer-wait rule](limits.md#the-answer-wait-rule) says. Then the orchestrator sends the agent the decision of
-  the user. The reason: if the user then picks the simpler rule, a landing with the patch costs a second ticket. On
-  2026-10-17, the agent of #250 went on, #250 landed with the patch before the user chose the simpler rule, and #306
-  undoes the patch. The agent also stops by itself under the case "Two reviews in a row" of
-  [the stop rule](plan-review.md#the-stop-rule).
+- When the orchestrator gives the user the simpler rule as a choice, the orchestrator also tells the task subagent of
+  the ticket to wait. The task subagent does not run its next `tasker approve` or `tasker accept` until the user
+  decides. The task subagent waits as [the answer-wait rule](limits.md#the-answer-wait-rule) says. Then the orchestrator
+  sends the task subagent the user's decision. The reason: if the user then picks the simpler rule, a landing with the
+  patch costs a second ticket. On 2026-10-17, the task subagent of #250 went on. Ticket #250 landed with the patch
+  before the user chose the simpler rule, and #306 undoes the patch. The task subagent also stops by itself under the
+  case "Two reviews in a row" of [the stop rule](plan-review.md#the-stop-rule).
 
 ## The tools of a session
 

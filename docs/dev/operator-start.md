@@ -56,9 +56,9 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    [The word of the user](operator-conversations.md#the-word-of-the-user) says. The message of the operator starts with
    "From the user:" and says that the initial planning ends. Then the operator waits for the message of the initial
    planner that the initial planning is done. This message ends the wait. While it waits, the operator continues its
-   other work and does not wait in a loop, as [the answer-wait rule](limits.md#the-answer-wait-rule) says for an agent.
-   If the send fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says. The tab of
-   the initial planner stays open, and the operator still waits for the message of the initial planner.
+   other work. It does not wait in a loop. [The answer-wait rule](limits.md#the-answer-wait-rule) says this for a task
+   subagent. If the send fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says. The
+   tab of the initial planner stays open, and the operator still waits for the message of the initial planner.
 6. The message of the initial planner is the one signal that ends the initial planning. The operator does this step only
    after this message. The word of the user to the initial planner in step 5 is the request of the user for this stop.
    Then the operator closes the tab of the initial planner, as "Stop a session" says.
@@ -144,16 +144,16 @@ The facts that follow were measured on 2026-10-24 with herdr 0.9.3 and Claude Co
 - The flag `-n` sets the session name, and the last argument is the first prompt of the session.
   [The seam of an agent kind](../config.md#the-seam-of-an-agent-kind) is the home of these flags.
 - In the fact tests of #503 and #516, the row of a test session had the field `name`, with the herdr agent name. Each
-  agent read the row soon after a `herdr agent start` that exited with 0. The row for a pane that
-  `herdr pane report-agent` reported, with no `herdr agent start` in that pane, has no `name` field. The agent of #503
-  measured this with herdr 0.9.3 on 2026-10-25.
+  task subagent read the row soon after a `herdr agent start` that exited with 0. The row for a pane that
+  `herdr pane report-agent` reported, with no `herdr agent start` in that pane, has no `name` field. The task subagent
+  of #503 measured this with herdr 0.9.3 on 2026-10-25.
 - On 2026-10-25 at about 15:40 MDT, none of the 17 rows of `herdr agent list` had a `name` field. This includes the rows
   of planner-m14 and orchestrator-m14, which `herdr agent start` started. The cause of the missing field is not known.
   The start of planner-m14 and the start of orchestrator-m14 each exited with 1 and the error code `timeout`. For the
   other rows, the result of the start is not known. operator-m14 and planner-m14 measured this with herdr 0.9.3 on
   2026-10-25.
 - `herdr agent start` refuses a herdr agent name that already runs. It exits with code 1 and prints the error code
-  `agent_name_taken`. The agent of #503 measured this with herdr 0.9.3 on 2026-10-25.
+  `agent_name_taken`. The task subagent of #503 measured this with herdr 0.9.3 on 2026-10-25.
 - The new session is a top-level session, not a subagent of the operator.
 - The tool `SendMessage` works in both directions, and `ListAgents` lists the session.
 - The model flag and the effort flag of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind) reach the
@@ -247,7 +247,7 @@ its input prompt, the wait of step 2 ends at once, before the session reads "sto
 a new turn right after the wait, or it reads nothing before the close. In both cases, the operator still does the close
 of step 3 at once. It does not wait for a read of "stop", and it sends no message to the user for this case. The reason:
 the turn that "stop" starts only answers the stop, so a close that cuts it loses no work. On 2026-10-25, with herdr
-0.9.3 and Claude Code 2.1.310, the agent of #519 sent "stop" to a test session of its own in the state `done`.
+0.9.3 and Claude Code 2.1.310, the task subagent of #519 sent "stop" to a test session of its own in the state `done`.
 `herdr agent wait <pane id> --timeout 600000` returned `done` at once. About 0.5 seconds later, the message started a
 new turn, and the session answered the stop. On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, operator-docs sent
 "From the user: stop" to planner-messages, which waited for the input of the user.

@@ -22,7 +22,7 @@ On 2026-10-18, the machine used Node 26.7.0, git 2.47.3, gh 2.101.0 and Claude C
 ## The local clone
 
 1. Clone the repo to the local clone: `git clone git@github.com:codeguru42/tasker.git $HOME/src/mine/tasker`. The
-   orchestrator and its agents run git and `tasker` from this clone.
+   orchestrator and its task subagents run git and `tasker` from this clone.
 2. In the local clone, run `nvm install`, so that the clone uses the Node version of step 1 of
    [Set up a working copy](../../CONTRIBUTING.md#set-up-a-working-copy).
 3. [The folder bullet of Limits](limits.md#limits) gives the place of the task worktree. Do not change the other entries

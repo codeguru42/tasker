@@ -32,7 +32,7 @@ tab. In a handoff of the operator, the old operator also closes its own tab, as
 
 The operator runs only these `tasker` commands: `show-config`, `show-quota`, `show`, `show-bootstrap`, `show-plan`,
 `show-questions`, `show-verify`, `show-review`, `status` and `doctor`. It runs no other `tasker` command and starts no
-agent of a ticket. An installing operator also runs the commands that
+task subagent for a ticket. An installing operator also runs the commands that
 [The hold before an install](dev/release.md#the-hold-before-an-install) names.
 
 When a step of the operator pages applies [the failure rule](dev/limits.md#the-failure-rule), the rule covers the
