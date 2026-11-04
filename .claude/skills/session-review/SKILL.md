@@ -62,6 +62,12 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 8. Report a short summary: the memory notes that the session deleted or trimmed, and each proposal with its target. Add the open work of step 7 to the summary. Give the open work in one numbered list, in the form of [The form of a reply](../../../docs/dev/working-with-the-user.md#the-form-of-a-reply). If the session finds no open work, say so. Name each drop of step 7 (c).
    Also give each candidate that step 3 sends to the user, and each note of step 5 (f). If the session works through the operator, send them to the operator in one item. Step 7 (d) gives this rule for an open question.
 
+   In the rounds of [the initial planner](../../../docs/dev/planner.md#the-initial-planner-and-the-follow-up-planner) after the initial planning, give one line above the proposals of the summary. The line names `/session-review` as the source of the proposals. It says that they are a look back at the process, apart from the milestone. It also says that no ticket of the milestone waits for them.
+
+   The line covers only the proposals that change no issue of the milestone and add no issue to it. Give each other proposal after the proposals of the line, as work of the milestone. If no proposal of the summary fits the line, give no line.
+
+   On 2026-10-31, planner-m27 gave three rules for the planner right after the planning of the milestone "M27 — Codex". The user asked: "why are we visiting rules for the planner while implementing codex?" Then the user said: "so we are reevaluating the process here after finishing the codex planning."
+
 ## Rules
 
 - Never edit a tracked doc, for example `AGENTS.md`, `CLAUDE.md` or a file under `docs/`. The reason: a tracked doc is shared with each contributor as soon as a commit holds it.
