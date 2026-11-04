@@ -31,13 +31,22 @@ After the start, the old planner does these steps:
 
 1. Post nothing new and start no new draft. Start no new ticket subagent. Wait for the report of each ticket subagent
    that runs.
-2. Write the handoff file, with the name and the time of [The handoff file](handoff.md#the-handoff-file). An example is
+2. Run the rounds of [Session-review rounds](session-review-rounds.md). Give each finding to a ticket subagent, as
+   [The review loop of a draft](planner.md#the-review-loop-of-a-draft) says. For these findings, this step wins over
+   step 1.
+
+   Wait for the report of each such ticket subagent. Then post an issue, add the finding to an open issue, or drop it,
+   as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. Send each draft that waits
+   for a decision of the user to the operator as an item, as [The escape hatch](planner.md#the-escape-hatch) says. Then
+   send the report of the rounds to the operator as a report.
+
+3. Write the handoff file, with the name and the time of [The handoff file](handoff.md#the-handoff-file). An example is
    `2026-10-24-1530-docs-planner.md`.
-3. Send the path of the handoff file to [the operator of the session](../operator.md) as an item, as
+4. Send the path of the handoff file to [the operator of the session](../operator.md) as an item, as
    [The form of an item](operator-items.md#the-form-of-an-item) of operator-items.md says.
 
 Until the end of the handoff ([The end of a handoff](handoff.md#the-end-of-a-handoff)), the old planner does step 1 of
-these steps, also after step 3.
+these steps, also after step 4.
 
 ## The handoff file of the planner
 

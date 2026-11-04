@@ -9,9 +9,8 @@ A long-running orchestrator is the orchestrator of a milestone that stays open w
 for example "Docs" (see [docs/dev/planner.md](planner.md)). In a handoff, the old orchestrator gives its work to a new
 orchestrator in a new session.
 
-The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone stops when the
-Todo column of its milestone is empty, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The rules of
-this page do not cover it.
+The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone stops at step 4
+of [The close of a milestone](operator-start.md#the-close-of-a-milestone). The rules of this page do not cover it.
 
 A long-running orchestrator also reads the board with one recurring job, the board watch job. A new issue can arrive
 when no ticket of the milestone runs. Then no landing comes, and no read of the board follows. On 2026-10-25,
@@ -94,6 +93,10 @@ before the suggestion of a handoff. The suggestion can come in a reply, as the p
 says. It can also come in an item to the operator, as
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
 
+During the close of a milestone, the landing count bans no new ticket, at any count. The reason:
+[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) bans each handoff during the close, so the ban of
+the landing count has no end.
+
 The ban on a new ticket holds until the start of the handoff, as
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. From the start, step 1 of
 [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) and the paragraph after the steps hold. The
@@ -130,9 +133,8 @@ After the start, the old orchestrator does these steps:
    [the task subagent notice](doc-reads.md#the-task-subagent-notice). The reason: a job lives only in the session of the
    orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task is still in flight at the handoff,
    nobody resumes it after a quota stop.
-3. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round
-   finds nothing new. The user asked for this rule on 2026-10-17. Then write the handoff file, as
-   [The handoff file](handoff.md#the-handoff-file) says.
+3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17. Then
+   write the handoff file, as [The handoff file](handoff.md#the-handoff-file) says.
 4. Send the path of the handoff file to [the operator of the session](../operator.md) as an item, as
    [The form of an item](operator-items.md#the-form-of-an-item) of operator-items.md says.
 
@@ -155,7 +157,7 @@ handoff file:
 - The number of each open broken-test issue that the old orchestrator knows of (see the broken-test rule in
   [A failed CI run](ci-wait.md#a-failed-ci-run)).
 - A table of the open issues of the milestone, with the columns issue, topic, blockers and files.
-- Each open finding of the review rounds. A handled finding, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets)
+- Each open finding of the review rounds. A handled finding, as [Session-review rounds](session-review-rounds.md)
   defines it, leaves the file.
 
 ## The start of the new orchestrator
