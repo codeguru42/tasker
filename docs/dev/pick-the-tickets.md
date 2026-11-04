@@ -489,6 +489,13 @@ does these steps:
    `gh issue edit <blocked issue> --remove-blocked-by <number>`. Then that issue can start, as
    [the stacking rule](#the-stacking-rule) says.
 
+   If the new milestone is "Future", ask no question in this step. This paragraph then wins over the earlier sentences
+   of this step. For each issue that the first command of this step lists, run
+   `gh issue edit <blocked issue> --remove-blocked-by <number>`. Then list the open issues that the deferred issue waits
+   for: `gh issue view <number> --json blockedBy -q '.blockedBy.nodes[] | select(.state == "OPEN") | .number'`. For each
+   issue of that list, run `gh issue edit <number> --remove-blocked-by <blocker>`. The reason: an open issue that waits
+   for an issue of "Future" waits with no end.
+
 If a `gh` command of these steps fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator
 does the other steps. The task keeps its state.
 
