@@ -75,7 +75,6 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
 | The session skips the staleness check of the existing notes. | Do each check of step 2. |
 | The session skips the doc check of the existing notes. | Do the doc check of step 2, and step 5 for each kept note. |
 | The session edits a tracked doc. | Make a proposal, as step 6 says. |
-| The session saves the state of a task in progress as memory. | Follow the list of what not to save, as step 3 says. |
 | The session writes a candidate to memory. | Write no memory. Give the candidate to step 6 or to the summary of step 8, as step 3 says. |
 | The session tries to start the skill from a hook. | Run the skill only on a request, as "When to use" says. |
 | The session keeps a proposal only in its reply, but the docs give a target for its role. | Send the proposal to that target, as step 6 says. |
