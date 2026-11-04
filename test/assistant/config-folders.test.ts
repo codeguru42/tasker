@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { piAgentDir as fromPiAgentDir } from "../../src/assistant/config-folders.js";
 
 function piAgentDir(env: NodeJS.ProcessEnv) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fromPiAgentDir(env);
 }
 

@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isSet } from "../config/path.js";
 
 // The configuration folder of claude: CLAUDE_CONFIG_DIR, else .claude under HOME, else none.
@@ -11,4 +12,22 @@ export function claudeConfigDir(env: NodeJS.ProcessEnv): string | undefined {
 export function codexHome(env: NodeJS.ProcessEnv): string | undefined {
   if (isSet(env.CODEX_HOME)) return env.CODEX_HOME;
   return isSet(env.HOME) ? join(env.HOME, ".codex") : undefined;
+}
+
+// The agent folder of pi: PI_CODING_AGENT_DIR, else .pi/agent under HOME, else none.
+export function piAgentDir(env: NodeJS.ProcessEnv): string | undefined {
+  if (isSet(env.PI_CODING_AGENT_DIR)) {
+    const value = env.PI_CODING_AGENT_DIR;
+    if (value === "~") return isSet(env.HOME) ? env.HOME : undefined;
+    if (value.startsWith("~/")) return isSet(env.HOME) ? join(env.HOME, value.slice(2)) : undefined;
+    if (value.startsWith("file://")) {
+      try {
+        return fileURLToPath(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+  return isSet(env.HOME) ? join(env.HOME, ".pi", "agent") : undefined;
 }
