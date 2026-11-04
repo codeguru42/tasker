@@ -64,13 +64,13 @@ The orchestrator does all the steps of this section.
   issue can join a milestone while a run is in progress. An open issue can also lose its last open blocker while no
   ticket lands. In one milestone, a new issue stayed in Todo for hours, because the orchestrator read the board only at
   the start. On 2026-10-25, #495 and three new issues had no open blocker, and two slots of orchestrator-m22 stayed free
-  for about an hour. The bullet in [Land the work](land-the-work.md#land-the-work) gives the place of this read among
-  the landing steps. Its title is "When the final report of the task subagent of a ticket says that the ticket landed".
-  The orchestrator also reads the board when a message of another session names one of these changes: a new issue in the
-  milestone of the orchestrator, an added or a removed blocked-by link of an open issue of that milestone, or a move of
-  an issue into that milestone. This covers a message of each session on purpose. Today the follow-up planner sends such
-  messages, as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running
-  orchestrator also reads the board with its board watch job, as
+  for about an hour. The bullet "When the final report of the task subagent of a ticket says that the ticket landed" of
+  [Land the work](land-the-work.md#land-the-work) gives the place of this read among the landing steps. The orchestrator
+  also reads the board when a message of another session names one of these changes: a new issue in the milestone of the
+  orchestrator, an added or a removed blocked-by link of an open issue of that milestone, or a move of an issue into
+  that milestone. This covers a message of each session on purpose. Today the follow-up planner sends such messages, as
+  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running orchestrator
+  also reads the board with its board watch job, as
   [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says. Each read of the board that does
   not come at a landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts
   "at its next read of the board" or "each time it reads the board". So the priority rule applies to each start after
@@ -257,8 +257,8 @@ When a stacked ticket starts, the stacked orchestrator does these steps:
 1. Set a landing order with the parent as the earlier ticket, as [Land the work](land-the-work.md#land-the-work) says.
    Do this also when the parent belongs to another orchestrator.
 2. Tell the stacked task subagent that the ticket is stacked, and name the parent.
-3. For a file that the parent changes, tell the stacked task subagent that the stacked task builds on that change. As a
-   result, the fourth case of [the stop rule](plan-review.md#the-stop-rule) does not apply.
+3. For a file that the parent changes, tell the stacked task subagent that the fourth case of
+   [the stop rule](plan-review.md#the-stop-rule) does not apply, because the stacked task builds on that change.
 
 These rules apply to a stacked ticket and its parent. The user decided them on 2026-10-16.
 
@@ -283,21 +283,21 @@ These rules apply to a stacked ticket and its parent. The user decided them on 2
 ### The parent-hold rule
 
 This rule covers the parent of a stacked ticket before the stacked ticket starts.
-[The stacking rule](#the-stacking-rule) gives the ready states. Several commands move a task out of a ready state. They
-include the refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket), `tasker review <issue> "<feedback>"`
-of [the add-work rule](run-one-ticket.md#the-add-work-rule), `tasker update-branch` and `tasker merge`. The task
-subagent of the parent runs these commands. `tasker merge` moves the task from `accepted` to `merging` and `landed`. On
+[The stacking rule](#the-stacking-rule) gives the ready states. The task subagent of the parent moves its task out of a
+ready state with the refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket). It also moves its task out
+of a ready state with `tasker review <issue> "<feedback>"` of [the add-work rule](run-one-ticket.md#the-add-work-rule),
+`tasker update-branch` or `tasker merge`. `tasker merge` moves the task from `accepted` to `merging` and `landed`. On
 #215, a refine of step 8 moved the parent out of a ready state before the task subagents of two stacked tickets ran
 `tasker start`. `tasker start` refused both of them (see
 [the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)).
 
-Before it starts a stacked ticket on an unready parent, the orchestrator tells the parent's task subagent to hold. The
-hold of a parent that belongs to another orchestrator is out of scope. The hold lasts until the orchestrator tells the
-task subagent of the parent that the hold ended. A message to an ended task subagent starts it again (see
-["Terms" in "Quota"](quota.md#terms)). If the task subagent of the parent gets the message while a command runs, it lets
-the command end and keeps the hold. If the task subagent of the parent gets the message while it waits for an answer or
-a next step, it keeps the hold. Then the task subagent of the parent ends its turn again, as
-[the answer-wait rule](limits.md#the-answer-wait-rule) says.
+The parent is not ready yet when the orchestrator plans to start a stacked ticket on it. The orchestrator tells the task
+subagent of the parent to hold. The hold of a parent that belongs to another orchestrator is out of scope. The hold
+lasts until the orchestrator tells the task subagent of the parent that the hold ended. A message to a task subagent
+that has ended starts the task subagent again (see ["Terms" in "Quota"](quota.md#terms)). If the task subagent of the
+parent gets the message while a command runs, the task subagent lets the command end and keeps the hold. If the task
+subagent of the parent gets the message while it waits for an answer or a next step, it keeps the hold. Then the task
+subagent of the parent ends its turn again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says.
 
 The orchestrator sends the hold only when a [slot](quota.md#the-delay-of-each-task-subagent) is free for the stacked
 ticket. If no slot is free, the orchestrator sends no hold (see the bullet "Run at most 3 task subagents at the same
@@ -306,16 +306,17 @@ and starts nothing. On 2026-10-18, orchestrator-docs held #279 for #282 while al
 hold at once.
 
 When the orchestrator sends the hold, it keeps that free slot for the planned stacked ticket. A kept slot is not free
-for another hold or for the start of another ticket. The kept slot counts against the limit of 3 task subagents in
+for another hold or for the start of another ticket. While the hold runs, the orchestrator counts the kept slot as one
+of the 3 task subagents of the bullet "Run at most 3 task subagents at the same time" of
 [Pick the tickets](#pick-the-tickets). As a result, the orchestrator sends at most one hold for one free slot. For a
 second planned stacked ticket, on the same parent or on another parent, the orchestrator needs one more free slot.
 
-When the orchestrator starts the task subagent of the stacked ticket, it gives that subagent the kept slot. From then
-on, the slot belongs to that task subagent. It is no longer a kept slot. While the hold runs, the kept slot takes
-priority over the bullet "When the orchestrator starts a task subagent". It also takes priority over the sentence "Then
-the next task subagent that starts takes the slot." of
-[The delay of each task subagent](quota.md#the-delay-of-each-task-subagent). If the hold ends before the orchestrator
-starts the task subagent of the stacked ticket, the kept slot is free again. The user decided this on 2026-10-24.
+When the orchestrator starts the task subagent of the stacked ticket, it gives that task subagent the kept slot. From
+then on, the slot is the slot of that task subagent and no longer a kept slot. While the hold runs, the kept slot wins
+over the bullet "When the orchestrator starts a task subagent" and over the sentence "Then the next task subagent that
+starts takes the slot." of [The delay of each task subagent](quota.md#the-delay-of-each-task-subagent). If the hold ends
+before the orchestrator starts the task subagent of the stacked ticket, the kept slot is free again. The user decided
+this on 2026-10-24.
 
 If no slot is free, the orchestrator keeps no record of the planned start. After the orchestrator frees a slot, as
 [Delete the job](quota.md#delete-the-job) says, it applies the stacking rule and this rule again. It does this at its
@@ -454,11 +455,11 @@ An issue can hold an open question that stops its start. The note of
 [the change-of-scope comment](plan-review.md#the-change-of-scope-comment) that starts
 `## Open question after the change of scope` and the hold comment of [A ticket on hold](#a-ticket-on-hold) are forms of
 such a question. For the order of the priority rule, the orchestrator counts such a ticket as a ticket that can start.
-If that ticket is next for a free slot, the orchestrator asks the user about the question. Before then, the orchestrator
-does not ask, even when a slot is free. On 2026-10-31, #635 held such a question.
+If that ticket is the next ticket for a free slot, the orchestrator asks the user about the question. Before that, the
+orchestrator does not ask, also with a free slot. On 2026-10-31, #635 held such a question.
 
-While the answer waits, the next ticket takes the free slot. After the answer, and after each body edit that the issue
-asks for, the ticket can start.
+While the answer waits, the ticket after it takes the free slot. After the answer, and after each body edit that the
+issue asks for, the ticket can start.
 
 ### The defer rule
 
@@ -468,19 +469,20 @@ from M5 to "Future" while its task was in `awaiting_plan_review`. The user did n
 `tasker abort` deletes the work of the task subagent. When the user defers a ticket that has a task in flight, the
 orchestrator does these steps:
 
-1. Tell the task subagent of the ticket to end its work. A message to a task subagent that has ended starts it again
-   (see ["Terms" in "Quota"](quota.md#terms)). The task subagent ends its work after its current `tasker` command ends.
-   It runs no other `tasker` command. Before its final report, it removes the task worktree as
+1. Tell the task subagent of the ticket to end its work. A message to a task subagent that has ended starts the task
+   subagent again (see ["Terms" in "Quota"](quota.md#terms)). The task subagent ends its work after its current `tasker`
+   command ends. It runs no other `tasker` command. Before its final report, it removes the task worktree as
    [the own-worktree rule](limits.md#the-own-worktree-rule) says. The remove changes no task, and the task keeps its
    state. Then it gives its final report.
 2. Leave the task in its state. Do not run `tasker abort`, unless the user tells you to.
 3. Delete the jobs of the task subagent, as ["Delete the job" in "Quota"](quota.md#delete-the-job) says.
 4. Move the issue to the milestone that the user names: `gh issue edit <number> --milestone "<milestone>"`.
 5. Move the card of the ticket to Todo. The ticket waits in Todo of its new milestone.
-6. Post a comment on the issue that starts with `## Parked task`. Add the findings of the final report so the next task
-   subagent can start from them. Include the task state, open plan questions, answers so far, and facts that the task
-   subagent tested. For a stacked task, give the start base of its last read. The final report gives that base. If the
-   task subagent held none, say so (see [the comeback rule](run-one-ticket.md#the-comeback-rule)).
+6. Post a comment on the issue that starts with `## Parked task`, with the findings of the final report. The next task
+   subagent can start from them. Examples are the state of the task, the open plan questions, and the answers so far.
+   The examples also include the facts that the task subagent tested. For a stacked task, the comment gives the start
+   base of the last read when the work of the task subagent ended. The final report gives it, or says that the task
+   subagent held none (see [the comeback rule](run-one-ticket.md#the-comeback-rule)).
 7. List the open issues that the deferred issue blocks:
    `gh issue view <number> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. For each issue
    of the list, read its milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The command
@@ -569,17 +571,17 @@ the user, the orchestrator skips its removal.
 
 The orchestrator writes the prompt of each task subagent.
 
-- The prompt of each task subagent gives only the context of its ticket. The context is the issue key, the milestone of
-  its ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)). The milestones that are off limits
-  for the task subagent are part of the context. It gives the landing order (see
+- The prompt of a task subagent gives only the context of its ticket. The context is the issue key, the milestone of its
+  ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)). The context includes the milestones
+  that are off limits for the task subagent. It gives the landing order (see
   ["Land the work"](land-the-work.md#land-the-work)) and, for a stacked ticket, its parent (see
   [the stacked-ticket rule](#the-stacked-ticket-rule)). It gives the quota slot and whether the task subagent has a job
   (see ["Quota"](quota.md#quota)). It gives the folder of the task subagent for its files (see the folder bullet of
   ["Limits"](limits.md#limits)).
 
-  It links the change-of-scope and design-gap comments of its issue (see the bullet below that starts "If the account of
-  the orchestrator"). It gives the hints for its first refine and the task worktree with its path,
-  `../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
+It gives the links of the change-of-scope and design-gap comments of its issue. See the bullet below that starts "If the
+account of the orchestrator". It gives the hints for its first refine and the task worktree with its path,
+`../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
 
 - The prompt never tells the task subagent to take a path from the `worktree:` line of `tasker show`. The reason: that
   line prints the worktree of tasker, and [the own-worktree rule](limits.md#the-own-worktree-rule) bans each read and
@@ -624,15 +626,15 @@ The orchestrator writes the prompt of each task subagent.
   fact. On #539 (2026-10-25), a hint named a resolve of `TASKER_GH_BIN` in `src/issues/github/run.ts`, and the base held
   no such name.
 
-- If the account of the orchestrator posted a `## Change of scope` or `## Design gap` comment on the ticket, the prompt
-  links that comment for its task subagent. If the ticket has no such comment, the prompt does not mention these
-  comments. The reason: [the issue check](plan-review.md#the-issue-check) counts such a comment of the account of the
-  orchestrator as part of the issue only when the orchestrator sends its link. On #395 (2026-10-24), the prompt gave no
-  link to the comment https://github.com/codeguru42/tasker/issues/395#issuecomment-6386939662. The task subagent found
-  the comment at step 1 of ["Run one ticket"](run-one-ticket.md#run-one-ticket). Then the orchestrator had to tell the
-  task subagent that the comment is part of the issue.
-- When the orchestrator starts a task subagent, the orchestrator names its session after the issue key of its ticket.
-  The orchestrator sets the session name with the `name` option of the Agent tool, for example
+- If the account of the orchestrator posted comments on the issue of the task subagent that start with
+  `## Change of scope` or `## Design gap`, the prompt links each one. If the issue has no such comment, the prompt does
+  not mention these comments. The reason: [the issue check](plan-review.md#the-issue-check) counts such a comment of the
+  account of the orchestrator as part of the issue only when the orchestrator sends its link. On #395 (2026-10-24), the
+  prompt gave no link to the comment https://github.com/codeguru42/tasker/issues/395#issuecomment-6386939662. The task
+  subagent found the comment at step 1 of ["Run one ticket"](run-one-ticket.md#run-one-ticket). Then the orchestrator
+  had to tell the task subagent that the comment is part of the issue.
+- When the orchestrator starts a task subagent, the orchestrator names the session of the task subagent after the issue
+  key of its ticket. The orchestrator sets the session name with the `name` option of the Agent tool, for example
   `name: "codeguru42-tasker-108"`.
   - The list of the options of the Agent tool does not show `name`, but the tool accepts it. The `description` option is
     not the session name. The M7 orchestrator tested `name` on 2026-10-15. An Agent call with
@@ -645,30 +647,31 @@ The orchestrator writes the prompt of each task subagent.
     Agent call with `name: "codeguru42/tasker#143"` failed before the task subagent started, with the error
     `name must start with a letter or digit and contain only letters, digits, underscores, or hyphens (max 64 chars)`.
     This error gives the same rule as the pattern. No later session tests the issue key as a name again.
-  - The orchestrator uses the session name in each message and resume message to the task subagent. It also uses the
-    session name in each quota job prompt. The first bullet of this section already puts the issue key in the prompt of
-    the task subagent. The prompt of each quota job gives the full issue key too, so that each one can be matched to the
-    task. The reason: several orchestrators run at the same time. A name such as `agent-1` or a bare number does not say
-    which ticket or which repo the session belongs to. The full key is unique, so the reports, the messages and the jobs
-    can be matched to the task.
+  - The orchestrator uses the session name for each message to the task subagent, for each resume message and in the
+    prompt of each quota job. The first bullet of this section already puts the issue key in the prompt of the task
+    subagent. The prompt of each quota job gives the full issue key too, so that each one can be matched to the task.
+    The reason: several orchestrators run at the same time. A name such as `agent-1` or a bare number does not say which
+    ticket or which repo the session belongs to. The full key is unique, so the reports, the messages and the jobs can
+    be matched to the task.
   - One task subagent runs one ticket, so one name belongs to one task. If the orchestrator starts a second session for
-    the same ticket, it adds a suffix, for example `codeguru42-tasker-108-2`. It names the new task subagent in its
-    prompt. A SendMessage to a task subagent can fail with "No transcript found for agent ID". Then the orchestrator
-    cannot resume that task subagent. In that case, the orchestrator starts a second session for the ticket, with the
-    suffix of this bullet. The new task subagent follows [the comeback rule](run-one-ticket.md#the-comeback-rule). The
-    prompt of the new task subagent gives the state of the task from `tasker show <issue>`. The prompt gives the task
-    worktree of the new name, as the first bullet of this section says. The comeback rule then finds the old task
-    worktree through the branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule). The
-    orchestrator moves the quota jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. On #409
-    (2026-10-24), a SendMessage failed in this way after a restart of the session of the orchestrator at a `/rename`.
-  - If a task subagent already runs with no name, the orchestrator does not restart it only to give it a name. A new
-    task subagent lacks the old task subagent's context. It has not read the old plans or review loops. For a task
-    subagent with no name, the orchestrator puts the full issue key in each message and resume message. It also puts the
-    full issue key in each quota job prompt, in place of the session name. The orchestrator names each new task
-    subagent.
-- Before the task subagent starts, the orchestrator makes its folder for its files (see the folder bullet of
-  ["Limits"](limits.md#limits)). In one case, a background command of a task subagent wrote into a missing folder and
-  failed.
+    the same ticket, the orchestrator adds a suffix, for example `codeguru42-tasker-108-2`, and says so in the prompt of
+    the new task subagent. A SendMessage to a task subagent can fail with "No transcript found for agent ID". Then the
+    orchestrator cannot resume that task subagent. In that case, the orchestrator starts a second session for the
+    ticket, with the suffix of this bullet. The new task subagent follows
+    [the comeback rule](run-one-ticket.md#the-comeback-rule). The prompt of the new task subagent gives the state of the
+    task from `tasker show <issue>`. The prompt gives the task worktree of the new name, as the first bullet of this
+    section says. The comeback rule then finds the old task worktree through the branch-exists case of
+    [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves the quota jobs of the ticket, as
+    [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage failed in this way after a
+    restart of the session of the orchestrator at a `/rename`.
+  - If a task subagent already runs with no name, the orchestrator does not restart the task subagent only to give it a
+    name. The reason: a new task subagent does not have the context of the old task subagent, for example the plans that
+    it read and its review loops. For a task subagent with no name, the orchestrator puts the full issue key in the text
+    of each message, each resume message and each quota job prompt, in place of the session name. The orchestrator names
+    each new task subagent.
+- Before the task subagent starts, the orchestrator makes the folder of the task subagent for its files (see the folder
+  bullet of ["Limits"](limits.md#limits)). In one case, a background command of a task subagent wrote into a missing
+  folder and failed.
 - The orchestrator writes in the prompt that the comment of step 11 of
   ["Run one ticket"](run-one-ticket.md#run-one-ticket) is the only write of the task subagent on GitHub issues, labels
   and the project board (see ["Limits"](limits.md#limits)). In one case, a strong "never run a gh write" line in the
