@@ -209,8 +209,10 @@ The task subagent sends each message to the orchestrator with `SendMessage` and 
 example `orchestrator-m8`, is not the address. The rule covers each message that the task subagent sends while it works.
 Examples are the run-start and run-end reports of
 ["When there is no reset time yet"](quota.md#when-there-is-no-reset-time-yet) in ["Quota"](quota.md#quota), the reports
-of the stop cases, the list of files after `tasker approve` and the questions. The rule does not cover the final report
-(see [the final report](run-one-ticket.md#the-final-report)). The task subagent of #153 learned this rule on 2026-10-15.
+of the stop cases, the list of files after `tasker approve` and the questions.
+
+The rule does not cover the final report (see [the final report](run-one-ticket.md#the-final-report)), except after a
+[refused `SubagentHandback` call](#the-answer-wait-rule). The task subagent of #153 learned this rule on 2026-10-15.
 
 ### The answer-wait rule
 
@@ -228,8 +230,33 @@ In Claude Code 2.1.314, a subagent gives its final answer with the tool `Subagen
 that plain text at the end of a turn does not reach the orchestrator. It also says "Use it once", "The call ends your
 run" and "do not use it for progress updates or questions". The subagent still uses this tool for an interim report,
 because it has no other final answer. On 2026-10-30, a `SendMessage` after a `SubagentHandback` call started a
-background subagent again with its context. A second `SubagentHandback` call of that subagent also reached the session
-that started the subagent.
+background subagent again with its context. After this start, a second `SubagentHandback` call of that subagent also
+reached the session that started the subagent.
+
+A refused `SubagentHandback` call is a call of that tool whose result says that nothing was sent. An example of such a
+result is "Nothing was sent: your report was already delivered (SubagentHandback delivers one report). Use SendMessage
+for anything further, then stop." After a refused `SubagentHandback` call, the task subagent sends the same report with
+`SendMessage`, as [the address rule](#the-address-rule) says. The message starts with a line that says that Claude Code
+refused the `SubagentHandback` call. The report follows that line with no change. Then the task subagent ends its turn.
+
+This send covers the final report and each interim report that the task subagent did not send with `SendMessage` before
+the call. It does not cover a final answer that follows a report with `SendMessage`. An example is the final answer of a
+stop. It also does not cover the interim final answer of a task subagent that stays in its wait, as
+[the task subagent notice](doc-reads.md#the-task-subagent-notice) says. The orchestrator takes the message of a refused
+`SubagentHandback` call as the report of that call. If the `SendMessage` call fails, the task subagent ends its turn,
+and the report stays only in its transcript.
+
+Claude Code 2.1.318 refused a second `SubagentHandback` call after a start by the end of a background command. On #734
+(2026-11-04), the task subagent gave an interim report with `SubagentHandback` while its background command ran, against
+the wait bullet of [the command rules](tasker-commands.md#the-command-rules). The end of that command started the task
+subagent again, with no message of the orchestrator. Claude Code refused its next `SubagentHandback` call, the final
+report, and the final report did not reach the orchestrator as a message.
+
+In a test on the same day, a `SendMessage` started a test subagent again, and its second call reached the session that
+started it. In another test on that day, the end of a background command started a test subagent again. Claude Code
+refused its second call, and a `SendMessage` after it reached the session that started the subagent. No one measured how
+often Claude Code refuses a second call, a third call, or a call after a start by another event. An example of another
+event is the report of a subagent of the task subagent.
 
 A stop of a task subagent has these parts:
 
