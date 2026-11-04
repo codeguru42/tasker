@@ -586,6 +586,11 @@ likely edit the same file", which name the planner.
 - An issue of an earlier milestone never waits for an issue of a later milestone. If the earlier milestone is one chain,
   the planner links a shared-file overlap only to the last issue of that chain. After the links, the planner reads every
   blocked-by link of both milestones and makes sure of this rule.
+- An issue of the milestone "Future" has no blocked-by link to an open issue, in either direction. Such an issue moves
+  into another milestone before its work starts. This bullet wins over each other bullet of this page that adds a link.
+  For a ticket that renames a doc, the planner still edits the body of such an issue. The session that moves an issue
+  into "Future" removes each link of the issue to an open issue in the same step. It uses the commands of step 7 of
+  [the defer rule](pick-the-tickets.md#the-defer-rule).
 - The planner gives the reasons for the links in the chat with the user, not in the issue.
 
 ## The milestone of an issue
