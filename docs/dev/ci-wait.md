@@ -116,8 +116,8 @@ the new issue, it goes on with step 12 of the CI wait.
 ## A failed CI run
 
 This section gives the steps of the orchestrator after a task subagent reports a failed run in step 11 of
-[the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that a task subagent reports. The
-An issue of a failed CI run gets the priority `P0`. The priority rule of
+[the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that a task subagent reports. An
+issue of a failed CI run gets the priority `P0`. The priority rule of
 [Pick the tickets](pick-the-tickets.md#pick-the-tickets) makes that issue start before the tickets with a lower
 priority. [The project board](issues.md#the-project-board) gives the commands of the priority. The repo has the label
 `broken-test`.
