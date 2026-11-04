@@ -24,8 +24,8 @@ and a seven-day job.
   account"), a seven-day job that has not fired also counts as the job. In the other two cases, a seven-day job alone
   does not count.
 - A subagent is running while it works on its turn. A subagent has ended when its turn is over, for example after a
-  tasker command stops in `quota_blocked` or `interrupted`. A message to an ended subagent starts it again, and the
-  subagent keeps its context. A login expiry also ends the session of the subagent itself, with the error
+  tasker command stops in `quota_blocked` or `interrupted`. A message to a subagent that has ended starts the subagent
+  again, and the subagent keeps its context. A login expiry also ends the session of the subagent itself, with the error
   `Login expired · Please run /login`. After the user logs in again, the orchestrator resumes the task subagent with a
   message.
 - `tasker show-quota` prints the last quota event of each repo as a JSON list. It has no `--json` flag. Each entry has
@@ -89,8 +89,10 @@ of the task subagent for that reset. The delays prevent a resume of all the task
 - The job time of a job is its reset time plus the delay of the task subagent. The reset time falls on a full 10
   minutes, for example 11:30. So the job time is a full minute.
 - If the reset time is not a full minute, the orchestrator must round the job time up to the next full minute.
-- When the orchestrator starts a task subagent, the orchestrator must give it the free slot with the lowest number.
-- When the orchestrator schedules a job for a task subagent, a five-hour job or a seven-day job, it keeps the same slot.
+- When the orchestrator starts a task subagent, the orchestrator must give the task subagent the free slot with the
+  lowest number.
+- When the orchestrator schedules a job for a task subagent, a five-hour job or a seven-day job, the task subagent keeps
+  the same slot.
 - The task subagent keeps its slot until the orchestrator frees it, as "Delete the job" says. Then the next task
   subagent that starts takes the slot.
 
@@ -101,11 +103,11 @@ of the task subagent for that reset. The delays prevent a resume of all the task
 2. If there is a reset time, the orchestrator must schedule a one-shot five-hour job for the job time of that task
    subagent. The orchestrator also follows [the schedule-all rule](#when-there-is-no-reset-time-yet). The orchestrator
    applies the [future-time rule](#schedule-a-job-when-a-task-subagent-starts) of this section.
-3. If the task subagent has no job after steps 1 and 2, the orchestrator starts it without a job. The orchestrator tells
-   the task subagent that it has no job. For example, there is no reset time before the first run in the project. "When
-   there is no reset time yet" gives the next steps.
-4. If a seven-day job alone counts as the job, the orchestrator starts the task subagent. The orchestrator tells it that
-   it has a job.
+3. If the task subagent has no job after steps 1 and 2, the orchestrator starts the task subagent without a job. The
+   orchestrator tells the task subagent that it has no job. For example, there is no reset time before the first run in
+   the project. "When there is no reset time yet" gives the next steps.
+4. If a seven-day job alone counts as the job, the orchestrator starts the task subagent. The orchestrator tells the
+   task subagent that it has a job.
 
 - The future-time rule: right before each CronCreate, the orchestrator reads the current time with `date`. The rule
   covers each schedule of a five-hour job or a seven-day job (each job is a one-shot job). The seven places are step 2
@@ -150,8 +152,8 @@ Each time the orchestrator runs `tasker show-quota` and reads the reset time, as
 also reads the seven-day reset time and applies this rule. This holds whether or not a five-hour reset time exists.
 
 - If the seven-day reset time is in the future, the orchestrator schedules a seven-day job for each task subagent that
-  has none. The exception is a task subagent that the schedule-all rule leaves out (see
-  [When there is no reset time yet](#when-there-is-no-reset-time-yet)). The reset can be far in the future. The job is a
+  has none, except a task subagent that the schedule-all rule leaves out (see
+  [When there is no reset time yet](#when-there-is-no-reset-time-yet)), however far away the reset is. The job is a
   one-shot job for the job time of the seven-day reset. The delay and the rounding come from
   [The delay of each task subagent](#the-delay-of-each-task-subagent). The
   [future-time rule](#schedule-a-job-when-a-task-subagent-starts) applies before each schedule.
@@ -177,31 +179,33 @@ The rule has three failure cases:
 
 ### When there is no reset time yet
 
-- Each task subagent must tell the orchestrator each time a tasker run ends. If a task subagent has no job, it must also
-  tell the orchestrator each time a tasker run starts. The runs are `tasker plan`, `tasker refine`, `tasker execute`,
-  `tasker review`, `tasker retry` and `tasker resume`.
+- Each task subagent must tell the orchestrator each time a tasker run ends. If a task subagent has no job, the task
+  subagent must also tell the orchestrator each time a tasker run starts. The runs are `tasker plan`, `tasker refine`,
+  `tasker execute`, `tasker review`, `tasker retry` and `tasker resume`.
 - If the orchestrator gets a run-start report and the ticket already has a job that has not fired, the orchestrator does
   not schedule another job.
-- While a task subagent has no job and the schedule-all rule does not leave it out, the orchestrator reads the reset
-  time each time it reports a tasker run start. [Terms](#terms) gives the read steps. The orchestrator also reads the
-  reset time each time any task subagent reports a tasker run end. If there is no reset time, nothing else changes.
-- The schedule-all rule has two parts. The first part: the orchestrator schedules a job for each task subagent without a
-  job. It does this each time it runs `tasker show-quota` and reads a reset time. The
+- While any task subagent has no job and the schedule-all rule does not leave it out, the orchestrator runs
+  `tasker show-quota` and reads the reset time, as [Terms](#terms) says, each time a task subagent without a job reports
+  that a tasker run starts. The orchestrator also does this each time any task subagent reports that a tasker run ends.
+  If there is no reset time, nothing else changes.
+- The schedule-all rule has two parts. The first part: each time the orchestrator runs `tasker show-quota` and reads a
+  reset time, the orchestrator also schedules a job for each task subagent without a job. The
   [future-time rule](#schedule-a-job-when-a-task-subagent-starts) applies before each schedule. The second part says
   which task subagent the rule leaves out, and until when. The rule leaves out a task subagent whose last job fired in a
   case of [When the job fires](#when-the-job-fires) that scheduled no new job for that task subagent. The orchestrator
   schedules no job for a left-out task subagent under the schedule-all rule or under the seven-day rule. A fire of
   either job, in a case that schedules no new job, leaves the task subagent out. If a case of "When the job fires" says
-  that the orchestrator schedules the next job, the rule no longer leaves out the task subagent of the fired job. This
-  applies from the start of [The next job](#the-next-job). As a result, that section schedules the next five-hour job,
-  and the seven-day rule covers the task subagent at the read of that section. The task subagent stays left out until
-  the orchestrator starts it or until the end condition above. "Schedule a job when a task subagent starts" covers a new
-  start. A message to the task subagent does not end this. The rule also leaves out a task subagent whose slot the
-  orchestrator freed, as [Delete the job](#delete-the-job) says. This lasts until the orchestrator starts it again, as
-  "Schedule a job when a task subagent starts" says.
-- When a task subagent had no job, the orchestrator tells it after it schedules a job. If the task subagent gets this
-  message, it stops the run-start reports. It keeps the run-end reports. With no five-hour window, the seven-day rule
-  can give a job to a task subagent with no job. Then the orchestrator also tells the task subagent that it has a job.
+  that the orchestrator schedules the next job, the task subagent of the fired job is no longer left out. This applies
+  from the start of [The next job](#the-next-job). As a result, that section schedules the next five-hour job, and the
+  seven-day rule covers the task subagent at the read of that section. The task subagent stays left out until the
+  orchestrator starts it as "Schedule a job when a task subagent starts" says, or until the end condition above. A
+  message to the task subagent does not end this. The rule also leaves out a task subagent whose slot the orchestrator
+  freed, as [Delete the job](#delete-the-job) says, until the orchestrator starts it again, as "Schedule a job when a
+  task subagent starts" says.
+- When the orchestrator schedules the job of a task subagent that had no job, the orchestrator tells the task subagent
+  that it has a job. If the task subagent gets this message, the task subagent stops the run-start reports. The task
+  subagent keeps the run-end reports. With no five-hour window, the seven-day rule can give a job to a task subagent
+  with no job. Then the orchestrator also tells the task subagent that it has a job.
 - The earlier-reset rule applies to each run-end report of a task in `quota_blocked`, while the seven-day job of its
   task subagent counts as the job. The report can be the final answer that ends the turn of the task subagent. The
   orchestrator runs `tasker show-quota` and `tasker show <issue>`, in this order. If another rule of this section
@@ -231,15 +235,15 @@ The rule has three failure cases:
 
   | Before the read     | After the read      | Result                                                                                                                                                                                               |
   | ------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | Not known           | No five-hour window | The orchestrator applies the seven-day rule first. If the task subagent then has a seven-day job, the orchestrator tells it that it has a job.                                                       |
+  | Not known           | No five-hour window | The orchestrator applies the seven-day rule first. If the task subagent then has a seven-day job, the orchestrator tells the task subagent that it has a job.                                        |
   | Not known           | Five-hour window    | The present rules apply.                                                                                                                                                                             |
   | No five-hour window | Five-hour window    | The first sentences of this bullet apply.                                                                                                                                                            |
   | Five-hour window    | No five-hour window | A five-hour job that has not fired stays. A seven-day job that has not fired counts as the job. The orchestrator tells each task subagent that had no job and has a seven-day job that it has a job. |
 
 - If the orchestrator must tell a task subagent that it has a job or that it has no job, and the task subagent is
-  running, the orchestrator tells it at once. If the task subagent has ended, the orchestrator does not send a message
-  only for this. The orchestrator puts this information in the next message that it sends to that task subagent, for
-  example the resume message.
+  running, the orchestrator tells the task subagent at once. If the task subagent has ended, the orchestrator does not
+  send a message only for this. The orchestrator puts this information in the next message that it sends to that task
+  subagent, for example the resume message.
 - If the quota runs out before the orchestrator schedules a job, no job resumes the task subagent. In that case, the
   orchestrator tells the user when the orchestrator has tokens again.
 
@@ -298,12 +302,12 @@ Then exactly one of these cases applies:
 #### The next job
 
 If a case of [When the job fires](#when-the-job-fires) says that the orchestrator schedules the next job, the
-orchestrator first applies the resume rule. The resume rule: if the case sent no resume message, the subagent has ended
-(see "Terms"), and the task subagent does not wait for an answer or a next step from the orchestrator, the orchestrator
-sends the task subagent a resume message, as in the first case of "When the job fires". The task subagent waits for the
-orchestrator after a stop, a question or a request for the next step, until the orchestrator sends the answer or the
-next step. The reason: the quota can end the session of the task subagent between two `tasker` commands, and then no
-other case resumes it.
+orchestrator first applies the resume rule. The resume rule: if the case sent no resume message, the task subagent has
+ended (see "Terms"), and the task subagent does not wait for an answer or a next step from the orchestrator, the
+orchestrator sends the task subagent a resume message, as in the first case of "When the job fires". The task subagent
+waits for the orchestrator after a stop, a question or a request for the next step, until the orchestrator sends the
+answer or the next step. The reason: the quota can end the session of the task subagent between two `tasker` commands,
+and then no other case resumes the task subagent.
 
 A resume message can come from the first case, the hand-over of the `resets at:` case to the steps of the first case,
 the interrupted case, the earlier-reset rule or the resume rule. After each one, the orchestrator deletes with
@@ -329,14 +333,15 @@ not tell the task subagent that it has no job.
 - If a tasker command of the task subagent stops in `quota_blocked` or `interrupted`, the task subagent ends its turn.
   The task subagent does not wait, sleep or schedule anything. The task stays in that state. This end of the turn is a
   wait point of [the answer-wait rule](limits.md#the-answer-wait-rule).
-- If the orchestrator tells the task subagent to resume, it runs `tasker status --issue <issue>`.
+- If the orchestrator tells the task subagent to resume, the task subagent runs `tasker status --issue <issue>`.
 - If the task is in `quota_blocked` or `interrupted`, the task subagent runs `tasker resume <issue>`. The task goes back
   to the state before the run that stopped, and tasker runs the same command again. After that command, the task reaches
   the state that ["Run one ticket"](run-one-ticket.md#run-one-ticket) gives for its step. Then the task subagent
   continues with the next step of "Run one ticket".
 - If the task is in `awaiting_quota_approval`, the task subagent does not run `tasker resume` or
   `tasker approve-credits`. The task subagent [stops](limits.md#the-answer-wait-rule).
-- If the task is in a different state, the task subagent does not run `tasker resume`. It continues from that state.
+- If the task is in a different state, the task subagent does not run `tasker resume`. The task subagent continues from
+  that state.
 
 ### Delete the job
 
