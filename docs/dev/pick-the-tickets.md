@@ -691,7 +691,7 @@ The orchestrator writes the prompt of each task subagent.
 
   The reason: the classifier of auto mode denied three merge calls of task subagents, as
   [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. On 2026-11-03, the report of the task subagent of
-  #563 called the denied call "plain form `tasker merge codeguru42/tasker#563`". The denied call had `2>&1 | tail-6`
+  #563 called the denied call "plain form `tasker merge codeguru42/tasker#563`". The denied call had `2>&1 | tail -6`
   after the command. The same report gave the text of the denial with "..." in place of its end.
 
 - For all the rules, the prompt names the docs of this list, "the base list". The base list is the same for the task

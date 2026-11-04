@@ -25,8 +25,8 @@ when the call is one `tasker` command. Claude Code sends a call that does not ma
 mode, and the call ran.
 
 A form that ran before can still get a denial. From 2026-11-01 to 2026-11-04, task subagents sent 18 merge calls in the
-form `cd <clone> && tasker merge <issue> 2>&1 | tail-<n>`, or in that form with no `cd`. Each of these calls went to the
-classifier. The classifier allowed 15 of them and denied 3. Each denial gave the reason "[Merge Without Review]".
+form `cd <clone> && tasker merge <issue> 2>&1 | tail -<n>`, or in that form with no `cd`. Each of these calls went to
+the classifier. The classifier allowed 15 of them and denied 3. Each denial gave the reason "[Merge Without Review]".
 
 The classifier denied the merge call of #563 on 2026-11-02 and on 2026-11-03, and the merge call of #719 on 2026-11-04,
 each in that form. No one measured why the classifier denied these 3 calls and allowed the other 15. On 2026-11-04, on
