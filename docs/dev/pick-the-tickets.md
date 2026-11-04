@@ -129,18 +129,19 @@ The orchestrator does all the steps of this section.
   user. Do not write the issues of the next milestone. A round is one run of `/session-review`. The orchestrator runs
   `/session-review` again after each round that found something. The rounds end when a round finds nothing new. A round
   can find a lesson that an earlier round missed, or a new fact from the answers of the user. A finding is handled when
-  the orchestrator sent it to the planner, as the planner bullet of [The prompt of an agent](#the-prompt-of-an-agent)
-  says. A finding is also handled when the planner filed it as an issue or added it to an open issue. A finding is also
-  handled when the orchestrator wrote it to memory, for a fact that the rules keep out of the tracked docs. A finding is
-  also handled when the user decided to drop it. A finding that is not handled is open. When each finding is handled,
-  the orchestrator tells the user one time that the milestone is done, and it lists each finding with its state. The
-  orchestrator does not ask the user to close the milestone, and it does not bring the milestone up again in later
-  replies. On 2026-10-25, orchestrator-m21 asked the user several times whether to ask the planner to close M21, and the
-  user said: "I will decide when to close M21". The milestone closes only when the user says so, as
-  [Milestones](issues.md#milestones) of issues.md says. The stop of this bullet does not cover a long-running
-  orchestrator (see [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review
-  rounds of this bullet, the list of the findings and the report that the milestone is done cover a long-running
-  orchestrator, before it moves to the next milestone.
+  the orchestrator sent it to the planner, as the planner bullet of
+  [The prompt of a task subagent](#the-prompt-of-a-task-subagent) says. A finding is also handled when the planner filed
+  it as an issue or added it to an open issue. A finding is also handled when the orchestrator wrote it to memory, for a
+  fact that the rules keep out of the tracked docs. A finding is also handled when the user decided to drop it. A
+  finding that is not handled is open. When each finding is handled, the orchestrator tells the user one time that the
+  milestone is done, and it lists each finding with its state. The orchestrator does not ask the user to close the
+  milestone, and it does not bring the milestone up again in later replies. On 2026-10-25, orchestrator-m21 asked the
+  user several times whether to ask the planner to close M21, and the user said: "I will decide when to close M21". The
+  milestone closes only when the user says so, as [Milestones](issues.md#milestones) of issues.md says. The stop of this
+  bullet does not cover a long-running orchestrator (see
+  [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review rounds of this
+  bullet, the list of the findings and the report that the milestone is done cover a long-running orchestrator, before
+  it moves to the next milestone.
 
 ### The stacking rule
 
@@ -154,7 +155,7 @@ when these facts are true:
 - Each blocker of the ticket is closed or is ready to stack.
 - The checks of this rule pass: the wait cases, the check of the tip of the base of the parent and the wait for a fix
   round of the parent.
-- A [slot](quota.md#the-delay-of-each-agent) is free, or the orchestrator keeps a slot for the ticket, as
+- A [slot](quota.md#the-delay-of-each-task-subagent) is free, or the orchestrator keeps a slot for the ticket, as
   [the parent-hold rule](#the-parent-hold-rule) says.
 
 The other rules of [Pick the tickets](#pick-the-tickets) still apply. The orchestrator does not wait for the landing of
@@ -296,8 +297,8 @@ runs, the agent lets the command end and keeps the hold. If the agent of the par
 an answer or a next step, it keeps the hold. Then the agent of the parent ends its turn again, as
 [the answer-wait rule](limits.md#the-answer-wait-rule) says.
 
-The orchestrator sends the hold only when a [slot](quota.md#the-delay-of-each-agent) is free for the stacked ticket. If
-no slot is free, the orchestrator sends no hold (see the bullet "Run at most 3 agents at the same time" of
+The orchestrator sends the hold only when a [slot](quota.md#the-delay-of-each-task-subagent) is free for the stacked
+ticket. If no slot is free, the orchestrator sends no hold (see the bullet "Run at most 3 agents at the same time" of
 [Pick the tickets](#pick-the-tickets)). The reason: a hold with no free slot stalls a fix round of the parent and starts
 nothing. On 2026-10-18, orchestrator-docs held #279 for #282 while all 3 slots were in use, and it ended the hold at
 once.
@@ -311,8 +312,8 @@ parent or on another parent, the orchestrator needs one more free slot.
 When the orchestrator starts the agent of the stacked ticket, it gives that agent the kept slot. From then on, the slot
 is the slot of that agent and no longer a kept slot. While the hold runs, the kept slot wins over the bullet "When the
 orchestrator starts an agent" and over the sentence "Then the next agent that starts takes the slot." of
-[The delay of each agent](quota.md#the-delay-of-each-agent). If the hold ends before the orchestrator starts the agent
-of the stacked ticket, the kept slot is free again. The user decided this on 2026-10-24.
+[The delay of each task subagent](quota.md#the-delay-of-each-task-subagent). If the hold ends before the orchestrator
+starts the agent of the stacked ticket, the kept slot is free again. The user decided this on 2026-10-24.
 
 If no slot is free, the orchestrator keeps no record of the planned start. After the orchestrator frees a slot, as
 [Delete the job](quota.md#delete-the-job) says, it applies the stacking rule and this rule again. It does this at its
@@ -562,13 +563,13 @@ If the milestone is open and no orchestrator of its slug runs, the operator remo
 [The close of a milestone](operator-start.md#the-close-of-a-milestone) says. If the label is already gone at the word of
 the user, the orchestrator skips its removal.
 
-## The prompt of an agent
+## The prompt of a task subagent
 
 The orchestrator writes the prompt of each agent.
 
-- The prompt of an agent gives only the context of its ticket. The context is the issue key, the milestone of its ticket
-  (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)), the milestones that are off limits for the
-  agent, the landing order (see ["Land the work"](land-the-work.md#land-the-work)), for a stacked ticket, its parent
+- The prompt of a task subagent gives only the context of its ticket. The context is the issue key, the milestone of its
+  ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)), the milestones that are off limits for
+  the agent, the landing order (see ["Land the work"](land-the-work.md#land-the-work)), for a stacked ticket, its parent
   (see [the stacked-ticket rule](#the-stacked-ticket-rule)), the quota slot and whether the agent has a job (see
   ["Quota"](quota.md#quota)), the folder of the agent for its files (see the folder bullet of
   ["Limits"](limits.md#limits)), the links of the change-of-scope and design-gap comments of its issue (see the bullet

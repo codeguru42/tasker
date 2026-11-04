@@ -149,14 +149,14 @@ agent [stops](limits.md#the-answer-wait-rule) in each of these cases:
   overlap warning, the agent reads the milestone of its issue with
   `gh issue view <issue> --json milestone -q '.milestone.title'`. `<issue>` is the number of the issue key on the line
   of the task in the warning. The agent knows the milestone of its own ticket from its prompt (see
-  [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent)). This case does not count a task of the other
-  kind. The two kinds are a ticket of the milestone "Docs" and a ticket of a numbered milestone, for example "M19 —
-  Polish". For such a task, [the Docs rule](land-the-work.md#the-docs-rule) covers the shared file. This case still
-  applies to a file when the warning also lists that file for another task that the case counts. For example, the
-  warning lists a file for a task of "M19 — Polish" and for a task of "Docs", and the ticket of the agent is of "Docs".
-  Then the case applies to that file because of the task of "Docs". If the read prints an empty line, the issue has no
-  milestone. That is an answer, not a failure, and the case counts the task, because such a task is not of the other
-  kind. If a read fails, the case counts the task. An example of a failed read is exit code 1 with
+  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent)). This case does not count a task
+  of the other kind. The two kinds are a ticket of the milestone "Docs" and a ticket of a numbered milestone, for
+  example "M19 — Polish". For such a task, [the Docs rule](land-the-work.md#the-docs-rule) covers the shared file. This
+  case still applies to a file when the warning also lists that file for another task that the case counts. For example,
+  the warning lists a file for a task of "M19 — Polish" and for a task of "Docs", and the ticket of the agent is of
+  "Docs". Then the case applies to that file because of the task of "Docs". If the read prints an empty line, the issue
+  has no milestone. That is an answer, not a failure, and the case counts the task, because such a task is not of the
+  other kind. If a read fails, the case counts the task. An example of a failed read is exit code 1 with
   `GraphQL: Could not resolve to an issue or pull request ...`. The case also counts a task of "Future", a task of
   another milestone that is neither "Docs" nor numbered, and a task of the same kind. For the parent of a stacked
   ticket, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) gives the exception. If the plan does

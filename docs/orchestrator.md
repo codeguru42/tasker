@@ -23,10 +23,11 @@ item. When a rule waits for the user, the answer of the question that the rule w
 [The answer](dev/operator-items.md#the-answer) of operator-items.md says. An answer of the operator also ends the wait,
 unless the question is a question for the user alone. The orchestrator sends each lesson, each finding of a session
 review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the planner bullet of
-[The prompt of an agent](dev/pick-the-tickets.md#the-prompt-of-an-agent) says. The messages between orchestrators that
-go straight are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the broken-test notice of
-[A failed CI run](dev/ci-wait.md#a-failed-ci-run), the messages of [the hold rule](dev/land-the-work.md#the-hold-rule),
-a landing order of [the overlap rule](dev/land-the-work.md#the-overlap-rule), a change to an issue in flight
+[The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The messages between
+orchestrators that go straight are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the
+broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the messages of
+[the hold rule](dev/land-the-work.md#the-hold-rule), a landing order of
+[the overlap rule](dev/land-the-work.md#the-overlap-rule), a change to an issue in flight
 ([Land the work](dev/land-the-work.md#land-the-work)) and the messages of
 [the hold before an install](dev/release.md#the-hold-before-an-install). [The request rule](#the-request-rule) covers
 each other request between orchestrators that needs a decision of the user.
@@ -53,8 +54,9 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
 
 - [docs/dev/pick-the-tickets.md](dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket
   rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold" and "The prompt
-  of an agent".
-- [docs/dev/doc-reads.md](dev/doc-reads.md): the re-read rule, the notice rule, the agent notice and the doc-read rule.
+  of a task subagent".
+- [docs/dev/doc-reads.md](dev/doc-reads.md): the re-read rule, the notice rule, the task subagent notice and the
+  doc-read rule.
 - [docs/dev/run-one-ticket.md](dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base
   rule, the add-work rule, the diff read and the measure rule.
 - [docs/dev/plan-review.md](dev/plan-review.md): the repo-files rule, the fact test, the issue check, the stop rule, the
@@ -67,9 +69,9 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
 - [docs/dev/review-findings.md](dev/review-findings.md): "Review findings" and the docs-only update.
 - [docs/dev/land-the-work.md](dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the section rule,
   the set rule, the hold rule and the stuck-task rule.
-- [docs/dev/quota.md](dev/quota.md): "Quota", "Terms", "The delay of each agent", "Schedule a job when an agent starts",
-  the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What the agent does",
-  "Delete the job" and "Do not use these".
+- [docs/dev/quota.md](dev/quota.md): "Quota", "Terms", "The delay of each task subagent", "Schedule a job when a task
+  subagent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What
+  the task subagent does", "Delete the job" and "Do not use these".
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
   topic handoff" and "The hold of the items".

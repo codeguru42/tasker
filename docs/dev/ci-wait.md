@@ -103,14 +103,14 @@ land on `main` during the wait. The agent waits only for the runs of its own lan
 `main`. If a git command of the CI wait fails, the agent stops and reports the error. A stop of the CI wait also skips
 steps 10 and 11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the agent gets a resume
 message while the task is in `landed` (see ["When the job fires"](quota.md#when-the-job-fires) and
-["What the agent does"](quota.md#what-the-agent-does) in ["Quota"](quota.md#quota)), the rule depends on what the agent
-did before. If the agent did not run `gh run rerun` yet, it does the CI wait again from step 1 of the CI wait. If it ran
-`gh run rerun` and did not send the report of step 11 yet, it does not run `gh run rerun` again. If the rerun did not
-start, it goes to step 10 of the CI wait with the result "did not start". Otherwise, it waits for the rerun as step 9
-says, with a new 30-minute limit from its first `gh run watch` after the resume. Then it goes on with step 10. If it
-sent the report of step 11, it does not do the CI wait again. It waits for the answer of the orchestrator, as
-[the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of the new issue, it goes on with step
-12 of the CI wait.
+["What the task subagent does"](quota.md#what-the-task-subagent-does) in ["Quota"](quota.md#quota)), the rule depends on
+what the agent did before. If the agent did not run `gh run rerun` yet, it does the CI wait again from step 1 of the CI
+wait. If it ran `gh run rerun` and did not send the report of step 11 yet, it does not run `gh run rerun` again. If the
+rerun did not start, it goes to step 10 of the CI wait with the result "did not start". Otherwise, it waits for the
+rerun as step 9 says, with a new 30-minute limit from its first `gh run watch` after the resume. Then it goes on with
+step 10. If it sent the report of step 11, it does not do the CI wait again. It waits for the answer of the
+orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of the new issue, it
+goes on with step 12 of the CI wait.
 
 ## A failed CI run
 

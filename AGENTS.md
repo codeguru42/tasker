@@ -35,9 +35,9 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   rebase conflict.
 - [docs/dev/pick-the-tickets.md](docs/dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the
   stacked-ticket rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold"
-  and "The prompt of an agent".
-- [docs/dev/doc-reads.md](docs/dev/doc-reads.md): the re-read rule, the notice rule, the agent notice and the doc-read
-  rule.
+  and "The prompt of a task subagent".
+- [docs/dev/doc-reads.md](docs/dev/doc-reads.md): the re-read rule, the notice rule, the task subagent notice and the
+  doc-read rule.
 - [docs/dev/run-one-ticket.md](docs/dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the
   base rule, the add-work rule, the diff read and the measure rule.
 - [docs/dev/plan-review.md](docs/dev/plan-review.md): the repo-files rule, the fact test, the issue check, the stop
@@ -50,9 +50,9 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 - [docs/dev/review-findings.md](docs/dev/review-findings.md): "Review findings" and the docs-only update.
 - [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the section
   rule, the set rule, the hold rule and the stuck-task rule.
-- [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each agent", "Schedule a job when an agent
-  starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What the agent
-  does", "Delete the job" and "Do not use these".
+- [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each task subagent", "Schedule a job when a
+  task subagent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job",
+  "What the task subagent does", "Delete the job" and "Do not use these".
 - [docs/dev/handoff.md](docs/dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
   topic handoff" and "The hold of the items".

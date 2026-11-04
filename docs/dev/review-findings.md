@@ -202,7 +202,7 @@ later, the fix goes to the first place of this list that applies:
    its agent to add the fix to its next refine. For a ticket that has not started, the orchestrator edits its issue
    body.
 3. If no such ticket exists, the orchestrator sends the finding to the planner, as the planner bullet of
-   [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) says.
+   [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 ### The docs-only update
 
@@ -252,6 +252,6 @@ the verify-failure rule.
 
 The reason: the update changed no file of the task, so the diff and the whole files of the task stay the same. The cost:
 the review does not see a rule that a moved doc changed. If the moved doc is a doc of the agent,
-[the agent notice](doc-reads.md#the-agent-notice) names the changed section. That notice can arrive after
-`tasker accept`. The user decided this rule on 2026-11-01. On #550, docs-only commits moved `main` four times in about
-15 minutes, and each cycle cost one review run with the same patch id.
+[the task subagent notice](doc-reads.md#the-task-subagent-notice) names the changed section. That notice can arrive
+after `tasker accept`. The user decided this rule on 2026-11-01. On #550, docs-only commits moved `main` four times in
+about 15 minutes, and each cycle cost one review run with the same patch id.

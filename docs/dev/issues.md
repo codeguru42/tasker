@@ -109,7 +109,8 @@ on that open issue that gives the new case. This section covers each session, al
 
 - A session that finds a recurrence and is not the planner sends the recurrence to the planner, as each lesson goes. The
   message names the open issue. For the orchestrator, the planner bullet of
-  [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) of pick-the-tickets.md gives the message.
+  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) of pick-the-tickets.md gives the
+  message.
 - The planner drafts the recurrence comment. The comment gives the ticket, the date and the facts of the new case. The
   planner shows the draft to the user, as [Before a post](#before-a-post) says. The planner posts the comment after the
   approval.

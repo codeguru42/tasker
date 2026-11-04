@@ -187,23 +187,23 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   orchestrator of the task sends the link of the comment to its agent, and the agent of the task follows the steps of
   the section "The change-of-scope comment" of plan-review.md. The orchestrator of the task makes no decision about an
   edit. For a new requirement, the requester sends the requirement to the planner, as the planner bullet of
-  [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) says. The requester sends no message to the
-  orchestrator of the task for a new requirement. On 2026-10-15, orchestrator-m8 edited one bullet of the body of #194
-  (Docs) while the task of #194 was in review loop 1, and orchestrator-docs learned of the edit only from a later
-  message.
+  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The requester sends no
+  message to the orchestrator of the task for a new requirement. On 2026-10-15, orchestrator-m8 edited one bullet of the
+  body of #194 (Docs) while the task of #194 was in review loop 1, and orchestrator-docs learned of the edit only from a
+  later message.
 - When the final report of the agent of a ticket says that the ticket landed, the orchestrator of the ticket does these
   steps in this order. The final report says this when the agent ran `tasker finish`, which closes the issue. First, the
   orchestrator deletes the jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. Then the orchestrator
   does [the re-read rule](doc-reads.md#the-re-read-rule). Then the orchestrator does the memory step. Then the
   orchestrator does [the notice rule](doc-reads.md#the-notice-rule). Then the orchestrator does
-  [the agent notice](doc-reads.md#the-agent-notice). Last, the orchestrator reads the board for the next ticket, as
-  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. In the memory step, the orchestrator searches its
-  memory files for the number of the issue. If the search finds no file with the number, the memory step is complete. In
-  each file that names the issue, the orchestrator deletes the lines that the landed docs now hold. After the re-read
-  rule, the orchestrator reads the landed docs as [the doc-read rule](doc-reads.md#the-doc-read-rule) says. If no line
-  is left besides the frontmatter and the links, the orchestrator deletes the file and its line in the index of the
-  memory. If a search, an edit or a delete of a memory file fails, the orchestrator tells the user the step and the
-  error. The memory file then stays as it was, and the orchestrator continues with the next step of the order. The
+  [the task subagent notice](doc-reads.md#the-task-subagent-notice). Last, the orchestrator reads the board for the next
+  ticket, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. In the memory step, the orchestrator
+  searches its memory files for the number of the issue. If the search finds no file with the number, the memory step is
+  complete. In each file that names the issue, the orchestrator deletes the lines that the landed docs now hold. After
+  the re-read rule, the orchestrator reads the landed docs as [the doc-read rule](doc-reads.md#the-doc-read-rule) says.
+  If no line is left besides the frontmatter and the links, the orchestrator deletes the file and its line in the index
+  of the memory. If a search, an edit or a delete of a memory file fails, the orchestrator tells the user the step and
+  the error. The memory file then stays as it was, and the orchestrator continues with the next step of the order. The
   orchestrator does these steps for each ticket, also for a ticket of the milestone "Docs". The user decided the memory
   step on 2026-10-17 and the order on 2026-10-18.
 

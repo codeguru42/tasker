@@ -50,18 +50,18 @@ These limits apply to the orchestrator and to the agents, except where a bullet 
 - The orchestrator and each agent load the simple-english skill and follow the simple-english bullet of
   [Docs](rules.md#docs) of rules.md.
 - The folder of an agent is `$HOME/Documents/tasker/agents/<session name>`. The session name is the name of the session
-  of the agent from ["The prompt of an agent"](pick-the-tickets.md#the-prompt-of-an-agent), for example
+  of the agent from ["The prompt of a task subagent"](pick-the-tickets.md#the-prompt-of-a-task-subagent), for example
   `codeguru42-tasker-43`. The task worktree of [the own-worktree rule](#the-own-worktree-rule) is
   `../tasker-worktrees/<session name>`, relative to the root of the local clone of the orchestrator. That path is a
   folder with the session name in the folder `tasker-worktrees`, next to the local clone of the orchestrator. The task
   worktree is not in the folder of the agent and not in the clone. The orchestrator makes the folder of the agent before
-  the agent starts, as ["The prompt of an agent"](pick-the-tickets.md#the-prompt-of-an-agent) says. The agent keeps each
-  other file that it writes in the folder of the agent, for example the feedback files and the notes. Two agents that
-  run at the same time keep their files in different folders. The agent does not write a file in the scratchpad folder
-  that Claude Code names in the system prompt of the agent. The reason: each agent of one orchestrator gets the same
-  scratchpad folder as the orchestrator. This rule wins over the instruction of the system prompt of the agent to use
-  the scratchpad folder for temporary files. For example, on #519 (2026-10-25), the agent wrote two files in the
-  scratchpad folder and then moved them to the folder of the agent. It overwrote nothing. Before an agent runs
+  the agent starts, as ["The prompt of a task subagent"](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The
+  agent keeps each other file that it writes in the folder of the agent, for example the feedback files and the notes.
+  Two agents that run at the same time keep their files in different folders. The agent does not write a file in the
+  scratchpad folder that Claude Code names in the system prompt of the agent. The reason: each agent of one orchestrator
+  gets the same scratchpad folder as the orchestrator. This rule wins over the instruction of the system prompt of the
+  agent to use the scratchpad folder for temporary files. For example, on #519 (2026-10-25), the agent wrote two files
+  in the scratchpad folder and then moved them to the folder of the agent. It overwrote nothing. Before an agent runs
   `tasker refine` or `tasker review <issue> "<feedback>"` with feedback text from a file, the agent makes sure that the
   file holds the text for its own ticket. [The plain-form rule](tasker-commands.md#the-plain-form-rule) gives the form
   of the command. If two agents use the same file name, the refine or the review of one ticket can send the text of

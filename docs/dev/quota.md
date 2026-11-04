@@ -1,6 +1,6 @@
 # Quota jobs
 
-The readers of this page are the orchestrator, and the agent for "What the agent does".
+The readers of this page are the orchestrator, and the agent for "What the task subagent does".
 
 ## Quota
 
@@ -74,7 +74,7 @@ job.
 - If a task is in `quota_blocked`, `tasker show <issue>` prints the reset time of that stop in a line
   `resets at: <ISO time>`.
 
-### The delay of each agent
+### The delay of each task subagent
 
 Each running agent has a slot and a delay. The delay is the number of minutes between a reset time and the job of the
 agent for that reset. The delays prevent a resume of all the agents at the same time.
@@ -92,13 +92,13 @@ agent for that reset. The delays prevent a resume of all the agents at the same 
 - The agent keeps its slot until the orchestrator frees it, as "Delete the job" says. Then the next agent that starts
   takes the slot.
 
-### Schedule a job when an agent starts
+### Schedule a job when a task subagent starts
 
 1. When the orchestrator starts an agent, the orchestrator must run `tasker show-quota` and read the reset time, as
    [Terms](#terms) says. The orchestrator also applies [the seven-day rule](#the-seven-day-rule).
 2. If there is a reset time, the orchestrator must schedule a one-shot five-hour job for the job time of that agent. The
    orchestrator also follows [the schedule-all rule](#when-there-is-no-reset-time-yet). The orchestrator applies the
-   [future-time rule](#schedule-a-job-when-an-agent-starts) of this section.
+   [future-time rule](#schedule-a-job-when-a-task-subagent-starts) of this section.
 3. If the agent has no job after steps 1 and 2, the orchestrator starts the agent without a job. The orchestrator tells
    the agent that it has no job. For example, there is no reset time before the first run in the project. "When there is
    no reset time yet" gives the next steps.
@@ -151,8 +151,8 @@ also reads the seven-day reset time and applies this rule. This holds whether or
   except an agent that the schedule-all rule leaves out (see
   [When there is no reset time yet](#when-there-is-no-reset-time-yet)), however far away the reset is. The job is a
   one-shot job for the job time of the seven-day reset. The delay and the rounding come from
-  [The delay of each agent](#the-delay-of-each-agent). The [future-time rule](#schedule-a-job-when-an-agent-starts)
-  applies before each schedule.
+  [The delay of each task subagent](#the-delay-of-each-task-subagent). The
+  [future-time rule](#schedule-a-job-when-a-task-subagent-starts) applies before each schedule.
 - The reason: after the seven-day quota runs out, no session has tokens for a later read. As a result, the orchestrator
   schedules the job at the first read that gives the time.
 - The prompt of the job names the issue, the agent and the window `seven_day`. The prompt tells the orchestrator to do
@@ -160,8 +160,9 @@ also reads the seven-day reset time and applies this rule. This holds whether or
 - If the ticket has a seven-day job that has not fired, and the seven-day reset time did not change, the orchestrator
   schedules no second one. To compare, the orchestrator uses the seven-day reset time that it stored with the job id.
 - If the seven-day reset time changed, the orchestrator first applies the
-  [future-time rule](#schedule-a-job-when-an-agent-starts) to the new job time. If the orchestrator can schedule the new
-  job, it deletes the old seven-day job with CronDelete, and then it schedules the new one. If not, the old job stays.
+  [future-time rule](#schedule-a-job-when-a-task-subagent-starts) to the new job time. If the orchestrator can schedule
+  the new job, it deletes the old seven-day job with CronDelete, and then it schedules the new one. If not, the old job
+  stays.
 
 The rule has three failure cases:
 
@@ -185,8 +186,8 @@ The rule has three failure cases:
   else changes.
 - The schedule-all rule has two parts. The first part: each time the orchestrator runs `tasker show-quota` and reads a
   reset time, the orchestrator also schedules a job for each agent without a job. The
-  [future-time rule](#schedule-a-job-when-an-agent-starts) applies before each schedule. The second part says which
-  agent the rule leaves out, and until when. The rule leaves out an agent whose last job fired in a case of
+  [future-time rule](#schedule-a-job-when-a-task-subagent-starts) applies before each schedule. The second part says
+  which agent the rule leaves out, and until when. The rule leaves out an agent whose last job fired in a case of
   [When the job fires](#when-the-job-fires) that scheduled no new job for that agent. The orchestrator schedules no job
   for a left-out agent under the schedule-all rule or under the seven-day rule. A fire of either job, in a case that
   schedules no new job, leaves the agent out. If a case of "When the job fires" says that the orchestrator schedules the
@@ -195,7 +196,7 @@ The rule has three failure cases:
   covers the agent at the read of that section. The agent stays left out until the orchestrator starts it as "Schedule a
   job when an agent starts" says, or until the end condition above. A message to the agent does not end this. The rule
   also leaves out an agent whose slot the orchestrator freed, as [Delete the job](#delete-the-job) says, until the
-  orchestrator starts it again, as "Schedule a job when an agent starts" says.
+  orchestrator starts it again, as "Schedule a job when a task subagent starts" says.
 - When the orchestrator schedules the job of an agent that had no job, the orchestrator tells the agent that it has a
   job. If the agent gets this message, the agent stops the run-start reports. The agent keeps the run-end reports. With
   no five-hour window, the seven-day rule can give a job to an agent with no job. Then the orchestrator also tells the
@@ -244,11 +245,11 @@ The rule has three failure cases:
 
 When a seven-day job fires, the orchestrator first runs CronList. The orchestrator deletes with CronDelete each job of
 the ticket whose time is in the past. After the delete, the ticket has no job of that kind, as
-[Schedule a job when an agent starts](#schedule-a-job-when-an-agent-starts) says for a deleted id. Then the orchestrator
-does the steps of this section one time. The reason is that the time of such a job can fall inside a stop of the
-seven-day window. No session has tokens then, so the job does not fire. Such a job can fire late, next to the seven-day
-job, and send a second resume message. If CronList or CronDelete fails, [the failure rule](limits.md#the-failure-rule)
-applies. Then the orchestrator does the steps of this section.
+[Schedule a job when a task subagent starts](#schedule-a-job-when-a-task-subagent-starts) says for a deleted id. Then
+the orchestrator does the steps of this section one time. The reason is that the time of such a job can fall inside a
+stop of the seven-day window. No session has tokens then, so the job does not fire. Such a job can fire late, next to
+the seven-day job, and send a second resume message. If CronList or CronDelete fails,
+[the failure rule](limits.md#the-failure-rule) applies. Then the orchestrator does the steps of this section.
 
 When a job of a ticket fires, a five-hour job or a seven-day job, the orchestrator runs `tasker status --issue <issue>`
 and `tasker show <issue>`. Apart from the CronList step of the paragraph above, the steps are the same for both jobs.
@@ -260,13 +261,13 @@ Then exactly one of these cases applies:
 - If the task is in `quota_blocked` and its `resets at:` time is in the future, the stop is in a longer window, for
   example `seven_day`. The job of this case is the seven-day job for the job time of that `resets at:` time. If the
   ticket has no seven-day job for that time, the orchestrator applies the
-  [future-time rule](#schedule-a-job-when-an-agent-starts) right before the CronCreate of that job. If the job time is
-  not later than the current time, the stop has already reset. Then this case hands over to the steps of the first case:
-  the resume message, then [The next job](#the-next-job). The orchestrator does not tell the user that the agent stays
-  stopped, and the rest of this case does not apply. If the job time is still in the future, or the ticket already has a
-  seven-day job for that time, the orchestrator does not resume the agent, and it tells the user. The orchestrator
-  schedules the job one time. If the ticket already has a seven-day job for that time, no CronCreate runs, so no check
-  runs, and that job stays. For a seven-day job of the ticket that has not fired,
+  [future-time rule](#schedule-a-job-when-a-task-subagent-starts) right before the CronCreate of that job. If the job
+  time is not later than the current time, the stop has already reset. Then this case hands over to the steps of the
+  first case: the resume message, then [The next job](#the-next-job). The orchestrator does not tell the user that the
+  agent stays stopped, and the rest of this case does not apply. If the job time is still in the future, or the ticket
+  already has a seven-day job for that time, the orchestrator does not resume the agent, and it tells the user. The
+  orchestrator schedules the job one time. If the ticket already has a seven-day job for that time, no CronCreate runs,
+  so no check runs, and that job stays. For a seven-day job of the ticket that has not fired,
   [the seven-day rule](#the-seven-day-rule) applies: the same time means no new job, and another time means delete and
   replace. The seven-day job of the ticket for that `resets at:` time counts as the job that this case schedules, also
   when the orchestrator keeps an existing job. As a result, this case never leaves the agent out of
@@ -303,23 +304,23 @@ the quota can end the session of the agent between two `tasker` commands, and th
 A resume message can come from the first case, the hand-over of the `resets at:` case to the steps of the first case,
 the interrupted case, the earlier-reset rule or the resume rule. After each one, the orchestrator deletes with
 CronDelete each other job of the ticket that has not fired. After the delete, the ticket has no job of that kind, as
-[Schedule a job when an agent starts](#schedule-a-job-when-an-agent-starts) says for a deleted id. The reason: after a
-resume message, this section schedules the next job, so an older job of the ticket sends only a second resume message.
-Review 1 of #249 found that a late five-hour job can resume the agent before the seven-day job, which then sends a
-second resume message. The CronList step of the first paragraph of "When the job fires" covers the fire of a seven-day
-job, and this step covers each job. If CronDelete fails, [the failure rule](limits.md#the-failure-rule) applies, and the
-job and its id stay.
+[Schedule a job when a task subagent starts](#schedule-a-job-when-a-task-subagent-starts) says for a deleted id. The
+reason: after a resume message, this section schedules the next job, so an older job of the ticket sends only a second
+resume message. Review 1 of #249 found that a late five-hour job can resume the agent before the seven-day job, which
+then sends a second resume message. The CronList step of the first paragraph of "When the job fires" covers the fire of
+a seven-day job, and this step covers each job. If CronDelete fails, [the failure rule](limits.md#the-failure-rule)
+applies, and the job and its id stay.
 
 Then the orchestrator schedules the next job: it runs `tasker show-quota` and reads the reset time, as [Terms](#terms)
 says. The orchestrator also applies [the seven-day rule](#the-seven-day-rule). If there is a reset time, the
 orchestrator schedules the next five-hour job for the job time of that agent, but only if the ticket has no five-hour
-job that has not fired. The [future-time rule](#schedule-a-job-when-an-agent-starts) applies before the schedule. The
-orchestrator also follows [the schedule-all rule](#when-there-is-no-reset-time-yet). If there is no reset time yet and
-the agent has no job, the orchestrator tells the agent that it has no job. Then "When there is no reset time yet"
+job that has not fired. The [future-time rule](#schedule-a-job-when-a-task-subagent-starts) applies before the schedule.
+The orchestrator also follows [the schedule-all rule](#when-there-is-no-reset-time-yet). If there is no reset time yet
+and the agent has no job, the orchestrator tells the agent that it has no job. Then "When there is no reset time yet"
 applies to that agent. If a seven-day job alone counts as the job, the orchestrator does not tell the agent that it has
 no job.
 
-### What the agent does
+### What the task subagent does
 
 - If a tasker command of the agent stops in `quota_blocked` or `interrupted`, the agent ends its turn. The agent does
   not wait, sleep or schedule anything. The task stays in that state. This end of the turn is a wait point of
@@ -348,18 +349,18 @@ no job.
 - In each of these cases, the orchestrator frees the slot of the agent. This also applies when the agent has no job.
   [The schedule-all rule](#when-there-is-no-reset-time-yet) also leaves out this agent.
 - The bullet that starts "One agent runs one ticket" of
-  [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) can start a second session for a ticket. Then the
-  orchestrator deletes each job of the ticket whose id still lives with CronDelete. The new session takes the slot of
-  the old session, in place of the free slot with the lowest number of
-  [The delay of each agent](#the-delay-of-each-agent). This case does not free the slot. For the old session, this case
-  is also a case of the bullet that starts "If an agent stops for another reason". For this case, this bullet wins over
-  the sentence "In each of these cases, the orchestrator frees the slot of the agent." of the bullet before this one.
-  [The schedule-all rule](#when-there-is-no-reset-time-yet) still leaves out the old session, as the bullet before this
-  one says. The old session keeps its slot from the failed SendMessage until the orchestrator starts the new session. At
-  that start, the slot passes to the new session. Then the orchestrator schedules the jobs for the new session name, as
-  [Schedule a job when an agent starts](#schedule-a-job-when-an-agent-starts) says. The reason: a job lives in the
-  session of the orchestrator, and its prompt names the old agent. On 2026-10-24, the jobs survived a restart of that
-  session.
+  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) can start a second session for a
+  ticket. Then the orchestrator deletes each job of the ticket whose id still lives with CronDelete. The new session
+  takes the slot of the old session, in place of the free slot with the lowest number of
+  [The delay of each task subagent](#the-delay-of-each-task-subagent). This case does not free the slot. For the old
+  session, this case is also a case of the bullet that starts "If an agent stops for another reason". For this case,
+  this bullet wins over the sentence "In each of these cases, the orchestrator frees the slot of the agent." of the
+  bullet before this one. [The schedule-all rule](#when-there-is-no-reset-time-yet) still leaves out the old session, as
+  the bullet before this one says. The old session keeps its slot from the failed SendMessage until the orchestrator
+  starts the new session. At that start, the slot passes to the new session. Then the orchestrator schedules the jobs
+  for the new session name, as [Schedule a job when a task subagent starts](#schedule-a-job-when-a-task-subagent-starts)
+  says. The reason: a job lives in the session of the orchestrator, and its prompt names the old agent. On 2026-10-24,
+  the jobs survived a restart of that session.
 - If CronDelete fails, [the failure rule](limits.md#the-failure-rule) applies. The job stays. When the job fires, the
   case of "When the job fires" for its state applies. An example is the case of a finished task, which schedules
   nothing.

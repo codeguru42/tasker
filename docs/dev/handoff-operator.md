@@ -88,7 +88,7 @@ After the start, the old operator does these steps:
 2. Run the review rounds of the last bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets), until a round
    finds nothing new. Send each finding that proposes a change of the docs to `planner-<slug>` with `SendMessage`. The
    orchestrator does the same, as the planner bullet of
-   [The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent) says. If a round or a send fails,
+   [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If a round or a send fails,
    [the failure rule](limits.md#the-failure-rule) applies, and the rounds end. This sentence wins over the words "until
    a round finds nothing new". Then write the handoff file, as [The handoff file](handoff.md#the-handoff-file) says. If
    the write or the `date` command fails, [the failure rule](limits.md#the-failure-rule) applies.

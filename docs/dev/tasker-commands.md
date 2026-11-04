@@ -125,7 +125,7 @@ and do not change it.
   agent waits, it runs a short wait in another Bash call, for example
   `timeout 100 bash -c 'while :; do sleep 15; done'`. This call always exits with 124. If no report came, the agent runs
   the same wait again. After the report, the agent reads the state with `tasker show <issue>`. When the orchestrator
-  starts the agent again, the agent follows ["What the agent does"](quota.md#what-the-agent-does) in
+  starts the agent again, the agent follows ["What the task subagent does"](quota.md#what-the-task-subagent-does) in
   ["Quota"](quota.md#quota).
 - When the output of a read-only `tasker` command goes into a pipe, start the call with `set -o pipefail`. As a result,
   a failed `tasker` command stops the chain. To keep only some lines, use `sed -n`, for example `sed -n '1,20p'`, not

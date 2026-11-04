@@ -92,7 +92,7 @@ answer of its user about the hold to its operator. The operator relays it to the
 If an operator has no orchestrator, it reports that to the installing session at once. The installing operator lists the
 sessions with `ListAgents`. It asks the user to examine each session that has no `operator-<slug>` of its slug and is
 not an agent of an orchestrator (a name of the form `<owner>-<repo>-<number>`, see
-[The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent)). An installing operator also runs
+[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent)). An installing operator also runs
 `git pull --ff-only origin main`, `npm run install:global`, `tasker --version` and the moves of
 [Untracked paths before an install](#untracked-paths-before-an-install). `npm run install:global` runs
 `tasker --version` and `tasker install-skills`. This is an exception to the list of the `tasker` commands of the

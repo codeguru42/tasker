@@ -18,7 +18,8 @@ can put a hint in the issue body ([planner.md](planner.md#the-body-of-an-issue))
 Before the task subagent gives a hint, it compares the hint with the Out of scope section of the issue. If the Out of
 scope section excludes what the hint asks for, the task subagent does not give the hint, also when the hint fits its
 ticket. The bullet "A hint of the orchestrator can resolve a conflict" of
-["The prompt of an agent"](pick-the-tickets.md#the-prompt-of-an-agent) gives the same compare for the orchestrator.
+["The prompt of a task subagent"](pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the same compare for the
+orchestrator.
 
 ## All tickets
 
@@ -1082,9 +1083,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   bullet on a change to an issue in flight.
 - If a rule makes a step run again, ask the plan in the first refine for two things. First, the second run skips each
   job that the first run made. An example is each job that the first run of a step scheduled under
-  [the future-time rule](quota.md#schedule-a-job-when-an-agent-starts). Second, the rule names what the second run does
-  for each of its jobs, not only for the job that started the second run. On #431 (2026-10-25), review 5 found both gaps
-  in the future-time rule.
+  [the future-time rule](quota.md#schedule-a-job-when-a-task-subagent-starts). Second, the rule names what the second
+  run does for each of its jobs, not only for the job that started the second run. On #431 (2026-10-25), review 5 found
+  both gaps in the future-time rule.
 - If a ticket adds a stop to one step, ask the plan to look for each other step that uses the same input. An example of
   an input is the base commit. The plan adds the same stop there. On #419, step 4 of
   [the commit check](verify-failures.md#the-commit-check) got its stop. Reviews 1 and 2 asked for the missing stop in
@@ -1190,13 +1191,13 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   name and a bare name both count. On #324, a rule only for quoted names left four bare names with no link, for example
   [the diff read](run-one-ticket.md#the-diff-read) and [the issue check](plan-review.md#the-issue-check). Loops 1 to 3
   found them one direction or one set of names at a time. On #322, the diff read found a quoted name,
-  "[The prompt of an agent](pick-the-tickets.md#the-prompt-of-an-agent)", that the plan missed. A search for the bare
-  quote with no `[` before it finds such names. The search follows [the doc-search rule](rules.md#docs). If a hint is
-  about a form of text, for example quote marks, ask the plan to write each example of the hint in the exact form that
-  the example describes. On #355, a new hint drew the difference between a quoted name and a bare name of a rule. The
-  plan put quote marks around the bare-name examples, the diff read and the issue check, and review 1 found it. A hint
-  of the orchestrator then asked for a link on each term that another doc defines. The plan put the links inside the
-  quote marks, so the mistake was harder to see.
+  "[The prompt of an agent](pick-the-tickets.md#the-prompt-of-a-task-subagent)", that the plan missed. A search for the
+  bare quote with no `[` before it finds such names. The search follows [the doc-search rule](rules.md#docs). If a hint
+  is about a form of text, for example quote marks, ask the plan to write each example of the hint in the exact form
+  that the example describes. On #355, a new hint drew the difference between a quoted name and a bare name of a rule.
+  The plan put quote marks around the bare-name examples, the diff read and the issue check, and review 1 found it. A
+  hint of the orchestrator then asked for a link on each term that another doc defines. The plan put the links inside
+  the quote marks, so the mistake was harder to see.
 - An example sentence can name a section of a file, for example the sample notice of
   [the notice rule](doc-reads.md#the-notice-rule). After the move of that section, the file name changes, and the
   section name stays. On #322, the section name was swapped, and #324 fixed the same sample again.

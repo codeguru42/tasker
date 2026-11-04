@@ -137,8 +137,8 @@ orchestrator tells the agent to end its work, for example in step 1 of
 [the defer rule](pick-the-tickets.md#the-defer-rule). A final answer that the agent gives before the end of its work is
 an interim report, not the final report. That final answer gives the state of the task, says if the agent stopped, and
 says that the agent waits. Examples are the final answer of [the answer-wait rule](limits.md#the-answer-wait-rule) and
-the end of the turn after a quota stop in ["What the agent does" in "Quota"](quota.md#what-the-agent-does). The report
-gives these items:
+the end of the turn after a quota stop in
+["What the task subagent does" in "Quota"](quota.md#what-the-task-subagent-does). The report gives these items:
 
 - The result: the landed commit, the number of review loops, the files that landed and, for each doc that landed, the
   sections that changed. If the work of the agent ended before `tasker finish`, for example after the orchestrator told
@@ -164,7 +164,7 @@ gives these items:
   each cause or claim that nobody measured as not measured.
 
 The orchestrator sorts the lessons. A lesson that is a rule for the repo or for agents goes where the new-rule bullet of
-["The prompt of an agent"](pick-the-tickets.md#the-prompt-of-an-agent) says.
+["The prompt of a task subagent"](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 ### The comeback rule
 
@@ -182,11 +182,11 @@ base. Then each step that uses the start base does what it says for an agent tha
 diff read and the commit check stop. Then the agent does [the remote setup](#the-diff-read). Then the agent makes the
 task worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says. The branch-exists case can apply. The
 make changes no task. If the task is in `quota_blocked`, `interrupted` or `awaiting_quota_approval`, the agent follows
-["What the agent does" in "Quota"](quota.md#what-the-agent-does), and it does not do the rest of this rule. Otherwise,
-the agent runs `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. If the exit code is 1, the base
-branch moved. In that case, if `tasker show <issue>` lists `update-branch`, the agent runs `tasker update-branch`. If
-`tasker show <issue>` does not list `update-branch`, the agent does not run it. The diff read before `tasker accept`
-finds the move later. If `tasker update-branch` reports a rebase conflict, the agent follows
+["What the task subagent does" in "Quota"](quota.md#what-the-task-subagent-does), and it does not do the rest of this
+rule. Otherwise, the agent runs `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. If the exit
+code is 1, the base branch moved. In that case, if `tasker show <issue>` lists `update-branch`, the agent runs
+`tasker update-branch`. If `tasker show <issue>` does not list `update-branch`, the agent does not run it. The diff read
+before `tasker accept` finds the move later. If `tasker update-branch` reports a rebase conflict, the agent follows
 [docs/dev/rebase-conflicts.md](rebase-conflicts.md), as ["Land the work"](land-the-work.md#land-the-work) says. If a
 step of that page stops, a command fails, or the exit code is not 0 and not 1, the agent
 [stops](limits.md#the-answer-wait-rule). Otherwise, the agent continues ["Run one ticket"](#run-one-ticket) from the
