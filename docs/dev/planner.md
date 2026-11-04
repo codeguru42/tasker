@@ -23,12 +23,14 @@ The planner is one role. The operator starts each session of the planner, as
 
 The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab. The
 follow-up planner is the planner that files the follow-ups of the milestone while the orchestrator runs the milestone.
-The operator starts the follow-up planner after the initial planning. For a milestone with no initial planning, the
-operator starts the follow-up planner at once, as [The order of a milestone](operator-start.md#the-order-of-a-milestone)
-says.
+The operator starts the follow-up planner after the initial planning.
 
 - The initial planner works with the user directly, as [The operator](working-with-the-user.md#the-operator) of
   working-with-the-user.md says. It sends no item to the operator.
+- After its start reads, the initial planner reads the title and the description of its milestone, with the read command
+  of step 3 of [The order of a milestone](operator-start.md#the-order-of-a-milestone). Then it starts the drafts of the
+  issues at once. The prompt names no kinds of GitHub objects to make, so the initial planner still asks the user before
+  a post, as [The order of the work](#the-order-of-the-work) says.
 - When the user says that the initial planning is done, the initial planner posts each approved draft. Then it runs the
   rounds of `/session-review`. A round and the end of the rounds work as the bullet that starts "When the Todo column of
   the milestone is empty" of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says for the orchestrator. Only

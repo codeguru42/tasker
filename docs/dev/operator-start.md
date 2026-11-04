@@ -12,10 +12,42 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    of `sessions.models.operator` with the flags of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind),
    for example `claude -n operator-m9 --model opus --effort high`. If `sessions.models.operator` has no entry, the user
    passes neither flag.
-3. If the user tells the operator that the milestone has no initial planning, the operator does not start the initial
-   planner. The operator skips steps 4 to 6 and does step 7 at once. Otherwise, when the user asks, the operator starts
-   the initial planner, as "Start a session" says. An example of a milestone with no initial planning is a milestone
-   that stays open and gets its issues from the follow-ups of other tickets.
+3. The operator finds the milestone of its slug, the milestone whose title gives the slug, as
+   [docs/sessions.md](../sessions.md) defines the slug. To read the milestones, the operator runs
+   `gh api --paginate 'repos/codeguru42/tasker/milestones?state=all&per_page=100'`. If the read fails,
+   [the failure rule](limits.md#the-failure-rule) applies. Then the operator creates no milestone and starts no initial
+   planner.
+
+   If the repo has no milestone of the slug, the operator drafts a title and a description with the user. The title
+   gives the slug, for example `M29 — <name>` for the slug `m29`. If an open milestone of the slug exists, the operator
+   shows its title and its description to the user and asks whether they are still right. The reason: a decision after
+   the first draft of the description can change it. Then the operator drafts each change of the title or the
+   description that the user asks for. If the milestone of the slug is closed, the operator tells the user and starts no
+   initial planner.
+
+   The operator writes the description to `/tmp/tasker/<slug>/drafts/milestone.md`, and the file holds nothing else.
+   Before it shows the draft, it runs the self-check of the simple-english skill over the file, as
+   [Before a post](issues.md#before-a-post) says for a draft. The description holds enough detail for the initial
+   planner to start the drafts of the issues. This judgment is open on purpose, and the user makes it with the approval.
+   The operator posts the title and the description only after the approval of the user.
+
+   After the approval, the operator runs one of these commands. To create the milestone, it runs
+   `gh api -X POST repos/codeguru42/tasker/milestones -f title='<title>' -F description=@<file>`. To change a milestone,
+   it runs `gh api -X PATCH repos/codeguru42/tasker/milestones/<number>` with `-f title='<title>'`,
+   `-F description=@<file>` or both. `<file>` is the path of the draft file. If the command fails, the failure rule
+   applies, and the operator starts no initial planner.
+
+   For a denied create or change command, the operator gives the user the command with the `!` prefix. If the user says
+   that the command ran, the operator goes on as after its own command. If the user says that the command did not run,
+   the operator starts no initial planner and waits for a new word of the user. On a new word of the user to go on, the
+   operator does step 3 again from its first paragraph.
+
+   After the post, the operator starts the initial planner, as "Start a session" says. If the user approves the existing
+   title and description with no change, the operator also starts the initial planner. The approval is the decision of
+   the user that the milestone starts, and the operator needs no other request of the user. If the user rejects the
+   draft or says that the milestone waits, the operator posts nothing and starts no initial planner. Then it waits for a
+   new word of the user. On a new word of the user to go on, the operator does step 3 again from its first paragraph.
+
 4. The user works with the initial planner in its tab.
    [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) of
    planner.md gives the rules of the initial planner.
@@ -135,7 +167,7 @@ The operator puts the milestone title in place of `<milestone>`. Each prompt is 
 The initial planner:
 
 ```text
-You are the planner of <milestone>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/planner.md. This is the initial planning: the user works with you in this tab.
+You are the planner of <milestone>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/planner.md. This is the initial planning: the user works with you in this tab. After the start reads, read the title and the description of the milestone. Then start the drafts of its issues.
 ```
 
 The follow-up planner:
