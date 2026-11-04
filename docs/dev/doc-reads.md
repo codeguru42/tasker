@@ -1,7 +1,7 @@
 # Doc reads
 
-The readers of this page are the orchestrator, the agents, the operator and each planner. The operator reads the notice
-rule and the doc-read rule, and each planner reads the doc-read rule.
+The readers of this page are the orchestrator, the task subagents, the operator and each planner. The operator reads the
+notice rule and the doc-read rule, and each planner reads the doc-read rule.
 
 ## The re-read rule
 
@@ -77,7 +77,7 @@ session that does not answer gets no second notice. The re-read rule covers such
 
 The notice is information. When the other orchestrator gets a notice, the other orchestrator does the steps of the
 re-read rule before its next step. The other orchestrator takes the rule from the doc, not from the notice. The other
-orchestrator also sends a task subagent notice to its own agents in flight, as
+orchestrator also sends a task subagent notice to its own task subagents in flight, as
 [the task subagent notice](#the-task-subagent-notice) says. When the operator gets a notice, the operator does
 [the doc-read rule](#the-doc-read-rule) and then reads each changed start doc of the operator again.
 
@@ -85,106 +85,109 @@ Each orchestrator has its own docs of the orchestrator, because each prompt name
 `docs/orchestrator.md`, the pages of its list "The pages", `docs/sessions.md`, `docs/dev/rules.md` and
 `docs/dev/working-with-the-user.md` are docs of each orchestrator.
 
-The re-read rule and the notice rule do not cover the agents. Each new agent reads its docs when it starts.
-[The task subagent notice](#the-task-subagent-notice) gives the docs of an agent, and it covers an agent in flight.
+The re-read rule and the notice rule do not cover task subagents. Each new task subagent reads its docs when it starts.
+[The task subagent notice](#the-task-subagent-notice) gives the docs of a task subagent, and it covers a task subagent
+in flight.
 
 ## The task subagent notice
 
-After a landing, the orchestrator tells each agent in flight which sections of its docs changed. On #486, #444 landed
-while #486 ran and changed the order of the same-patch reads before `tasker update-branch`. The agent of #486 read the
-diff of the docs on its own, with no rule that asked it to.
+After a landing, the orchestrator tells each task subagent in flight which sections of its docs changed. On #486, #444
+landed while #486 ran and changed the order of the same-patch reads before `tasker update-branch`. The task subagent of
+#486 read the diff of the docs on its own, with no rule that asked it to.
 
-The docs of an agent are the docs that its prompt names for all the rules and for the change of its ticket, as
+The docs of a task subagent are the docs that its prompt names for all the rules and for the change of its ticket, as
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) of `docs/dev/pick-the-tickets.md`
 says. These are the docs of "[the base list](pick-the-tickets.md#the-prompt-of-a-task-subagent)" and each file that the
 prompt names because the ticket changes it. Such a file can be under `skills/`.
 
-A file that the prompt names for another reason, for example as the source of a fact of a hint, is not a doc of the
-agent. Each agent has its own docs, because each prompt names its own docs. The orchestrator takes the docs of an agent
-from the prompt that it wrote for that agent.
+A file that the prompt names for another reason, for example as the source of a fact of a hint, is not a doc of the task
+subagent. Each task subagent has its own docs, because each prompt names its own docs. The orchestrator takes the docs
+of a task subagent from the prompt that it wrote for that task subagent.
 
-An agent in flight is an agent of the orchestrator from its start until its
+A task subagent in flight is a task subagent of the orchestrator from its start until its
 [final report](run-one-ticket.md#the-final-report) arrives. The term "running" of ["Terms"](quota.md#terms) in
-`docs/dev/quota.md` keeps its own meaning. An agent in flight can be running or ended in the meaning of that page.
+`docs/dev/quota.md` keeps its own meaning. A task subagent in flight can be running or ended in the meaning of that
+page.
 
 The task subagent notice covers each landing of a ticket of the orchestrator. The steps of the orchestrator come right
 after the steps of [the notice rule](#the-notice-rule), as [Land the work](land-the-work.md#land-the-work) says.
 
 1. When the final report of the task subagent says that the ticket landed, the orchestrator reads the files that landed
    in that report.
-2. If no file of the report is a doc of an agent in flight, the orchestrator sends no task subagent notice for that
-   landing.
-3. Otherwise, the orchestrator sends one message with `SendMessage` to each agent in flight that has a file of the
-   report among its docs. The message is the task subagent notice. It names the landed commit and each changed section
-   of each doc of that agent, from the same report.
+2. If no file of the report is a doc of a task subagent in flight, the orchestrator sends no task subagent notice for
+   that landing.
+3. Otherwise, the orchestrator sends one message with `SendMessage` to each task subagent in flight that has a file of
+   the report among its docs. The message is the task subagent notice. It names the landed commit and each changed
+   section of each doc of that task subagent, from the same report.
 
    For example: Landed `<commit>` on `main`. `docs/dev/run-one-ticket.md` changed in "The diff read", and
    `docs/dev/review-findings.md` changed in "Review findings".
 
 When the orchestrator gets a notice of the notice rule from another orchestrator, it sends a task subagent notice too.
-It sends it to each agent in flight that has a doc of the notice among its docs. The task subagent notice names each
-section of the notice that is in a doc of that agent. If no section of the notice is in a doc of an agent in flight, the
-orchestrator sends no task subagent notice.
+It sends it to each task subagent in flight that has a doc of the notice among its docs. The task subagent notice names
+each section of the notice that is in a doc of that task subagent. If no section of the notice is in a doc of a task
+subagent in flight, the orchestrator sends no task subagent notice.
 
 The task subagent notice does not depend on [the re-read rule](#the-re-read-rule). If the re-read rule fails at this
 landing, the orchestrator still sends the task subagent notice. [The failure rule](limits.md#the-failure-rule) of
 `docs/dev/limits.md` applies, as the re-read rule says.
 
-When an agent gets a task subagent notice, it reads each named doc again, as [the doc-read rule](#the-doc-read-rule)
-says. It does this before its next command or tool call of its work. From then on, the agent follows the new text of the
-named sections. A step that the agent already did stays done.
+When a task subagent gets a task subagent notice, it reads each named doc again, as
+[the doc-read rule](#the-doc-read-rule) says. It does this before its next command or tool call of its work. From then
+on, the task subagent follows the new text of the named sections. A step that the task subagent already did stays done.
 
-If the agent runs a long `tasker` command in the background, the read comes after the end of that command.
+If the task subagent runs a long `tasker` command in the background, the read comes after the end of that command.
 
-An agent can wait in a loop that reads a state. Examples are the "To wait" bullet of "Land the work",
+A task subagent can wait in a loop that reads a state. Examples are the "To wait" bullet of "Land the work",
 [the CI wait](ci-wait.md#the-ci-wait) of `docs/dev/ci-wait.md` and the wait bullet of
-[the command rules](tasker-commands.md#the-command-rules) of `docs/dev/tasker-commands.md`. Such an agent reads the
-named docs again before its next read of the state. The limit of the wait does not change.
+[the command rules](tasker-commands.md#the-command-rules) of `docs/dev/tasker-commands.md`. Such a task subagent reads
+the named docs again before its next read of the state. The limit of the wait does not change.
 
-An agent can also wait with its turn ended. Examples are a wait for an answer under
+A task subagent can also wait with its turn ended. Examples are a wait for an answer under
 [the answer-wait rule](limits.md#the-answer-wait-rule) of `docs/dev/limits.md`, and a wait in `quota_blocked` or
 `interrupted`, as ["What the task subagent does"](quota.md#what-the-task-subagent-does) of `docs/dev/quota.md` says.
 
-If the last report of the agent is an interim final answer, the agent waits with its turn ended. If the orchestrator
-sent an answer, a next step or a resume message after that report, this wait ended. In each other case, the orchestrator
-sends the task subagent notice.
+If the last report of the task subagent is an interim final answer, the task subagent waits with its turn ended. If the
+orchestrator sent an answer, a next step or a resume message after that report, this wait ended. In each other case, the
+orchestrator sends the task subagent notice.
 
-For such a wait, the orchestrator sends no task subagent notice, because each message starts the agent again. It keeps
-each landed commit and each changed section of each doc of that agent. It puts them in the next message that it sends to
-that agent, for example the answer or the resume message. Each section stands one time in that message. The paragraphs
-of this wait win over each other sentence of this section on the send of a task subagent notice.
+For such a wait, the orchestrator sends no task subagent notice, because each message starts the task subagent again. It
+keeps each landed commit and each changed section of each doc of that task subagent. It puts them in the next message
+that it sends to that task subagent, for example the answer or the resume message. Each section stands one time in that
+message. The paragraphs of this wait win over each other sentence of this section on the send of a task subagent notice.
 
 After the send of that message works, the orchestrator drops the kept sections. If that message fails, the orchestrator
-keeps them for the next message. When the agent is no longer in flight, the orchestrator also drops them. When a new
-session takes its ticket, the orchestrator also drops them. The limit: the kept sections live in the context of the
+keeps them for the next message. When the task subagent is no longer in flight, the orchestrator also drops them. When a
+new session takes its ticket, the orchestrator also drops them. The limit: the kept sections live in the context of the
 orchestrator, so a compaction can lose them.
 
-The agent treats the sections of that message as a task subagent notice. A task subagent notice can still reach an agent
-that ended its turn, because the notice left before its interim final answer. A message can also leave the agent in its
-wait, for example a hold of the parent-hold rule. Such an agent reads the named docs again. Then it ends its turn with
-an [interim final answer](limits.md#the-answer-wait-rule). It sends no `SendMessage` and does not repeat its question or
-its report.
+The task subagent treats the sections of that message as a task subagent notice. A task subagent notice can still reach
+a task subagent that ended its turn, because the notice left before its interim final answer. A message can also leave
+the task subagent in its wait, for example a hold of the parent-hold rule. Such a task subagent reads the named docs
+again. Then it ends its turn with an [interim final answer](limits.md#the-answer-wait-rule). It sends no `SendMessage`
+and does not repeat its question or its report.
 
-The first line of that interim final answer says that the answer is not the final report and names what the agent still
-waits for. The orchestrator treats it as no answer and no next step, and the wait does not change. For the orchestrator,
-each read that a rule gives after a report of an agent still applies.
+The first line of that interim final answer says that the answer is not the final report and names what the task
+subagent still waits for. The orchestrator treats it as no answer and no next step, and the wait does not change. For
+the orchestrator, each read that a rule gives after a report of a task subagent still applies.
 
-If the fetch of the doc-read rule fails, an agent that does not wait stops and reports the error. The doc-read rule says
-this for an agent. An agent that waits gives the error in its interim final answer, or in its next report, and keeps its
-wait.
+If the fetch of the doc-read rule fails, a task subagent that does not wait stops and reports the error. The doc-read
+rule says this for a task subagent. A task subagent that waits gives the error in its interim final answer, or in its
+next report, and keeps its wait.
 
 If a message of the orchestrator fails, the failure rule of `docs/dev/limits.md` applies, and the orchestrator continues
 its work. The orchestrator sends no second task subagent notice for that landing. The task subagent notice needs no
 answer.
 
-The task subagent notice is information. The agent takes each rule from the doc, not from the task subagent notice.
+The task subagent notice is information. The task subagent takes each rule from the doc, not from the task subagent
+notice.
 
 ## The doc-read rule
 
 The local clone holds the checkout of the user, for example a commit of a pre-release. The docs of the orchestration
 come from `origin/main`, not from that checkout.
 
-1. Before the orchestrator, the operator, a planner or an agent reads a doc, it runs
+1. Before the orchestrator, the operator, a planner or a task subagent reads a doc, it runs
    `git -C <local clone> fetch origin`.
 2. Then it reads each doc with `git -C <local clone> show origin/main:<path>`, in a Bash call. `<path>` is the path of
    the doc from the root of the repo, for example `docs/dev/limits.md`.
@@ -217,7 +220,7 @@ nothing to read. That is an answer, not a failure.
 Each doc read uses `origin/main` in one command, so [the shared-clone rule](limits.md#the-shared-clone-rule) needs no
 hash read for it. A fetch of another session between two reads can give a newer doc of `origin/main`.
 
-If the fetch fails, an agent [stops](limits.md#the-answer-wait-rule) and reports the error. For the orchestrator,
+If the fetch fails, a task subagent [stops](limits.md#the-answer-wait-rule) and reports the error. For the orchestrator,
 [the re-read rule](#the-re-read-rule) gives the failure path. If the fetch of the doc-read rule fails for the operator
 or a planner, [the failure rule](limits.md#the-failure-rule) of `docs/dev/limits.md` applies to that session. Then that
 session reads the doc with `git -C <local clone> show origin/main:<path>`. The read uses the `origin/main` of the last
