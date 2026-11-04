@@ -91,9 +91,9 @@ transition. As a result, a failure in a later step still keeps the earlier value
 
 ### Why stderr holds the question and the notes
 
-The task subagent reads stdout. It holds the fields of the task, then the lines of the tracker writes, so it can parse
-them. A failed tracker write sends warnings to stderr. The question for the base branch and the notes from the base step
-also go there.
+A task subagent reads stdout. It holds the fields of the task, then the lines of the tracker writes, so the task
+subagent can parse it. The warnings of a failed tracker write go to stderr, and so do the question for the base branch
+and the notes of the base step.
 
 ### The tracker writes
 

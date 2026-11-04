@@ -1,11 +1,11 @@
 # Orchestrator
 
 [The orchestration pages](orchestrator.md) give the rules for an orchestrator. The orchestrator is the assistant session
-that picks tickets and starts one task subagent for each ticket. It moves the cards, sets the landing order and writes
+that picks tickets, starts one task subagent for each ticket. It moves the cards, sets the landing order and writes
 memory.
 
 A ticket is an issue on the project board. A task subagent, as [sessions.md](sessions.md) defines it, runs the steps of
-["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for one ticket. The user is the person who works with the
+["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the person who works with the
 sessions, as [sessions.md](sessions.md) says. The operator starts the orchestrator, as
 [Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not type in the
 session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
@@ -34,10 +34,10 @@ broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the mes
 each other request between orchestrators that needs a decision of the user.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
-not task subagents. They do not run the steps on [the orchestration pages](orchestrator.md).
+not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).
 
-The orchestrator and its task subagents run tasker from the local clone of the orchestrator. For one ticket, its task
-subagent is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names.
+The orchestrator and its task subagents run tasker from the local clone of the orchestrator. For one ticket, the task
+subagent of that ticket is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names.
 
 Every `tasker` command on [the orchestration pages](orchestrator.md) is the installed `tasker`: the `tasker` command on
 the PATH from a global install. The installed `tasker` is a build of this repo, from a version that can be older than
@@ -104,7 +104,7 @@ The rules:
   does not cover this item.
 - After the answer, the receiving orchestrator does the requested change only if the user accepts it. Then it tells the
   sending orchestrator the decision of the user with `SendMessage`. The sending orchestrator does its own step that
-  matches the request, if it has one, only after an accept. An example of such a step is a message to its own ticket
+  matches the request, if it has one, only after an accept. An example of such a step is a message to its own task
   subagent.
 - A message of this rule fails when the send fails or when no session of the target name runs. Then
   [the failure rule](dev/limits.md#the-failure-rule) applies to the orchestrator that sends it.

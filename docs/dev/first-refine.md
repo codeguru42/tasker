@@ -922,11 +922,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   the issue of the ticket. On #450 (2026-10-25), a place after the first paragraph of
   [the design-gap rule](plan-review.md#the-design-gap-rule) made the next sentence read as a sentence about the other
   issue. The place needed a design-gap answer.
-- If one rule has two kinds of actor, for example the orchestrator and a task subagent, ask the plan to list each actor.
-  Ask it to list each sentence with its actor. Otherwise the review finds each failure path that names only one actor
-  (#135). If a rule lets a task subagent get something through the orchestrator, ask the plan to say who does the
-  action. On #271, review loop 2 found that the text did not say who does the permitted read for a task subagent. The
-  user decided that the orchestrator does the read and gives the fact to the task subagent as an answer.
+- If one rule has two kinds of actor, for example the orchestrator and a task subagent, ask the plan to list each
+  sentence with its actor. Otherwise the review finds each failure path that names only one actor (#135). If a rule lets
+  a task subagent get something through the orchestrator, ask the plan to say who does the action. On #271, review loop
+  2 found that the text did not say who does the permitted read for a task subagent. The user decided that the
+  orchestrator does the read and gives the fact to the task subagent as an answer.
 - If a rule waits for a report from another orchestrator, it also gives that orchestrator the duty to send the report.
   Otherwise the wait has no end. On #147, review 1 found this gap. If a rule ends a wait on named events, ask the plan
   for an end case when the waited object leaves the flow. On #238,
@@ -963,9 +963,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule runs at each read of a value, ask the plan to put the rule right after the read, not inside a branch such as
   "If there is a reset time". On #232, review 1 found that a stale five-hour time gave no
   [seven-day job](quota.md#terms).
-- If a ticket turns one job of a ticket into two, ask the plan to find each rule that leaves a task subagent out. Ask it
-  to find each rule that schedules no new job. Ask it to make sure that each such rule is true for the other job that
-  still lives. On #232, review 1 and review 3 found such a case.
+- If a ticket turns one job of a ticket into two, ask the plan to find each rule that leaves a task subagent out or
+  schedules no new job. Ask it to make sure that each such rule is true for the other job that still lives. On #232,
+  review 1 and review 3 found such a case.
 - A rule takes a fact about one event from the report of that event, not from a diff since the last read. An example is
   the landed commit with its files. Several task subagents can land close together, and then the diff covers more than
   one event (#135).
@@ -1016,8 +1016,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule offers the user a choice, ask the plan to say what happens to later offers after the user says no or the
   command fails. On #227, review 1 found that the same offer came back at each read of the board.
 - If a rule changes how a task subagent ends its turn, ask the plan to list each place on the page where the task
-  subagent ends its turn. Ask it also to list each place where the task subagent gives a report. Ask for each place
-  where the orchestrator reads the last report. On #166, each fix drew a new case, and the work took 4 loops.
+  subagent ends its turn or gives a report. Also ask for each place where the orchestrator reads the last report. On
+  #166, each fix drew a new case, and the work took 4 loops.
 - If a ticket changes how a session numbers the questions of an [item](../sessions.md), ask the plan in the first refine
   for a list. The list names each place that reads those numbers or an answer to them. Examples of such a place are the
   send and the close of an item in [The answer](operator-items.md#the-answer) of `docs/dev/operator-items.md`. The plan

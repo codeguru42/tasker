@@ -267,8 +267,8 @@ link to open an issue from a reply.
 - When the orchestrator gives the user the simpler rule as a choice, the orchestrator also tells the task subagent of
   the ticket to wait. The task subagent does not run its next `tasker approve` or `tasker accept` until the user
   decides. The task subagent waits as [the answer-wait rule](limits.md#the-answer-wait-rule) says. Then the orchestrator
-  sends the task subagent the user's decision. The reason: if the user then picks the simpler rule, a landing with the
-  patch costs a second ticket. On 2026-10-17, the task subagent of #250 went on. Ticket #250 landed with the patch
+  sends the task subagent the decision of the user. The reason: if the user then picks the simpler rule, a landing with
+  the patch costs a second ticket. On 2026-10-17, the task subagent of #250 went on. Ticket #250 landed with the patch
   before the user chose the simpler rule, and #306 undoes the patch. The task subagent also stops by itself under the
   case "Two reviews in a row" of [the stop rule](plan-review.md#the-stop-rule).
 

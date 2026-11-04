@@ -58,7 +58,7 @@ The orchestrator does all the steps of this section.
   [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) or a hold of the user.
   The ticket of a parked task that comes back to Todo of the current milestone takes its place by its label (see
   [the defer rule](#the-defer-rule)). Each time the orchestrator reads the board, it applies the rule again. Then a
-  ticket with `priority: high` or `priority: medium` that joined the milestone and can start takes the next free slot
+  ticket with `priority: high` or `priority: medium` that joined the milestone and can start takes the next free agent
   before the tickets with no label.
 - Each time a ticket lands, read the board again: the open issues of the milestone and the issues that block them. A new
   issue can join a milestone while a run is in progress. An open issue can also lose its last open blocker while no
@@ -291,13 +291,13 @@ of a ready state with `tasker review <issue> "<feedback>"` of [the add-work rule
 `tasker start`. `tasker start` refused both of them (see
 [the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)).
 
-The parent is not ready yet when the orchestrator plans to start a stacked ticket on it. The orchestrator tells the task
-subagent of the parent to hold. The hold of a parent that belongs to another orchestrator is out of scope. The hold
-lasts until the orchestrator tells the task subagent of the parent that the hold ended. A message to a task subagent
-that has ended starts the task subagent again (see ["Terms" in "Quota"](quota.md#terms)). If the task subagent of the
-parent gets the message while a command runs, the task subagent lets the command end and keeps the hold. If the task
-subagent of the parent gets the message while it waits for an answer or a next step, it keeps the hold. Then the task
-subagent of the parent ends its turn again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says.
+The orchestrator plans to start a stacked ticket on a parent that is not ready yet. It tells the task subagent of the
+parent to hold. The hold of a parent that belongs to another orchestrator is out of scope. The hold lasts until the
+orchestrator tells the task subagent of the parent that the hold ended. A message to a task subagent that has ended
+starts the task subagent again (see ["Terms" in "Quota"](quota.md#terms)). If the task subagent of the parent gets the
+message while a command runs, the task subagent lets the command end and keeps the hold. If the task subagent of the
+parent gets the message while it waits for an answer or a next step, it keeps the hold. Then the task subagent of the
+parent ends its turn again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says.
 
 The orchestrator sends the hold only when a [slot](quota.md#the-delay-of-each-task-subagent) is free for the stacked
 ticket. If no slot is free, the orchestrator sends no hold (see the bullet "Run at most 3 task subagents at the same
@@ -455,10 +455,10 @@ An issue can hold an open question that stops its start. The note of
 [the change-of-scope comment](plan-review.md#the-change-of-scope-comment) that starts
 `## Open question after the change of scope` and the hold comment of [A ticket on hold](#a-ticket-on-hold) are forms of
 such a question. For the order of the priority rule, the orchestrator counts such a ticket as a ticket that can start.
-If that ticket is the next ticket for a free slot, the orchestrator asks the user about the question. Before that, the
-orchestrator does not ask, also with a free slot. On 2026-10-31, #635 held such a question.
+If that ticket is the next ticket for a free agent, the orchestrator asks the user about the question. Before that, the
+orchestrator does not ask, also with a free agent. On 2026-10-31, #635 held such a question.
 
-While the answer waits, the ticket after it takes the free slot. After the answer, and after each body edit that the
+While the answer waits, the ticket after it takes the free agent. After the answer, and after each body edit that the
 issue asks for, the ticket can start.
 
 ### The defer rule
@@ -479,10 +479,10 @@ orchestrator does these steps:
 4. Move the issue to the milestone that the user names: `gh issue edit <number> --milestone "<milestone>"`.
 5. Move the card of the ticket to Todo. The ticket waits in Todo of its new milestone.
 6. Post a comment on the issue that starts with `## Parked task`, with the findings of the final report. The next task
-   subagent can start from them. Examples are the state of the task, the open plan questions, and the answers so far.
-   The examples also include the facts that the task subagent tested. For a stacked task, the comment gives the start
-   base of the last read when the work of the task subagent ended. The final report gives it, or says that the task
-   subagent held none (see [the comeback rule](run-one-ticket.md#the-comeback-rule)).
+   subagent can start from them. Examples are the state of the task, the open plan questions, the answers so far and the
+   facts that the task subagent tested. For a stacked task, the comment gives the start base of the last read when the
+   work of the task subagent ended. The final report gives it, or says that the task subagent held none (see
+   [the comeback rule](run-one-ticket.md#the-comeback-rule)).
 7. List the open issues that the deferred issue blocks:
    `gh issue view <number> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. For each issue
    of the list, read its milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The command
@@ -574,14 +574,14 @@ The orchestrator writes the prompt of each task subagent.
 - The prompt of a task subagent gives only the context of its ticket. The context is the issue key, the milestone of its
   ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)). The context includes the milestones
   that are off limits for the task subagent. It gives the landing order (see
-  ["Land the work"](land-the-work.md#land-the-work)) and, for a stacked ticket, its parent (see
+  ["Land the work"](land-the-work.md#land-the-work)). For a stacked ticket, it gives its parent (see
   [the stacked-ticket rule](#the-stacked-ticket-rule)). It gives the quota slot and whether the task subagent has a job
   (see ["Quota"](quota.md#quota)). It gives the folder of the task subagent for its files (see the folder bullet of
   ["Limits"](limits.md#limits)).
 
-It gives the links of the change-of-scope and design-gap comments of its issue. See the bullet below that starts "If the
-account of the orchestrator". It gives the hints for its first refine and the task worktree with its path,
-`../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
+  It gives the links of the change-of-scope and design-gap comments of its issue. See the bullet below that starts "If
+  the account of the orchestrator". It gives the hints for its first refine and the task worktree with its path,
+  `../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
 
 - The prompt never tells the task subagent to take a path from the `worktree:` line of `tasker show`. The reason: that
   line prints the worktree of tasker, and [the own-worktree rule](limits.md#the-own-worktree-rule) bans each read and

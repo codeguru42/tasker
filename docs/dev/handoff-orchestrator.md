@@ -72,10 +72,10 @@ The old orchestrator counts the landings of its session. Each of these also coun
 - A decision of the user that takes several question rounds
 
 An event adds to the count before any other step of that event. For a landing, the final report of the task subagent
-brings the count to 12. This happens before the landing steps. The bullet "When the final report of the task subagent of
-a ticket says that the ticket landed" in [Land the work](land-the-work.md#land-the-work) gives those steps. So the read
-of the board of that landing starts no new ticket. For a decision of the user that takes several question rounds, the
-answer of the user that ends the decision brings the count up.
+brings the count to 12. It does this before the steps of the bullet "When the final report of the task subagent of a
+ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work). So the read of the board of that
+landing starts no new ticket. For a decision of the user that takes several question rounds, the answer of the user that
+ends the decision brings the count up.
 
 At a count of 12, the old orchestrator suggests a handoff to the user in its report of that landing. The report of a
 landing (a landing report) is the reply in which the old orchestrator tells the user that a ticket landed. If a counted

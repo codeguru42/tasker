@@ -17,9 +17,9 @@ At the start of its session, the orchestrator runs `git -C <local clone> fetch o
 hash that this command prints is the first last read. Then the orchestrator reads the docs of the orchestrator, as the
 doc-read rule says.
 
-Each time a ticket lands, the orchestrator does these steps. The bullet "When the final report of the task subagent of a
-ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) gives their place. The steps
-change no task.
+Each time a ticket lands, the orchestrator does these steps. They are at the place that the bullet "When the final
+report of the task subagent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work)
+gives. The steps change no task.
 
 1. Run `git -C <local clone> fetch origin`, as [the doc-read rule](#the-doc-read-rule) says.
 2. Read the tip of `main` one time: `git -C <local clone> rev-parse --verify origin/main`. This rule calls the hash

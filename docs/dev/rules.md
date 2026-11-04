@@ -146,9 +146,9 @@ provider id and a kind of task.
   request. Examples of the text on GitHub are the comment of step 11 of
   [Run one ticket](run-one-ticket.md#run-one-ticket) and the body of an issue. The text also includes the replies to the
   user, the reports and messages between sessions, and the feedback texts of `tasker refine` and of
-  `tasker review <issue> "<feedback>"`. A task subagent's final report to the orchestrator is one example. The
-  orchestrator's messages to a task subagent are another. This rule does not apply to the sessions that tasker starts
-  for plan, execute and review, except for the docs that they write.
+  `tasker review <issue> "<feedback>"`. Examples of the reports and messages are the final report of a task subagent to
+  the orchestrator. The messages of the orchestrator to a task subagent are examples too. This rule does not apply to
+  the sessions that tasker starts for plan, execute and review, except for the docs that they write.
 - Each session writes "task subagent" for the session that [docs/sessions.md](../sessions.md) defines as a task
   subagent, also where the text of an issue says "agent".
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path

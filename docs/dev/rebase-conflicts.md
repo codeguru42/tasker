@@ -206,9 +206,9 @@ only what differs.
     files or files that git does not track. The report helps to find the cause of such a failure. In one case, a task
     subagent used `--force` and blamed `node_modules/`. But git removes a worktree that holds only ignored files without
     `--force`, so the cause is unknown.
-20. Delete the local task branch: `git branch -D <task branch>`. Step 17 checks that the base branch contains the work.
-    It also accepts a matching patch for every commit, or tasker's landed result after it took the pushed tip. If the
-    command fails, stop. The worktree is gone. The local task branch stays.
+20. Delete the local task branch: `git branch -D <task branch>`. Step 17 already makes sure that the base branch
+    contains the work, a commit with the same patch for each commit, or the landed result of tasker after it took the
+    pushed tip. If the command fails, stop. The worktree is gone. The local task branch stays.
 21. Make sure that `origin` has no task branch: do step 10 of "Run one ticket" in
     [docs/dev/run-one-ticket.md](run-one-ticket.md#run-one-ticket). If the driver is not the task subagent of a ticket,
     it runs those commands in the clone of the driver. Where that step says to report to the orchestrator, a person
