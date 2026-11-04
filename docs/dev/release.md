@@ -38,10 +38,10 @@ starts "The installing session can be an operator" says. If a message of the hol
 [the failure rule](limits.md#the-failure-rule) applies to the session that sends it. A missing answer is out of scope.
 
 The hold covers the tasks of each orchestrator, also the tasks of an installing orchestrator. In the hold, the
-orchestrator starts no new ticket, and it tells each of its agents to hold. Each agent finishes its current `tasker`
-command and then runs no other `tasker` command. An agent can continue a step that runs no `tasker` command. An example
-is the rest of [the CI wait](ci-wait.md#the-ci-wait) after step 1 of the CI wait. The agent runs its next `tasker`
-command, for example `tasker finish`, only after the hold ends.
+orchestrator starts no new ticket, and it tells each of its task subagents to hold. Each task subagent finishes its
+current `tasker` command and then runs no other `tasker` command. A task subagent can continue a step that runs no
+`tasker` command. An example is the rest of [the CI wait](ci-wait.md#the-ci-wait) after step 1 of the CI wait. The task
+subagent runs its next `tasker` command, for example `tasker finish`, only after the hold ends.
 
 No run is in progress when `tasker status` shows no task in a state that spawns a process. These are the blue states of
 [docs/statemachine.md](../statemachine.md#main-lifecycle), the "spawning states", for example `planning`, `executing`,
@@ -79,9 +79,10 @@ relayed decision in [A decision of the user](working-with-the-user.md#a-decision
 reason for this exception: a hold only delays work. The user decided this on 2026-10-25.
 
 After the end of the hold, each orchestrator loads the tasker skill again with the Skill tool, before its next `tasker`
-command. The installing session also does this. Each orchestrator tells each of its agents that the hold ended. It also
-tells each agent to load the tasker skill again before the next `tasker` command of the agent. The reason: the install
-can change the tasker skill (see [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
+command. The installing session also does this. Each orchestrator tells each of its task subagents that the hold ended.
+It also tells each task subagent to load the tasker skill again before the next `tasker` command of the task subagent.
+The reason: the install can change the tasker skill (see
+[Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
 
 The installing session can be an operator. An installing operator sends the request of the hold and the end of the hold
 as [the word of the user](operator-conversations.md#the-word-of-the-user): each message starts with "From the user:". It
@@ -91,7 +92,7 @@ answer of its user about the hold to its operator. The operator relays it to the
 
 If an operator has no orchestrator, it reports that to the installing session at once. The installing operator lists the
 sessions with `ListAgents`. It asks the user to examine each session that has no `operator-<slug>` of its slug and is
-not an agent of an orchestrator (a name of the form `<owner>-<repo>-<number>`, see
+not a task subagent of an orchestrator (a name of the form `<owner>-<repo>-<number>`, see
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent)). An installing operator also runs
 `git pull --ff-only origin main`, `npm run install:global`, `tasker --version` and the moves of
 [Untracked paths before an install](#untracked-paths-before-an-install). `npm run install:global` runs
@@ -100,10 +101,10 @@ operator in [docs/operator.md](../operator.md).
 
 On 2026-10-25, on the word of the user, orchestrator-m21 asked orchestrator-docs and orchestrator-m22 for a hold.
 orchestrator-docs acted on the relayed hold at once and asked its own user about the hold. Both held, and
-`tasker status` showed no run in progress. One agent of orchestrator-docs finished the CI wait of its task in `landed`
-and did not run `tasker finish`. After `npm run install:global` and a passing `tasker doctor`, orchestrator-m21 ended
-the hold with the new version 2026.10.25-22cbbedd. No answer of the user came before the hold ended, and the hold took
-about 10 minutes.
+`tasker status` showed no run in progress. One task subagent of orchestrator-docs finished the CI wait of its task in
+`landed` and did not run `tasker finish`. After `npm run install:global` and a passing `tasker doctor`, orchestrator-m21
+ended the hold with the new version 2026.10.25-22cbbedd. No answer of the user came before the hold ended, and the hold
+took about 10 minutes.
 
 On 2026-10-25, the user said "we need a pause on all tasks to install", and operator-docs sent the hold to
 orchestrator-docs. operator-docs also relayed the hold to operator-m22, operator-m24, operator-m14 and operator-skills.
@@ -166,9 +167,9 @@ a hold before an install, the hold then stays, as [The hold before an install](#
   holds only the build of the commit that is checked out.
 - `npm install -g` of a package file copies the files into the global folder of npm. A later change of the clone does
   not change the installed `tasker`.
-- An agent can test a review finding that says that npm changes a version with `npm install <tarball>` in a scratch
-  folder, with no `-g`. A global install replaces the installed tasker. On #395, the agent dismissed finding 1 of review
-  1 after such a test.
+- A task subagent can test a review finding that says that npm changes a version with `npm install <tarball>` in a
+  scratch folder, with no `-g`. A global install replaces the installed tasker. On #395, the task subagent dismissed
+  finding 1 of review 1 after such a test.
 - Without `npm run install:global`, a plain `npm pack` builds a package with the version `0.0.0`. Then
   `tasker --version` of that install prints `0.0.0`.
 

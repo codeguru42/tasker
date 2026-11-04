@@ -1,16 +1,16 @@
 # CI wait
 
-The readers of this page are the agent of a ticket for the CI wait, and the orchestrator for "A failed CI run".
+The readers of this page are the task subagent of a ticket for the CI wait, and the orchestrator for "A failed CI run".
 
 ## The CI wait
 
-After `tasker merge` in step 9 of [Run one ticket](run-one-ticket.md#run-one-ticket), the agent of the ticket waits for
-the CI runs of the landed commit. `tasker verify` runs on the local machine, and the `Check` workflow on GitHub can
-still fail. For example, the local Node version can differ from the Node version of CI. The runs that count are the runs
-of the `Check` workflow on `main` for the landed commit, because they test the merged result. The agent runs each
-command of the CI wait in the local clone of the orchestrator. During the whole CI wait, the task stays in `landed`. The
-step numbers in the list below name the steps of the CI wait, not the steps of "Run one ticket". The agent does these
-steps:
+After `tasker merge` in step 9 of [Run one ticket](run-one-ticket.md#run-one-ticket), the task subagent of the ticket
+waits for the CI runs of the landed commit. `tasker verify` runs on the local machine, and the `Check` workflow on
+GitHub can still fail. For example, the local Node version can differ from the Node version of CI. The runs that count
+are the runs of the `Check` workflow on `main` for the landed commit, because they test the merged result. The task
+subagent runs each command of the CI wait in the local clone of the orchestrator. During the whole CI wait, the task
+stays in `landed`. The step numbers in the list below name the steps of the CI wait, not the steps of "Run one ticket".
+The task subagent does these steps:
 
 1. Right after `tasker merge`, run `git fetch --multiple tasker origin`. The `tasker` remote is the read-only remote of
    [the diff read](run-one-ticket.md#the-diff-read). Then run `git rev-parse tasker/<task branch>`. The task branch is
@@ -40,11 +40,11 @@ steps:
    `tail` keeps only the end of the output. `set -o pipefail` keeps the exit code of `timeout` and `gh run watch`, not
    the exit code of `tail`. `2>&1` keeps an error of `gh` in the end of the output. `tail` reads its whole input, so the
    pipe gives no exit code 141. A `Check` run takes about 3 to 5 minutes, but it can take longer than one tool call of
-   the agent. The agent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means that the run
-   passed. Exit code 124 means that the run is still in progress. In that case, run the same command again. The
-   30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a run
-   is not complete when the 30 minutes end, stop. Any other exit code means that the run failed, or that `gh` failed. In
-   that case, go to step 6 of the CI wait.
+   the task subagent. The task subagent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means
+   that the run passed. Exit code 124 means that the run is still in progress. In that case, run the same command again.
+   The 30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a
+   run is not complete when the 30 minutes end, stop. Any other exit code means that the run failed, or that `gh`
+   failed. In that case, go to step 6 of the CI wait.
 6. Run `gh run view <run id> --json status,conclusion,url,jobs`. If the command fails, stop and report the error. If
    `status` is `completed` and `conclusion` is `success`, the run passed. If `status` is not `completed`, `gh run watch`
    failed and the run is still in progress. In that case, do step 5 of the CI wait again. If `status` is `completed` and
@@ -79,8 +79,8 @@ steps:
     report also gives the result of the rerun: passed, failed again, did not start (with its error), or did not complete
     in 30 minutes. It also gives the result of the local run with the Node version, and each error of steps 7 to 9 of
     the CI wait. Then wait for the answer of the orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule)
-    says. While the agent waits, the task stays in `landed`. This wait is not a stop. The steps of the orchestrator are
-    in "A failed CI run".
+    says. While the task subagent waits, the task stays in `landed`. This wait is not a stop. The steps of the
+    orchestrator are in "A failed CI run".
 12. When the orchestrator answers with the number of the new issue, run `tasker finish`. The task goes to `finished`,
     and the issue closes. Then do steps 10 and 11 of "Run one ticket". The comment of step 11 also names the failed run,
     the verdict and the new issue.
@@ -98,35 +98,37 @@ command" of [the command rules](tasker-commands.md#the-command-rules). After the
 moved call, step 6 takes the place of the exit codes of step 5.
 
 The CI wait passes only when each run of the list passed in step 5 or step 6 of the CI wait. A rerun that passes in step
-9 of the CI wait does not make the CI wait pass. The agent still does steps 10 to 12 of the CI wait. Other agents can
-land on `main` during the wait. The agent waits only for the runs of its own landed commit, not for a later run on
-`main`. If a git command of the CI wait fails, the agent stops and reports the error. A stop of the CI wait also skips
-steps 10 and 11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the agent gets a resume
-message while the task is in `landed` (see ["When the job fires"](quota.md#when-the-job-fires) and
+9 of the CI wait does not make the CI wait pass. The task subagent still does steps 10 to 12 of the CI wait. Other task
+subagents can land on `main` during the wait. The task subagent waits only for the runs of its own landed commit, not
+for a later run on `main`. If a git command of the CI wait fails, the task subagent stops and reports the error. A stop
+of the CI wait also skips steps 10 and 11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the
+task subagent gets a resume message while the task is in `landed` (see
+["When the job fires"](quota.md#when-the-job-fires) and
 ["What the task subagent does"](quota.md#what-the-task-subagent-does) in ["Quota"](quota.md#quota)), the rule depends on
-what the agent did before. If the agent did not run `gh run rerun` yet, it does the CI wait again from step 1 of the CI
-wait. If it ran `gh run rerun` and did not send the report of step 11 yet, it does not run `gh run rerun` again. If the
-rerun did not start, it goes to step 10 of the CI wait with the result "did not start". Otherwise, it waits for the
-rerun as step 9 says, with a new 30-minute limit from its first `gh run watch` after the resume. Then it goes on with
-step 10. If it sent the report of step 11, it does not do the CI wait again. It waits for the answer of the
-orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of the new issue, it
-goes on with step 12 of the CI wait.
+what the task subagent did before. If the task subagent did not run `gh run rerun` yet, it does the CI wait again from
+step 1 of the CI wait. If it ran `gh run rerun` and did not send the report of step 11 yet, it does not run
+`gh run rerun` again. If the rerun did not start, it goes to step 10 of the CI wait with the result "did not start".
+Otherwise, it waits for the rerun as step 9 says, with a new 30-minute limit from its first `gh run watch` after the
+resume. Then it goes on with step 10. If it sent the report of step 11, it does not do the CI wait again. It waits for
+the answer of the orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of
+the new issue, it goes on with step 12 of the CI wait.
 
 ## A failed CI run
 
-This section gives the steps of the orchestrator after an agent reports a failed run in step 11 of
-[the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that an agent reports. The repo has
-three priority labels: `priority: high`, `priority: medium` and `priority: low`. An issue of a failed CI run gets
-`priority: high`. The priority rule of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) makes that issue start
-before the tickets with a lower priority. The repo also has the label `broken-test`.
+This section gives the steps of the orchestrator after a task subagent reports a failed run in step 11 of
+[the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that a task subagent reports. The
+repo has three priority labels: `priority: high`, `priority: medium` and `priority: low`. An issue of a failed CI run
+gets `priority: high`. The priority rule of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) makes that issue
+start before the tickets with a lower priority. The repo also has the label `broken-test`.
 
 1. File a new issue:
    `gh issue create --title "<title>" --body-file <file> --label "priority: high" --milestone "<milestone in progress>"`.
    The milestone in progress is the current milestone of ["Pick the tickets"](pick-the-tickets.md#pick-the-tickets). If
    the verdict is broken, also add `--label broken-test` to the command. The body gives the run URL, the failed tests,
-   the verdict and the evidence of the agent (the result of the rerun and of the local run). The body asks for the cause
-   and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists, and
-   [the failure rule](limits.md#the-failure-rule) applies. The agent keeps waiting, and the task stays in `landed`.
+   the verdict and the evidence of the task subagent (the result of the rerun and of the local run). The body asks for
+   the cause and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue
+   exists, and [the failure rule](limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task
+   stays in `landed`.
 2. If the verdict is broken, the new issue blocks all further work. Send the broken-test notice to each other
    orchestrator, as the broken-test rule says. Add no blocked-by link to the other issues. Tell the user at once. If a
    handoff starts while the issue is open, name the issue in the handoff file, as
@@ -136,8 +138,8 @@ before the tickets with a lower priority. The repo also has the label `broken-te
    broken-test issue of #273, with the words "we don't need blocked-by links as long as all other orchestrators know to
    wait".
 3. If the verdict is flaky, the new issue blocks nothing.
-4. Send the agent the number of the new issue. The bullet of ["Land the work"](land-the-work.md#land-the-work) that
-   reads the state with `tasker show <issue>` first applies to this message.
+4. Send the task subagent the number of the new issue. The bullet of ["Land the work"](land-the-work.md#land-the-work)
+   that reads the state with `tasker show <issue>` first applies to this message.
 
 The broken-test rule: a broken-test issue is the new issue of step 1 when the verdict is broken. It has the label
 `broken-test`. The rule has two actors: the orchestrator that files the broken-test issue, and each other orchestrator.
