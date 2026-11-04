@@ -136,13 +136,10 @@ The task subagent of the ticket runs steps 1 to 11. Each step gives the state of
 ### The final report
 
 At the end of its work on the ticket, the task subagent gives a final report to the orchestrator. The task subagent
-gives the final report as its final answer, not with `SendMessage`. The work of the task subagent on the ticket ends
+gives the final report as its final answer, not with `SendMessage`, except after a
+[refused `SubagentHandback` call](limits.md#the-answer-wait-rule). The work of the task subagent on the ticket ends
 after step 11, or when the orchestrator tells the task subagent to end its work, for example in step 1 of
-[the defer rule](pick-the-tickets.md#the-defer-rule). A final answer that the task subagent gives before the end of its
-work is an interim report, not the final report. That final answer gives the state of the task, says if the task
-subagent stopped, and says that the task subagent waits. Examples are the final answer of
-[the answer-wait rule](limits.md#the-answer-wait-rule) and the end of the turn after a quota stop in
-["What the task subagent does" in "Quota"](quota.md#what-the-task-subagent-does). The report gives these items:
+[the defer rule](pick-the-tickets.md#the-defer-rule). The report gives these items:
 
 - The result: the landed commit, the number of review loops, the files that landed and, for each doc that landed, the
   sections that changed. If the work of the task subagent ended before `tasker finish`, for example after the
@@ -170,6 +167,11 @@ subagent stopped, and says that the task subagent waits. Examples are the final 
 
 The orchestrator sorts the lessons. A lesson that is a rule for the repo or for task subagents goes where the new-rule
 bullet of ["The prompt of a task subagent"](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+
+A final answer that the task subagent gives before the end of its work is an interim report, not the final report. That
+final answer gives the state of the task, says if the task subagent stopped, and says that the task subagent waits.
+Examples are the final answer of [the answer-wait rule](limits.md#the-answer-wait-rule) and the end of the turn after a
+quota stop in ["What the task subagent does" in "Quota"](quota.md#what-the-task-subagent-does).
 
 ### The comeback rule
 
