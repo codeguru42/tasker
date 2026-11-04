@@ -112,8 +112,8 @@ does not end while a review agent runs. If a review agent ends with no report, t
 agent for that loop. If that one also ends with no report, the ticket subagent ends, and its report says so. Then the
 planner tells the user before any post of that draft.
 
-If a ticket subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the planner. Then
-The planner judges this end with the harness notifications of [The wait for a report](#the-wait-for-a-report). Then the
+If a ticket subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the planner. The
+planner judges this end with the harness notifications of [The wait for a report](#the-wait-for-a-report). Then the
 planner starts one new ticket subagent for the draft. With a draft file, it starts at step 2, and with no draft file, at
 step 1. If that one also ends with no report, the planner tells the user.
 
