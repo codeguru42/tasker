@@ -27,17 +27,17 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   `awaiting_plan_review`, the orchestrator tells the user. If the start state is before `awaiting_work_review`,
   [the hold rule](#the-hold-rule) also applies. If `tasker show <issue>` fails,
   [the failure rule](limits.md#the-failure-rule) applies, and the start state is unknown.
-- To wait, the later task subagent reads the issue state once: `gh issue view <number> --json state -q .state`. If the
-  state is `OPEN`, the later task subagent reads it again every 30 seconds until it is `CLOSED`. The later task subagent
-  waits at most 60 minutes from the first read. With each read of the issue state, the later task subagent also reads
-  the state of the earlier task on the `state:` line of `tasker show <earlier issue>`, for example `state: landed`. When
-  the earlier task reaches `landed`, `finishing` or `finished`, the later task subagent follows the bullet "When the
-  issue of the earlier ticket is closed". After the `tasker update-branch` of that bullet, the later task subagent stops
-  reading the task state. The 60-minute limit still counts from the first read of the issue state. If
-  `tasker show <earlier issue>` fails, the later task subagent reads no more task states in this wait, and it waits for
-  the close of the issue.
+- To wait, the later task subagent reads the state of the issue of the earlier ticket one time:
+  `gh issue view <number> --json state -q .state`. If the state is `OPEN`, the later task subagent reads it again every
+  30 seconds until it is `CLOSED`. The later task subagent waits at most 60 minutes from the first read. With each read
+  of the issue state, the later task subagent also reads the state of the earlier task on the `state:` line of
+  `tasker show <earlier issue>`, for example `state: landed`. If the earlier task is in `landed`, `finishing` or
+  `finished`, the later task subagent follows the bullet "When the issue of the earlier ticket is closed". After the
+  `tasker update-branch` of that bullet, the later task subagent stops reading the task state. The 60-minute limit still
+  counts from the first read of the issue state. If `tasker show <earlier issue>` fails, the later task subagent reads
+  no more task states in this wait, and it waits for the close of the issue.
 - If the state is still `OPEN` 60 minutes after the first read, the later task subagent stops waiting. To stop waiting
-  means that the later task subagent stops reading both states.
+  means that the later task subagent stops reading the issue state and the state of the earlier task.
 - If the earlier task subagent [stops](limits.md#the-answer-wait-rule) or ends its work before the issue of the earlier
   ticket closes, the orchestrator tells the later task subagent to stop waiting. Then the later task subagent stops
   waiting. For example, the earlier task subagent stops after its last loop of
@@ -109,8 +109,8 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   above do not apply. The later task subagent runs no second `tasker update-branch` and continues step 9 of "Run one
   ticket" from `tasker accept`. The `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>` of
   [the diff read](run-one-ticket.md#the-diff-read) right before `tasker accept` finds a later move of the base branch.
-  On 2026-10-17, the task subagent of #248 updated its branch from `executed` after parent #252 landed. It then asked
-  the orchestrator about a second update.
+  On 2026-10-17, the task subagent of #248 updated its branch from `executed` after its parent #252 landed, and then
+  asked the orchestrator about a second update.
 - The later task subagent of a stacked task never runs `tasker merge` or `tasker mark-landed` before the issue of the
   parent is closed, because the landing guard refuses a stacked task whose parent did not land and whose task did not
   move (see [the stacked-task guards](workspaces.md#stacked-task)).
@@ -264,7 +264,7 @@ the shared file, these rules apply:
 
 - The compare of [the overlap rule](#the-overlap-rule). The orchestrator of each ticket still does the compare.
 - The update of the diff read after a landing of the other ticket. If the other ticket lands first, the task subagent of
-  the second ticket runs `tasker update-branch`, as [the diff read](run-one-ticket.md#the-diff-read) says.
+  the ticket that lands second runs `tasker update-branch` as [the diff read](run-one-ticket.md#the-diff-read) says.
 
 For these two tickets, the Docs rule wins over the second sentence of the bullet "If the edit of a shared file is not
 required". The first sentence of that bullet still applies. No rule of a landing order applies between these two
@@ -402,6 +402,6 @@ orchestrator also asks the user. The user can swap the landing order, postpone t
 task subagent to wait again. The orchestrator does not tell the later task subagent to wait again without the user. If
 the state changed, the orchestrator can tell the later task subagent to wait again, and it tells the user. If the new
 state is before `awaiting_work_review`, the hold rule applies instead of a new wait. The stuck-task rule does not cover
-a later task subagent under the hold rule. That subagent started no wait and has no 60-minute limit. On #101, the later
-task subagent waited two hours, in two waits of 60 minutes, for #34 of another milestone. During that time, #34 stayed
-in `awaiting_plan_review`.
+a later task subagent under the hold rule. That task subagent started no wait and has no 60-minute limit. On #101, the
+later task subagent waited two hours, in two waits of 60 minutes, for #34 of another milestone. During that time, #34
+stayed in `awaiting_plan_review`.
