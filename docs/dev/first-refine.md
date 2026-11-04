@@ -1073,8 +1073,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   orchestrator of a task by the milestone of its issue, for example the bullet on a change to an issue in flight and the
   overlap rule. On #368, the review found such a rule after the plan.
 - If a rule defines a form, for example "the plain form of a read is ...", ask the plan to also state the duty, for
-  example "the agent runs each read in its plain form". On #371, review 2 found a definition with no duty, and it cost
-  one loop.
+  example "the task subagent runs each read in its plain form". On #371, review 2 found a definition with no duty, and
+  it cost one loop.
 - If a rule limits a denial or a failure to one event, for example "a denial at one update does not skip the reads at
   the next update", ask the plan to say which event a read before and a read after the event belongs to. On #371, review
   1 found two readings.
