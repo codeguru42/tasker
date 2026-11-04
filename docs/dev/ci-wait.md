@@ -117,18 +117,32 @@ the new issue, it goes on with step 12 of the CI wait.
 
 This section gives the steps of the orchestrator after a task subagent reports a failed run in step 11 of
 [the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that a task subagent reports. The
-repo has three priority labels: `priority: high`, `priority: medium` and `priority: low`. An issue of a failed CI run
-gets `priority: high`. The priority rule of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) makes that issue
-start before the tickets with a lower priority. The repo also has the label `broken-test`.
+An issue of a failed CI run gets the priority `P0`. The priority rule of
+[Pick the tickets](pick-the-tickets.md#pick-the-tickets) makes that issue start before the tickets with a lower
+priority. [The project board](issues.md#the-project-board) gives the commands of the priority. The repo has the label
+`broken-test`.
 
-1. File a new issue:
-   `gh issue create --title "<title>" --body-file <file> --label "priority: high" --milestone "<milestone in progress>"`.
-   The milestone in progress is the current milestone of ["Pick the tickets"](pick-the-tickets.md#pick-the-tickets). If
-   the verdict is broken, also add `--label broken-test` to the command. The body gives the run URL, the failed tests,
-   the verdict and the evidence of the task subagent (the result of the rerun and of the local run). The body asks for
-   the cause and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue
-   exists, and [the failure rule](limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task
-   stays in `landed`.
+1. File a new issue: `gh issue create --title "<title>" --body-file <file> --milestone "<milestone in progress>"`. The
+   milestone in progress is the current milestone of ["Pick the tickets"](pick-the-tickets.md#pick-the-tickets). If the
+   verdict is broken, also add `--label broken-test` to the command. The body gives the run URL, the failed tests, the
+   verdict and the evidence of the task subagent (the result of the rerun and of the local run). The body asks for the
+   cause and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists,
+   and [the failure rule](limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task stays in
+   `landed`.
+
+   If `gh issue create` worked, set the priority `P0` on the card of the new issue. First, read the item id of the card:
+   `timeout 90 bash -c 'while :; do id=$(gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq ".items[] | select(.content.type == \"Issue\" and .content.number == <number>) | .id") || exit 2; [ -n "$id" ] && { echo "$id"; exit 0; }; sleep 15; done'`.
+   `<number>` is the number of the new issue, from the URL that `gh issue create` prints. The workflow of the board adds
+   a new issue within a minute. So the command reads the board every 15 seconds for at most 90 seconds. It prints the
+   item id and exits with 0.
+
+   Exit code 124 means that the card did not show, and exit code 2 means that the read failed. After exit code 0, set
+   the option `P0` with the set command of [The project board](issues.md#the-project-board). If the read exits with 124
+   or 2, or the set fails, [the failure rule](limits.md#the-failure-rule) applies. A denial of the read by the
+   classifier of auto mode also counts as a failed read. Then the issue has no priority, and the orchestrator does the
+   other steps. If the classifier denies the set, [the tool-block rule](tasker-commands.md#the-tool-block-rule) applies,
+   and the orchestrator does steps 2 to 4 at once.
+
 2. If the verdict is broken, the new issue blocks all further work. Send the broken-test notice to each other
    orchestrator, as the broken-test rule says. Add no blocked-by link to the other issues. Tell the user at once. If a
    handoff starts while the issue is open, name the issue in the handoff file, as
