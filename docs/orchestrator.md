@@ -1,8 +1,7 @@
 # Orchestrator
 
 [The orchestration pages](orchestrator.md) give the rules for an orchestrator. The orchestrator is the assistant session
-that picks tickets, starts one task subagent for each ticket. It moves the cards, sets the landing order and writes
-memory.
+that picks tickets, starts one task subagent for each ticket. It moves the cards and sets the landing order.
 
 A ticket is an issue on the project board. A task subagent, as [sessions.md](sessions.md) defines it, runs the steps of
 ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the person who works with the
