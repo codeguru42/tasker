@@ -172,6 +172,24 @@ provider id and a kind of task.
   full text of the copy. Otherwise, the change names no document outside the repo. The reason: the work on this repo
   must continue on any machine. Also, the plan session of a ticket sees only the issue and the repo.
 
+- The short-exception rule: a tracked doc holds no short exception. A short exception is a decision of the user that
+  ends soon and that makes an exception to a rule, for example "M26 lands first". A rule or a hint can still name an
+  issue or a milestone as evidence or as a reason. The reason: such an exception soon becomes wrong, for example after
+  its issue lands or its milestone closes. A short exception stays in an [item](../sessions.md), in the word of the user
+  or in an open issue that it is about. A [handoff file](handoff.md#the-items-of-a-handoff-file) carries it as a
+  decision of the user that still applies.
+
+  Whether an exception ends soon is a judgment. The judgment is open on purpose. The session that drafts the doc change
+  makes it, for example the planner that writes its issue. For a short exception, this rule wins over the bullets of
+  [What goes in a ticket](planner.md#what-goes-in-a-ticket) of planner.md that start "If the user states a design fact
+  or a rule" and "The work on this repo must continue on any machine".
+
+  On 2026-10-31, on a draft of a landing-order rule, the user said: "Tracked rules should not generally name a specific
+  issue. Rule overrides such as "M26 lands first" don't need to be in tracked documents." The same day, the user
+  narrowed the rule: "Issue references for evidence or reasoning is fine. The case that this ticket covers arose from a
+  milestone that was closing shortly, so its execption was quickly invalidated and didn't need a permanent place in a
+  tracked doc." In the second quote, "this ticket" means that draft.
+
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path
   such as `/home/<user>/...`.
 - Prettier wraps the prose of each Markdown file that it formats at 120 characters (`proseWrap` "always" in

@@ -357,9 +357,9 @@ waits for the same answer.
 When the answer or the word of the user reaches an orchestrator through its own operator, that orchestrator keeps the
 set. That operator passes the answer or the word to the operator of each other orchestrator of the set, as
 [The word of the user](operator-conversations.md#the-word-of-the-user) says. The named set stands in the item of the
-confirmation or in the word of the user, not in a tracked doc. The
-[handoff file](handoff.md#the-items-of-a-handoff-file) of the orchestrator lists each set under the decisions of the
-user. A new orchestrator keeps each set that its handoff file lists.
+confirmation or in the word of the user. A named set is a short exception, so [the short-exception rule](rules.md#docs)
+keeps it out of the tracked docs. The [handoff file](handoff.md#the-items-of-a-handoff-file) of the orchestrator lists
+each set under the decisions of the user. A new orchestrator keeps each set that its handoff file lists.
 
 The confirmed order applies only to a pair of the set that the overlap rule covers. For such a pair, it wins over the
 sentence "A ticket of an earlier milestone lands first". For a stacked ticket and its parent,

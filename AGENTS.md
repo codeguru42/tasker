@@ -17,8 +17,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 - [docs/sessions.md](docs/sessions.md): the terms that each role uses: the user, the slug, the sessions of a slug, an
   item, task subagent, ticket subagent, the own name of a session, the session ref and the socket address.
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo (the check, test first, the commits, the docs, the test
-  helpers, the code rules, the simple-english skill, the memory rule, the outside-document rule, the installed skill and
-  `AGENTS.md`).
+  helpers, the code rules, the simple-english skill, the memory rule, the outside-document rule, the short-exception
+  rule, the installed skill and `AGENTS.md`).
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to start work as a contributor to tasker.
 - [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the layout, the steps to add a command, the imports, the
   zod facts and the tests.
