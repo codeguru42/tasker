@@ -208,7 +208,9 @@ subagent ends its turn in step 2 of the steps above. Then the planner gets a wai
 waiting on its own background work". This wait notification is not the end of the ticket subagent.
 
 The planner has no time limit for a ticket subagent. A ticket subagent can run three review loops, and a loop can have
-two review agents. A second report of the same ticket subagent gives a late report, as the next paragraphs say.
+two review agents. A second report of the same ticket subagent gives a late report, as the next paragraphs say. A
+message of the ticket subagent with `SendMessage` after a
+[refused `SubagentHandback` call](limits.md#the-answer-wait-rule) also counts as such a second report.
 
 A late report is a report of a review agent that arrives after the hand-back of its ticket subagent. On 2026-11-04, a
 late report started planner-m16-ticket-priority-field-1 again with its context, 2 minutes 43 seconds after its
@@ -220,7 +222,9 @@ The ticket subagent that a late report starts again does these steps:
    `## Late report of <name of the review agent>`.
 2. Change nothing in the draft.
 3. End with `SubagentHandback`. The report names the draft file, the review agent and the new section of the report
-   file.
+   file. After a [refused `SubagentHandback` call](limits.md#the-answer-wait-rule), send the same report to the planner
+   with `SendMessage` and `to: "main"`. The first line of the message says that Claude Code refused the
+   `SubagentHandback` call. Then end the turn. If the send fails, the report file of step 1 still holds the findings.
 
 No one tested a ticket subagent with no background work left. Two facts support the start again: a `SendMessage` to an
 ended subagent starts it again. The answer-wait rule of [limits.md](limits.md#the-answer-wait-rule) records this for a
