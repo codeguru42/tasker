@@ -35,7 +35,7 @@ orchestrator.
   repeated default, for example `failingCommand: null` for a failed run. On #220, a first refine read the ban on a
   repeat of the steps of the shared helper too widely. The fix cost an extra refine. Before a ticket adds a second test
   file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
-- If a plan stores a value that code reads back, the agent compares the plan with
+- If a plan stores a value that code reads back, the task subagent compares the plan with
   [the rule of the `events` table](data-root.md#events-table). The value lives in a column of a table. If the plan keeps
   the value in another place, for example a file, the first refine asks for a column.
 - Ask the plan for the side effects of each fix before `tasker approve`. A fix can cause a new finding about its own
@@ -69,9 +69,9 @@ orchestrator.
   rebase, run `npm run check` and update those callers ([rules.md](rules.md#commits)).
 - A ticket can add lines to the output of a command. Then ask the plan to name each test that reads that output with
   `toEqual`, `toBe` or `endsWith`. Another ticket that lands first can add more such tests, also to a file that the plan
-  named. After each `tasker update-branch`, the agent searches `test/` again for such tests and names each new test in
-  the next refine. On #351 (2026-10-30), the update onto #233 brought four new tests that expected the output to end at
-  the `state:` line. The verify run failed, and the fix cost one refine.
+  named. After each `tasker update-branch`, the task subagent searches `test/` again for such tests and names each new
+  test in the next refine. On #351 (2026-10-30), the update onto #233 brought four new tests that expected the output to
+  end at the `state:` line. The verify run failed, and the fix cost one refine.
 - The prompts of the installed tasker tell the plan that a todo does not run `npm run check`. Say in the first refine
   that [the Check rule](rules.md#check) wins over those prompts. On #158, the plan asked about the conflict as an open
   question, and the answer cost an extra refine. The Check rule also wins for `npm run format:check`. On #417, plan v2
@@ -96,19 +96,19 @@ orchestrator.
   [the broken-commit steps](verify-failures.md#the-broken-commit-steps) say. The plan does not ask the execute session
   for `git merge-base` against a local branch in the worktree of tasker. On #419 (2026-10-25), the local `main` of the
   clone of tasker was an old commit, and plan v6 used the base commit 9ce3caa9 for this reason. If `origin` holds the
-  task branch from step 9 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md), the agent does the pushed-branch rule
-  of [the broken-commit steps](verify-failures.md#the-broken-commit-steps) after step 11 of that page, before each later
-  `tasker update-branch`. The parent of a [stacked task](pick-the-tickets.md#the-stacked-ticket-rule) can land with
-  changed commits before the task has a commit of its own. Then the push of step 9 of
-  [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) puts a commit of `origin/<base branch>` on `origin`. In
-  that case, each run of the pushed-branch rule deletes nothing, because the ancestor check of step 4 of the rule
-  passes. On #426 (2026-10-25), the rule ran two times and deleted nothing.
+  task branch from step 9 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md), the task subagent follows the
+  pushed-branch rule of [the broken-commit steps](verify-failures.md#the-broken-commit-steps) after step 11 of that
+  page. It does this before each later `tasker update-branch`. The parent of a
+  [stacked task](pick-the-tickets.md#the-stacked-ticket-rule) can land with changed commits before the task has a commit
+  of its own. Then the push of step 9 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) puts a commit of
+  `origin/<base branch>` on `origin`. In that case, each run of the pushed-branch rule deletes nothing, because the
+  ancestor check of step 4 of the rule passes. On #426 (2026-10-25), the rule ran two times and deleted nothing.
 - In a docs ticket where several commits change the same line, ask the plan for a fallback that makes one `docs:`
-  commit. A fixup autosquash of such commits conflicts. On #253, the agent hit this conflict. If the task has one
-  `docs:` commit, the feedback of a fix after a review can ask for `git commit --amend --no-edit`, with the base commit
-  named. On #265, the amend kept one commit with no autosquash conflict. Do not ask for an amend when the task is the
-  parent of a [stacked task](pick-the-tickets.md#the-stacked-ticket-rule). The amend rewrites the base of the stacked
-  task. Ask for a new commit on top instead.
+  commit. A fixup autosquash of such commits conflicts. On #253, the task subagent hit this conflict. If the task has
+  one `docs:` commit, the feedback of a fix after a review can ask for `git commit --amend --no-edit`, with the base
+  commit named. On #265, the amend kept one commit with no autosquash conflict. Do not ask for an amend when the task is
+  the parent of a [stacked task](pick-the-tickets.md#the-stacked-ticket-rule). The amend rewrites the base of the
+  stacked task. Ask for a new commit on top instead.
 - If the feedback of a refine names the base commit of the task at `tasker start`, read it with `git fetch tasker` and
   then `git rev-parse --verify tasker/<task branch>` right after `tasker start`. Do not read it from the local `main`,
   because `main` can move after the start. On #150, the feedback said that `main` moved after plan v1, but the task had
@@ -129,15 +129,15 @@ orchestrator.
   `KEY_PARSERS.jira` folded it again with `asciiFold()`. A review asked to drop the fold of the parser."
 - If a review finding depends on the timing of the event loop, ask for a failing test first. If execute cannot make a
   test fail, dismiss the finding with the evidence from the local machine. The evidence is a loop of about 200 runs of
-  that test. Such a loop finds a test that fails only sometimes. Before the dismiss, the agent runs the loop in the task
-  worktree, as [the measure rule](run-one-ticket.md#the-measure-rule) does, after the npm ci bullet of
-  [Limits](limits.md#limits). If the plan depends on the timing of the event loop, the agent runs
-  [the fact test](plan-review.md#the-fact-test) two times. The agent gives both results in the first refine. One run
-  starts the code in top-level code. The other run starts it inside a callback of the poll phase (the phase of the event
-  loop that runs the callbacks of input and output), for example after an `await` of a file read. A real run of tasker
-  starts its code in such a callback. On #224, one `setImmediate` turn passed in top-level code. Inside such a callback,
-  on Node v26.7.0, one turn lost a SIGTERM that the process sent to itself 5 of 5 times. Two turns lost it 0 of 5 times.
-  Review loop 1 of #224 found the case.
+  that test. Such a loop finds a test that fails only sometimes. Before the dismiss, the task subagent runs the loop in
+  the task worktree, as [the measure rule](run-one-ticket.md#the-measure-rule) does, after the npm ci bullet of
+  [Limits](limits.md#limits). If the plan depends on the timing of the event loop, the task subagent runs
+  [the fact test](plan-review.md#the-fact-test) two times. The task subagent gives both results in the first refine. One
+  run starts the code in top-level code. The other run starts it inside a callback of the poll phase (the phase of the
+  event loop that runs the callbacks of input and output), for example after an `await` of a file read. A real run of
+  tasker starts its code in such a callback. On #224, one `setImmediate` turn passed in top-level code. Inside such a
+  callback, on Node v26.7.0, one turn lost a SIGTERM that the process sent to itself 5 of 5 times. Two turns lost it 0
+  of 5 times. Review loop 1 of #224 found the case.
 - If tests wait in a loop, ask for one shared wait helper.
 - For a test on fake timers, ask for `vi.runAllTimersAsync()` and not a helper that moves the clock a fixed amount. On
   #223, such a helper drew a finding about a false comment.
@@ -178,21 +178,21 @@ orchestrator.
   loop.
 - If an issue says that a page or a bullet stays, ask the plan to change no line of it. On #632, the Docs section said
   that a bullet of `docs/dev/operator-items.md` stays, and plan v1 still changed that section.
-- Before `tasker approve`, the agent reads the todos and the risks of the plan, and it looks for each claim about the
-  source of a text. Examples of such a claim are "the user dictated this text" and "the user decided that X". The agent
-  tests each such claim against the issue and the feedback of each refine. If neither gives that source, the agent asks
-  the plan in a refine to remove the claim. On #475 (2026-10-25), plan v2 called a text of the feedback "text that the
-  user dictated", to keep a sentence over the word limit. On #439 (2026-10-25), a todo of plans v2 and v3 gave a false
-  decision of the user about [the Check rule](rules.md#check) that no feedback gave. If neither the issue nor an answer
-  of the orchestrator gives the source of a text, a feedback text names no source. It says "the agent". On #520
-  (2026-10-25), refine 1 wrote "the user asked for these scripts" with no such word of the user, and plan v2 copied it.
-  This cost refine 2.
+- Before `tasker approve`, the task subagent reads the todos and the risks of the plan, and it looks for each claim
+  about the source of a text. Examples of such a claim are "the user dictated this text" and "the user decided that X".
+  The task subagent tests each such claim against the issue and the feedback of each refine. If neither gives that
+  source, the task subagent asks the plan in a refine to remove the claim. On #475 (2026-10-25), plan v2 called a text
+  of the feedback "text that the user dictated", to keep a sentence over the word limit. On #439 (2026-10-25), a todo of
+  plans v2 and v3 gave a false decision of the user about [the Check rule](rules.md#check) that no feedback gave. If
+  neither the issue nor an answer of the orchestrator gives the source of a text, a feedback text names no source. It
+  says "the agent". On #520 (2026-10-25), refine 1 wrote "the user asked for these scripts" with no such word of the
+  user, and plan v2 copied it. This cost refine 2.
 
-  A first refine can give a fact that the agent measured, or a decision of the agent. Then the first refine asks the
-  plan to name no source for that fact or decision, or to say "the agent". It also says: "Do not name the user as the
-  source of this fact or decision." On #391 (2026-10-26), refine 1 said "the agent measured" for its facts and named no
-  source for its changes. Plan v2 still wrote "the user measured" and "the user decided", and this cost refine 2. On
-  #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
+  A first refine can give a fact that the task subagent measured, or a decision of the task subagent. Then the first
+  refine asks the plan to name no source for that fact or decision, or to say "the agent". It also says: "Do not name
+  the user as the source of this fact or decision." On #391 (2026-10-26), refine 1 said "the agent measured" for its
+  facts and named no source for its changes. Plan v2 still wrote "the user measured" and "the user decided", and this
+  cost refine 2. On #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
 
 - If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
   [The body of an issue](planner.md#the-body-of-an-issue) asks the planner for the same compare before the post. If no
@@ -214,7 +214,7 @@ orchestrator.
   the present perfect and the past perfect, for example "has ended" and "had ended". Of the perfect forms, the search of
   step 2 of the self-check finds only "has been" and "have been". As a result, ask the plan to read each "has", "have"
   and "had" of the copied text. If the issue uses a perfect form, ask the plan for one plain term in its place. Ask the
-  plan to use that term in each place of the form. A term that a doc defines stays as it is, for example "An agent has
+  plan to use that term in each place of the form. A term that a doc defines stays as it is, for example "A subagent has
   ended" of "Terms" in `docs/dev/quota.md`. Ask the plan to make sure that the plain term keeps the meaning of the
   issue. On #440 (2026-10-25), the first plain term "no longer runs" also covered "not started yet", and that changed
   the rule. Review 1 found the gap as [a design gap](plan-review.md#the-design-gap-rule).
@@ -233,9 +233,9 @@ orchestrator.
 - In a doc step, ask the plan to write a function name without its arguments, for example `doctorChecks()`, not
   `doctorChecks(repos)`. [rules.md](rules.md#docs) counts the arguments of a function as a repeat of the code. On #266,
   the trim of the sentences that repeat the code found such a step.
-- A check of the docs in the plan must not write a file to the folder of the agent. The folder bullet of
+- A check of the docs in the plan must not write a file to the folder of the task subagent. The folder bullet of
   [Limits](limits.md#limits) names that folder. Process substitution, for example `diff <(cmd1) <(cmd2)`, needs no file.
-  On #115, a plan step wrote a temporary file to the folder of the agent.
+  On #115, a plan step wrote a temporary file to the folder of the task subagent.
 - If the ticket derives a name from a key, for example a session name from an issue key, say that a collision of derived
   names is not an issue ([Core features first](working-with-the-user.md#core-features-first)). Otherwise the plan raises
   the question (#115).
@@ -258,13 +258,14 @@ orchestrator.
   permission mode, measure the fact and give it in the first refine with the command and its result
   ([the fact test](plan-review.md#the-fact-test)). On #128, the plan session tried to get such a fact itself, outside
   the worktree. Ask the plan to add no test that the issue or [Tests](rules.md#tests) of rules.md does not ask for. A
-  fact test is the work of the agent, in [the folder of the agent](limits.md#limits) or in the task worktree, before the
-  refine, and never a todo of the plan. On #425, plan v1 added the guard test `test/package-version.test.ts`, and it
-  gave the execute session the fact test `npm pack` in the worktree of tasker. Refine 1 removed both.
+  fact test is the task subagent's work. It runs in [the folder of the task subagent](limits.md#limits) or in the task
+  worktree, before the refine, and never as a todo of the plan. On #425, plan v1 added the guard test
+  `test/package-version.test.ts`, and it gave the execute session the fact test `npm pack` in the worktree of tasker.
+  Refine 1 removed both.
 - If a ticket adds a security check of a path for an outside tool, the real path can disagree with the tool. An example
-  is a hook of `claude`. In each [diff read](run-one-ticket.md#the-diff-read), the agent also runs the real tool end to
-  end with the built code of the task. The agent runs it in the task worktree, in the same way as
-  [the measure rule](run-one-ticket.md#the-measure-rule). If the run finds a gap, the agent adds the work with
+  is a hook of `claude`. In each [diff read](run-one-ticket.md#the-diff-read), the task subagent also runs the real tool
+  end to end with the built code of the task. The task subagent runs it in the task worktree, in the same way as
+  [the measure rule](run-one-ticket.md#the-measure-rule). If the run finds a gap, the task subagent adds the work with
   [the add-work rule](run-one-ticket.md#the-add-work-rule). Also ask the plan for a check on the text of the path, not
   on the real path. The check on the text denies each symbolic link and each `.` or `..` part. The reason: such a check
   needs no real path, so the text of the path and the path that the kernel writes cannot disagree. On #430 (2026-10-25),
@@ -272,49 +273,51 @@ orchestrator.
   check on the real path. In review loop 1, the rule had a gap with a symbolic link to a path that does not exist.
   Review loop 3 found that the text `..` and the kernel read of a symbolic link disagree. The user then changed the rule
   to a check on the text.
-- If a ticket depends on the loaded copy of a skill that the agent must not run, the agent measures which copy loads. An
-  example is a skill that writes memory, which [Limits](limits.md#limits) bans for an agent. The agent uses a scratch
-  run of `claude -p` in a scratch repo that starts no skill. The hint that starts "For
+- If a ticket depends on the loaded copy of a skill that the task subagent must not run, the task subagent measures
+  which copy loads. An example is a skill that writes memory, which [Limits](limits.md#limits) bans for a task subagent.
+  The task subagent uses a scratch run of `claude -p` in a scratch repo that starts no skill. The hint that starts "For
   [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder. The prompt asks the session to list
   the descriptions of its skills and to run no skill. The run uses
   `--model haiku --max-turns 1 --disallowedTools Bash Write Edit`. A control skill that only the scratch repo holds
   shows that the run reads the skills of the scratch repo. On #413 (2026-10-25), with Claude Code 2.1.310, a copy was in
   the scratch repo and a copy was in `$HOME/.claude/skills/`. Claude Code loaded the copy in `$HOME/.claude/skills/`.
-- If a ticket depends on a `SessionEnd` hook, the agent measures the hook with `claude -p` in a scratch repo. The hint
-  that starts "For [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder. A project hook for
-  `SessionEnd` in the scratch repo logs its input. The agent first runs
+- If a ticket depends on a `SessionEnd` hook, the task subagent measures the hook with `claude -p` in a scratch repo.
+  The hint that starts "For [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder. A project
+  hook for `SessionEnd` in the scratch repo logs its input. The task subagent first runs
   `claude -p "<prompt>" --model haiku --max-turns 1`. Then `claude -p --continue "/clear" --model haiku --max-turns 1`
-  runs the hook `SessionEnd` with `"reason":"clear"`. The transcript file still exists when the hook runs. The agent of
-  #413 measured this on 2026-10-25, with Claude Code 2.1.310. On #413, this fact test showed that a reason of the issue
-  was false. The issue said that Claude Code has no hook that runs before `/clear` with the transcript still there.
-- If [a fact test](plan-review.md#the-fact-test) takes more than 30 minutes, the agent starts it in the first tool call
-  of the work. The agent gives its result in the comment of step 11 of
+  runs the hook `SessionEnd` with `"reason":"clear"`. The transcript file still exists when the hook runs. The task
+  subagent of #413 measured this on 2026-10-25, with Claude Code 2.1.310. On #413, this fact test showed that a reason
+  of the issue was false. The issue said that Claude Code has no hook that runs before `/clear` with the transcript
+  still there.
+- If [a fact test](plan-review.md#the-fact-test) takes more than 30 minutes, the task subagent starts it in the first
+  tool call of the work. The task subagent gives its result in the comment of step 11 of
   [Run one ticket](run-one-ticket.md#run-one-ticket). On #252, the result of a 40-minute test came after the landing.
 - For [a fact test](plan-review.md#the-fact-test) in a scratch repo, make a new folder inside
-  [the folder of the agent](limits.md#limits) with `mkdir`. Start each command in that folder as
+  [the folder of the task subagent](limits.md#limits) with `mkdir`. Start each command in that folder as
   [the fact test](plan-review.md#the-fact-test) says. Do not clear a folder with `rm -rf`. On #231, a Bash call with
   `rm -rf` drew a permission prompt. The same test in a new folder ran with no prompt.
-- If [a fact test](plan-review.md#the-fact-test) starts `claude` from a Bash call of the agent, the test run gets no
-  `HERDR_*` name in its environment. A test session that `herdr agent start` starts is not covered. For example, the
-  test starts `claude -p` with `env -i` and only the names of `ALLOWED_ENV_NAMES` in `src/config/allowed-env-names.ts`,
-  the filter of [The environment of a phase](phases.md#the-environment-of-a-phase). The reason is that the hook
-  `herdr-agent-state.sh` of the user configuration of Claude Code runs at each `SessionStart`. The hook can report the
-  session onto the pane that the `HERDR_*` names give. The agent of #523 measured with Claude Code 2.1.310 and herdr
-  0.9.3 on 2026-10-25 that with the filter, no `HERDR_*` name passed and the hook did nothing.
-- If [a fact test](plan-review.md#the-fact-test) needs a command that runs for a set time, the agent uses
-  `timeout <seconds> tail -f /dev/null`. An example is a stand-in for a slow command. The agent cannot run a foreground
-  `sleep`, as step 5 of [the CI wait](ci-wait.md#the-ci-wait) says. On #523 (2026-10-25), Claude Code 2.1.310 blocked a
-  foreground `sleep 40` in a Bash call of the agent.
-- If a script for [a fact test](plan-review.md#the-fact-test) in [the folder of the agent](limits.md#limits), outside
-  the repo, uses top-level `await`, give the script the extension `.mts`. No `package.json` in that folder sets
+- If [a fact test](plan-review.md#the-fact-test) starts `claude` from a Bash call of the task subagent, the test run
+  gets no `HERDR_*` name in its environment. A test session that `herdr agent start` starts is not covered. For example,
+  the test starts `claude -p` with `env -i` and only the names of `ALLOWED_ENV_NAMES` in
+  `src/config/allowed-env-names.ts`, the filter of [The environment of a phase](phases.md#the-environment-of-a-phase).
+  The reason is that the hook `herdr-agent-state.sh` of the user configuration of Claude Code runs at each
+  `SessionStart`. The hook can report the session onto the pane that the `HERDR_*` names give. The task subagent of #523
+  measured with Claude Code 2.1.310 and herdr 0.9.3 on 2026-10-25 that with the filter, no `HERDR_*` name passed and the
+  hook did nothing.
+- If [a fact test](plan-review.md#the-fact-test) needs a command that runs for a set time, the task subagent uses
+  `timeout <seconds> tail -f /dev/null`. An example is a stand-in for a slow command. The task subagent cannot run a
+  foreground `sleep`, as step 5 of [the CI wait](ci-wait.md#the-ci-wait) says. On #523 (2026-10-25), Claude Code 2.1.310
+  blocked a foreground `sleep 40` in a Bash call of the task subagent.
+- If a script for [a fact test](plan-review.md#the-fact-test) in [the folder of the task subagent](limits.md#limits),
+  outside the repo, uses top-level `await`, give the script the extension `.mts`. No `package.json` in that folder sets
   `"type": "module"`. As a result, `tsx` builds a `.ts` file there as CommonJS and refuses top-level `await`. On #225,
   `tsx` refused such a `.ts` script, and the same script ran as `.mts`.
-- For [a fact test](plan-review.md#the-fact-test) about `grep`, call `/usr/bin/grep`. In the Bash tool of an agent,
-  `grep` is a shell function that runs `ugrep`, not GNU grep. On #280, the agent measured its pattern with GNU grep
-  3.11.
+- For [a fact test](plan-review.md#the-fact-test) about `grep`, call `/usr/bin/grep`. In the Bash tool of a task
+  subagent, `grep` is a shell function that runs `ugrep`, not GNU grep. On #280, the task subagent measured its pattern
+  with GNU grep 3.11.
 - To read a value in a scratch test, for example the real error of a git command, write the value to a file in
-  [the folder of the agent](limits.md#limits), for example with `appendFileSync`. On #287, the output of `console.log`
-  in a scratch test did not show in the output of `npm test`. The write to a file showed the error.
+  [the folder of the task subagent](limits.md#limits), for example with `appendFileSync`. On #287, the output of
+  `console.log` in a scratch test did not show in the output of `npm test`. The write to a file showed the error.
 - [A fact test](plan-review.md#the-fact-test) tests the exact assertion of the plan, not only the text of the doc. On
   #137, `toEqual([input])` failed, because zod removes the unknown keys before the schema runs `refine()`.
 - To run [a fact test](plan-review.md#the-fact-test) of a Vitest assertion in a scratch folder, run
@@ -326,9 +329,9 @@ orchestrator.
 - To measure a `gh` write with no call to GitHub, run `gh` against a fake local HTTPS server. Set `SSL_CERT_FILE` and
   `GH_ENTERPRISE_TOKEN`. Name the host of the server in the repo of the command, for example
   `gh issue edit 7 -R localhost:8444/owner/repo`. Give `GH_CONFIG_DIR` and `XDG_CACHE_HOME` folders of their own,
-  because `gh` caches GraphQL answers. The agents of #63 and #236 used this.
+  because `gh` caches GraphQL answers. The task subagents of #63 and #236 used this.
 - `gh api -i <path>` prints the header `X-Accepted-OAuth-Scopes` from a GET alone. The header gives the scope that the
-  call needs. The output holds no token. The agent of #317 used this.
+  call needs. The output holds no token. The task subagent of #317 used this.
 - In a feedback text, name a file [outside the worktree](plan-review.md#the-repo-files-rule) only as "a file outside the
   worktree". On #252, refine 1 named the location of such a file, the plan copied the name, and refine 2 had to remove
   it. The hint also covers a [web page](plan-review.md#the-repo-files-rule). A feedback text names such a page only as
@@ -349,19 +352,20 @@ orchestrator.
   of this page asks for. For a reason clause that no requirement asks for, the hint that starts "Ask the plan to add no
   reason that the issue does not give" applies. On #455 (2026-10-25), plan v1 gave a "suggested text" for one change and
   "a shorter form is also good" for another. One refine with the exact final text fixed it. Before a refine gives an
-  exact final text, the agent counts the sentences of each of its paragraphs. A descriptive paragraph has at most six
-  sentences, by Rule 6.6 of the simple-english skill. If a descriptive paragraph has more than six sentences, the exact
-  final text keeps it at six sentences or fewer. Examples are a split of the paragraph and a join of two sentences. On
-  #436 (2026-10-25), two paragraphs of an exact final text had seven sentences, and one of them cost one more refine.
-- Before the agent dismisses a finding about the text of a message, it makes sure that the text is true for that case. A
-  false message is a bug, not an edge case that [Review findings](review-findings.md#review-findings) lets the agent
-  dismiss. On #132, the agent first dismissed such a finding as an edge case. The error named a log file that does not
-  exist, for a command that the deadline kept from its start.
+  exact final text, the task subagent counts the sentences of each of its paragraphs. A descriptive paragraph has at
+  most six sentences, by Rule 6.6 of the simple-english skill. If a descriptive paragraph has more than six sentences,
+  the exact final text keeps it at six sentences or fewer. Examples are a split of the paragraph and a join of two
+  sentences. On #436 (2026-10-25), two paragraphs of an exact final text had seven sentences, and one of them cost one
+  more refine.
+- Before the task subagent dismisses a finding about the text of a message, it makes sure that the text is true for that
+  case. A false message is a bug, not an edge case that [Review findings](review-findings.md#review-findings) lets the
+  task subagent dismiss. On #132, the task subagent first dismissed such a finding as an edge case. The error named a
+  log file that does not exist, for a command that the deadline kept from its start.
 - If a shared rule names several options, ask the plan to make sure that the rule is true for each one. On #213, "the
   command uses the newest item" was false for `--command` of `show-verify`.
-- Before the agent acts on a finding about a missing check, it looks for the check in the shared steps that the code
-  calls. On #160, review 2 said that the feedback form had no check of the base revision. But the shared refine step
-  already did that check before any write.
+- Before the task subagent acts on a finding about a missing check, it looks for the check in the shared steps that the
+  code calls. On #160, review 2 said that the feedback form had no check of the base revision. But the shared refine
+  step already did that check before any write.
 - A finding about a test gap that names two values needs a scratch check of each value. On #47, plan v5 covered only the
   remote.
 - A refine can ask for a check that throws for a value that the code always has. Such a check cannot fail, and the
@@ -445,9 +449,9 @@ orchestrator.
   asked for `String.fromCodePoint(0x212a)`.
 - In [the diff read](run-one-ticket.md#the-diff-read), do not filter the diff with a pattern such as
   `grep -v '^[-+][-+]'`. A changed bullet line of a doc starts with `+-` or `--`, so the filter also drops it. Read the
-  full diff. On #208, the agent found this, and the orchestrator hit it again on the same day.
+  full diff. On #208, the task subagent found this, and the orchestrator hit it again on the same day.
 - If [the diff read](run-one-ticket.md#the-diff-read) finds small work and the ticket must wait under a landing order,
-  the agent adds the work before the wait. On #221, the fix landed in the loop before the wait. The review after
+  the task subagent adds the work before the wait. On #221, the fix landed in the loop before the wait. The review after
   `tasker update-branch` then had nothing new to find.
 - For a [stacked task](pick-the-tickets.md#the-stacked-ticket-rule) whose parent is in `landed` while plan v1 is under
   review, wait for the close of the issue of the parent. Then run `tasker update-branch` before the first refine.
