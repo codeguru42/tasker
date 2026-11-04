@@ -28,6 +28,7 @@ The command line in each assistant:
 - Claude Code: the request is `/tasker <command line>`. The folder of `skillsDirs` is `$HOME/.claude/skills`. Claude
   Code fills in the placeholder.
 - Codex: the request is `$tasker <command line>`. The folder of `skillsDirs` is `$HOME/.agents/skills`.
+- pi: the request is `/skill:tasker <command line>`. The folder of `skillsDirs` is `$HOME/.agents/skills`.
 
 If the command line of the user is not empty, follow these rules:
 
