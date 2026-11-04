@@ -17,9 +17,9 @@ At the start of its session, the orchestrator runs `git -C <local clone> fetch o
 hash that this command prints is the first last read. Then the orchestrator reads the docs of the orchestrator, as the
 doc-read rule says.
 
-Each time a ticket lands, the orchestrator does these steps, at the place that the bullet "When the final report of the
-agent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) gives. The steps
-change no task.
+Each time a ticket lands, the orchestrator does these steps. The bullet in
+[Land the work](land-the-work.md#land-the-work) gives their place among the landing steps. Its title is "When the final
+report of the task subagent of a ticket says that the ticket landed". The steps change no task.
 
 1. Run `git -C <local clone> fetch origin`, as [the doc-read rule](#the-doc-read-rule) says.
 2. Read the tip of `main` one time: `git -C <local clone> rev-parse --verify origin/main`. This rule calls the hash
@@ -58,7 +58,7 @@ operator, sent no notice to the operator.
 
 The orchestrator of the ticket does these steps:
 
-1. When the final report of the agent of the ticket arrives, read the files that landed in that report.
+1. When the final report of the task subagent of the ticket arrives, read the files that landed in that report.
 2. If no file of the report is a doc of the orchestrator of the ticket or a start doc of the operator, send no notice.
 3. Read your own name from the first line of the output of `ListAgents`, as [sessions.md](../sessions.md) says. If a doc
    of the orchestrator changed, each session whose name starts with `orchestrator-`, except your own session, is another
@@ -110,8 +110,8 @@ An agent in flight is an agent of the orchestrator from its start until its
 The task subagent notice covers each landing of a ticket of the orchestrator. The steps of the orchestrator come right
 after the steps of [the notice rule](#the-notice-rule), as [Land the work](land-the-work.md#land-the-work) says.
 
-1. When the final report of the agent says that the ticket landed, the orchestrator reads the files that landed in that
-   report.
+1. When the final report of the task subagent says that the ticket landed, the orchestrator reads the files that landed
+   in that report.
 2. If no file of the report is a doc of an agent in flight, the orchestrator sends no task subagent notice for that
    landing.
 3. Otherwise, the orchestrator sends one message with `SendMessage` to each agent in flight that has a file of the

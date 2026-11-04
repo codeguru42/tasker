@@ -474,9 +474,9 @@ A deny of the hook adds no event, so `permissionDenials` stays `[]`.
 ### What the sandbox blocks and what stays open
 
 No `-c` key and no flag gives one run a `forbidden` rule. A rules file loads only from the Codex home of the user or
-from a trusted worktree, and `--ignore-user-config` drops the trust. `--ignore-rules` drops each rule. So the agent
-tested no form that passes a rule, because no rule exists. The sandbox is the only limit on `deniedCommands`, and it
-does not block every entry.
+from a trusted worktree, and `--ignore-user-config` drops the trust. `--ignore-rules` drops each rule. So the task
+subagent tested no form that passes a rule, because no rule exists. The sandbox is the only limit on `deniedCommands`,
+and it does not block every entry.
 
 The sockets of herdr and of the ssh agent work when the network is on. So the table denies the herdr folder and the file
 of `SSH_AUTH_SOCK` in every role. A herdr socket at a custom path (`HERDR_SOCKET_PATH` outside the default folder) and a
@@ -528,8 +528,8 @@ the hook allows the patch.
 `doctorChecks()` gives the checks `codex version` and `codex login`. They run once for all repos of the provider.
 `codex version` makes sure that `codex` is on `PATH` and starts. `codex login` makes sure that `codex` has a login.
 
-The agent measured `codex login status` on `codex-cli 0.166.0` on 2026-10-31. With a login, the exit code was 0. With an
-empty folder as `CODEX_HOME`, the exit code was 1 and stderr was `Not logged in`.
+The task subagent measured `codex login status` on `codex-cli 0.166.0` on 2026-10-31. With a login, the exit code was 0.
+With an empty folder as `CODEX_HOME`, the exit code was 1 and stderr was `Not logged in`.
 
 `CODEX_HOME` passes [the filter](phases.md#the-environment-of-a-phase) on purpose. It locates the credentials and the
 configuration of the child.

@@ -33,7 +33,7 @@ Run each git command in the clone of the driver or in its worktree.
    `main`.
 4. If the base branch is the branch of another task, the task is a stacked task. For a stacked task, the driver runs
    `tasker show <parent issue>` in the clone of the driver. The parent issue is the key in the note
-   `based on <key>'s branch` that `tasker start` printed. For an agent, the prompt names the parent.
+   `based on <key>'s branch` that `tasker start` printed. For a task subagent, the prompt names the parent.
 
    If the driver cannot name the parent issue, stop. `tasker show` changes no task. If `tasker show` fails, stop. If the
    `state:` line is not `landed`, `finishing` or `finished`, stop. If the `base:` line of the parent has the form
@@ -46,7 +46,7 @@ Run each git command in the clone of the driver or in its worktree.
 5. Run `git fetch --multiple tasker origin`. The fetch reads the task branch from the tasker clone. The fetch of
    `origin` also gets the base branch.
 6. If a worktree already holds the local task branch, use it, and do [the update rule](limits.md#the-update-rule) in the
-   worktree. For an agent, that worktree is the task worktree of
+   worktree. For a task subagent, that worktree is the task worktree of
    [the own-worktree rule](limits.md#the-own-worktree-rule) of `docs/dev/limits.md`. Then go to step 7. Otherwise, run
    `git worktree add -b <task branch> <path> tasker/<task branch>`. This makes a worktree with a local task branch. If
    the local task branch already exists, follow the branch-exists case of the own-worktree rule. Do not copy it here.
@@ -125,8 +125,8 @@ Run each git command in the clone of the driver or in its worktree.
     worktree and the local task branch stay.
 
     On 2026-10-24, #409 pushed 816f63f6 at step 9, and step 11 recorded 816f63f6 as `<taken>`. Then `main` moved, and a
-    second `tasker update-branch` stopped on a conflict. The agent fixed the branch as 526e9e5b, and the normal push
-    failed. The user said: "go ahead with the delete, no need to ask next time".
+    second `tasker update-branch` stopped on a conflict. The task subagent fixed the branch as 526e9e5b, and the normal
+    push failed. The user said: "go ahead with the delete, no need to ask next time".
 
 11. Run `tasker update-branch <issue> --take-remote`. tasker resets its task branch to the task branch on `origin`. Then
     tasker rebases or merges that branch onto the newest base branch.
@@ -144,9 +144,9 @@ Run each git command in the clone of the driver or in its worktree.
     worktree. Do not do step 6, because the update rule there drops the fix that only the local task branch holds. This
     return from step 11 to step 7 is the loop.
 
-    On #460 (2026-10-25), the agent rebased onto 20ad87bc and pushed e7b9d58e at step 9. Then `main` moved to 4554ff97,
-    and step 11 exited with 1 on a new conflict. The local task branch held the work of e7b9d58e. The orchestrator
-    ordered a delete with a lease at e7b9d58e and the same steps again.
+    On #460 (2026-10-25), the task subagent rebased onto 20ad87bc and pushed e7b9d58e at step 9. Then `main` moved to
+    4554ff97, and step 11 exited with 1 on a new conflict. The local task branch held the work of e7b9d58e. The
+    orchestrator ordered a delete with a lease at e7b9d58e and the same steps again.
 
     The case of a new conflict covers no other failure of this step. One such failure prints a line that starts with
     `updating branch failed: `, and the task goes to `failed`. That line can also hold `stopped on conflicts:`.
@@ -179,16 +179,16 @@ stay. The task branch on `origin` can still exist. A person decides the next ste
 not a stop. A hand-over goes from one check of step 17 to the next check, or from step 18 to step 19. Each step names
 only what differs.
 
-15. Keep the worktree and the local task branch until the work lands. For an agent, steps 18 to 20 are the only remove
-    of its task worktree, at the end of its work. After `tasker finish`, run `tasker show <issue>` in the clone of the
-    driver. If `tasker show` prints the line `state: finished`, do steps 16 to 21 in this order. Run them in the clone
-    of the driver, not in the worktree. As a result, the driver deletes nothing before step 17 passes. If the task is in
-    `cleanup_failed`, `tasker finish` stopped before its cleanup ended. In that case, do not do steps 16 to 21. If
+15. Keep the worktree and the local task branch until the work lands. For a task subagent, steps 18 to 20 are the only
+    remove of its task worktree, at the end of its work. After `tasker finish`, run `tasker show <issue>` in the clone
+    of the driver. If `tasker show` prints the line `state: finished`, do steps 16 to 21 in this order. Run them in the
+    clone of the driver, not in the worktree. As a result, the driver deletes nothing before step 17 passes. If the task
+    is in `cleanup_failed`, `tasker finish` stopped before its cleanup ended. In that case, do not do steps 16 to 21. If
     `tasker show` fails or prints another state, do not do steps 16 to 21.
 16. Run `git fetch origin`. The fetch gets the base branch with the landed work. If the fetch fails, stop.
 17. Make sure that the base branch contains the work of the task branch. First, read two hashes in your clone:
     `git rev-parse --verify <task branch>` gives `<tip>`, and `git rev-parse --verify origin/<base branch>` gives
-    `<base>`. For an agent, `<tip>` is the tip of the local task branch after its last update rule (see
+    `<base>`. For a task subagent, `<tip>` is the tip of the local task branch after its last update rule (see
     [the update rule](limits.md#the-update-rule) of `docs/dev/limits.md`). `tasker merge` lands the tip of tasker as a
     fast-forward, so the ancestor check then passes. If no update ran after step 11, `<tip>` is the pushed tip, and the
     take check applies as it is written. If a read fails, stop. Then run [the ancestor check](#the-ancestor-check). If
@@ -203,18 +203,18 @@ only what differs.
 19. If `git worktree remove` fails, stop. Report the exact error of git and the output of
     `git -C <path> status --porcelain --ignored`. For example, git prints
     `fatal: '<path>' contains modified or untracked files, use --force to delete it` when the worktree holds changed
-    files or files that git does not track. The report helps to find the cause of such a failure. In one case, an agent
-    used `--force` and blamed `node_modules/`. But git removes a worktree that holds only ignored files without
+    files or files that git does not track. The report helps to find the cause of such a failure. In one case, a task
+    subagent used `--force` and blamed `node_modules/`. But git removes a worktree that holds only ignored files without
     `--force`, so the cause is unknown.
-20. Delete the local task branch: `git branch -D <task branch>`. Step 17 already makes sure that the base branch
-    contains the work, a commit with the same patch for each commit, or the landed result of tasker after it took the
-    pushed tip. If the command fails, stop. The worktree is gone. The local task branch stays.
+20. Delete the local task branch: `git branch -D <task branch>`. Step 17 checks that the base branch contains the work.
+    It also accepts a matching patch for every commit, or tasker's landed result after it took the pushed tip. If the
+    command fails, stop. The worktree is gone. The local task branch stays.
 21. Make sure that `origin` has no task branch: do step 10 of "Run one ticket" in
-    [docs/dev/run-one-ticket.md](run-one-ticket.md#run-one-ticket). If the driver is not the agent of a ticket, it runs
-    those commands in the clone of the driver. Where that step says to report to the orchestrator, a person decides the
-    next step instead. Step 10 of this page describes this rule. The driver does not do step 11 of "Run one ticket". In
-    this step, the worktree and the local task branch are gone. The failure cases of step 21 are the cases of step 10 of
-    "Run one ticket". Step 10 of "Run one ticket" names what stays.
+    [docs/dev/run-one-ticket.md](run-one-ticket.md#run-one-ticket). If the driver is not the task subagent of a ticket,
+    it runs those commands in the clone of the driver. Where that step says to report to the orchestrator, a person
+    decides the next step instead. Step 10 of this page describes this rule. The driver does not do step 11 of "Run one
+    ticket". In this step, the worktree and the local task branch are gone. The failure cases of step 21 are the cases
+    of step 10 of "Run one ticket". Step 10 of "Run one ticket" names what stays.
 
 ### The ancestor check
 
@@ -258,7 +258,7 @@ does the task branch on `origin` until the pushed-branch rule of
 for each rewritten commit. In issue #96, on 2026-10-15, the pushed tip was 198ba3a, and the work landed as 574877a.
 
 In this check, the pushed tip is `<tip>`. First, read the tip of the task branch on `origin` one time:
-`git rev-parse --verify origin/<task branch>`. If the agent holds a `<deleted>` of the pushed-branch rule of
+`git rev-parse --verify origin/<task branch>`. If the task subagent holds a `<deleted>` of the pushed-branch rule of
 [the broken-commit steps](verify-failures.md#the-broken-commit-steps), use it as this hash, and do not run the read. The
 delete removed `origin/<task branch>` from the local clone. This check calls this hash `<origin hash>`. If
 `<origin hash>` differs from `<tip>`, `origin` holds or held a commit other than the pushed tip.

@@ -1,13 +1,14 @@
 # Orchestrator
 
 [The orchestration pages](orchestrator.md) give the rules for an orchestrator. The orchestrator is the assistant session
-that picks tickets, starts one agent for each ticket, moves the cards, sets the landing order and writes memory.
+that picks tickets and starts one ticket subagent for each ticket. It moves the cards, sets the landing order and writes
+memory.
 
-A ticket is an issue on the project board. A ticket subagent is an assistant session that the orchestrator starts for
-one ticket. The ticket subagent runs the steps of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that
-ticket. The user is the person who works with the sessions, as [sessions.md](sessions.md) says. The operator starts the
-orchestrator, as [Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not
-type in the session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
+A ticket is an issue on the project board. For each ticket, the orchestrator starts a ticket subagent. The ticket
+subagent runs the steps of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the
+person who works with the sessions, as [sessions.md](sessions.md) says. The operator starts the orchestrator, as
+[Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not type in the
+session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
 [A blocked session](dev/operator-start.md#a-blocked-session) says. The orchestrator reads its own name and its slug from
 the first line of the output of `ListAgents`, as [sessions.md](sessions.md) says. A task is the record that tasker keeps
 for one ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
@@ -33,10 +34,10 @@ broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the mes
 each other request between orchestrators that needs a decision of the user.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
-not agents and they do not run the steps on [the orchestration pages](orchestrator.md).
+task subagents, not ticket subagents, and they do not run the steps on [the orchestration pages](orchestrator.md).
 
-The orchestrator and its agents run tasker from the local clone of the orchestrator. For one ticket, the agent of that
-ticket is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names.
+The orchestrator and its ticket subagents run tasker from the local clone of the orchestrator. For one ticket, its
+ticket subagent is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names.
 
 Every `tasker` command on [the orchestration pages](orchestrator.md) is the installed `tasker`: the `tasker` command on
 the PATH from a global install. The installed `tasker` is a build of this repo, from a version that can be older than
@@ -103,7 +104,8 @@ The rules:
   does not cover this item.
 - After the answer, the receiving orchestrator does the requested change only if the user accepts it. Then it tells the
   sending orchestrator the decision of the user with `SendMessage`. The sending orchestrator does its own step that
-  matches the request, if it has one, only after an accept. An example of such a step is a message to its own agent.
+  matches the request, if it has one, only after an accept. An example of such a step is a message to its own ticket
+  subagent.
 - A message of this rule fails when the send fails or when no session of the target name runs. Then
   [the failure rule](dev/limits.md#the-failure-rule) applies to the orchestrator that sends it.
 - When the sending orchestrator sends a request that needs a decision of the user, it also sends

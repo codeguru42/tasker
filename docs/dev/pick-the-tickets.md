@@ -64,13 +64,13 @@ The orchestrator does all the steps of this section.
   issue can join a milestone while a run is in progress. An open issue can also lose its last open blocker while no
   ticket lands. In one milestone, a new issue stayed in Todo for hours, because the orchestrator read the board only at
   the start. On 2026-10-25, #495 and three new issues had no open blocker, and two slots of orchestrator-m22 stayed free
-  for about an hour. The bullet "When the final report of the agent of a ticket says that the ticket landed" of
-  [Land the work](land-the-work.md#land-the-work) gives the place of this read among the landing steps. The orchestrator
-  also reads the board when a message of another session names one of these changes: a new issue in the milestone of the
-  orchestrator, an added or a removed blocked-by link of an open issue of that milestone, or a move of an issue into
-  that milestone. This covers a message of each session on purpose. Today the follow-up planner sends such messages, as
-  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running orchestrator
-  also reads the board with its board watch job, as
+  for about an hour. The bullet in [Land the work](land-the-work.md#land-the-work) gives the place of this read among
+  the landing steps. Its title is "When the final report of the task subagent of a ticket says that the ticket landed".
+  The orchestrator also reads the board when a message of another session names one of these changes: a new issue in the
+  milestone of the orchestrator, an added or a removed blocked-by link of an open issue of that milestone, or a move of
+  an issue into that milestone. This covers a message of each session on purpose. Today the follow-up planner sends such
+  messages, as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running
+  orchestrator also reads the board with its board watch job, as
   [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says. Each read of the board that does
   not come at a landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts
   "at its next read of the board" or "each time it reads the board". So the priority rule applies to each start after

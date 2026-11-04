@@ -416,7 +416,7 @@ The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-st
 ```
 
 The help of `acli jira auth switch` gives `--site` as its flag for the site. Nobody measured the output with no login,
-because the agent must not log out.
+because the task subagent must not log out.
 
 ## The measure of an ADF description
 
@@ -431,14 +431,14 @@ document is the value of `fields.description`. The read gave back the nodes, mar
 
 ## The measure of an issue read
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-25. The agent of #543
-made three issues in the project `TEST`:
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-25. The task subagent
+of #543 made three issues in the project `TEST`:
 
 - `TEST-2`, with the labels `base:main` and `tasker-measure` and the component `tasker-measure`.
 - `TEST-3`, with no description.
 - `TEST-4`, in the status `Done`.
 
-`acli` has no command for a component. The agent of #543 made `TEST-2` with
+`acli` has no command for a component. The task subagent of #543 made `TEST-2` with
 `acli jira workitem create --from-json <file>`. The field `additionalAttributes.components` of the file held
 `[{"name": "tasker-measure"}]`. The project `TEST` had no component before this command. Jira made the component
 `tasker-measure` (id 10000) with the issue.
@@ -456,8 +456,8 @@ issue. It gave:
 
 ## The measure of the blockers
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The agent of #545
-made these links for the issue `TEST-9` of the project `TEST`:
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The task subagent
+of #545 made these links for the issue `TEST-9` of the project `TEST`:
 
 - `acli jira workitem link create --out TEST-9 --in TEST-6 --type Blocks --yes`
 - `acli jira workitem link create --out TEST-9 --in TEST-4 --type Blocks --yes`
@@ -513,8 +513,8 @@ has no `created`. The flat body of comment 3 lost its bullet list. For these rea
 
 ## The measure of the writes
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The agent of #546
-made the issue `TEST-10` of the project `TEST` with
+The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The task subagent
+of #546 made the issue `TEST-10` of the project `TEST` with
 `acli jira workitem create --project TEST --type Task --summary "tasker #546 assign and transition measure" --json`. Its
 first status was `Backlog`. Stderr was empty in each case, and the exit code was 0 in each case.
 
@@ -542,8 +542,8 @@ More facts:
 - `--status "in progress"` from `In Progress` also exited with 0. Its stdout repeated the lower-case text.
 - `--status "Selected for Development"` from `In Progress` passed.
 
-The limit: the refused transitions used only names that the workflow of `TEST` does not offer. The agent found no status
-of that workflow that the workflow refuses.
+The limit: the refused transitions used only names that the workflow of `TEST` does not offer. The task subagent found
+no status of that workflow that the workflow refuses.
 
 ## The measure of a custom field
 
@@ -561,7 +561,7 @@ The user measured these facts on a real Jira site on 2026-11-02, in a comment on
   id to its name. The user read it on issues of three projects. The comment says that
   `GET /rest/api/3/issue/<key>?expand=names` gives the same data.
 
-The agent of #476 measured `acli` version `1.3.39-stable` on the test site on 2026-11-03. It ran
+The task subagent of #476 measured `acli` version `1.3.39-stable` on the test site on 2026-11-03. It ran
 `acli jira field create --name "Release Branch" --type "com.atlassian.jira.plugin.system.customfieldtypes:textfield"`.
 The command made the field `customfield_10044`. The field did not show on `TEST-1`, `TEST-2` or `TEST-9`, also with
 `--fields '*all'`. `acli jira workitem edit` has no way to set a custom field.
