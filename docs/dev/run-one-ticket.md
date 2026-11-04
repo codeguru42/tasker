@@ -75,14 +75,17 @@ The task subagent of the ticket runs steps 1 to 11. Each step gives the state of
    task goes to `finished`, and the issue closes. If a run failed, step 12 of the CI wait runs `tasker finish`. If the
    CI wait stops, do not run `tasker finish`, and do not do steps 10 and 11.
 10. After `tasker finish`, make sure that `origin` has no task branch of the ticket. Do not rely on `tasker finish` for
-    this. Do this step after each `tasker finish`. At the end of this step, whatever its result, remove the task
-    worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says. Each "then do step 11" of this step comes
-    after that remove. The remove changes no task, and the task keeps its state, for example `finished`. In each case of
-    this step that says "delete nothing" or "delete nothing more", report to the orchestrator, and then do step 11. In
-    such a case, unless the case says otherwise, the task branch on `origin` can still exist, and the task keeps its
-    state. If the task subagent followed [docs/dev/rebase-conflicts.md](rebase-conflicts.md) and did not do its steps 15
-    to 20 yet, it does those steps first. If a step of that page stops before step 21, do not do the rest of this step.
-    The shared failure paragraph before step 15 of that page names what stays behind, with the difference that the step
+    this. Do this step after each `tasker finish`. At the end of this step, whatever its result, run
+    `git fetch --prune tasker` in the local clone of the orchestrator. The fetch deletes each ref `tasker/<branch>`
+    whose branch is no longer in the tasker clone. This also deletes the refs of other tasks. If the fetch fails, name
+    the error in the report to the orchestrator. Then, also after a failed fetch, remove the task worktree as
+    [the own-worktree rule](limits.md#the-own-worktree-rule) says. Each "then do step 11" of this step comes after that
+    remove. The remove changes no task, and the task keeps its state, for example `finished`. In each case of this step
+    that says "delete nothing" or "delete nothing more", report to the orchestrator, and then do step 11. In such a
+    case, unless the case says otherwise, the task branch on `origin` can still exist, and the task keeps its state. If
+    the task subagent followed [docs/dev/rebase-conflicts.md](rebase-conflicts.md) and did not do its steps 15 to 20
+    yet, it does those steps first. If a step of that page stops before step 21, do not do the rest of this step. The
+    shared failure paragraph before step 15 of that page names what stays behind, with the difference that the step
     names, and the task keeps its state. Report to the orchestrator. Then do step 11. After steps 15 to 20, step 21 of
     that page sends the task subagent back to this step. The task subagent then does the rest of this step and does not
     do steps 15 to 20 again. Run each command of this step in the local clone of the orchestrator. Run
@@ -214,8 +217,19 @@ these steps:
 2. If the line has the form `refs/heads/<parent branch>`, the task is stacked. Right before the command, run
    `git fetch tasker`. Then use `tasker/<parent branch>` in place of `origin/<base branch>`. If the step already ran
    `git fetch tasker` or `git fetch --multiple tasker origin` right before the command, it needs no second fetch.
-3. If a step uses `tasker/<parent branch>` in more than one command, read its hash one time with
-   `git rev-parse --verify`, as [the shared-clone rule](limits.md#the-shared-clone-rule) says.
+3. In step 2, right after the fetch, run `git rev-parse --verify tasker/<parent branch>`. If the read succeeds, each
+   command of the step uses the printed hash in place of `tasker/<parent branch>`. The reason: the prune of step 10 of
+   ["Run one ticket"](#run-one-ticket) in another session can delete the ref between two commands. If the read fails, do
+   step 4.
+4. Run `tasker show <full key of the parent>`. If the `state:` line of the parent is `landed`, `finishing`,
+   `cleanup_failed` or `finished`, the parent [has landed](workspaces.md#stacked-task). If the parent has landed and the
+   `base:` line of the parent has a plain name, run `git fetch origin`, and then
+   `git rev-parse --verify origin/<base branch of the parent>`. `<base branch of the parent>` is the plain name of the
+   `base:` line of the parent. Each command of the step uses this printed hash in place of `tasker/<parent branch>`.
+
+   In each other case, and when a command of this step fails, the step that uses the base fails. A task subagent then
+   [stops](limits.md#the-answer-wait-rule) and reports the error, and the orchestrator follows
+   [the failure rule](limits.md#the-failure-rule).
 
 A `tasker update-branch` with no conflict moves a stacked task onto the base that the walk ends on after the parent
 lands.
