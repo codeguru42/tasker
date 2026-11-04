@@ -66,11 +66,14 @@ describe("skills/tasker/SKILL.md", () => {
     const items = (end === -1 ? rest : rest.slice(0, end)).split(/\n(?=- )/).map((item) => item.replace(/\s+/g, " "));
     const claude = items.find((item) => item.startsWith("- Claude Code:")) ?? "";
     const codex = items.find((item) => item.startsWith("- Codex:")) ?? "";
+    const pi = items.find((item) => item.startsWith("- pi:")) ?? "";
     expect(claude).toContain("`/tasker <command line>`");
     expect(claude).toContain("`$HOME/.claude/skills`");
     expect(claude).toContain("fills in the placeholder");
     expect(codex).toContain("`$tasker <command line>`");
     expect(codex).toContain("`$HOME/.agents/skills`");
+    expect(pi).toContain("/skill:tasker <command line>");
+    expect(pi).toContain("$HOME/.agents/skills");
   });
 
   it("reports a command in --help that the skill does not list", async () => {
