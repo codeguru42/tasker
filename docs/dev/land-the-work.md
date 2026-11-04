@@ -210,6 +210,22 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   the error. The memory file then stays as it was, and the orchestrator continues with the next step of the order. The
   orchestrator does these steps for each ticket, also for a ticket of the milestone "Docs". The user decided the memory
   step on 2026-10-17 and the order on 2026-10-18.
+- A live test is a test of the work of a ticket on a real outside system or with an account of the user. An example is a
+  real Jira site of the user. No session runs a live test.
+
+  A ticket that needs a live test does not wait for it. The orchestrator judges whether a ticket needs a live test, and
+  this judgment is open on purpose. If the task subagent asks whether the ticket waits, the orchestrator tells it to go
+  on with the steps of ["Run one ticket"](run-one-ticket.md#run-one-ticket). A word of the user can still put the ticket
+  on hold, as [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) says.
+
+  The orchestrator asks the user nothing about the live test before the landing. If the user asks whether the ticket
+  waits for its live test, the orchestrator recommends the landing. When the orchestrator tells the user that the ticket
+  landed, it also names the live test. The user runs the live test after the merge and the next install of tasker. If
+  the test fails, the user files a follow-up issue or asks a planner for one.
+
+  The user decided this rule on 2026-11-03, for #476, a ticket of the Jira tracker that passed all its checks: "for
+  issues like this, I will test after merging and installing. Then I will file follow up a ticket if it doesn't work as
+  expected."
 
 ### The overlap rule
 
