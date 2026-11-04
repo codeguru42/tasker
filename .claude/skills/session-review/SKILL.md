@@ -59,22 +59,24 @@ The skill runs in a loop with the user before the clear. In the loop, the sessio
    - (e) A list entry that an earlier round of the same session listed is not a new finding. A round that lists only such list entries finds nothing new, so it can end the rounds. Open work with no answer does not keep the rounds running.
 
    On 2026-10-30, a session asked "Do you want me to find out why #537 closed?". Then it ran two rounds of `/session-review`, and neither round named the question. On 2026-10-31, the user asked: "Does session review include a rule for checking for unanswered open questions or unfinished work?"
-8. Report a short summary: the memory entries that the session made, changed or removed, and each proposal with its target. Add the open work of step 7 to the summary. Give the open work in one numbered list, in the form of [The form of a reply](../../../docs/dev/working-with-the-user.md#the-form-of-a-reply). If the session finds no open work, say so. Name each drop of step 7 (c).
+8. Report a short summary: the memory notes that the session deleted or trimmed, and each proposal with its target. Add the open work of step 7 to the summary. Give the open work in one numbered list, in the form of [The form of a reply](../../../docs/dev/working-with-the-user.md#the-form-of-a-reply). If the session finds no open work, say so. Name each drop of step 7 (c).
+   Also give each candidate that step 3 sends to the user, and each note of step 5 (f). If the session works through the operator, send them to the operator in one item. Step 7 (d) gives this rule for an open question.
 
 ## Rules
 
-- Never edit a tracked doc, for example `AGENTS.md`, `CLAUDE.md` or a file under `docs/`. The reason: a tracked doc is shared with each contributor as soon as a commit holds it. A memory write is personal.
+- Never edit a tracked doc, for example `AGENTS.md`, `CLAUDE.md` or a file under `docs/`. The reason: a tracked doc is shared with each contributor as soon as a commit holds it.
+- Write no memory, as step 3 says. The skill only deletes a note or the lines of a note, as steps 4 and 5 say.
 - This skill names no target for a proposal. The docs of the repo give the target for each role, as step 6 says. The reason: the docs of the repo are the one home of that rule, and the rule changes.
 
 ## Common mistakes
 
 | Mistake | What to do instead |
 | --- | --- |
-| The session skips the staleness check of the existing entries. | Do each check of step 2. |
+| The session skips the staleness check of the existing notes. | Do each check of step 2. |
 | The session skips the doc check of the existing notes. | Do the doc check of step 2, and step 5 for each kept note. |
 | The session edits a tracked doc. | Make a proposal, as step 6 says. |
 | The session saves the state of a task in progress as memory. | Follow the list of what not to save, as step 3 says. |
-| The session writes the status of an issue in a memory note, for example "#537 landed". | Name the issue number only as a delete condition or as a source, as step 3 says. Read the status from GitHub. |
+| The session writes a candidate to memory. | Write no memory. Give the candidate to step 6 or to the summary of step 8, as step 3 says. |
 | The session tries to start the skill from a hook. | Run the skill only on a request, as "When to use" says. |
 | The session keeps a proposal only in its reply, but the docs give a target for its role. | Send the proposal to that target, as step 6 says. |
 | The session ends the review, but a question or an offer of the session still has no answer. | List the open work, as steps 7 and 8 say. |
