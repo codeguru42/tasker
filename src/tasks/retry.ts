@@ -156,7 +156,7 @@ async function retryLocked(store: TaskStore, request: RetryRequest): Promise<Ret
       },
     };
   }
-  return restorePendingReopen(store, request, task, async (restored, head) => {
+  const retryAfterRecovery = async (restored: boolean, head?: string): Promise<RetryResult> => {
     if (restored) writes.clearReopenStartHead = true;
     try {
       transitionWithRetry(store, taskId, chosen.target, { origin, resumeExecute }, writes);
@@ -173,7 +173,10 @@ async function retryLocked(store: TaskStore, request: RetryRequest): Promise<Ret
       );
     }
     return result;
-  });
+  };
+  return chosen.next === "reopen-hint"
+    ? restorePendingReopen(store, request, task, retryAfterRecovery)
+    : retryAfterRecovery(false);
 }
 
 // The verify run that the last move into failed recorded, or undefined.
