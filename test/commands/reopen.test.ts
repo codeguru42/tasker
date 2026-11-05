@@ -90,7 +90,6 @@ describe("reopen", () => {
           file: `invalid-${origin}-${invalid.replaceAll(" ", "-")}.txt`,
         });
         const beforeTask = latestTaskOf(fixture.started.dataRoot, KEY);
-        const beforeEvents = eventsOf(fixture.started.dataRoot, KEY);
         const beforeMarker = readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id);
         const beforeBranchHead = await gitOutput(
           { gitDir: fixture.started.clone },
@@ -109,14 +108,12 @@ describe("reopen", () => {
             ? /cannot read the plan file .* of revision v1/
             : "the plan session of codeguru42/tasker#5 runs on gpt-5, and claude-code refuses it: is not a claude-code model: gpt-5";
 
-        const result = await runReopen();
-
-        expect(result.code).toBe(1);
-        expect(result.out).toBe("");
-        if (typeof message === "string") expect(result.err).toBe(`${message}\n`);
-        else expect(result.err).toMatch(message);
+        await expectCommandRefused(
+          fixture.started,
+          () => runReopen(),
+          typeof message === "string" ? `${message}\n` : message,
+        );
         expect(latestTaskOf(fixture.started.dataRoot, KEY)).toEqual(beforeTask);
-        expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual(beforeEvents);
         expect(latestTaskOf(fixture.started.dataRoot, KEY).reopenStartHead).toBe(beforeTask.reopenStartHead);
         expect(readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id)).toEqual(beforeMarker);
         expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toBeUndefined();
