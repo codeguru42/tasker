@@ -171,12 +171,15 @@ remote cleanup, if `issueTracker.updateOnFinish` is `true`, the command marks th
 `marked <issue key> done on the tracker`. At the end, the command prints `finished <issue key>`.
 
 If the remote branch moved from the stored published revision, the command stops before the tracker update. It moves the
-task to `cleanup_failed`, prints `finishing failed: <reason>` on stderr, and exits with code 1. The local worktree and
-branch can already be gone. Inspect the branch on `origin`. If you resolve or remove it, run `tasker finish` again.
+task to `cleanup_failed`, exits with code 1, and prints this form on stderr:
+`finishing failed: the task branch <branch> moved on origin: tasker published <published>, origin has <actual>; local cleanup already occurred; decide what to do with the extra commits, then run tasker finish <issue key> again`.
+The local worktree and branch can already be gone. Inspect the branch on `origin`. If you resolve or remove it, run
+`tasker finish` again.
 
 If another remote deletion error occurs, the command records a `remote_cleanup_warning` event, prints a warning on
-stderr, and continues to the tracker update and completion. This includes a failed read of the remote branch. The task
-can finish while its remote branch remains on `origin`.
+stderr, and continues to the tracker update and completion. The warning is
+`warning: cannot delete the task branch <branch> on origin: <reason>`. This includes a failed read of the remote branch.
+The task can finish while its remote branch remains on `origin`.
 
 If the write to the tracker fails, the exit code stays 0 and the task still goes to `finished`. The command prints the
 warning `warning: cannot mark <issue key> done on the tracker: <error>` on stderr. The error can span two lines. To
@@ -188,8 +191,10 @@ to this command.
 
 The task goes to `cleanup_failed` when local cleanup fails after the move to `finishing`. The error is
 `finishing failed: <reason>`. The command prints the same error on stderr and stops with exit code 1. For example, git
-refuses to remove a worktree with uncommitted changes. A failure to record completion after external cleanup also moves
-the task to `cleanup_failed`; its error names the completed cleanup and the failed completion record.
+refuses to remove a worktree with uncommitted changes. If the completion record fails after a remote deletion warning,
+the error names the successful local cleanup, the failed remote deletion and reason, and the failed completion record.
+It does not say that external cleanup succeeded. After successful remote cleanup, the error names that outcome and the
+failed completion record.
 
 To recover from an interrupted finish, run `tasker resume`. Resume returns the task to `landed` and runs finish again.
 To recover from a cleanup failure, fix the cause and run `tasker finish` again. A second run skips local or remote
