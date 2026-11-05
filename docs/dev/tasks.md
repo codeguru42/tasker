@@ -8,10 +8,9 @@ the commands of each phase.
 
 The commands abort, plan, refine, approve, unapprove, execute, accept, resume, approve-credits, merge, push,
 mark-landed, update-branch and finish share one rule. Each of these commands makes all its checks before its first
-write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and
-[Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the
-plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in
-[The locks](#the-locks).
+write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) gives an exception
+for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that
+changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
 
 ## Start
 
@@ -742,26 +741,14 @@ the remote already has the revision, tasker records it without another push.
 
 ## Mark landed
 
-`tasker mark-landed` records that the work of a task in `accepted`, `pushed` or `in_peer_review` already landed on the
-base branch outside tasker. The task goes to `landed`.
+`tasker mark-landed` records the operator's declaration that work in `accepted`, `pushed` or `in_peer_review` landed.
+The task moves to `landed`.
 
-Its checks cover the task, the state, the landing guard, the branch and the stored base. Then it takes the repo lock and
-fetches `origin`. It reads the tip of the task branch and the tip of the base with the operation of merge. If the base
-does not contain the work, the command stops with an error. The fetch can still move the refs of `origin` in the clone,
-also when the command stops with this error. The last write is one transaction that appends one `marked_landed` event
-with the data `{ revision, baseTip, from, to }` and moves the task to `landed`. The `marked_landed` event takes the
-place of the `transition` event for this move.
+The command checks the task and its state under the task lock. It makes no Git or forge query and takes no repo lock.
+One transaction appends one `marked_landed` event with exactly `{ from, to: "landed" }` and moves the task to `landed`.
+This event takes the place of the generic `transition` event for the move.
 
-These reasons explain its rules:
-
-- The landing guard runs right after the check of the state, for the same reason as in [Merge](#merge). A stacked task
-  with no own commit has a task branch that equals its base, so without the guard the command would record `landed` for
-  work that did not land.
-- The check is read-only toward `origin`. The work landed outside tasker, so tasker only records it.
-- The check reads the tip of the task ref in the clone and not the worktree, for the same reason as the on-base check of
-  [Merge](#merge).
-- The fetch holds the repo lock, because the fetch changes the refs of the clone.
-  [The locks table](data-root.md#locks-table) requires it.
+The command records the operator's declaration as given. It does not inspect branch, base or parent metadata.
 
 ## Update branch
 
