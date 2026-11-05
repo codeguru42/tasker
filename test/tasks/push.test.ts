@@ -48,7 +48,7 @@ describe("pushTask", () => {
       callPush(accepted, store, recorder.env),
     );
 
-    expect(result).toMatchObject({ issueKey: accepted.key, branch: accepted.task.branch, revision: accepted.revision });
+    expect(result).toMatchObject({ branch: accepted.task.branch, revision: accepted.revision });
     expect(io.out.join("")).toBe("");
     expect(io.err.join("")).toBe("");
     expect(await accepted.origin.branchHead(accepted.task.branch!)).toBe(accepted.revision);
