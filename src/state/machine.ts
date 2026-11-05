@@ -412,10 +412,10 @@ export function transitionWithLanding(
   return store.endRun(id, "landed", transitionCheck("landed", "landed", landing));
 }
 
-// Appends the marked_landed event { revision, baseTip, from, to } and moves the task to landed, in one transaction.
+// Appends the marked_landed event { from, to } and moves the task to landed, in one transaction.
 // An illegal edge writes nothing.
-export function transitionWithMarkedLanding(store: TaskStore, id: number, revision: string, baseTip: string): Task {
-  return store.endRun(id, "landed", transitionCheck("marked_landed", "landed", { revision, baseTip }));
+export function transitionWithMarkedLanding(store: TaskStore, id: number): Task {
+  return store.endRun(id, "landed", transitionCheck("marked_landed", "landed"));
 }
 
 // Appends the finished event { worktree, branch, from, to }, enters finished, and clears the run marker in one transaction.

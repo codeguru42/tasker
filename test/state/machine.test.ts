@@ -868,7 +868,7 @@ describe("task transitions", () => {
   });
 
   describe("transitionWithMarkedLanding", () => {
-    const mark = (id: number) => transitionWithMarkedLanding(store, id, "head-sha", "base-sha");
+    const mark = (id: number) => transitionWithMarkedLanding(store, id);
 
     it("writes one marked_landed event in place of the transition event and deletes the run marker", () => {
       const task = store.createTask(newTask("workspace_ready"));

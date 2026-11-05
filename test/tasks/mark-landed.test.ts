@@ -13,13 +13,10 @@ import {
 } from "../helpers/task-fixtures.js";
 
 // Calls markLandedTask for the task of the fixture with a store.
-const callMarkLanded = (fixture: AcceptedTask, store: TaskStore, waitMs = 300) =>
+const callMarkLanded = (fixture: AcceptedTask, store: TaskStore) =>
   markLandedTask(store, {
-    config: fixture.config,
     ref: taskRefOf(fixture),
     taskId: fixture.task.id,
-    env: process.env,
-    repoLockWaitMs: waitMs,
   });
 
 describe("markLandedTask", () => {
