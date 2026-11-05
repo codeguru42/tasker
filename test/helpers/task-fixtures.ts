@@ -42,6 +42,7 @@ import {
   GIT_TEST_IDENTITY,
   type GitOrigin,
   commitInWorktree,
+  copyCloneBranchToOrigin,
   gitOutput,
   landBranchOnOriginMain,
   localBranches,
@@ -790,6 +791,10 @@ export interface LandedTask extends AcceptedTask {
   branch: string;
 }
 
+export interface PublishedLandedTask extends LandedTask {
+  publishedRevision: string;
+}
+
 // Runs useAcceptedTask(options), then tasker merge for the task, and gives the task in landed. It throws when the
 // merge fails. Call it inside a test.
 export async function useLandedTask(options?: Parameters<typeof useWorkReviewTask>[0]): Promise<LandedTask> {
@@ -799,6 +804,27 @@ export async function useLandedTask(options?: Parameters<typeof useWorkReviewTas
   const task = latestTaskOf(accepted.dataRoot, accepted.key);
   if (task.worktreePath === null || task.branch === null) throw new Error("the landed task has no worktree or branch");
   return { ...accepted, task, worktree: task.worktreePath, branch: task.branch };
+}
+
+// Runs useLandedTask(options), publishes its task branch to origin, and stores that revision on the task.
+export async function usePublishedLandedTask(
+  options?: Parameters<typeof useWorkReviewTask>[0],
+): Promise<PublishedLandedTask> {
+  const landed = await useLandedTask(options);
+  await copyCloneBranchToOrigin({
+    origin: landed.origin.path,
+    clone: landed.clone,
+    branch: landed.branch,
+    env: landed.env,
+  });
+  const publishedRevision = await gitOutput(
+    { gitDir: landed.clone },
+    landed.env,
+    "rev-parse",
+    `refs/heads/${landed.branch}`,
+  );
+  const task = withDataRootStore(landed.dataRoot, (store) => store.updateTask(landed.task.id, { publishedRevision }));
+  return { ...landed, task, publishedRevision };
 }
 
 // Makes the head of the task branch the head of main on origin, as a push by someone else would.

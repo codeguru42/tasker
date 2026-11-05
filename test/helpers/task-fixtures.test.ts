@@ -55,6 +55,7 @@ import {
   useAssistantRunFixture,
   useExecuteFixture,
   useLandedTask,
+  usePublishedLandedTask,
   useRefineFixture,
   useReviewedRefineFixture,
   usePlanFixture,
@@ -719,6 +720,17 @@ describe("useLandedTask", () => {
     expect(latestTaskOf(landed.dataRoot, landed.key).state).toBe("landed");
     expect(await taskWorkspaceState(landed)).toEqual({ state: "landed", worktree: true, listed: true, branch: true });
     expect(await landed.origin.branchHead("main")).toBe(landed.revision);
+  });
+});
+
+describe("usePublishedLandedTask", () => {
+  it("publishes the task branch and stores its revision", async () => {
+    const landed = await usePublishedLandedTask();
+
+    expect(landed.task.state).toBe("landed");
+    expect(landed.task.publishedRevision).toBe(landed.publishedRevision);
+    expect(latestTaskOf(landed.dataRoot, landed.key).publishedRevision).toBe(landed.publishedRevision);
+    expect(await landed.origin.branchHead(landed.branch)).toBe(landed.publishedRevision);
   });
 });
 

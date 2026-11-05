@@ -1,4 +1,4 @@
-import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { finish } from "../../src/commands/finish.js";
@@ -7,9 +7,11 @@ import { canonicalPath } from "../../src/real-path.js";
 import { taskLogsDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
+import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { trackerWriteCalls } from "../helpers/fake-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
+import { useFakeClaudeOnPath } from "../helpers/fake-claude.js";
 import {
   databasePathOf,
   dayAt,
@@ -30,6 +32,7 @@ import {
   trackerRepo,
   taskWorkspaceState,
   useAcceptedTask,
+  usePublishedLandedTask,
   useLandedTask,
   useStartFixture,
   fixtureTrackerAnswer,
@@ -112,6 +115,158 @@ describe("finish", () => {
     expect(lockNames(dataRoot)).toEqual([]);
     expect(existsSync(bootstrapLogPath(taskLogsDir(dataRoot, latestTaskOf(dataRoot, KEY))))).toBe(true);
     expect(quotaEventsOf(dataRoot)).toEqual([seeded]);
+  });
+
+  it("deletes the published branch after local cleanup", async () => {
+    const landed = await usePublishedLandedTask();
+    const claude = useFakeClaudeOnPath({});
+    const hookDir = join(landed.origin.path, "hooks");
+    mkdirSync(hookDir, { recursive: true });
+    const marker = join(landed.origin.dir, "cleanup-order-seen");
+    writeFileSync(
+      join(hookDir, "pre-receive"),
+      [
+        "#!/bin/sh",
+        `test ! -e ${JSON.stringify(landed.worktree)} || exit 1`,
+        `git --git-dir ${JSON.stringify(landed.clone)} show-ref --verify --quiet refs/heads/${landed.branch} && exit 1`,
+        `touch ${JSON.stringify(marker)}`,
+        "",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+    const main = await landed.origin.branchHead("main");
+
+    const result = await runFinish();
+
+    expect(result).toEqual({
+      code: 0,
+      out:
+        `removed the worktree ${canonicalPath(landed.worktree)}\ndeleted the branch ${landed.branch}\n` +
+        `finished ${KEY}\n`,
+      err: "",
+    });
+    expect(existsSync(marker)).toBe(true);
+    expect(await landed.origin.branchHead(landed.branch)).toBeUndefined();
+    expect(await landed.origin.branchHead("main")).toBe(main);
+    expect(await taskWorkspaceState(landed)).toEqual({
+      state: "finished",
+      worktree: false,
+      listed: false,
+      branch: false,
+    });
+    expect(trackerWriteCalls(landed.gh)).toEqual([]);
+    expect(quotaEventsOf(landed.dataRoot)).toEqual([]);
+    expect(claude.calls()).toEqual([]);
+  });
+
+  it("keeps the remote branch when the task has no published revision", async () => {
+    const landed = await usePublishedLandedTask();
+    withDataRootStore(landed.dataRoot, (store) => store.updateTask(landed.task.id, { publishedRevision: null }));
+
+    const result = await runFinish();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`finished ${KEY}\n`);
+    expect(await landed.origin.branchHead(landed.branch)).toBe(landed.publishedRevision);
+    expect((await taskWorkspaceState(landed)).state).toBe("finished");
+    expect(trackerWriteCalls(landed.gh)).toEqual([]);
+  });
+
+  it("accepts a published branch that is already absent on origin", async () => {
+    const landed = await usePublishedLandedTask();
+    await runGit(["update-ref", "-d", `refs/heads/${landed.branch}`], {
+      gitDir: landed.origin.path,
+      env: landed.env,
+    });
+
+    const result = await runFinish();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`finished ${KEY}\n`);
+    expect(await landed.origin.branchHead(landed.branch)).toBeUndefined();
+    expect((await taskWorkspaceState(landed)).state).toBe("finished");
+  });
+
+  it("blocks completion when the published branch moved", async () => {
+    const landed = await usePublishedLandedTask({
+      repo: trackerRepo({ updateOnFinish: true, doneLabel: "done" }),
+      ghAnswers: [fixtureTrackerAnswer("doneLabel")],
+    });
+    const other = await landed.origin.addCommit(landed.branch);
+
+    const result = await runFinish();
+
+    expect(result).toEqual({
+      code: 1,
+      out: `removed the worktree ${canonicalPath(landed.worktree)}\ndeleted the branch ${landed.branch}\n`,
+      err:
+        `finishing failed: the task branch moved on origin: ${landed.branch}: ` +
+        `tasker published ${landed.publishedRevision}, origin has ${other}\n`,
+    });
+    expect(await taskWorkspaceState(landed)).toEqual({
+      state: "cleanup_failed",
+      worktree: false,
+      listed: false,
+      branch: false,
+    });
+    expect(await landed.origin.branchHead(landed.branch)).toBe(other);
+    expect(readRunMarker(databasePathOf(landed.dataRoot), landed.task.id)).toBeUndefined();
+    expect(trackerWriteCalls(landed.gh)).toEqual([]);
+    expect(eventDataOf(landed.dataRoot, KEY, "remote_cleanup_warning")).toEqual([]);
+  });
+
+  it("warns and continues to the tracker when remote deletion fails", async () => {
+    const landed = await usePublishedLandedTask({
+      repo: trackerRepo({ updateOnFinish: true, doneLabel: "done" }),
+      ghAnswers: [fixtureTrackerAnswer("doneLabel")],
+    });
+    const hookDir = join(landed.origin.path, "hooks");
+    mkdirSync(hookDir, { recursive: true });
+    writeFileSync(join(hookDir, "pre-receive"), "#!/bin/sh\necho 'remote delete refused' >&2\nexit 1\n", {
+      mode: 0o755,
+    });
+
+    const result = await runFinish();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`marked ${KEY} done on the tracker\nfinished ${KEY}\n`);
+    const [warning] = eventDataOf(landed.dataRoot, KEY, "remote_cleanup_warning") as {
+      branch: string;
+      publishedRevision: string;
+      error: string;
+    }[];
+    expect(warning).toEqual({
+      branch: landed.branch,
+      publishedRevision: landed.publishedRevision,
+      error: expect.stringContaining("remote delete refused"),
+    });
+    expect(result.err).toBe(`warning: could not delete ${landed.branch} on origin: ${warning?.error}\n`);
+    expect(trackerWriteCalls(landed.gh)).toEqual([fixtureTrackerCall("doneLabel")]);
+    expect(await landed.origin.branchHead(landed.branch)).toBe(landed.publishedRevision);
+    expect((await taskWorkspaceState(landed)).state).toBe("finished");
+  });
+
+  it("refuses a task in peer review before cleanup", async () => {
+    const peerReview = await useAcceptedTask();
+    withDataRootStore(peerReview.dataRoot, (store) =>
+      moveTaskThrough(store, peerReview.task.id, ["pushing", "pushed", "opening_pr", "in_peer_review"]),
+    );
+    const before = await taskWorkspaceState({
+      ...peerReview,
+      worktree: String(peerReview.task.worktreePath),
+      branch: String(peerReview.task.branch),
+    });
+
+    await expectCommandRefused({ dataRoot: peerReview.dataRoot, key: KEY }, runFinish, refusal("in_peer_review"));
+
+    expect(
+      await taskWorkspaceState({
+        ...peerReview,
+        worktree: String(peerReview.task.worktreePath),
+        branch: String(peerReview.task.branch),
+      }),
+    ).toEqual(before);
+    expect(await peerReview.origin.branchHead(String(peerReview.task.branch))).toBeUndefined();
   });
 
   it("finishes the steps that are left from cleanup_failed", async () => {
