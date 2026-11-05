@@ -12,6 +12,7 @@ import {
   githubIssueAnswer,
   githubLabelsAfter,
   githubWriteAnswer,
+  runFakeGh,
   trackerWriteCalls,
   writeFakeGh,
 } from "./fake-gh.js";
@@ -28,6 +29,22 @@ describe("fakeGh", () => {
   });
 
   const run = runGh;
+
+  it("runs the selected fake gh with the supplied environment and arguments", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["listed"], stdout: "listed\n" }], { logEnv: ["FAKE_GH_MARKER"] });
+    const env = { ...gh.env, PATH: "/does-not-exist", FAKE_GH_MARKER: "from-caller" };
+    const result = runFakeGh(env, ["listed"]);
+    expect(result.stdout).toBe("listed\n");
+    expect(gh.calls()).toEqual([{ args: ["listed"], ghToken: undefined, env: { FAKE_GH_MARKER: "from-caller" } }]);
+  });
+
+  it("returns an unexpected fake gh call and logs it", () => {
+    const gh = fakeGh(dir, {}, []);
+    const result = runFakeGh(gh.env, ["unexpected", "call"]);
+    expect(result.status).toBe(99);
+    expect(gh.unanswered()).toEqual([["unexpected", "call"]]);
+    rmSync(`${gh.logPath}.unanswered`);
+  });
 
   it("selects its executable when the child PATH cannot find gh", () => {
     const gh = fakeGh(dir, {}, [{ args: ["listed"], stdout: "listed\n" }]);
