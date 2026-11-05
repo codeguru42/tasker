@@ -43,6 +43,8 @@ import {
   NO_SESSION_VALUES,
   sessionValuesOf,
   refuseBranchUpdated,
+  rejectPublishedEvent,
+  failPublicationRecord,
   reviewSessionRows,
   seedCreditsApproval,
   seedCreditsApprovalIn,
@@ -1319,5 +1321,35 @@ describe("acceptedRevisionOf", () => {
       db.exec("UPDATE tasks SET accepted_revision = 'abc'");
     });
     expect(acceptedRevisionOf(dataRoot, "codeguru42/tasker#1")).toBe("abc");
+  });
+});
+
+describe("rejectPublishedEvent", () => {
+  it("rejects published events until its removal function drops the trigger", () => {
+    const dataRoot = join(useTempDir("tasker-reject-published-"), "data");
+    seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "accepted", at: dayAt(1) }]);
+    const dbPath = databasePathOf(dataRoot);
+    const remove = rejectPublishedEvent(dbPath);
+    expect(() =>
+      withRawDatabase(dbPath, (db) =>
+        db.exec("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'published', '{}')"),
+      ),
+    ).toThrow("event rejected");
+    remove();
+    expect(
+      withRawDatabase(dbPath, (db) =>
+        db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'reject_published_event'").get(),
+      ),
+    ).toBeUndefined();
+  });
+});
+
+describe("failPublicationRecord", () => {
+  it("throws disk full when the wrapped store records publication", () => {
+    const { dataRoot } = seedOneTask("accepted", "a/b#1", "a/b");
+    withDataRootStore(dataRoot, (store) => {
+      const failing = failPublicationRecord(store);
+      expect(() => failing.recordPublication(1, "a".repeat(40), () => undefined)).toThrow("disk full");
+    });
   });
 });

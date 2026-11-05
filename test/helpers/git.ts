@@ -7,7 +7,7 @@ import { type RepoPaths, repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { GitError, runGit } from "../../src/vcs/git/run.js";
 import { taskBranchName, taskWorktreePath } from "../../src/vcs/git/worktree.js";
 import { createVcsProvider, type VcsContext, type VcsProvider } from "../../src/vcs/provider.js";
-import { logLine, pathWithFirst, realCommandPath, writeFakeCommand } from "./fake-commands.js";
+import { logLine, pathWithFirst, readArgLog, realCommandPath, writeFakeCommand } from "./fake-commands.js";
 import { makeTempDir, writeFileWithParents } from "./temp.js";
 
 // The fixed author and committer of every commit that a git test makes.
@@ -391,6 +391,11 @@ export function gitBeforeCommandEnv(
     ].join("\n"),
   );
   return { ...base, PATH: pathWithFirst(bin, base) };
+}
+
+// The recorded git calls whose arguments include the push subcommand.
+export function recordedPushCalls(logPath: string): string[][] {
+  return readArgLog(logPath).filter((args) => args.includes("push"));
 }
 
 // Writes a git wrapper into binDir. It runs the real git with the same arguments. Then it exits

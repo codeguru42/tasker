@@ -4,8 +4,7 @@ import { push } from "../../src/commands/push.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom, type TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
-import { commitInWorktree, copyCloneBranchToOrigin, gitRecorderEnv } from "../helpers/git.js";
-import { readArgLog } from "../helpers/fake-commands.js";
+import { commitInWorktree, copyCloneBranchToOrigin, gitRecorderEnv, recordedPushCalls } from "../helpers/git.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   answerStream,
@@ -21,6 +20,7 @@ import { validReviewAnswer } from "../helpers/review.js";
 import {
   eventDataOf,
   eventsOf,
+  rejectPublishedEvent,
   databasePathOf,
   failRefineFrom,
   failTaskFrom,
@@ -28,7 +28,6 @@ import {
   failVerifyRun,
   latestTaskOf,
   reviewSessionRows,
-  withRawDatabase,
   withDataRootStore,
 } from "../helpers/store.js";
 import {
@@ -190,11 +189,7 @@ describe("tasker retry", () => {
     const accepted = await useAcceptedTask();
     const recorder = gitRecorderEnv(useTempDir("tasker-retry-push-git-log-"), accepted.env);
     useProcessEnv(recorder.env);
-    withRawDatabase(databasePathOf(accepted.dataRoot), (raw) => {
-      raw.exec(
-        "CREATE TRIGGER reject_published_event BEFORE INSERT ON events WHEN NEW.type = 'published' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
-      );
-    });
+    const allowPublishedEvent = rejectPublishedEvent(databasePathOf(accepted.dataRoot));
 
     const first = await runCommand(push, "push", KEY, "--repo", REPO);
 
@@ -203,16 +198,14 @@ describe("tasker retry", () => {
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
     expect(latestTaskOf(accepted.dataRoot, KEY).publishedRevision).toBeNull();
 
-    withRawDatabase(databasePathOf(accepted.dataRoot), (raw) => {
-      raw.exec("DROP TRIGGER reject_published_event");
-    });
+    allowPublishedEvent();
     const retried = await runRetry();
 
     expect(retried.code).toBe(0);
     expect(retried.out).toContain(
       `${accepted.task.branch!} is already on origin at ${accepted.revision}\nstate: pushed\n`,
     );
-    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(1);
+    expect(recordedPushCalls(recorder.log)).toHaveLength(1);
     expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({
       state: "pushed",
       publishedRevision: accepted.revision,

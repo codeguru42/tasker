@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
@@ -24,6 +24,7 @@ import {
   gitBeforeCommandEnv,
   gitBeforePushEnv,
   gitRecorderEnv,
+  recordedPushCalls,
   gitTestEnv,
   type GitOrigin,
   localBranches,
@@ -503,5 +504,16 @@ describe("gitProvider", () => {
   it("gives the revision of a base on origin and of a local base", () => {
     expect(gitProvider().baseRevision("dev")).toBe("refs/remotes/origin/dev");
     expect(gitProvider().baseRevision("refs/heads/x")).toBe("refs/heads/x");
+  });
+});
+
+describe("recordedPushCalls", () => {
+  it("selects recorded calls that include the push argument", () => {
+    const log = join(useTempDir("tasker-recorded-push-"), "git.log");
+    writeFileSync(
+      log,
+      ["2", "status", "--short", "3", "push", "origin", "main", "2", "fetch", "origin", ""].join("\0"),
+    );
+    expect(recordedPushCalls(log)).toEqual([["push", "origin", "main"]]);
   });
 });

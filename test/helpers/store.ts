@@ -69,6 +69,26 @@ export function refuseBranchUpdated(dataRoot: string): void {
   );
 }
 
+// Rejects published events until the returned function removes the trigger.
+export function rejectPublishedEvent(dbPath: string): () => void {
+  withRawDatabase(dbPath, (db) =>
+    db.exec(
+      "CREATE TRIGGER reject_published_event BEFORE INSERT ON events WHEN NEW.type = 'published' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+    ),
+  );
+  return () => withRawDatabase(dbPath, (db) => db.exec("DROP TRIGGER reject_published_event"));
+}
+
+// A TaskStore that fails when it records publication, as a full disk would.
+export function failPublicationRecord(store: TaskStore): TaskStore {
+  return {
+    ...store,
+    recordPublication() {
+      throw new Error("disk full");
+    },
+  };
+}
+
 // Runs fn with the open store of dataRoot. It keeps each promise of withStoreFile.
 export function withDataRootStore<T>(dataRoot: string, fn: (store: TaskStore) => T, options?: StoreOptions): T {
   return withStoreFile(databasePathOf(dataRoot), fn, options);

@@ -23,7 +23,6 @@ export interface PushRequest {
 export interface Pushed {
   branch: string;
   revision: string;
-  lease: boolean;
   pushed: boolean;
 }
 
@@ -74,7 +73,6 @@ async function pushLocked(store: TaskStore, request: PushRequest): Promise<PushT
     return {
       branch,
       revision: publication.revision,
-      lease: publication.lease,
       pushed,
     };
   });

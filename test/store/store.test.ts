@@ -41,6 +41,7 @@ import {
   tableNames,
   tableRowCount,
   withRawDatabase,
+  rejectPublishedEvent,
   withStoreFile,
   writeRunMarker,
 } from "../helpers/store.js";
@@ -939,11 +940,7 @@ describe("task store", () => {
 
     it("rolls back state, published revision, event, and marker when recording fails", () => {
       const task = runningTask("pushing");
-      withRawDatabase(dbPath, (raw) => {
-        raw.exec(
-          "CREATE TRIGGER reject_published_event BEFORE INSERT ON events WHEN NEW.type = 'published' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
-        );
-      });
+      rejectPublishedEvent(dbPath);
       const eventsBefore = store.listEvents(task.id);
       expect(() =>
         transitionWithPublication(store, task.id, "a".repeat(40), { branch: "issue-6", lease: false, pushed: false }),

@@ -6,11 +6,17 @@ import { expectNoAssistantRun, taskRefOf, useAcceptedTask, type AcceptedTask } f
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
-import { copyCloneBranchToOrigin, gitBeforePushEnv, gitOutput, gitRecorderEnv } from "../helpers/git.js";
-import { readArgLog } from "../helpers/fake-commands.js";
+import {
+  copyCloneBranchToOrigin,
+  gitBeforePushEnv,
+  gitOutput,
+  gitRecorderEnv,
+  recordedPushCalls,
+} from "../helpers/git.js";
 import { useFakeClaudeOnPath } from "../helpers/fake-claude.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
+  failPublicationRecord,
   databasePathOf,
   eventsOf,
   lastErrorOf,
@@ -68,7 +74,7 @@ describe("pushTask", () => {
         to: "pushed",
       },
     });
-    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(1);
+    expect(recordedPushCalls(recorder.log)).toHaveLength(1);
     expect(accepted.gh.calls()).toEqual(ghCalls);
     expectNoAssistantRun({ claude, started: { dataRoot: accepted.dataRoot } });
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
@@ -163,13 +169,7 @@ describe("pushTask", () => {
     const accepted = await useAcceptedTask();
 
     const { result, io } = await withDataRootStore(accepted.dataRoot, (store) => {
-      const failing: TaskStore = {
-        ...store,
-        recordPublication() {
-          throw new Error("disk full");
-        },
-      };
-      return callPush(accepted, failing);
+      return callPush(accepted, failPublicationRecord(store));
     });
 
     const message = `pushing failed: pushed ${accepted.revision} to origin/${accepted.task.branch!}, but tasker cannot record the result: disk full`;
@@ -209,7 +209,7 @@ describe("pushTask", () => {
         to: "pushed",
       },
     });
-    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(0);
+    expect(recordedPushCalls(recorder.log)).toHaveLength(0);
     expect(accepted.gh.calls()).toEqual(ghCalls);
   });
 
@@ -239,7 +239,7 @@ describe("pushTask", () => {
       state: "pushed",
       publishedRevision: accepted.revision,
     });
-    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(1);
+    expect(recordedPushCalls(recorder.log)).toHaveLength(1);
     expectNoAssistantRun({ claude, started: { dataRoot: accepted.dataRoot } });
   });
 
@@ -255,13 +255,7 @@ describe("pushTask", () => {
     const recorder = gitRecorderEnv(useTempDir("tasker-push-git-log-"), accepted.env);
 
     const { result, io } = await withDataRootStore(accepted.dataRoot, (store) => {
-      const failing: TaskStore = {
-        ...store,
-        recordPublication() {
-          throw new Error("disk full");
-        },
-      };
-      return callPush(accepted, failing, recorder.env);
+      return callPush(accepted, failPublicationRecord(store), recorder.env);
     });
 
     expect(result).toEqual({ exitCode: 1 });
@@ -269,7 +263,7 @@ describe("pushTask", () => {
     expect(lastErrorOf(accepted.dataRoot, accepted.task.id)).toBe("pushing failed: disk full");
     expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("failed");
     expect(await accepted.origin.branchHead(accepted.task.branch!)).toBe(accepted.revision);
-    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(0);
+    expect(recordedPushCalls(recorder.log)).toHaveLength(0);
     expect(accepted.gh.calls()).toEqual(ghCalls);
   });
 });
