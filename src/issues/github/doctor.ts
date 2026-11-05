@@ -2,6 +2,7 @@ import type { Check } from "../../doctor/check.js";
 import { firstLine } from "../../doctor/first-line.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import { isOlderVersion } from "../../doctor/version-compare.js";
+import { isSet } from "../../config/path.js";
 import { projectOf } from "../../issue-key/resolve.js";
 import type { IssueDoctorRepo } from "../provider.js";
 import { authStatus } from "./auth.js";
@@ -28,6 +29,13 @@ export function ghVersionCheck(timeoutMs = 5000): Check {
       output = await readGhVersion(env, { signal });
     } catch (error) {
       if (error instanceof GhNotInstalledError) {
+        if (isSet(env.TASKER_GH_BIN)) {
+          return {
+            status: "error",
+            detail: error.message,
+            remediation: `Fix TASKER_GH_BIN or install a compatible gh executable named ${env.TASKER_GH_BIN}.`,
+          };
+        }
         return {
           status: "error",
           detail: `gh is not installed. tasker needs gh ${MINIMUM_TEXT} or newer.`,
