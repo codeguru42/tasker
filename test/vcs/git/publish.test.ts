@@ -584,6 +584,8 @@ describe("publish, land and delete", () => {
         const published = await addCloneCommit(clone, env, BRANCH);
         await publish();
         const other = await origin.addCommit(BRANCH);
+        await runGit(["update-ref", `refs/heads/${BRANCH}`, published], { gitDir: origin.path, env: origin.env });
+        expect(await origin.branchHead(BRANCH)).toBe(published);
         const racing = gitBeforePushEnv(join(origin.dir, "before-delete"), env, [
           realCommandPath("git"),
           "--git-dir",
