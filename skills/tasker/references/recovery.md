@@ -48,12 +48,7 @@ The command reads the origin. The origin is the state that the task left when it
   entry for a push.
 
 When a reopen fails while refining from `accepted` or `pushed`, retry returns the task to that same state. It prints the
-retry line, then prints this hint:
-
-- `run tasker reopen <issue key> "<feedback>" again`
-
-Retry prints only a hint. It starts no assistant and does not print the saved feedback. Run the command with new
-feedback.
+retry line, then the hint for that origin from the list below.
 
 A failed reopen can stop while tasker resyncs the branch to its base. If `reopen_start_head` has a value, retry restores
 the worktree to that head under the repo lock. Retry clears the saved head in the same database transaction as the state
@@ -100,8 +95,8 @@ task stays in the target state. The refusal is the error of that command. Run `t
 read the state and the `next:` or `commands:` line that it prints. Run a command that the state allows.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state
-and the command writes nothing. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors) and of the
-task lock belong to this group:
+and the command writes no task data or event. The shared errors of no task, of
+[the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
 - The task failed in a state that retry has no step for. The error is
   `the task of <issue key> failed in <state>; tasker retry has no step for it`. A task that failed in `merging` after a
