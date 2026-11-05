@@ -347,6 +347,15 @@ ancestor before the push.
 The delete needs the lease, because a plain delete of a branch that origin does not have succeeds with a warning. After
 a failed push, tasker reads the tip again, so a branch that is already gone is not an error.
 
+Before the delete, tasker reads the tip of the branch. If the tip matches the stored published revision, tasker deletes
+the branch with a lease on that revision. If the tip differs, tasker reports `RemoteTaskRefMovedError` and leaves the
+branch in place. An absent branch returns `already-gone`.
+
+The lease also protects a move after the read. If the push fails and the second read finds a different tip, tasker
+reports `RemoteTaskRefMovedError`. If the second read finds no branch, tasker returns `already-gone`. If the first read
+fails, tasker reports a delete error. If the second read fails, tasker keeps the push error. A failed read does not mean
+that the branch is absent.
+
 ### Side effects of publish and land
 
 - Each push, also a push that git then rejects, uses one token, because the hook deletes the token before git sends
