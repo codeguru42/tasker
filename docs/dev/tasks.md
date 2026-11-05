@@ -1,13 +1,13 @@
 # The task commands
 
-This page gives the reasons and the limits of the task commands start, abort, plan, refine, approve, unapprove, execute,
-verify, review, dismiss-review, merge, mark-landed, update-branch, finish, retry, resume, approve-credits and accept,
-and of the result of an assistant run. The reference files of the user doc [SKILL.md](../../skills/tasker/SKILL.md), one
-for each phase in `skills/tasker/references/`, show the output.
+This page gives the reasons and limits of the task commands. It also explains the result of an assistant run. The
+commands are start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, push,
+mark-landed, update-branch, finish, retry, resume, approve-credits and accept. The user reference files show their
+output. Each phase has a file in [SKILL.md](../../skills/tasker/SKILL.md) and `skills/tasker/references/`.
 
-The commands abort, plan, refine, approve, unapprove, execute, accept, resume, approve-credits, merge, mark-landed,
-update-branch and finish share one rule. Each of these commands makes all its checks before its first write, so a
-refused command leaves the task, the files and the events as they were. [Accept](#accept) and
+The commands abort, plan, refine, approve, unapprove, execute, accept, resume, approve-credits, merge, push,
+mark-landed, update-branch and finish share one rule. Each of these commands makes all its checks before its first
+write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) and
 [Mark landed](#mark-landed) give an exception for the refs of the clone. A refused approve or unapprove also leaves the
 plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in
 [The locks](#the-locks).
@@ -151,8 +151,8 @@ the entry is gone.
 The remove and the delete have one home in `src/tasks/`. Abort and [Finish](#finish) both call it, and the abort keeps
 its discard step before that call.
 
-The abort does not delete the task branch on `origin`. `tasker merge` pushes only the base branch, and no command
-publishes a task branch.
+The abort does not delete the task branch on `origin`. `tasker push` publishes that branch, and no tasker command
+deletes it from `origin`.
 
 A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task
 stores.
@@ -538,13 +538,15 @@ The command has these limits:
 
 `tasker retry` moves a task in `failed` back to the state before the step that failed, and runs that step again. The
 state that the task left when it failed is the origin. A fixed table gives the target and the next command for each
-origin. For the origin `provisioning`, retry does not move the task. The steps of `tasker start` move it from `failed`
-to `provisioning`. For the origin `refining`, the origin of the refine picks the row. The origin of a refine is the
-`from` of the last move into `refining`. For the origin `merging`, the merge origin picks the row. The merge origin is
-the `from` of the last move into `merging`. For the origins `quota_blocked`, `awaiting_quota_approval` and
-`interrupted`, the origin of the pause picks the row of the same table. The rows of the origins `refining` and `merging`
-do not apply to the origin of a pause. The origin of the pause is the `from` of the last move into the pause. An origin,
-or an origin of the pause, that the table does not hold gets no retry, and the command refuses it.
+origin. For `provisioning`, retry does not move the task. `tasker start` moves it from `failed` to `provisioning`.
+
+For `refining`, the origin of the refine picks the row. For `merging` and `pushing`, the state that the task left when
+the command started picks the row. For `quota_blocked`, `awaiting_quota_approval` and `interrupted`, the origin of the
+pause picks a row from the direct retry table. The origin is the `from` value of the last move into that state.
+
+A failure from `accepted`, or from `pushing` after `accepted`, returns to `accepted` and runs `tasker push`. A failure
+from `interrupted` after a push has no retry row and remains refused. A state without a matching row also has no retry
+step, so the command refuses it.
 
 The move, the delete of the sessions, the todo marks, the fix turn and one `retry` event share one transaction. The
 `retry` event has the data `{ origin, target, resumeExecute, from, to }` and takes the place of the `transition` event
@@ -564,6 +566,8 @@ These reasons explain its rules:
   decide the next step.
 - A merge that failed can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on
   the base, so a second run lands the task with no second push.
+- A push can reach `origin` before tasker records the result. Retry calls the provider again with the stored published
+  revision. If `origin` already has that revision, the provider reports it without pushing again.
 - After a turn that pushed, `tasker execute` moves the task to its pause first, and the push guard then fails the task.
   So the last move into `failed` comes from the pause, and retry reads the origin of the pause.
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and
@@ -578,16 +582,15 @@ These reasons explain its rules:
 
 `tasker resume` moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs
 the same command again, except for a task that stopped in `updating_branch`. For that task, the command first restores
-the worktree, and then it runs nothing. The state that the task left when the run stopped is the origin. Resume has a
-step for these origins: `planning`, `executing`, `verifying`, `reviewing`, `merging`, `finishing` and `updating_branch`.
-It also has a step for `refining`, when the origin of the refine is `awaiting_plan_review`, `failed`, `reviewed` or
-`awaiting_work_review`. The origin `verifying` works only from `interrupted`. The origins `merging`, `finishing` and
-`updating_branch` also work only from `interrupted`. [The Pauses table](../statemachine.md#pauses) gives the target and
-the next command of these origins, and this page does not copy it. For the origin `refining`, the origin of the refine
-picks the row, as in [Retry](#retry). For the origin `merging`, the merge origin picks the row in the same way. For the
-origin `updating_branch`, the origin of the update (the state that the task left when `tasker update-branch` started)
-picks the row, and the task goes back to it. Resume refuses each other origin, a merge origin with no row and an update
-origin with no row.
+the worktree, and then it runs nothing. The state that the task left when the run stopped is the origin. Resume has rows
+for `planning`, `executing`, `verifying`, `reviewing`, `merging`, `pushing`, `finishing` and `updating_branch`. It also
+has rows for `refining` when its origin is `awaiting_plan_review`, `failed`, `reviewed` or `awaiting_work_review`.
+
+The origins `verifying`, `merging`, `pushing`, `finishing` and `updating_branch` work only from `interrupted`.
+[The Pauses table](../statemachine.md#pauses) gives their targets and next commands. This page does not copy that table.
+For `refining`, the refine origin picks the row, as in [Retry](#retry). For `merging` and `pushing`, the state that the
+task left when that command started picks the row. For `updating_branch`, the update origin picks the row, and the task
+returns to it. Resume refuses any other origin, a merge origin with no row and an update origin with no row.
 
 A guard in the shared move refuses a pause that the state machine cannot reach from the origin. The state machine has no
 edge from the origin into that pause, so no run stopped that way. As a result, `verifying`, `merging` or `finishing` in
@@ -610,6 +613,8 @@ These reasons explain its rules:
 - A verify run has no session, so the verify runs again from the first command.
 - A merge that stopped can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on
   the base, so a second run lands the task with no second push.
+- If publication finished before a push stopped, resume runs `tasker push` again. The provider recognizes the stored
+  revision on `origin`. Tasker records it without another push.
 - Each cleanup step of `tasker finish` skips what is done, so a second run finishes the rest. The target of `finishing`
   is `landed`, also when the task came from `cleanup_failed`, because `tasker finish` runs from `landed` with the same
   steps.
@@ -669,8 +674,8 @@ These reasons explain its rules:
   before a person lands it.
 - The moved-base guard refuses a task whose parent landed. The branch of a landed parent is no base to judge the work
   against (see [Stacked task](workspaces.md#stacked-task)).
-- Accept only records the decision of a person. `tasker merge` is the one step that changes origin. As a result, a
-  refused or an accepted task leaves origin as it was, and the person still decides to land in a separate step.
+- Accept records the decision to approve the reviewed tree. Publication with `tasker push` and landing with
+  `tasker merge` or `tasker mark-landed` stay separate decisions.
 
 The base can move after the check of `tasker accept`. Then `tasker merge` fails, and nothing moves on `origin`.
 
@@ -708,6 +713,31 @@ These reasons explain its rules:
 - The repo lock covers the fetch and the push, because both change the refs of the clone.
   [The locks table](data-root.md#locks-table) requires it.
 - The command takes the repo lock before the move to `merging`, so a busy lock changes no state.
+
+## Push
+
+`tasker push` publishes the accepted task branch to `origin`. The task goes through `pushing` to `pushed`. It does not
+land the work on the base branch. Run `tasker merge` or `tasker mark-landed` when you decide to land it.
+
+Before it writes, the command compares the exact local task branch tip with the revision that `tasker accept` stored.
+Then it publishes only the task branch. It does not need the base branch, an assistant or a forge.
+
+The review and the accept cover one tree. The push covers the same tree.
+
+These reasons explain its rules:
+
+- A commit after the accept has no review. The command publishes only the accepted revision.
+- The provider uses the last published revision as a lease for an update. If the remote already holds that revision, the
+  provider reports it without another push. This lets retry record a push that reached `origin` before a store write
+  failed.
+- The stored published revision, the move to `pushed` and the `published` event share one transaction. Later runs read
+  the revision from the task row.
+- If tasker adds PR storage in the future, publication must preserve that PR record. This task adds no PR storage.
+
+If a step fails after the task enters `pushing`, the task goes to `failed`. Retry returns it to `accepted` and runs
+`tasker push` again. A crash during the push leaves the task in `pushing` with a run marker. The dead-run step moves it
+to `interrupted`. Resume returns it to `accepted` and runs `tasker push` again. The provider checks the remote first. If
+the remote already has the revision, tasker records it without another push.
 
 ## Mark landed
 
