@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { retry } from "../../src/commands/retry.js";
+import { push } from "../../src/commands/push.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom, type TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
-import { commitInWorktree } from "../helpers/git.js";
+import { commitInWorktree, copyCloneBranchToOrigin, gitRecorderEnv } from "../helpers/git.js";
+import { readArgLog } from "../helpers/fake-commands.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID } from "../helpers/fake-claude.js";
 import {
   answerStream,
@@ -19,12 +21,14 @@ import { validReviewAnswer } from "../helpers/review.js";
 import {
   eventDataOf,
   eventsOf,
+  databasePathOf,
   failRefineFrom,
   failTaskFrom,
   failTaskVia,
   failVerifyRun,
   latestTaskOf,
   reviewSessionRows,
+  withRawDatabase,
   withDataRootStore,
 } from "../helpers/store.js";
 import {
@@ -39,10 +43,12 @@ import {
   useStartedTask,
   useVerifyFixture,
 } from "../helpers/task-fixtures.js";
+import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import { executedLine, plannedLine, reviewedLinePrefix, verifiedLine } from "../helpers/command-output.js";
 
 const KEY = "codeguru42/tasker#5";
+const REPO = "codeguru42/tasker";
 const TODOS = [planTodo("a"), planTodo("b", ["a"])];
 
 const runRetry = (key = KEY, ...extra: string[]) => runCommand(retry, "retry", key, ...extra);
@@ -160,6 +166,57 @@ describe("tasker retry", () => {
     expect(eventDataOf(accepted.dataRoot, KEY, "retry")).toEqual([
       { origin: "pushing", target: "accepted", resumeExecute: false, from: "failed", to: "accepted" },
     ]);
+  });
+
+  it("reports a failed push and leaves the task failed", async () => {
+    const accepted = await useAcceptedTask();
+    await copyCloneBranchToOrigin({
+      origin: accepted.origin.path,
+      clone: accepted.clone,
+      branch: accepted.task.branch!,
+      env: accepted.env,
+    });
+    await accepted.origin.addCommit(accepted.task.branch!, { file: "moved.txt" });
+    withDataRootStore(accepted.dataRoot, (store) => failTaskVia(store, accepted.task.id, "accepted", "pushing"));
+
+    const result = await runRetry();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("pushing failed: the task branch moved on origin");
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
+  });
+
+  it("retries a real push after its store write fails without pushing again", async () => {
+    const accepted = await useAcceptedTask();
+    const recorder = gitRecorderEnv(useTempDir("tasker-retry-push-git-log-"), accepted.env);
+    useProcessEnv(recorder.env);
+    withRawDatabase(databasePathOf(accepted.dataRoot), (raw) => {
+      raw.exec(
+        "CREATE TRIGGER reject_published_event BEFORE INSERT ON events WHEN NEW.type = 'published' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+      );
+    });
+
+    const first = await runCommand(push, "push", KEY, "--repo", REPO);
+
+    expect(first.code).toBe(1);
+    expect(first.err).toContain(`pushed ${accepted.revision} to origin/${accepted.task.branch!}`);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
+    expect(latestTaskOf(accepted.dataRoot, KEY).publishedRevision).toBeNull();
+
+    withRawDatabase(databasePathOf(accepted.dataRoot), (raw) => {
+      raw.exec("DROP TRIGGER reject_published_event");
+    });
+    const retried = await runRetry();
+
+    expect(retried.code).toBe(0);
+    expect(retried.out).toContain(
+      `${accepted.task.branch!} is already on origin at ${accepted.revision}\nstate: pushed\n`,
+    );
+    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(1);
+    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({
+      state: "pushed",
+      publishedRevision: accepted.revision,
+    });
   });
 
   it("refuses a tip that is not the accepted revision after a failed merge", async () => {

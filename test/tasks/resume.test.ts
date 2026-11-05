@@ -89,6 +89,7 @@ describe("resumeTask origins", () => {
       pauses: ["interrupted"],
       sessions: kept,
     },
+    { origin: "pushing", target: "accepted", next: "push", pauses: ["interrupted"], sessions: kept },
     {
       origin: "refining",
       refineOrigin: "awaiting_plan_review",

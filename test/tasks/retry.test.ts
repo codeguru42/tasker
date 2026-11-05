@@ -165,6 +165,7 @@ describe("retryTask origins", () => {
       sessions: { ...kept, execute: false },
     },
     { origin: "verifying", target: "executed", next: "verify", state: "executed", sessions: kept },
+    { origin: "accepted", target: "accepted", next: "push", state: "accepted", sessions: kept },
     { origin: "merging", before: "accepted", target: "accepted", next: "merge", state: "accepted", sessions: kept },
     { origin: "pushing", before: "accepted", target: "accepted", next: "push", state: "accepted", sessions: kept },
   ];

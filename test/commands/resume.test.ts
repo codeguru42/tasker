@@ -9,7 +9,7 @@ import { GitError } from "../../src/vcs/git/run.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
-import { commitInWorktree, gitOutput } from "../helpers/git.js";
+import { commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
 import {
   executedLine,
   plannedLine,
@@ -364,6 +364,24 @@ describe("tasker resume", () => {
       publishedRevision: accepted.revision,
     });
     expect(eventDataOf(accepted.dataRoot, KEY, "resume")).toEqual([{ origin: "pushing", target: "accepted" }]);
+  });
+
+  it("reports a failed push and leaves the task failed", async () => {
+    const accepted = await useAcceptedTask();
+    await copyCloneBranchToOrigin({
+      origin: accepted.origin.path,
+      clone: accepted.clone,
+      branch: accepted.task.branch!,
+      env: accepted.env,
+    });
+    await accepted.origin.addCommit(accepted.task.branch!, { file: "moved.txt" });
+    withDataRootStore(accepted.dataRoot, (store) => pauseTaskVia(store, accepted.task.id, "accepted", "pushing"));
+
+    const result = await runResume();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("pushing failed: the task branch moved on origin");
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
   });
 
   it("refuses a tip that is not the accepted revision after a paused merge", async () => {
