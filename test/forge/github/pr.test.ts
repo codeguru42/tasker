@@ -7,11 +7,7 @@ import { forgeGh } from "../../helpers/forge-gh.js";
 import type { FakeAnswer } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 
-const listOpenPrs = untypedListOpenPrs as (
-  session: ReturnType<typeof createGhSession>,
-  target: { cwd: string; head: string },
-  env: NodeJS.ProcessEnv,
-) => Promise<OpenPullRequest[]>;
+const listOpenPrs = untypedListOpenPrs;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
