@@ -1,10 +1,11 @@
-import { relative } from "node:path";
-import { mkdirSync } from "node:fs";
+import { relative, join } from "node:path";
+import { mkdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../src/github/forge-session.js";
 import { failureOf, thrownBy } from "../helpers/errors.js";
 import { forgeGh } from "../helpers/forge-gh.js";
 import { writeFakeCommand } from "../helpers/fake-commands.js";
+import { startFixture } from "../helpers/processes.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
 const answer = { args: ["repo", "view"], stdout: "repository" };
@@ -26,6 +27,23 @@ const run = (
   cwd: string,
   env: NodeJS.ProcessEnv,
 ) => session.run(args, cwd, env);
+
+function diagnosticStrings(value: unknown, seen = new Set<object>()): string[] {
+  if (typeof value === "string") return [value];
+  if (value === null || typeof value !== "object" || seen.has(value)) return [];
+  seen.add(value);
+  return Object.getOwnPropertyNames(value).flatMap((name) => {
+    try {
+      return diagnosticStrings((value as Record<string, unknown>)[name], seen);
+    } catch {
+      return [];
+    }
+  });
+}
+
+function expectNoToken(error: Error, token: string): void {
+  expect(diagnosticStrings(error).join("\n")).not.toContain(token);
+}
 
 describe("createGhSession", () => {
   it("throws for an empty account during construction", () => {
@@ -274,5 +292,91 @@ describe("forge account authentication", () => {
     await failureOf(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH)), Error);
 
     expect(fake.calls().map((call) => call.args)).toEqual([tokenAnswer("octo", `${forgeToken}\n`, 1).args]);
+  });
+});
+
+describe("forge command results", () => {
+  it("accepts empty success output", async () => {
+    const dir = useTempDir("tasker-forge-empty-success-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), { args: ["repo", "view"], stdout: "" }]);
+
+    await expect(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH))).resolves.toBe("");
+  });
+
+  it("removes every token occurrence from successful output", async () => {
+    const dir = useTempDir("tasker-forge-token-success-");
+    const fake = forgeGh(dir, forgeToken, [
+      tokenAnswer("octo"),
+      { args: ["repo", "view"], stdout: `${forgeToken} and ${forgeToken}\n` },
+    ]);
+
+    const result = await run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+
+    expect(result).toBe("*** and ***\n");
+    expect(result).not.toContain(forgeToken);
+  });
+
+  it("rejects nonzero status before exposing partial stdout", async () => {
+    const dir = useTempDir("tasker-forge-partial-output-");
+    const fake = forgeGh(dir, forgeToken, [
+      tokenAnswer("octo"),
+      { args: ["repo", "view"], stdout: `partial ${forgeToken}`, stderr: "denied", exitCode: 9 },
+    ]);
+
+    const error = await failureOf(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH)), Error);
+
+    expect(error.message).toContain("exit code 9");
+    expectNoToken(error, forgeToken);
+  });
+
+  it("trims safe stderr and removes the token from every reachable diagnostic", async () => {
+    const dir = useTempDir("tasker-forge-safe-stderr-");
+    const fake = forgeGh(dir, forgeToken, [
+      tokenAnswer("octo"),
+      { args: ["repo", "view"], stdout: forgeToken, stderr: ` \npermission denied ${forgeToken}\n `, exitCode: 2 },
+    ]);
+
+    const error = await failureOf(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH)), Error);
+
+    expect((error as Error & { stderr?: string }).stderr).toBe("permission denied ***");
+    expectNoToken(error, forgeToken);
+  });
+
+  it("gives install guidance when gh cannot start", async () => {
+    const dir = useTempDir("tasker-forge-no-gh-");
+    const fake = forgeGh(dir, forgeToken, []);
+    const error = await failureOf(
+      run(createGhSession("octo"), ["repo", "view"], dir, {
+        ...taskerEnv(fake.env.PATH),
+        TASKER_GH_BIN: join(dir, "missing-gh"),
+      }),
+      Error,
+    );
+
+    expect(error.message).toMatch(/install gh|set TASKER_GH_BIN/);
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it("names the missing worktree in its error", async () => {
+    const dir = useTempDir("tasker-forge-no-worktree-");
+    const missing = join(dir, "missing-worktree");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo")]);
+
+    const error = await failureOf(
+      run(createGhSession("octo"), ["repo", "view"], missing, taskerEnv(fake.env.PATH)),
+      Error,
+    );
+
+    expect(error.message).toContain(missing);
+  });
+
+  it("keeps captured output and saved gh logs free of token text", async () => {
+    const dir = useTempDir("tasker-forge-quiet-");
+    const child = startFixture("forge-gh-quiet.ts", [dir]);
+
+    await expect(child.exited).resolves.toEqual({ code: 0, signal: null });
+    expect(child.stdout()).toBe("");
+    expect(child.stderr()).toBe("");
+    expect(readFileSync(join(dir, "forge-gh.log"), "utf8")).not.toContain(forgeToken);
   });
 });
