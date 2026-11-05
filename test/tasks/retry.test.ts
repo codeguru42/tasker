@@ -6,8 +6,17 @@ import { verifyCommandLogPath } from "../../src/store/layout.js";
 import type { Task } from "../../src/store/store.js";
 import { retryTask } from "../../src/tasks/retry.js";
 import { configWithTrackers } from "../helpers/config.js";
-import { seedApprovedTaskWithSessions, sessionsOf, seedExecuteTodoStates, seedReviewSession } from "../helpers/plan.js";
+import {
+  answerStream,
+  seedApprovedTaskWithSessions,
+  seedExecuteSession,
+  sessionsOf,
+  seedExecuteTodoStates,
+  seedReviewSession,
+  validPlanAnswer,
+} from "../helpers/plan.js";
 import { expectRefusedWithoutChange } from "../helpers/task-fixtures.js";
+import { useReopenFixture } from "../helpers/task-fixtures.js";
 import {
   eventsOf,
   failTaskFrom,
@@ -194,6 +203,35 @@ describe("retryTask origins", () => {
         ? { origin, target, resumeExecute: false }
         : { origin, target, resumeExecute: false, from: "failed", to: target };
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([{ type: "retry", data }]);
+  });
+
+  it.each(["accepted", "pushed"] as const)("prints a reopen hint for a failed reopen from %s", async (origin) => {
+    const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);
+    const { dataRoot } = fixture.started;
+    const { task } = fixture;
+    withDataRootStore(dataRoot, (store) => {
+      seedExecuteSession(store, task.id, 1);
+      seedReviewSession(store, task.id, 1);
+      failTaskVia(store, task.id, origin, "refining");
+    });
+    const beforeTask = latestTaskOf(dataRoot, KEY);
+    const beforeSessions = sessionsOf(dataRoot, task);
+    const beforeRevisions = withDataRootStore(dataRoot, (store) => store.listPlanRevisions(task.id));
+    const beforeEvents = eventsOf(dataRoot, KEY);
+
+    const result = await retry(dataRoot, task);
+
+    expect(result).toEqual({ origin: "refining", target: origin, next: "reopen-hint" });
+    expect(latestTaskOf(dataRoot, KEY).state).toBe(origin);
+    expect(sessionsOf(dataRoot, task)).toEqual(beforeSessions);
+    expect(withDataRootStore(dataRoot, (store) => store.listPlanRevisions(task.id))).toEqual(beforeRevisions);
+    expect(latestTaskOf(dataRoot, KEY)).toMatchObject({
+      acceptedRevision: beforeTask.acceptedRevision,
+      publishedRevision: beforeTask.publishedRevision,
+    });
+    expect(eventsOf(dataRoot, KEY).slice(beforeEvents.length)).toEqual([
+      { type: "retry", data: { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin } },
+    ]);
   });
 });
 

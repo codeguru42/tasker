@@ -37,6 +37,7 @@ import {
   useAcceptedTask,
   useExecuteFixture,
   usePlanFixture,
+  useReopenFixture,
   useRefineFixture,
   useReviewFixture,
   useStartedTask,
@@ -269,6 +270,26 @@ describe("tasker retry", () => {
     },
   ];
 
+  it.each(["accepted", "pushed"] as const)("prints the reopen hint for a failed reopen from %s", async (origin) => {
+    const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);
+    withDataRootStore(fixture.started.dataRoot, (store) => failRefineFrom(store, fixture.task.id, origin));
+    const ghCalls = fixture.started.gh.calls();
+
+    const result = await runRetry();
+
+    expect(result).toEqual({
+      code: 0,
+      out: `${firstLine("refining", origin)}run tasker reopen ${KEY} "<feedback>" again\n`,
+      err: "",
+    });
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(fixture.started.gh.calls()).toEqual(ghCalls);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe(origin);
+    expect(eventDataOf(fixture.started.dataRoot, KEY, "retry")).toEqual([
+      { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin },
+    ]);
+  });
+
   it.each(hints)(
     "prints a hint and runs nothing for a task that failed in refining after a refine from $refineOrigin",
     async ({ refineOrigin, target, hint }) => {
@@ -406,5 +427,6 @@ describe("tasker retry", () => {
     expect(help).toContain("Use the repo with this key when two repos share the project of the issue");
     expect(help).toContain("--resume-execute");
     expect(help).toContain("For a task that failed in verifying");
+    expect(help).toContain("hint-only recovery for a failed reopen");
   });
 });
