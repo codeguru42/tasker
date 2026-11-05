@@ -200,8 +200,10 @@ describe("finish", () => {
       code: 1,
       out: `removed the worktree ${canonicalPath(landed.worktree)}\ndeleted the branch ${landed.branch}\n`,
       err:
-        `finishing failed: the task branch moved on origin: ${landed.branch}: ` +
-        `tasker published ${landed.publishedRevision}, origin has ${other}\n`,
+        `finishing failed: the task branch ${landed.branch} moved on origin: ` +
+        `tasker published ${landed.publishedRevision}, origin has ${other}; ` +
+        `local cleanup already occurred; decide what to do with the extra commits, ` +
+        `then run tasker finish ${KEY} again\n`,
     });
     expect(await taskWorkspaceState(landed)).toEqual({
       state: "cleanup_failed",
@@ -211,6 +213,11 @@ describe("finish", () => {
     });
     expect(await landed.origin.branchHead(landed.branch)).toBe(other);
     expect(readRunMarker(databasePathOf(landed.dataRoot), landed.task.id)).toBeUndefined();
+    expect(lastErrorOf(landed.dataRoot, landed.task.id)).toBe(
+      `the task branch ${landed.branch} moved on origin: tasker published ${landed.publishedRevision}, ` +
+        `origin has ${other}; local cleanup already occurred; decide what to do with the extra commits, ` +
+        `then run tasker finish ${KEY} again`,
+    );
     expect(trackerWriteCalls(landed.gh)).toEqual([]);
     expect(eventDataOf(landed.dataRoot, KEY, "remote_cleanup_warning")).toEqual([]);
   });
@@ -260,7 +267,7 @@ describe("finish", () => {
       publishedRevision: landed.publishedRevision,
       error: expect.stringContaining("remote delete refused"),
     });
-    expect(result.err).toBe(`warning: could not delete ${landed.branch} on origin: ${warning?.error}\n`);
+    expect(result.err).toBe(`warning: cannot delete the task branch ${landed.branch} on origin: ${warning?.error}\n`);
     expect(trackerWriteCalls(landed.gh)).toEqual([fixtureTrackerCall("doneLabel")]);
     expect(await landed.origin.branchHead(landed.branch)).toBe(landed.publishedRevision);
     expect((await taskWorkspaceState(landed)).state).toBe("finished");
