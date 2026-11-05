@@ -23,7 +23,7 @@ const env = {
   TASKER_GH_BIN: join(binDir, "gh"),
 };
 
-const failure = await session.run(["repo", "view"], dir, env).then(
+const failure = await session.run(["repo", "view"], { cwd: dir, env }).then(
   () => undefined,
   (error: unknown) => error,
 );
