@@ -1,10 +1,10 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resume } from "../../src/commands/resume.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { canonicalPath } from "../../src/real-path.js";
-import { type TransitionDetail } from "../../src/state/machine.js";
+import { transitionWithReopenStart, type TransitionDetail } from "../../src/state/machine.js";
 import { GitError } from "../../src/vcs/git/run.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
@@ -33,12 +33,15 @@ import { deadRunNote, wrongStateError } from "../helpers/state-commands.js";
 import {
   eventDataOf,
   eventsOf,
+  databasePathOf,
   latestTaskOf,
   pauseRefineFrom,
   pauseTaskFrom,
   pauseTaskVia,
-  reviewSessionRows,
+  readRunMarker,
   seedDeadRun,
+  reviewSessionRows,
+  withRawDatabase,
   withDataRootStore,
 } from "../helpers/store.js";
 import {
@@ -52,6 +55,7 @@ import {
   usePublishedLandedTask,
   useMovedBaseTask,
   usePlanFixture,
+  useReopenFixture,
   useRefineFixture,
   useReviewedRefineFixture,
   useReviewFixture,
@@ -67,6 +71,13 @@ const PAUSES = ["quota_blocked", "interrupted"] as const;
 
 const runResume = (key = KEY, ...extra: string[]) => runCommand(resume, "resume", key, ...extra);
 
+function seedDeadReopen(dataRoot: string, taskId: number): void {
+  withRawDatabase(databasePathOf(dataRoot), (db) =>
+    db.prepare("DELETE FROM run_markers WHERE task_id = ?").run(taskId),
+  );
+  seedDeadRun(dataRoot, taskId, "refining");
+}
+
 const V2_ANSWER = validPlanAnswer({
   plan_markdown: "## Summary\n\nAdd the b module and its test, test first.\n",
   todos: [{ id: "only-todo", title: "Do the work", description: "Do all of it.", depends_on: [] }],
@@ -74,6 +85,105 @@ const V2_ANSWER = validPlanAnswer({
 });
 
 describe("tasker resume", () => {
+  it.each(["accepted", "pushed"] as const)(
+    "restores a stopped reopen from %s and reuses its feedback",
+    async (origin) => {
+      const fixture = await useReopenFixture({ stream: answerStream(V2_ANSWER) }, origin);
+      const { dataRoot } = fixture.started;
+      const startHead = await taskBranchTipOf({
+        clone: fixture.started.clone,
+        env: fixture.started.env,
+        task: fixture.task,
+      });
+      withDataRootStore(dataRoot, (store) => transitionWithReopenStart(store, fixture.task.id, startHead, FEEDBACK));
+      await commitInWorktree(fixture.started.worktree, fixture.started.env, { file: "crash-after-move.txt" });
+      seedDeadReopen(dataRoot, fixture.task.id);
+
+      const result = await runResume();
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain(resumedLine(KEY, "refining", origin));
+      expect(result.out).toContain(`reopened ${KEY} as revision v2\n`);
+      expect(result.out).toContain("state: awaiting_plan_review\n");
+      expect(result.err).toContain(deadRunNote(KEY, "refining"));
+      expect(fixture.claude.calls()).toHaveLength(1);
+      expect(fixture.claude.calls()[0].stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
+      expect(argAfter(fixture.claude.calls()[0].argv, "--resume")).toBe(TEST_SESSION_ID);
+      expect(latestTaskOf(dataRoot, KEY)).toMatchObject({
+        state: "awaiting_plan_review",
+        reopenStartHead: null,
+        publishedRevision: fixture.task.publishedRevision,
+      });
+      expect(
+        await taskBranchTipOf({ clone: fixture.started.clone, env: fixture.started.env, task: fixture.task }),
+      ).toBe(startHead);
+      expect(readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id)).toBeUndefined();
+    },
+  );
+
+  it("resumes after completed resync without restoring its old head", async () => {
+    const fixture = await useReopenFixture({ stream: answerStream(V2_ANSWER) }, "accepted");
+    const { dataRoot, worktree, env, origin, clone } = fixture.started;
+    const startHead = await taskBranchTipOf({ clone, env, task: fixture.task });
+    withDataRootStore(dataRoot, (store) => transitionWithReopenStart(store, fixture.task.id, startHead, FEEDBACK));
+    const newBase = await origin.addCommit("main", { file: "completed-resync.txt" });
+    await gitOutput({ cwd: worktree }, env, "fetch", "origin");
+    await gitOutput({ cwd: worktree }, env, "rebase", "origin/main");
+    withDataRootStore(dataRoot, (store) => store.completeReopen(fixture.task.id, newBase));
+    seedDeadReopen(dataRoot, fixture.task.id);
+    const completedHead = await gitOutput({ cwd: worktree }, env, "rev-parse", "HEAD");
+
+    const result = await runResume();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(resumedLine(KEY, "refining", "accepted"));
+    expect(result.out).toContain(`reopened ${KEY} as revision v2\n`);
+    expect(await gitOutput({ cwd: worktree }, env, "rev-parse", "HEAD")).toBe(completedHead);
+    expect(latestTaskOf(dataRoot, KEY).syncedBaseTip).toBe(newBase);
+  });
+
+  it("keeps a live reopen marker and refuses to resume refining", async () => {
+    const fixture = await useReopenFixture({ stream: answerStream(V2_ANSWER) });
+    const startHead = await taskBranchTipOf({
+      clone: fixture.started.clone,
+      env: fixture.started.env,
+      task: fixture.task,
+    });
+    withDataRootStore(fixture.started.dataRoot, (store) =>
+      transitionWithReopenStart(store, fixture.task.id, startHead, FEEDBACK),
+    );
+
+    const result = await runResume();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain(wrongStateError("refining", KEY, "resume", "quota_blocked or interrupted"));
+    expect(fixture.claude.calls()).toHaveLength(0);
+    expect(readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id)).toMatchObject({
+      state: "refining",
+    });
+  });
+
+  it("keeps the pause and recovery head when restoring a stopped reopen fails", async () => {
+    const fixture = await useReopenFixture({ stream: answerStream(V2_ANSWER) });
+    const { dataRoot, worktree } = fixture.started;
+    const startHead = await taskBranchTipOf({
+      clone: fixture.started.clone,
+      env: fixture.started.env,
+      task: fixture.task,
+    });
+    withDataRootStore(dataRoot, (store) => transitionWithReopenStart(store, fixture.task.id, startHead, FEEDBACK));
+    await commitInWorktree(worktree, fixture.started.env, { file: "restore-failure.txt" });
+    seedDeadReopen(dataRoot, fixture.task.id);
+    rmSync(worktree, { recursive: true, force: true });
+
+    const result = await runResume();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toMatch(/restore|worktree|repository/i);
+    expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: "interrupted", reopenStartHead: startHead });
+    expect(fixture.claude.calls()).toHaveLength(0);
+  });
+
   it.each(PAUSES)("continues the plan session for a task paused in %s from planning", async (pause) => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const { dataRoot } = fixture.started;

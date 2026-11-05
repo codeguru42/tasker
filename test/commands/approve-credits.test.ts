@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { approveCredits } from "../../src/commands/approve-credits.js";
+import { transitionTask, transitionWithReopenStart } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { plannedLine, resumedLine } from "../helpers/command-output.js";
 import {
@@ -20,12 +21,16 @@ import {
   moveTaskThrough,
   pausePlanFixtureRefine,
   pausePlanFixtureTask,
+  taskBranchTipOf,
+  useReopenFixture,
   usePlanFixture,
 } from "../helpers/task-fixtures.js";
+import { commitInWorktree } from "../helpers/git.js";
 
 const KEY = "codeguru42/tasker#5";
 const RESETS_AT = 1792206000;
 const OLD = 1791778800;
+const FEEDBACK = "Keep the loop.";
 const ASK = { repo: { overagePolicy: "ask" } };
 
 const runApprove = (key = KEY, ...extra: string[]) => runCommand(approveCredits, "approve-credits", key, ...extra);
@@ -174,6 +179,34 @@ describe("tasker approve-credits", () => {
     expect(eventDataOf(dataRoot, KEY, "credits_approved")).toEqual([{ resetsAt: OLD }, { resetsAt: RESETS_AT }]);
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
   });
+
+  it.each(["accepted", "pushed"] as const)(
+    "restores and reopens a stopped task from %s after credit approval",
+    async (origin) => {
+      const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);
+      const { dataRoot, worktree, env } = fixture.started;
+      const startHead = await taskBranchTipOf({ clone: fixture.started.clone, env, task: fixture.task });
+      withDataRootStore(dataRoot, (store) => {
+        transitionWithReopenStart(store, fixture.task.id, startHead, FEEDBACK);
+        transitionTask(store, fixture.task.id, "awaiting_quota_approval", { utilization: 0.95, resetsAt: RESETS_AT });
+      });
+      await commitInWorktree(worktree, env, { file: "credit-recovery.txt" });
+
+      const result = await runApprove();
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain(`reopened ${KEY} as revision v2\n`);
+      expect(result.out).toContain("state: awaiting_plan_review\n");
+      expect(fixture.claude.calls()).toHaveLength(1);
+      expect(fixture.claude.calls()[0].stdin).toContain(`<feedback>${FEEDBACK}</feedback>`);
+      expect(latestTaskOf(dataRoot, KEY)).toMatchObject({
+        state: "awaiting_plan_review",
+        reopenStartHead: null,
+        publishedRevision: fixture.task.publishedRevision,
+      });
+      expect(await taskBranchTipOf({ clone: fixture.started.clone, env, task: fixture.task })).toBe(startHead);
+    },
+  );
 
   it("keeps the approval when the next command fails", async () => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()), exitCode: 1, stderr: "boom" }, ASK);

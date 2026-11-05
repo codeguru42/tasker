@@ -4,18 +4,28 @@ import type { TaskState } from "../../src/state/machine.js";
 import type { Config } from "../../src/config/schema.js";
 import type { Task } from "../../src/store/store.js";
 import { resumeTask } from "../../src/tasks/resume.js";
+import { GitError } from "../../src/vcs/git/run.js";
 import { configWithTrackers } from "../helpers/config.js";
+import { failureOf } from "../helpers/errors.js";
+import { commitInWorktree, gitOutput } from "../helpers/git.js";
 import { seedApprovedTaskWithSessions, sessionsOf } from "../helpers/plan.js";
 import { wrongStateError } from "../helpers/state-commands.js";
-import { expectRefusedWithoutChange, taskBranchTipOf, useWorkReviewTask } from "../helpers/task-fixtures.js";
+import {
+  expectRefusedWithoutChange,
+  taskBranchTipOf,
+  useRefineFixture,
+  useWorkReviewTask,
+} from "../helpers/task-fixtures.js";
 import {
   eventDataOf,
   eventsOf,
+  databasePathOf,
   latestTaskOf,
   pauseRefineFrom,
   pauseTaskFrom,
   pauseTaskVia,
   placeTask,
+  withRawDatabase,
   withDataRootStore,
 } from "../helpers/store.js";
 
@@ -33,6 +43,13 @@ function resume(dataRoot: string, task: Task, config: Config = configWithTracker
   const ref = { key: KEY, repoKey: REPO, shortRef: githubShortRef("5") };
   return withDataRootStore(dataRoot, (store) =>
     resumeTask(store, { ref, taskId: task.id, config, env: process.env, repoLockWaitMs: 1000 }),
+  );
+}
+
+function resumeWithEnv(dataRoot: string, task: Task, config: Config, env: NodeJS.ProcessEnv) {
+  const ref = { key: KEY, repoKey: REPO, shortRef: githubShortRef("5") };
+  return withDataRootStore(dataRoot, (store) =>
+    resumeTask(store, { ref, taskId: task.id, config, env, repoLockWaitMs: 1000 }),
   );
 }
 
@@ -209,6 +226,63 @@ describe("resumeTask origins", () => {
 
     expect(result).toEqual({ origin: "refining", target: "reviewed", next: "refine" });
     expect(result).not.toHaveProperty("feedback");
+  });
+
+  it.each(["accepted", "pushed"] as const)(
+    "returns to %s after a reopen pause with its exact feedback",
+    async (origin) => {
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
+      withDataRootStore(dataRoot, (store) => pauseRefineFrom(store, task.id, origin, "interrupted", FEEDBACK));
+
+      const result = await resume(dataRoot, task);
+
+      expect(result).toEqual({ origin: "refining", target: origin, next: "reopen", feedback: FEEDBACK });
+      expect(latestTaskOf(dataRoot, KEY).state).toBe(origin);
+      expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "refining", target: origin }]);
+    },
+  );
+
+  it("restores an interrupted rebase and clears reopen recovery with the resume move", async () => {
+    const fixture = await useRefineFixture({ stream: [] });
+    const { task, started } = fixture;
+    const path = String(task.worktreePath);
+    await commitInWorktree(path, started.env, { file: "reopen-conflict.txt", content: "task\n" });
+    const startHead = await taskBranchTipOf({ clone: started.clone, env: started.env, task });
+    await started.origin.addCommit("main", { file: "reopen-conflict.txt", content: "base\n" });
+    await gitOutput({ cwd: path }, started.env, "fetch", "origin");
+    await failureOf(gitOutput({ cwd: path }, started.env, "rebase", "origin/main"), GitError);
+    withDataRootStore(started.dataRoot, (store) => {
+      store.updateTask(task.id, { state: "accepted", reopenStartHead: startHead });
+      pauseRefineFrom(store, task.id, "accepted", "interrupted", FEEDBACK);
+    });
+
+    const result = await resumeWithEnv(started.dataRoot, task, started.config, started.env);
+
+    expect(result).toEqual({ origin: "refining", target: "accepted", next: "reopen", feedback: FEEDBACK });
+    expect(latestTaskOf(started.dataRoot, KEY)).toMatchObject({ state: "accepted", reopenStartHead: null });
+    expect(await taskBranchTipOf({ clone: started.clone, env: started.env, task })).toBe(startHead);
+    expect(await gitOutput({ cwd: path }, started.env, "status", "--porcelain")).toBe("");
+    expect(await gitOutput({ cwd: path }, started.env, "symbolic-ref", "HEAD")).toBe(
+      `refs/heads/${String(task.branch)}`,
+    );
+  });
+
+  it("keeps the pause and recovery head when the resume event write fails", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    const startHead = "a".repeat(40);
+    withDataRootStore(dataRoot, (store) => {
+      store.updateTask(task.id, { reopenStartHead: startHead });
+      pauseRefineFrom(store, task.id, "pushed", "interrupted", FEEDBACK);
+    });
+    withRawDatabase(databasePathOf(dataRoot), (db) => {
+      db.exec(`CREATE TRIGGER reject_reopen_resume BEFORE INSERT ON events
+        WHEN NEW.type = 'resume' BEGIN SELECT RAISE(ABORT, 'resume event rejected'); END`);
+    });
+
+    await expect(resume(dataRoot, task)).rejects.toThrow("resume event rejected");
+
+    expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: "interrupted", reopenStartHead: startHead });
+    expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([]);
   });
 });
 
