@@ -9,6 +9,7 @@ import { retryTask } from "../../src/tasks/retry.js";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import { configWithTrackers } from "../helpers/config.js";
 import { failureOf } from "../helpers/errors.js";
+import { readArgLog } from "../helpers/fake-commands.js";
 import { commitInWorktree, gitBeforeCommandEnv, gitOutput, gitRecorderEnv } from "../helpers/git.js";
 import {
   answerStream,
@@ -247,6 +248,9 @@ describe("retryTask origins", () => {
       seedReviewSession(store, task.id, 1);
       failTaskVia(store, task.id, origin, "refining");
     });
+    withDataRootStore(dataRoot, (store) =>
+      store.updateTask(task.id, { acceptedRevision: "accepted-revision", publishedRevision: "published-revision" }),
+    );
     const beforeTask = latestTaskOf(dataRoot, KEY);
     const beforeSessions = sessionsOf(dataRoot, task);
     const beforeRevisions = withDataRootStore(dataRoot, (store) => store.listPlanRevisions(task.id));
@@ -259,9 +263,11 @@ describe("retryTask origins", () => {
     expect(sessionsOf(dataRoot, task)).toEqual(beforeSessions);
     expect(withDataRootStore(dataRoot, (store) => store.listPlanRevisions(task.id))).toEqual(beforeRevisions);
     expect(latestTaskOf(dataRoot, KEY)).toMatchObject({
-      acceptedRevision: beforeTask.acceptedRevision,
-      publishedRevision: beforeTask.publishedRevision,
+      acceptedRevision: "accepted-revision",
+      publishedRevision: "published-revision",
     });
+    expect(beforeTask.acceptedRevision).toBe("accepted-revision");
+    expect(beforeTask.publishedRevision).toBe("published-revision");
     expect(eventsOf(dataRoot, KEY).slice(beforeEvents.length)).toEqual([
       { type: "retry", data: { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin } },
     ]);
@@ -368,6 +374,7 @@ describe("retryTask pending reopen recovery", () => {
 
   it("reports a busy repo lock without restoring the pending worktree", async () => {
     const fixture = await failedPendingReopen();
+    const beforeEvents = eventsOf(fixture.started.dataRoot, KEY);
     const name = repoLockName(REPO);
     const holder = startLockHolder(databasePathOf(fixture.started.dataRoot), name);
     await holder.attempt;
@@ -389,10 +396,12 @@ describe("retryTask pending reopen recovery", () => {
     expect(
       await gitOutput({ cwd: String(fixture.task.worktreePath) }, fixture.started.env, "status", "--porcelain"),
     ).toContain("reopen-conflict.txt");
+    expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual(beforeEvents);
   });
 
   it("keeps the task failed and the recovery head when restore fails", async () => {
     const fixture = await failedPendingReopen();
+    const beforeEvents = eventsOf(fixture.started.dataRoot, KEY);
     const path = String(fixture.task.worktreePath);
     writeFileSync(join(path, "untracked-after-failure.txt"), "keep until restore works\n");
     const env = gitBeforeCommandEnv(useTempDir("tasker-retry-restore-failure-"), fixture.started.env, "clean", [
@@ -407,26 +416,30 @@ describe("retryTask pending reopen recovery", () => {
     );
 
     expect(error.message).toContain("clean refused by test");
+    expect(error.message).toContain("git clean -fd");
     expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({
       state: "failed",
       reopenStartHead: fixture.startHead,
     });
-    expect(eventsOf(fixture.started.dataRoot, KEY).at(-1)?.type).toBe("transition");
+    expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual(beforeEvents);
   });
 
   it("repeats restore after the retry event fails, then commits the retry on a later call", async () => {
     const fixture = await failedPendingReopen();
+    const beforeEvents = eventsOf(fixture.started.dataRoot, KEY);
+    const recorder = gitRecorderEnv(useTempDir("tasker-retry-event-failure-git-log-"), fixture.started.env);
     const release = rejectRetryEvent(databasePathOf(fixture.started.dataRoot));
     try {
       const error = await failureOf(
         retry(fixture.started.dataRoot, fixture.task, false, {
           config: fixture.started.config,
-          env: fixture.started.env,
+          env: recorder.env,
         }),
         Error,
       );
 
       expect(error.message).toContain("event rejected");
+      expect(error.message).toContain(fixture.startHead);
       expect(
         await gitOutput({ cwd: String(fixture.task.worktreePath) }, fixture.started.env, "rev-parse", "HEAD"),
       ).toBe(fixture.startHead);
@@ -434,18 +447,31 @@ describe("retryTask pending reopen recovery", () => {
         state: "failed",
         reopenStartHead: fixture.startHead,
       });
-      expect(eventsOf(fixture.started.dataRoot, KEY).at(-1)?.type).toBe("transition");
+      expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual(beforeEvents);
+      expect(
+        readArgLog(recorder.log).filter((args) => args.includes("checkout") && args.includes("--force")),
+      ).toHaveLength(1);
     } finally {
       release();
     }
 
     const result = await retry(fixture.started.dataRoot, fixture.task, false, {
       config: fixture.started.config,
-      env: fixture.started.env,
+      env: recorder.env,
     });
 
     expect(result).toEqual({ origin: "refining", target: "accepted", next: "reopen-hint" });
     expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({ state: "accepted", reopenStartHead: null });
+    expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual([
+      ...beforeEvents,
+      {
+        type: "retry",
+        data: { origin: "refining", target: "accepted", resumeExecute: false, from: "failed", to: "accepted" },
+      },
+    ]);
+    expect(
+      readArgLog(recorder.log).filter((args) => args.includes("checkout") && args.includes("--force")),
+    ).toHaveLength(2);
   });
 });
 
