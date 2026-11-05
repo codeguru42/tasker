@@ -44,6 +44,7 @@ import {
   sessionValuesOf,
   refuseBranchUpdated,
   rejectPublishedEvent,
+  rejectRetryEvent,
   rejectFinishedEvent,
   failPublicationRecord,
   reviewSessionRows,
@@ -1365,6 +1366,26 @@ describe("rejectFinishedEvent", () => {
     expect(() =>
       withRawDatabase(dbPath, (db) =>
         db.exec("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'finished', '{}')"),
+      ),
+    ).not.toThrow();
+  });
+});
+
+describe("rejectRetryEvent", () => {
+  it("rejects retry events until its removal function drops the trigger", () => {
+    const dataRoot = join(useTempDir("tasker-reject-retry-"), "data");
+    seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "failed", at: dayAt(1) }]);
+    const dbPath = databasePathOf(dataRoot);
+    const remove = rejectRetryEvent(dbPath);
+    expect(() =>
+      withRawDatabase(dbPath, (db) =>
+        db.exec("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'retry', '{}')"),
+      ),
+    ).toThrow("event rejected");
+    remove();
+    expect(() =>
+      withRawDatabase(dbPath, (db) =>
+        db.exec("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'retry', '{}')"),
       ),
     ).not.toThrow();
   });
