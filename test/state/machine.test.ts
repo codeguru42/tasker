@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import * as stateMachine from "../../src/state/machine.js";
 import {
   approvedResetsAtOf,
   SPAWNING_STATES,
@@ -491,6 +492,33 @@ describe("task transitions", () => {
       expect(store.getTask(task.id)!.state).toBe("executing");
       expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
       expect(store.listEvents(task.id)).toEqual(before);
+    });
+  });
+
+  describe("transitionWithFinish", () => {
+    it("records completion, enters the terminal state, and clears the run marker together", () => {
+      const task = store.createTask(newTask("landed"));
+      transitionTask(store, task.id, "finishing");
+      const before = store.listEvents(task.id);
+      const complete = (
+        stateMachine as unknown as {
+          transitionWithFinish?: (
+            store: TaskStore,
+            id: number,
+            detail: { worktree: string; branch: string },
+          ) => { state: string };
+        }
+      ).transitionWithFinish;
+
+      expect(complete).toBeTypeOf("function");
+      const finished = complete!(store, task.id, { worktree: "removed", branch: "deleted" });
+
+      expect(finished.state).toBe("finished");
+      expect(store.getTask(task.id)?.state).toBe("finished");
+      expect(store.runStatus(task.id)).toBeUndefined();
+      expect(store.listEvents(task.id).slice(before.length)).toEqual([
+        { type: "finished", data: { worktree: "removed", branch: "deleted", from: "finishing", to: "finished" } },
+      ]);
     });
   });
 

@@ -215,6 +215,26 @@ describe("finish", () => {
     expect(eventDataOf(landed.dataRoot, KEY, "remote_cleanup_warning")).toEqual([]);
   });
 
+  it("finishes on a repeat run after the moved branch is removed", async () => {
+    const landed = await usePublishedLandedTask();
+    await landed.origin.addCommit(landed.branch);
+
+    const first = await runFinish();
+
+    expect(first.code).toBe(1);
+    expect(latestTaskOf(landed.dataRoot, KEY).state).toBe("cleanup_failed");
+    await runGit(["update-ref", "-d", `refs/heads/${landed.branch}`], {
+      gitDir: landed.origin.path,
+      env: landed.env,
+    });
+
+    const second = await runFinish();
+
+    expect(second).toEqual({ code: 0, out: `finished ${KEY}\n`, err: "" });
+    expect(latestTaskOf(landed.dataRoot, KEY).state).toBe("finished");
+    expect(await landed.origin.branchHead(landed.branch)).toBeUndefined();
+  });
+
   it("warns and continues to the tracker when remote deletion fails", async () => {
     const landed = await usePublishedLandedTask({
       repo: trackerRepo({ updateOnFinish: true, doneLabel: "done" }),

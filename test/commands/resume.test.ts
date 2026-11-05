@@ -49,6 +49,7 @@ import {
   useAcceptedTask,
   useExecuteFixture,
   useLandedTask,
+  usePublishedLandedTask,
   useMovedBaseTask,
   usePlanFixture,
   useRefineFixture,
@@ -416,6 +417,18 @@ describe("tasker resume", () => {
     );
     expect(latestTaskOf(dataRoot, KEY).state).toBe("finished");
     expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "finishing", target: "landed" }]);
+  });
+
+  it("deletes the published branch when resume continues an interrupted finish", async () => {
+    const landed = await usePublishedLandedTask();
+    withDataRootStore(landed.dataRoot, (store) => pauseTaskFrom(store, landed.task.id, "finishing", "interrupted"));
+
+    const result = await runResume();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`finished ${KEY}\n`);
+    expect(latestTaskOf(landed.dataRoot, KEY).state).toBe("finished");
+    expect(await landed.origin.branchHead(landed.branch)).toBeUndefined();
   });
 
   it("runs only the branch step for a task paused in interrupted from finishing after the worktree was removed", async () => {
