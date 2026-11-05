@@ -347,7 +347,7 @@ ancestor before the push.
 The delete needs the lease, because a plain delete of a branch that origin does not have succeeds with a warning. After
 a failed push, tasker reads the tip again, so a branch that is already gone is not an error.
 
-A changed revision can hold work that tasker has not published, so the provider leaves that branch in place and reports
+A changed revision can hold work that tasker did not publish, so the provider leaves that branch in place and reports
 that it moved. A failed read proves neither that the branch is absent nor that deletion is safe, so the provider reports
 a delete error. [Finish](tasks.md#finish) gives the command policy for these outcomes.
 
