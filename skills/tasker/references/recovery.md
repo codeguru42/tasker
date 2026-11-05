@@ -123,7 +123,8 @@ origin in this table:
   `landed`.
 - `pushing`: the task goes to `accepted`, and the command runs `tasker push`.
 - `finishing`: the task goes to `landed`, and the command runs `tasker finish`. The target is `landed` also when the
-  task came to `finishing` from `cleanup_failed`. Each cleanup step skips what is already done.
+  task came to `finishing` from `cleanup_failed`. The repeated cleanup skips local resources that are already gone and
+  treats a remote branch that finish already deleted as already gone.
 - `updating_branch`: only a task in `interrupted` has this origin. The task goes back to the origin of the update, which
   is the state that it left when `tasker update-branch` started. The command first puts the worktree back at the head
   from before the update. It ends a rebase or a merge in progress, puts the task branch and the worktree at that head,
