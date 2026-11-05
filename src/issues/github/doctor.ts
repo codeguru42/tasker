@@ -23,6 +23,7 @@ export function accountOf(repo: IssueDoctorRepo): string {
 
 export function ghVersionCheck(timeoutMs = 5000): Check {
   const remediation = `Install gh ${MINIMUM_TEXT} or newer.`;
+  const selectedRemediation = `Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects gh ${MINIMUM_TEXT} or newer.`;
   return timedCheck({ name: "gh version", required: true, timeoutMs }, async (env, { signal }) => {
     let output: string;
     try {
@@ -33,8 +34,7 @@ export function ghVersionCheck(timeoutMs = 5000): Check {
           return {
             status: "error",
             detail: error.message,
-            remediation:
-              "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects a compatible gh executable.",
+            remediation: selectedRemediation,
           };
         }
         return {
@@ -56,7 +56,7 @@ export function ghVersionCheck(timeoutMs = 5000): Check {
       return {
         status: "error",
         detail: `gh ${found} is older than the minimum ${MINIMUM_TEXT}. Before ${MINIMUM_TEXT}, gh auth token has no --user flag.`,
-        remediation,
+        remediation: isSet(env.TASKER_GH_BIN) ? selectedRemediation : remediation,
       };
     }
     return { status: "ok", detail: `gh ${found} (minimum ${MINIMUM_TEXT})` };

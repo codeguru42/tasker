@@ -168,7 +168,9 @@ describe("doctor", () => {
     const lines = out.split("\n");
     const at = lines.findIndex((line) => line.startsWith("error gh version"));
     expect(at).toBeGreaterThan(-1);
-    expect(lines[at + 1]).toMatch(/^ {6}.*Install gh 2\.40\.0 or newer\./);
+    expect(lines[at + 1]).toBe(
+      "      Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects gh 2.40.0 or newer.",
+    );
     for (const name of ["gh auth", "gh project", "gh labels"]) {
       expect(out).toContain(name);
     }
