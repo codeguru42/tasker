@@ -882,8 +882,6 @@ describe("task transitions", () => {
       expect(events.slice(0, before.length)).toEqual(before);
       expect(events.slice(before.length).map((e) => e.type)).toEqual(["marked_landed"]);
       expect(events[events.length - 1].data).toEqual({
-        revision: "head-sha",
-        baseTip: "base-sha",
         from: "accepted",
         to: "landed",
       });

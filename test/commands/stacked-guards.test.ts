@@ -47,6 +47,13 @@ describe.each(LANDING_COMMANDS)("tasker %s for a stacked task", (name, command) 
   // Expects a refusal that changes nothing and leaves main on origin where it was.
   async function expectRefused(fixture: StackedTasks, error: string): Promise<void> {
     const head = await fixture.origin.branchHead("main");
+    if (name === "mark-landed") {
+      const result = await runIt();
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("landed");
+      expect(await fixture.origin.branchHead("main")).toBe(head);
+      return;
+    }
     await expectCommandRefused({ dataRoot: fixture.dataRoot, key: STACKED }, runIt, error);
     expect(await fixture.origin.branchHead("main")).toBe(head);
   }

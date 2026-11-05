@@ -69,7 +69,7 @@ export function refuseBranchUpdated(dataRoot: string): void {
   );
 }
 
-function rejectEvent(dbPath: string, type: "published" | "finished"): () => void {
+function rejectEvent(dbPath: string, type: "published" | "finished" | "marked_landed"): () => void {
   const trigger = `reject_${type}_event`;
   withRawDatabase(dbPath, (db) =>
     db.exec(
@@ -87,6 +87,11 @@ export function rejectPublishedEvent(dbPath: string): () => void {
 // Rejects finished events until the returned function removes the trigger.
 export function rejectFinishedEvent(dbPath: string): () => void {
   return rejectEvent(dbPath, "finished");
+}
+
+// Rejects marked_landed events until the returned function removes the trigger.
+export function rejectMarkedLandedEvent(dbPath: string): () => void {
+  return rejectEvent(dbPath, "marked_landed");
 }
 
 // A TaskStore that fails when it records publication, as a full disk would.

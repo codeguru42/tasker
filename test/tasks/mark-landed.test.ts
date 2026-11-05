@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { repoLockName } from "../../src/store/locks.js";
+import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { markLandedTask } from "../../src/tasks/mark-landed.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { startLockHolder } from "../helpers/processes.js";
@@ -23,21 +23,25 @@ const callMarkLanded = (fixture: AcceptedTask, store: TaskStore, waitMs = 300) =
   });
 
 describe("markLandedTask", () => {
-  it("leaves everything and releases the task lock when the repo lock is busy", async () => {
+  it("marks landed while the repo lock is busy", async () => {
     const accepted = await useAcceptedTask();
     await landAcceptedTask(accepted);
     const holder = startLockHolder(databasePathOf(accepted.dataRoot), repoLockName(accepted.repoKey));
     await holder.attempt;
 
-    await withDataRootStore(accepted.dataRoot, (store) =>
-      expectRefusedWithoutChange(
-        accepted,
-        () => callMarkLanded(accepted, store),
-        `the lock ${repoLockName(accepted.repoKey)} is busy`,
-      ),
-    );
+    await withDataRootStore(accepted.dataRoot, (store) => callMarkLanded(accepted, store));
 
-    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("accepted");
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("landed");
     expect(lockNames(accepted.dataRoot)).toEqual([repoLockName(accepted.repoKey)]);
+  });
+
+  it("refuses at once when another process holds the task lock", async () => {
+    const accepted = await useAcceptedTask();
+    const name = taskLockName(accepted.repoKey, accepted.key);
+    const holder = startLockHolder(databasePathOf(accepted.dataRoot), name);
+    await holder.attempt;
+    await withDataRootStore(accepted.dataRoot, (store) =>
+      expectRefusedWithoutChange(accepted, () => callMarkLanded(accepted, store), `the lock ${name} is busy`),
+    );
   });
 });
