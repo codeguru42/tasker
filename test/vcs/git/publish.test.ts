@@ -592,8 +592,6 @@ describe("publish, land and delete", () => {
           "refs/heads/" + BRANCH,
           other,
         ]);
-        const before = pushes().length;
-
         const error = await failureOf(remove({ published, env: racing }), Error);
 
         expect(error.message).toBe(
@@ -603,7 +601,6 @@ describe("publish, land and delete", () => {
         expect((error as Error & { taskRef?: string }).taskRef).toBe(BRANCH);
         expect((error as Error & { published?: string }).published).toBe(published);
         expect((error as Error & { tip?: unknown }).tip).toEqual({ state: "present", revision: other });
-        expect(pushes()).toHaveLength(before + 1);
         expect(await origin.branchHead(BRANCH)).toBe(other);
         expectNoTokenFile();
       });

@@ -1,4 +1,5 @@
 import { detailSuffix } from "../../detail-suffix.js";
+import { RemoteTaskRefMovedError } from "../errors.js";
 import { LOCAL_PREFIX } from "../local-branch.js";
 import type { RemoteTaskRefDeletion, RemoteTip } from "../provider.js";
 import { isAncestor } from "./changes.js";
@@ -45,9 +46,7 @@ async function orFailed<T>(summary: string, step: () => Promise<T>): Promise<T> 
 
 // The one copy of the moved error.
 function movedError(branch: string, published: string | undefined, tip: RemoteTip): Error {
-  const before = published === undefined ? "tasker never published it" : `tasker published ${published}`;
-  const now = tip.state === "absent" ? "origin does not have it" : `origin has ${tip.revision}`;
-  return new Error(`the task branch moved on origin: ${branch}: ${before}, ${now}`);
+  return new RemoteTaskRefMovedError(branch, published, tip);
 }
 
 // The decision on a tip. The expected tip is published, or no branch when published is not set.
