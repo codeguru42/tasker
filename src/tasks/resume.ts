@@ -20,7 +20,7 @@ import { requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
 // The command that runs after the move of a resume. A resume has no start and no refine of findings: retry prints a
 // hint for the refine values, and resume runs them. A resume also runs finish, which retry never does.
-export type ResumeNext = Exclude<RetryNext, "start" | "refine-findings"> | "finish" | "update-branch";
+export type ResumeNext = Exclude<RetryNext, "start" | "refine-findings"> | "finish" | "update-branch" | "reopen";
 
 export interface ResumeRequest {
   ref: IssueRef;
@@ -73,6 +73,8 @@ const PLAIN_REFINE_ROW: ResumeRow = {
 const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   awaiting_plan_review: PLAIN_REFINE_ROW,
   failed: PLAIN_REFINE_ROW,
+  accepted: { target: "accepted", next: "reopen", clearReview: false },
+  pushed: { target: "pushed", next: "reopen", clearReview: false },
   reviewed: { target: "reviewed", next: "refine", clearReview: false },
   awaiting_work_review: {
     target: "awaiting_work_review",
@@ -118,7 +120,10 @@ async function resumeLocked(store: TaskStore, request: ResumeRequest): Promise<R
   const events = store.listEvents(request.taskId);
   // The guard comes first, so an update with no record needs no worktree.
   const move = resumeMoveOf(task, events, "resume");
-  if (move.origin !== "updating_branch") return applyResumeMove(store, task, events, move);
+  if (move.origin !== "updating_branch") {
+    const clearedReopenHead = await restorePendingReopen(store, request, task);
+    return applyResumeMove(store, task, events, move, [], {}, clearedReopenHead);
+  }
   const head = updateStartHeadOf(events);
   if (head === undefined) {
     throw new Error(`the update of ${task.issueKey} recorded no start head; tasker resume cannot restore the worktree`);
@@ -129,6 +134,26 @@ async function resumeLocked(store: TaskStore, request: ResumeRequest): Promise<R
     const { vcs, ctx } = vcsForRepo(request.config, task.repoKey, request.env);
     await vcs.restoreWorkspace(ctx, { path: requireWorktree(task), taskRef: requireBranch(task), revision: head });
     return { ...applyResumeMove(store, task, events, move, [], { head }), head };
+  });
+}
+
+// Restores a reopen that stopped after its start transaction. The repo lock covers the Git write. The caller clears
+// the recovery head atomically with the pause-to-origin move after this lock is free.
+export async function restorePendingReopen(
+  store: TaskStore,
+  request: Pick<ResumeRequest, "config" | "env" | "repoLockWaitMs">,
+  task: Task,
+): Promise<boolean> {
+  const head = task.reopenStartHead;
+  if (head === null) return false;
+  return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
+    const { vcs, ctx } = vcsForRepo(request.config, task.repoKey, request.env);
+    await vcs.restoreWorkspace(ctx, {
+      path: requireWorktree(task),
+      taskRef: requireBranch(task),
+      revision: head,
+    });
+    return true;
   });
 }
 
@@ -144,7 +169,12 @@ function resumeMoveOf(task: Task, events: readonly TaskEvent[], command: "resume
   // The state check made sure that the task is in a pause, so its state is a task state.
   const pause = task.state as TaskState;
   const origin = transitionFromEvents(events, pause);
-  const row = origin === undefined ? undefined : originRow(events, origin, RESUME_TABLES);
+  const refineOrigin = origin === "refining" ? transitionFromEvents(events, origin) : undefined;
+  const isReopen = (refineOrigin === "accepted" || refineOrigin === "pushed") && refineFeedbackOf(events) !== undefined;
+  const row =
+    origin === undefined || ((refineOrigin === "accepted" || refineOrigin === "pushed") && !isReopen)
+      ? undefined
+      : originRow(events, origin, RESUME_TABLES);
   // The state machine has no edge from the origin into this pause, so no run stopped that way.
   if (origin === undefined || row === undefined || !canTransition(origin, pause)) {
     throw new Error(
@@ -163,9 +193,11 @@ function applyResumeMove(
   { origin, row }: ResumeMove,
   extra: readonly NewEvent[] = [],
   detail: { head?: string } = {},
+  clearReopenStartHead = false,
 ): ResumeResult {
   const writes: ResumeWrites = {};
   if (row.clearReview) writes.clearReviewSession = store.nextReview(task.id);
+  if (clearReopenStartHead) writes.clearReopenStartHead = true;
   transitionWithResume(store, task.id, row.target, origin, writes, extra, detail);
   const result: ResumeResult = { origin, target: row.target, next: row.next };
   const feedback = origin === "refining" ? refineFeedbackOf(events) : undefined;
@@ -175,12 +207,15 @@ function applyResumeMove(
 // Moves a task in a pause back to the state before the run that stopped, with the events of extra after the resume
 // event, in one transaction. The caller holds the task lock and made sure that the task is in a pause that command
 // accepts. It refuses an origin with no row.
-export function moveFromPause(
+export async function moveFromPause(
   store: TaskStore,
   task: Task,
   events: readonly TaskEvent[],
   command: "resume" | "approve-credits",
   extra: readonly NewEvent[] = [],
-): ResumeResult {
-  return applyResumeMove(store, task, events, resumeMoveOf(task, events, command), extra);
+  recoveryRequest?: Pick<ResumeRequest, "config" | "env" | "repoLockWaitMs">,
+): Promise<ResumeResult> {
+  const move = resumeMoveOf(task, events, command);
+  const restored = recoveryRequest === undefined ? false : await restorePendingReopen(store, recoveryRequest, task);
+  return applyResumeMove(store, task, events, move, extra, {}, restored);
 }

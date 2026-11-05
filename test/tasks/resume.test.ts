@@ -268,10 +268,12 @@ describe("resumeTask origins", () => {
   });
 
   it("keeps the pause and recovery head when the resume event write fails", async () => {
-    const { dataRoot, task } = seedApprovedTaskWithSessions();
-    const startHead = "a".repeat(40);
+    const fixture = await useRefineFixture({ stream: [] });
+    const { dataRoot, env } = fixture.started;
+    const { task } = fixture;
+    const startHead = await taskBranchTipOf({ clone: fixture.started.clone, env, task });
     withDataRootStore(dataRoot, (store) => {
-      store.updateTask(task.id, { reopenStartHead: startHead });
+      store.updateTask(task.id, { state: "accepted", reopenStartHead: startHead });
       pauseRefineFrom(store, task.id, "pushed", "interrupted", FEEDBACK);
     });
     withRawDatabase(databasePathOf(dataRoot), (db) => {
@@ -279,7 +281,7 @@ describe("resumeTask origins", () => {
         WHEN NEW.type = 'resume' BEGIN SELECT RAISE(ABORT, 'resume event rejected'); END`);
     });
 
-    await expect(resume(dataRoot, task)).rejects.toThrow("resume event rejected");
+    await expect(resumeWithEnv(dataRoot, task, fixture.started.config, env)).rejects.toThrow("resume event rejected");
 
     expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: "interrupted", reopenStartHead: startHead });
     expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([]);

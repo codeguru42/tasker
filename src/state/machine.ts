@@ -126,6 +126,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
     "approved",
     "awaiting_work_review",
     "accepted",
+    "pushed",
     "reviewed",
   ],
   awaiting_quota_approval: [
@@ -134,6 +135,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
     "approved",
     "awaiting_work_review",
     "accepted",
+    "pushed",
     "reviewed",
   ],
   interrupted: [

@@ -6,6 +6,7 @@ import { mergeIssue } from "./merge.js";
 import { planIssue } from "./plan.js";
 import { pushIssue } from "./push.js";
 import { refineIssue } from "./refine.js";
+import { reopenIssue } from "./reopen.js";
 import { reviewFeedbackIssue, reviewIssue } from "./review.js";
 import { startIssue } from "./start.js";
 import { verifyIssue } from "./verify.js";
@@ -14,6 +15,7 @@ import { verifyIssue } from "./verify.js";
 export type NextRun =
   | { command: "start" | "plan" | "execute" | "verify" | "review" | "merge" | "push" | "finish" }
   | { command: "refine"; feedback: string | undefined }
+  | { command: "reopen"; feedback: string }
   | { command: "review-feedback"; feedback: string };
 
 // Runs the command of next for the issue, with the steps and the output of that command.
@@ -33,6 +35,9 @@ export async function runNextCommand(
       break;
     case "refine":
       await refineIssue(io, config, issue, options, next.feedback);
+      break;
+    case "reopen":
+      await reopenIssue(io, config, issue, options, next.feedback);
       break;
     case "review-feedback":
       await reviewFeedbackIssue(io, config, issue, options, next.feedback);

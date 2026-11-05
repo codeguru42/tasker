@@ -6,6 +6,7 @@ import {
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
   orFailAsync,
+  REPO_LOCK_WAIT_MS,
   REPO_OPTION_DESCRIPTION,
   withIssueTaskAsync,
 } from "./shared.js";
@@ -24,7 +25,13 @@ export const approveCredits: RegisterCommand = (program, io) => {
       const { approvedResetsAt, ...moved } = await orFailAsync(io, () =>
         withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
           key: found.issueKey,
-          ...(await approveCreditsTask(store, { ref, taskId: found.id })),
+          ...(await approveCreditsTask(store, {
+            ref,
+            taskId: found.id,
+            config,
+            env: process.env,
+            repoLockWaitMs: REPO_LOCK_WAIT_MS,
+          })),
         })),
       );
       io.stdout(

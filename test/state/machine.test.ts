@@ -210,6 +210,7 @@ const SPECIFIC: Record<string, string[]> = {
     "approved",
     "awaiting_work_review",
     "accepted",
+    "pushed",
     "reviewed",
   ],
   awaiting_quota_approval: [
@@ -218,6 +219,7 @@ const SPECIFIC: Record<string, string[]> = {
     "approved",
     "awaiting_work_review",
     "accepted",
+    "pushed",
     "reviewed",
   ],
   interrupted: [
@@ -282,8 +284,8 @@ const NO_ASSISTANT = ["verifying", "pushing", "opening_pr", "merging", "finishin
 const ASSISTANT = ["planning", "refining", "executing", "reviewing"] as TaskState[];
 
 describe("table edges", () => {
-  it("has 108 specific edges", () => {
-    expect(TABLE_EDGES).toHaveLength(108);
+  it("has 110 specific edges", () => {
+    expect(TABLE_EDGES).toHaveLength(110);
   });
 
   it.each(TABLE_EDGES)("allows %s -> %s", (from, to) => {
@@ -298,7 +300,7 @@ describe("table edges", () => {
       }
     }
     expect(found).toEqual(LEGAL_EDGES);
-    expect(found.size).toBe(158);
+    expect(found.size).toBe(160);
   });
 
   it.each(ILLEGAL_EDGES)("refuses %s -> %s", (from, to) => {

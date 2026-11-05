@@ -62,8 +62,10 @@ export async function runResumed(
   const run: NextRun =
     next === "refine"
       ? { command: next, feedback }
-      : next === "review-feedback"
+      : next === "reopen"
         ? { command: next, feedback: feedback! }
-        : { command: next };
+        : next === "review-feedback"
+          ? { command: next, feedback: feedback! }
+          : { command: next };
   await runNextCommand(io, config, issue, options, run);
 }

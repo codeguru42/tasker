@@ -4,7 +4,7 @@ import type { TaskStore } from "../store/store.js";
 import { moveFromPause, type ResumeRequest, type ResumeResult } from "./resume.js";
 import { taskInState } from "./task-state.js";
 
-export type ApproveCreditsRequest = Pick<ResumeRequest, "ref" | "taskId">;
+export type ApproveCreditsRequest = Pick<ResumeRequest, "ref" | "taskId" | "config" | "env" | "repoLockWaitMs">;
 
 export interface ApproveCreditsResult extends ResumeResult {
   // The reset time of the approved quota window. The pause record gives it, and a pause can have none.
@@ -22,7 +22,7 @@ export async function approveCreditsTask(
   return withTaskLock(store, repoKey, key, () => approveCreditsLocked(store, request));
 }
 
-function approveCreditsLocked(store: TaskStore, request: ApproveCreditsRequest): ApproveCreditsResult {
+async function approveCreditsLocked(store: TaskStore, request: ApproveCreditsRequest): Promise<ApproveCreditsResult> {
   const task = taskInState(store, request.taskId, "approve-credits");
   const events = store.listEvents(request.taskId);
   // taskInState made sure that the task is in a pause, so its state is a task state.
@@ -40,12 +40,13 @@ function approveCreditsLocked(store: TaskStore, request: ApproveCreditsRequest):
       );
     }
   }
-  const result = moveFromPause(
+  const result = await moveFromPause(
     store,
     task,
     events,
     "approve-credits",
     record.resetsAt === undefined ? [] : [{ type: "credits_approved", data: { resetsAt: record.resetsAt } }],
+    request,
   );
   return record.resetsAt === undefined ? result : { ...result, approvedResetsAt: record.resetsAt };
 }
