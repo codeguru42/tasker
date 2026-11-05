@@ -375,6 +375,23 @@ describe("forge account authentication", () => {
     expect(error.message).toContain("gh auth login");
   });
 
+  it("reports a stopped token lookup without login guidance or captured output", async () => {
+    const dir = useTempDir("tasker-forge-token-stopped-");
+    const lookup = {
+      ...tokenAnswer("octo", "private lookup stdout"),
+      stderr: "private lookup stderr",
+      killWith: "TERM",
+    };
+    const fake = forgeGh(dir, forgeToken, [lookup, answer]);
+    const error = await failureOf(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH)), Error);
+
+    expect(error.message).toMatch(/signal|stopped|terminated/i);
+    expect(error.message).not.toContain("gh auth login");
+    expectNoToken(error, "private lookup stdout");
+    expectNoToken(error, "private lookup stderr");
+    expect(fake.calls().map((call) => call.args)).toEqual([lookup.args]);
+  });
+
   it("rejects nonzero token lookup status even when stdout contains a token", async () => {
     const dir = useTempDir("tasker-forge-token-status-");
     const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo", `${forgeToken}\n`, 1), answer]);
