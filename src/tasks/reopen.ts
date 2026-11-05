@@ -11,7 +11,7 @@ import { resyncTaskBase } from "./update-branch.js";
 import { failRun } from "./run-outcome.js";
 import { runRefine } from "./refine.js";
 import { requireBranch, requireWorktree, taskInState } from "./task-state.js";
-import { vcsForRepo } from "../vcs/provider.js";
+import { uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
 import type { Task, TaskStore } from "../store/store.js";
 import type { ReconcileStrategy, VcsContext, VcsProvider } from "../vcs/provider.js";
 
@@ -24,11 +24,6 @@ export interface ReopenRequest {
   env: NodeJS.ProcessEnv;
   io: Io;
   repoLockWaitMs: number;
-}
-
-interface ReopenResync {
-  completed: Task;
-  baseTip: string;
 }
 
 // Resyncs the accepted work, then continues its recorded plan session. The task lock covers both steps.
@@ -94,7 +89,7 @@ async function reopenLocked(store: TaskStore, request: ReopenRequest): Promise<P
 
     try {
       const completed = store.completeReopen(task.id, baseTip);
-      return { completed, baseTip } satisfies ReopenResync;
+      return { completed };
     } catch (error) {
       const head = await vcs
         .workspaceState(ctx, { path })
@@ -146,7 +141,7 @@ async function cleanTaskWorkspace(
     throw new Error(
       [
         `the worktree has uncommitted changes: ${path}`,
-        ...state.changes.map((change) => `${change.status} ${change.path}`),
+        ...state.changes.map(uncommittedChangeText),
         "tasker reopen needs a clean worktree",
       ].join("\n"),
     );

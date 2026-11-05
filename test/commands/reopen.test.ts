@@ -226,7 +226,7 @@ describe("reopen", () => {
     await commitInWorktree(fixture.stacked.worktree, fixture.env, { file: "stacked-followup.txt" });
     await commitInWorktree(fixture.parent.worktree, fixture.env, { file: "parent-followup.txt" });
 
-    const result = await runCommand(reopen, "reopen", fixture.stacked.key, FEEDBACK, "--repo", REPO);
+    const result = await runReopen(FEEDBACK, fixture.stacked.key);
 
     expect(result.code).toBe(0);
     expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).state).toBe("awaiting_plan_review");

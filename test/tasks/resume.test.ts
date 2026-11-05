@@ -39,14 +39,12 @@ const BOTH: readonly Pause[] = ["quota_blocked", "interrupted"];
 
 // Calls resumeTask for the task in the data root, in a store that closes after the call. The rows with no git do not
 // read the configuration, so config defaults to a parsed one.
-function resume(dataRoot: string, task: Task, config: Config = configWithTrackers({ [REPO]: {} })) {
-  const ref = { key: KEY, repoKey: REPO, shortRef: githubShortRef("5") };
-  return withDataRootStore(dataRoot, (store) =>
-    resumeTask(store, { ref, taskId: task.id, config, env: process.env, repoLockWaitMs: 1000 }),
-  );
-}
-
-function resumeWithEnv(dataRoot: string, task: Task, config: Config, env: NodeJS.ProcessEnv) {
+function resume(
+  dataRoot: string,
+  task: Task,
+  config: Config = configWithTrackers({ [REPO]: {} }),
+  env: NodeJS.ProcessEnv = process.env,
+) {
   const ref = { key: KEY, repoKey: REPO, shortRef: githubShortRef("5") };
   return withDataRootStore(dataRoot, (store) =>
     resumeTask(store, { ref, taskId: task.id, config, env, repoLockWaitMs: 1000 }),
@@ -256,7 +254,7 @@ describe("resumeTask origins", () => {
       pauseRefineFrom(store, task.id, "accepted", "interrupted", FEEDBACK);
     });
 
-    const result = await resumeWithEnv(started.dataRoot, task, started.config, started.env);
+    const result = await resume(started.dataRoot, task, started.config, started.env);
 
     expect(result).toEqual({ origin: "refining", target: "accepted", next: "reopen", feedback: FEEDBACK });
     expect(latestTaskOf(started.dataRoot, KEY)).toMatchObject({ state: "accepted", reopenStartHead: null });
@@ -281,7 +279,7 @@ describe("resumeTask origins", () => {
         WHEN NEW.type = 'resume' BEGIN SELECT RAISE(ABORT, 'resume event rejected'); END`);
     });
 
-    await expect(resumeWithEnv(dataRoot, task, fixture.started.config, env)).rejects.toThrow("resume event rejected");
+    await expect(resume(dataRoot, task, fixture.started.config, env)).rejects.toThrow("resume event rejected");
 
     expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: "interrupted", reopenStartHead: startHead });
     expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([]);
