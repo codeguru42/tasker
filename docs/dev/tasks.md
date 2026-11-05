@@ -850,21 +850,33 @@ These reasons explain its rules:
 ## Finish
 
 `tasker finish` cleans up a task in `landed` or `cleanup_failed`: it removes the worktree and the local task branch, and
-the task goes through `finishing` to `finished`.
+then deletes the published task branch on `origin` when the task has a stored published revision. The task enters
+`finishing` before cleanup.
 
-The last write appends one `transition` event with the data `{ worktree, branch, from, to }`. The value of `worktree` is
-`removed` or `already gone`. The value of `branch` is `deleted` or `already gone`. If a step fails after the move to
-`finishing`, the task goes to `cleanup_failed`. Its `transition` event then has the data `{ error, from, to }`.
+The remote delete uses a lease on the stored published revision. If the branch moved, finish stops before the tracker
+write, moves the task to `cleanup_failed`, and prints the error. Local cleanup can already have removed the worktree and
+local branch. The user must resolve or remove the moved remote branch before running finish again.
 
-If `issueTracker.updateOnFinish` is `true`, finish also marks the issue done. The `tracker_update` event comes before
-the last `transition` event. [The tracker writes](#the-tracker-writes) gives the reason.
+Other remote deletion errors write a `remote_cleanup_warning` event and print a warning. Finish continues to the tracker
+write and completion. The task can reach `finished` while its remote branch remains on `origin`.
+
+If `issueTracker.updateOnFinish` is `true`, finish marks the issue done after remote cleanup. The `tracker_update` event
+comes before the `finished` event. [The tracker writes](#the-tracker-writes) gives the reason.
+
+The completion write appends one `finished` event with `{ worktree, branch, from, to }`, moves the task to `finished`,
+and clears its run marker in one transaction. The value of `worktree` is `removed` or `already gone`. The value of
+`branch` is `deleted` or `already gone`. If this write fails after external cleanup, finish moves the task to
+`cleanup_failed`. Its error names the completed cleanup and the failed completion record.
+
+If local cleanup fails after the move to `finishing`, the task goes to `cleanup_failed`. Its `transition` event has the
+data `{ error, from, to }`. The error starts with `finishing failed:`.
 
 These links give the rules that finish follows:
 
 - The command makes its checks before its first write, as the [intro](#the-task-commands) says.
 - The task lock does not wait, and the repo lock waits. [The locks](#the-locks) gives both rules.
-- Each step first checks that its target still exists, so a second run finishes the steps that are left. [Abort](#abort)
-  gives the rule.
+- Each cleanup step skips resources that are already gone, so a second run can finish after a remote delete or a crash.
+  [Abort](#abort) gives the local cleanup rule.
 - The worktree goes before the branch, for the reason in [Abort](#abort).
 - The command takes the repo lock before the move to `finishing`, for the reason in [Merge](#merge).
 
