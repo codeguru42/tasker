@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { readGithubBlockers } from "../../src/issues/github/blockers.js";
 import { readGithubIssue } from "../../src/issues/github/issue.js";
@@ -17,6 +17,9 @@ import {
 } from "./fake-gh.js";
 import { useTempDir } from "./temp.js";
 
+const runGh = (env: NodeJS.ProcessEnv, ...args: string[]) =>
+  spawnSync(env.TASKER_GH_BIN ?? "gh", args, { env, encoding: "utf8" });
+
 describe("fakeGh", () => {
   let dir: string;
 
@@ -24,7 +27,17 @@ describe("fakeGh", () => {
     dir = useTempDir("tasker-fake-gh-");
   });
 
-  const run = (env: NodeJS.ProcessEnv, ...args: string[]) => spawnSync("gh", args, { env, encoding: "utf8" });
+  const run = runGh;
+
+  it("selects its executable when the child PATH cannot find gh", () => {
+    const gh = fakeGh(dir, {}, [{ args: ["listed"], stdout: "listed\n" }]);
+    const env = { ...gh.env, PATH: "/does-not-exist" };
+
+    expect(isAbsolute(gh.env.TASKER_GH_BIN ?? "")).toBe(true);
+    expect(gh.env.TASKER_GH_BIN).toBe(join(dir, "bin", "gh"));
+    expect(run(env, "listed").stdout).toBe("listed\n");
+    expect(run(env, "unexpected").status).toBe(99);
+  });
 
   it("answers a listed call with the stdout, stderr and exit code of its answer", () => {
     const gh = fakeGh(dir, {}, [{ args: ["issue", "view", "7"], stdout: "out\n", stderr: "err\n", exitCode: 3 }]);
@@ -219,7 +232,7 @@ describe("trackerWriteCalls", () => {
       githubWriteAnswer({ project: "octo/repo", number: 7, verb: "edit", rest: ["--add-assignee", "@me"] }),
       githubWriteAnswer({ project: "octo/repo", number: 7, verb: "close", rest: ["--reason", "completed"] }),
     ]);
-    const run = (...args: string[]) => spawnSync("gh", args, { env: gh.env, encoding: "utf8" });
+    const run = (...args: string[]) => runGh(gh.env, ...args);
 
     run("auth", "token", "--hostname", "github.com", "--user", "octo");
     run("issue", "edit", "7", "-R", "octo/repo", "--add-assignee", "@me");
@@ -251,7 +264,7 @@ describe("githubLabelsAfter", () => {
       edit(7, "--remove-label", "none"),
     ];
     const gh = fakeGh(useTempDir("tasker-labels-after-"), {}, answers);
-    for (const answer of answers) spawnSync("gh", [...answer.args], { env: gh.env, encoding: "utf8" });
+    for (const answer of answers) runGh(gh.env, ...answer.args);
 
     expect(githubLabelsAfter(gh, { project: "octo/repo", number: 7, labels: ["bug", "docs"] })).toEqual([
       "docs",
@@ -262,7 +275,7 @@ describe("githubLabelsAfter", () => {
   it("ignores a call for another issue number", () => {
     const answer = edit(8, "--add-label", "wip");
     const gh = fakeGh(useTempDir("tasker-labels-after-"), {}, [answer]);
-    spawnSync("gh", [...answer.args], { env: gh.env, encoding: "utf8" });
+    runGh(gh.env, ...answer.args);
 
     expect(githubLabelsAfter(gh, { project: "octo/repo", number: 7 })).toEqual([]);
   });
@@ -307,7 +320,7 @@ describe("blockerReadCalls", () => {
       githubIssueAnswer({ project: "octo/repo", number: 7 }),
       githubBlockersAnswer({ project: "octo/repo", number: 7 }),
     ]);
-    const run = (...args: string[]) => spawnSync("gh", args, { env: gh.env, encoding: "utf8" });
+    const run = (...args: string[]) => runGh(gh.env, ...args);
     const blockersArgs = githubBlockersAnswer({ project: "octo/repo", number: 7 }).args;
 
     run("issue", "view", "7", "-R", "octo/repo", "--json", "number,title,body,url,labels,state");

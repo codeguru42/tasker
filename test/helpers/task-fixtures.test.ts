@@ -73,6 +73,9 @@ import {
   fixtureTrackerCall,
 } from "./task-fixtures.js";
 
+const runGh = (env: NodeJS.ProcessEnv, args: readonly string[]) =>
+  spawnSync(env.TASKER_GH_BIN ?? "gh", [...args], { env, encoding: "utf8" });
+
 // The ref of codeguru42/tasker#<n> in the repo of the fixture, with the short ref that the code makes.
 function issueRefOf(fixture: Pick<StartFixture, "repoKey">, n: number): IssueRef {
   return { key: `codeguru42/tasker#${n}`, repoKey: fixture.repoKey, shortRef: githubShortRef(String(n)) };
@@ -88,11 +91,14 @@ describe("useStartFixture", () => {
     expect(repo.defaultBaseBranch).toBe("main");
   });
 
-  it("sets TASKER_CONFIG and puts the fake gh first on the PATH", async () => {
+  it("sets TASKER_CONFIG and selects fake gh while keeping tool PATH", async () => {
     const fixture = await useStartFixture();
 
     expect(process.env.TASKER_CONFIG).toBe(fixture.configPath);
+    expect(fixture.gh.env.TASKER_GH_BIN).toBeTruthy();
+    expect(process.env.TASKER_GH_BIN).toBe(fixture.gh.env.TASKER_GH_BIN);
     expect(process.env.PATH?.startsWith(`${String(fixture.gh.env.PATH)}${delimiter}`)).toBe(true);
+    expect(execFileSync("git", ["--version"], { env: process.env, encoding: "utf8" })).toContain("git version");
   });
 
   it("answers the read of issue 5 through the fake gh", async () => {
@@ -1015,7 +1021,7 @@ describe("useStartFixture with ghAnswers", () => {
   it("adds the answers after the token and issue answers", async () => {
     const answer = fixtureTrackerAnswer("assign");
     const fixture = await useStartFixture({ ghAnswers: [answer] });
-    const result = spawnSync("gh", [...answer.args], { env: fixture.gh.env, encoding: "utf8" });
+    const result = runGh(fixture.gh.env, answer.args);
 
     expect(result.status).toBe(0);
     expect(trackerWriteCalls(fixture.gh)).toEqual([[...answer.args]]);
@@ -1056,7 +1062,7 @@ describe("fixtureTrackerAnswer", () => {
   it("works in useStartFixture, and trackerWriteCalls logs the call", async () => {
     const fixture = await useStartFixture({ ghAnswers: [fixtureTrackerAnswer("close", { exitCode: 3 })] });
 
-    const result = spawnSync("gh", fixtureTrackerCall("close"), { env: fixture.gh.env, encoding: "utf8" });
+    const result = runGh(fixture.gh.env, fixtureTrackerCall("close"));
 
     expect(result.status).toBe(3);
     expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("close")]);
