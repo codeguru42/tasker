@@ -589,9 +589,9 @@ has rows for `refining` when its origin is `awaiting_plan_review`, `failed`, `re
 
 The origins `verifying`, `merging`, `pushing`, `finishing` and `updating_branch` work only from `interrupted`.
 [The Pauses table](../statemachine.md#pauses) gives their targets and next commands. This page does not copy that table.
-For `refining`, the refine origin picks the row, as in [Retry](#retry). For `merging` and `pushing`, the state that the
-task left when that command started picks the row. For `updating_branch`, the update origin picks the row, and the task
-returns to it. Resume refuses any other origin, a merge origin with no row and an update origin with no row.
+For `refining`, the refine origin picks the row, as in [Retry](#retry). For `merging`, the state that the task left when
+the merge started picks the row. For `updating_branch`, the update origin picks the row, and the task returns to it.
+Resume refuses any other origin, a merge origin with no row and an update origin with no row.
 
 A guard in the shared move refuses a pause that the state machine cannot reach from the origin. The state machine has no
 edge from the origin into that pause, so no run stopped that way. As a result, `verifying`, `merging` or `finishing` in

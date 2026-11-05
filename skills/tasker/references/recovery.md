@@ -121,8 +121,7 @@ origin in this table:
 - `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs
   `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to
   `landed`.
-- `pushing`, when the state before the push is `accepted`: the task goes to `accepted`, and the command runs
-  `tasker push`.
+- `pushing`: the task goes to `accepted`, and the command runs `tasker push`.
 - `finishing`: the task goes to `landed`, and the command runs `tasker finish`. The target is `landed` also when the
   task came to `finishing` from `cleanup_failed`. Each cleanup step skips what is already done.
 - `updating_branch`: only a task in `interrupted` has this origin. The task goes back to the origin of the update, which
