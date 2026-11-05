@@ -3,7 +3,8 @@
 This page gives the reasons and limits of the task commands. It also explains the result of an assistant run. The
 commands are start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, push,
 mark-landed, update-branch, finish, retry, resume, approve-credits and accept. The user reference files show their
-output. Each phase has a file in [SKILL.md](../../skills/tasker/SKILL.md) and `skills/tasker/references/`.
+output. [SKILL.md](../../skills/tasker/SKILL.md) links to reference files in `skills/tasker/references/`, which explain
+the commands of each phase.
 
 The commands abort, plan, refine, approve, unapprove, execute, accept, resume, approve-credits, merge, push,
 mark-landed, update-branch and finish share one rule. Each of these commands makes all its checks before its first
@@ -151,8 +152,7 @@ the entry is gone.
 The remove and the delete have one home in `src/tasks/`. Abort and [Finish](#finish) both call it, and the abort keeps
 its discard step before that call.
 
-The abort does not delete the task branch on `origin`. `tasker push` publishes that branch, and no tasker command
-deletes it from `origin`.
+The abort does not delete the task branch on `origin`. No ticket has added remote branch deletion yet.
 
 A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task
 stores.
@@ -567,7 +567,8 @@ These reasons explain its rules:
 - A merge that failed can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on
   the base, so a second run lands the task with no second push.
 - A push can reach `origin` before tasker records the result. Retry calls the provider again with the stored published
-  revision. If `origin` already has that revision, the provider reports it without pushing again.
+  revision as the lease. If `origin` holds the current local task branch revision, the provider reports it without a
+  second push.
 - After a turn that pushed, `tasker execute` moves the task to its pause first, and the push guard then fails the task.
   So the last move into `failed` comes from the pause, and retry reads the origin of the pause.
 - The move and the run are two steps with the lock free between them. The next command takes the task lock itself and
@@ -613,8 +614,8 @@ These reasons explain its rules:
 - A verify run has no session, so the verify runs again from the first command.
 - A merge that stopped can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on
   the base, so a second run lands the task with no second push.
-- If publication finished before a push stopped, resume runs `tasker push` again. The provider recognizes the stored
-  revision on `origin`. Tasker records it without another push.
+- If publication finished before a push stopped, resume runs `tasker push` again. If `origin` holds the current local
+  task branch revision, the provider reports it without another push. Tasker records that revision.
 - Each cleanup step of `tasker finish` skips what is done, so a second run finishes the rest. The target of `finishing`
   is `landed`, also when the task came from `cleanup_failed`, because `tasker finish` runs from `landed` with the same
   steps.
@@ -716,8 +717,8 @@ These reasons explain its rules:
 
 ## Push
 
-`tasker push` publishes the accepted task branch to `origin`. The task goes through `pushing` to `pushed`. It does not
-land the work on the base branch. Run `tasker merge` or `tasker mark-landed` when you decide to land it.
+Publication and landing are separate decisions after acceptance. `tasker push` publishes the accepted task branch to
+`origin`. The task goes through `pushing` to `pushed`. It does not land the work on the base branch.
 
 Before it writes, the command compares the exact local task branch tip with the revision that `tasker accept` stored.
 Then it publishes only the task branch. It does not need the base branch, an assistant or a forge.
@@ -727,12 +728,12 @@ The review and the accept cover one tree. The push covers the same tree.
 These reasons explain its rules:
 
 - A commit after the accept has no review. The command publishes only the accepted revision.
-- The provider uses the last published revision as a lease for an update. If the remote already holds that revision, the
-  provider reports it without another push. This lets retry record a push that reached `origin` before a store write
-  failed.
+- The provider uses the last published revision as a lease for an update. If `origin` holds the current local task
+  branch revision, it reports that result without another push. This lets retry record a push that reached `origin`
+  before a store write failed.
 - The stored published revision, the move to `pushed` and the `published` event share one transaction. Later runs read
   the revision from the task row.
-- If tasker adds PR storage in the future, publication must preserve that PR record. This task adds no PR storage.
+- If a task has a PR record, publication must preserve it.
 
 If a step fails after the task enters `pushing`, the task goes to `failed`. Retry returns it to `accepted` and runs
 `tasker push` again. A crash during the push leaves the task in `pushing` with a run marker. The dead-run step moves it
