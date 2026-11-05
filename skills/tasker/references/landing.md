@@ -122,39 +122,14 @@ it to `interrupted`.
 
 ## `tasker mark-landed`
 
-Records that the work of a task in the state `accepted`, `pushed` or `in_peer_review` already landed on the base branch
-outside tasker: `tasker mark-landed <issue>`. The task goes to the state `landed`.
+Declares that work in `accepted`, `pushed` or `in_peer_review` landed: `tasker mark-landed <issue>`. The task moves to
+`landed`. The command makes no Git or forge calls and takes no clone lock.
 
-The command fetches `origin`. Then it reads the tip of the task branch in the clone and makes sure that the tip of the
-base contains it. For a local base, the tip is the tip of the local branch in the clone. The command never pushes.
+On success, the command prints `marked <issue key> landed\n` on stdout. The command records the declaration and moves
+the task in one transaction.
 
-On success, the command prints the line `marked <issue key> landed at <revision>` on stdout. The revision is the tip of
-the task branch.
-
-The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state
-and nothing is written. The shared errors of no task, of the wrong state, of the task lock and of the clone lock belong
-to this group:
-
-- The task is stacked, so it has a parent task. The error depends on the parent:
-  - The parent landed. The error is
-    `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
-    Run `tasker update-branch <issue key>`.
-  - The chain of parents has a loop. The error is the loop error of [`tasker update-branch`](keeping-current.md#errors).
-  - The end task of the walk has a local base and no parent. The error is the local-base error of
-    [`tasker update-branch`](keeping-current.md#errors).
-  - The parent is cancelled. The error is
-    `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
-  - The parent is in any other state. The error is
-    `the parent <parent key> of <issue key> has not landed; land the parent first, then run tasker update-branch <issue key>`.
-- The task has no branch. The error is `the task of <issue key> has no branch`.
-- The task has no base. The error is `the task of <issue key> has no base`.
-- The fetch or the read of the base fails, for example because `origin` has no such base. The error is
-  `cannot read the base tip: <error>`.
-- The base does not contain the task branch. The error is
-  `the branch <branch> (<revision>) is not on the base <base revision> (<base tip>)`. The base revision is the ref that
-  the check compared, for example `refs/remotes/origin/main`.
-
-A fetch that ran still moves the refs of `origin` in the clone, also when the command stops with an error.
+The command stops with exit code 1 and prints the error on stderr when the task does not exist, its state is not one of
+the three states above, or another process holds the task lock. In each case, the task and its events stay unchanged.
 
 ## `tasker finish`
 
