@@ -18,7 +18,7 @@ import {
   type VerifyRunResult,
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
-import { TERMINAL_STATES } from "../../src/state/machine.js";
+import { TERMINAL_STATES, transitionWithPublication } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
 import { claudeRateLimitEvent } from "../helpers/fake-claude.js";
 import { findingEntries, reviewFinding } from "../helpers/review.js";
@@ -932,6 +932,20 @@ describe("task store", () => {
       expect(taskWithPublishedRevision(store.getTask(task.id))).toBe("a".repeat(40));
     });
 
+    it("stores the event returned by the publication check", () => {
+      const task = runningTask("pushing");
+      const revision = "a".repeat(40);
+      store.recordPublication(task.id, revision, { branch: "argument-branch", lease: false, pushed: true }, () => ({
+        type: "published",
+        data: { branch: "callback-branch", revision, lease: true, pushed: false, from: "pushing", to: "pushed" },
+      }));
+
+      expect(store.listEvents(task.id).at(-1)).toMatchObject({
+        type: "published",
+        data: { branch: "callback-branch", revision, lease: true, pushed: false, from: "pushing", to: "pushed" },
+      });
+    });
+
     it("rolls back state, published revision, event, and marker when recording fails", () => {
       const task = runningTask("pushing");
       withRawDatabase(dbPath, (raw) => {
@@ -940,25 +954,8 @@ describe("task store", () => {
         );
       });
       const eventsBefore = store.listEvents(task.id);
-      const recordPublication = store as unknown as {
-        recordPublication: (
-          taskId: number,
-          revision: string,
-          result: { branch: string; lease: boolean; pushed: boolean },
-          check: (current: Task) => undefined,
-        ) => void;
-      };
       expect(() =>
-        recordPublication.recordPublication(
-          task.id,
-          "a".repeat(40),
-          {
-            branch: "issue-6",
-            lease: false,
-            pushed: false,
-          },
-          () => undefined,
-        ),
+        transitionWithPublication(store, task.id, "a".repeat(40), { branch: "issue-6", lease: false, pushed: false }),
       ).toThrow("event rejected");
       expect(store.getTask(task.id)).toMatchObject({ state: "pushing", publishedRevision: null });
       expect(store.listEvents(task.id)).toEqual(eventsBefore);
