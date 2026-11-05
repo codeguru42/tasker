@@ -37,6 +37,7 @@ describe("fakeGh", () => {
     expect(gh.env.TASKER_GH_BIN).toBe(join(dir, "bin", "gh"));
     expect(run(env, "listed").stdout).toBe("listed\n");
     expect(run(env, "unexpected").status).toBe(99);
+    rmSync(`${gh.logPath}.unanswered`);
   });
 
   it("answers a listed call with the stdout, stderr and exit code of its answer", () => {

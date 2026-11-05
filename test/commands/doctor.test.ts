@@ -48,6 +48,7 @@ async function setUp(answers: readonly FakeGhAnswer[], change: (raw: RawConfig) 
   useProcessEnv({
     ...fixture.origin.env,
     PATH: [join(dir, "bin"), ...toolPath].join(delimiter),
+    TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
     TASKER_CONFIG: written.path,
   });
   return { fixture, fake, dir };

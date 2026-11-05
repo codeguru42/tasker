@@ -163,7 +163,7 @@ export function replaceStartGh(
 // options.ghAnswers adds answers to the fake gh, after the token and issue answers.
 // Last, each issue gets an answer of the blockers read with no blockers. An answer of
 // options.ghAnswers for the same read comes first, so it wins.
-// The fake gh comes first on the PATH, so the real gh never runs and git still runs.
+// TASKER_GH_BIN selects fake gh. PATH also includes its bin folder for other tools.
 // Call it inside a test. After the test, it removes the folders and restores the env.
 export async function useStartFixture(
   options: {
@@ -197,6 +197,7 @@ export async function useStartFixture(
   useProcessEnv({
     TASKER_CONFIG: written.path,
     PATH: `${String(gh.env.PATH)}${delimiter}${String(process.env.PATH)}`,
+    TASKER_GH_BIN: gh.env.TASKER_GH_BIN,
   });
   return { origin, dataRoot: written.dataRoot, configPath: written.path, gh, repoKey, config: loadConfig() };
 }

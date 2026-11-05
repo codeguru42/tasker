@@ -13,7 +13,7 @@ try {
     { args: ["api", "user"], stdout: "out\n", stderr: "err\n" },
     { args: ["issue", "view", "7"], stdout: "out\n", stderr: "err\n", exitCode: 1 },
   ]);
-  const options = { account: "octo", env: { PATH: binDir } };
+  const options = { account: "octo", env: { PATH: binDir, TASKER_GH_BIN: join(binDir, "gh") } };
   // gh writes to stdout and stderr on success. runGh must keep both away from the terminal.
   await runGh(["api", "user"], options);
   // A failing gh must not write to the terminal either.

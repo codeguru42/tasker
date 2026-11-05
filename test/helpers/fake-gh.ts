@@ -133,7 +133,7 @@ export function fakeGh(
   writeFakeGh(binDir, logPath, answers, logEnv);
   const checks = answerChecks("gh", logPath);
   const fake: FakeGh = {
-    env: { ...baseEnv, PATH: binDir },
+    env: { ...baseEnv, PATH: binDir, TASKER_GH_BIN: join(binDir, "gh") },
     logPath,
     calls: () =>
       readFakeCalls(logPath, 1, logEnv).map((call) => ({ args: call.args, ghToken: call.leading[0], env: call.env })),
