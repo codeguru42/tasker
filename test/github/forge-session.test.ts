@@ -85,6 +85,20 @@ describe("createGhSession", () => {
     expect(fake.calls().map((call) => call.args)).toEqual([tokenAnswer("octo").args, ["repo", "view"]]);
   });
 
+  it("reports a missing worktree before reading the account token", async () => {
+    const dir = useTempDir("tasker-forge-missing-worktree-");
+    const fake = forgeGh(dir, "", []);
+    const missingWorktree = join(dir, "missing-worktree");
+
+    const error = await failureOf(
+      run(createGhSession("octo"), ["repo", "view"], missingWorktree, taskerEnv(fake.env.PATH)),
+      Error,
+    );
+
+    expect(error.message).toContain(missingWorktree);
+    expect(fake.calls()).toEqual([]);
+  });
+
   it.each([undefined, "", "  "])("requires a nonblank TASKER_PATH, got %j", async (path) => {
     const dir = useTempDir("tasker-forge-no-path-");
     const fake = forgeGh(dir, "token", []);
