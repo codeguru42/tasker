@@ -38,6 +38,7 @@ import {
   NO_SESSION_VALUES,
   sessionValuesOf,
   seedReview,
+  rejectRetryEvent,
   tableNames,
   tableRowCount,
   withRawDatabase,
@@ -2685,19 +2686,15 @@ describe("task store", () => {
         type: "retry",
         data: { origin: "refining", target: "accepted", resumeExecute: false, from: "failed", to: "accepted" },
       });
-      withRawDatabase(dbPath, (db) =>
-        db.exec(
-          "CREATE TRIGGER reject_retry_event BEFORE INSERT ON events WHEN NEW.type = 'retry' BEGIN SELECT RAISE(ABORT, 'retry event rejected'); END",
-        ),
-      );
+      const release = rejectRetryEvent(dbPath);
       expectNothingChanged(
         task.id,
         () => store.retryTask(task.id, "accepted", { clearReopenStartHead: true }, check),
-        "retry event rejected",
+        "event rejected",
       );
       expect(store.getTask(task.id)?.reopenStartHead).toBe("start-head");
 
-      withRawDatabase(dbPath, (db) => db.exec("DROP TRIGGER reject_retry_event"));
+      release();
       const moved = store.retryTask(task.id, "accepted", { clearReopenStartHead: true }, check);
 
       expect(moved).toMatchObject({ state: "accepted", reopenStartHead: null });

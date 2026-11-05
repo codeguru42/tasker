@@ -31,8 +31,8 @@ import {
   failTaskVia,
   failVerifyRun,
   latestTaskOf,
-  withRawDatabase,
   seedReview,
+  rejectRetryEvent,
   withDataRootStore,
 } from "../helpers/store.js";
 
@@ -68,16 +68,6 @@ async function failedPendingReopen(origin: "accepted" | "pushed" = "accepted") {
     failRefineFrom(store, fixture.task.id, origin);
   });
   return { ...fixture, startHead, task: latestTaskOf(fixture.started.dataRoot, KEY) };
-}
-
-function rejectRetryEvent(dataRoot: string): () => void {
-  const dbPath = databasePathOf(dataRoot);
-  withRawDatabase(dbPath, (db) =>
-    db.exec(
-      "CREATE TRIGGER reject_retry_event BEFORE INSERT ON events WHEN NEW.type = 'retry' BEGIN SELECT RAISE(ABORT, 'retry event rejected'); END",
-    ),
-  );
-  return () => withRawDatabase(dbPath, (db) => db.exec("DROP TRIGGER reject_retry_event"));
 }
 
 // Expects that retry refuses with message, and that the state, the events and the sessions stay the same.
@@ -426,7 +416,7 @@ describe("retryTask pending reopen recovery", () => {
 
   it("repeats restore after the retry event fails, then commits the retry on a later call", async () => {
     const fixture = await failedPendingReopen();
-    const release = rejectRetryEvent(fixture.started.dataRoot);
+    const release = rejectRetryEvent(databasePathOf(fixture.started.dataRoot));
     try {
       const error = await failureOf(
         retry(fixture.started.dataRoot, fixture.task, false, {
@@ -436,7 +426,7 @@ describe("retryTask pending reopen recovery", () => {
         Error,
       );
 
-      expect(error.message).toContain("retry event rejected");
+      expect(error.message).toContain("event rejected");
       expect(
         await gitOutput({ cwd: String(fixture.task.worktreePath) }, fixture.started.env, "rev-parse", "HEAD"),
       ).toBe(fixture.startHead);
