@@ -210,6 +210,7 @@ describe("task store", () => {
       undoAfterHead: null,
       undoSyncedBaseTip: null,
       acceptedRevision: null,
+      publishedRevision: null,
       trackerMarked: false,
       parentTaskId: null,
       attempt: 1,
@@ -943,15 +944,21 @@ describe("task store", () => {
         recordPublication: (
           taskId: number,
           revision: string,
-          result: { branch: string; lease: string | null; pushed: string },
+          result: { branch: string; lease: boolean; pushed: boolean },
+          check: (current: Task) => undefined,
         ) => void;
       };
       expect(() =>
-        recordPublication.recordPublication(task.id, "a".repeat(40), {
-          branch: "issue-6",
-          lease: null,
-          pushed: "pushed",
-        }),
+        recordPublication.recordPublication(
+          task.id,
+          "a".repeat(40),
+          {
+            branch: "issue-6",
+            lease: false,
+            pushed: false,
+          },
+          () => undefined,
+        ),
       ).toThrow("event rejected");
       expect(store.getTask(task.id)).toMatchObject({ state: "pushing", publishedRevision: null });
       expect(store.listEvents(task.id)).toEqual(eventsBefore);
@@ -1060,7 +1067,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(18);
+        expect(migrations.length).toBe(19);
       });
     });
   });

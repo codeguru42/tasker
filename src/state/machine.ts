@@ -392,6 +392,21 @@ export function transitionWithAcceptance(store: TaskStore, id: number, revision:
   return store.acceptTask(id, revision, transitionCheck("accepted", "accepted", { revision, baseTip }));
 }
 
+// Appends the published event and moves pushing to pushed in one transaction.
+export function transitionWithPublication(
+  store: TaskStore,
+  id: number,
+  revision: string,
+  publication: { branch: string; lease: boolean; pushed: boolean },
+): Task {
+  return store.recordPublication(
+    id,
+    revision,
+    publication,
+    transitionCheck("published", "pushed", { ...publication, revision }),
+  );
+}
+
 // Appends the landed event { revision, base, pushed, from, to } and moves the task to landed, in one transaction.
 // An illegal edge writes nothing.
 export function transitionWithLanding(
