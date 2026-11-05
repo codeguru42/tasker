@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import { markLanded } from "../../src/commands/mark-landed.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { readArgLog } from "../helpers/fake-commands.js";
+import { useFakeClaudeOnPath } from "../helpers/fake-claude.js";
+import { gitRecorderEnv } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -10,6 +13,7 @@ import {
   latestTaskOf,
   readRunMarker,
   rejectMarkedLandedEvent,
+  seedTasks,
   withDataRootStore,
 } from "../helpers/store.js";
 import {
@@ -19,10 +23,12 @@ import {
   moveTaskThrough,
   seedAcceptedTask,
   useAcceptedTask,
+  expectNoAssistantRun,
   useStartFixture,
   useWorkReviewTask,
   type StartFixture,
 } from "../helpers/task-fixtures.js";
+import { useProcessEnv } from "../helpers/temp.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -32,19 +38,50 @@ const NEEDS = "accepted, pushed or in_peer_review";
 const runMarkLanded = () => runCommand(markLanded, "mark-landed", KEY, "--repo", REPO);
 
 // Runs mark-landed and expects a refusal that changes nothing.
-const expectRefused = (fixture: Pick<StartFixture, "dataRoot">, error: string | RegExp) =>
-  expectCommandRefused({ dataRoot: fixture.dataRoot, key: KEY }, runMarkLanded, error);
+const expectRefused = async (fixture: Pick<StartFixture, "dataRoot">, error: string | RegExp) => {
+  const beforeTask = latestTaskOf(fixture.dataRoot, KEY);
+  const beforeEvents = eventsOf(fixture.dataRoot, KEY);
+  const beforeMarker = readRunMarker(databasePathOf(fixture.dataRoot), beforeTask.id);
+  await expectCommandRefused({ dataRoot: fixture.dataRoot, key: KEY }, runMarkLanded, error);
+  expect(latestTaskOf(fixture.dataRoot, KEY)).toEqual(beforeTask);
+  expect(eventsOf(fixture.dataRoot, KEY)).toEqual(beforeEvents);
+  expect(readRunMarker(databasePathOf(fixture.dataRoot), beforeTask.id)).toEqual(beforeMarker);
+};
+
+const expectSparseLanding = (
+  dataRoot: string,
+  taskId: number,
+  before: ReturnType<typeof latestTaskOf>,
+  events: ReturnType<typeof eventsOf>,
+  marker: ReturnType<typeof readRunMarker>,
+) => {
+  const after = latestTaskOf(dataRoot, KEY);
+  expect(after).toMatchObject({ ...before, state: "landed", updatedAt: expect.any(String) });
+  expect(Object.hasOwn(after, "prNumber")).toBe(false);
+  expect(eventsOf(dataRoot, KEY).slice(0, events.length)).toEqual(events);
+  expect(eventsOf(dataRoot, KEY).slice(events.length)).toEqual([
+    { type: "marked_landed", data: { from: "accepted", to: "landed" } },
+  ]);
+  expect(readRunMarker(databasePathOf(dataRoot), taskId)).toEqual(marker);
+};
 
 // Lands the work, moves the task through states, and expects mark-landed to record the landing from the last state.
 // It also expects that origin keeps the head of main and that no run marker stays.
 const expectMarkedFrom = async (states: Parameters<typeof moveTaskThrough>[2], from: string) => {
   const accepted = await useAcceptedTask();
-  await landAcceptedTask(accepted);
   withDataRootStore(accepted.dataRoot, (store) => moveTaskThrough(store, accepted.task.id, states));
+  const head = await accepted.origin.branchHead("main");
+  const recorder = gitRecorderEnv(accepted.origin.dir, process.env);
+  useProcessEnv(recorder.env);
+  const claude = useFakeClaudeOnPath({});
   const before = eventsOf(accepted.dataRoot, KEY);
+  const gitCalls = readArgLog(recorder.log);
   const ghCalls = accepted.gh.calls();
 
   const result = await runMarkLanded();
+  expect(readArgLog(recorder.log)).toEqual(gitCalls);
+  expect(accepted.gh.calls()).toEqual(ghCalls);
+  expectNoAssistantRun({ claude, started: { dataRoot: accepted.dataRoot } });
 
   expect(result).toEqual({ code: 0, out: `marked ${KEY} landed\n`, err: "" });
   expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
@@ -56,13 +93,12 @@ const expectMarkedFrom = async (states: Parameters<typeof moveTaskThrough>[2], f
       data: { from, to: "landed" },
     },
   ]);
-  expect(accepted.gh.calls()).toEqual(ghCalls);
-  expect(await accepted.origin.branchHead("main")).toBe(accepted.revision);
+  expect(await accepted.origin.branchHead("main")).toBe(head);
   expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
 };
 
 describe("tasker mark-landed", () => {
-  it("records a landing on the base and moves the task to landed", () => expectMarkedFrom([], "accepted"));
+  it("declares an accepted task landed", () => expectMarkedFrom([], "accepted"));
 
   it("records a landing for a task in pushed", () => expectMarkedFrom(["pushing", "pushed"], "pushed"));
 
@@ -103,16 +139,36 @@ describe("tasker mark-landed", () => {
 
   it("marks a sparse accepted task with no branch", async () => {
     const fixture = await useStartFixture();
-    seedAcceptedTask(fixture);
+    const task = seedAcceptedTask(fixture);
+    const before = latestTaskOf(fixture.dataRoot, KEY);
+    expect(before.branch).toBeNull();
+    expect(before.base).toBeNull();
+    expect(before.worktreePath).toBeNull();
+    expect(before.acceptedRevision).toBeNull();
+    expect(before.publishedRevision).toBeNull();
+    const events = eventsOf(fixture.dataRoot, KEY);
+    const marker = readRunMarker(databasePathOf(fixture.dataRoot), task.id);
 
-    expect((await runMarkLanded()).code).toBe(0);
+    const result = await runMarkLanded();
+    expect(result).toEqual({ code: 0, out: `marked ${KEY} landed\n`, err: "" });
+    expectSparseLanding(fixture.dataRoot, task.id, before, events, marker);
   });
 
   it("marks a sparse accepted task with no base", async () => {
     const fixture = await useStartFixture();
-    seedAcceptedTask(fixture, { branch: "tasker/five" });
+    const task = seedAcceptedTask(fixture, { branch: "tasker/five" });
+    const before = latestTaskOf(fixture.dataRoot, KEY);
+    expect(before.branch).toBe("tasker/five");
+    expect(before.base).toBeNull();
+    expect(before.worktreePath).toBeNull();
+    expect(before.acceptedRevision).toBeNull();
+    expect(before.publishedRevision).toBeNull();
+    const events = eventsOf(fixture.dataRoot, KEY);
+    const marker = readRunMarker(databasePathOf(fixture.dataRoot), task.id);
 
-    expect((await runMarkLanded()).code).toBe(0);
+    const result = await runMarkLanded();
+    expect(result).toEqual({ code: 0, out: `marked ${KEY} landed\n`, err: "" });
+    expectSparseLanding(fixture.dataRoot, task.id, before, events, marker);
   });
 
   describe("refusals", () => {
@@ -120,6 +176,38 @@ describe("tasker mark-landed", () => {
       const work = await useWorkReviewTask();
 
       await expectRefused(work, `${wrongStateError("awaiting_work_review", KEY, "mark-landed", NEEDS)}\n`);
+    });
+
+    it("refuses a live task in a spawning state without changing its marker", async () => {
+      const fixture = await useStartFixture();
+      const [task] = seedTasks(fixture.dataRoot, [
+        { issueKey: KEY, repoKey: REPO, state: "pushing", at: "2026-01-01T00:00:00.000Z" },
+      ]);
+      const before = latestTaskOf(fixture.dataRoot, KEY);
+      const events = eventsOf(fixture.dataRoot, KEY);
+      const marker = readRunMarker(databasePathOf(fixture.dataRoot), task.id);
+      const result = await runMarkLanded();
+      expect(result.code).toBe(1);
+      expect(result.err).toContain(wrongStateError("pushing", KEY, "mark-landed", NEEDS));
+      expect(latestTaskOf(fixture.dataRoot, KEY)).toEqual(before);
+      expect(eventsOf(fixture.dataRoot, KEY)).toEqual(events);
+      expect(readRunMarker(databasePathOf(fixture.dataRoot), task.id)).toEqual(marker);
+    });
+
+    it("does not write when task lookup fails", async () => {
+      const fixture = await useStartFixture({ issues: [{ project: REPO, number: 6 }] });
+      const [task] = seedTasks(fixture.dataRoot, [
+        { issueKey: "codeguru42/tasker#6", repoKey: REPO, state: "accepted", at: "2026-01-01T00:00:00.000Z" },
+      ]);
+      const before = latestTaskOf(fixture.dataRoot, "codeguru42/tasker#6");
+      const events = eventsOf(fixture.dataRoot, "codeguru42/tasker#6");
+      const marker = readRunMarker(databasePathOf(fixture.dataRoot), task.id);
+      const result = await runCommand(markLanded, "mark-landed", "codeguru42/tasker#7", "--repo", REPO);
+      expect(result.code).toBe(1);
+      expect(result.err).toContain("no task");
+      expect(latestTaskOf(fixture.dataRoot, "codeguru42/tasker#6")).toEqual(before);
+      expect(eventsOf(fixture.dataRoot, "codeguru42/tasker#6")).toEqual(events);
+      expect(readRunMarker(databasePathOf(fixture.dataRoot), task.id)).toEqual(marker);
     });
 
     it("fails at once when another process holds the task lock", async () => {

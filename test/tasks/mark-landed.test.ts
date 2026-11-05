@@ -3,7 +3,15 @@ import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { markLandedTask } from "../../src/tasks/mark-landed.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { databasePathOf, latestTaskOf, lockNames, withDataRootStore } from "../helpers/store.js";
+import {
+  databasePathOf,
+  eventsOf,
+  latestTaskOf,
+  lockNames,
+  readRunMarker,
+  withDataRootStore,
+} from "../helpers/store.js";
+import { failureOf } from "../helpers/errors.js";
 import {
   expectRefusedWithoutChange,
   landAcceptedTask,
@@ -13,10 +21,10 @@ import {
 } from "../helpers/task-fixtures.js";
 
 // Calls markLandedTask for the task of the fixture with a store.
-const callMarkLanded = (fixture: AcceptedTask, store: TaskStore) =>
+const callMarkLanded = (fixture: AcceptedTask, store: TaskStore, taskId = fixture.task.id) =>
   markLandedTask(store, {
     ref: taskRefOf(fixture),
-    taskId: fixture.task.id,
+    taskId,
   });
 
 describe("markLandedTask", () => {
@@ -40,5 +48,21 @@ describe("markLandedTask", () => {
     await withDataRootStore(accepted.dataRoot, (store) =>
       expectRefusedWithoutChange(accepted, () => callMarkLanded(accepted, store), `the lock ${name} is busy`),
     );
+  });
+
+  it("does not change stored data when the task id lookup fails", async () => {
+    const accepted = await useAcceptedTask();
+    const before = latestTaskOf(accepted.dataRoot, accepted.key);
+    const events = eventsOf(accepted.dataRoot, accepted.key);
+    const marker = readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id);
+
+    const error = await withDataRootStore(accepted.dataRoot, (store) =>
+      failureOf(callMarkLanded(accepted, store, accepted.task.id + 1000), Error),
+    );
+
+    expect(error.message).toContain("task");
+    expect(latestTaskOf(accepted.dataRoot, accepted.key)).toEqual(before);
+    expect(eventsOf(accepted.dataRoot, accepted.key)).toEqual(events);
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toEqual(marker);
   });
 });
