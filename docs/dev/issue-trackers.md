@@ -36,9 +36,11 @@ GitHub account. It gives the Jira provider to a Jira repo, with one provider for
 
 `TASKER_GH_BIN` selects the `gh` executable. If the value is unset or blank, tasker uses `gh` from the explicit `PATH`
 in the call's environment. A bare value also uses that `PATH`. A value with `/` must name an executable regular file. A
-relative path resolves from tasker's working directory. An invalid path raises `ProgramFileError` before tasker starts
-`gh`. The child environment still needs a nonempty `PATH`, even when the override names an absolute path. Repository
-calls, the internal `gh auth token` lookup, and the `gh --version` read all use the selected executable.
+relative path resolves from tasker's working directory.
+
+An invalid path raises `ProgramFileError` before tasker starts `gh`. The child environment still needs a nonempty
+`PATH`, even when the override names an absolute path. Repository calls, the internal `gh auth token` lookup, and the
+`gh --version` read all use the selected executable.
 
 [The environment](#the-environment) gives the rule that each call that acts on a repo names its repo.
 
