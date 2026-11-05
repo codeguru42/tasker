@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { Config } from "../../src/config/schema.js";
-import type { IssueRef } from "../../src/issue-key/ref.js";
-import { taskRefOf, useAcceptedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
-import { LockBusyError, repoLockName } from "../../src/store/locks.js";
-import type { TaskStore } from "../../src/store/store.js";
+import { RunMarkerExistsError, type TaskStore } from "../../src/store/store.js";
+import { LockBusyError, repoLockName, taskLockName } from "../../src/store/locks.js";
+import { pushTask } from "../../src/tasks/push.js";
+import { expectNoAssistantRun, taskRefOf, useAcceptedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
-import { copyCloneBranchToOrigin, gitBeforePushEnv } from "../helpers/git.js";
+import { copyCloneBranchToOrigin, gitBeforePushEnv, gitOutput, gitRecorderEnv } from "../helpers/git.js";
+import { readArgLog } from "../helpers/fake-commands.js";
+import { useFakeClaudeOnPath } from "../helpers/fake-claude.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -16,6 +17,7 @@ import {
   latestTaskOf,
   lockNames,
   readRunMarker,
+  writeRunMarker,
   withDataRootStore,
 } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
@@ -23,20 +25,7 @@ import { useTempDir } from "../helpers/temp.js";
 // Calls pushTask for the accepted fixture with a store, and gives the result and its output.
 const callPush = async (fixture: AcceptedTask, store: TaskStore, env = fixture.env, waitMs = 300) => {
   const io = captureIo();
-  const module = (await import("../../src/tasks/push.js")) as unknown as {
-    pushTask: (
-      taskStore: TaskStore,
-      request: {
-        config: Config;
-        ref: IssueRef;
-        taskId: number;
-        env: NodeJS.ProcessEnv;
-        io: ReturnType<typeof captureIo>;
-        repoLockWaitMs: number;
-      },
-    ) => Promise<unknown>;
-  };
-  const result = await module.pushTask(store, {
+  const result = await pushTask(store, {
     config: fixture.config,
     ref: taskRefOf(fixture),
     taskId: fixture.task.id,
@@ -50,9 +39,14 @@ const callPush = async (fixture: AcceptedTask, store: TaskStore, env = fixture.e
 describe("pushTask", () => {
   it("publishes the accepted task branch and records the result", async () => {
     const accepted = await useAcceptedTask();
+    const claude = useFakeClaudeOnPath({});
     const main = await accepted.origin.branchHead("main");
+    const ghCalls = accepted.gh.calls();
+    const recorder = gitRecorderEnv(useTempDir("tasker-push-git-log-"), accepted.env);
 
-    const { result, io } = await withDataRootStore(accepted.dataRoot, (store) => callPush(accepted, store));
+    const { result, io } = await withDataRootStore(accepted.dataRoot, (store) =>
+      callPush(accepted, store, recorder.env),
+    );
 
     expect(result).toMatchObject({ issueKey: accepted.key, branch: accepted.task.branch, revision: accepted.revision });
     expect(io.out.join("")).toBe("");
@@ -63,10 +57,20 @@ describe("pushTask", () => {
       state: "pushed",
       publishedRevision: accepted.revision,
     });
-    expect(eventsOf(accepted.dataRoot, accepted.key).at(-1)).toMatchObject({
+    expect(eventsOf(accepted.dataRoot, accepted.key).at(-1)).toEqual({
       type: "published",
-      data: { revision: accepted.revision, branch: accepted.task.branch, lease: true, pushed: true },
+      data: {
+        branch: accepted.task.branch,
+        revision: accepted.revision,
+        lease: true,
+        pushed: true,
+        from: "pushing",
+        to: "pushed",
+      },
     });
+    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(1);
+    expect(accepted.gh.calls()).toEqual(ghCalls);
+    expectNoAssistantRun({ claude, started: { dataRoot: accepted.dataRoot } });
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
   });
 
@@ -127,6 +131,34 @@ describe("pushTask", () => {
     expect(lockNames(accepted.dataRoot)).toEqual([name]);
   });
 
+  it("refuses to run while another process holds the task lock", async () => {
+    const accepted = await useAcceptedTask();
+    const name = taskLockName(accepted.repoKey, accepted.key);
+    const holder = startLockHolder(databasePathOf(accepted.dataRoot), name);
+    await holder.attempt;
+
+    const error = await withDataRootStore(accepted.dataRoot, (store) =>
+      failureOf(callPush(accepted, store), LockBusyError),
+    );
+
+    expect(error.message).toContain(name);
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("accepted");
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
+  });
+
+  it("refuses to run while a live task marker exists", async () => {
+    const accepted = await useAcceptedTask();
+    writeRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id, "executing", process.pid);
+
+    const error = await withDataRootStore(accepted.dataRoot, (store) =>
+      failureOf(callPush(accepted, store), RunMarkerExistsError),
+    );
+
+    expect(error.message).toContain("already has a run marker");
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("accepted");
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toMatchObject({ state: "executing" });
+  });
+
   it("fails the task when the remote push succeeds but recording fails", async () => {
     const accepted = await useAcceptedTask();
 
@@ -150,6 +182,7 @@ describe("pushTask", () => {
 
   it("uses the stored revision to recognize an already published branch", async () => {
     const accepted = await useAcceptedTask();
+    const ghCalls = accepted.gh.calls();
     await copyCloneBranchToOrigin({
       origin: accepted.origin.path,
       clone: accepted.clone,
@@ -160,9 +193,83 @@ describe("pushTask", () => {
       store.updateTask(accepted.task.id, { publishedRevision: accepted.revision });
     });
 
-    const { result } = await withDataRootStore(accepted.dataRoot, (store) => callPush(accepted, store));
+    const recorder = gitRecorderEnv(useTempDir("tasker-push-git-log-"), accepted.env);
+    const { result } = await withDataRootStore(accepted.dataRoot, (store) => callPush(accepted, store, recorder.env));
 
     expect(result).toMatchObject({ revision: accepted.revision, pushed: false });
     expect(await accepted.origin.branchHead(accepted.task.branch!)).toBe(accepted.revision);
+    expect(eventsOf(accepted.dataRoot, accepted.key).at(-1)).toEqual({
+      type: "published",
+      data: {
+        branch: accepted.task.branch,
+        revision: accepted.revision,
+        lease: false,
+        pushed: false,
+        from: "pushing",
+        to: "pushed",
+      },
+    });
+    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(0);
+    expect(accepted.gh.calls()).toEqual(ghCalls);
+  });
+
+  it("updates a remote branch from an older stored revision to the accepted tip", async () => {
+    const accepted = await useAcceptedTask();
+    const claude = useFakeClaudeOnPath({});
+    await accepted.origin.addCommit("main", { file: "remote-base.txt" });
+    const oldRemote = await accepted.origin.branchHead("main");
+    await gitOutput(
+      { gitDir: accepted.origin.path },
+      accepted.env,
+      "update-ref",
+      `refs/heads/${accepted.task.branch!}`,
+      oldRemote!,
+    );
+    withDataRootStore(accepted.dataRoot, (store) => {
+      store.updateTask(accepted.task.id, { publishedRevision: oldRemote });
+    });
+    const recorder = gitRecorderEnv(useTempDir("tasker-push-git-log-"), accepted.env);
+
+    const { result } = await withDataRootStore(accepted.dataRoot, (store) => callPush(accepted, store, recorder.env));
+
+    expect(result).toMatchObject({ revision: accepted.revision, pushed: true });
+    expect(await accepted.origin.branchHead(accepted.task.branch!)).toBe(accepted.revision);
+    expect(await accepted.origin.branchHead("main")).toBe(oldRemote);
+    expect(latestTaskOf(accepted.dataRoot, accepted.key)).toMatchObject({
+      state: "pushed",
+      publishedRevision: accepted.revision,
+    });
+    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(1);
+    expectNoAssistantRun({ claude, started: { dataRoot: accepted.dataRoot } });
+  });
+
+  it("reports only the recording error when an already published result cannot be stored", async () => {
+    const accepted = await useAcceptedTask();
+    const ghCalls = accepted.gh.calls();
+    await copyCloneBranchToOrigin({
+      origin: accepted.origin.path,
+      clone: accepted.clone,
+      branch: accepted.task.branch!,
+      env: accepted.env,
+    });
+    const recorder = gitRecorderEnv(useTempDir("tasker-push-git-log-"), accepted.env);
+
+    const { result, io } = await withDataRootStore(accepted.dataRoot, (store) => {
+      const failing: TaskStore = {
+        ...store,
+        recordPublication() {
+          throw new Error("disk full");
+        },
+      };
+      return callPush(accepted, failing, recorder.env);
+    });
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe("pushing failed: disk full\n");
+    expect(lastErrorOf(accepted.dataRoot, accepted.task.id)).toBe("pushing failed: disk full");
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("failed");
+    expect(await accepted.origin.branchHead(accepted.task.branch!)).toBe(accepted.revision);
+    expect(readArgLog(recorder.log).filter((args) => args.includes("push"))).toHaveLength(0);
+    expect(accepted.gh.calls()).toEqual(ghCalls);
   });
 });

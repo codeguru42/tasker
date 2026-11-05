@@ -356,7 +356,7 @@ describe("tasker resume", () => {
     expect(result.code).toBe(0);
     expect(result.out).toBe(
       resumedLine(KEY, "pushing", "accepted") +
-        `pushed ${KEY}\npublished: ${accepted.revision} to origin/${accepted.task.branch!}\n`,
+        `pushed ${accepted.task.branch!} at ${accepted.revision}\nstate: pushed\n`,
     );
     expect(result.err).toBe("");
     expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({

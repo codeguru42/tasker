@@ -27,7 +27,7 @@ describe("tasker push", () => {
 
     expect(result).toEqual({
       code: 0,
-      out: `pushed ${KEY}\npublished: ${accepted.revision} to origin/${accepted.task.branch!}\n`,
+      out: `pushed ${accepted.task.branch!} at ${accepted.revision}\nstate: pushed\n`,
       err: "",
     });
     expect(await accepted.origin.branchHead(accepted.task.branch!)).toBe(accepted.revision);
@@ -36,7 +36,7 @@ describe("tasker push", () => {
       state: "pushed",
       publishedRevision: accepted.revision,
     });
-    expect(eventsOf(accepted.dataRoot, KEY).slice(before.length)).toMatchObject([
+    expect(eventsOf(accepted.dataRoot, KEY).slice(before.length)).toEqual([
       { type: "transition", data: { from: "accepted", to: "pushing" } },
       {
         type: "published",
@@ -106,10 +106,21 @@ describe("tasker push", () => {
     const result = await runPush();
 
     expect(result.code).toBe(0);
-    expect(result.out).toContain(`already published: ${accepted.revision}`);
+    expect(result.out).toBe(`${accepted.task.branch!} is already on origin at ${accepted.revision}\nstate: pushed\n`);
     expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({
       state: "pushed",
       publishedRevision: accepted.revision,
+    });
+    expect(eventsOf(accepted.dataRoot, KEY).at(-1)).toEqual({
+      type: "published",
+      data: {
+        branch: accepted.task.branch,
+        revision: accepted.revision,
+        lease: false,
+        pushed: false,
+        from: "pushing",
+        to: "pushed",
+      },
     });
   });
 });
