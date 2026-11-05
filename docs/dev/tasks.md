@@ -682,10 +682,10 @@ The base can move after the check of `tasker accept`. Then `tasker merge` fails,
 
 ## Reopen
 
-`tasker reopen <issue> <feedback>` starts a new plan from work in `accepted` or `pushed`. It requires a moved stored
-base, a clean worktree on the task branch, the latest complete plan revision and its recorded plan session. It resyncs
-the worktree to the tip of the stored base before it continues that session with the exact feedback. The new complete
-plan revision is unapproved and waits in `awaiting_plan_review`.
+`tasker reopen <issue> <feedback>` starts a new plan from work in `accepted` or `pushed`. It requires a stored base, a
+clean worktree on the task branch, the latest complete plan revision and its recorded plan session. The landed-parent
+guard must pass. It resyncs the worktree to the tip of the stored base before it continues that session with the exact
+feedback. The new complete plan revision is unapproved and waits in `awaiting_plan_review`.
 
 Resync before the new plan keeps the plan on the current base. A full approval and review cycle follows acceptance
 because the work changes. Publication and PR records stay for later explicit commands.
