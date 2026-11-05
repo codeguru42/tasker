@@ -1,6 +1,5 @@
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import * as stateMachine from "../../src/state/machine.js";
 import {
   approvedResetsAtOf,
   SPAWNING_STATES,
@@ -22,6 +21,7 @@ import {
   transitionWithAcceptance,
   transitionWithBranchUpdate,
   transitionWithExecution,
+  transitionWithFinish,
   transitionWithLanding,
   transitionWithMarkedLanding,
   transitionWithPlanApproval,
@@ -36,6 +36,7 @@ import {
   type TransitionDetail,
 } from "../../src/state/machine.js";
 import { openStore, type TaskStore } from "../../src/store/store.js";
+import { thrownBy } from "../helpers/errors.js";
 import {
   seedExecuteSession,
   seedPinnedPlanRevision,
@@ -50,6 +51,7 @@ import {
   reviewSessionRows,
   seedCreditsApproval,
   seedReview,
+  rejectFinishedEvent,
   writeRunMarker,
 } from "../helpers/store.js";
 import { moveTaskThrough, TO_WORK_REVIEW } from "../helpers/task-fixtures.js";
@@ -57,6 +59,8 @@ import { useTempDir } from "../helpers/temp.js";
 
 const dismissFindings = (store: TaskStore, id: number, positions: number[], reason = "Not a bug.") =>
   transitionWithReviewDismissal(store, id, 1, positions, reason);
+const completeTask = (store: TaskStore, id: number, detail: { worktree: string; branch: string }) =>
+  transitionWithFinish(store, id, detail);
 
 describe("spawning states", () => {
   it("has the ten spawning states", () => {
@@ -500,18 +504,7 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("landed"));
       transitionTask(store, task.id, "finishing");
       const before = store.listEvents(task.id);
-      const complete = (
-        stateMachine as unknown as {
-          transitionWithFinish?: (
-            store: TaskStore,
-            id: number,
-            detail: { worktree: string; branch: string },
-          ) => { state: string };
-        }
-      ).transitionWithFinish;
-
-      expect(complete).toBeTypeOf("function");
-      const finished = complete!(store, task.id, { worktree: "removed", branch: "deleted" });
+      const finished = completeTask(store, task.id, { worktree: "removed", branch: "deleted" });
 
       expect(finished.state).toBe("finished");
       expect(store.getTask(task.id)?.state).toBe("finished");
@@ -524,6 +517,22 @@ describe("task transitions", () => {
       ).toEqual([
         { type: "finished", data: { worktree: "removed", branch: "deleted", from: "finishing", to: "finished" } },
       ]);
+    });
+
+    it("rolls back the state and marker when the finished event insert fails", () => {
+      const task = store.createTask(newTask("landed"));
+      transitionTask(store, task.id, "finishing");
+      const before = store.listEvents(task.id);
+      const remove = rejectFinishedEvent(join(dir, "tasker.db"));
+
+      expect(thrownBy(() => completeTask(store, task.id, { worktree: "removed", branch: "deleted" }))).toMatchObject({
+        message: "event rejected",
+      });
+
+      expect(store.getTask(task.id)!.state).toBe("finishing");
+      expect(store.runStatus(task.id)).toEqual({ status: "running", pid: process.pid });
+      expect(store.listEvents(task.id)).toEqual(before);
+      remove();
     });
   });
 

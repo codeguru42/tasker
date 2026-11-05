@@ -69,14 +69,24 @@ export function refuseBranchUpdated(dataRoot: string): void {
   );
 }
 
-// Rejects published events until the returned function removes the trigger.
-export function rejectPublishedEvent(dbPath: string): () => void {
+function rejectEvent(dbPath: string, type: "published" | "finished"): () => void {
+  const trigger = `reject_${type}_event`;
   withRawDatabase(dbPath, (db) =>
     db.exec(
-      "CREATE TRIGGER reject_published_event BEFORE INSERT ON events WHEN NEW.type = 'published' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+      `CREATE TRIGGER ${trigger} BEFORE INSERT ON events WHEN NEW.type = '${type}' BEGIN SELECT RAISE(ABORT, 'event rejected'); END`,
     ),
   );
-  return () => withRawDatabase(dbPath, (db) => db.exec("DROP TRIGGER reject_published_event"));
+  return () => withRawDatabase(dbPath, (db) => db.exec(`DROP TRIGGER ${trigger}`));
+}
+
+// Rejects published events until the returned function removes the trigger.
+export function rejectPublishedEvent(dbPath: string): () => void {
+  return rejectEvent(dbPath, "published");
+}
+
+// Rejects finished events until the returned function removes the trigger.
+export function rejectFinishedEvent(dbPath: string): () => void {
+  return rejectEvent(dbPath, "finished");
 }
 
 // A TaskStore that fails when it records publication, as a full disk would.

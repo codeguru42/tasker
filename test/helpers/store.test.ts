@@ -44,6 +44,7 @@ import {
   sessionValuesOf,
   refuseBranchUpdated,
   rejectPublishedEvent,
+  rejectFinishedEvent,
   failPublicationRecord,
   reviewSessionRows,
   seedCreditsApproval,
@@ -1341,6 +1342,31 @@ describe("rejectPublishedEvent", () => {
         db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'reject_published_event'").get(),
       ),
     ).toBeUndefined();
+  });
+});
+
+describe("rejectFinishedEvent", () => {
+  it("rejects finished events until its removal function drops the trigger", () => {
+    const dataRoot = join(useTempDir("tasker-reject-finished-"), "data");
+    seedTasks(dataRoot, [{ issueKey: "a/b#1", repoKey: "a/b", state: "landed", at: dayAt(1) }]);
+    const dbPath = databasePathOf(dataRoot);
+    const remove = rejectFinishedEvent(dbPath);
+    expect(() =>
+      withRawDatabase(dbPath, (db) =>
+        db.exec("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'finished', '{}')"),
+      ),
+    ).toThrow("event rejected");
+    remove();
+    expect(
+      withRawDatabase(dbPath, (db) =>
+        db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'reject_finished_event'").get(),
+      ),
+    ).toBeUndefined();
+    expect(() =>
+      withRawDatabase(dbPath, (db) =>
+        db.exec("INSERT INTO events (task_id, at, type, data) VALUES (1, 't', 'finished', '{}')"),
+      ),
+    ).not.toThrow();
   });
 });
 

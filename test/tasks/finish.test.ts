@@ -13,6 +13,7 @@ import {
   latestTaskOf,
   lockNames,
   readRunMarker,
+  rejectFinishedEvent,
   withDataRootStore,
 } from "../helpers/store.js";
 import {
@@ -59,22 +60,14 @@ describe("finishTask", () => {
 
   it("rolls back a failed completion record and names the external cleanup", async () => {
     const landed = await usePublishedLandedTask();
-    const { result, io } = await withDataRootStore(landed.dataRoot, async (store) => {
-      const endRun = store.endRun.bind(store);
-      store.endRun = (id, state, check) =>
-        endRun(id, state, (current) => {
-          const event = check?.(current);
-          if (state === "finished") throw new Error("injected completion record failure");
-          return event;
-        });
-      return callFinish(landed, store);
-    });
+    const removeTrigger = rejectFinishedEvent(databasePathOf(landed.dataRoot));
+    const { result, io } = await withDataRootStore(landed.dataRoot, (store) => callFinish(landed, store));
 
     expect(result).toEqual({ exitCode: 1 });
     expect(io.out.join("")).toContain(`removed the worktree ${landed.worktree}\n`);
     expect(io.err.join("")).toContain("external cleanup succeeded");
     expect(io.err.join("")).toContain("completion record failed");
-    expect(io.err.join("")).toContain("injected completion record failure");
+    expect(io.err.join("")).toContain("event rejected");
     expect(latestTaskOf(landed.dataRoot, landed.key).state).toBe("cleanup_failed");
     expect(readRunMarker(databasePathOf(landed.dataRoot), landed.task.id)).toBeUndefined();
     expect(eventsOf(landed.dataRoot, landed.key).filter((event) => event.type === "finished")).toEqual([]);
@@ -85,11 +78,16 @@ describe("finishTask", () => {
       branch: false,
     });
     expect(await landed.origin.branchHead(landed.branch)).toBeUndefined();
+
+    removeTrigger();
+    await withDataRootStore(landed.dataRoot, async (store) => callFinish(landed, store));
+    expect(latestTaskOf(landed.dataRoot, landed.key).state).toBe("finished");
   });
 
   it("reports failed remote cleanup when the completion record also fails", async () => {
     const landed = await usePublishedLandedTask();
     const removeRejectingHook = rejectOriginPush(landed.origin);
+    const removeTrigger = rejectFinishedEvent(databasePathOf(landed.dataRoot));
 
     const {
       first,
@@ -100,14 +98,6 @@ describe("finishTask", () => {
       finishedEventsAfterFirst,
       workspaceAfterFirst,
     } = await withDataRootStore(landed.dataRoot, async (store) => {
-      const endRun = store.endRun.bind(store);
-      let failCompletion = true;
-      store.endRun = (id, state, check) =>
-        endRun(id, state, (current) => {
-          const event = check?.(current);
-          if (state === "finished" && failCompletion) throw new Error("injected completion record failure");
-          return event;
-        });
       const first = await callFinish(landed, store);
       const remoteBranchAfterFirst = await landed.origin.branchHead(landed.branch);
       const stateAfterFirst = latestTaskOf(landed.dataRoot, landed.key).state;
@@ -116,8 +106,8 @@ describe("finishTask", () => {
         (event) => event.type === "finished",
       );
       const workspaceAfterFirst = await taskWorkspaceState(landed);
-      failCompletion = false;
       removeRejectingHook();
+      removeTrigger();
       const second = await callFinish(landed, store);
       return {
         first,
@@ -146,7 +136,7 @@ describe("finishTask", () => {
     expect(first.io.err.join("")).toContain(`warning: cannot delete the task branch ${landed.branch} on origin:`);
     expect(first.io.err.join("")).toContain("remote branch failed");
     expect(first.io.err.join("")).toContain("completion record failed");
-    expect(first.io.err.join("")).toContain("injected completion record failure");
+    expect(first.io.err.join("")).toContain("event rejected");
     expect(first.io.err.join("")).not.toContain("external cleanup succeeded");
     expect(remoteBranchAfterFirst).toBe(landed.publishedRevision);
     expect(stateAfterFirst).toBe("cleanup_failed");
