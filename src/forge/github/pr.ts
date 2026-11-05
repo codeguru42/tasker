@@ -1,4 +1,4 @@
-import type { CreatePrInput, OpenPullRequest, PrTarget, PullRequest } from "../provider.js";
+import type { CreatePrInput, MergeMethod, OpenPullRequest, PrTarget, PullRequest } from "../provider.js";
 import type { GhSession } from "../../github/forge-session.js";
 
 interface GhOpenPullRequest {
@@ -98,6 +98,21 @@ export async function isPrMerged(
     return state === "MERGED";
   } catch (error) {
     throw operationError("read merged state", error, `of pull request ${prNumber}`);
+  }
+}
+
+export async function mergePr(
+  session: GhSession,
+  prNumber: number,
+  method: MergeMethod,
+  headSha: string,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+): Promise<void> {
+  try {
+    await session.run(["pr", "merge", String(prNumber), `--${method}`, "--match-head-commit", headSha], { cwd, env });
+  } catch (error) {
+    throw operationError("request merge", error, `of pull request ${prNumber}`);
   }
 }
 

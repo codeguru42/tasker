@@ -13,14 +13,7 @@ import { useTempDir } from "../../helpers/temp.js";
 const listOpenPrs = untypedListOpenPrs;
 const createPr = untypedCreatePr;
 const isPrMerged = untypedIsPrMerged;
-const mergePr = untypedMergePr as (
-  session: ReturnType<typeof createGhSession>,
-  prNumber: number,
-  method: MergeMethod,
-  headSha: string,
-  cwd: string,
-  env: NodeJS.ProcessEnv,
-) => Promise<void>;
+const mergePr = untypedMergePr;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
