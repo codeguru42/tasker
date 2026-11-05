@@ -34,7 +34,9 @@ const REPO = "codeguru42/tasker";
 function retry(dataRoot: string, task: Task, resumeExecute = false) {
   const config = { ...configWithTrackers({ [REPO]: {} }), dataRoot };
   const ref = { key: KEY, repoKey: REPO, shortRef: githubShortRef("5") };
-  return withDataRootStore(dataRoot, (store) => retryTask(store, { config, ref, taskId: task.id, resumeExecute }));
+  return withDataRootStore(dataRoot, (store) =>
+    retryTask(store, { config, ref, taskId: task.id, resumeExecute, env: process.env, repoLockWaitMs: 300_000 }),
+  );
 }
 
 // Expects that retry refuses with message, and that the state, the events and the sessions stay the same.

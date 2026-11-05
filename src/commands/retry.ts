@@ -5,6 +5,7 @@ import {
   ISSUE_ARGUMENT_DESCRIPTION,
   loadConfigOrFail,
   orFailAsync,
+  REPO_LOCK_WAIT_MS,
   REPO_OPTION_DESCRIPTION,
   withIssueTaskAsync,
 } from "./shared.js";
@@ -12,7 +13,9 @@ import {
 export const retry: RegisterCommand = (program, io) => {
   program
     .command("retry")
-    .description("Move a task in failed back to the state before the step that failed, and run that step again")
+    .description(
+      "Move a task in failed back to the state before the step that failed, and run that step again. Use hint-only recovery for a failed reopen",
+    )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option(
@@ -30,6 +33,8 @@ export const retry: RegisterCommand = (program, io) => {
             ref,
             taskId: found.id,
             resumeExecute: options.resumeExecute === true,
+            env: process.env,
+            repoLockWaitMs: REPO_LOCK_WAIT_MS,
           })),
         })),
       );
@@ -46,6 +51,9 @@ export const retry: RegisterCommand = (program, io) => {
           break;
         case "review-feedback":
           io.stdout(`run tasker review ${key} "<feedback>" again\n`);
+          break;
+        case "reopen-hint":
+          io.stdout(`run tasker reopen ${key} "<feedback>" again\n`);
           break;
         default:
           await runNextCommand(io, config, issue, repo, { command: next });

@@ -23,6 +23,7 @@ export type RetryNext =
   | "refine"
   | "refine-findings"
   | "review-feedback"
+  | "reopen-hint"
   | "execute"
   | "verify"
   | "review"
@@ -35,6 +36,8 @@ export interface RetryRequest {
   // The task that the lookup found. The retry reads it again under the task lock.
   taskId: number;
   resumeExecute: boolean;
+  env: NodeJS.ProcessEnv;
+  repoLockWaitMs: number;
 }
 
 export interface RetryResult {
@@ -72,6 +75,8 @@ const REFINE_RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   failed: PLAIN_REFINE_ROW,
   reviewed: { target: "reviewed", next: "refine-findings", clears: {} },
   awaiting_work_review: { target: "awaiting_work_review", next: "review-feedback", clears: {} },
+  accepted: { target: "accepted", next: "reopen-hint", clears: {} },
+  pushed: { target: "pushed", next: "reopen-hint", clears: {} },
 };
 
 // The refining entry has a fallback: a refine origin with no row keeps the row of a plain refine. The merging entry has

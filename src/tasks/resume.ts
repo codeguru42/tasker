@@ -20,7 +20,8 @@ import { requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
 // The command that runs after the move of a resume. A resume has no start and no refine of findings: retry prints a
 // hint for the refine values, and resume runs them. A resume also runs finish, which retry never does.
-export type ResumeNext = Exclude<RetryNext, "start" | "refine-findings"> | "finish" | "update-branch" | "reopen";
+export type ResumeNext =
+  Exclude<RetryNext, "start" | "refine-findings" | "reopen-hint"> | "finish" | "update-branch" | "reopen";
 
 export interface ResumeRequest {
   ref: IssueRef;
