@@ -4,10 +4,10 @@
 
 ## The GitHub folder
 
-All code that starts `gh` is in `src/issues/github/`. No file outside `src/issues/` imports from it, and a command gets
-a provider from the registry (see [The issue provider](#the-issue-provider)). A
-[boundary test](code-conventions.md#tests) enforces both rules. The Jira tracker has its own folder, as
-[The Jira folder](jira.md#the-jira-folder) of jira.md says.
+The shared `gh` process boundary is in `src/github/` (see [GitHub process boundary](github.md)). The tracker operations
+are in `src/issues/github/`. No file outside `src/issues/` imports from the tracker folder, and a command gets a
+provider from the registry (see [The issue provider](#the-issue-provider)). A [boundary test](code-conventions.md#tests)
+enforces both rules. The Jira tracker has its own folder, as [The Jira folder](jira.md#the-jira-folder) of jira.md says.
 
 ## The issue provider
 
@@ -32,17 +32,7 @@ GitHub account. It gives the Jira provider to a Jira repo, with one provider for
 
 ## runGh()
 
-`gh` gets no input stream. Its output goes to pipes, never to the terminal, and nothing is logged.
-
-`TASKER_GH_BIN` selects the `gh` executable. If the value is unset or blank, tasker uses `gh` from the explicit `PATH`
-in the call's environment. A bare value also uses that `PATH`. A value with `/` must name an executable regular file. A
-relative path resolves from tasker's working directory.
-
-An invalid path raises `ProgramFileError` before tasker starts `gh`. The child environment still needs a nonempty
-`PATH`, even when the override names an absolute path. Repository calls, the internal `gh auth token` lookup, and the
-`gh --version` read all use the selected executable.
-
-[The environment](#the-environment) gives the rule that each call that acts on a repo names its repo.
+The shared executable selection, child start and output capture are in [GitHub process boundary](github.md).
 
 An abort stops the call. It also stops the token call under the rule in [The token](#the-token). The version read makes
 no token call, because the version needs no login.
@@ -66,23 +56,18 @@ its token.
 - When the last waiter leaves by an abort, the read stops and leaves the cache. As a result, a later caller starts a new
   read and never joins a stopped one.
 
-The environment of the token call is in [The environment](#the-environment).
+The token call uses the tracker environment in [GitHub process boundary](github.md#tracker-environment).
 
-## The environment
+## Tracker environment
 
-- tasker removes each token variable, `GH_HOST` and `GH_REPO` of the caller. As a result, only the token of the account
-  counts. Each call that acts on a repo must name the repo, because tasker removes `GH_REPO`, and without a repo `gh`
-  reads the repo from the git folder of its cwd.
-- gh gets no prompt, no update notice and no color.
-- Other names pass as they are, for example `GH_CONFIG_DIR`.
-- tasker does not add `process.env`.
-- An empty `PATH` fails before `gh` starts, so Node never uses the `PATH` of tasker.
-- The token call uses the same environment, without the new token.
+The shared environment rules are in [GitHub process boundary](github.md#tracker-environment). Each tracker operation
+that acts on a repo names the project in its arguments. As a result, `gh` does not select a repo from the git folder of
+its working directory.
 
 ## The errors
 
-The token never appears in an error. The token call never puts its stdout into an error, and a main call replaces the
-token with `***`. No error has a `cause`.
+Tracker errors have no `cause`. The shared credential-removal rule is in
+[GitHub process boundary](github.md#results-and-errors).
 
 ## Read an issue
 
@@ -208,7 +193,7 @@ The checks never change GitHub. They make only these `gh` calls: `gh --version`,
 
 ## Tests
 
-Each test file that uses the token resets its modules before each test, so each test starts with an empty token cache.
-The token cache of the `gh` code stays the one home of the token read.
+Each test file that uses the tracker token resets its modules before each test, so each test starts with an empty token
+cache. The tracker token cache stays in `src/issues/github/run.ts`.
 
 The registry test needs no reset, because each test builds its own configuration object.

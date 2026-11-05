@@ -23,7 +23,7 @@ The tracker starts from the environment that its caller supplies. It removes `GH
 `GH_CONFIG_DIR` and `TASKER_GH_BIN`.
 
 The tracker does not add values from `process.env`. Its token lookup uses the same environment without the account
-token. Tracker calls that act on a repository include its name in their arguments. Tracker errors have no cause.
+token.
 
 ## Forge environment
 
