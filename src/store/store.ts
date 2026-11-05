@@ -140,7 +140,7 @@ type ResolvedPlanQuestion = Extract<PlanQuestionState, { state: "resolved" }>;
 
 // A review revision comes from the open findings of a review. A review-feedback revision comes from the feedback of
 // the user on the committed work. The table has no check on the values.
-export type PlanRevisionSource = "plan" | "refine" | "review" | "review-feedback";
+export type PlanRevisionSource = "plan" | "refine" | "reopen" | "review" | "review-feedback";
 
 export interface NewPlanRevision {
   version: number;

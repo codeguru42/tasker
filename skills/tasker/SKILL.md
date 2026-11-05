@@ -240,6 +240,11 @@ Prints one review and its findings with their status, in any state. See
 
 Accepts the work of a task in `awaiting_work_review`. See [the reference](references/work-review.md#tasker-accept).
 
+### `tasker reopen`
+
+Resyncs accepted or pushed work to its stored base, then continues the plan session with feedback. See
+[the reference](references/landing.md#tasker-reopen).
+
 ### `tasker merge`
 
 Lands the work of a task in `accepted` on the base branch of `origin`. See

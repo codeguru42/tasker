@@ -37,6 +37,8 @@ export interface PlanRunRequest {
   tipGuard: TipGuard;
   source: PlanRevisionSource;
   feedback?: string;
+  // The caller already moved the task into refining and started its run marker.
+  alreadyRefining?: boolean;
 }
 
 // The request of one plan-mode run that ends in a structured answer. A is the answer, R is the result of record.
@@ -50,6 +52,8 @@ export interface PlanModeAnswerRequest<A, R> {
   prompt: string;
   // The user feedback of a refine. The move into the phase records it.
   feedback?: string;
+  // The caller already moved the task into the phase.
+  alreadyInPhase?: boolean;
   prepared: PreparedPlanModeRun;
   // Layer 3 of the push guard, started before the run.
   tipGuard: TipGuard;
@@ -81,7 +85,9 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
     refused,
     record,
   } = request;
-  transitionTask(store, task.id, phase, feedback === undefined ? undefined : { feedback });
+  if (request.alreadyInPhase !== true) {
+    transitionTask(store, task.id, phase, feedback === undefined ? undefined : { feedback });
+  }
   try {
     const startedAt = new Date().toISOString();
     makeParentFolders(transcriptPath);
@@ -134,13 +140,28 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
 
 // Runs the assistant in plan mode and records the plan revision. The caller holds the task lock.
 export function runPlanRevision(request: PlanRunRequest): Promise<PlanResult> {
-  const { store, config, task, io, phase, prompt, archived, version, prepared, tipGuard, source, feedback } = request;
+  const {
+    store,
+    config,
+    task,
+    io,
+    phase,
+    prompt,
+    archived,
+    version,
+    prepared,
+    tipGuard,
+    source,
+    feedback,
+    alreadyRefining,
+  } = request;
   return runPlanModeAnswer({
     store,
     config,
     task,
     io,
     phase,
+    alreadyInPhase: alreadyRefining,
     prompt,
     feedback,
     prepared,

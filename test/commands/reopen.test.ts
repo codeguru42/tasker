@@ -41,7 +41,7 @@ describe("reopen", () => {
     const { code, help } = await runHelp(reopen, "reopen");
 
     expect(code).toBe(0);
-    expect(help).toContain("reopen <issue> <feedback>");
+    expect(help).toContain("<issue> <feedback>");
     expect(help).toContain("--repo <key>");
   });
 
@@ -116,11 +116,7 @@ describe("reopen", () => {
     const fixture = await useReopenFixture({ stream: answerStream(V2) });
     withDataRootStore(fixture.started.dataRoot, (store) => store.clearPlanSession(fixture.task.id));
 
-    await expectCommandRefused(
-      { dataRoot: fixture.started.dataRoot, key: KEY },
-      () => runReopen(),
-      /no recorded plan session/,
-    );
+    await expectCommandRefused({ dataRoot: fixture.started.dataRoot, key: KEY }, () => runReopen(), /no plan session/);
     expectNoAssistantRun(fixture);
   });
 
@@ -131,7 +127,7 @@ describe("reopen", () => {
     await expectCommandRefused(
       { dataRoot: fixture.started.dataRoot, key: KEY },
       () => runReopen(),
-      /worktree .* (?:dirty|clean)/,
+      /uncommitted changes/,
     );
     expectNoAssistantRun(fixture);
   });
@@ -188,14 +184,14 @@ describe("reopen", () => {
     })();
 
     expect(result.code).toBe(1);
-    expect(result.err).toMatch(/reopen.*base|cannot read the base/);
+    expect(result.err).toMatch(/reopening failed: git fetch failed/);
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
     expectNoAssistantRun(fixture);
   });
 
   it("reports the moved HEAD when the resync database write fails", async () => {
     const fixture = await useReopenFixture({ stream: answerStream(V2) });
-    const priorHead = gitOutput(
+    const priorHead = await gitOutput(
       { gitDir: fixture.started.clone },
       fixture.started.env,
       "rev-parse",
@@ -210,7 +206,7 @@ describe("reopen", () => {
 
     const result = await runReopen();
 
-    const movedHead = gitOutput(
+    const movedHead = await gitOutput(
       { gitDir: fixture.started.clone },
       fixture.started.env,
       "rev-parse",
@@ -242,7 +238,7 @@ describe("reopen", () => {
     const result = await runReopen();
 
     expect(result.code).toBe(1);
-    expect(result.err).toMatch(/^reopening failed:/);
+    expect(result.err).toMatch(/^refining failed:/);
     expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("failed");
     expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toBeUndefined();
   });

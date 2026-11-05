@@ -96,6 +96,8 @@ export interface RefineRun {
   context: string;
   // The feedback of the user to store, or none. None gives "None." in the prompt.
   feedback?: string;
+  // The caller already moved the task into refining and started its run marker.
+  alreadyRefining?: boolean;
 }
 
 // Continues the plan session of the task with the context and the feedback, and records the next plan revision.
@@ -145,5 +147,6 @@ export async function runRefine(store: TaskStore, run: RefineRun): Promise<PlanR
     tipGuard,
     source,
     feedback,
+    alreadyRefining: run.alreadyRefining,
   });
 }

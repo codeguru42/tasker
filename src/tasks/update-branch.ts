@@ -99,6 +99,49 @@ function replayNote(issueKey: string, start: ReplayStart): string | undefined {
   }
 }
 
+interface BaseResyncRequest {
+  vcs: VcsProvider;
+  ctx: VcsContext;
+  path: string;
+  baseTip: string;
+  currentHead: string;
+  contains: boolean;
+  syncedBaseTip: string | null;
+  parent: Task | undefined;
+  strategy: ReconcileStrategy;
+  issueKey: string;
+  io: Io;
+}
+
+interface BaseResyncResult {
+  resynced: ResyncResult;
+  replayStart?: ReplayStart;
+}
+
+// Resync the task worktree onto the fetched base tip. Both reopen and update-branch use this base step.
+export async function resyncTaskBase(request: BaseResyncRequest): Promise<BaseResyncResult> {
+  const { vcs, ctx, path, baseTip, currentHead, contains, syncedBaseTip, parent, strategy, issueKey, io } = request;
+  if (contains) return { resynced: { moved: false, how: "none", head: currentHead } };
+  if (parent !== undefined && strategy === "rebase") {
+    let replayStart: ReplayStart | undefined;
+    const head = await vcs.replayOnto(ctx, {
+      path,
+      onto: baseTip,
+      syncedBaseTip: syncedBaseTip ?? undefined,
+      onStart: (start) => {
+        replayStart = start;
+        const note = replayNote(issueKey, start);
+        if (note !== undefined) io.stderr(note);
+      },
+    });
+    return {
+      resynced: { moved: head !== currentHead, how: "rebase", head },
+      ...(replayStart === undefined ? {} : { replayStart }),
+    };
+  }
+  return { resynced: await vcs.resync(ctx, { path, baseRevision: baseTip, strategy }) };
+}
+
 // The note for a merge move of a task that had a parent when the command started.
 function mergeMoveNote(base: string, issueKey: string): string {
   return `note: tasker merged ${base} into ${issueKey}, so the commits of the parent are now in its history; use --strategy rebase for a stacked task that has no merge move yet\n`;
@@ -272,29 +315,19 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       }
       // `contains` describes the local tip before the sync step, and a take can move to a tip without the base.
       const upToDate = contains && synced.sync !== "take-remote";
-      let replayStart: ReplayStart | undefined;
-      const resynced: Pick<ResyncResult, "how" | "head"> = upToDate
-        ? { how: "none", head: syncedHead }
-        : parent !== undefined && strategy === "rebase"
-          ? // The new tip of a stacked task is the tip of the branch of the parent while the parent is in flight,
-            // and the tip of the base that the walk ends on after the parent landed. Under rebase, the replay puts the
-            // commits after the synced base tip onto the new tip, with a rebase. It starts after the merge base when
-            // the merge base is newer. It falls back to the commits after the merge base when it cannot use the
-            // synced base tip. Under merge, a stacked task uses the resync of every other task.
-            {
-              how: "rebase",
-              head: await vcs.replayOnto(ctx, {
-                path,
-                onto: baseTip,
-                syncedBaseTip: task.syncedBaseTip ?? undefined,
-                onStart: (start) => {
-                  replayStart = start;
-                  const note = replayNote(task.issueKey, start);
-                  if (note !== undefined) io.stderr(note);
-                },
-              }),
-            }
-          : await vcs.resync(ctx, { path, baseRevision: baseTip, strategy });
+      const { resynced, replayStart } = await resyncTaskBase({
+        vcs,
+        ctx,
+        path,
+        baseTip,
+        currentHead: syncedHead,
+        contains: upToDate,
+        syncedBaseTip: task.syncedBaseTip,
+        parent,
+        strategy,
+        issueKey: task.issueKey,
+        io,
+      });
       const moved = "remoteTip" in synced || resynced.how !== "none";
       // A task that is ready to land, or failed in the land, with a head that is not the accepted revision needs a new
       // review, also when the head did not move. A task with no accepted revision needs a new review too. This value

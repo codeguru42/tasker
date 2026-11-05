@@ -14,6 +14,7 @@ import { model } from "./model.js";
 import { show } from "./show.js";
 import { plan } from "./plan.js";
 import { refine } from "./refine.js";
+import { reopen } from "./reopen.js";
 import { retry } from "./retry.js";
 import { resume } from "./resume.js";
 import { approveCredits } from "./approve-credits.js";
@@ -43,6 +44,7 @@ export const commands: RegisterCommand[] = [
   start,
   plan,
   refine,
+  reopen,
   approve,
   unapprove,
   execute,

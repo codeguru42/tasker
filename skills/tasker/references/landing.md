@@ -4,6 +4,46 @@ These commands land the work on the base branch, record a landing that happened 
 [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share.
 [The Landing section of docs/statemachine.md](../../../docs/statemachine.md#landing) gives the states.
 
+## `tasker reopen`
+
+Starts a new plan for a task in `accepted` or `pushed`: `tasker reopen <issue> <feedback> [--repo <key>]`. The feedback
+is required and must not be blank. Use it to say what bug was found after acceptance and what the new complete plan must
+do. The command continues the recorded plan session.
+
+Before it starts, the task must have a branch, worktree, stored base, latest complete plan revision and recorded plan
+session. The base guard must pass. The worktree must be clean, on the stored task branch, and at the same HEAD as that
+branch. The command refuses a detached worktree or another branch. It fetches the stored base and resyncs the worktree
+to its tip with the configured update strategy before the assistant runs.
+
+The command records the worktree HEAD and feedback as it enters `refining`. On success, it records a complete,
+unapproved plan revision and moves the task to `awaiting_plan_review`. It prints this form on stdout, with the plan's
+todo lines between `todos:` and `questions:`:
+
+```text
+reopened <issue key> as revision v<N>
+plan: <plan path>
+prompt: <prompt path>
+todos:
+- <todo id>: <todo title>
+questions: <count>
+state: awaiting_plan_review
+```
+
+The revision does not approve or publish the changed work. Approve it, execute it, verify it, review it and accept it
+before another push or other publication. Reopen keeps the accepted revision, published revision and any PR record.
+
+Before the task enters `refining`, a refusal exits with code 1 and writes no task or worktree changes. The error names
+the failed guard. It can report blank feedback, a missing branch, worktree, base, plan revision or plan session, a dirty
+worktree, a detached worktree, another branch, or a task branch HEAD that differs from the worktree HEAD. A task lock or
+repo lock refusal also happens before the start write.
+
+After the task enters `refining`, a fetch, resync or completion-record failure moves it to `failed`, starts no
+assistant, and prints `reopening failed: <reason>` on stderr. If Git moved the task branch but the completion record
+failed, the error also gives the resulting HEAD. An assistant or plan failure moves the task to `failed` and reports the
+refining error. A stopped run can continue through `tasker resume` or eligible `tasker approve-credits`; both restore an
+unfinished resync before they run reopen again with the recorded feedback. `tasker retry` has no row for a failed
+reopen.
+
 ## `tasker push`
 
 Publishes the work of a task in `accepted` to its branch on `origin`: `tasker push <issue>`. Publication and landing are
