@@ -564,6 +564,9 @@ These reasons explain its rules:
   `awaiting_work_review` also need you again, because the findings or the feedback can change. So retry runs nothing for
   the origin `refining`. It moves the task back to the state of the origin of the refine and prints a hint, and you
   decide the next step.
+- A failed reopen needs new feedback from you, so retry prints a hint instead of another assistant run. A pending resync
+  can leave the branch and worktree between revisions. Retry restores the recorded starting HEAD before it changes the
+  state. Retry and resume share the restore operation so both recovery paths follow the same rules.
 - A merge that failed can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on
   the base, so a second run lands the task with no second push.
 - A push can reach `origin` before tasker records the result. Retry calls the provider again with the stored published
