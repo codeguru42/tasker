@@ -33,7 +33,8 @@ export function ghVersionCheck(timeoutMs = 5000): Check {
           return {
             status: "error",
             detail: error.message,
-            remediation: `Fix TASKER_GH_BIN or install a compatible gh executable named ${env.TASKER_GH_BIN}.`,
+            remediation:
+              "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects a compatible gh executable.",
           };
         }
         return {
