@@ -163,11 +163,15 @@ flowchart LR
   a base that is a local branch of the tasker clone.
 - tasker does not wait for CI. The CI wait is a step of the landing process of each project, outside the state machine.
   There is no `waiting_for_ci` or `ci_failed` state.
-- `finish` runs under `finishing`. It removes the worktree and the local branch ref. It deletes the task branch on
-  `origin` if tasker published one. It marks the issue done when `updateOnFinish` is set. If someone moved the branch on
-  `origin`, `finish` does not delete it. It stops in `cleanup_failed` and skips the tracker write. You decide what to do
-  with the extra commits, then run `finish` again. A crash in `finishing` goes to `interrupted`, and `resume` runs the
-  cleanup again.
+- `finish` runs under `finishing`. It removes the worktree and the local branch ref, then deletes the task branch on
+  `origin` when tasker recorded a published revision. The delete uses a lease on that revision. It marks the issue done
+  after remote cleanup when `updateOnFinish` is set.
+- If the branch on `origin` moved, the new tip can include commits tasker did not publish. The lease protects those
+  commits, so `finish` stops in `cleanup_failed` and skips the tracker write. Resolve or remove the moved branch, then
+  run `finish` again.
+- Other remote deletion errors do not prove that the branch moved. `finish` records a `remote_cleanup_warning`, prints a
+  warning, and continues to the tracker write and completion. A crash in `finishing` goes to `interrupted`, and `resume`
+  runs cleanup again. The repeated cleanup skips resources that are already gone.
 
 ### Pull request path
 
