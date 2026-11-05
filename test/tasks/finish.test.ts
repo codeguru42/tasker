@@ -95,7 +95,15 @@ describe("finishTask", () => {
     const hook = join(hookDir, "pre-receive");
     writeFileSync(hook, "#!/bin/sh\necho 'remote delete refused' >&2\nexit 1\n", { mode: 0o755 });
 
-    const { first, second } = await withDataRootStore(landed.dataRoot, async (store) => {
+    const {
+      first,
+      second,
+      remoteBranchAfterFirst,
+      stateAfterFirst,
+      markerAfterFirst,
+      finishedEventsAfterFirst,
+      workspaceAfterFirst,
+    } = await withDataRootStore(landed.dataRoot, async (store) => {
       const endRun = store.endRun.bind(store);
       let failCompletion = true;
       store.endRun = (id, state, check) =>
@@ -105,10 +113,25 @@ describe("finishTask", () => {
           return event;
         });
       const first = await callFinish(landed, store);
+      const remoteBranchAfterFirst = await landed.origin.branchHead(landed.branch);
+      const stateAfterFirst = latestTaskOf(landed.dataRoot, landed.key).state;
+      const markerAfterFirst = readRunMarker(databasePathOf(landed.dataRoot), landed.task.id);
+      const finishedEventsAfterFirst = eventsOf(landed.dataRoot, landed.key).filter(
+        (event) => event.type === "finished",
+      );
+      const workspaceAfterFirst = await taskWorkspaceState(landed);
       failCompletion = false;
       rmSync(hook);
       const second = await callFinish(landed, store);
-      return { first, second };
+      return {
+        first,
+        second,
+        remoteBranchAfterFirst,
+        stateAfterFirst,
+        markerAfterFirst,
+        finishedEventsAfterFirst,
+        workspaceAfterFirst,
+      };
     });
 
     expect(first.result).toEqual({ exitCode: 1 });
@@ -129,11 +152,11 @@ describe("finishTask", () => {
     expect(first.io.err.join("")).toContain("completion record failed");
     expect(first.io.err.join("")).toContain("injected completion record failure");
     expect(first.io.err.join("")).not.toContain("external cleanup succeeded");
-    expect(await landed.origin.branchHead(landed.branch)).toBe(landed.publishedRevision);
-    expect(latestTaskOf(landed.dataRoot, landed.key).state).toBe("cleanup_failed");
-    expect(readRunMarker(databasePathOf(landed.dataRoot), landed.task.id)).toBeUndefined();
-    expect(eventsOf(landed.dataRoot, landed.key).filter((event) => event.type === "finished")).toEqual([]);
-    expect(await taskWorkspaceState(landed)).toEqual({
+    expect(remoteBranchAfterFirst).toBe(landed.publishedRevision);
+    expect(stateAfterFirst).toBe("cleanup_failed");
+    expect(markerAfterFirst).toBeUndefined();
+    expect(finishedEventsAfterFirst).toEqual([]);
+    expect(workspaceAfterFirst).toEqual({
       state: "cleanup_failed",
       worktree: false,
       listed: false,

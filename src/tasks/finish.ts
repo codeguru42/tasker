@@ -47,7 +47,7 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
     try {
       const entry = await findTaskWorkspace(vcs, ctx, task.worktreePath);
       const result = await cleanUpTaskWorkspace(vcs, ctx, entry, task.branch, (line) => io.stdout(`${line}\n`));
-      let remoteResult: "deleted" | "already-gone" | undefined;
+      let remoteResult: "skipped" | "deleted" | "already-gone" | { state: "failed"; reason: string } = "skipped";
       if (task.publishedRevision !== null && task.branch !== null) {
         try {
           remoteResult = (
@@ -65,6 +65,7 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
             return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${reason}`);
           }
           const message = errorMessage(error);
+          remoteResult = { state: "failed", reason: message };
           store.appendEvent(task.id, "remote_cleanup_warning", {
             branch: task.branch,
             publishedRevision: task.publishedRevision,
@@ -92,14 +93,16 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
       try {
         transitionWithFinish(store, task.id, { ...result });
       } catch (error) {
-        const remote = remoteResult ?? "not requested";
-        return failRunTo(
-          store,
-          task,
-          io,
-          "cleanup_failed",
-          `finishing failed after external cleanup succeeded (worktree ${result.worktree}, local branch ${result.branch}, remote branch ${remote}): completion record failed: ${errorMessage(error)}`,
-        );
+        const remote =
+          typeof remoteResult === "string"
+            ? `remote branch ${remoteResult}`
+            : `remote branch failed: ${remoteResult.reason}`;
+        const cleanup = `worktree ${result.worktree}, local branch ${result.branch}, ${remote}`;
+        const message =
+          typeof remoteResult === "string"
+            ? `finishing failed after external cleanup succeeded (${cleanup}): completion record failed: ${errorMessage(error)}`
+            : `finishing failed after cleanup (${cleanup}): completion record failed: ${errorMessage(error)}`;
+        return failRunTo(store, task, io, "cleanup_failed", message);
       }
     } catch (error) {
       return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${errorMessage(error)}`);
