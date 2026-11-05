@@ -92,13 +92,13 @@ describe("reopen", () => {
         const beforeTask = latestTaskOf(fixture.started.dataRoot, KEY);
         const beforeEvents = eventsOf(fixture.started.dataRoot, KEY);
         const beforeMarker = readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id);
-        const beforeBranchHead = gitOutput(
+        const beforeBranchHead = await gitOutput(
           { gitDir: fixture.started.clone },
           fixture.started.env,
           "rev-parse",
           `refs/heads/${String(fixture.task.branch)}`,
         );
-        const beforeWorktreeHead = gitOutput(
+        const beforeWorktreeHead = await gitOutput(
           { cwd: fixture.task.worktreePath! },
           fixture.started.env,
           "rev-parse",
@@ -121,14 +121,14 @@ describe("reopen", () => {
         expect(readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id)).toEqual(beforeMarker);
         expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toBeUndefined();
         expect(
-          gitOutput(
+          await gitOutput(
             { gitDir: fixture.started.clone },
             fixture.started.env,
             "rev-parse",
             `refs/heads/${String(fixture.task.branch)}`,
           ),
         ).toBe(beforeBranchHead);
-        expect(gitOutput({ cwd: fixture.task.worktreePath! }, fixture.started.env, "rev-parse", "HEAD")).toBe(
+        expect(await gitOutput({ cwd: fixture.task.worktreePath! }, fixture.started.env, "rev-parse", "HEAD")).toBe(
           beforeWorktreeHead,
         );
         expectNoAssistantRun(fixture);

@@ -9,7 +9,7 @@ import type { PlanResult } from "./plan-run.js";
 import { assertBaseMoved, parentOf } from "./parent.js";
 import { resyncTaskBase } from "./update-branch.js";
 import { failRun } from "./run-outcome.js";
-import { runRefine } from "./refine.js";
+import { prepareRefine, runRefine } from "./refine.js";
 import { requireBranch, requireWorktree, taskInState } from "./task-state.js";
 import { uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
 import type { Task, TaskStore } from "../store/store.js";
@@ -40,12 +40,13 @@ async function reopenLocked(store: TaskStore, request: ReopenRequest): Promise<P
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   if (task.base === null) throw new Error(`the task of ${task.issueKey} has no base revision`);
   const base = task.base;
-  if (store.latestPlanRevision(task.id) === undefined) {
-    throw new Error(`the task of ${task.issueKey} has no plan revision; run tasker plan first`);
-  }
-  if (store.planSession(task.id) === undefined) {
-    throw new Error(`the task of ${task.issueKey} has no plan session`);
-  }
+  const prepared = await prepareRefine(
+    store,
+    config,
+    env,
+    task,
+    `the task of ${task.issueKey} has no plan revision; run tasker plan first`,
+  );
   assertBaseMoved(store, task);
 
   const start = await cleanTaskWorkspace(vcs, ctx, task, path, branch);
@@ -111,6 +112,7 @@ async function reopenLocked(store: TaskStore, request: ReopenRequest): Promise<P
       context: REOPEN_REFINE_CONTEXT,
       feedback,
       alreadyRefining: true,
+      prepared,
     });
   } catch (error) {
     return failRun(

@@ -14,7 +14,7 @@ import { fillTemplate } from "../prompts/template.js";
 import { approvedResetsAtOf, originText, lastTransitionError } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
-import type { PlanRevisionSource, Task, TaskStore } from "../store/store.js";
+import type { PlanRevision, PlanRevisionSource, StoredSession, Task, TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
@@ -98,18 +98,38 @@ export interface RefineRun {
   feedback?: string;
   // The caller already moved the task into refining and started its run marker.
   alreadyRefining?: boolean;
+  prepared?: RefinePreparation;
+}
+
+export interface RefinePreparation {
+  revision: PlanRevision;
+  session: StoredSession;
+  currentPlan: string;
+}
+
+// Reads and checks the plan inputs that runRefine needs. Call it before changing task or Git state when refusal must
+// leave that state intact.
+export async function prepareRefine(
+  store: TaskStore,
+  config: Config,
+  env: NodeJS.ProcessEnv,
+  task: Task,
+  missingRevisionMessage = `the task of ${task.issueKey} has no plan revision`,
+): Promise<RefinePreparation> {
+  const revision = store.latestPlanRevision(task.id);
+  if (revision === undefined) throw new Error(missingRevisionMessage);
+  const session = store.planSession(task.id);
+  if (session === undefined) throw new Error(`the task of ${task.issueKey} has no plan session`);
+  await assertSessionModel(session, env, `the plan session of ${task.issueKey}`);
+  const currentPlan = readPlanFile(config.dataRoot, task, revision.version);
+  return { revision, session, currentPlan };
 }
 
 // Continues the plan session of the task with the context and the feedback, and records the next plan revision.
 // The caller holds the task lock and has checked the state and the feedback.
 export async function runRefine(store: TaskStore, run: RefineRun): Promise<PlanResult> {
   const { config, env, io, task, source, context, feedback } = run;
-  const revision = store.latestPlanRevision(task.id);
-  if (revision === undefined) throw new Error(`the task of ${task.issueKey} has no plan revision`);
-  const session = store.planSession(task.id);
-  if (session === undefined) throw new Error(`the task of ${task.issueKey} has no plan session`);
-  await assertSessionModel(session, env, `the plan session of ${task.issueKey}`);
-  const currentPlan = readPlanFile(config.dataRoot, task, revision.version);
+  const { revision, session, currentPlan } = run.prepared ?? (await prepareRefine(store, config, env, task));
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   const baseRevision = requireBaseRevision(vcs, task);
   const branch = requireBranch(task);
