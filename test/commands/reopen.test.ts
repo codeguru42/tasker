@@ -1,4 +1,4 @@
-import { existsSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { reopen } from "../../src/commands/reopen.js";
@@ -72,6 +72,67 @@ describe("reopen", () => {
         { type: "transition", data: { from: origin, to: "refining", feedback: FEEDBACK } },
       ]);
       expect(readRunMarker(databasePathOf(fixture.started.dataRoot), task.id)).toBeUndefined();
+    },
+  );
+
+  it.each(["accepted", "pushed"] as const)(
+    "refuses a %s task with an invalid current plan before resync",
+    async (origin) => {
+      for (const invalid of ["missing plan file", "refused recorded model"] as const) {
+        const fixture = await useReopenFixture(
+          { stream: answerStream(V2) },
+          origin,
+          invalid === "refused recorded model" ? { session: { model: "gpt-5" } } : {},
+        );
+        const planPath = planRevisionPath(fixture.started.dataRoot, fixture.task, 1);
+        if (invalid === "missing plan file") rmSync(planPath);
+        await fixture.started.origin.addCommit("main", {
+          file: `invalid-${origin}-${invalid.replaceAll(" ", "-")}.txt`,
+        });
+        const beforeTask = latestTaskOf(fixture.started.dataRoot, KEY);
+        const beforeEvents = eventsOf(fixture.started.dataRoot, KEY);
+        const beforeMarker = readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id);
+        const beforeBranchHead = gitOutput(
+          { gitDir: fixture.started.clone },
+          fixture.started.env,
+          "rev-parse",
+          `refs/heads/${String(fixture.task.branch)}`,
+        );
+        const beforeWorktreeHead = gitOutput(
+          { cwd: fixture.task.worktreePath! },
+          fixture.started.env,
+          "rev-parse",
+          "HEAD",
+        );
+        const message =
+          invalid === "missing plan file"
+            ? /cannot read the plan file .* of revision v1/
+            : "the plan session of codeguru42/tasker#5 runs on gpt-5, and claude-code refuses it: is not a claude-code model: gpt-5";
+
+        const result = await runReopen();
+
+        expect(result.code).toBe(1);
+        expect(result.out).toBe("");
+        if (typeof message === "string") expect(result.err).toBe(`${message}\n`);
+        else expect(result.err).toMatch(message);
+        expect(latestTaskOf(fixture.started.dataRoot, KEY)).toEqual(beforeTask);
+        expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual(beforeEvents);
+        expect(latestTaskOf(fixture.started.dataRoot, KEY).reopenStartHead).toBe(beforeTask.reopenStartHead);
+        expect(readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id)).toEqual(beforeMarker);
+        expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toBeUndefined();
+        expect(
+          gitOutput(
+            { gitDir: fixture.started.clone },
+            fixture.started.env,
+            "rev-parse",
+            `refs/heads/${String(fixture.task.branch)}`,
+          ),
+        ).toBe(beforeBranchHead);
+        expect(gitOutput({ cwd: fixture.task.worktreePath! }, fixture.started.env, "rev-parse", "HEAD")).toBe(
+          beforeWorktreeHead,
+        );
+        expectNoAssistantRun(fixture);
+      }
     },
   );
 
