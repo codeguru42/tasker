@@ -14,10 +14,21 @@ Before it writes anything, the command reads the exact local task branch tip and
 It publishes only that task branch. It uses the last published revision as the lease for an update. If tasker has not
 published the branch, it uses an empty lease. It does not change the base branch.
 
-On success, the command prints `pushed <issue key>` on stdout. Then it prints one of these lines:
+On success, the command prints one of these forms on stdout:
 
-- `published: <revision> to origin/<branch>` after a push.
-- `already published: <revision> on origin/<branch>. Nothing pushed.` when origin already has that revision.
+- After a push:
+
+  ```text
+  pushed <branch> at <revision>
+  state: pushed
+  ```
+
+- When origin already has that revision:
+
+  ```text
+  <branch> is already on origin at <revision>
+  state: pushed
+  ```
 
 The command stops with exit code 1 and prints the error on stderr in these cases. Before the move to `pushing`, the task
 keeps its state and no event or run marker is written. The shared errors of no task, of
