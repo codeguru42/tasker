@@ -6,6 +6,7 @@ import {
   runChild,
   subcommandOf,
 } from "../../process/run-child.js";
+import { resolveProgram } from "../../process/resolve-program.js";
 
 export interface RunGhOptions {
   account: string;
@@ -87,13 +88,14 @@ function abortError(): Error {
 //   GITHUB_ENTERPRISE_TOKEN, GH_HOST and GH_REPO.
 // - Then it sets GH_TOKEN to the token of the account, GH_PROMPT_DISABLED=1,
 //   GH_NO_UPDATE_NOTIFIER=1 and NO_COLOR=1.
-// - All other names pass as they are, for example GH_CONFIG_DIR, PATH and HOME.
+// - All other names pass as they are, for example GH_CONFIG_DIR, PATH, HOME and TASKER_GH_BIN.
 // - The token call uses the same environment, without the new GH_TOKEN.
 // The token call is `gh auth token --hostname github.com --user <account>`. With --user,
 // gh 2.101.0 ignores GH_TOKEN. tasker reads the token one time for each account in one
 // process. A failed read is not kept.
-// runGh() does not add process.env. gh is found on the PATH of env. An env with no PATH
-// or an empty one rejects before gh starts, through runChild().
+// runGh() does not add process.env. TASKER_GH_BIN selects the executable. When it is unset or blank,
+// gh is found on the PATH of env. A bare name uses that PATH. A path value must name a runnable file.
+// runChild() still needs a nonempty PATH, including when TASKER_GH_BIN names a path.
 // gh gets no input stream. Its stdout and stderr go to pipes, never to the terminal.
 // options.signal stops gh with SIGTERM and rejects with an AbortError. These rules hold:
 // 1. A signal that already aborted rejects before any gh starts and before the token cache is read.
@@ -227,7 +229,8 @@ async function spawnGh(
   const hide = (text: string) => (mode.token === undefined ? text : text.split(mode.token).join(REDACTED));
   let result: ChildResult;
   try {
-    result = await runChild("gh", args, { env, signal: mode.signal });
+    const program = resolveProgram("gh", "TASKER_GH_BIN", env);
+    result = await runChild(program, args, { env, signal: mode.signal });
   } catch (error) {
     if (error instanceof CommandNotFoundError) {
       throw new GhNotInstalledError(error.message);
