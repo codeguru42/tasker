@@ -76,6 +76,12 @@ The column `tracker_marked` is 1 when the task marked the issue in progress on t
 migration fills it once for each row that exists: it is 1 when the task has a `tracker_update` event with the action
 `in_progress` and the result `ok`. Code reads the column and never the event, as the rule of the `events` table says.
 
+The column `published_revision` holds the last task branch revision that tasker recorded on `origin`, or NULL before the
+first recorded publication. Schema version 19 adds it. Existing task rows get NULL. After publication, tasker reads this
+column to check the remote tip and set the lease for the next update. It does not read the event for this value. The
+published revision, the state `pushed`, the `published` event and the run-marker removal share one transaction. This
+keeps the task state and the revision that later runs use in sync.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 
