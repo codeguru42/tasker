@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../../src/github/forge-session.js";
 import { createPr as untypedCreatePr } from "../../../src/forge/github/pr.js";
+import { isPrMerged as untypedIsPrMerged } from "../../../src/forge/github/pr.js";
 import { listOpenPrs as untypedListOpenPrs } from "../../../src/forge/github/pr.js";
 import type { CreatePrInput, OpenPullRequest, PullRequest } from "../../../src/forge/provider.js";
 import { failureOf } from "../../helpers/errors.js";
@@ -10,6 +11,12 @@ import { useTempDir } from "../../helpers/temp.js";
 
 const listOpenPrs = untypedListOpenPrs;
 const createPr = untypedCreatePr;
+const isPrMerged = untypedIsPrMerged as (
+  session: ReturnType<typeof createGhSession>,
+  prNumber: number,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+) => Promise<boolean>;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
@@ -34,6 +41,10 @@ function listCall(
 
 function createCall(session: ReturnType<typeof createGhSession>, target: CreatePrInput, env: NodeJS.ProcessEnv) {
   return createPr(session, target, env);
+}
+
+function mergedCall(session: ReturnType<typeof createGhSession>, number: number, cwd: string, env: NodeJS.ProcessEnv) {
+  return isPrMerged(session, number, cwd, env);
 }
 
 function setup(answers: readonly FakeAnswer[], dir = useTempDir("tasker-list-open-prs-")) {
@@ -286,6 +297,73 @@ describe("createPr", () => {
     const error = await failureOf(createCall(session, target, env), Error);
     expect(error.message).toContain(head);
     expect(error.message).toContain("create failed with ***");
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(errorStrings(error).join("\n")).not.toContain(token);
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+});
+
+describe("isPrMerged", () => {
+  it.each([
+    ["MERGED", true],
+    ["OPEN", false],
+    ["CLOSED", false],
+  ])("returns %s state as %s and ignores extra fields and whitespace", async (state, expected) => {
+    const dir = useTempDir("tasker-is-pr-merged-");
+    const { env, fake, session } = setup(
+      [
+        {
+          args: ["pr", "view", "42", "--json", "state"],
+          stdout: ` \n { "state": "${state}", "url": "https://example.test/pull/42" } \n`,
+        },
+      ],
+      dir,
+    );
+
+    await expect(mergedCall(session, 42, dir, env)).resolves.toBe(expected);
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toEqual([
+      expect.objectContaining({
+        args: ["pr", "view", "42", "--json", "state"],
+        tokenMatches: true,
+        cwd: dir,
+      }),
+    ]);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["invalid JSON", "{"],
+    ["missing state", JSON.stringify({ url: "https://example.test/pull/42" })],
+    ["nonstring state", JSON.stringify({ state: 42 })],
+    ["array response", JSON.stringify([{ state: "MERGED" }])],
+  ])("rejects a %s response", async (_label, stdout) => {
+    const dir = useTempDir("tasker-is-pr-merged-malformed-");
+    const { env, fake, session } = setup([{ args: ["pr", "view", "42", "--json", "state"], stdout }], dir);
+
+    const error = await failureOf(mergedCall(session, 42, dir, env), Error);
+    expect(error.message).toContain("42");
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+
+  it("wraps a failed state read with its number and safe cause", async () => {
+    const dir = useTempDir("tasker-is-pr-merged-failure-");
+    const { env, fake, session } = setup(
+      [
+        {
+          args: ["pr", "view", "42", "--json", "state"],
+          stderr: `view failed with ${token}`,
+          exitCode: 1,
+        },
+      ],
+      dir,
+    );
+
+    const error = await failureOf(mergedCall(session, 42, dir, env), Error);
+    expect(error.message).toContain("42");
+    expect(error.message).toContain("view failed with ***");
     expect(error.cause).toBeInstanceOf(Error);
     expect(errorStrings(error).join("\n")).not.toContain(token);
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
