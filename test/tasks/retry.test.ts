@@ -279,6 +279,44 @@ describe("retryTask origins", () => {
 });
 
 describe("retryTask pending reopen recovery", () => {
+  it("does not restore an unfinished reopen resync for a plain refine retry", async () => {
+    const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
+    const startHead = await startConflictedReopenResync(fixture);
+    withDataRootStore(fixture.started.dataRoot, (store) => {
+      store.updateTask(fixture.task.id, { reopenStartHead: startHead });
+      failRefineFrom(store, fixture.task.id, "awaiting_plan_review");
+    });
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
+    const path = String(task.worktreePath);
+    const beforeHead = await gitOutput({ cwd: path }, fixture.started.env, "rev-parse", "HEAD");
+    const beforeStatus = await gitOutput({ cwd: path }, fixture.started.env, "status", "--porcelain");
+    const recorder = gitRecorderEnv(useTempDir("tasker-retry-plain-refine-git-log-"), fixture.started.env);
+
+    const result = await retry(fixture.started.dataRoot, task, false, {
+      config: fixture.started.config,
+      env: recorder.env,
+    });
+
+    expect(result).toEqual({ origin: "refining", target: "awaiting_plan_review", next: "refine" });
+    expect(eventsOf(fixture.started.dataRoot, KEY).at(-1)).toEqual({
+      type: "retry",
+      data: {
+        origin: "refining",
+        target: "awaiting_plan_review",
+        resumeExecute: false,
+        from: "failed",
+        to: "awaiting_plan_review",
+      },
+    });
+    expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({
+      state: "awaiting_plan_review",
+      reopenStartHead: startHead,
+    });
+    expect(await gitOutput({ cwd: path }, fixture.started.env, "rev-parse", "HEAD")).toBe(beforeHead);
+    expect(await gitOutput({ cwd: path }, fixture.started.env, "status", "--porcelain")).toBe(beforeStatus);
+    expect(existsSync(recorder.log)).toBe(false);
+  });
+
   it.each(["accepted", "pushed"] as const)("restores a pending reopen from %s", async (origin) => {
     const fixture = await failedPendingReopen(origin);
     const path = String(fixture.task.worktreePath);
