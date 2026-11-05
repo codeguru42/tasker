@@ -12,13 +12,15 @@ when one function serves several cases.
   provider. See [docs/config.md](../config.md).
 - `src/store/` holds the task store. See [data-root.md](data-root.md).
 - `src/doctor/` holds the code that all doctor checks share. See [doctor.md](doctor.md).
+- `src/github/` holds the shared GitHub process boundary and forge session. It starts GitHub commands through
+  `src/process/`. See [github.md](github.md).
 - `src/issues/` holds the issue tracker code. See [issue-trackers.md](issue-trackers.md).
 - `src/forge/` holds the forge interface and implementations. See [forge.md](forge.md).
 - `src/assistant/` holds the assistant provider interface, the pick of a provider, the model forms, the configuration
   folders of the assistants, the shared read of a stream line and the removal of placeholders. See
   [assistants.md](assistants.md).
 - `src/process/` holds the code that starts a child process. Every child process starts from a module in this folder.
-  The git, gh and ssh code start their processes through its shared helper.
+  The git, GitHub and ssh callers start their processes through its shared helper.
 - `src/phases/` holds the code that runs the commands of a phase. See [phases.md](phases.md).
 - `src/vcs/` holds the version control layer. See [version-control.md](version-control.md).
 - `src/vcs/git/` holds the git code. See [version-control.md](version-control.md).
