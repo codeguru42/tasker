@@ -1,5 +1,5 @@
 import { relative, join } from "node:path";
-import { mkdirSync, readFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../src/github/forge-session.js";
 import { failureOf, thrownBy } from "../helpers/errors.js";
@@ -414,6 +414,48 @@ describe("forge command results", () => {
     );
 
     expect(error.message).toMatch(/install gh|set TASKER_GH_BIN/);
+    expect(error.cause).toBeInstanceOf(Error);
+    expect((error.cause as Error).message).toContain("missing-gh");
+    expect((error.cause as Error).stack).toContain("missing-gh");
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it("gives install guidance when a selected bare executable cannot run", async () => {
+    const dir = useTempDir("tasker-forge-no-execute-");
+    const path = useTempDir("tasker-forge-no-execute-path-");
+    const selected = join(path, "selected-gh");
+    writeFileSync(selected, "#!/bin/sh\nexit 0\n");
+    chmodSync(selected, 0o644);
+    const fake = forgeGh(dir, forgeToken, []);
+    const error = await failureOf(
+      run(createGhSession("octo"), ["repo", "view"], dir, {
+        ...taskerEnv(path),
+        TASKER_GH_BIN: "selected-gh",
+      }),
+      Error,
+    );
+
+    expect(error.message).toContain("selected-gh");
+    expect(error.message).toMatch(/install gh|set TASKER_GH_BIN/);
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it("keeps an invalid path override readable and does not fall back to gh", async () => {
+    const dir = useTempDir("tasker-forge-invalid-override-");
+    const fake = forgeGh(dir, forgeToken, []);
+    const invalid = join(dir, "invalid-gh");
+    const error = await failureOf(
+      run(createGhSession("octo"), ["repo", "view"], dir, {
+        ...taskerEnv(fake.env.PATH),
+        TASKER_GH_BIN: invalid,
+      }),
+      Error,
+    );
+
+    expect(error.message).toContain(invalid);
+    expect(error.cause).toBeInstanceOf(Error);
+    expect((error.cause as Error).message).toContain(invalid);
+    expect((error.cause as Error).stack).toContain(invalid);
     expect(fake.calls()).toEqual([]);
   });
 
