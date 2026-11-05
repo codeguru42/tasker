@@ -853,10 +853,11 @@ These reasons explain its rules:
 
 Local cleanup runs first. If it fails, the remote branch stays available for recovery. Finish removes the remote branch
 before it updates the tracker, so a moved branch gets a decision before the issue closes. The remote delete uses a lease
-on the stored published revision. A moved revision can hold unpublished work, so finish stops and asks the user to
-resolve or remove the remote branch before another run. Another deletion error, including a failed read, does not prove
-that the revision changed. Finish records a warning and continues. The task can reach `finished` while its remote branch
-remains on `origin`.
+on the stored published revision.
+
+A moved revision can hold unpublished work, so finish stops and asks the user to resolve or remove the remote branch
+before another run. Another deletion error, including a failed read, does not prove that the revision changed. Finish
+records a warning and continues. The task can reach `finished` while its remote branch remains on `origin`.
 
 If `issueTracker.updateOnFinish` is `true`, finish marks the issue done after remote cleanup. The `tracker_update` event
 comes before the `finished` event. [The tracker writes](#the-tracker-writes) gives the reason.
