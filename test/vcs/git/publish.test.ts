@@ -555,6 +555,10 @@ describe("publish, land and delete", () => {
       expect(error.message).toBe(
         `the task branch moved on origin: ${BRANCH}: tasker published ${published}, origin has ${other}`,
       );
+      expect(error.name).toBe("RemoteTaskRefMovedError");
+      expect((error as Error & { taskRef?: string }).taskRef).toBe(BRANCH);
+      expect((error as Error & { published?: string }).published).toBe(published);
+      expect((error as Error & { tip?: unknown }).tip).toEqual({ state: "present", revision: other });
       expect(pushes()).toHaveLength(before);
       expect(await origin.branchHead(BRANCH)).toBe(other);
       expectNoTokenFile();
@@ -573,6 +577,54 @@ describe("publish, land and delete", () => {
         expect(error.message.startsWith(named)).toBe(true);
         expect(error.message).toContain(ORIGIN_REFUSES);
         expect(await origin.branchHead(BRANCH)).toBe(published);
+        expectNoTokenFile();
+      });
+
+      it("classifies a branch moved between the tip read and the leased delete", async () => {
+        const published = await addCloneCommit(clone, env, BRANCH);
+        await publish();
+        const other = await origin.addCommit(BRANCH);
+        const racing = gitBeforePushEnv(join(origin.dir, "before-delete"), env, [
+          realCommandPath("git"),
+          "--git-dir",
+          origin.path,
+          "update-ref",
+          "refs/heads/" + BRANCH,
+          other,
+        ]);
+        const before = pushes().length;
+
+        const error = await failureOf(remove({ published, env: racing }), Error);
+
+        expect(error.message).toBe(
+          `the task branch moved on origin: ${BRANCH}: tasker published ${published}, origin has ${other}`,
+        );
+        expect(error.name).toBe("RemoteTaskRefMovedError");
+        expect((error as Error & { taskRef?: string }).taskRef).toBe(BRANCH);
+        expect((error as Error & { published?: string }).published).toBe(published);
+        expect((error as Error & { tip?: unknown }).tip).toEqual({ state: "present", revision: other });
+        expect(pushes()).toHaveLength(before + 1);
+        expect(await origin.branchHead(BRANCH)).toBe(other);
+        expectNoTokenFile();
+      });
+
+      it("reports the branch as already gone when it disappears during deletion", async () => {
+        const published = await addCloneCommit(clone, env, BRANCH);
+        await publish();
+        const racing = gitBeforePushEnv(join(origin.dir, "before-delete"), env, [
+          realCommandPath("git"),
+          "--git-dir",
+          origin.path,
+          "update-ref",
+          "-d",
+          "refs/heads/" + BRANCH,
+        ]);
+
+        const result = await remove({ published, env: racing });
+
+        expect(result).toEqual({ state: "already-gone" });
+        expect(await origin.branchHead(BRANCH)).toBeUndefined();
+        expect(pushes()).toHaveLength(1);
         expectNoTokenFile();
       });
 
