@@ -849,27 +849,23 @@ These reasons explain its rules:
 
 ## Finish
 
-`tasker finish` cleans up a task in `landed` or `cleanup_failed`: it removes the worktree and the local task branch, and
-then deletes the published task branch on `origin` when the task has a stored published revision. The task enters
-`finishing` before cleanup.
+`tasker finish` cleans up a task in `landed` or `cleanup_failed`. It enters `finishing` before cleanup.
 
-The remote delete uses a lease on the stored published revision. If the branch moved, finish stops before the tracker
-write, moves the task to `cleanup_failed`, and prints the error. Local cleanup can already have removed the worktree and
-local branch. The user must resolve or remove the moved remote branch before running finish again.
-
-Other remote deletion errors write a `remote_cleanup_warning` event and print a warning. Finish continues to the tracker
-write and completion. The task can reach `finished` while its remote branch remains on `origin`.
+Local cleanup runs first. If it fails, the remote branch stays available for recovery. Finish removes the remote branch
+before it updates the tracker, so a moved branch gets a decision before the issue closes. The remote delete uses a lease
+on the stored published revision. A moved revision can hold unpublished work, so finish stops and asks the user to
+resolve or remove the remote branch before another run. Another deletion error, including a failed read, does not prove
+that the revision changed. Finish records a warning and continues. The task can reach `finished` while its remote branch
+remains on `origin`.
 
 If `issueTracker.updateOnFinish` is `true`, finish marks the issue done after remote cleanup. The `tracker_update` event
 comes before the `finished` event. [The tracker writes](#the-tracker-writes) gives the reason.
 
-The completion write appends one `finished` event with `{ worktree, branch, from, to }`, moves the task to `finished`,
-and clears its run marker in one transaction. The value of `worktree` is `removed` or `already gone`. The value of
-`branch` is `deleted` or `already gone`. If this write fails after external cleanup, finish moves the task to
-`cleanup_failed`. Its error names the completed cleanup and the failed completion record.
-
-If local cleanup fails after the move to `finishing`, the task goes to `cleanup_failed`. Its `transition` event has the
-data `{ error, from, to }`. The error starts with `finishing failed:`.
+The completion event, task state and run marker change in one transaction. This prevents a `finished` state without its
+event or a cleared marker without a completed record. If this write fails, finish moves the task to `cleanup_failed` and
+reports the cleanup results and the failed record. When remote deletion failed, the error names that failure and its
+reason. It does not say that external cleanup succeeded. A local cleanup failure also moves the task to `cleanup_failed`
+and prints an error that starts with `finishing failed:`.
 
 These links give the rules that finish follows:
 
