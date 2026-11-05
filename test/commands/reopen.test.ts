@@ -205,7 +205,7 @@ describe("reopen", () => {
   it("keeps the published revision when resync moves HEAD", async () => {
     const fixture = await useReopenFixture({ stream: answerStream(V2) }, "pushed");
     const published = fixture.task.publishedRevision;
-    const beforeHead = gitOutput(
+    const beforeHead = await gitOutput(
       { gitDir: fixture.started.clone },
       fixture.started.env,
       "rev-parse",
@@ -216,7 +216,7 @@ describe("reopen", () => {
     const result = await runReopen();
 
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
-    const afterHead = gitOutput(
+    const afterHead = await gitOutput(
       { gitDir: fixture.started.clone },
       fixture.started.env,
       "rev-parse",
