@@ -1,12 +1,4 @@
-import {
-  ChildCommandError,
-  type ChildResult,
-  childFailureMessage,
-  CommandNotFoundError,
-  runChild,
-  subcommandOf,
-} from "../../process/run-child.js";
-import { resolveProgram } from "../../process/resolve-program.js";
+import { ChildCommandError, CommandNotFoundError, GhProcessError, runGhProcess } from "../../github/process.js";
 
 export interface RunGhOptions {
   account: string;
@@ -46,8 +38,6 @@ export class GhLoginError extends Error {
 }
 
 const GITHUB_HOST = "github.com";
-const REDACTED = "***";
-
 // See the doc comment of runGh().
 const REMOVED_GH_VARS: readonly string[] = [
   "GH_TOKEN",
@@ -226,23 +216,20 @@ async function spawnGh(
   env: NodeJS.ProcessEnv,
   mode: { dropStdout?: boolean; token?: string; signal?: AbortSignal } = {},
 ): Promise<string> {
-  const hide = (text: string) => (mode.token === undefined ? text : text.split(mode.token).join(REDACTED));
-  let result: ChildResult;
   try {
-    const program = resolveProgram("gh", "TASKER_GH_BIN", env);
-    result = await runChild(program, args, { env, signal: mode.signal });
+    const result = await runGhProcess(args, env, {
+      dropStdout: mode.dropStdout,
+      token: mode.token,
+      signal: mode.signal,
+    });
+    return result.stdout;
   } catch (error) {
     if (error instanceof CommandNotFoundError) {
       throw new GhNotInstalledError(error.message);
     }
+    if (error instanceof GhProcessError) {
+      throw new GhError(error.message, error.subcommand, error.stdout, error.stderr, error.exitCode);
+    }
     throw error;
   }
-  const { code, signal, stdout } = result;
-  if (code === 0) {
-    return stdout;
-  }
-  const subcommand = subcommandOf(args);
-  const shownStdout = mode.dropStdout ? "" : hide(stdout);
-  const stderr = hide(result.stderr);
-  throw new GhError(childFailureMessage("gh", subcommand, code, signal, stderr), subcommand, shownStdout, stderr, code);
 }

@@ -34,7 +34,7 @@ describe("the shared gh process", () => {
     const fake = fakeGh(dir, {}, []);
     const missing = `${dir}/missing-worktree`;
 
-    await expect(runGhProcess(["api", "user"], fake.env, missing)).rejects.toThrow(missing);
+    await expect(runGhProcess(["api", "user"], fake.env, { cwd: missing })).rejects.toThrow(missing);
     expect(fake.calls()).toEqual([]);
   });
 });
