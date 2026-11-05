@@ -81,6 +81,17 @@ first recorded publication. Schema version 19 adds it. Existing task rows get NU
 instead of the event. Publication writes the revision, the state `pushed`, the `published` event and the run-marker
 removal in one transaction. This keeps the stored revision and task state in sync.
 
+The column `reopen_start_head` holds the worktree HEAD from the start of a reopen that has not recorded its resync yet.
+Schema version 20 adds it. Existing task rows get NULL. `startReopen` writes the head with the move into `refining`, its
+feedback transition event and the run marker in one transaction. After resync, `completeReopen` records
+`synced_base_tip` and clears `reopen_start_head` and the three update-branch undo columns in one write. It keeps
+`accepted_revision` and `published_revision`.
+
+If the process stops before `completeReopen`, `resume` or eligible `approve-credits` restores the saved head under the
+repo lock before returning the task to its origin. The same transaction as that move clears `reopen_start_head`. A
+failed restore keeps both the pause and the recovery head. If the column is NULL, the resync was recorded, so recovery
+keeps the current worktree state.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 
@@ -115,7 +126,8 @@ new schema version.
 The table has one row for each plan that the assistant returned for a task. A revision is one such plan. A later
 revision comes from the feedback of the user on an earlier one, or, with the source `review`, from the open findings of
 a review, with the feedback of the user or none. With the source `review-feedback`, a revision comes from the feedback
-of the user on the committed work of a task in `awaiting_work_review`.
+of the user on the committed work of a task in `awaiting_work_review`. With the source `reopen`, it comes from the
+feedback for a task in `accepted` or `pushed`, after the task branch resyncs to its stored base.
 
 These rules hold:
 
