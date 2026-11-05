@@ -90,8 +90,20 @@ describe("gh doctor checks", () => {
       expect(result).toEqual({
         status: "error",
         detail: "missing-gh is not installed: missing-gh was not found on PATH",
-        remediation: "Fix TASKER_GH_BIN or install a compatible gh executable named missing-gh.",
+        remediation:
+          "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects a compatible gh executable.",
       });
+      expect(fake.calls()).toEqual([]);
+    });
+
+    it("gives valid repair advice when PATH is missing for the selected gh executable", async () => {
+      const fake = fakeGh(dir, {}, [{ args: versionArgs, stdout: "gh version 2.40.0\n" }]);
+      const result = await doctor.ghVersionCheck().run({ TASKER_GH_BIN: fake.env.TASKER_GH_BIN });
+      expect(result.status).toBe("error");
+      expect(result.detail).toContain("PATH");
+      expect(result.remediation).toBe(
+        "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects a compatible gh executable.",
+      );
       expect(fake.calls()).toEqual([]);
     });
 
