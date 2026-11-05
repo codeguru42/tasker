@@ -34,14 +34,14 @@ export async function listOpenPrs(
         { cwd: target.cwd, env },
       );
     } catch (error) {
-      throw operationError("list", error, target.head);
+      throw operationError("list pull requests", error, `for head ${target.head}`);
     }
 
     let requests: GhOpenPullRequest[];
     try {
       requests = parseOpenPullRequests(response);
     } catch (error) {
-      throw operationError("list", error, target.head);
+      throw operationError("list pull requests", error, `for head ${target.head}`);
     }
 
     if (BigInt(requests.length) < limit) {
@@ -65,13 +65,39 @@ export async function createPr(
       { cwd: target.cwd, env },
     );
   } catch (error) {
-    throw operationError("create", error, target.head);
+    throw operationError("create pull request", error, `for head ${target.head}`);
   }
 
   try {
     return pullRequestFromOutput(response);
   } catch (error) {
-    throw operationError("create", error, target.head);
+    throw operationError("create pull request", error, `for head ${target.head}`);
+  }
+}
+
+export async function isPrMerged(
+  session: GhSession,
+  prNumber: number,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+): Promise<boolean> {
+  let response: string;
+  try {
+    response = await session.run(["pr", "view", String(prNumber), "--json", "state"], { cwd, env });
+  } catch (error) {
+    throw operationError("read merged state", error, `of pull request ${prNumber}`);
+  }
+
+  try {
+    const value: unknown = JSON.parse(response);
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      throw new Error("GitHub returned an invalid pull request state");
+    }
+    const state = (value as Record<string, unknown>).state;
+    if (typeof state !== "string") throw new Error("GitHub returned an invalid pull request state");
+    return state === "MERGED";
+  } catch (error) {
+    throw operationError("read merged state", error, `of pull request ${prNumber}`);
   }
 }
 
@@ -140,9 +166,9 @@ function pullRequestFromOutput(output: string): PullRequest {
   return identities.values().next().value!;
 }
 
-function operationError(operation: "create" | "list", error: unknown, head: string): Error {
+function operationError(operation: string, error: unknown, subject: string): Error {
   const cause = error instanceof Error ? error : new Error(String(error));
   const stderr = "stderr" in cause && typeof cause.stderr === "string" ? cause.stderr.trim() : "";
   const details = stderr !== "" && !cause.message.includes(stderr) ? `: ${stderr}` : "";
-  return new Error(`could not ${operation} pull requests for head ${head}: ${cause.message}${details}`, { cause });
+  return new Error(`could not ${operation} ${subject}: ${cause.message}${details}`, { cause });
 }
