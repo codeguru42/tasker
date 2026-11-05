@@ -63,6 +63,8 @@ The session replaces every occurrence of the account token in successful stdout 
 output. A nonzero exit rejects before a caller can parse stdout. The session trims stderr and removes the token from it.
 
 The session removes the token from every reachable error message, stream, stack and cause. A repository command error
-keeps a sanitized copy of the original command error as its cause. A failed token lookup discards its output and gives
-the account and the external login step. A start error tells the user to install `gh` or set `TASKER_GH_BIN`. A missing
-worktree error names the missing directory.
+keeps a sanitized copy of the original command error as its cause. If the token lookup exits with a nonzero code or
+succeeds with empty output, the session reports a missing login and gives the account and external login step. If a
+signal stops the lookup, the session reports the stop without login guidance. This stopped error does not expose lookup
+stdout or stderr in its message, fields or cause. A start error tells the user to install `gh` or set `TASKER_GH_BIN`. A
+missing worktree error names the missing directory.
