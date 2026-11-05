@@ -35,7 +35,7 @@ const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 const NEEDS = "accepted, pushed or in_peer_review";
 
-const runMarkLanded = () => runCommand(markLanded, "mark-landed", KEY, "--repo", REPO);
+const runMarkLanded = (issueKey = KEY) => runCommand(markLanded, "mark-landed", issueKey, "--repo", REPO);
 
 // Runs mark-landed and expects a refusal that changes nothing.
 const expectRefused = async (fixture: Pick<StartFixture, "dataRoot">, error: string | RegExp) => {
@@ -65,8 +65,8 @@ const expectSparseLanding = (
   expect(readRunMarker(databasePathOf(dataRoot), taskId)).toEqual(marker);
 };
 
-// Lands the work, moves the task through states, and expects mark-landed to record the landing from the last state.
-// It also expects that origin keeps the head of main and that no run marker stays.
+// Moves the task through states, declares it landed, and expects origin to keep the head of main.
+// It also expects that no run marker stays.
 const expectMarkedFrom = async (states: Parameters<typeof moveTaskThrough>[2], from: string) => {
   const accepted = await useAcceptedTask();
   withDataRootStore(accepted.dataRoot, (store) => moveTaskThrough(store, accepted.task.id, states));
@@ -202,7 +202,7 @@ describe("tasker mark-landed", () => {
       const before = latestTaskOf(fixture.dataRoot, "codeguru42/tasker#6");
       const events = eventsOf(fixture.dataRoot, "codeguru42/tasker#6");
       const marker = readRunMarker(databasePathOf(fixture.dataRoot), task.id);
-      const result = await runCommand(markLanded, "mark-landed", "codeguru42/tasker#7", "--repo", REPO);
+      const result = await runMarkLanded("codeguru42/tasker#7");
       expect(result.code).toBe(1);
       expect(result.err).toContain("no task");
       expect(latestTaskOf(fixture.dataRoot, "codeguru42/tasker#6")).toEqual(before);
