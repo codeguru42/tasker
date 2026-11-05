@@ -8,6 +8,12 @@ import { writeFakeCommand } from "../helpers/fake-commands.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
 const answer = { args: ["repo", "view"], stdout: "repository" };
+const forgeToken = "forge-token-secret";
+const tokenAnswer = (account: string, stdout = `${forgeToken}\n`, exitCode = 0) => ({
+  args: ["auth", "token", "--user", account],
+  stdout,
+  exitCode,
+});
 const taskerEnv = (ghPath: string | undefined, rest: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({
   TASKER_PATH: ghPath,
   TASKER_HOME: "/tasker/home",
@@ -167,5 +173,101 @@ describe("createGhSession", () => {
       }),
     ).resolves.toBe("repository");
     expect(fake.calls().map((call) => call.args)).toEqual([["repo", "view"]]);
+  });
+});
+
+describe("forge account authentication", () => {
+  it("reads the configured account token only when the first repository call starts", async () => {
+    const dir = useTempDir("tasker-forge-lazy-token-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("configured"), answer]);
+    const session = createGhSession("configured");
+
+    expect(fake.calls()).toEqual([]);
+    await run(session, ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+
+    expect(fake.calls().map((call) => call.args)).toEqual([tokenAnswer("configured").args, ["repo", "view"]]);
+    expect(fake.calls().map((call) => call.tokenMatches)).toEqual([false, true]);
+  });
+
+  it("trims the token before it uses it for the repository call", async () => {
+    const dir = useTempDir("tasker-forge-trim-token-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo", ` \n${forgeToken}\n  `), answer]);
+
+    await run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+
+    expect(fake.calls().map((call) => call.tokenMatches)).toEqual([false, true]);
+  });
+
+  it("reuses a successful token across sequential calls in one session", async () => {
+    const dir = useTempDir("tasker-forge-sequential-token-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), answer]);
+    const session = createGhSession("octo");
+
+    await run(session, ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+    await run(session, ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+
+    expect(fake.calls().map((call) => call.args)).toEqual([
+      tokenAnswer("octo").args,
+      ["repo", "view"],
+      ["repo", "view"],
+    ]);
+    expect(fake.calls().filter((call) => call.tokenMatches)).toHaveLength(2);
+  });
+
+  it("shares a pending token lookup across concurrent calls in one session", async () => {
+    const dir = useTempDir("tasker-forge-concurrent-token-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), answer]);
+    const session = createGhSession("octo");
+
+    await Promise.all([
+      run(session, ["repo", "view"], dir, taskerEnv(fake.env.PATH)),
+      run(session, ["repo", "view"], dir, taskerEnv(fake.env.PATH)),
+    ]);
+
+    expect(fake.calls().filter((call) => call.args[0] === "auth")).toHaveLength(1);
+    expect(fake.calls().filter((call) => call.tokenMatches)).toHaveLength(2);
+  });
+
+  it("keeps token caches separate for separate sessions", async () => {
+    const dir = useTempDir("tasker-forge-independent-token-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), answer]);
+
+    await run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+    await run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+
+    expect(fake.calls().filter((call) => call.args[0] === "auth")).toHaveLength(2);
+  });
+
+  it.each([
+    ["failed status", "token-looking-output", 1],
+    ["empty output", "  \n", 0],
+  ])("retries a token lookup after %s", async (_label, stdout, exitCode) => {
+    const dir = useTempDir("tasker-forge-token-retry-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo", stdout, exitCode)]);
+    const session = createGhSession("octo");
+    const env = taskerEnv(fake.env.PATH);
+
+    await failureOf(run(session, ["repo", "view"], dir, env), Error);
+    await failureOf(run(session, ["repo", "view"], dir, env), Error);
+
+    expect(fake.calls().filter((call) => call.args[0] === "auth")).toHaveLength(2);
+  });
+
+  it("reports the account and external login step when token lookup fails", async () => {
+    const dir = useTempDir("tasker-forge-login-guidance-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo", "", 1)]);
+    const error = await failureOf(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH)), Error);
+
+    expect(error.message).toContain("octo");
+    expect(error.message).toContain("gh auth login");
+  });
+
+  it("rejects nonzero token lookup status even when stdout contains a token", async () => {
+    const dir = useTempDir("tasker-forge-token-status-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo", `${forgeToken}\n`, 1), answer]);
+
+    await failureOf(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH)), Error);
+
+    expect(fake.calls().map((call) => call.args)).toEqual([tokenAnswer("octo", `${forgeToken}\n`, 1).args]);
   });
 });
