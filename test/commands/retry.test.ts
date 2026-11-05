@@ -142,6 +142,27 @@ describe("tasker retry", () => {
     ]);
   });
 
+  it("runs tasker push for a task that failed in pushing", async () => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => failTaskVia(store, accepted.task.id, "accepted", "pushing"));
+
+    const result = await runRetry();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toBe(
+      firstLine("pushing", "accepted") +
+        `pushed ${KEY}\npublished: ${accepted.revision} to origin/${accepted.task.branch!}\n`,
+    );
+    expect(result.err).toBe("");
+    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({
+      state: "pushed",
+      publishedRevision: accepted.revision,
+    });
+    expect(eventDataOf(accepted.dataRoot, KEY, "retry")).toEqual([
+      { origin: "pushing", target: "accepted", resumeExecute: false, from: "failed", to: "accepted" },
+    ]);
+  });
+
   it("refuses a tip that is not the accepted revision after a failed merge", async () => {
     const accepted = await useAcceptedTask();
     withDataRootStore(accepted.dataRoot, (store) => failTaskVia(store, accepted.task.id, "accepted", "merging"));

@@ -78,6 +78,21 @@ describe("handleDeadRun", () => {
     expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
   });
 
+  it("moves a dead push run to interrupted and clears its run marker", async () => {
+    const { dataRoot, task } = seedDead("pushing");
+
+    const result = await handle(dataRoot, task);
+
+    expect(result.task.state).toBe("interrupted");
+    expect(result.notes).toEqual([deadRunNote(KEY, "pushing")]);
+    expect(eventDataOf(dataRoot, KEY, "transition").at(-1)).toMatchObject({
+      cause: "dead_run",
+      from: "pushing",
+      to: "interrupted",
+    });
+    expect(readRunMarker(databasePathOf(dataRoot), task.id)).toBeUndefined();
+  });
+
   it("moves a task in a spawning state that has no marker", async () => {
     const { dataRoot, task } = seedOneTask("approved", KEY, REPO);
     withDataRootStore(dataRoot, (store) => store.updateTask(task.id, { state: "planning" }));

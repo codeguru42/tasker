@@ -42,11 +42,11 @@ describe("retryTask checks", () => {
     await expectRetryRefused(dataRoot, task, `the task of ${KEY} is in approved; tasker retry needs failed`);
   });
 
-  it.each(["approved", "pushing"] as const)("refuses a task that failed in %s", async (origin) => {
+  it("refuses a task that failed in approved", async () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
-    withDataRootStore(dataRoot, (store) => failTaskFrom(store, task.id, origin));
+    withDataRootStore(dataRoot, (store) => failTaskFrom(store, task.id, "approved"));
 
-    await expectRetryRefused(dataRoot, task, `the task of ${KEY} failed in ${origin}; tasker retry has no step for it`);
+    await expectRetryRefused(dataRoot, task, `the task of ${KEY} failed in approved; tasker retry has no step for it`);
   });
 
   it("refuses a task that failed in merging after a move from in_peer_review", async () => {
@@ -166,6 +166,7 @@ describe("retryTask origins", () => {
     },
     { origin: "verifying", target: "executed", next: "verify", state: "executed", sessions: kept },
     { origin: "merging", before: "accepted", target: "accepted", next: "merge", state: "accepted", sessions: kept },
+    { origin: "pushing", before: "accepted", target: "accepted", next: "push", state: "accepted", sessions: kept },
   ];
 
   const labeled = rows.map((row) => ({

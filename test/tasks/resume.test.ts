@@ -82,6 +82,14 @@ describe("resumeTask origins", () => {
       sessions: kept,
     },
     {
+      origin: "pushing",
+      before: "accepted",
+      target: "accepted",
+      next: "push",
+      pauses: ["interrupted"],
+      sessions: kept,
+    },
+    {
       origin: "refining",
       refineOrigin: "awaiting_plan_review",
       target: "awaiting_plan_review",
@@ -225,13 +233,6 @@ describe("resumeTask checks", () => {
     withDataRootStore(dataRoot, (store) => store.updateTask(task.id, { state: "awaiting_quota_approval" }));
 
     await expectResumeRefused(dataRoot, task, wrongStateError("awaiting_quota_approval", KEY, "resume", NEEDS));
-  });
-
-  it("refuses a task paused from pushing", async () => {
-    const { dataRoot, task } = seedApprovedTaskWithSessions();
-    withDataRootStore(dataRoot, (store) => pauseTaskFrom(store, task.id, "pushing", "interrupted"));
-
-    await expectResumeRefused(dataRoot, task, noStep("pushing"));
   });
 
   it("refuses merging after a move from in_peer_review", async () => {

@@ -347,6 +347,25 @@ describe("tasker resume", () => {
     expect(eventDataOf(accepted.dataRoot, KEY, "resume")).toEqual([{ origin: "merging", target: "accepted" }]);
   });
 
+  it("runs tasker push for a task paused in interrupted from pushing", async () => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => pauseTaskVia(store, accepted.task.id, "accepted", "pushing"));
+
+    const result = await runResume();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toBe(
+      resumedLine(KEY, "pushing", "accepted") +
+        `pushed ${KEY}\npublished: ${accepted.revision} to origin/${accepted.task.branch!}\n`,
+    );
+    expect(result.err).toBe("");
+    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({
+      state: "pushed",
+      publishedRevision: accepted.revision,
+    });
+    expect(eventDataOf(accepted.dataRoot, KEY, "resume")).toEqual([{ origin: "pushing", target: "accepted" }]);
+  });
+
   it("refuses a tip that is not the accepted revision after a paused merge", async () => {
     const accepted = await useAcceptedTask();
     withDataRootStore(accepted.dataRoot, (store) => pauseTaskVia(store, accepted.task.id, "accepted", "merging"));
