@@ -90,6 +90,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   and the reconcile.
 - [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code: the gh boundary, the gh token and
   environment, the gh and GitHub facts that the code guards against, and the doctor checks.
+- [docs/dev/forge.md](docs/dev/forge.md): the forge purpose and provider boundary, including how the forge account
+  differs from the issue tracker account and which code uses the shared interface.
 - [docs/dev/jira.md](docs/dev/jira.md): the Jira tracker code: the Jira folder, `runAcli()`, the commands that tasker
   never runs, `TASKER_ACLI_BIN`, the active site, the site guard, the conversion of ADF, the read of an issue and its
   comments, the blockers of an issue, the writes, the in-progress check, the in-progress clear, the abort write, the
