@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import type {
   CiStatus,
   CreatePrInput,
@@ -57,28 +58,56 @@ type ListOpenPrsResult = Assert<Equal<ReturnType<ForgeProvider["listOpenPrs"]>, 
 type CreatePrResult = Assert<Equal<ReturnType<ForgeProvider["createPr"]>, Promise<PullRequest>>>;
 type MergePrResult = Assert<Equal<ReturnType<ForgeProvider["mergePr"]>, Promise<void>>>;
 
+type ContractAssertions = [
+  CiStatusIsExact,
+  MergeMethodIsExact,
+  PullRequestIsExact,
+  OpenPullRequestIsExact,
+  PrTargetIsExact,
+  CreatePrInputIsExact,
+  ProviderMethodsAreExact,
+  ProviderIdentityIsExact,
+  CiStatusArgs,
+  IsPrMergedArgs,
+  ListOpenPrsArgs,
+  CreatePrArgs,
+  MergePrArgs,
+  CiStatusResult,
+  IsPrMergedResult,
+  ListOpenPrsResult,
+  CreatePrResult,
+  MergePrResult,
+];
+
+describe("ForgeProvider type contract", () => {
+  it("satisfies its compile-time assertions", () => {
+    const assertions: ContractAssertions = [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ];
+    expect(assertions).toEqual(Array.from({ length: 18 }, () => true));
+  });
+});
+
 export function checkReadonlyIdentity(provider: ForgeProvider): void {
   // @ts-expect-error id is readonly
   provider.id = "other";
   // @ts-expect-error account is readonly
   provider.account = "other";
 }
-
-void (0 as unknown as CiStatusIsExact);
-void (0 as unknown as MergeMethodIsExact);
-void (0 as unknown as PullRequestIsExact);
-void (0 as unknown as OpenPullRequestIsExact);
-void (0 as unknown as PrTargetIsExact);
-void (0 as unknown as CreatePrInputIsExact);
-void (0 as unknown as ProviderMethodsAreExact);
-void (0 as unknown as ProviderIdentityIsExact);
-void (0 as unknown as CiStatusArgs);
-void (0 as unknown as IsPrMergedArgs);
-void (0 as unknown as ListOpenPrsArgs);
-void (0 as unknown as CreatePrArgs);
-void (0 as unknown as MergePrArgs);
-void (0 as unknown as CiStatusResult);
-void (0 as unknown as IsPrMergedResult);
-void (0 as unknown as ListOpenPrsResult);
-void (0 as unknown as CreatePrResult);
-void (0 as unknown as MergePrResult);
