@@ -3,7 +3,8 @@ import { createGhSession } from "../../../src/github/forge-session.js";
 import { createPr as untypedCreatePr } from "../../../src/forge/github/pr.js";
 import { isPrMerged as untypedIsPrMerged } from "../../../src/forge/github/pr.js";
 import { listOpenPrs as untypedListOpenPrs } from "../../../src/forge/github/pr.js";
-import type { CreatePrInput, OpenPullRequest, PullRequest } from "../../../src/forge/provider.js";
+import { mergePr as untypedMergePr } from "../../../src/forge/github/pr.js";
+import type { CreatePrInput, MergeMethod, OpenPullRequest, PullRequest } from "../../../src/forge/provider.js";
 import { failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
 import type { FakeAnswer } from "../../helpers/fake-commands.js";
@@ -12,6 +13,14 @@ import { useTempDir } from "../../helpers/temp.js";
 const listOpenPrs = untypedListOpenPrs;
 const createPr = untypedCreatePr;
 const isPrMerged = untypedIsPrMerged;
+const mergePr = untypedMergePr as (
+  session: ReturnType<typeof createGhSession>,
+  prNumber: number,
+  method: MergeMethod,
+  headSha: string,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+) => Promise<void>;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
@@ -40,6 +49,17 @@ function createCall(session: ReturnType<typeof createGhSession>, target: CreateP
 
 function mergedCall(session: ReturnType<typeof createGhSession>, number: number, cwd: string, env: NodeJS.ProcessEnv) {
   return isPrMerged(session, number, cwd, env);
+}
+
+function mergeCall(
+  session: ReturnType<typeof createGhSession>,
+  number: number,
+  method: MergeMethod,
+  headSha: string,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+) {
+  return mergePr(session, number, method, headSha, cwd, env);
 }
 
 function setup(answers: readonly FakeAnswer[], dir = useTempDir("tasker-list-open-prs-")) {
@@ -362,6 +382,103 @@ describe("isPrMerged", () => {
     expect(error.cause).toBeInstanceOf(Error);
     expect(errorStrings(error).join("\n")).not.toContain(token);
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+});
+
+const mergeArgs = (number: number, method: MergeMethod, headSha: string) => [
+  "pr",
+  "merge",
+  String(number),
+  `--${method}`,
+  "--match-head-commit",
+  headSha,
+];
+
+describe("mergePr", () => {
+  it.each([
+    ["merge", ""],
+    ["squash", "Merge accepted; completion is still pending."],
+    ["rebase", ""],
+  ] satisfies [MergeMethod, string][])(
+    "requests %s with the expected head and ignores success output",
+    async (method, stdout) => {
+      const dir = useTempDir("tasker-merge-pr-");
+      const headSha = "expected-head-sha-123";
+      const { env, fake, session } = setup([{ args: mergeArgs(42, method, headSha), stdout }], dir);
+
+      await expect(mergeCall(session, 42, method, headSha, dir, env)).resolves.toBeUndefined();
+      expect(fake.calls().filter(({ args }) => args[0] === "pr")).toEqual([
+        expect.objectContaining({
+          args: mergeArgs(42, method, headSha),
+          tokenMatches: true,
+          cwd: dir,
+          env: {
+            HOME: "/tasker/home",
+            GH_CONFIG_DIR: "/tasker/gh-config",
+            GH_PROMPT_DISABLED: "1",
+            GH_NO_UPDATE_NOTIFIER: "1",
+            NO_COLOR: "1",
+          },
+        }),
+      ]);
+      expect(fake.calls().some(({ args }) => args[0] === "pr" && args[1] === "view")).toBe(false);
+      expect(JSON.stringify(fake.calls())).not.toContain(token);
+      fake.assertAnswered();
+    },
+  );
+
+  it("refuses a changed remote head and does not read completion or retry", async () => {
+    const dir = useTempDir("tasker-merge-pr-stale-head-");
+    const headSha = "expected-head-sha-123";
+    const { env, fake, session } = setup(
+      [
+        {
+          args: mergeArgs(42, "squash", headSha),
+          stderr: `expected head does not match current head near ${token}`,
+          exitCode: 1,
+        },
+      ],
+      dir,
+    );
+    fake.setRemoteHead("changed-head-sha-456");
+
+    const error = await failureOf(mergeCall(session, 42, "squash", headSha, dir, env), Error);
+    expect(error.message).toContain("42");
+    expect(error.message).toContain("expected head does not match current head near ***");
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(errorStrings(error).join("\n")).not.toContain(token);
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([mergeArgs(42, "squash", headSha)]);
+    fake.assertAnswered();
+  });
+
+  it("waits for a delayed command response without polling for merged state", async () => {
+    const dir = useTempDir("tasker-merge-pr-delayed-");
+    const headSha = "expected-head-sha-123";
+    const { env, fake, session } = setup(
+      [
+        {
+          args: mergeArgs(42, "merge", headSha),
+          stdout: "The merge request is accepted, but GitHub has not completed it yet.",
+          delaySeconds: 0.05,
+        },
+      ],
+      dir,
+    );
+
+    await expect(mergeCall(session, 42, "merge", headSha, dir, env)).resolves.toBeUndefined();
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([mergeArgs(42, "merge", headSha)]);
+    expect(fake.calls().some(({ args }) => args[0] === "pr" && args[1] === "view")).toBe(false);
     fake.assertAnswered();
   });
 });
