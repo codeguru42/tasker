@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { runGhProcess } from "../../src/github/process.js";
+import { GhProcessError } from "../../src/github/process.js";
+import { failureOf } from "../helpers/errors.js";
 import { fakeGh } from "../helpers/fake-gh.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -27,6 +29,17 @@ describe("the shared gh process", () => {
       stderr: "denied",
       exitCode: 7,
     });
+  });
+
+  it("keeps captured details when the token is empty", async () => {
+    const dir = useTempDir("tasker-shared-gh-empty-token-");
+    const fake = fakeGh(dir, {}, [
+      { args: ["api", "user"], stdout: "original stdout", stderr: "original stderr", exitCode: 7 },
+    ]);
+
+    const error = await failureOf(runGhProcess(["api", "user"], fake.env, { token: "" }), GhProcessError);
+    expect(error.stdout).toBe("original stdout");
+    expect(error.stderr).toBe("original stderr");
   });
 
   it("reports a missing worktree before starting gh", async () => {
