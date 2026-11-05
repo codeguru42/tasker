@@ -36,24 +36,12 @@ const CANCELLED = `the parent ${PARENT} of ${STACKED} is cancelled; ${STACKED} c
 
 const run = (command: typeof merge, name: string) => () => runCommand(command, name, STACKED, "--repo", REPO);
 
-const LANDING_COMMANDS = [
-  ["merge", merge],
-  ["mark-landed", markLanded],
-] as const;
-
-describe.each(LANDING_COMMANDS)("tasker %s for a stacked task", (name, command) => {
-  const runIt = run(command, name);
+describe("tasker merge for a stacked task", () => {
+  const runIt = run(merge, "merge");
 
   // Expects a refusal that changes nothing and leaves main on origin where it was.
   async function expectRefused(fixture: StackedTasks, error: string): Promise<void> {
     const head = await fixture.origin.branchHead("main");
-    if (name === "mark-landed") {
-      const result = await runIt();
-      expect(result.code).toBe(0);
-      expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("landed");
-      expect(await fixture.origin.branchHead("main")).toBe(head);
-      return;
-    }
     await expectCommandRefused({ dataRoot: fixture.dataRoot, key: STACKED }, runIt, error);
     expect(await fixture.origin.branchHead("main")).toBe(head);
   }
@@ -88,6 +76,50 @@ describe.each(LANDING_COMMANDS)("tasker %s for a stacked task", (name, command) 
     });
 
     await expectRefused(fixture, CANCELLED);
+  });
+});
+
+describe("tasker mark-landed for a stacked task", () => {
+  const runIt = run(markLanded, "mark-landed");
+
+  async function expectDeclaredLanded(fixture: StackedTasks): Promise<void> {
+    const head = await fixture.origin.branchHead("main");
+    const result = await runIt();
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("landed");
+    expect(await fixture.origin.branchHead("main")).toBe(head);
+  }
+
+  it("marks a stacked task landed while its parent is in flight", async () => {
+    const fixture = await useStackedTasks();
+    withDataRootStore(fixture.dataRoot, (store) => placeTask(store, fixture.stacked.task.id, "accepted"));
+
+    await expectDeclaredLanded(fixture);
+  });
+
+  it("marks a stacked task landed with no own commit while its parent is in flight", async () => {
+    const fixture = await useStackedTasks({ stackedCommit: false });
+    withDataRootStore(fixture.dataRoot, (store) => placeTask(store, fixture.stacked.task.id, "accepted"));
+
+    await expectDeclaredLanded(fixture);
+  });
+
+  it("marks a stacked task landed after its parent landed", async () => {
+    const fixture = await useStackedTasks();
+    withDataRootStore(fixture.dataRoot, (store) => placeTask(store, fixture.stacked.task.id, "accepted"));
+    await landAndDropParent(fixture);
+
+    await expectDeclaredLanded(fixture);
+  });
+
+  it("marks a stacked task landed when its parent is cancelled", async () => {
+    const fixture = await useStackedTasks();
+    withDataRootStore(fixture.dataRoot, (store) => {
+      placeTask(store, fixture.stacked.task.id, "accepted");
+      placeTask(store, fixture.parent.task.id, "cancelled");
+    });
+
+    await expectDeclaredLanded(fixture);
   });
 });
 
