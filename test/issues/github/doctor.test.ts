@@ -65,7 +65,9 @@ describe("gh doctor checks", () => {
       ["", "error", "cannot read the gh version from: "],
     ])("reads %j as %s", async (stdout, status, detail) => {
       const fake = fakeGh(dir, {}, [{ args: versionArgs, stdout }]);
-      const result = await doctor.ghVersionCheck().run(fake.env);
+      const env = { ...fake.env };
+      delete env.TASKER_GH_BIN;
+      const result = await doctor.ghVersionCheck().run(env);
       expect(result.status).toBe(status);
       expect(result.detail).toBe(detail);
       expect(result.remediation).toBe(
@@ -91,7 +93,7 @@ describe("gh doctor checks", () => {
         status: "error",
         detail: "missing-gh is not installed: missing-gh was not found on PATH",
         remediation:
-          "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects a compatible gh executable.",
+          "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects gh 2.40.0 or newer.",
       });
       expect(fake.calls()).toEqual([]);
     });
@@ -102,9 +104,21 @@ describe("gh doctor checks", () => {
       expect(result.status).toBe("error");
       expect(result.detail).toContain("PATH");
       expect(result.remediation).toBe(
-        "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects a compatible gh executable.",
+        "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects gh 2.40.0 or newer.",
       );
       expect(fake.calls()).toEqual([]);
+    });
+
+    it("gives valid repair advice when the selected gh version is too old", async () => {
+      const fake = fakeGh(dir, {}, [{ args: versionArgs, stdout: "gh version 2.39.2\n" }]);
+      const result = await doctor.ghVersionCheck().run(fake.env);
+      expect(result).toEqual({
+        status: "error",
+        detail: OLDER("2.39.2"),
+        remediation:
+          "Set PATH to the directories for child programs. Make sure that TASKER_GH_BIN selects gh 2.40.0 or newer.",
+      });
+      expect(fake.calls()).toEqual([{ args: versionArgs, ghToken: undefined, env: {} }]);
     });
 
     it("gives the timeout result when gh is slow", async () => {
