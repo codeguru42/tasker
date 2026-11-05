@@ -37,10 +37,15 @@ The command reads the origin. The origin is the state that the task left when it
 - `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs
   `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to
   `landed`.
+- `accepted`: the task goes to `accepted`, and the command runs `tasker push`.
+- `pushing`, when the state before the push is `accepted`: the task goes to `accepted`, and the command runs
+  `tasker push`.
 - `quota_blocked`, `awaiting_quota_approval` or `interrupted`: the command uses the row of the state that the task left
   when it moved into the pause, but only when that state is `planning`, `executing`, `verifying` or `reviewing`. For
   example, a task that failed in `interrupted` after a move from `executing` goes to `approved`, and the command runs
-  `tasker execute`. The first line is then `retried <issue key>: failed in interrupted, back in approved`.
+  `tasker execute`. The first line is then `retried <issue key>: failed in interrupted, back in approved`. A task that
+  failed in `interrupted` after a push has no retry step. Retry uses the direct row for `interrupted`, which has no
+  entry for a push.
 
 The origin of a refine is the state that the task left when the last refine started. The state before the merge is the
 state that the task left when the last merge started.
@@ -65,10 +70,10 @@ For the origin `provisioning`, the target is `provisioning`, so the line is
 For a task that failed in `provisioning`, the steps of `tasker start` run with no `--base`. If they stop because no base
 branch is known, run `tasker start <issue> --base <branch>`. `tasker start` continues the same task.
 
-The output of the next command follows: the output of `tasker start`, `tasker plan`, `tasker execute`, `tasker verify`,
-`tasker review` or `tasker merge`. The next command keeps its own errors and its own exit code. If it fails, the task
-goes to `failed` again with a new error, and you can run `tasker retry` again. For the origin `refining`, the command
-prints one line and exits with code 0. The line depends on the origin of the refine:
+The next command prints its output after the retry line. It keeps its own errors and exit code. It can be
+`tasker start`, `tasker plan`, `tasker execute`, `tasker verify`, `tasker review`, `tasker merge` or `tasker push`. If
+it fails, the task goes to `failed` again with a new error. You can run `tasker retry` again. For the origin `refining`,
+the command prints one hint line and exits with code 0. The line depends on the origin of the refine:
 
 - `awaiting_plan_review` or `failed`: `run tasker refine <issue key> "<feedback>" again`
 - `reviewed`:
@@ -86,7 +91,8 @@ task lock belong to this group:
 - The task failed in a state that retry has no step for. The error is
   `the task of <issue key> failed in <state>; tasker retry has no step for it`. A task that failed in `merging` after a
   move from a state other than `accepted` gets this error too. So does a task that failed in a pause after a move from
-  each other state, for example `refining`, `merging` or `pushing`. The error then names the pause as the state.
+  each other state, for example `refining`, `merging` or `pushing`. The error then names the pause as the state. A
+  failure from `interrupted` after a push remains refused.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is
   `--resume-execute applies only to a task that failed in verifying`.
 
@@ -115,6 +121,8 @@ origin in this table:
 - `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs
   `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to
   `landed`.
+- `pushing`, when the state before the push is `accepted`: the task goes to `accepted`, and the command runs
+  `tasker push`.
 - `finishing`: the task goes to `landed`, and the command runs `tasker finish`. The target is `landed` also when the
   task came to `finishing` from `cleanup_failed`. Each cleanup step skips what is already done.
 - `updating_branch`: only a task in `interrupted` has this origin. The task goes back to the origin of the update, which
