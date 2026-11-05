@@ -30,23 +30,29 @@ token.
 The forge session reads only the environment passed to `GhSession.run()`. It does not read `process.env` or copy other
 ambient values into the child environment.
 
-The session requires a nonblank `TASKER_PATH`. It also requires at least one nonblank value: `TASKER_HOME` or
-`TASKER_GH_CONFIG_DIR`. The child environment contains `PATH` from `TASKER_PATH`, each nonblank authentication location,
-and these fixed values:
+The session requires a nonblank `TASKER_PATH`. It uses this value for the child's `PATH`. It also needs one
+authentication location. If `TASKER_GH_CONFIG_DIR` is nonblank, `TASKER_HOME` can be blank or unset. If `TASKER_HOME` is
+nonblank, `TASKER_GH_CONFIG_DIR` can be blank or unset. If both are blank or unset, tasker names both inputs and asks
+for one. The child receives `TASKER_HOME` as `HOME` and `TASKER_GH_CONFIG_DIR` as `GH_CONFIG_DIR`. It gets these fixed
+values:
 
 - `GH_PROMPT_DISABLED=1`
 - `GH_NO_UPDATE_NOTIFIER=1`
 - `NO_COLOR=1`
 
 The session rejects supplied `TASKER_GH_TOKEN`, `TASKER_GH_HOST` and `TASKER_GH_REPO` values. It ignores unprefixed
-values such as `GH_TOKEN`, `GH_HOST`, `GH_REPO`, `HOME` and `GH_CONFIG_DIR`. It uses `TASKER_GH_BIN` to select the
-executable but does not put that variable in the child environment.
+values such as `GH_TOKEN`, `GH_HOST`, `GH_REPO`, `HOME` and `GH_CONFIG_DIR`. It uses `TASKER_GH_BIN` only to select the
+executable. It does not put that name or any other `TASKER_*` name in the child environment.
 
-Each repository call uses the supplied worktree as its working directory. It does not add `--repo`. Before the first
-repository call, the session runs `gh auth token --user <account>` with the selected executable and the isolated
-environment. This internal lookup does not receive `GH_TOKEN`. The session trims the lookup output and requires a
-successful exit and a nonempty token. It caches a successful token only for that session. Concurrent calls in one
-session share the lookup. A failed lookup is tried again on the next call.
+Each repository call uses the supplied worktree as its working directory. The session checks that this folder exists
+before it looks up the account token or selects and starts the executable. A missing folder error names the worktree.
+The session does not add `--repo`. Before the first repository call, it runs `gh auth token --user <account>` with the
+selected executable and the isolated environment. This internal lookup does not receive `GH_TOKEN`. The session trims
+the lookup output and requires a successful exit and a nonempty token. It caches a successful token only for that
+session. Concurrent calls in one session share the lookup. A failed lookup is tried again on the next call.
+
+The shared process code raises `ProgramFileError` when a path in `TASKER_GH_BIN` is invalid or cannot run. The session
+reports that error with install or override guidance. It does not fall back to another `gh` on `PATH`.
 
 Use `gh auth login` outside tasker to establish the account login. Tasker does not log in or change the active account.
 The session rejects public calls to `gh auth token`, `gh auth login`, `gh auth logout` and `gh auth switch`.
