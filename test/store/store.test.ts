@@ -2701,7 +2701,8 @@ describe("task store", () => {
       const moved = store.retryTask(task.id, "accepted", { clearReopenStartHead: true }, check);
 
       expect(moved).toMatchObject({ state: "accepted", reopenStartHead: null });
-      expect(store.listEvents(task.id).at(-1)).toEqual({
+      expect(store.listEvents(task.id).at(-1)).toMatchObject({
+        id: expect.any(Number),
         taskId: task.id,
         at: expect.any(String),
         type: "retry",

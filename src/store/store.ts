@@ -223,6 +223,7 @@ export interface NewExecuteFixTurn {
 // The writes of a retry beside the move. They share the transaction of the move.
 export interface RetryWrites {
   clearPlanSession?: boolean;
+  clearReopenStartHead?: boolean;
   // The version of the pinned revision whose execute session goes.
   clearExecuteSession?: number;
   // The review number whose review session goes.
@@ -232,7 +233,7 @@ export interface RetryWrites {
 }
 
 // The writes of a resume beside the move. They share the transaction of the move.
-export type ResumeWrites = Pick<RetryWrites, "clearReviewSession"> & { clearReopenStartHead?: boolean };
+export type ResumeWrites = Pick<RetryWrites, "clearReviewSession" | "clearReopenStartHead">;
 
 export interface ExecuteFixTurn extends NewExecuteFixTurn {
   queuedAt: string;
@@ -1650,18 +1651,23 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     },
 
     retryTask(taskId, state, writes, check) {
-      return writeTask(taskId, { state }, check, (at) => {
-        endRunAndClearReviewStep(taskId, state, writes.clearReviewSession);
-        if (writes.clearPlanSession === true) deleteSessionStep(taskId, { role: "plan" });
-        if (writes.clearExecuteSession !== undefined) {
-          deleteSessionStep(taskId, { role: "execute", planVersion: writes.clearExecuteSession });
-        }
-        if (writes.resumeExecute !== undefined) {
-          const { version, fixTurn } = writes.resumeExecute;
-          markExecuteTodosDoneStep(taskId, version, at);
-          queueExecuteFixTurnStep(taskId, version, fixTurn, at);
-        }
-      });
+      return writeTask(
+        taskId,
+        { state, ...(writes.clearReopenStartHead === true ? { reopenStartHead: null } : {}) },
+        check,
+        (at) => {
+          endRunAndClearReviewStep(taskId, state, writes.clearReviewSession);
+          if (writes.clearPlanSession === true) deleteSessionStep(taskId, { role: "plan" });
+          if (writes.clearExecuteSession !== undefined) {
+            deleteSessionStep(taskId, { role: "execute", planVersion: writes.clearExecuteSession });
+          }
+          if (writes.resumeExecute !== undefined) {
+            const { version, fixTurn } = writes.resumeExecute;
+            markExecuteTodosDoneStep(taskId, version, at);
+            queueExecuteFixTurnStep(taskId, version, fixTurn, at);
+          }
+        },
+      );
     },
 
     resumeTask(taskId, state, writes, check, events) {

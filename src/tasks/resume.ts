@@ -122,8 +122,9 @@ async function resumeLocked(store: TaskStore, request: ResumeRequest): Promise<R
   // The guard comes first, so an update with no record needs no worktree.
   const move = resumeMoveOf(task, events, "resume");
   if (move.origin !== "updating_branch") {
-    const clearedReopenHead = await restorePendingReopen(store, request, task);
-    return applyResumeMove(store, task, events, move, [], {}, clearedReopenHead);
+    return restorePendingReopen(store, request, task, (restored) =>
+      applyResumeMove(store, task, events, move, [], {}, restored),
+    );
   }
   const head = updateStartHeadOf(events);
   if (head === undefined) {
@@ -138,15 +139,16 @@ async function resumeLocked(store: TaskStore, request: ResumeRequest): Promise<R
   });
 }
 
-// Restores a reopen that stopped after its start transaction. The repo lock covers the Git write. The caller clears
-// the recovery head atomically with the pause-to-origin move after this lock is free.
-export async function restorePendingReopen(
+// Restores a reopen that stopped after its start transaction. When a head is stored, the repo lock covers both the
+// Git restore and the callback. The caller clears the recovery head in its callback transaction.
+export async function restorePendingReopen<T>(
   store: TaskStore,
   request: Pick<ResumeRequest, "config" | "env" | "repoLockWaitMs">,
   task: Task,
-): Promise<boolean> {
+  afterRestore: (restored: boolean, head?: string) => T | Promise<T>,
+): Promise<T> {
   const head = task.reopenStartHead;
-  if (head === null) return false;
+  if (head === null) return afterRestore(false);
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     const { vcs, ctx } = vcsForRepo(request.config, task.repoKey, request.env);
     await vcs.restoreWorkspace(ctx, {
@@ -154,7 +156,7 @@ export async function restorePendingReopen(
       taskRef: requireBranch(task),
       revision: head,
     });
-    return true;
+    return afterRestore(true, head);
   });
 }
 
@@ -217,6 +219,7 @@ export async function moveFromPause(
   recoveryRequest: Pick<ResumeRequest, "config" | "env" | "repoLockWaitMs">,
 ): Promise<ResumeResult> {
   const move = resumeMoveOf(task, events, command);
-  const restored = await restorePendingReopen(store, recoveryRequest, task);
-  return applyResumeMove(store, task, events, move, extra, {}, restored);
+  return restorePendingReopen(store, recoveryRequest, task, (restored) =>
+    applyResumeMove(store, task, events, move, extra, {}, restored),
+  );
 }

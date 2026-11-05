@@ -1,5 +1,6 @@
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
+import { errorMessage } from "../error-message.js";
 import { readLogTail } from "../phases/command-step.js";
 import {
   originText,
@@ -13,7 +14,9 @@ import { verifyCommandLogPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import type { RetryWrites, TaskEvent, TaskStore, VerifyRun } from "../store/store.js";
 import { originRow, type OriginTables } from "./origin-row.js";
-import { taskInState } from "./task-state.js";
+import { requireBranch, requireWorktree, taskInState } from "./task-state.js";
+import { restorePendingReopen } from "./resume.js";
+import { vcsForRepo } from "../vcs/provider.js";
 
 // The command that runs after the move of a retry. The three refine values run nothing: the user gives the
 // feedback again, or acts on the findings again.
@@ -110,7 +113,7 @@ export async function retryTask(store: TaskStore, request: RetryRequest): Promis
   return withTaskLock(store, repoKey, key, () => retryLocked(store, request));
 }
 
-function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
+async function retryLocked(store: TaskStore, request: RetryRequest): Promise<RetryResult> {
   const { config, taskId, resumeExecute } = request;
   const task = taskInState(store, taskId, "retry");
   const events = store.listEvents(taskId);
@@ -153,8 +156,24 @@ function retryLocked(store: TaskStore, request: RetryRequest): RetryResult {
       },
     };
   }
-  transitionWithRetry(store, taskId, chosen.target, { origin, resumeExecute }, writes);
-  return result;
+  return restorePendingReopen(store, request, task, async (restored, head) => {
+    if (restored) writes.clearReopenStartHead = true;
+    try {
+      transitionWithRetry(store, taskId, chosen.target, { origin, resumeExecute }, writes);
+    } catch (error) {
+      if (!restored || head === undefined) throw error;
+      const { vcs, ctx } = vcsForRepo(config, task.repoKey, request.env);
+      const restoredHead = await vcs
+        .workspaceState(ctx, { path: requireWorktree(task) })
+        .then((state) => state.head)
+        .catch(() => head);
+      throw new Error(
+        `retry failed: ${errorMessage(error)}; the task branch ${requireBranch(task)} is now at ${restoredHead}`,
+        { cause: error },
+      );
+    }
+    return result;
+  });
 }
 
 // The verify run that the last move into failed recorded, or undefined.
