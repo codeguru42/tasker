@@ -322,10 +322,14 @@ describe("forge account authentication", () => {
 
   it("looks up a separate token for each account", async () => {
     const dir = useTempDir("tasker-forge-separate-accounts-");
-    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), answer, tokenAnswer("other"), answer]);
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), answer, tokenAnswer("other"), answer, answer, answer]);
+    const octo = createGhSession("octo");
+    const other = createGhSession("other");
 
-    await run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH));
-    await run(createGhSession("other"), ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+    await run(octo, ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+    await run(other, ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+    await run(octo, ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+    await run(other, ["repo", "view"], dir, taskerEnv(fake.env.PATH));
 
     expect(
       fake
