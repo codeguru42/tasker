@@ -58,7 +58,9 @@ export function rejectOriginPush(
   mkdirSync(hooks, { recursive: true });
   const hide = options.hideOrigin === true ? ['mv -- "$(pwd)" "$(pwd).gone"'] : [];
   const message = options.message ?? "remote delete refused";
-  writeFileSync(hook, ["#!/bin/sh", `echo '${message}' >&2`, ...hide, "exit 1", ""].join("\n"), { mode: 0o755 });
+  writeFileSync(hook, ["#!/bin/sh", `printf '%s\\n' ${shellQuote(message)} >&2`, ...hide, "exit 1", ""].join("\n"), {
+    mode: 0o755,
+  });
   return () => rmSync(hook, { force: true });
 }
 
