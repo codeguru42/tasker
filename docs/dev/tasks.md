@@ -2,15 +2,16 @@
 
 This page gives the reasons and limits of the task commands. It also explains the result of an assistant run. The
 commands are start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, push,
-mark-landed, update-branch, finish, retry, resume, approve-credits and accept. The user reference files show their
-output. [SKILL.md](../../skills/tasker/SKILL.md) links to reference files in `skills/tasker/references/`, which explain
-the commands of each phase.
+mark-landed, update-branch, finish, retry, resume, approve-credits, accept and reopen. The user reference files show
+their output. [SKILL.md](../../skills/tasker/SKILL.md) links to reference files in `skills/tasker/references/`, which
+explain the commands of each phase.
 
-The commands abort, plan, refine, approve, unapprove, execute, accept, resume, approve-credits, merge, push,
-mark-landed, update-branch and finish share one rule. Each of these commands makes all its checks before its first
-write, so a refused command leaves the task, the files and the events as they were. [Accept](#accept) gives an exception
-for the refs of the clone. A refused approve or unapprove also leaves the plan revisions as they were. Each command that
-changes a task follows the no-wait rule of the task lock in [The locks](#the-locks).
+The commands abort, plan, refine, approve, unapprove, execute, accept, reopen, resume, approve-credits, merge, push,
+mark-landed, update-branch and finish share a preflight rule. Each checks its guards before its first write, so a
+preflight refusal leaves the task, files and events as they were. A failure after reopen starts follows its failed-run
+path. [Accept](#accept) gives an exception for the refs of the clone. A refused approve or unapprove also leaves the
+plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in
+[The locks](#the-locks).
 
 ## Start
 
@@ -678,6 +679,28 @@ These reasons explain its rules:
   `tasker merge` or `tasker mark-landed` stay separate decisions.
 
 The base can move after the check of `tasker accept`. Then `tasker merge` fails, and nothing moves on `origin`.
+
+## Reopen
+
+`tasker reopen <issue> <feedback>` starts a new plan from work in `accepted` or `pushed`. It requires a moved stored
+base, a clean worktree on the task branch, the latest complete plan revision and its recorded plan session. It resyncs
+the worktree to the tip of the stored base before it continues that session with the exact feedback. The new complete
+plan revision is unapproved and waits in `awaiting_plan_review`.
+
+Resync before the new plan keeps the plan on the current base. A full approval and review cycle follows acceptance
+because the work changes. Publication and PR records stay for later explicit commands.
+
+Reopen keeps `accepted_revision` and `published_revision`. The new revision must be approved, executed, verified and
+accepted before a later push or other publication. Reopen does not push, open a PR, merge or import comments.
+
+If a reopen stops in `quota_blocked` or `interrupted`, `resume` or eligible `approve-credits` uses the same move that
+resumes other pauses. Before that move, it restores the saved start head when resync did not finish. It clears the
+recovery head in the transaction that returns the task to `accepted` or `pushed`. Then it runs reopen again with the
+feedback recorded when the first run started. If the restore fails, the task stays paused with the recovery head, and no
+assistant starts. The repo lock covers the restore, and the caller releases it before the repeated reopen takes its
+locks.
+
+A failed reopen has no `retry` row. `tasker retry` does not restart it.
 
 ## Merge
 
