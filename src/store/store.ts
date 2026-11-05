@@ -62,6 +62,7 @@ export interface Task {
   undoBeforeHead: string | null;
   undoAfterHead: string | null;
   undoSyncedBaseTip: string | null;
+  reopenStartHead: string | null;
   acceptedRevision: string | null;
   publishedRevision: string | null;
   trackerMarked: boolean;
@@ -101,6 +102,7 @@ export interface TaskChanges {
   undoBeforeHead?: string | null;
   undoAfterHead?: string | null;
   undoSyncedBaseTip?: string | null;
+  reopenStartHead?: string | null;
   acceptedRevision?: string | null;
   publishedRevision?: string | null;
   trackerMarked?: boolean;
@@ -230,7 +232,7 @@ export interface RetryWrites {
 }
 
 // The writes of a resume beside the move. They share the transaction of the move.
-export type ResumeWrites = Pick<RetryWrites, "clearReviewSession">;
+export type ResumeWrites = Pick<RetryWrites, "clearReviewSession"> & { clearReopenStartHead?: boolean };
 
 export interface ExecuteFixTurn extends NewExecuteFixTurn {
   queuedAt: string;
@@ -276,6 +278,10 @@ export interface TaskStore extends LockStore {
   // Moves the task into a spawning state and writes its run marker with the pid of this process,
   // in one transaction. The event that check returns is appended in the same transaction.
   startRun(id: number, state: string, check?: (current: Task) => NewEvent | undefined): Task;
+  // Starts a reopen run and stores the head to restore in the same transaction.
+  startReopen(id: number, head: string, check?: (current: Task) => NewEvent | undefined): Task;
+  // Stores the base tip and clears reopen recovery and branch-update undo data in one transaction.
+  completeReopen(id: number, syncedBaseTip: string): Task;
   // Moves the task to a state that is not spawning and deletes its run marker, in one transaction.
   // The current state can be any state. The marker of any process goes, and a missing marker is not an error.
   endRun(id: number, state: string, check?: (current: Task) => NewEvent | undefined): Task;
@@ -495,6 +501,7 @@ interface TaskRow {
   undo_before_head: string | null;
   undo_after_head: string | null;
   undo_synced_base_tip: string | null;
+  reopen_start_head: string | null;
   accepted_revision: string | null;
   published_revision: string | null;
   tracker_marked: number;
@@ -542,6 +549,7 @@ function rowToTask(row: TaskRow): Task {
     undoBeforeHead: row.undo_before_head,
     undoAfterHead: row.undo_after_head,
     undoSyncedBaseTip: row.undo_synced_base_tip,
+    reopenStartHead: row.reopen_start_head,
     acceptedRevision: row.accepted_revision,
     publishedRevision: row.published_revision,
     trackerMarked: row.tracker_marked === 1,
@@ -729,7 +737,7 @@ function setUp(db: DatabaseSync) {
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
            synced_base_tip = ?, undo_before_head = ?, undo_after_head = ?, undo_synced_base_tip = ?,
-           accepted_revision = ?, published_revision = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
+           reopen_start_head = ?, accepted_revision = ?, published_revision = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -1019,6 +1027,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.undoBeforeHead !== undefined) next.undoBeforeHead = changes.undoBeforeHead;
     if (changes.undoAfterHead !== undefined) next.undoAfterHead = changes.undoAfterHead;
     if (changes.undoSyncedBaseTip !== undefined) next.undoSyncedBaseTip = changes.undoSyncedBaseTip;
+    if (changes.reopenStartHead !== undefined) next.reopenStartHead = changes.reopenStartHead;
     if (changes.acceptedRevision !== undefined) next.acceptedRevision = changes.acceptedRevision;
     if (changes.publishedRevision !== undefined) next.publishedRevision = changes.publishedRevision;
     if (changes.trackerMarked !== undefined) next.trackerMarked = changes.trackerMarked;
@@ -1034,6 +1043,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.undoBeforeHead,
       next.undoAfterHead,
       next.undoSyncedBaseTip,
+      next.reopenStartHead,
       next.acceptedRevision,
       next.publishedRevision,
       next.trackerMarked ? 1 : 0,
@@ -1073,6 +1083,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     markerStep?: (at: string) => void,
   ): Task {
     return immediateTransaction(db, () => writeTaskStep(id, changes, check, markerStep));
+  }
+
+  // Refuses an existing run marker and inserts the marker for a new run.
+  function insertRunMarkerStep(id: number, state: string, at: string): void {
+    const marker = statements.selectRunMarker.get(id) as { state: string; pid: number } | undefined;
+    if (marker !== undefined) throw new RunMarkerExistsError(id, marker.state, marker.pid);
+    statements.insertRunMarker.run(id, state, process.pid, at);
   }
 
   // The marker step that retryTask and resumeTask share: the run marker delete, and the delete of the review
@@ -1303,12 +1320,28 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           throw new Error(`${state} is not a spawning state`);
         }
         // A dead process also keeps its marker. A later recovery clears it.
-        const marker = statements.selectRunMarker.get(id) as { state: string; pid: number } | undefined;
-        if (marker !== undefined) {
-          throw new RunMarkerExistsError(id, marker.state, marker.pid);
-        }
-        statements.insertRunMarker.run(id, state, process.pid, at);
+        insertRunMarkerStep(id, state, at);
       });
+    },
+
+    startReopen(id, head, check) {
+      return writeTask(id, { state: "refining", reopenStartHead: head }, check, (at) => {
+        insertRunMarkerStep(id, "refining", at);
+      });
+    },
+
+    completeReopen(id, syncedBaseTip) {
+      return writeTask(
+        id,
+        {
+          syncedBaseTip,
+          reopenStartHead: null,
+          undoBeforeHead: null,
+          undoAfterHead: null,
+          undoSyncedBaseTip: null,
+        },
+        undefined,
+      );
     },
 
     endRun(id, state, check) {
@@ -1634,10 +1667,15 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     resumeTask(taskId, state, writes, check, events) {
       return immediateTransaction(db, () => {
         let at = "";
-        const task = writeTaskStep(taskId, { state }, check, (stepAt) => {
-          at = stepAt;
-          endRunAndClearReviewStep(taskId, state, writes.clearReviewSession);
-        });
+        const task = writeTaskStep(
+          taskId,
+          { state, ...(writes.clearReopenStartHead === true ? { reopenStartHead: null } : {}) },
+          check,
+          (stepAt) => {
+            at = stepAt;
+            endRunAndClearReviewStep(taskId, state, writes.clearReviewSession);
+          },
+        );
         for (const event of events) writeEvent(taskId, at, event.type, event.data);
         return task;
       });

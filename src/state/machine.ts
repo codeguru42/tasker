@@ -213,6 +213,14 @@ export function transitionTask(store: TaskStore, id: number, to: TaskState, deta
   return isSpawningState(to) ? store.startRun(id, to, check) : store.endRun(id, to, check);
 }
 
+// Starts a reopen run with its recovery head and feedback in one transaction.
+export function transitionWithReopenStart(store: TaskStore, id: number, head: string, feedback: string): Task {
+  return store.startReopen(id, head, (current) => ({
+    type: "transition",
+    data: { feedback, ...legalMove(current, "refining") },
+  }));
+}
+
 // Moves the task to interrupted when its run is dead, in one transaction with the read of the run status. It writes
 // one transition event { cause: "dead_run", childPid, from, to }. It gives undefined and writes nothing when the run
 // is not dead. from is the state before the move.

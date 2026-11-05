@@ -18,7 +18,7 @@ import {
   type VerifyRunResult,
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
-import { TERMINAL_STATES, transitionWithPublication } from "../../src/state/machine.js";
+import { TERMINAL_STATES, transitionWithPublication, transitionWithReopenStart } from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
 import { claudeRateLimitEvent } from "../helpers/fake-claude.js";
 import { findingEntries, reviewFinding } from "../helpers/review.js";
@@ -210,6 +210,7 @@ describe("task store", () => {
       undoBeforeHead: null,
       undoAfterHead: null,
       undoSyncedBaseTip: null,
+      reopenStartHead: null,
       acceptedRevision: null,
       publishedRevision: null,
       trackerMarked: false,
@@ -909,7 +910,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(19);
+        expect(schemaVersion(raw)).toBe(20);
         expect(raw.prepare("SELECT published_revision FROM tasks WHERE id = 1").get()).toEqual({
           published_revision: null,
         });
@@ -992,9 +993,7 @@ describe("task store", () => {
     it("starts a reopen with state, exact feedback, recovery head, and run marker in one write", () => {
       const task = store.createTask({ ...newTask, state: "accepted" });
       const feedback = "The scope comment requires preserving the published revision.";
-      const moved = (
-        store as TaskStore & { startReopen(id: number, head: string, feedback: string): Task }
-      ).startReopen(task.id, "a".repeat(40), feedback);
+      const moved = transitionWithReopenStart(store, task.id, "a".repeat(40), feedback);
 
       expect(moved).toMatchObject({ state: "refining", reopenStartHead: "a".repeat(40) });
       expect(store.listEvents(task.id).at(-1)).toMatchObject({
@@ -1002,6 +1001,23 @@ describe("task store", () => {
         data: { from: "accepted", to: "refining", feedback },
       });
       expect(readRunMarker(dbPath, task.id)).toMatchObject({ state: "refining" });
+    });
+
+    it("keeps task data unchanged when a reopen already has a run marker", () => {
+      const task = store.createTask({ ...newTask, state: "accepted" });
+      store.updateTask(task.id, { reopenStartHead: "stored-head" });
+      const dead = deadPid();
+      writeRunMarker(dbPath, task.id, "executing", dead);
+      const eventsBefore = store.listEvents(task.id);
+      const error = thrownBy(
+        () => store.startReopen(task.id, "new-head"),
+        `task ${task.id} already has a run marker: state executing, process ${dead}`,
+      );
+
+      expect(error).toBeInstanceOf(RunMarkerExistsError);
+      expect(store.getTask(task.id)).toMatchObject({ state: "accepted", reopenStartHead: "stored-head" });
+      expect(store.listEvents(task.id)).toEqual(eventsBefore);
+      expect(readRunMarker(dbPath, task.id)).toMatchObject({ state: "executing", pid: dead });
     });
 
     it("completes reopen with synced base and clears undo data but keeps publication", () => {
@@ -1014,11 +1030,8 @@ describe("task store", () => {
         undoSyncedBaseTip: "undo-base",
         acceptedRevision: "accepted-revision",
         publishedRevision: "published-revision",
-      } as never);
-      const done = (store as TaskStore & { completeReopen(id: number, syncedBaseTip: string): Task }).completeReopen(
-        task.id,
-        "new-base",
-      );
+      });
+      const done = store.completeReopen(task.id, "new-base");
 
       expect(done).toMatchObject({
         syncedBaseTip: "new-base",
@@ -1033,18 +1046,8 @@ describe("task store", () => {
 
     it("clears reopen recovery data with the resume state move", () => {
       const task = store.createTask({ ...newTask, state: "interrupted" });
-      store.updateTask(task.id, { reopenStartHead: "a".repeat(40) } as never);
-      const resumed = (
-        store as TaskStore & {
-          resumeTask(
-            id: number,
-            state: string,
-            writes: { clearReopenStartHead: true },
-            check: () => unknown,
-            events: never[],
-          ): Task;
-        }
-      ).resumeTask(
+      store.updateTask(task.id, { reopenStartHead: "a".repeat(40) });
+      const resumed = store.resumeTask(
         task.id,
         "accepted",
         { clearReopenStartHead: true },
@@ -1160,7 +1163,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(19);
+        expect(migrations.length).toBe(20);
       });
     });
   });
