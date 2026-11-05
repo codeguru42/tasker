@@ -23,6 +23,12 @@ describe("expectedStateCommands", () => {
     });
   });
 
+  it("gives the publication and landing choices for an accepted task", () => {
+    expect(expectedStateCommands("accepted")).toEqual({
+      commands: ["merge", "push", "mark-landed", "update-branch", "abort"],
+    });
+  });
+
   it("gives nothing for a terminal state", () => {
     expect(expectedStateCommands("finished")).toBeUndefined();
   });

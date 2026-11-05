@@ -28,6 +28,7 @@ const ACCEPTED: Record<TaskCommand, readonly string[]> = {
   "dismiss-review": ["reviewed"],
   accept: ["awaiting_work_review"],
   merge: ["accepted"],
+  push: ["accepted"],
   "mark-landed": ["accepted", "pushed", "in_peer_review"],
   finish: ["landed", "cleanup_failed"],
   retry: ["failed"],
@@ -62,6 +63,12 @@ describe("stateCommands", () => {
     expect(stateCommands("nonsense")).toBeUndefined();
   });
 
+  it("offers push beside merge for an accepted task", () => {
+    expect(stateCommands("accepted")).toEqual({
+      commands: ["merge", "push", "mark-landed", "update-branch", "abort"],
+    });
+  });
+
   it.each(STATES)("gives the expected row for %s", (state) => {
     expect(stateCommands(state)).toEqual(expectedStateCommands(state));
   });
@@ -86,6 +93,10 @@ describe("stateCommands", () => {
 describe("acceptedStates", () => {
   it.each(Object.entries(ACCEPTED))("gives the states that %s accepts, in the order of STATES", (command, states) => {
     expect(acceptedStates(command as TaskCommand)).toEqual(states);
+  });
+
+  it("accepts push only from accepted", () => {
+    expect(acceptedStates("push" as TaskCommand)).toEqual(["accepted"]);
   });
 });
 
