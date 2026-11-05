@@ -64,8 +64,9 @@ describe("createGhSession", () => {
     ["auth switch", ["auth", "switch"]],
     ["pr checkout", ["pr", "checkout", "42"]],
     ["repo sync", ["repo", "sync", "owner/repo"]],
-    ["repo create with push", ["repo", "create", "new-repo", "--push"]],
-    ["repo create with push enabled", ["repo", "create", "new-repo", "--push=true"]],
+    ...["--push", "--push=1", "--push=t", "--push=T", "--push=true", "--push=TRUE", "--push=True"].map(
+      (push): [string, string[]] => [`repo create with ${push}`, ["repo", "create", "new-repo", push]],
+    ),
     ["empty args", []],
     ["flag first", ["--repo", "owner/repo"]],
   ])("rejects %s before starting gh", async (_label, args) => {
@@ -86,9 +87,9 @@ describe("createGhSession", () => {
     expect(fake.calls().map((call) => call.args)).toEqual([tokenAnswer("octo").args, ["repo", "view"]]);
   });
 
-  it("accepts repo create with push disabled", async () => {
+  it.each(["--push=false", "--push=0"])("accepts repo create with %s", async (push) => {
     const dir = useTempDir("tasker-forge-create-no-push-");
-    const createAnswer = { args: ["repo", "create", "new-repo", "--push=false"], stdout: "created" };
+    const createAnswer = { args: ["repo", "create", "new-repo", push], stdout: "created" };
     const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), createAnswer]);
 
     await expect(run(createGhSession("octo"), createAnswer.args, dir, taskerEnv(fake.env.PATH))).resolves.toBe(
