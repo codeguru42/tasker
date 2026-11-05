@@ -11,7 +11,8 @@ The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator
 
 An item is a message from a planner or an orchestrator to the operator about something that needs the user.
 
-A task subagent is a subagent that the orchestrator starts with the Agent tool for one ticket. A ticket subagent is a
+A task subagent is a subagent that the orchestrator starts for one ticket with the
+[native subagent tools](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) of its session. A ticket subagent is a
 subagent that a planner starts with the Agent tool for the work on one draft of an issue. A review agent is not a ticket
 subagent.
 

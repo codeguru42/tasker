@@ -578,6 +578,19 @@ the user, the orchestrator skips its removal.
 
 The orchestrator writes the prompt of each task subagent.
 
+A Codex orchestrator starts each task subagent with the native subagent tools of its own session. It does not start a
+ticket driver as a top-level Codex session through herdr. The operator still starts top-level role sessions through
+[Start a session](operator-start.md#start-a-session).
+
+The Codex orchestrator uses its native tools to send task instructions and receive task reports. It keeps the native
+identifier of each task subagent with the issue key. The native tools and their exposed arguments govern Codex starts
+and messages, including the naming argument. The Claude Code `Agent` and `SendMessage` argument forms below do not
+define Codex tool arguments.
+
+If a required native subagent tool is unavailable or fails, the Codex orchestrator reports the failure through its
+operator. It starts no replacement ticket driver in a herdr tab. The existing ticket selection, task prompt, worktree,
+slot and landing rules still apply.
+
 - The prompt of a task subagent gives only the context of its ticket. The context is the issue key, the milestone of its
   ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)), the milestones that are off limits for
   the task subagent, the landing order (see ["Land the work"](land-the-work.md#land-the-work)), for a stacked ticket,
@@ -637,37 +650,37 @@ The orchestrator writes the prompt of each task subagent.
   prompt gave no link to the comment https://github.com/codeguru42/tasker/issues/395#issuecomment-6386939662. The task
   subagent found the comment at step 1 of ["Run one ticket"](run-one-ticket.md#run-one-ticket). Then the orchestrator
   had to tell the task subagent that the comment is part of the issue.
-- When the orchestrator starts a task subagent, the orchestrator names the session of the task subagent after the issue
-  key of its ticket. The orchestrator sets the session name with the `name` option of the Agent tool, for example
+- When the orchestrator starts a task subagent, it names it after the issue key of its ticket. Codex uses the native
+  tools and arguments described above. Claude Code uses the `name` argument of its `Agent` tool, for example
   `name: "codeguru42-tasker-108"`.
   - The list of the options of the Agent tool does not show `name`, but the tool accepts it. The `description` option is
-    not the session name. The M7 orchestrator tested `name` on 2026-10-15. An Agent call with
+    not the session name. The M7 orchestrator tested `name` on 2026-10-15. In Claude Code, an Agent call with
     `name: "codeguru42-tasker-nametest"` started the task subagent with no error. A SendMessage with
     `to: "codeguru42-tasker-nametest"` reached that task subagent, and the task subagent answered. The report of the
     task subagent came back from `codeguru42-tasker-nametest`.
-  - The session name has the form `<owner>-<repo>-<number>`, for example `codeguru42-tasker-108` for
-    `codeguru42/tasker#108`. The Agent tool refuses a name that does not match `^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`
+  - In Claude Code, the session name has the form `<owner>-<repo>-<number>`, for example `codeguru42-tasker-108` for
+    `codeguru42/tasker#108`. Its Agent tool refuses a name that does not match `^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`
     (tested on 2026-10-14). The issue key itself does not match. The Docs orchestrator tested this on 2026-10-15. An
     Agent call with `name: "codeguru42/tasker#143"` failed before the task subagent started, with the error
     `name must start with a letter or digit and contain only letters, digits, underscores, or hyphens (max 64 chars)`.
     This error gives the same rule as the pattern. No later session tests the issue key as a name again.
-  - The orchestrator uses the session name for each message to the task subagent, for each resume message and in the
-    prompt of each quota job. The first bullet of this section already puts the issue key in the prompt of the task
-    subagent. The prompt of each quota job gives the full issue key too, so that each one can be matched to the task.
-    The reason: several orchestrators run at the same time. A name such as `agent-1` or a bare number does not say which
-    ticket or which repo the session belongs to. The full key is unique, so the reports, the messages and the jobs can
-    be matched to the task.
+  - In Claude Code, the orchestrator uses the session name for each message to the task subagent, for each resume
+    message and in the prompt of each quota job. The first bullet of this section already puts the issue key in the
+    prompt of the task subagent. The prompt of each quota job gives the full issue key too, so that each one can be
+    matched to the task. The reason: several orchestrators run at the same time. A name such as `agent-1` or a bare
+    number does not say which ticket or which repo the session belongs to. The full key is unique, so the reports, the
+    messages and the jobs can be matched to the task.
   - One task subagent runs one ticket, so one name belongs to one task. If the orchestrator starts a second session for
     the same ticket, the orchestrator adds a suffix, for example `codeguru42-tasker-108-2`, and says so in the prompt of
     the new task subagent. A SendMessage to a task subagent can fail with "No transcript found for agent ID". Then the
     orchestrator cannot resume that task subagent. In that case, the orchestrator starts a second session for the
-    ticket, with the suffix of this bullet. The new task subagent follows
-    [the comeback rule](run-one-ticket.md#the-comeback-rule). The prompt of the new task subagent gives the state of the
-    task from `tasker show <issue>`. The prompt gives the task worktree of the new name, as the first bullet of this
-    section says. The comeback rule then finds the old task worktree through the branch-exists case of
-    [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves the quota jobs of the ticket, as
-    [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage failed in this way after a
-    restart of the session of the orchestrator at a `/rename`.
+    ticket, with the suffix of this bullet. The Claude Code `SendMessage` failure described above does not define Codex
+    message behavior. The new task subagent follows [the comeback rule](run-one-ticket.md#the-comeback-rule). The prompt
+    of the new task subagent gives the state of the task from `tasker show <issue>`. The prompt gives the task worktree
+    of the new name, as the first bullet of this section says. The comeback rule then finds the old task worktree
+    through the branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves
+    the quota jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage
+    failed in this way after a restart of the session of the orchestrator at a `/rename`.
   - If a task subagent already runs with no name, the orchestrator does not restart the task subagent only to give it a
     name. The reason: a new task subagent does not have the context of the old task subagent, for example the plans that
     it read and its review loops. For a task subagent with no name, the orchestrator puts the full issue key in the text
