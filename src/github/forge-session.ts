@@ -133,6 +133,10 @@ async function readAccountToken(
     if (error instanceof CommandNotFoundError || error instanceof ProgramFileError) {
       throw new GhInstallError(error.message, sanitizeError(error));
     }
+    if (isAccessDenied(error)) {
+      const cause = sanitizeError(error);
+      throw new GhInstallError(cause.message, cause);
+    }
     throw error;
   }
   const accountTokenValue = result.stdout.trim();
@@ -141,11 +145,16 @@ async function readAccountToken(
 }
 
 function redact(text: string, token: string): string {
+  if (token === "") return text;
   return text.split(token).join("***");
 }
 
 function repositoryError(error: unknown, token: string): GhSessionError {
   if (error instanceof CommandNotFoundError || error instanceof ProgramFileError) {
+    const safeCause = sanitizeError(error, token);
+    return new GhInstallError(safeCause.message, safeCause);
+  }
+  if (isAccessDenied(error)) {
     const safeCause = sanitizeError(error, token);
     return new GhInstallError(safeCause.message, safeCause);
   }
@@ -159,6 +168,10 @@ function repositoryError(error: unknown, token: string): GhSessionError {
   }
   const safeCause = error instanceof Error ? sanitizeError(error, token) : new Error(redact(String(error), token));
   return new GhSessionError(safeCause.message, {}, safeCause);
+}
+
+function isAccessDenied(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error && error.code === "EACCES";
 }
 
 function sanitizeError(error: Error, token = "", seen = new Map<object, unknown>()): Error {
