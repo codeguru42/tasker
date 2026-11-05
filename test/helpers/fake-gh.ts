@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import {
   answerChecks,
   type FakeAnswer,
@@ -10,6 +11,11 @@ import {
 
 // One canned answer of the fake gh. See FakeAnswer.
 export type FakeGhAnswer = FakeAnswer;
+
+// Run the gh executable selected for a test environment.
+export function runFakeGh(env: NodeJS.ProcessEnv, args: readonly string[]) {
+  return spawnSync(env.TASKER_GH_BIN ?? "gh", [...args], { env, encoding: "utf8" });
+}
 
 // One call that the fake gh logged.
 export interface FakeGhCall {

@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { isOnPath } from "../../src/assistant/claude-code/sandbox.js";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
@@ -13,7 +13,7 @@ import { changedPaths } from "../../src/vcs/git/changes.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { failureOf } from "./errors.js";
-import { githubBlockersAnswer, trackerWriteCalls } from "./fake-gh.js";
+import { githubBlockersAnswer, runFakeGh, trackerWriteCalls } from "./fake-gh.js";
 import { GIT_TEST_IDENTITY, commitInWorktree, gitOutput, localBranches } from "./git.js";
 import { TEST_SESSION_ID } from "./fake-claude.js";
 import { answerStream, planTodo, validPlanAnswer } from "./plan.js";
@@ -72,9 +72,6 @@ import {
   fixtureTrackerAnswer,
   fixtureTrackerCall,
 } from "./task-fixtures.js";
-
-const runGh = (env: NodeJS.ProcessEnv, args: readonly string[]) =>
-  spawnSync(env.TASKER_GH_BIN ?? "gh", [...args], { env, encoding: "utf8" });
 
 // The ref of codeguru42/tasker#<n> in the repo of the fixture, with the short ref that the code makes.
 function issueRefOf(fixture: Pick<StartFixture, "repoKey">, n: number): IssueRef {
@@ -1021,7 +1018,7 @@ describe("useStartFixture with ghAnswers", () => {
   it("adds the answers after the token and issue answers", async () => {
     const answer = fixtureTrackerAnswer("assign");
     const fixture = await useStartFixture({ ghAnswers: [answer] });
-    const result = runGh(fixture.gh.env, answer.args);
+    const result = runFakeGh(fixture.gh.env, answer.args);
 
     expect(result.status).toBe(0);
     expect(trackerWriteCalls(fixture.gh)).toEqual([[...answer.args]]);
@@ -1062,7 +1059,7 @@ describe("fixtureTrackerAnswer", () => {
   it("works in useStartFixture, and trackerWriteCalls logs the call", async () => {
     const fixture = await useStartFixture({ ghAnswers: [fixtureTrackerAnswer("close", { exitCode: 3 })] });
 
-    const result = runGh(fixture.gh.env, fixtureTrackerCall("close"));
+    const result = runFakeGh(fixture.gh.env, fixtureTrackerCall("close"));
 
     expect(result.status).toBe(3);
     expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("close")]);

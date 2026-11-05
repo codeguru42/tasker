@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -18,9 +17,6 @@ import {
 } from "./fake-gh.js";
 import { useTempDir } from "./temp.js";
 
-const runGh = (env: NodeJS.ProcessEnv, ...args: string[]) =>
-  spawnSync(env.TASKER_GH_BIN ?? "gh", args, { env, encoding: "utf8" });
-
 describe("fakeGh", () => {
   let dir: string;
 
@@ -28,7 +24,7 @@ describe("fakeGh", () => {
     dir = useTempDir("tasker-fake-gh-");
   });
 
-  const run = runGh;
+  const run = (env: NodeJS.ProcessEnv, ...args: string[]) => runFakeGh(env, args);
 
   it("runs the selected fake gh with the supplied environment and arguments", () => {
     const gh = fakeGh(dir, {}, [{ args: ["listed"], stdout: "listed\n" }], { logEnv: ["FAKE_GH_MARKER"] });
@@ -250,7 +246,7 @@ describe("trackerWriteCalls", () => {
       githubWriteAnswer({ project: "octo/repo", number: 7, verb: "edit", rest: ["--add-assignee", "@me"] }),
       githubWriteAnswer({ project: "octo/repo", number: 7, verb: "close", rest: ["--reason", "completed"] }),
     ]);
-    const run = (...args: string[]) => runGh(gh.env, ...args);
+    const run = (...args: string[]) => runFakeGh(gh.env, args);
 
     run("auth", "token", "--hostname", "github.com", "--user", "octo");
     run("issue", "edit", "7", "-R", "octo/repo", "--add-assignee", "@me");
@@ -282,7 +278,7 @@ describe("githubLabelsAfter", () => {
       edit(7, "--remove-label", "none"),
     ];
     const gh = fakeGh(useTempDir("tasker-labels-after-"), {}, answers);
-    for (const answer of answers) runGh(gh.env, ...answer.args);
+    for (const answer of answers) runFakeGh(gh.env, answer.args);
 
     expect(githubLabelsAfter(gh, { project: "octo/repo", number: 7, labels: ["bug", "docs"] })).toEqual([
       "docs",
@@ -293,7 +289,7 @@ describe("githubLabelsAfter", () => {
   it("ignores a call for another issue number", () => {
     const answer = edit(8, "--add-label", "wip");
     const gh = fakeGh(useTempDir("tasker-labels-after-"), {}, [answer]);
-    runGh(gh.env, ...answer.args);
+    runFakeGh(gh.env, answer.args);
 
     expect(githubLabelsAfter(gh, { project: "octo/repo", number: 7 })).toEqual([]);
   });
@@ -338,7 +334,7 @@ describe("blockerReadCalls", () => {
       githubIssueAnswer({ project: "octo/repo", number: 7 }),
       githubBlockersAnswer({ project: "octo/repo", number: 7 }),
     ]);
-    const run = (...args: string[]) => runGh(gh.env, ...args);
+    const run = (...args: string[]) => runFakeGh(gh.env, args);
     const blockersArgs = githubBlockersAnswer({ project: "octo/repo", number: 7 }).args;
 
     run("issue", "view", "7", "-R", "octo/repo", "--json", "number,title,body,url,labels,state");
