@@ -4,10 +4,9 @@ import type { TaskState } from "../../src/state/machine.js";
 import type { Config } from "../../src/config/schema.js";
 import type { Task } from "../../src/store/store.js";
 import { resumeTask } from "../../src/tasks/resume.js";
-import { GitError } from "../../src/vcs/git/run.js";
 import { configWithTrackers } from "../helpers/config.js";
-import { failureOf } from "../helpers/errors.js";
-import { commitInWorktree, gitOutput } from "../helpers/git.js";
+import { gitOutput } from "../helpers/git.js";
+import { startConflictedReopenResync } from "../helpers/reopen-resync.js";
 import { seedApprovedTaskWithSessions, sessionsOf } from "../helpers/plan.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 import {
@@ -244,11 +243,7 @@ describe("resumeTask origins", () => {
     const fixture = await useRefineFixture({ stream: [] });
     const { task, started } = fixture;
     const path = String(task.worktreePath);
-    await commitInWorktree(path, started.env, { file: "reopen-conflict.txt", content: "task\n" });
-    const startHead = await taskBranchTipOf({ clone: started.clone, env: started.env, task });
-    await started.origin.addCommit("main", { file: "reopen-conflict.txt", content: "base\n" });
-    await gitOutput({ cwd: path }, started.env, "fetch", "origin");
-    await failureOf(gitOutput({ cwd: path }, started.env, "rebase", "origin/main"), GitError);
+    const startHead = await startConflictedReopenResync(fixture);
     withDataRootStore(started.dataRoot, (store) => {
       store.updateTask(task.id, { state: "accepted", reopenStartHead: startHead });
       pauseRefineFrom(store, task.id, "accepted", "interrupted", FEEDBACK);

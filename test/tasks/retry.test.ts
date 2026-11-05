@@ -1,11 +1,15 @@
-import { rmSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { failedFrom, failTask, transitionTask, type TaskState } from "../../src/state/machine.js";
 import { verifyCommandLogPath } from "../../src/store/layout.js";
 import type { Task } from "../../src/store/store.js";
 import { retryTask } from "../../src/tasks/retry.js";
+import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import { configWithTrackers } from "../helpers/config.js";
+import { failureOf } from "../helpers/errors.js";
+import { commitInWorktree, gitBeforeCommandEnv, gitOutput, gitRecorderEnv } from "../helpers/git.js";
 import {
   answerStream,
   seedApprovedTaskWithSessions,
@@ -15,14 +19,19 @@ import {
   seedReviewSession,
   validPlanAnswer,
 } from "../helpers/plan.js";
-import { expectRefusedWithoutChange } from "../helpers/task-fixtures.js";
-import { useReopenFixture } from "../helpers/task-fixtures.js";
+import { expectRefusedWithoutChange, useReopenFixture, useRefineFixture } from "../helpers/task-fixtures.js";
+import { startConflictedReopenResync } from "../helpers/reopen-resync.js";
+import { startLockHolder } from "../helpers/processes.js";
+import { useTempDir } from "../helpers/temp.js";
 import {
+  databasePathOf,
   eventsOf,
+  failRefineFrom,
   failTaskFrom,
   failTaskVia,
   failVerifyRun,
   latestTaskOf,
+  withRawDatabase,
   seedReview,
   withDataRootStore,
 } from "../helpers/store.js";
@@ -31,12 +40,44 @@ const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 
 // Calls retryTask for the task in the data root, in a store that closes after the call.
-function retry(dataRoot: string, task: Task, resumeExecute = false) {
-  const config = { ...configWithTrackers({ [REPO]: {} }), dataRoot };
+function retry(
+  dataRoot: string,
+  task: Task,
+  resumeExecute = false,
+  options: { config?: ReturnType<typeof configWithTrackers>; env?: NodeJS.ProcessEnv; repoLockWaitMs?: number } = {},
+) {
+  const config = { ...(options.config ?? configWithTrackers({ [REPO]: {} })), dataRoot };
   const ref = { key: KEY, repoKey: REPO, shortRef: githubShortRef("5") };
   return withDataRootStore(dataRoot, (store) =>
-    retryTask(store, { config, ref, taskId: task.id, resumeExecute, env: process.env, repoLockWaitMs: 300_000 }),
+    retryTask(store, {
+      config,
+      ref,
+      taskId: task.id,
+      resumeExecute,
+      env: options.env ?? process.env,
+      repoLockWaitMs: options.repoLockWaitMs ?? 300_000,
+    }),
   );
+}
+
+async function failedPendingReopen(origin: "accepted" | "pushed" = "accepted") {
+  const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
+  const startHead = await startConflictedReopenResync(fixture);
+  withDataRootStore(fixture.started.dataRoot, (store) => {
+    store.updateTask(fixture.task.id, { state: origin, reopenStartHead: startHead });
+    failRefineFrom(store, fixture.task.id, origin);
+  });
+  return { ...fixture, startHead, task: latestTaskOf(fixture.started.dataRoot, KEY) };
+}
+
+function rejectRetryEvent(dataRoot: string): () => void {
+  const dbPath = databasePathOf(dataRoot);
+  withRawDatabase(dbPath, (db) =>
+    db.exec(
+      "CREATE TRIGGER reject_retry_event BEFORE INSERT ON events WHEN NEW.type = 'retry' BEGIN SELECT RAISE(ABORT, 'retry event rejected'); END",
+    ),
+  );
+  return () => withRawDatabase(dbPath, (db) => db.exec("DROP TRIGGER reject_retry_event"));
 }
 
 // Expects that retry refuses with message, and that the state, the events and the sessions stay the same.
@@ -234,6 +275,149 @@ describe("retryTask origins", () => {
     expect(eventsOf(dataRoot, KEY).slice(beforeEvents.length)).toEqual([
       { type: "retry", data: { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin } },
     ]);
+  });
+});
+
+describe("retryTask pending reopen recovery", () => {
+  it.each(["accepted", "pushed"] as const)("restores a pending reopen from %s", async (origin) => {
+    const fixture = await failedPendingReopen(origin);
+    const path = String(fixture.task.worktreePath);
+    writeFileSync(join(path, "after-failure.txt"), "discard me\n");
+
+    const result = await retry(fixture.started.dataRoot, fixture.task, false, {
+      config: fixture.started.config,
+      env: fixture.started.env,
+    });
+
+    expect(result).toEqual({ origin: "refining", target: origin, next: "reopen-hint" });
+    expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({ state: origin, reopenStartHead: null });
+    expect(await gitOutput({ cwd: path }, fixture.started.env, "rev-parse", "HEAD")).toBe(fixture.startHead);
+    expect(await gitOutput({ cwd: path }, fixture.started.env, "status", "--porcelain")).toBe("");
+  });
+
+  it("keeps completed branch movement and makes no Git call when the recovery head is null", async () => {
+    const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
+    const path = String(fixture.task.worktreePath);
+    const movedHead = await commitInWorktree(path, fixture.started.env, { file: "completed-resync.txt" });
+    withDataRootStore(fixture.started.dataRoot, (store) => {
+      store.updateTask(fixture.task.id, { state: "accepted", reopenStartHead: null });
+      failRefineFrom(store, fixture.task.id, "accepted");
+    });
+    const recorder = gitRecorderEnv(useTempDir("tasker-retry-null-reopen-git-log-"), fixture.started.env);
+
+    const result = await retry(fixture.started.dataRoot, fixture.task, false, {
+      config: fixture.started.config,
+      env: recorder.env,
+    });
+
+    expect(result).toEqual({ origin: "refining", target: "accepted", next: "reopen-hint" });
+    expect(await gitOutput({ cwd: path }, fixture.started.env, "rev-parse", "HEAD")).toBe(movedHead);
+    expect(existsSync(recorder.log)).toBe(false);
+  });
+
+  it("refuses --resume-execute before it restores a pending reopen", async () => {
+    const fixture = await failedPendingReopen();
+    const events = eventsOf(fixture.started.dataRoot, KEY);
+
+    const error = await failureOf(
+      retry(fixture.started.dataRoot, fixture.task, true, {
+        config: fixture.started.config,
+        env: fixture.started.env,
+      }),
+      Error,
+    );
+
+    expect(error.message).toBe("--resume-execute applies only to a task that failed in verifying");
+    expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({
+      state: "failed",
+      reopenStartHead: fixture.startHead,
+    });
+    expect(eventsOf(fixture.started.dataRoot, KEY)).toEqual(events);
+    expect(
+      await gitOutput({ cwd: String(fixture.task.worktreePath) }, fixture.started.env, "status", "--porcelain"),
+    ).toContain("reopen-conflict.txt");
+  });
+
+  it("reports a busy repo lock without restoring the pending worktree", async () => {
+    const fixture = await failedPendingReopen();
+    const name = repoLockName(REPO);
+    const holder = startLockHolder(databasePathOf(fixture.started.dataRoot), name);
+    await holder.attempt;
+
+    const error = await failureOf(
+      retry(fixture.started.dataRoot, fixture.task, false, {
+        config: fixture.started.config,
+        env: fixture.started.env,
+        repoLockWaitMs: 0,
+      }),
+      LockBusyError,
+    );
+
+    expect(error.message).toContain(`the lock ${name} is busy`);
+    expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({
+      state: "failed",
+      reopenStartHead: fixture.startHead,
+    });
+    expect(
+      await gitOutput({ cwd: String(fixture.task.worktreePath) }, fixture.started.env, "status", "--porcelain"),
+    ).toContain("reopen-conflict.txt");
+  });
+
+  it("keeps the task failed and the recovery head when restore fails", async () => {
+    const fixture = await failedPendingReopen();
+    const path = String(fixture.task.worktreePath);
+    writeFileSync(join(path, "untracked-after-failure.txt"), "keep until restore works\n");
+    const env = gitBeforeCommandEnv(useTempDir("tasker-retry-restore-failure-"), fixture.started.env, "clean", [
+      "sh",
+      "-c",
+      "printf 'clean refused by test\\n' >&2; exit 1",
+    ]);
+
+    const error = await failureOf(
+      retry(fixture.started.dataRoot, fixture.task, false, { config: fixture.started.config, env }),
+      Error,
+    );
+
+    expect(error.message).toContain("clean refused by test");
+    expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({
+      state: "failed",
+      reopenStartHead: fixture.startHead,
+    });
+    expect(eventsOf(fixture.started.dataRoot, KEY).at(-1)?.type).toBe("transition");
+  });
+
+  it("repeats restore after the retry event fails, then commits the retry on a later call", async () => {
+    const fixture = await failedPendingReopen();
+    const release = rejectRetryEvent(fixture.started.dataRoot);
+    try {
+      const error = await failureOf(
+        retry(fixture.started.dataRoot, fixture.task, false, {
+          config: fixture.started.config,
+          env: fixture.started.env,
+        }),
+        Error,
+      );
+
+      expect(error.message).toContain("retry event rejected");
+      expect(
+        await gitOutput({ cwd: String(fixture.task.worktreePath) }, fixture.started.env, "rev-parse", "HEAD"),
+      ).toBe(fixture.startHead);
+      expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({
+        state: "failed",
+        reopenStartHead: fixture.startHead,
+      });
+      expect(eventsOf(fixture.started.dataRoot, KEY).at(-1)?.type).toBe("transition");
+    } finally {
+      release();
+    }
+
+    const result = await retry(fixture.started.dataRoot, fixture.task, false, {
+      config: fixture.started.config,
+      env: fixture.started.env,
+    });
+
+    expect(result).toEqual({ origin: "refining", target: "accepted", next: "reopen-hint" });
+    expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({ state: "accepted", reopenStartHead: null });
   });
 });
 

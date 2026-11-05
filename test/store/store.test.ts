@@ -2677,6 +2677,37 @@ describe("task store", () => {
       );
       expect(store.planSession(task.id)).toBeDefined();
     });
+
+    it("clears reopen recovery with the retry move and event, or rolls all three back", () => {
+      const task = store.createTask({ ...newTask, state: "failed" });
+      store.updateTask(task.id, { reopenStartHead: "start-head" });
+      const check = () => ({
+        type: "retry",
+        data: { origin: "refining", target: "accepted", resumeExecute: false, from: "failed", to: "accepted" },
+      });
+      withRawDatabase(dbPath, (db) =>
+        db.exec(
+          "CREATE TRIGGER reject_retry_event BEFORE INSERT ON events WHEN NEW.type = 'retry' BEGIN SELECT RAISE(ABORT, 'retry event rejected'); END",
+        ),
+      );
+      expectNothingChanged(
+        task.id,
+        () => store.retryTask(task.id, "accepted", { clearReopenStartHead: true }, check),
+        "retry event rejected",
+      );
+      expect(store.getTask(task.id)?.reopenStartHead).toBe("start-head");
+
+      withRawDatabase(dbPath, (db) => db.exec("DROP TRIGGER reject_retry_event"));
+      const moved = store.retryTask(task.id, "accepted", { clearReopenStartHead: true }, check);
+
+      expect(moved).toMatchObject({ state: "accepted", reopenStartHead: null });
+      expect(store.listEvents(task.id).at(-1)).toEqual({
+        taskId: task.id,
+        at: expect.any(String),
+        type: "retry",
+        data: check().data,
+      });
+    });
   });
 
   describe("execute todo states", () => {
