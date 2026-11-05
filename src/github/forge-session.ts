@@ -1,6 +1,7 @@
 import { isSet } from "../config/path.js";
 import { CommandNotFoundError, type ChildResult } from "../process/run-child.js";
 import { ProgramFileError } from "../process/resolve-program.js";
+import { startFolderError } from "../process/start-folder.js";
 import { GhProcessError, runGhProcess } from "./process.js";
 
 export interface GhSession {
@@ -75,6 +76,8 @@ export function createGhSession(account: string): GhSession {
       if (!isSet(env.TASKER_HOME) && !isSet(env.TASKER_GH_CONFIG_DIR)) {
         return Promise.reject(new Error("TASKER_HOME or TASKER_GH_CONFIG_DIR must be nonblank"));
       }
+      const folderError = startFolderError(env.TASKER_GH_BIN ?? "gh", cwd);
+      if (folderError !== undefined) return Promise.reject(new Error(folderError));
 
       const childEnv: NodeJS.ProcessEnv = {
         PATH: env.TASKER_PATH,
