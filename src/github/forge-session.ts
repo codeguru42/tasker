@@ -4,7 +4,7 @@ import { ProgramFileError } from "../process/resolve-program.js";
 import { GhProcessError, runGhProcess } from "./process.js";
 
 export interface GhSession {
-  run(args: readonly string[], cwd: string, env: NodeJS.ProcessEnv): Promise<string>;
+  run(args: readonly string[], options: { cwd: string; env: NodeJS.ProcessEnv }): Promise<string>;
 }
 
 const forbiddenCommands = new Set(["token", "login", "logout", "switch"]);
@@ -54,7 +54,7 @@ export function createGhSession(account: string): GhSession {
   let tokenRead: Promise<string> | undefined;
 
   return {
-    run(args, cwd, env) {
+    run(args, { cwd, env }) {
       if (args.length === 0) return Promise.reject(new Error("a gh command is required"));
       const [command, subcommand] = args;
       if (command.startsWith("-")) return Promise.reject(new Error("the first gh argument must be a command"));
@@ -78,8 +78,8 @@ export function createGhSession(account: string): GhSession {
 
       const childEnv: NodeJS.ProcessEnv = {
         PATH: env.TASKER_PATH,
-        ...(isSet(env.TASKER_HOME) ? { TASKER_HOME: env.TASKER_HOME } : {}),
-        ...(isSet(env.TASKER_GH_CONFIG_DIR) ? { TASKER_GH_CONFIG_DIR: env.TASKER_GH_CONFIG_DIR } : {}),
+        ...(isSet(env.TASKER_HOME) ? { HOME: env.TASKER_HOME } : {}),
+        ...(isSet(env.TASKER_GH_CONFIG_DIR) ? { GH_CONFIG_DIR: env.TASKER_GH_CONFIG_DIR } : {}),
         GH_PROMPT_DISABLED: "1",
         GH_NO_UPDATE_NOTIFIER: "1",
         NO_COLOR: "1",
