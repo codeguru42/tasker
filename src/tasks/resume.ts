@@ -57,6 +57,7 @@ const RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   executing: { target: "approved", next: "execute", clearReview: false },
   verifying: { target: "executed", next: "verify", clearReview: false },
   reviewing: { target: "awaiting_work_review", next: "review", clearReview: true },
+  pushing: { target: "accepted", next: "push", clearReview: false },
   // The target is landed also when the task came to finishing from cleanup_failed: finish runs from landed too.
   finishing: { target: "landed", next: "finish", clearReview: false },
 };
@@ -101,9 +102,6 @@ const RESUME_TABLES: OriginTables<ResumeRow> = {
     updating_branch: { rows: UPDATE_BRANCH_RESUME_TABLE },
     merging: {
       rows: { accepted: { target: "accepted", next: "merge", clearReview: false } },
-    },
-    pushing: {
-      rows: { accepted: { target: "accepted", next: "push", clearReview: false } },
     },
   },
 };
