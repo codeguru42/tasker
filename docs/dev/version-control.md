@@ -303,8 +303,8 @@ An error that wraps a failure has no `cause`, and no code reads its detail.
 
 ### The published revision
 
-The caller passes the last revision that tasker published for the branch. Limit: no store column, file or git ref holds
-it.
+The task row stores the last published revision in `published_revision`. The caller reads this column and passes its
+value to the provider. A `NULL` value means tasker has not recorded a published revision for the branch.
 
 One rule decides what the tip on the remote means for publish and delete. The expected tip is the published revision, or
 no branch when none is set. A tip at the expected revision is "expected". No branch while a published revision is set is
