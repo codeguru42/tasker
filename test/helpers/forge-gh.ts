@@ -30,18 +30,19 @@ export function forgeGh(
 ): ForgeGh {
   const binDir = join(dir, "bin");
   const logPath = join(dir, "forge-gh.log");
+  const safeEnvNames = envNames.filter((name) => name !== "GH_TOKEN");
   const tokenMatch = `"$(if [ "\${GH_TOKEN-}" = ${shellQuote(token)} ]; then printf set:true; else printf set:false; fi)"`;
   const cwd = '"set:$PWD"';
   writeFakeCommand(
     binDir,
     "gh",
-    fakeAnswerScript("gh", logPath, answers, [tokenMatch, cwd, ...logEnvItems("gh", envNames)]),
+    fakeAnswerScript("gh", logPath, answers, [tokenMatch, cwd, ...logEnvItems("gh", safeEnvNames)]),
   );
   const checks = answerChecks("gh", logPath);
   return {
     env: { PATH: binDir, TASKER_GH_BIN: join(binDir, "gh") },
     calls: () =>
-      readFakeCalls(logPath, 2, envNames).map((call) => ({
+      readFakeCalls(logPath, 2, safeEnvNames).map((call) => ({
         args: call.args,
         tokenMatches: call.leading[0] === "true",
         cwd: call.leading[1] ?? "",

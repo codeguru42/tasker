@@ -54,12 +54,12 @@ describe("createGhSession", () => {
 
   it("accepts an unrelated repository command", async () => {
     const dir = useTempDir("tasker-forge-accepted-");
-    const fake = forgeGh(dir, "token", [answer]);
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), answer]);
 
     await expect(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH))).resolves.toBe(
       "repository",
     );
-    expect(fake.calls().map((call) => call.args)).toEqual([["repo", "view"]]);
+    expect(fake.calls().map((call) => call.args)).toEqual([tokenAnswer("octo").args, ["repo", "view"]]);
   });
 
   it.each([undefined, "", "  "])("requires a nonblank TASKER_PATH, got %j", async (path) => {
@@ -101,8 +101,8 @@ describe("createGhSession", () => {
     mkdirSync(worktree);
     const fake = forgeGh(
       dir,
-      "token",
-      [answer],
+      forgeToken,
+      [tokenAnswer("octo"), answer],
       [
         "PATH",
         "TASKER_HOME",
@@ -111,7 +111,6 @@ describe("createGhSession", () => {
         "GH_PROMPT_DISABLED",
         "GH_NO_UPDATE_NOTIFIER",
         "NO_COLOR",
-        "GH_TOKEN",
         "HOME",
       ],
     );
@@ -130,22 +129,28 @@ describe("createGhSession", () => {
 
     await run(createGhSession("octo"), ["repo", "view"], worktree, supplied);
 
+    const expectedEnv = {
+      PATH: fake.env.PATH,
+      TASKER_HOME: "/tasker/home",
+      TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
+      TASKER_GH_BIN: undefined,
+      GH_PROMPT_DISABLED: "1",
+      GH_NO_UPDATE_NOTIFIER: "1",
+      NO_COLOR: "1",
+      HOME: undefined,
+    };
     expect(fake.calls()).toEqual([
       {
-        args: ["repo", "view"],
+        args: tokenAnswer("octo").args,
         tokenMatches: false,
+        cwd: process.cwd(),
+        env: expectedEnv,
+      },
+      {
+        args: ["repo", "view"],
+        tokenMatches: true,
         cwd: worktree,
-        env: {
-          PATH: fake.env.PATH,
-          TASKER_HOME: "/tasker/home",
-          TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
-          TASKER_GH_BIN: undefined,
-          GH_PROMPT_DISABLED: "1",
-          GH_NO_UPDATE_NOTIFIER: "1",
-          NO_COLOR: "1",
-          GH_TOKEN: undefined,
-          HOME: undefined,
-        },
+        env: expectedEnv,
       },
     ]);
     expect(supplied).toEqual(before);
@@ -153,7 +158,7 @@ describe("createGhSession", () => {
 
   it.each(["bare", "absolute", "relative", "blank"])("uses a %s executable override", async (kind) => {
     const dir = useTempDir("tasker-forge-program-");
-    const fake = forgeGh(dir, "token", [answer]);
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), answer]);
     const taskerPath = useTempDir("tasker-forge-tasker-path-");
     writeFakeCommand(taskerPath, "selected-gh", `exec "${fake.env.TASKER_GH_BIN!}" "$@"`);
     const path = kind === "bare" ? taskerPath : fake.env.PATH!;
@@ -172,7 +177,7 @@ describe("createGhSession", () => {
         ...(kind === "blank" ? { TASKER_GH_BIN: executable } : { TASKER_GH_BIN: executable }),
       }),
     ).resolves.toBe("repository");
-    expect(fake.calls().map((call) => call.args)).toEqual([["repo", "view"]]);
+    expect(fake.calls().map((call) => call.args)).toEqual([tokenAnswer("octo").args, ["repo", "view"]]);
   });
 });
 
