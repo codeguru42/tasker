@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { fetchOrigin } from "../../../src/vcs/git/changes.js";
@@ -19,6 +19,7 @@ import {
   gitRecorderEnv,
   makeGitClone,
   makeGitOrigin,
+  rejectOriginPush,
   sshKeyArgs,
   type GitOrigin,
 } from "../../helpers/git.js";
@@ -141,21 +142,7 @@ describe("publish, land and delete", () => {
     };
   }
 
-  // The message of the pre-receive hook that refusePushesOnOrigin() writes.
   const ORIGIN_REFUSES = "tasker-test: origin refuses the push";
-
-  // Makes origin refuse each push. With hideOrigin, the hook also moves the origin repo away,
-  // so that the next read of origin fails.
-  function refusePushesOnOrigin(options: { hideOrigin?: boolean } = {}): void {
-    const hooks = join(origin.path, "hooks");
-    mkdirSync(hooks, { recursive: true });
-    const hide = options.hideOrigin === true ? ['mv -- "$(pwd)" "$(pwd).gone"'] : [];
-    writeFileSync(
-      join(hooks, "pre-receive"),
-      ["#!/bin/sh", `echo '${ORIGIN_REFUSES}' >&2`, ...hide, "exit 1", ""].join("\n"),
-      { mode: 0o755 },
-    );
-  }
 
   describe("publishTaskBranch", () => {
     it("publishes a new branch with the empty lease", async () => {
@@ -292,7 +279,7 @@ describe("publish, land and delete", () => {
 
       it("names the branch when origin refuses the push", async () => {
         await addCloneCommit(clone, env, BRANCH);
-        refusePushesOnOrigin();
+        rejectOriginPush(origin, { message: ORIGIN_REFUSES });
 
         const error = await failureOf(publish(), Error);
 
@@ -570,7 +557,7 @@ describe("publish, land and delete", () => {
       it("names the branch when origin refuses the push", async () => {
         const published = await addCloneCommit(clone, env, BRANCH);
         await publish();
-        refusePushesOnOrigin();
+        rejectOriginPush(origin, { message: ORIGIN_REFUSES });
 
         const error = await failureOf(remove({ published }), Error);
 
@@ -630,7 +617,7 @@ describe("publish, land and delete", () => {
       it("keeps the push error when the second read of the tip fails", async () => {
         const published = await addCloneCommit(clone, env, BRANCH);
         await publish();
-        refusePushesOnOrigin({ hideOrigin: true });
+        rejectOriginPush(origin, { message: ORIGIN_REFUSES, hideOrigin: true });
         const mark = gitCalls().length;
 
         const error = await failureOf(remove({ published }), Error);

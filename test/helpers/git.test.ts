@@ -26,6 +26,7 @@ import {
   gitRecorderEnv,
   recordedPushCalls,
   gitTestEnv,
+  rejectOriginPush,
   type GitOrigin,
   localBranches,
   makeGitClone,
@@ -139,6 +140,32 @@ describe("makeGitOrigin", () => {
   it("rejects a branch name that starts with -", async () => {
     await expect(origin.createBranch("-d")).rejects.toThrow("the branch name must not start with -");
     await expect(origin.addCommit("-x")).rejects.toThrow("the branch name must not start with -");
+  });
+});
+
+describe("rejectOriginPush", () => {
+  it("rejects a push and allows a push after removal", async () => {
+    const origin = await makeGitOrigin();
+    const clone = await makeGitClone(origin);
+    try {
+      const branch = "b1";
+      const revision = await addCloneCommit(clone, origin.env, branch);
+      await runGit(["config", "core.hooksPath", "/dev/null"], { gitDir: clone, env: origin.env });
+      const removeHook = rejectOriginPush(origin, { message: "test push rejected" });
+
+      const rejected = await failureOf(
+        runGit(["push", "origin", `refs/heads/${branch}:refs/heads/${branch}`], { gitDir: clone, env: origin.env }),
+        GitError,
+      );
+      expect(rejected.stderr).toContain("test push rejected");
+      expect(await origin.branchHead(branch)).toBeUndefined();
+
+      removeHook();
+      await runGit(["push", "origin", `refs/heads/${branch}:refs/heads/${branch}`], { gitDir: clone, env: origin.env });
+      expect(await origin.branchHead(branch)).toBe(revision);
+    } finally {
+      origin.remove();
+    }
   });
 });
 

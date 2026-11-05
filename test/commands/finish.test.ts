@@ -12,6 +12,7 @@ import { runCommand } from "../helpers/cli.js";
 import { trackerWriteCalls } from "../helpers/fake-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { useFakeClaudeOnPath } from "../helpers/fake-claude.js";
+import { rejectOriginPush } from "../helpers/git.js";
 import {
   databasePathOf,
   dayAt,
@@ -248,11 +249,7 @@ describe("finish", () => {
       repo: trackerRepo({ updateOnFinish: true, doneLabel: "done" }),
       ghAnswers: [fixtureTrackerAnswer("doneLabel")],
     });
-    const hookDir = join(landed.origin.path, "hooks");
-    mkdirSync(hookDir, { recursive: true });
-    writeFileSync(join(hookDir, "pre-receive"), "#!/bin/sh\necho 'remote delete refused' >&2\nexit 1\n", {
-      mode: 0o755,
-    });
+    rejectOriginPush(landed.origin);
 
     const result = await runFinish();
 

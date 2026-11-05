@@ -48,6 +48,20 @@ export interface GitOrigin {
   remove: () => void;
 }
 
+// Installs a pre-receive hook that rejects pushes to origin. The returned function removes the hook.
+export function rejectOriginPush(
+  origin: GitOrigin,
+  options: { message?: string; hideOrigin?: boolean } = {},
+): () => void {
+  const hooks = join(origin.path, "hooks");
+  const hook = join(hooks, "pre-receive");
+  mkdirSync(hooks, { recursive: true });
+  const hide = options.hideOrigin === true ? ['mv -- "$(pwd)" "$(pwd).gone"'] : [];
+  const message = options.message ?? "remote delete refused";
+  writeFileSync(hook, ["#!/bin/sh", `echo '${message}' >&2`, ...hide, "exit 1", ""].join("\n"), { mode: 0o755 });
+  return () => rmSync(hook, { force: true });
+}
+
 // Git reads a name that starts with "-" as an option.
 function assertBranchName(name: string): void {
   if (name.startsWith("-")) {

@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { finishTask } from "../../src/tasks/finish.js";
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
+import { rejectOriginPush } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -90,10 +89,7 @@ describe("finishTask", () => {
 
   it("reports failed remote cleanup when the completion record also fails", async () => {
     const landed = await usePublishedLandedTask();
-    const hookDir = join(landed.origin.path, "hooks");
-    mkdirSync(hookDir, { recursive: true });
-    const hook = join(hookDir, "pre-receive");
-    writeFileSync(hook, "#!/bin/sh\necho 'remote delete refused' >&2\nexit 1\n", { mode: 0o755 });
+    const removeRejectingHook = rejectOriginPush(landed.origin);
 
     const {
       first,
@@ -121,7 +117,7 @@ describe("finishTask", () => {
       );
       const workspaceAfterFirst = await taskWorkspaceState(landed);
       failCompletion = false;
-      rmSync(hook);
+      removeRejectingHook();
       const second = await callFinish(landed, store);
       return {
         first,
