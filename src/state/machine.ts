@@ -418,6 +418,11 @@ export function transitionWithMarkedLanding(store: TaskStore, id: number, revisi
   return store.endRun(id, "landed", transitionCheck("marked_landed", "landed", { revision, baseTip }));
 }
 
+// Appends the finished event { worktree, branch, from, to }, enters finished, and clears the run marker in one transaction.
+export function transitionWithFinish(store: TaskStore, id: number, detail: { worktree: string; branch: string }): Task {
+  return store.endRun(id, "finished", transitionCheck("finished", "finished", detail));
+}
+
 export function failTask(store: TaskStore, id: number, message: string): Task {
   return transitionTask(store, id, "failed", { error: message });
 }

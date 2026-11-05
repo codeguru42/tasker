@@ -3,7 +3,7 @@ import type { Config } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
-import { transitionTask } from "../state/machine.js";
+import { transitionTask, transitionWithFinish } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { RemoteTaskRefMovedError } from "../vcs/errors.js";
@@ -47,9 +47,12 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
     try {
       const entry = await findTaskWorkspace(vcs, ctx, task.worktreePath);
       const result = await cleanUpTaskWorkspace(vcs, ctx, entry, task.branch, (line) => io.stdout(`${line}\n`));
+      let remoteResult: "deleted" | "already-gone" | undefined;
       if (task.publishedRevision !== null && task.branch !== null) {
         try {
-          await vcs.deleteRemoteTaskRef(ctx, { taskRef: task.branch, published: task.publishedRevision });
+          remoteResult = (
+            await vcs.deleteRemoteTaskRef(ctx, { taskRef: task.branch, published: task.publishedRevision })
+          ).state;
         } catch (error) {
           if (error instanceof RemoteTaskRefMovedError) {
             return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${errorMessage(error)}`);
@@ -79,7 +82,18 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
           io,
         );
       }
-      transitionTask(store, task.id, "finished", { ...result });
+      try {
+        transitionWithFinish(store, task.id, { ...result });
+      } catch (error) {
+        const remote = remoteResult ?? "not requested";
+        return failRunTo(
+          store,
+          task,
+          io,
+          "cleanup_failed",
+          `finishing failed after external cleanup succeeded (worktree ${result.worktree}, local branch ${result.branch}, remote branch ${remote}): completion record failed: ${errorMessage(error)}`,
+        );
+      }
     } catch (error) {
       return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${errorMessage(error)}`);
     }

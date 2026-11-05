@@ -107,7 +107,7 @@ describe("finish", () => {
     expect(eventsOf(dataRoot, KEY).slice(landedEvents)).toEqual([
       { type: "transition", data: { from: "landed", to: "finishing" } },
       {
-        type: "transition",
+        type: "finished",
         data: { worktree: "removed", branch: "deleted", from: "finishing", to: "finished" },
       },
     ]);

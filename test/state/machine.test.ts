@@ -515,8 +515,13 @@ describe("task transitions", () => {
 
       expect(finished.state).toBe("finished");
       expect(store.getTask(task.id)?.state).toBe("finished");
-      expect(store.runStatus(task.id)).toBeUndefined();
-      expect(store.listEvents(task.id).slice(before.length)).toEqual([
+      expect(store.runStatus(task.id)).toEqual({ status: "none" });
+      expect(
+        store
+          .listEvents(task.id)
+          .slice(before.length)
+          .map(({ type, data }) => ({ type, data })),
+      ).toEqual([
         { type: "finished", data: { worktree: "removed", branch: "deleted", from: "finishing", to: "finished" } },
       ]);
     });
