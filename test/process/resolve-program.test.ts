@@ -1,4 +1,5 @@
 import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { isRunnableFile, ProgramFileError, resolveProgram } from "../../src/process/resolve-program.js";
@@ -113,5 +114,17 @@ describe("resolveProgram", () => {
 
   it("gives a name without a slash as it is", () => {
     expect(resolve({ TASKER_X_BIN: "fake-name" })).toBe("fake-name");
+  });
+
+  it("runs a bare name from the explicit child PATH", () => {
+    const dir = useTempDir("tasker-resolve-path-");
+    writeFakeCommand(dir, "selected-prog", "printf 'selected\\n'");
+    const env = { TASKER_X_BIN: "selected-prog", PATH: dir };
+    const program = resolve(env);
+
+    const result = spawnSync(program, [], { env, encoding: "utf8" });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe("selected\n");
   });
 });

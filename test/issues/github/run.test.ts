@@ -1,9 +1,11 @@
-import { mkdirSync } from "node:fs";
+import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { failureOf } from "../../helpers/errors.js";
 import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import { writeFakeCommand } from "../../helpers/fake-commands.js";
 import { startFixture } from "../../helpers/processes.js";
-import { useTempDir } from "../../helpers/temp.js";
+import { useProcessEnv, useTempDir } from "../../helpers/temp.js";
 
 // Fails when token is in the error: its text, its stack, any own property, or a cause.
 function expectNoToken(error: Error, token: string): void {
@@ -17,15 +19,85 @@ describe("runGh", () => {
   // The module loads again before each test, so that each test starts with an empty token cache.
   // Never import run.ts at the top of this file: a second copy would have other error classes.
   let gh: typeof import("../../../src/issues/github/run.js");
+  let programFileError: typeof import("../../../src/process/resolve-program.js").ProgramFileError;
   let dir: string;
 
   beforeEach(async () => {
     dir = useTempDir("tasker-run-gh-");
     vi.resetModules();
+    programFileError = (await import("../../../src/process/resolve-program.js")).ProgramFileError;
     gh = await import("../../../src/issues/github/run.js");
   });
 
   const tokenArgs = (account: string) => ["auth", "token", "--hostname", "github.com", "--user", account];
+  const run = (args: readonly string[], env: NodeJS.ProcessEnv) => gh.runGh(args, { account: "octo", env });
+  const readVersion = (env: NodeJS.ProcessEnv) => gh.readGhVersion(env);
+
+  it.each([undefined, "", "  "])("uses gh on the explicit child PATH when TASKER_GH_BIN is %j", async (override) => {
+    const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: ["api", "user"], stdout: "ok" }]);
+    const env = { ...fake.env, TASKER_GH_BIN: override };
+
+    expect(await run(["api", "user"], env)).toBe("ok");
+    expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs("octo"), ["api", "user"]]);
+  });
+
+  it("uses a bare override on the explicit child PATH despite process PATH", async () => {
+    const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: ["api", "user"], stdout: "ok" }]);
+    const lookup = useTempDir("tasker-gh-lookup-");
+    writeFakeCommand(lookup, "selected-gh", `exec "${fake.env.TASKER_GH_BIN!}" "$@"`);
+    const env = { ...fake.env, PATH: lookup, TASKER_GH_BIN: "selected-gh" };
+    const otherPath = useTempDir("tasker-gh-process-path-");
+    useProcessEnv({ PATH: otherPath });
+
+    expect(await run(["api", "user"], env)).toBe("ok");
+    expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs("octo"), ["api", "user"]]);
+  });
+
+  it.each(["absolute", "relative"] as const)("uses a %s executable outside the child PATH", async (kind) => {
+    const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: ["api", "user"], stdout: "ok" }]);
+    const value = kind === "absolute" ? fake.env.TASKER_GH_BIN! : relative(process.cwd(), fake.env.TASKER_GH_BIN!);
+    const env = { ...fake.env, PATH: useTempDir("tasker-gh-empty-path-"), TASKER_GH_BIN: value };
+
+    expect(await run(["api", "user"], env)).toBe("ok");
+    expect(fake.calls().map((call) => call.args)).toEqual([tokenArgs("octo"), ["api", "user"]]);
+  });
+
+  it.each(["missing", "not executable", "directory"] as const)(
+    "rejects an invalid %s override before starting gh",
+    async (kind) => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: ["api", "user"] }]);
+      const invalidDir = useTempDir("tasker-gh-invalid-");
+      const value =
+        kind === "missing"
+          ? join(invalidDir, "missing")
+          : kind === "not executable"
+            ? join(invalidDir, "plain")
+            : invalidDir;
+      if (kind === "not executable") {
+        writeFileSync(value, "plain");
+        chmodSync(value, 0o644);
+      }
+      const env = { ...fake.env, PATH: useTempDir("tasker-gh-invalid-path-"), TASKER_GH_BIN: value };
+
+      const error = await failureOf(run(["api", "user"], env), programFileError);
+
+      expect(error).toMatchObject({
+        name: "ProgramFileError",
+        message: `TASKER_GH_BIN is ${value}, but ${value} is not a file that you can run`,
+        variable: "TASKER_GH_BIN",
+        value,
+      });
+      expect(fake.calls()).toEqual([]);
+    },
+  );
+
+  it("uses the selected executable for a version read", async () => {
+    const fake = fakeGh(dir, {}, [{ args: ["--version"], stdout: "selected version\n" }]);
+    const env = { ...fake.env, PATH: useTempDir("tasker-gh-version-path-"), TASKER_GH_BIN: fake.env.TASKER_GH_BIN };
+
+    expect(await readVersion(env)).toBe("selected version\n");
+    expect(fake.calls()).toEqual([{ args: ["--version"], ghToken: undefined, env: {} }]);
+  });
 
   it("resolves with the stdout of gh, not trimmed", async () => {
     const fake = fakeGh(dir, {}, [

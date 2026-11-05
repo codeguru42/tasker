@@ -95,4 +95,14 @@ describe("childEnv", () => {
 
     expect(env).toEqual(before);
   });
+
+  it("drops TASKER_GH_BIN and keeps the caller environment unchanged", () => {
+    const env = { HOME: "/home/me", TASKER_GH_BIN: "/tools/gh" };
+    const before = structuredClone(env);
+
+    const result = childEnv(env, ["TASKER_GH_BIN"]);
+
+    expect(result).not.toHaveProperty("TASKER_GH_BIN");
+    expect(env).toEqual(before);
+  });
 });
