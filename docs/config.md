@@ -252,6 +252,8 @@ A new kind needs its own row and its own ticket, because each kind has its own f
 | `account`     | non-empty string                    | required  | The account to use.          |
 | `mergeMethod` | `"merge"`, `"squash"` or `"rebase"` | `"merge"` | How to merge a pull request. |
 
+The forge account and the issue tracker account serve different services. They can use different accounts.
+
 ## `vcs`
 
 `vcs` selects the version control provider of the repo. It also holds the configuration of that provider.
