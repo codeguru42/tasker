@@ -121,12 +121,11 @@ A stacked task is a task with a stored parent. `tasker start` stores the parent 
 `cancelled` or `finished`. The parent has landed when its task is in `landed`, `finishing`, `cleanup_failed` or
 `finished`.
 
-A stacked task whose parent landed must move first. `tasker merge`, `tasker mark-landed`, `tasker refine`,
-`tasker execute`, `tasker verify`, `tasker review` and `tasker accept` refuse it with
+A stacked task whose parent landed must move first. `tasker merge`, `tasker refine`, `tasker execute`, `tasker verify`,
+`tasker review` and `tasker accept` refuse it with
 `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
 These commands print the loop error or the local-base error of [Errors](#errors) when the walk fails. A cancelled parent
-stops only the landing commands. Their error is
-`the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
+stops `tasker merge`. Its error is `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
 
 The new tip depends on the parent:
 
