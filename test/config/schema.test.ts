@@ -193,6 +193,39 @@ describe("parseConfig repos", () => {
     expect(repo.forge).toEqual({ provider: "github", account: "me", mergeMethod: "merge" });
   });
 
+  it("allows a repo to omit forge", () => {
+    expect(parsedRepo(validConfig())).not.toHaveProperty("forge");
+  });
+
+  it("keeps the forge account separate from the issue tracker account", () => {
+    const raw = validConfig();
+    raw.repos.tasker.forge = { provider: "github", account: "forge-team" };
+    const repo = parseConfig(raw, {}, home).repos.tasker as {
+      forge: { account: string };
+      issueTracker: { account: string };
+    };
+    expect(repo.forge.account).toBe("forge-team");
+    expect(repo.issueTracker.account).toBe("codeguru42");
+  });
+
+  it.each(["merge", "squash", "rebase"] as const)("accepts the %s merge method", (mergeMethod) => {
+    const raw = validConfig();
+    raw.repos.tasker.forge = { provider: "github", account: "me", mergeMethod };
+    expect((parsedRepo(raw) as Repo & { forge: { mergeMethod: string } }).forge.mergeMethod).toBe(mergeMethod);
+  });
+
+  it("rejects unknown forge keys at their field paths", () => {
+    const raw = validConfig();
+    raw.repos.tasker.forge = { provider: "github", account: "me", host: "example.com", repo: "other", project: "X" };
+    const issues = issuesOf(raw);
+    expectIssueAt(issues, "repos.tasker.forge.host");
+    expectIssueAt(issues, "repos.tasker.forge.repo");
+    expectIssueAt(issues, "repos.tasker.forge.project");
+    expect(issues.join("\n")).toContain("host");
+    expect(issues.join("\n")).toContain("repo");
+    expect(issues.join("\n")).toContain("project");
+  });
+
   it("rejects an empty verify.commands", () => {
     const raw = validConfig();
     raw.repos.tasker.verify.commands = [];
@@ -258,7 +291,10 @@ describe("parseConfig repos", () => {
     ["updateBranchStrategy", "squash", "repos.tasker.updateBranchStrategy"],
     ["verify", ["npm test"], "repos.tasker.verify"],
     ["forge", { provider: "gitlab", account: "me" }, "repos.tasker.forge.provider"],
+    ["forge", { account: "me" }, "repos.tasker.forge.provider"],
     ["forge", { provider: "github" }, "repos.tasker.forge.account"],
+    ["forge", { provider: "github", account: "" }, "repos.tasker.forge.account"],
+    ["forge", { provider: "github", account: "me", mergeMethod: "fast-forward" }, "repos.tasker.forge.mergeMethod"],
   ])("rejects a bad %s (%j)", (key, value, path) => {
     const raw = validConfig();
     raw.repos.tasker[key] = value;
