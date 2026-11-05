@@ -1,15 +1,8 @@
 import type { Io, RegisterCommand } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import { reopenTask } from "../tasks/reopen.js";
-import { reportPlanRun } from "./plan-revision.js";
-import {
-  ISSUE_ARGUMENT_DESCRIPTION,
-  loadConfigOrFail,
-  orFailAsync,
-  REPO_LOCK_WAIT_MS,
-  REPO_OPTION_DESCRIPTION,
-  withIssueTaskAsync,
-} from "./shared.js";
+import { runPlanCommand } from "./plan-revision.js";
+import { ISSUE_ARGUMENT_DESCRIPTION, loadConfigOrFail, REPO_LOCK_WAIT_MS, REPO_OPTION_DESCRIPTION } from "./shared.js";
 
 export const reopen: RegisterCommand = (program, io) => {
   program
@@ -34,27 +27,19 @@ export async function reopenIssue(
   options: { repo?: string },
   feedback: string,
 ): Promise<void> {
-  const completed = await orFailAsync(io, () =>
-    withIssueTaskAsync(io, config, issue, { repo: options.repo }, async (store, found, ref) => ({
-      key: found.issueKey,
-      taskId: found.id,
-      result: await reopenTask(store, {
+  await runPlanCommand(io, config, issue, options, {
+    command: "reopen",
+    verb: "reopened",
+    state: "awaiting_plan_review",
+    run: (store, ref, taskId) =>
+      reopenTask(store, {
         config,
         ref,
-        taskId: found.id,
+        taskId,
         feedback,
         env: process.env,
         io,
         repoLockWaitMs: REPO_LOCK_WAIT_MS,
       }),
-    })),
-  );
-  await reportPlanRun(io, config, {
-    command: "reopen",
-    verb: "reopened",
-    taskId: completed.taskId,
-    result: completed.result,
-    key: completed.key,
-    state: "awaiting_plan_review",
   });
 }

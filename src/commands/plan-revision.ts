@@ -51,7 +51,7 @@ const PLAN_OVERLAP_LAST_LINES: readonly string[] = ["tasker does not refuse. Dec
 
 // Prints the lines of a new plan revision, with "<verb> <issue key> as revision v<N>" first, then the overlap warning on
 // stderr. A result with exitCode stops the command: the run step already printed the message.
-export async function reportPlanRun(
+async function reportPlanRun(
   io: Io,
   config: Config,
   o: {
@@ -88,15 +88,16 @@ export async function reportPlanRun(
 }
 
 // Finds the task of the issue, runs the step that records a plan revision, and prints its lines.
-// tasker plan, tasker refine and the feedback form of tasker review use it.
+// tasker plan, tasker refine, the feedback form of tasker review and tasker reopen use it.
 export async function runPlanCommand(
   io: Io,
   config: Config,
   issue: string,
   options: { repo?: string },
   o: {
-    command: "plan" | "refine" | "review";
-    verb: "planned" | "refined";
+    command: "plan" | "refine" | "review" | "reopen";
+    verb: "planned" | "refined" | "reopened";
+    state?: string;
     run: (store: TaskStore, ref: IssueRef, taskId: number) => Promise<PlanResult>;
   },
 ): Promise<void> {
@@ -107,5 +108,5 @@ export async function runPlanCommand(
       result: await o.run(store, ref, found.id),
     })),
   );
-  await reportPlanRun(io, config, { command: o.command, taskId, result, verb: o.verb, key });
+  await reportPlanRun(io, config, { command: o.command, taskId, result, verb: o.verb, key, state: o.state });
 }
