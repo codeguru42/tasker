@@ -5,7 +5,6 @@ import {
   filesThatImport,
   filesThatStart,
   importsPath,
-  sourceFiles,
   sourceDir,
 } from "../../helpers/source-scan.js";
 import { join } from "node:path";
@@ -27,10 +26,8 @@ describe("the gh boundary", () => {
   });
 
   it("finds no importer of src/github outside its allowed folders", () => {
-    const outside = filesThatImport("github").filter((file) => {
-      const source = sourceFiles().find((entry) => entry.file === file);
-      return source !== undefined && breaksGithubBoundary(file, source.text);
-    });
+    const allowed = ["github/", "issues/github/", "forge/github/"];
+    const outside = filesThatImport("github").filter((file) => !allowed.some((prefix) => file.startsWith(prefix)));
     expect(outside).toEqual([]);
   });
 
