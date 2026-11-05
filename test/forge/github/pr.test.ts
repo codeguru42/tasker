@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../../src/github/forge-session.js";
+import { createPr as untypedCreatePr } from "../../../src/forge/github/pr.js";
 import { listOpenPrs as untypedListOpenPrs } from "../../../src/forge/github/pr.js";
-import type { OpenPullRequest } from "../../../src/forge/provider.js";
+import type { CreatePrInput, OpenPullRequest, PullRequest } from "../../../src/forge/provider.js";
 import { failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
 import type { FakeAnswer } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const listOpenPrs = untypedListOpenPrs;
+const createPr = untypedCreatePr as (
+  session: ReturnType<typeof createGhSession>,
+  target: CreatePrInput,
+  env: NodeJS.ProcessEnv,
+) => Promise<PullRequest>;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
@@ -30,8 +36,11 @@ function listCall(
   return listOpenPrs(session, { cwd, head: targetHead }, env);
 }
 
-function setup(answers: readonly FakeAnswer[]) {
-  const dir = useTempDir("tasker-list-open-prs-");
+function createCall(session: ReturnType<typeof createGhSession>, target: CreatePrInput, env: NodeJS.ProcessEnv) {
+  return createPr(session, target, env);
+}
+
+function setup(answers: readonly FakeAnswer[], dir = useTempDir("tasker-list-open-prs-")) {
   const fake = forgeGh(dir, token, [tokenAnswer(), ...answers], baseEnvNames);
   const env: NodeJS.ProcessEnv = {
     ...fake.env,
@@ -55,6 +64,41 @@ const listArgs = (targetHead: string, limit: number) => [
   "--limit",
   String(limit),
 ];
+
+const title = "Add pull request support\nwith safe merge guards";
+const body = "Summary\n\n- Preserve this text.\n- Keep each line.";
+const createTarget: CreatePrInput = {
+  cwd: "/unused",
+  head,
+  base: "release/4",
+  title,
+  body,
+};
+const createArgs = (target: CreatePrInput) => [
+  "pr",
+  "create",
+  "--head",
+  target.head,
+  "--base",
+  target.base,
+  "--title",
+  target.title,
+  "--body",
+  target.body,
+];
+
+function errorStrings(value: unknown, seen = new Set<object>()): string[] {
+  if (typeof value === "string") return [value];
+  if (value === null || typeof value !== "object" || seen.has(value)) return [];
+  seen.add(value);
+  return Object.getOwnPropertyNames(value).flatMap((name) => {
+    try {
+      return errorStrings((value as Record<string, unknown>)[name], seen);
+    } catch {
+      return [];
+    }
+  });
+}
 
 describe("listOpenPrs", () => {
   it("lists origin requests from every base with exact command and isolated environment", async () => {
@@ -165,6 +209,89 @@ describe("listOpenPrs", () => {
 
     const error = await failureOf(listCall(session, dir, head, env), Error);
     expect(error.message).toContain(head);
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+});
+
+describe("createPr", () => {
+  it("preserves title and body and returns the pull request among informational lines", async () => {
+    const dir = useTempDir("tasker-create-pr-");
+    const target = { ...createTarget, cwd: dir };
+    const output = [
+      "Creating pull request for feature/discover into release/4 in acme/project",
+      "https://docs.example.test/articles/about-pull-requests is general help",
+      "https://github.com/acme/project/pull/234",
+      "",
+    ].join("\n");
+    const { env, fake, session } = setup([{ args: createArgs(target), stdout: output }], dir);
+
+    await expect(createCall(session, target, env)).resolves.toEqual({
+      number: 234,
+      url: "https://github.com/acme/project/pull/234",
+    } satisfies PullRequest);
+    const prCalls = fake.calls().filter(({ args }) => args[0] === "pr");
+    expect(prCalls).toHaveLength(1);
+    expect(prCalls[0]).toMatchObject({
+      args: createArgs(target),
+      tokenMatches: true,
+      cwd: dir,
+      env: {
+        HOME: "/tasker/home",
+        GH_CONFIG_DIR: "/tasker/gh-config",
+        GH_PROMPT_DISABLED: "1",
+        GH_NO_UPDATE_NOTIFIER: "1",
+        NO_COLOR: "1",
+      },
+    });
+    expect(prCalls.some(({ args }) => args[1] === "list")).toBe(false);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["no pull request URL", "Pull request created successfully"],
+    [
+      "conflicting pull request URLs",
+      "https://github.com/acme/project/pull/234\nhttps://github.com/acme/project/pull/235",
+    ],
+  ])("rejects %s after one create attempt", async (_label, stdout) => {
+    const dir = useTempDir("tasker-create-pr-reject-");
+    const target = { ...createTarget, cwd: dir };
+    const { env, fake, session } = setup([{ args: createArgs(target), stdout }], dir);
+
+    const error = await failureOf(createCall(session, target, env), Error);
+    expect(error.message).toContain(head);
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([createArgs(target)]);
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(errorStrings(error).join("\n")).not.toContain(token);
+    fake.assertAnswered();
+  });
+
+  it("wraps a failed create with a sanitized cause and keeps one attempt", async () => {
+    const dir = useTempDir("tasker-create-pr-failure-");
+    const target = { ...createTarget, cwd: dir };
+    const { env, fake, session } = setup(
+      [
+        {
+          args: createArgs(target),
+          stderr: `create failed with ${token}`,
+          exitCode: 1,
+        },
+      ],
+      dir,
+    );
+
+    const error = await failureOf(createCall(session, target, env), Error);
+    expect(error.message).toContain(head);
+    expect(error.message).toContain("create failed with ***");
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(errorStrings(error).join("\n")).not.toContain(token);
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
     fake.assertAnswered();
   });
