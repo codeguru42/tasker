@@ -47,8 +47,19 @@ The command reads the origin. The origin is the state that the task left when it
   failed in `interrupted` after a push has no retry step. Retry uses the direct row for `interrupted`, which has no
   entry for a push.
 
-There is no reopen-specific retry row. A failed reopen uses the existing fallback for a failed refine: retry moves the
-task to `awaiting_plan_review` and prints a hint to run `tasker refine` with new feedback.
+When a reopen fails while refining from `accepted` or `pushed`, retry returns the task to that same state. It prints the
+retry line, then prints this hint:
+
+- `run tasker reopen <issue key> "<feedback>" again`
+
+Retry prints only a hint. It starts no assistant and does not print the saved feedback. Run the command with new
+feedback.
+
+A failed reopen can stop while tasker resyncs the branch to its base. If `reopen_start_head` has a value, retry restores
+the worktree to that head under the repo lock. Retry clears the saved head in the same database transaction as the state
+move and retry event. The restore ends any unfinished resync and removes uncommitted changes and untracked files,
+including edits made after the failure. If `reopen_start_head` is NULL, resync finished. Retry keeps the branch movement
+and makes no Git call.
 
 The origin of a refine is the state that the task left when the last refine started. The state before the merge is the
 state that the task left when the last merge started.
@@ -82,6 +93,7 @@ the command prints one hint line and exits with code 0. The line depends on the 
 - `reviewed`:
   `run tasker refine <issue key> again to act on the findings, or tasker dismiss-review <issue key> "<reason>"`
 - `awaiting_work_review`: `run tasker review <issue key> "<feedback>" again`
+- `accepted` or `pushed`: `run tasker reopen <issue key> "<feedback>" again`
 
 The command makes its move before it runs the next command. If the guard of a stacked task refuses the next command, the
 task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`. Then
@@ -98,6 +110,12 @@ task lock belong to this group:
   failure from `interrupted` after a push remains refused.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is
   `--resume-execute applies only to a task that failed in verifying`.
+- The repo lock is busy, or Git cannot restore the saved reopen head. Retry leaves the task in `failed` and keeps
+  `reopen_start_head`. It prints no retry line or hint. The error names the lock or gives Git's restore error and
+  recovery commands. A failed restore can leave the worktree partly changed.
+- The restore worked, but the database could not write the retry move or event. Retry reports the database error and the
+  restored branch head. It leaves the task in `failed` and keeps `reopen_start_head`, so the next retry restores the
+  same head again.
 
 ## `tasker resume`
 
