@@ -41,7 +41,7 @@ describe("createGhSession", () => {
   ])("rejects %s before starting gh", async (_label, args) => {
     const dir = useTempDir("tasker-forge-filter-");
     const fake = forgeGh(dir, "token", []);
-    const error = await failureOf(run(createGhSession("octo"), args, dir, taskerEnv(fake.env.PATH!)), Error);
+    const error = await failureOf(run(createGhSession("octo"), args, dir, taskerEnv(fake.env.PATH)), Error);
     expect(error.message).not.toBe("");
     expect(fake.calls()).toEqual([]);
   });
@@ -50,7 +50,7 @@ describe("createGhSession", () => {
     const dir = useTempDir("tasker-forge-accepted-");
     const fake = forgeGh(dir, "token", [answer]);
 
-    await expect(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH!))).resolves.toBe(
+    await expect(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH))).resolves.toBe(
       "repository",
     );
     expect(fake.calls().map((call) => call.args)).toEqual([["repo", "view"]]);
@@ -82,7 +82,7 @@ describe("createGhSession", () => {
     const dir = useTempDir("tasker-forge-forbidden-");
     const fake = forgeGh(dir, "token", []);
     const error = await failureOf(
-      run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH!, { [name]: "bad" })),
+      run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH, { [name]: "bad" })),
       Error,
     );
     expect(error.message).toContain(name);
@@ -110,7 +110,7 @@ describe("createGhSession", () => {
       ],
     );
     useProcessEnv({ PATH: "/ambient/path", HOME: "/ambient/home", GH_TOKEN: "ambient-token" });
-    const supplied = taskerEnv(fake.env.PATH!, {
+    const supplied = taskerEnv(fake.env.PATH, {
       TASKER_GH_TOKEN: undefined,
       TASKER_GH_HOST: undefined,
       TASKER_GH_REPO: undefined,

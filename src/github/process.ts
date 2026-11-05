@@ -15,6 +15,7 @@ export interface RunGhProcessOptions {
   signal?: AbortSignal;
   dropStdout?: boolean;
   token?: string;
+  programEnv?: NodeJS.ProcessEnv;
 }
 
 export class GhProcessError extends ChildCommandError {
@@ -29,7 +30,7 @@ export async function runGhProcess(
   env: NodeJS.ProcessEnv,
   options: RunGhProcessOptions = {},
 ): Promise<ChildResult> {
-  const program = resolveProgram("gh", "TASKER_GH_BIN", env);
+  const program = resolveProgram("gh", "TASKER_GH_BIN", options.programEnv ?? env);
   if (options.cwd !== undefined) {
     const folderError = startFolderError(program, options.cwd);
     if (folderError !== undefined) throw new Error(folderError);
