@@ -15,7 +15,7 @@ export const finish: RegisterCommand = (program, io) => {
   program
     .command("finish")
     .description(
-      "Clean up a task in landed or cleanup_failed: remove the worktree and the local task branch. The task goes through finishing to finished, or to cleanup_failed when a step fails. A second run finishes the steps that are left",
+      "Clean up a task in landed or cleanup_failed: remove its worktree and local branch, then delete its published branch with a lease. A moved remote branch blocks completion. Other remote deletion errors warn and allow completion. The tracker update runs after remote cleanup. A second run retries cleanup steps that remain",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)

@@ -6,6 +6,7 @@ import { issueProviderFor } from "../issues/provider.js";
 import { transitionTask } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
+import { RemoteTaskRefMovedError } from "../vcs/errors.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { failRunTo } from "./run-outcome.js";
 import { runTrackerWrite, trackerTargets } from "./tracker-write.js";
@@ -46,6 +47,22 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
     try {
       const entry = await findTaskWorkspace(vcs, ctx, task.worktreePath);
       const result = await cleanUpTaskWorkspace(vcs, ctx, entry, task.branch, (line) => io.stdout(`${line}\n`));
+      if (task.publishedRevision !== null && task.branch !== null) {
+        try {
+          await vcs.deleteRemoteTaskRef(ctx, { taskRef: task.branch, published: task.publishedRevision });
+        } catch (error) {
+          if (error instanceof RemoteTaskRefMovedError) {
+            return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${errorMessage(error)}`);
+          }
+          const message = errorMessage(error);
+          store.appendEvent(task.id, "remote_cleanup_warning", {
+            branch: task.branch,
+            publishedRevision: task.publishedRevision,
+            error: message,
+          });
+          io.stderr(`warning: could not delete ${task.branch} on origin: ${message}\n`);
+        }
+      }
       const { issueTracker } = config.repos[task.repoKey];
       if (issueTracker.updateOnFinish) {
         // The write comes before the move to finished, so a second run after a crash does it again.
