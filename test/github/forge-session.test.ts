@@ -320,6 +320,21 @@ describe("forge account authentication", () => {
     expect(fake.calls().filter((call) => call.args[0] === "auth")).toHaveLength(2);
   });
 
+  it("looks up a separate token for each account", async () => {
+    const dir = useTempDir("tasker-forge-separate-accounts-");
+    const fake = forgeGh(dir, forgeToken, [tokenAnswer("octo"), answer, tokenAnswer("other"), answer]);
+
+    await run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+    await run(createGhSession("other"), ["repo", "view"], dir, taskerEnv(fake.env.PATH));
+
+    expect(
+      fake
+        .calls()
+        .filter((call) => call.args[0] === "auth")
+        .map((call) => call.args),
+    ).toEqual([tokenAnswer("octo").args, tokenAnswer("other").args]);
+  });
+
   it.each([
     ["failed status", "token-looking-output", 1],
     ["empty output", "  \n", 0],
