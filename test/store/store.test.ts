@@ -951,6 +951,114 @@ describe("task store", () => {
     });
   });
 
+  describe("reopen recovery", () => {
+    it("adds reopen_start_head as null for existing tasks", () => {
+      const oldPath = join(dir, "old19.db");
+      makeOldDatabase(oldPath, 19);
+      withRawDatabase(oldPath, (raw) => insertRawTask(raw, "tasker", "accepted"));
+
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          expect(upgraded.getTask(1)).toMatchObject({ reopenStartHead: null });
+        },
+        { now },
+      );
+      withRawDatabase(oldPath, (raw) => {
+        expect(schemaVersion(raw)).toBe(20);
+        expect(raw.prepare("SELECT reopen_start_head FROM tasks WHERE id = 1").get()).toEqual({
+          reopen_start_head: null,
+        });
+      });
+    });
+
+    it("rolls back the migration column update", () => {
+      const oldPath = join(dir, "old19-rollback.db");
+      makeOldDatabase(oldPath, 19);
+      withRawDatabase(oldPath, (raw) => {
+        expect(() =>
+          migrate(raw, [
+            ...migrations.slice(0, 19),
+            "ALTER TABLE tasks ADD COLUMN reopen_start_head TEXT;\nUPDATE tasks SET invalid_column = NULL;",
+          ]),
+        ).toThrow();
+        expect(schemaVersion(raw)).toBe(19);
+        expect(raw.prepare("PRAGMA table_info(tasks)").all()).not.toEqual(
+          expect.arrayContaining([expect.objectContaining({ name: "reopen_start_head" })]),
+        );
+      });
+    });
+
+    it("starts a reopen with state, exact feedback, recovery head, and run marker in one write", () => {
+      const task = store.createTask({ ...newTask, state: "accepted" });
+      const feedback = "The scope comment requires preserving the published revision.";
+      const moved = (
+        store as TaskStore & { startReopen(id: number, head: string, feedback: string): Task }
+      ).startReopen(task.id, "a".repeat(40), feedback);
+
+      expect(moved).toMatchObject({ state: "refining", reopenStartHead: "a".repeat(40) });
+      expect(store.listEvents(task.id).at(-1)).toMatchObject({
+        type: "transition",
+        data: { from: "accepted", to: "refining", feedback },
+      });
+      expect(readRunMarker(dbPath, task.id)).toMatchObject({ state: "refining" });
+    });
+
+    it("completes reopen with synced base and clears undo data but keeps publication", () => {
+      const task = store.createTask({ ...newTask, state: "refining" });
+      store.updateTask(task.id, {
+        reopenStartHead: "a".repeat(40),
+        syncedBaseTip: "old-base",
+        undoBeforeHead: "before",
+        undoAfterHead: "after",
+        undoSyncedBaseTip: "undo-base",
+        acceptedRevision: "accepted-revision",
+        publishedRevision: "published-revision",
+      } as never);
+      const done = (store as TaskStore & { completeReopen(id: number, syncedBaseTip: string): Task }).completeReopen(
+        task.id,
+        "new-base",
+      );
+
+      expect(done).toMatchObject({
+        syncedBaseTip: "new-base",
+        reopenStartHead: null,
+        undoBeforeHead: null,
+        undoAfterHead: null,
+        undoSyncedBaseTip: null,
+        acceptedRevision: "accepted-revision",
+        publishedRevision: "published-revision",
+      });
+    });
+
+    it("clears reopen recovery data with the resume state move", () => {
+      const task = store.createTask({ ...newTask, state: "interrupted" });
+      store.updateTask(task.id, { reopenStartHead: "a".repeat(40) } as never);
+      const resumed = (
+        store as TaskStore & {
+          resumeTask(
+            id: number,
+            state: string,
+            writes: { clearReopenStartHead: true },
+            check: () => unknown,
+            events: never[],
+          ): Task;
+        }
+      ).resumeTask(
+        task.id,
+        "accepted",
+        { clearReopenStartHead: true },
+        () => ({
+          type: "transition",
+          data: { from: "interrupted", to: "accepted" },
+        }),
+        [],
+      );
+
+      expect(resumed).toMatchObject({ state: "accepted", reopenStartHead: null });
+    });
+  });
+
   it("closes the database when the file has a newer schema version", () => {
     const newerPath = join(dir, "newer.db");
     withRawDatabase(newerPath, (raw) => {
