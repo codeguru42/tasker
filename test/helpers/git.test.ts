@@ -151,13 +151,15 @@ describe("rejectOriginPush", () => {
       const branch = "b1";
       const revision = await addCloneCommit(clone, origin.env, branch);
       await runGit(["config", "core.hooksPath", "/dev/null"], { gitDir: clone, env: origin.env });
-      const removeHook = rejectOriginPush(origin, { message: "test push rejected" });
+      const message = "-n can't \\path $HOME";
+      const removeHook = rejectOriginPush(origin, { message });
 
       const rejected = await failureOf(
         runGit(["push", "origin", `refs/heads/${branch}:refs/heads/${branch}`], { gitDir: clone, env: origin.env }),
         GitError,
       );
-      expect(rejected.stderr).toContain("test push rejected");
+      expect(rejected.exitCode).not.toBe(0);
+      expect(rejected.stderr).toContain(message);
       expect(await origin.branchHead(branch)).toBeUndefined();
 
       removeHook();
