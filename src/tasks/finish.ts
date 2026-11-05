@@ -55,7 +55,14 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
           ).state;
         } catch (error) {
           if (error instanceof RemoteTaskRefMovedError) {
-            return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${errorMessage(error)}`);
+            if (error.published === undefined || error.tip.state !== "present") {
+              return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${errorMessage(error)}`);
+            }
+            const reason =
+              `the task branch ${error.taskRef} moved on origin: tasker published ${error.published}, ` +
+              `origin has ${error.tip.revision}; local cleanup already occurred; decide what to do with the extra ` +
+              `commits, then run tasker finish ${request.ref.key} again`;
+            return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${reason}`);
           }
           const message = errorMessage(error);
           store.appendEvent(task.id, "remote_cleanup_warning", {
@@ -63,7 +70,7 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
             publishedRevision: task.publishedRevision,
             error: message,
           });
-          io.stderr(`warning: could not delete ${task.branch} on origin: ${message}\n`);
+          io.stderr(`warning: cannot delete the task branch ${task.branch} on origin: ${message}\n`);
         }
       }
       const { issueTracker } = config.repos[task.repoKey];

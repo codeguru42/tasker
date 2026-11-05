@@ -214,7 +214,8 @@ describe("finish", () => {
     expect(await landed.origin.branchHead(landed.branch)).toBe(other);
     expect(readRunMarker(databasePathOf(landed.dataRoot), landed.task.id)).toBeUndefined();
     expect(lastErrorOf(landed.dataRoot, landed.task.id)).toBe(
-      `the task branch ${landed.branch} moved on origin: tasker published ${landed.publishedRevision}, ` +
+      `finishing failed: the task branch ${landed.branch} moved on origin: ` +
+        `tasker published ${landed.publishedRevision}, ` +
         `origin has ${other}; local cleanup already occurred; decide what to do with the extra commits, ` +
         `then run tasker finish ${KEY} again`,
     );
