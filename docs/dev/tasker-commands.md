@@ -189,7 +189,7 @@ no fact of the list. As a result, the rule that the task subagent first does the
 - `tasker refine`, `tasker execute`, `tasker verify`, `tasker review` and `tasker accept` refuse a stacked task whose
   parent has landed. They print
   `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
-  The task keeps its state. `tasker merge` and `tasker mark-landed` print the same error, and they print
+  The task keeps its state. `tasker merge` prints the same error, and it prints
   `the parent <parent key> of <issue key> has not landed; land the parent first, then run tasker update-branch <issue key>`
   while the parent is in flight (see [the stacked-task guards](workspaces.md#stacked-task)). `tasker update-branch`
   rebases only the commits of the task onto the base that the walk ends on.
