@@ -88,9 +88,11 @@ feedback transition event and the run marker in one transaction. After resync, `
 `accepted_revision` and `published_revision`.
 
 If the process stops before `completeReopen`, `resume` or eligible `approve-credits` restores the saved head under the
-repo lock before returning the task to its origin. The same transaction as that move clears `reopen_start_head`. A
-failed restore keeps both the pause and the recovery head. If the column is NULL, the resync was recorded, so recovery
-keeps the current worktree state.
+repo lock before returning the task to its origin. The move and the `resume` event clear `reopen_start_head` in one
+transaction. A retry of a failed reopen also restores the saved head under the repo lock before returning the task to
+`accepted` or `pushed`. The retry event, state move and clear of `reopen_start_head` share one transaction. A failed
+restore keeps the task state and recovery head. If the column is NULL, the resync was recorded, so recovery keeps the
+current worktree state.
 
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
