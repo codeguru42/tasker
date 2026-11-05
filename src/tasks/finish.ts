@@ -55,12 +55,13 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
           ).state;
         } catch (error) {
           if (error instanceof RemoteTaskRefMovedError) {
-            if (error.published === undefined || error.tip.state !== "present") {
-              return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${errorMessage(error)}`);
-            }
+            const moved = error as RemoteTaskRefMovedError & {
+              published: string;
+              tip: { state: "present"; revision: string };
+            };
             const reason =
-              `the task branch ${error.taskRef} moved on origin: tasker published ${error.published}, ` +
-              `origin has ${error.tip.revision}; local cleanup already occurred; decide what to do with the extra ` +
+              `the task branch ${moved.taskRef} moved on origin: tasker published ${moved.published}, ` +
+              `origin has ${moved.tip.revision}; local cleanup already occurred; decide what to do with the extra ` +
               `commits, then run tasker finish ${request.ref.key} again`;
             return failRunTo(store, task, io, "cleanup_failed", `finishing failed: ${reason}`);
           }
