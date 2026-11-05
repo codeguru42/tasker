@@ -4,6 +4,46 @@ These commands land the work on the base branch, record a landing that happened 
 [Shared errors](../SKILL.md#shared-errors) lists the errors that many commands share.
 [The Landing section of docs/statemachine.md](../../../docs/statemachine.md#landing) gives the states.
 
+## `tasker push`
+
+Publishes the work of a task in `accepted` to its branch on `origin`: `tasker push <issue>`. Publication and landing are
+separate choices. The task goes through `pushing` to `pushed`. The command does not need a base branch, an assistant or
+a forge.
+
+Before it writes anything, the command reads the exact local task branch tip and compares it with the accepted revision.
+It publishes only that task branch. It uses the last published revision as the lease for an update. If tasker has not
+published the branch, it uses an empty lease. It does not change the base branch.
+
+On success, the command prints `pushed <issue key>` on stdout. Then it prints one of these lines:
+
+- `published: <revision> to origin/<branch>` after a push.
+- `already published: <revision> on origin/<branch>. Nothing pushed.` when origin already has that revision.
+
+The command stops with exit code 1 and prints the error on stderr in these cases. Before the move to `pushing`, the task
+keeps its state and no event or run marker is written. The shared errors of no task, of
+[the wrong state](../SKILL.md#shared-errors), of the task lock and of the clone lock belong to this group:
+
+- The task has no branch. The error is `the task of <issue key> has no branch`.
+- The task has no accepted revision. The error is `the task of <issue key> has no accepted revision`.
+- The local tip differs from the accepted revision. The error names both revisions and says to run
+  `tasker update-branch` and review the work again. The command makes this check before it moves the task to `pushing`.
+
+The task goes to `failed` when a step fails after the move to `pushing`. The command prints the error on stderr and
+exits with code 1. The error starts with `pushing failed: <reason>`. The provider refuses publication when the task
+branch on origin moved from the last published revision. A remote move between the provider's read and push also makes
+its lease fail, so the provider does not replace that remote tip.
+
+If the remote push succeeds but tasker cannot record the result, the reason is
+`pushed <revision> to origin/<branch>, but tasker cannot record the result: <error>`. If origin already had the
+revision, the reason is the store error. Retry the failed task with `tasker retry`. When origin already has the
+revision, the provider reports that fact and tasker records it without another push.
+
+A crash during publication leaves the task in `pushing` with its run marker. The next command that reads the task moves
+it to `interrupted`. Run `tasker resume` to continue publication. See [tasker resume](recovery.md#tasker-resume).
+
+Do not change tasker-owned worktrees or branch refs outside tasker. Tasker does not protect publication against those
+concurrent changes.
+
 ## `tasker merge`
 
 Lands the work of a task in the state `accepted` on the base branch of `origin`: `tasker merge <issue>`. The task goes

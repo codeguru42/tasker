@@ -245,6 +245,10 @@ Accepts the work of a task in `awaiting_work_review`. See [the reference](refere
 Lands the work of a task in `accepted` on the base branch of `origin`. See
 [the reference](references/landing.md#tasker-merge).
 
+### `tasker push`
+
+Publishes the task branch of a task in `accepted` to `origin`. See [the reference](references/landing.md#tasker-push).
+
 ### `tasker mark-landed`
 
 Records that the work of a task in `accepted`, `pushed` or `in_peer_review` landed outside tasker. See

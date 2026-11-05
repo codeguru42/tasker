@@ -96,7 +96,7 @@ describe("acceptedStates", () => {
   });
 
   it("accepts push only from accepted", () => {
-    expect(acceptedStates("push" as TaskCommand)).toEqual(["accepted"]);
+    expect(acceptedStates("push")).toEqual(["accepted"]);
   });
 });
 

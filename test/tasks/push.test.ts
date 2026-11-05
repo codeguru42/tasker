@@ -81,11 +81,12 @@ describe("pushTask", () => {
     await accepted.origin.addCommit(accepted.task.branch!, { file: "moved.txt" });
     const before = eventsOf(accepted.dataRoot, accepted.key);
 
-    const error = await withDataRootStore(accepted.dataRoot, (store) => failureOf(callPush(accepted, store), Error));
+    const { result, io } = await withDataRootStore(accepted.dataRoot, (store) => callPush(accepted, store));
 
-    expect(error.message).toContain("the task branch moved on origin");
-    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("accepted");
-    expect(eventsOf(accepted.dataRoot, accepted.key)).toEqual(before);
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toContain("pushing failed: the task branch moved on origin");
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("failed");
+    expect(eventsOf(accepted.dataRoot, accepted.key)).not.toEqual(before);
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
   });
 

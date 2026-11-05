@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { run } from "../../src/cli.js";
 import { captureIo } from "../helpers/cli.js";
 import { commitInWorktree, copyCloneBranchToOrigin } from "../helpers/git.js";
-import { eventsOf, latestTaskOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
+import { databasePathOf, eventsOf, latestTaskOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { useAcceptedTask, useAcceptedTaskWithNoRevision, useWorkReviewTask } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
 
@@ -50,7 +50,7 @@ describe("tasker push", () => {
         },
       },
     ]);
-    expect(readRunMarker(accepted.dataRoot, accepted.task.id)).toBeUndefined();
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
     expect(accepted.gh.calls()).toEqual(ghCalls);
   });
 
@@ -63,12 +63,12 @@ describe("tasker push", () => {
 
     expect(result.code).toBe(1);
     expect(result.out).toBe("");
-    expect(result.err).toContain("pushing failed: the tip of");
+    expect(result.err).toContain("the tip of");
     expect(result.err).toContain(`(${moved}) is not the accepted revision (${accepted.revision})`);
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("accepted");
     expect(eventsOf(accepted.dataRoot, KEY)).toEqual(before);
     expect(await accepted.origin.branchHead(accepted.task.branch!)).toBeUndefined();
-    expect(readRunMarker(accepted.dataRoot, accepted.task.id)).toBeUndefined();
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
   });
 
   it("refuses a task that is not accepted", async () => {
