@@ -36,7 +36,8 @@ export async function runGhProcess(
     if (folderError !== undefined) throw new Error(folderError);
   }
   const result: ChildResult = await runChild(program, args, { env, cwd: options.cwd, signal: options.signal });
-  const hide = (text: string) => (options.token === undefined ? text : text.split(options.token).join("***"));
+  const hide = (text: string) =>
+    options.token === undefined || options.token === "" ? text : text.split(options.token).join("***");
   const { code, signal, stdout } = result;
   if (code === 0) return result;
   const subcommand = subcommandOf(args);
