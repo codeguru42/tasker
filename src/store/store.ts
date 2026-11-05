@@ -388,12 +388,7 @@ export interface TaskStore extends LockStore {
   // The event that check returns is appended in the same transaction.
   acceptTask(id: number, revision: string, check?: (current: Task) => NewEvent | undefined): Task;
   // Stores the published revision, appends its event, moves pushing to pushed, and removes its run marker in one transaction.
-  recordPublication(
-    id: number,
-    revision: string,
-    publication: { branch: string; lease: boolean; pushed: boolean },
-    check: (current: Task) => NewEvent | undefined,
-  ): Task;
+  recordPublication(id: number, revision: string, check: (current: Task) => NewEvent | undefined): Task;
   // The questions of a revision with their state. The newest revision has only open questions.
   // A resolved question names the next version, and its answer is the feedback of that version.
   planQuestions(taskId: number, version: number): PlanQuestionState[];
@@ -1690,19 +1685,8 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       return writeTask(id, { state: "accepted", acceptedRevision: revision }, check, () => endRunStep(id, "accepted"));
     },
 
-    recordPublication(id, revision, publication, check) {
-      return writeTask(
-        id,
-        { state: "pushed", publishedRevision: revision },
-        (current) => {
-          check(current);
-          return {
-            type: "published",
-            data: { ...publication, revision, from: "pushing", to: "pushed" },
-          };
-        },
-        () => endRunStep(id, "pushed"),
-      );
+    recordPublication(id, revision, check) {
+      return writeTask(id, { state: "pushed", publishedRevision: revision }, check, () => endRunStep(id, "pushed"));
     },
 
     latestPlanRevision: readLatestPlanRevision,

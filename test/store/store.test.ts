@@ -917,25 +917,16 @@ describe("task store", () => {
 
     it("reads and writes publishedRevision through the task API", () => {
       const task = store.createTask(newTask);
-      const taskWithPublishedRevision = (value: Task | undefined) => {
-        const record = value as unknown as { publishedRevision: string | null } | undefined;
-        return record?.publishedRevision;
-      };
-      expect(taskWithPublishedRevision(task)).toBeNull();
-      const updateWithPublishedRevision = (id: number, changes: { publishedRevision: string }) =>
-        (store as unknown as { updateTask: (id: number, changes: { publishedRevision: string }) => Task }).updateTask(
-          id,
-          changes,
-        );
-      const updated = updateWithPublishedRevision(task.id, { publishedRevision: "a".repeat(40) });
-      expect(taskWithPublishedRevision(updated)).toBe("a".repeat(40));
-      expect(taskWithPublishedRevision(store.getTask(task.id))).toBe("a".repeat(40));
+      expect(task.publishedRevision).toBeNull();
+      const updated = store.updateTask(task.id, { publishedRevision: "a".repeat(40) });
+      expect(updated.publishedRevision).toBe("a".repeat(40));
+      expect(store.getTask(task.id)?.publishedRevision).toBe("a".repeat(40));
     });
 
     it("stores the event returned by the publication check", () => {
       const task = runningTask("pushing");
       const revision = "a".repeat(40);
-      store.recordPublication(task.id, revision, { branch: "argument-branch", lease: false, pushed: true }, () => ({
+      store.recordPublication(task.id, revision, () => ({
         type: "published",
         data: { branch: "callback-branch", revision, lease: true, pushed: false, from: "pushing", to: "pushed" },
       }));

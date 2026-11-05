@@ -399,12 +399,7 @@ export function transitionWithPublication(
   revision: string,
   publication: { branch: string; lease: boolean; pushed: boolean },
 ): Task {
-  return store.recordPublication(
-    id,
-    revision,
-    publication,
-    transitionCheck("published", "pushed", { ...publication, revision }),
-  );
+  return store.recordPublication(id, revision, transitionCheck("published", "pushed", { ...publication, revision }));
 }
 
 // Appends the landed event { revision, base, pushed, from, to } and moves the task to landed, in one transaction.
