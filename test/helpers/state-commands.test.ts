@@ -25,7 +25,13 @@ describe("expectedStateCommands", () => {
 
   it("gives the publication and landing choices for an accepted task", () => {
     expect(expectedStateCommands("accepted")).toEqual({
-      commands: ["merge", "push", "mark-landed", "update-branch", "abort"],
+      commands: ["merge", "push", "mark-landed", "update-branch", "reopen", "abort"],
+    });
+  });
+
+  it("offers reopen for a pushed task", () => {
+    expect(expectedStateCommands("pushed")).toEqual({
+      commands: ["mark-landed", "update-branch", "reopen", "abort"],
     });
   });
 

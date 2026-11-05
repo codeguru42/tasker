@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PLAIN_REFINE_CONTEXT,
+  REOPEN_REFINE_CONTEXT,
   REFINE_PROMPT,
   REFINE_PROMPT_NAME,
   failureContextText,
@@ -85,6 +86,14 @@ describe("REFINE_PROMPT", () => {
 describe("PLAIN_REFINE_CONTEXT", () => {
   it("is the line of a plain refine", () => {
     expect(PLAIN_REFINE_CONTEXT).toBe("The user read the plan and asks for a revision.");
+  });
+});
+
+describe("REOPEN_REFINE_CONTEXT", () => {
+  it("says that a bug after acceptance needs a new complete plan", () => {
+    expect(REOPEN_REFINE_CONTEXT).toBe(
+      "A bug was found after acceptance. The user needs a new complete plan revision.",
+    );
   });
 });
 

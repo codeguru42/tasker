@@ -57,6 +57,7 @@ import {
   useLandedTask,
   usePublishedLandedTask,
   useRefineFixture,
+  useReopenFixture,
   useReviewedRefineFixture,
   usePlanFixture,
   useStartedTask,
@@ -902,6 +903,19 @@ describe("landParent", () => {
 
     expect(await fixture.origin.branchHead("main")).toBe(tip);
     expect(latestTaskOf(fixture.dataRoot, fixture.parent.key).state).toBe("landed");
+  });
+});
+
+describe("useReopenFixture", () => {
+  it.each(["accepted", "pushed"] as const)("keeps a complete plan and session for %s", async (origin) => {
+    const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);
+
+    expect(fixture.task).toMatchObject({
+      state: origin,
+      publishedRevision: origin === "pushed" ? "published-revision" : null,
+    });
+    expect(fixture.revision.version).toBe(1);
+    expect(fixture.session.sessionId).toBe(TEST_SESSION_ID);
   });
 });
 

@@ -459,6 +459,26 @@ export async function useRefineFixture(
   });
 }
 
+export interface ReopenFixture extends RefineFixture {
+  origin: "accepted" | "pushed";
+}
+
+// Runs useRefineFixture, then places its complete plan and recorded plan session in an accepted or pushed state.
+export async function useReopenFixture(
+  control: FakeClaudeControl,
+  origin: "accepted" | "pushed" = "accepted",
+  options: Parameters<typeof useRefineFixture>[1] = {},
+): Promise<ReopenFixture> {
+  const fixture = await useRefineFixture(control, options);
+  const task = withDataRootStore(fixture.started.dataRoot, (store) =>
+    store.updateTask(fixture.task.id, {
+      state: origin,
+      publishedRevision: origin === "pushed" ? "published-revision" : null,
+    }),
+  );
+  return { ...fixture, task, origin };
+}
+
 export interface ReviewedRefineFixture extends RefineFixture {
   review: Review | undefined;
   verifyRun: VerifyRun | undefined;
