@@ -65,7 +65,13 @@ export function createGhSession(account: string): GhSession {
       if ((command === "pr" && subcommand === "checkout") || (command === "repo" && subcommand === "sync")) {
         return Promise.reject(new Error(`gh ${command} ${subcommand} changes the local branch`));
       }
-      if (command === "repo" && subcommand === "create" && (args.includes("--push") || args.includes("--push=true"))) {
+      if (
+        command === "repo" &&
+        subcommand === "create" &&
+        ["--push", "--push=1", "--push=t", "--push=T", "--push=true", "--push=TRUE", "--push=True"].some((push) =>
+          args.includes(push),
+        )
+      ) {
         return Promise.reject(new Error("gh repo create --push publishes a branch"));
       }
 
