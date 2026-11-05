@@ -891,6 +891,74 @@ describe("task store", () => {
     });
   });
 
+  describe("published revision", () => {
+    it("adds migration 19 with a null published revision for existing tasks", () => {
+      const oldPath = join(dir, "old18.db");
+      makeOldDatabase(oldPath, 18);
+      withRawDatabase(oldPath, (raw) => {
+        insertRawTask(raw, "tasker", "accepted");
+      });
+
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          expect(upgraded.getTask(1)).toMatchObject({ publishedRevision: null });
+        },
+        { now },
+      );
+      withRawDatabase(oldPath, (raw) => {
+        expect(schemaVersion(raw)).toBe(19);
+        expect(raw.prepare("SELECT published_revision FROM tasks WHERE id = 1").get()).toEqual({
+          published_revision: null,
+        });
+      });
+    });
+
+    it("reads and writes publishedRevision through the task API", () => {
+      const task = store.createTask(newTask);
+      const taskWithPublishedRevision = (value: Task | undefined) => {
+        const record = value as unknown as { publishedRevision: string | null } | undefined;
+        return record?.publishedRevision;
+      };
+      expect(taskWithPublishedRevision(task)).toBeNull();
+      const updateWithPublishedRevision = (id: number, changes: { publishedRevision: string }) =>
+        (store as unknown as { updateTask: (id: number, changes: { publishedRevision: string }) => Task }).updateTask(
+          id,
+          changes,
+        );
+      const updated = updateWithPublishedRevision(task.id, { publishedRevision: "a".repeat(40) });
+      expect(taskWithPublishedRevision(updated)).toBe("a".repeat(40));
+      expect(taskWithPublishedRevision(store.getTask(task.id))).toBe("a".repeat(40));
+    });
+
+    it("rolls back state, published revision, event, and marker when recording fails", () => {
+      const task = runningTask("pushing");
+      withRawDatabase(dbPath, (raw) => {
+        raw.exec(
+          "CREATE TRIGGER reject_published_event BEFORE INSERT ON events WHEN NEW.type = 'published' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+        );
+      });
+      const eventsBefore = store.listEvents(task.id);
+      const recordPublication = store as unknown as {
+        recordPublication: (
+          taskId: number,
+          revision: string,
+          result: { branch: string; lease: string | null; pushed: string },
+        ) => void;
+      };
+      expect(() =>
+        recordPublication.recordPublication(task.id, "a".repeat(40), {
+          branch: "issue-6",
+          lease: null,
+          pushed: "pushed",
+        }),
+      ).toThrow("event rejected");
+      expect(store.getTask(task.id)).toMatchObject({ state: "pushing", publishedRevision: null });
+      expect(store.listEvents(task.id)).toEqual(eventsBefore);
+      expect(readRunMarker(dbPath, task.id)).toMatchObject({ state: "pushing" });
+    });
+  });
+
   it("closes the database when the file has a newer schema version", () => {
     const newerPath = join(dir, "newer.db");
     withRawDatabase(newerPath, (raw) => {
