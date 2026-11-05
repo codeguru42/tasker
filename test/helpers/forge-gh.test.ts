@@ -26,11 +26,12 @@ describe("the forge gh helper", () => {
     const dir = useTempDir("tasker-forge-gh-head-");
     const token = "head-token-secret";
     const fake = forgeGh(dir, token, []);
+    const env = { ...fake.env, GH_TOKEN: token };
     const setRemoteHead = (head: string) =>
       (fake as typeof fake & { setRemoteHead(head: string): void }).setRemoteHead(head);
     const callHead = (head: string) => {
       setRemoteHead(head);
-      return runFakeGh(fake.env, ["pr", "view", "42", "--json", "headRefOid"]);
+      return runFakeGh(env, ["pr", "view", "42", "--json", "headRefOid"]);
     };
 
     expect(callHead("head-one")).toMatchObject({ status: 0, stdout: "head-one" });
@@ -47,11 +48,12 @@ describe("the forge gh helper", () => {
     const dir = useTempDir("tasker-forge-gh-merge-state-");
     const token = "merge-token-secret";
     const fake = forgeGh(dir, token, []);
+    const env = { ...fake.env, GH_TOKEN: token };
     const setMergeState = (state: string) =>
       (fake as typeof fake & { setMergeState(state: string): void }).setMergeState(state);
     const readState = (state: string) => {
       setMergeState(state);
-      return runFakeGh(fake.env, ["pr", "view", "42", "--json", "state"]);
+      return runFakeGh(env, ["pr", "view", "42", "--json", "state"]);
     };
 
     expect(readState("OPEN")).toMatchObject({ status: 0, stdout: "OPEN" });

@@ -20,6 +20,8 @@ export interface ForgeGh {
   env: NodeJS.ProcessEnv;
   calls(): ForgeGhCall[];
   assertAnswered(): void;
+  setRemoteHead(head: string): void;
+  setMergeState(state: string): void;
 }
 
 export function forgeGh(
@@ -31,13 +33,19 @@ export function forgeGh(
   const binDir = join(dir, "bin");
   const logPath = join(dir, "forge-gh.log");
   const safeEnvNames = envNames.filter((name) => name !== "GH_TOKEN");
+  const currentAnswers = [...answers];
   const tokenMatch = `"$(if [ "\${GH_TOKEN-}" = ${shellQuote(token)} ]; then printf set:true; else printf set:false; fi)"`;
   const cwd = '"set:$PWD"';
-  writeFakeCommand(
-    binDir,
-    "gh",
-    fakeAnswerScript("gh", logPath, answers, [tokenMatch, cwd, ...logEnvItems("gh", safeEnvNames)]),
-  );
+  const extra = [tokenMatch, cwd, ...logEnvItems("gh", safeEnvNames)];
+  const write = () => writeFakeCommand(binDir, "gh", fakeAnswerScript("gh", logPath, currentAnswers, extra));
+  const setAnswer = (args: readonly string[], stdout: string) => {
+    const index = currentAnswers.findIndex((answer) => answer.args.join("\0") === args.join("\0"));
+    const answer: FakeAnswer = { args, stdout };
+    if (index === -1) currentAnswers.unshift(answer);
+    else currentAnswers[index] = answer;
+    write();
+  };
+  write();
   const checks = answerChecks("gh", logPath);
   return {
     env: { PATH: binDir, TASKER_GH_BIN: join(binDir, "gh") },
@@ -49,5 +57,7 @@ export function forgeGh(
         env: call.env,
       })),
     assertAnswered: checks.assertAnswered,
+    setRemoteHead: (head) => setAnswer(["pr", "view", "42", "--json", "headRefOid"], head),
+    setMergeState: (state) => setAnswer(["pr", "view", "42", "--json", "state"], state),
   };
 }
