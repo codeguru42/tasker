@@ -1,4 +1,4 @@
-import type { OpenPullRequest, PrTarget } from "../provider.js";
+import type { CreatePrInput, OpenPullRequest, PrTarget, PullRequest } from "../provider.js";
 import type { GhSession } from "../../github/forge-session.js";
 
 interface GhOpenPullRequest {
@@ -34,14 +34,14 @@ export async function listOpenPrs(
         { cwd: target.cwd, env },
       );
     } catch (error) {
-      throw operationError(error, target.head);
+      throw operationError("list", error, target.head);
     }
 
     let requests: GhOpenPullRequest[];
     try {
       requests = parseOpenPullRequests(response);
     } catch (error) {
-      throw operationError(error, target.head);
+      throw operationError("list", error, target.head);
     }
 
     if (BigInt(requests.length) < limit) {
@@ -50,6 +50,28 @@ export async function listOpenPrs(
         .map(({ number, url, baseRefName }) => ({ number, url, base: baseRefName }));
     }
     limit *= 2n;
+  }
+}
+
+export async function createPr(
+  session: GhSession,
+  target: CreatePrInput,
+  env: NodeJS.ProcessEnv,
+): Promise<PullRequest> {
+  let response: string;
+  try {
+    response = await session.run(
+      ["pr", "create", "--head", target.head, "--base", target.base, "--title", target.title, "--body", target.body],
+      { cwd: target.cwd, env },
+    );
+  } catch (error) {
+    throw operationError("create", error, target.head);
+  }
+
+  try {
+    return pullRequestFromOutput(response);
+  } catch (error) {
+    throw operationError("create", error, target.head);
   }
 }
 
@@ -93,9 +115,34 @@ function parseOpenPullRequests(response: string): GhOpenPullRequest[] {
   });
 }
 
-function operationError(error: unknown, head: string): Error {
+function pullRequestFromOutput(output: string): PullRequest {
+  const identities = new Map<string, PullRequest>();
+  for (const line of output.split(/\r?\n/)) {
+    const matches = line.match(/https?:\/\/[^\s]+/g) ?? [];
+    for (const match of matches) {
+      const url = match.trim().replace(/[.,;:!?]+$/, "");
+      let pathname: string;
+      try {
+        pathname = new URL(url).pathname;
+      } catch {
+        continue;
+      }
+      const numberMatch = /\/pull\/([1-9]\d*)\/?$/.exec(pathname);
+      if (numberMatch === null) continue;
+      const number = Number(numberMatch[1]);
+      if (!Number.isSafeInteger(number)) continue;
+      identities.set(url, { number, url });
+    }
+  }
+
+  if (identities.size === 0) throw new Error("GitHub did not return a pull request URL");
+  if (identities.size > 1) throw new Error("GitHub returned conflicting pull request URLs");
+  return identities.values().next().value!;
+}
+
+function operationError(operation: "create" | "list", error: unknown, head: string): Error {
   const cause = error instanceof Error ? error : new Error(String(error));
   const stderr = "stderr" in cause && typeof cause.stderr === "string" ? cause.stderr.trim() : "";
   const details = stderr !== "" && !cause.message.includes(stderr) ? `: ${stderr}` : "";
-  return new Error(`could not list pull requests for head ${head}: ${cause.message}${details}`, { cause });
+  return new Error(`could not ${operation} pull requests for head ${head}: ${cause.message}${details}`, { cause });
 }

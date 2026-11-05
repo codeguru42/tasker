@@ -9,11 +9,7 @@ import type { FakeAnswer } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const listOpenPrs = untypedListOpenPrs;
-const createPr = untypedCreatePr as (
-  session: ReturnType<typeof createGhSession>,
-  target: CreatePrInput,
-  env: NodeJS.ProcessEnv,
-) => Promise<PullRequest>;
+const createPr = untypedCreatePr;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
