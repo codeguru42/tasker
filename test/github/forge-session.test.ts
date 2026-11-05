@@ -326,6 +326,7 @@ describe("forge command results", () => {
     const error = await failureOf(run(createGhSession("octo"), ["repo", "view"], dir, taskerEnv(fake.env.PATH)), Error);
 
     expect(error.message).toContain("exit code 9");
+    expect(error.cause).toBeInstanceOf(Error);
     expectNoToken(error, forgeToken);
   });
 

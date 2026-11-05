@@ -1,5 +1,6 @@
 import { isSet } from "../config/path.js";
-import { type ChildResult } from "../process/run-child.js";
+import { CommandNotFoundError, type ChildResult } from "../process/run-child.js";
+import { ProgramFileError } from "../process/resolve-program.js";
 import { GhProcessError, runGhProcess } from "./process.js";
 
 export interface GhSession {
@@ -9,10 +10,40 @@ export interface GhSession {
 const forbiddenCommands = new Set(["token", "login", "logout", "switch"]);
 const forbiddenEnvironment = ["TASKER_GH_TOKEN", "TASKER_GH_HOST", "TASKER_GH_REPO"] as const;
 
-class GhLoginError extends Error {
+interface GhSessionErrorFields {
+  subcommand?: string;
+  stdout?: string;
+  stderr?: string;
+  exitCode?: number | null;
+}
+
+class GhSessionError extends Error {
+  readonly subcommand: string;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly exitCode: number | null;
+
+  constructor(message: string, fields: GhSessionErrorFields = {}, cause?: Error) {
+    super(message, cause === undefined ? undefined : { cause });
+    this.name = "GhSessionError";
+    this.subcommand = fields.subcommand ?? "";
+    this.stdout = fields.stdout ?? "";
+    this.stderr = fields.stderr ?? "";
+    this.exitCode = fields.exitCode ?? null;
+  }
+}
+
+class GhLoginError extends GhSessionError {
   constructor(account: string) {
     super(`gh has no login for the account ${account}: run \`gh auth login\` and log in as ${account}`);
     this.name = "GhLoginError";
+  }
+}
+
+class GhInstallError extends GhSessionError {
+  constructor(message: string, cause: Error) {
+    super(`${message}. Install gh or set TASKER_GH_BIN to a runnable file.`, {}, cause);
+    this.name = "GhInstallError";
   }
 }
 
@@ -59,7 +90,10 @@ export function createGhSession(account: string): GhSession {
           args,
           { ...childEnv, GH_TOKEN: accountTokenValue },
           { cwd, programEnv, token: accountTokenValue },
-        ).then((result) => result.stdout),
+        ).then(
+          (result) => redact(result.stdout, accountTokenValue),
+          (error: unknown) => Promise.reject(repositoryError(error, accountTokenValue)),
+        ),
       );
     },
   };
@@ -93,9 +127,86 @@ async function readAccountToken(
     result = await runGhProcess(["auth", "token", "--user", account], childEnv, { programEnv, dropStdout: true });
   } catch (error) {
     if (error instanceof GhProcessError) throw new GhLoginError(account);
+    if (error instanceof CommandNotFoundError || error instanceof ProgramFileError) {
+      throw new GhInstallError(error.message, sanitizeError(error));
+    }
     throw error;
   }
   const accountTokenValue = result.stdout.trim();
   if (accountTokenValue === "") throw new GhLoginError(account);
   return accountTokenValue;
+}
+
+function redact(text: string, token: string): string {
+  return text.split(token).join("***");
+}
+
+function repositoryError(error: unknown, token: string): GhSessionError {
+  if (error instanceof CommandNotFoundError || error instanceof ProgramFileError) {
+    const safeCause = sanitizeError(error, token);
+    return new GhInstallError(safeCause.message, safeCause);
+  }
+  if (error instanceof GhProcessError) {
+    const stdout = redact(error.stdout, token);
+    const stderr = redact(error.stderr, token).trim();
+    const subcommand = redact(error.subcommand, token);
+    const message = redact(error.message, token);
+    const safeCause = sanitizeError(error, token);
+    return new GhSessionError(message, { subcommand, stdout, stderr, exitCode: error.exitCode }, safeCause);
+  }
+  const safeCause = error instanceof Error ? sanitizeError(error, token) : new Error(redact(String(error), token));
+  return new GhSessionError(safeCause.message, {}, safeCause);
+}
+
+function sanitizeError(error: Error, token = "", seen = new Map<object, unknown>()): Error {
+  const prior = seen.get(error);
+  if (prior instanceof Error) return prior;
+  const safe = new Error(redact(error.message, token));
+  seen.set(error, safe);
+  safe.name = redact(error.name, token);
+  if (error.stack !== undefined) safe.stack = redact(error.stack, token);
+  if ("cause" in error) {
+    Object.defineProperty(safe, "cause", {
+      configurable: true,
+      enumerable: false,
+      value: sanitizeValue(error.cause, token, seen),
+      writable: true,
+    });
+  }
+  for (const key of Object.getOwnPropertyNames(error)) {
+    if (key === "name" || key === "message" || key === "stack" || key === "cause") continue;
+    const value = (error as unknown as Record<string, unknown>)[key];
+    Object.defineProperty(safe, key, {
+      configurable: true,
+      enumerable: Object.prototype.propertyIsEnumerable.call(error, key),
+      value:
+        key === "stderr" && typeof value === "string" ? redact(value, token).trim() : sanitizeValue(value, token, seen),
+      writable: true,
+    });
+  }
+  return safe;
+}
+
+function sanitizeValue(value: unknown, token: string, seen: Map<object, unknown>): unknown {
+  if (typeof value === "string") return redact(value, token);
+  if (value === null || typeof value !== "object") return value;
+  const prior = seen.get(value);
+  if (prior !== undefined) return prior;
+  if (value instanceof Error) return sanitizeError(value, token, seen);
+  if (Array.isArray(value)) {
+    const result: unknown[] = [];
+    seen.set(value, result);
+    result.push(...value.map((item) => sanitizeValue(item, token, seen)));
+    return result;
+  }
+  const result: Record<string, unknown> = {};
+  seen.set(value, result);
+  for (const key of Object.getOwnPropertyNames(value)) {
+    try {
+      result[key] = sanitizeValue((value as Record<string, unknown>)[key], token, seen);
+    } catch {
+      result[key] = "[unavailable]";
+    }
+  }
+  return result;
 }
