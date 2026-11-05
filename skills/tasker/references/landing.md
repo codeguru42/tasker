@@ -158,16 +158,25 @@ A fetch that ran still moves the refs of `origin` in the clone, also when the co
 
 ## `tasker finish`
 
-Cleans up a task in the state `landed` or `cleanup_failed`: `tasker finish <issue>`. The task goes through the state
-`finishing` to the state `finished`.
+Cleans up a task in the state `landed` or `cleanup_failed`: `tasker finish <issue>`. The command moves the task to
+`finishing` while it cleans up. It moves the task to `finished` when completion succeeds.
 
-The command removes the worktree of the task. Then it deletes the local task branch. It moves the task to `finishing`
-before the first step, and to `finished` after the last step.
+The command removes the worktree of the task. Then it deletes the local task branch. If the task has a published
+revision, it then deletes the task branch on `origin`. The delete uses a lease on the stored published revision, so it
+cannot delete a branch that moved after tasker published it.
 
 The command prints one line on stdout for each step that ran: `removed the worktree <path>` and
-`deleted the branch <branch>`. A step with nothing to do prints no line. If `issueTracker.updateOnFinish` is `true`, the
-command then marks the issue done on the tracker and prints `marked <issue key> done on the tracker`. At the end, the
-command prints the line `finished <issue key>`.
+`deleted the branch <branch>`. A step with nothing to do prints no line. The remote delete has no success line. After
+remote cleanup, if `issueTracker.updateOnFinish` is `true`, the command marks the issue done on the tracker and prints
+`marked <issue key> done on the tracker`. At the end, the command prints `finished <issue key>`.
+
+If the remote branch moved from the stored published revision, the command stops before the tracker update. It moves the
+task to `cleanup_failed`, prints `finishing failed: <reason>` on stderr, and exits with code 1. The local worktree and
+branch can already be gone. Inspect the branch on `origin`. If you resolve or remove it, run `tasker finish` again.
+
+If another remote deletion error occurs, the command records a `remote_cleanup_warning` event, prints a warning on
+stderr, and continues to the tracker update and completion. This includes a failed read of the remote branch. The task
+can finish while its remote branch remains on `origin`.
 
 If the write to the tracker fails, the exit code stays 0 and the task still goes to `finished`. The command prints the
 warning `warning: cannot mark <issue key> done on the tracker: <error>` on stderr. The error can span two lines. To
@@ -177,11 +186,14 @@ The command stops with exit code 1 and prints the error on stderr in these cases
 and nothing is written. The shared errors of no task, of the wrong state, of the task lock and of the clone lock apply
 to this command.
 
-The task goes to `cleanup_failed` when a step fails after the move to `finishing`. The error is
+The task goes to `cleanup_failed` when local cleanup fails after the move to `finishing`. The error is
 `finishing failed: <reason>`. The command prints the same error on stderr and stops with exit code 1. For example, git
-refuses to remove a worktree with uncommitted changes.
+refuses to remove a worktree with uncommitted changes. A failure to record completion after external cleanup also moves
+the task to `cleanup_failed`; its error names the completed cleanup and the failed completion record.
 
-To recover, fix the cause and run `tasker finish` again. A second run finishes the steps that are left.
+To recover from an interrupted finish, run `tasker resume`. Resume returns the task to `landed` and runs finish again.
+To recover from a cleanup failure, fix the cause and run `tasker finish` again. A second run skips local or remote
+resources that are already gone.
 
 The command keeps the files under `artifacts/`. A crash during the command leaves the task in `finishing` with its run
 marker. The next command that reads the task moves it to `interrupted`.
