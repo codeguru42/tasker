@@ -703,7 +703,7 @@ feedback recorded when the first run started. If the restore fails, the task sta
 assistant starts. The repo lock covers the restore, and the caller releases it before the repeated reopen takes its
 locks.
 
-A failed reopen has no `retry` row. `tasker retry` does not restart it.
+See [Retry](#retry) for recovery after a failed reopen.
 
 ## Merge
 
