@@ -41,8 +41,8 @@ After the task enters `refining`, a fetch, resync or completion-record failure m
 assistant, and prints `reopening failed: <reason>` on stderr. If Git moved the task branch but the completion record
 failed, the error also gives the resulting HEAD. An assistant or plan failure moves the task to `failed` and reports the
 refining error. A stopped run can continue through `tasker resume` or eligible `tasker approve-credits`; both restore an
-unfinished resync before they run reopen again with the recorded feedback. `tasker retry` has no row for a failed
-reopen.
+unfinished resync before they run reopen again with the recorded feedback. See [tasker retry](recovery.md#tasker-retry)
+for recovery after a failed reopen.
 
 ## `tasker push`
 
