@@ -102,6 +102,9 @@ const RESUME_TABLES: OriginTables<ResumeRow> = {
     merging: {
       rows: { accepted: { target: "accepted", next: "merge", clearReview: false } },
     },
+    pushing: {
+      rows: { accepted: { target: "accepted", next: "push", clearReview: false } },
+    },
   },
 };
 

@@ -18,7 +18,16 @@ import { taskInState } from "./task-state.js";
 // The command that runs after the move of a retry. The three refine values run nothing: the user gives the
 // feedback again, or acts on the findings again.
 export type RetryNext =
-  "start" | "plan" | "refine" | "refine-findings" | "review-feedback" | "execute" | "verify" | "review" | "merge";
+  | "start"
+  | "plan"
+  | "refine"
+  | "refine-findings"
+  | "review-feedback"
+  | "execute"
+  | "verify"
+  | "review"
+  | "merge"
+  | "push";
 
 export interface RetryRequest {
   config: Config;
@@ -53,6 +62,7 @@ const RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   executing: { target: "approved", next: "execute", clears: { execute: true } },
   verifying: { target: "executed", next: "verify", clears: {} },
   reviewing: { target: "awaiting_work_review", next: "review", clears: { review: true } },
+  accepted: { target: "accepted", next: "push", clears: {} },
 };
 
 // The rows of a task that failed in refining: the origin of the refine (the state that the task left when the last
@@ -77,6 +87,7 @@ const RETRY_TABLES: OriginTables<RetryRow> = {
     awaiting_quota_approval: { rows: RETRY_TABLE },
     interrupted: { rows: RETRY_TABLE },
     merging: { rows: { accepted: { target: "accepted", next: "merge", clears: {} } } },
+    pushing: { rows: { accepted: { target: "accepted", next: "push", clears: {} } } },
   },
 };
 
