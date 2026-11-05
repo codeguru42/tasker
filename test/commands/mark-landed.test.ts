@@ -101,25 +101,25 @@ describe("tasker mark-landed", () => {
     expect(result).toEqual({ code: 0, out: `marked ${KEY} landed\n`, err: "" });
   });
 
+  it("marks a sparse accepted task with no branch", async () => {
+    const fixture = await useStartFixture();
+    seedAcceptedTask(fixture);
+
+    expect((await runMarkLanded()).code).toBe(0);
+  });
+
+  it("marks a sparse accepted task with no base", async () => {
+    const fixture = await useStartFixture();
+    seedAcceptedTask(fixture, { branch: "tasker/five" });
+
+    expect((await runMarkLanded()).code).toBe(0);
+  });
+
   describe("refusals", () => {
     it("refuses a task in another state", async () => {
       const work = await useWorkReviewTask();
 
       await expectRefused(work, `${wrongStateError("awaiting_work_review", KEY, "mark-landed", NEEDS)}\n`);
-    });
-
-    it("marks a sparse accepted task with no branch", async () => {
-      const fixture = await useStartFixture();
-      seedAcceptedTask(fixture);
-
-      expect((await runMarkLanded()).code).toBe(0);
-    });
-
-    it("marks a sparse accepted task with no base", async () => {
-      const fixture = await useStartFixture();
-      seedAcceptedTask(fixture, { branch: "tasker/five" });
-
-      expect((await runMarkLanded()).code).toBe(0);
     });
 
     it("fails at once when another process holds the task lock", async () => {
