@@ -129,7 +129,12 @@ async function readAccountToken(
   try {
     result = await runGhProcess(["auth", "token", "--user", account], childEnv, { programEnv, dropStdout: true });
   } catch (error) {
-    if (error instanceof GhProcessError) throw new GhLoginError(account);
+    if (error instanceof GhProcessError) {
+      if (error.exitCode === null) {
+        throw new GhSessionError(error.message, { subcommand: error.subcommand, exitCode: null });
+      }
+      throw new GhLoginError(account);
+    }
     if (error instanceof CommandNotFoundError || error instanceof ProgramFileError) {
       throw new GhInstallError(error.message, sanitizeError(error));
     }
