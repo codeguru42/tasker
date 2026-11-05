@@ -135,7 +135,8 @@ only when no finding is left unhandled.
 ## Landing
 
 `accept` goes to `accepted`. The command you run picks how the task lands: `merge` for the trunk path, or `push` and
-`open-pr` for the pull request path. `mark-landed` is for work that landed outside tasker.
+`open-pr` for the pull request path. `mark-landed` records an operator declaration that work in `accepted`, `pushed` or
+`in_peer_review` landed outside tasker. It moves the task to `landed` without Git or forge queries.
 
 ### Trunk path
 
@@ -158,9 +159,12 @@ flowchart LR
 ```
 
 - `merge` from `accepted` fast-forwards the base branch on `origin` to the task sha, with one push. If the push is not a
-  fast-forward, the task fails from `merging`. `merge` and `mark-landed` refuse a stacked task until each parent in its
-  chain landed and the task moved (see [the stacked-task guards](dev/workspaces.md#stacked-task)). `merge` also refuses
-  a base that is a local branch of the tasker clone.
+  fast-forward, the task fails from `merging`. `merge` refuses a stacked task until each parent in its chain landed and
+  the task moved (see [the stacked-task guards](dev/workspaces.md#stacked-task)). `merge` also refuses a base that is a
+  local branch of the tasker clone.
+- `mark-landed` takes the no-wait task lock, reads the task state again under that lock, then records one
+  `marked_landed` event with `{ from, to: "landed" }` and moves the task to `landed` in one transaction. It takes no
+  repo lock and does not inspect branch, base or parent metadata.
 - tasker does not wait for CI. The CI wait is a step of the landing process of each project, outside the state machine.
   There is no `waiting_for_ci` or `ci_failed` state.
 - `finish` runs under `finishing`. It cleans up the task, then marks the issue done when `updateOnFinish` is set.
