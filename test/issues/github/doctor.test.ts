@@ -84,6 +84,17 @@ describe("gh doctor checks", () => {
       });
     });
 
+    it("reports a missing selected gh executable", async () => {
+      const fake = fakeGh(dir, {}, [{ args: versionArgs, stdout: "gh version 2.40.0\n" }]);
+      const result = await doctor.ghVersionCheck().run({ ...fake.env, TASKER_GH_BIN: "missing-gh" });
+      expect(result).toEqual({
+        status: "error",
+        detail: "missing-gh was not found on PATH",
+        remediation: "Fix TASKER_GH_BIN or install a compatible gh executable named missing-gh.",
+      });
+      expect(fake.calls()).toEqual([]);
+    });
+
     it("gives the timeout result when gh is slow", async () => {
       const fake = fakeGh(dir, {}, [{ args: versionArgs, stdout: "x", delaySeconds: 5 }]);
       const start = Date.now();
