@@ -162,9 +162,6 @@ flowchart LR
   fast-forward, the task fails from `merging`. `merge` refuses a stacked task until each parent in its chain landed and
   the task moved (see [the stacked-task guards](dev/workspaces.md#stacked-task)). `merge` also refuses a base that is a
   local branch of the tasker clone.
-- `mark-landed` takes the no-wait task lock, reads the task state again under that lock, then records one
-  `marked_landed` event with `{ from, to: "landed" }` and moves the task to `landed` in one transaction. It takes no
-  repo lock and does not inspect branch, base or parent metadata.
 - tasker does not wait for CI. The CI wait is a step of the landing process of each project, outside the state machine.
   There is no `waiting_for_ci` or `ci_failed` state.
 - `finish` runs under `finishing`. It cleans up the task, then marks the issue done when `updateOnFinish` is set.
