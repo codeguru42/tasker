@@ -686,10 +686,10 @@ Tasker reads the plan back from its plan file. As a result, the revision does no
 the assistant still remembers.
 
 The context block says why the user asks for a revision and what tasker knows about the work. One template serves each
-state, because each refine fills both blocks. The context holds one plain line, the open findings of a review, the line
-of the feedback of the user on the committed work, the origin and the error of a failure, or, for reopen, that a bug was
-found after acceptance and the user needs a new complete plan revision. The feedback holds the words of the user or
-`None.`.
+state, because each refine fills both blocks. The context holds one plain line, the open findings of a review, the
+feedback line from the user about the committed work, or the origin and error of a failure. For reopen, it says that a
+bug was found after acceptance and that the user needs a new complete plan revision. The feedback holds the words of the
+user or `None.`.
 
 The branch commits go in the prompt. An execute run is a separate session, so the refine session has not seen them.
 Their work is done, and the revision plans only the work that is still needed.
