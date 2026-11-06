@@ -255,32 +255,56 @@ of the task lock belong to this group:
 
 ## `tasker abort`
 
-Removes the worktree and the local task branch of an active task, and moves the task to the state `cancelled`:
-`tasker abort <issue>`.
+Cancels an active task and removes its worktree and local task branch: `tasker abort <issue>`. The command makes sure
+that the task is active, no run is in progress, and the worktree is clean before it changes anything. `--force` allows
+it to discard uncommitted work.
 
-`--force` discards the uncommitted changes of the worktree before the abort.
+After the guards pass, the command takes the repo lock. It deletes the published task branch on origin before it changes
+local work, the tracker or the task row. The command uses the stored published revision for this deletion. It then
+discards uncommitted work when you pass `--force`, removes the worktree and local branch, runs the tracker step, and
+moves the task to `cancelled`.
 
-The command prints one line for each step that ran, then `cancelled <issue>`. If the run of the task is dead, the notes
-of the dead run come on stderr before the steps. See [A dead run](../SKILL.md#a-dead-run). The steps are the discard of
-the uncommitted changes (only with `--force`), the removal of the worktree and the deletion of the branch. Then comes
-the tracker step. For a GitHub repo, the step runs only when `issueTracker.updateOnStart` is `true` and the repo sets
-`inProgressLabel`. It removes the in-progress label from the issue and prints
-`cleared the in-progress marker of <issue> on the tracker`. If this write fails, stderr gets
-`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. For a Jira repo, the step runs only
-when `issueTracker.updateOnStart` is `true`, the repo sets `abortStatus` and this task marked the issue in progress. It
-moves the issue to that status and prints `moved <issue> to the status "<status>" on the tracker`. If this write fails,
-stderr gets `warning: cannot move <issue> to the status "<status>" on the tracker: <error>`. In each other case, the
-step makes no call and prints no line. The assignee stays. After a failed write, the task still goes to `cancelled` and
-the command exits with 0. A step that has nothing to do prints no line. The files under `artifacts/` stay.
+When the command deletes the remote branch, it prints `deleted <branch> on origin`. It prints no deletion line when the
+branch is already gone. When the task has no stored branch or no stored publication revision, it skips remote deletion.
+If you pass `--keep-remote`, the command skips remote deletion and prints
+`kept <branch> on origin; to delete it: git push origin --delete <branch>` when the task has a stored branch. It prints
+no keep hint when the task has no stored branch. After the steps, it prints `cancelled <issue>`.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. The shared errors of the task lock and
-of the clone lock belong to this list:
+If remote deletion fails, the command exits with code 1 and writes an error to stderr. A moved branch gives this exact
+error:
 
-- The task is `finished` or `cancelled`. The error names the state. A task in any other state, `failed` included, can be
-  aborted.
+`cannot abort <issue key>: the task branch <branch> moved on origin: tasker published <published>, origin has <actual>; someone else pushed to it; use --keep-remote to keep that branch`
+
+Any other remote deletion error gives this exact form:
+
+`cannot abort <issue key>: cannot delete the task branch <branch> on origin: <reason>; run tasker abort <issue key> again, or delete the branch from a clone of your own`
+
+For either error, the command leaves the task row, publication, events, run marker, worktree, local branch and tracker
+state unchanged. Use `--keep-remote` to cancel while keeping the remote branch.
+
+If remote deletion succeeds but a later local step fails, the command keeps the `deleted <branch> on origin` line on
+stdout and writes the later error to stderr. The task stays active. Run `tasker abort <issue>` again to finish cleanup.
+The second run accepts that the remote branch is already gone and continues with the local steps.
+
+The command exits with code 1 and changes nothing on these refusals. The shared errors of the task lock and clone lock
+belong to this list:
+
+- The task is `finished` or `cancelled`. The error names the state. A task in any other state, including `failed`, can
+  be aborted.
 - The task has a run in progress. The error is
-  `the task of <issue> has a run in progress in <state> (tasker process <pid>); wait for it, or stop that process`. The
-  command changes nothing.
+  `the task of <issue> has a run in progress in <state> (tasker process <pid>); wait for it, or stop that process`.
 - The worktree has uncommitted changes and you did not pass `--force`. The error lists each change, then says
-  `tasker abort --force discards them`. Commit the changes or pass `--force`.
-- A step fails. The task keeps its state, so run the command again. The second run finishes the steps that are left.
+  `tasker abort --force discards them`.
+
+If you pass `--force`, abort discards the changes before it removes the worktree. If a tracker write fails, the command
+prints its warning, still moves the task to `cancelled` and exits with code 0. For a GitHub repo, the tracker step runs
+only when `issueTracker.updateOnStart` is `true` and the repo sets `inProgressLabel`. It removes the in-progress label
+and prints `cleared the in-progress marker of <issue> on the tracker`. If this write fails, stderr gets
+`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. For a Jira repo, the step runs only
+when `issueTracker.updateOnStart` is `true` and the repo sets `abortStatus`. This task must also have marked the issue
+in progress. The command moves the issue to that status and prints
+`moved <issue> to the status "<status>" on the tracker`. If this write fails, stderr gets
+`warning: cannot move <issue> to the status "<status>" on the tracker: <error>`. In each other case, the step makes no
+call and prints no line. The assignee stays. A step that has nothing to do prints no line. The files under `artifacts/`
+stay. If the run of the task is dead, the notes of the dead run come on stderr before the steps. See
+[A dead run](../SKILL.md#a-dead-run).
