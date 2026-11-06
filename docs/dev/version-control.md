@@ -17,6 +17,12 @@ maps names only and adds no behavior.
 - The interface owns the types of its operations. The git modules import them from the interface. No module re-exports
   them.
 - The doctor check type stays in `src/doctor/`, because it is not a version control type.
+- `defaultBase` is used by `tasker open-pr`, separate from `resolveBase`. It fetches `origin` into the clone, then reads
+  the remote `HEAD` with `git ls-remote --symref`. It returns the branch named by `refs/heads/<branch>`. A failed fetch,
+  failed HEAD query, or empty or unresolved symbolic `HEAD` is an error; it does not fall back to a fetched branch such
+  as `origin/main`. This resolution does not use `defaultBaseBranch`, the learned base or the task's stored base. The
+  task-base resolver can use those values to choose a task base. `tasker open-pr` instead compares the stored task base
+  with the remote default and refuses a mismatch.
 - Reconcile does not fetch. [The fetch](workspaces.md#the-fetch) gives the rule.
 - Push guard rule: a provider that cannot guard a push refuses to provision, and it never runs with a weaker guard. The
   git provider guards a push with the pre-push hook that provision writes (see [Push guard](#push-guard)).
