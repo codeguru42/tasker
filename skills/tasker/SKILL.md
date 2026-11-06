@@ -254,6 +254,10 @@ Lands the work of a task in `accepted` on the base branch of `origin`. See
 
 Publishes the task branch of a task in `accepted` to `origin`. See [the reference](references/landing.md#tasker-push).
 
+### `tasker open-pr`
+
+Opens or adopts a pull request for a task in `pushed`. See [the reference](references/landing.md#tasker-open-pr).
+
 ### `tasker mark-landed`
 
 Records that the work of a task in `accepted`, `pushed` or `in_peer_review` landed outside tasker. See

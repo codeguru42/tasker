@@ -70,7 +70,8 @@ describe("tasker open-pr", () => {
     expect(output.out.join("")).toBe(`adopted PR #42: ${url}\nstate: in_peer_review\n`);
     expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
     expect(fake.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs]);
-    expect(fake.calls().every(({ tokenMatches }) => tokenMatches)).toBe(true);
+    expect(fake.calls()[0]?.tokenMatches).toBe(false);
+    expect(fake.calls()[1]?.tokenMatches).toBe(true);
     expect(JSON.stringify(fake.calls())).not.toContain(TOKEN);
   });
 
@@ -125,7 +126,9 @@ describe("tasker open-pr", () => {
     expect(result).toEqual({ code: 0, out: `opened PR #43: ${url}\nstate: in_peer_review\n`, err: "" });
     expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 43 });
     expect(fake.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs, createArgs]);
-    expect(fake.calls().every(({ tokenMatches }) => tokenMatches)).toBe(true);
+    expect(fake.calls()[0]?.tokenMatches).toBe(false);
+    expect(fake.calls()[1]?.tokenMatches).toBe(true);
+    expect(fake.calls()[2]?.tokenMatches).toBe(true);
     expect(JSON.stringify(fake.calls())).not.toContain(TOKEN);
   });
 
@@ -159,7 +162,8 @@ describe("tasker open-pr", () => {
     expect(result.code).toBe(1);
     expect(result.err).toContain("lookup failed");
     expect(result.err).not.toContain(TOKEN);
-    expect(fake.calls().every(({ tokenMatches }) => tokenMatches)).toBe(true);
+    expect(fake.calls()[0]?.tokenMatches).toBe(false);
+    expect(fake.calls()[1]?.tokenMatches).toBe(true);
     expect(JSON.stringify(fake.calls())).not.toContain(TOKEN);
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
@@ -167,10 +171,19 @@ describe("tasker open-pr", () => {
 
   it("refuses a task without forge configuration", async () => {
     const accepted = await useAcceptedTask();
+    await copyCloneBranchToOrigin({
+      origin: accepted.origin.path,
+      clone: accepted.clone,
+      branch: accepted.task.branch!,
+      env: accepted.env,
+    });
+    withDataRootStore(accepted.dataRoot, (store) =>
+      store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision }),
+    );
     const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
 
     expect(result.code).toBe(1);
-    expect(result.err).toContain(`repo "tasker" has no forge configuration`);
-    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("accepted");
+    expect(result.err).toContain(`repo "${REPO}" has no forge configuration`);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("pushed");
   });
 });

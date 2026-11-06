@@ -9,6 +9,7 @@ import { installSkills } from "./install-skills.js";
 import { markLanded } from "./mark-landed.js";
 import { updateBranch } from "./update-branch.js";
 import { merge } from "./merge.js";
+import { openPr } from "./open-pr.js";
 import { push } from "./push.js";
 import { model } from "./model.js";
 import { show } from "./show.js";
@@ -57,6 +58,7 @@ export const commands: RegisterCommand[] = [
   accept,
   merge,
   push,
+  openPr,
   markLanded,
   updateBranch,
   finish,
