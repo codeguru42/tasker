@@ -2,6 +2,37 @@ import { describe, expect, it } from "vitest";
 import { ConfigError } from "../../src/config/schema.js";
 import { GitError } from "../../src/vcs/git/run.js";
 import { configIssuesOf, failureOf, thrownBy } from "./errors.js";
+// @ts-expect-error The shared export is added in the next commit.
+import { diagnosticStrings } from "./errors.js";
+
+function callDiagnosticStrings(value: unknown): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return diagnosticStrings(value);
+}
+
+describe("diagnosticStrings", () => {
+  it("collects strings from nested own properties", () => {
+    expect(callDiagnosticStrings({ outer: "first", nested: { inner: "second" } })).toEqual(["first", "second"]);
+  });
+
+  it("stops when objects form a cycle", () => {
+    const value: { text: string; next?: unknown } = { text: "kept" };
+    value.next = value;
+
+    expect(callDiagnosticStrings(value)).toEqual(["kept"]);
+  });
+
+  it("skips a property whose getter throws", () => {
+    const value = { safe: "kept" };
+    Object.defineProperty(value, "broken", {
+      get() {
+        throw new Error("getter failed");
+      },
+    });
+
+    expect(callDiagnosticStrings(value)).toEqual(["kept"]);
+  });
+});
 
 describe("failureOf", () => {
   it("gives the error of a rejected promise", async () => {
