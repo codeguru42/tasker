@@ -39,6 +39,17 @@ import {
 } from "./git.js";
 import { useTempDir } from "./temp.js";
 
+function callCaptureRejectedRemoteTaskBranchDeletion(started: Awaited<ReturnType<typeof usePublishedStartedTask>>) {
+  return captureRejectedRemoteTaskBranchDeletion({
+    origin: started.origin,
+    dataRoot: started.dataRoot,
+    repoKey: started.repoKey,
+    env: started.env,
+    branch: started.task.branch!,
+    publishedRevision: started.publishedRevision,
+  });
+}
+
 describe("makeGitOrigin", () => {
   let origin: GitOrigin;
 
@@ -177,18 +188,14 @@ describe("rejectOriginPush", () => {
 describe("captureRejectedRemoteTaskBranchDeletion", () => {
   it("returns the provider error and leaves the published branch and task intact", async () => {
     const started = await usePublishedStartedTask();
-    const branch = started.task.branch;
-    if (branch === null) throw new Error("the published task has no branch");
+    const branch = started.task.branch!;
     const published = started.publishedRevision;
-    const reason = await captureRejectedRemoteTaskBranchDeletion(started);
+    const taskBefore = latestTaskOf(started.dataRoot, started.key);
+    const reason = await callCaptureRejectedRemoteTaskBranchDeletion(started);
 
     expect(reason).toContain("transport unavailable");
     expect(await started.origin.branchHead(branch)).toBe(published);
-    expect(latestTaskOf(started.dataRoot, started.key)).toMatchObject({
-      id: started.task.id,
-      branch,
-      publishedRevision: published,
-    });
+    expect(latestTaskOf(started.dataRoot, started.key)).toStrictEqual(taskBefore);
   });
 });
 
