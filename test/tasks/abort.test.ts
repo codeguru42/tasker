@@ -12,6 +12,7 @@ import { startTask } from "../../src/tasks/start.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
 import { AUTH_STATUS_ARGS, fakeAcli, jiraRefOf, MEASURED_AUTH_STATUS } from "../helpers/fake-acli.js";
+import { copyCloneBranchToOrigin } from "../helpers/git.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -21,7 +22,14 @@ import {
   readRunMarker,
   withDataRootStore,
 } from "../helpers/store.js";
-import { taskWorkspaceState, useStartFixture, useStartedTask, type StartedTask } from "../helpers/task-fixtures.js";
+import {
+  taskRefOf,
+  taskWorkspaceState,
+  usePublishedStartedTask,
+  useStartFixture,
+  useStartedTask,
+  type StartedTask,
+} from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
 // Calls abortTask() with the defaults of a test. The values of request win.
@@ -79,6 +87,55 @@ async function abortJiraTask(
 }
 
 describe("abortTask", () => {
+  it("deletes a published task branch before local cleanup", async () => {
+    const started = await usePublishedStartedTask();
+    const lines: string[] = [];
+
+    const cancelled = await withDataRootStore(started.dataRoot, (store) =>
+      abortWith(store, {
+        config: started.config,
+        ref: taskRefOf(started),
+        taskId: started.task.id,
+        report: (line) => lines.push(line),
+      }),
+    );
+
+    expect(await started.origin.branchHead(started.branch)).toBeUndefined();
+    expect(lines).toEqual([
+      `deleted ${started.branch} on origin`,
+      `removed the worktree ${started.worktree}`,
+      `deleted the branch ${started.branch}`,
+    ]);
+    expect(cancelled.state).toBe("cancelled");
+  });
+
+  it("does not delete a branch when the task has no publication record", async () => {
+    const started = await useStartedTask();
+    await copyCloneBranchToOrigin({
+      origin: started.origin.path,
+      clone: started.clone,
+      branch: started.branch,
+      env: started.env,
+    });
+    const task = latestTaskOf(started.dataRoot, started.key);
+    withDataRootStore(started.dataRoot, (store) => store.updateTask(task.id, { publishedRevision: null }));
+    const remoteTip = await started.origin.branchHead(started.branch);
+    const lines: string[] = [];
+
+    await withDataRootStore(started.dataRoot, (store) =>
+      abortWith(store, {
+        config: started.config,
+        ref: taskRefOf(started),
+        taskId: task.id,
+        report: (line) => lines.push(line),
+      }),
+    );
+
+    expect(remoteTip).toBeTruthy();
+    expect(await started.origin.branchHead(started.branch)).toBe(remoteTip);
+    expect(lines.some((line) => line.startsWith("deleted ") && line.endsWith(" on origin"))).toBe(false);
+  });
+
   it("removes the worktree when the data root goes through a symlink", async () => {
     const fixture = await useStartFixture();
     const dataRoot = join(useTempDir("tasker-link-"), "link");

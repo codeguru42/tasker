@@ -12,7 +12,8 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand } from "../helpers/cli.js";
 import { githubLabelsAfter, trackerWriteCalls } from "../helpers/fake-gh.js";
-import { localBranches } from "../helpers/git.js";
+import { gitBeforePushEnv, localBranches } from "../helpers/git.js";
+import { realCommandPath } from "../helpers/fake-commands.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { deadRunNote } from "../helpers/state-commands.js";
 import {
@@ -32,23 +33,113 @@ import {
   replaceStartGh,
   taskWorkspaceState,
   trackerRepo,
+  usePublishedStartedTask,
   useStartFixture,
   useStartedTask,
   fixtureTrackerAnswer,
   fixtureTrackerCall,
 } from "../helpers/task-fixtures.js";
+import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
 
+// Runs tasker abort for the default issue of a command fixture.
+function runAbort(...args: string[]): Promise<{ code: number; out: string; err: string }> {
+  return runCommand(abort, "abort", ...args);
+}
+
 describe("abort", () => {
+  it("deletes the published branch before discard, cleanup, and tracker writes", async () => {
+    const started = await usePublishedStartedTask({
+      repo: trackerRepo({ updateOnStart: true, inProgressLabel: "in progress" }),
+      ghAnswers: [
+        fixtureTrackerAnswer("assign"),
+        fixtureTrackerAnswer("inProgress"),
+        fixtureTrackerAnswer("clearInProgress"),
+      ],
+    });
+    writeFileSync(join(started.worktree, "README.md"), "changed\n");
+
+    const result = await runAbort(KEY, "--force");
+
+    expect(result).toEqual({
+      code: 0,
+      out: `deleted ${started.branch} on origin\ndiscarded the uncommitted changes of ${canonicalPath(started.worktree)}\nremoved the worktree ${canonicalPath(started.worktree)}\ndeleted the branch ${started.branch}\ncleared the in-progress marker of ${KEY} on the tracker\ncancelled ${KEY}\n`,
+      err: "",
+    });
+    expect(await started.origin.branchHead(started.branch)).toBeUndefined();
+    expect(trackerWriteCalls(started.gh).at(-1)).toEqual(fixtureTrackerCall("clearInProgress"));
+  });
+
+  it("accepts an already absent published branch", async () => {
+    const started = await usePublishedStartedTask();
+    await runGit(["update-ref", "-d", `refs/heads/${started.branch}`], {
+      gitDir: started.origin.path,
+      env: started.env,
+    });
+
+    const result = await runAbort(KEY);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `removed the worktree ${canonicalPath(started.worktree)}\ndeleted the branch ${started.branch}\ncancelled ${KEY}\n`,
+      err: "",
+    });
+    expect(await started.origin.branchHead(started.branch)).toBeUndefined();
+  });
+
+  it("finishes when the published branch disappears during deletion", async () => {
+    const started = await usePublishedStartedTask();
+    const env = gitBeforePushEnv(useTempDir("tasker-abort-delete-"), process.env, [
+      realCommandPath("git"),
+      "--git-dir",
+      started.origin.path,
+      "update-ref",
+      "-d",
+      `refs/heads/${started.branch}`,
+    ]);
+    useProcessEnv({ PATH: env.PATH });
+
+    const result = await runAbort(KEY);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `removed the worktree ${canonicalPath(started.worktree)}\ndeleted the branch ${started.branch}\ncancelled ${KEY}\n`,
+      err: "",
+    });
+    expect(await started.origin.branchHead(started.branch)).toBeUndefined();
+  });
+
+  it("keeps local work after deletion succeeds and finishes on a repeat abort", async () => {
+    const started = await usePublishedStartedTask();
+    await runGit(["worktree", "lock", "--", started.worktree], { gitDir: started.clone, env: started.env });
+
+    const first = await runAbort(KEY);
+
+    expect(first.code).toBe(1);
+    expect(first.out).toBe(`deleted ${started.branch} on origin\n`);
+    expect(first.err).not.toBe("");
+    expect(await started.origin.branchHead(started.branch)).toBeUndefined();
+    expect(await taskWorkspaceState(started)).toMatchObject({ state: "workspace_ready", worktree: true, branch: true });
+
+    await runGit(["worktree", "unlock", "--", started.worktree], { gitDir: started.clone, env: started.env });
+    const second = await runAbort(KEY);
+
+    expect(second).toEqual({
+      code: 0,
+      out: `removed the worktree ${canonicalPath(started.worktree)}\ndeleted the branch ${started.branch}\ncancelled ${KEY}\n`,
+      err: "",
+    });
+  });
+
   it("cancels a task with a clean worktree, and keeps artifacts and origin", async () => {
     const started = await useStartedTask();
     expect(started.result.code).toBe(0);
     const originBefore = await localBranches(started.origin.path, started.env);
     const seeded = seedQuotaEvent(started.dataRoot, REPO);
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result).toEqual({
       code: 0,
@@ -74,7 +165,7 @@ describe("abort", () => {
       { issueKey: KEY, repoKey: REPO, state: "provisioning", at: "2026-01-01T00:00:00.000Z" },
     ]);
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result).toEqual({ code: 0, out: `cancelled ${KEY}\n`, err: "" });
     const state = withDataRootStore(fixture.dataRoot, (store) => store.findLatestTask(REPO, KEY)?.state);
@@ -92,7 +183,7 @@ describe("abort", () => {
     const marker = readRunMarker(dbPath, task.id);
     const events = eventsOf(fixture.dataRoot, KEY);
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result).toEqual({
       code: 1,
@@ -111,7 +202,7 @@ describe("abort", () => {
     ]);
     seedDeadRun(fixture.dataRoot, task.id, "planning");
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result).toEqual({
       code: 0,
@@ -126,7 +217,7 @@ describe("abort", () => {
     const started = await useStartedTask({ repo: { bootstrap: { commands: ["exit 3"], env: [] } } });
     expect((await taskWorkspaceState(started)).state).toBe("failed");
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result).toEqual({
       code: 0,
@@ -140,7 +231,7 @@ describe("abort", () => {
     const fixture = await useStartFixture();
     seedTasks(fixture.dataRoot, [{ issueKey: KEY, repoKey: REPO, state, at: "2026-01-01T00:00:00.000Z" }]);
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result).toEqual({
       code: 1,
@@ -155,7 +246,7 @@ describe("abort", () => {
   it("fails for an issue with no task", async () => {
     const fixture = await useStartFixture();
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result).toEqual({
       code: 1,
@@ -178,7 +269,7 @@ describe("abort", () => {
       const started = await dirtyTask();
       const before = await taskWorkspaceState(started);
 
-      const result = await runCommand(abort, "abort", KEY);
+      const result = await runAbort(KEY);
 
       expect(result).toEqual({
         code: 1,
@@ -195,7 +286,7 @@ describe("abort", () => {
       const started = await dirtyTask();
       const real = canonicalPath(started.worktree);
 
-      const result = await runCommand(abort, "abort", KEY, "--force");
+      const result = await runAbort(KEY, "--force");
 
       expect(result).toEqual({
         code: 0,
@@ -215,7 +306,7 @@ describe("abort", () => {
         repo: trackerRepo({ updateOnStart: false, inProgressLabel: "in progress" }),
       });
 
-      const result = await runCommand(abort, "abort", KEY);
+      const result = await runAbort(KEY);
 
       expect(result.code).toBe(0);
       expect(result.out).not.toContain("in-progress marker");
@@ -229,7 +320,7 @@ describe("abort", () => {
         ghAnswers: [fixtureTrackerAnswer("assign")],
       });
 
-      const result = await runCommand(abort, "abort", KEY);
+      const result = await runAbort(KEY);
 
       expect(result.code).toBe(0);
       expect(trackerWriteCalls(started.gh)).toEqual([fixtureTrackerCall("assign")]);
@@ -245,7 +336,7 @@ describe("abort", () => {
         ],
       });
 
-      const result = await runCommand(abort, "abort", KEY);
+      const result = await runAbort(KEY);
 
       expect(result).toEqual({
         code: 0,
@@ -274,7 +365,7 @@ describe("abort", () => {
         ],
       });
 
-      const result = await runCommand(abort, "abort", KEY);
+      const result = await runAbort(KEY);
 
       expect(result.code).toBe(0);
       const event = eventDataOf(started.dataRoot, KEY, "tracker_update").at(-1) as { error: string };
@@ -301,7 +392,7 @@ describe("abort", () => {
           fixtureTrackerAnswer("clearInProgress"),
         ],
       });
-      await runCommand(abort, "abort", KEY);
+      await runAbort(KEY);
       expect(trackerWriteCalls(started.gh)).toEqual([
         fixtureTrackerCall("assign"),
         fixtureTrackerCall("inProgress"),
@@ -325,7 +416,7 @@ describe("abort", () => {
       rmSync(started.worktree, { recursive: true, force: true });
       expect(await taskWorkspaceState(started)).toMatchObject({ worktree: false, listed: true });
 
-      const result = await runCommand(abort, "abort", KEY);
+      const result = await runAbort(KEY);
 
       expect(result).toEqual({
         code: 0,
@@ -344,7 +435,7 @@ describe("abort", () => {
       const started = await useStartedTask();
       await removeTaskWorktree({ clone: started.clone, env: started.env, path: started.worktree });
 
-      const result = await runCommand(abort, "abort", KEY);
+      const result = await runAbort(KEY);
 
       expect(result).toEqual({
         code: 0,
@@ -359,7 +450,7 @@ describe("abort", () => {
       await removeTaskWorktree({ clone: started.clone, env: started.env, path: started.worktree });
       await deleteTaskBranch({ clone: started.clone, env: started.env, branch: started.branch });
 
-      const result = await runCommand(abort, "abort", KEY);
+      const result = await runAbort(KEY);
 
       expect(result).toEqual({ code: 0, out: `cancelled ${KEY}\n`, err: "" });
       expect((await taskWorkspaceState(started)).state).toBe("cancelled");
@@ -371,7 +462,7 @@ describe("abort", () => {
     await runGit(["worktree", "lock", "--", started.worktree], { gitDir: started.clone, env: started.env });
     const before = await taskWorkspaceState(started);
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result.code).toBe(1);
     expect(result.out).toBe("");
@@ -387,7 +478,7 @@ describe("abort", () => {
     const holder = startLockHolder(createDataRoot(started.dataRoot).database, name);
     await holder.attempt;
 
-    const result = await runCommand(abort, "abort", KEY);
+    const result = await runAbort(KEY);
 
     expect(result.code).toBe(1);
     expect(result.out).toBe("");
