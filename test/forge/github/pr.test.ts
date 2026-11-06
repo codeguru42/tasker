@@ -5,7 +5,7 @@ import { isPrMerged as untypedIsPrMerged } from "../../../src/forge/github/pr.js
 import { listOpenPrs as untypedListOpenPrs } from "../../../src/forge/github/pr.js";
 import { mergePr as untypedMergePr } from "../../../src/forge/github/pr.js";
 import type { CreatePrInput, MergeMethod, OpenPullRequest, PullRequest } from "../../../src/forge/provider.js";
-import { failureOf } from "../../helpers/errors.js";
+import { diagnosticStrings, failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
 import type { FakeAnswer } from "../../helpers/fake-commands.js";
 import { useProcessEnv, useTempDir } from "../../helpers/temp.js";
@@ -105,19 +105,6 @@ const createArgs = (target: CreatePrInput) => [
   "--body",
   target.body,
 ];
-
-function errorStrings(value: unknown, seen = new Set<object>()): string[] {
-  if (typeof value === "string") return [value];
-  if (value === null || typeof value !== "object" || seen.has(value)) return [];
-  seen.add(value);
-  return Object.getOwnPropertyNames(value).flatMap((name) => {
-    try {
-      return errorStrings((value as Record<string, unknown>)[name], seen);
-    } catch {
-      return [];
-    }
-  });
-}
 
 describe("listOpenPrs", () => {
   it("lists origin requests from every base with exact command and isolated environment", async () => {
@@ -522,7 +509,7 @@ describe("createPr", () => {
         .map(({ args }) => args),
     ).toEqual([createArgs(target)]);
     expect(error.cause).toBeInstanceOf(Error);
-    expect(errorStrings(error).join("\n")).not.toContain(token);
+    expect(diagnosticStrings(error).join("\n")).not.toContain(token);
     fake.assertAnswered();
   });
 
@@ -544,7 +531,7 @@ describe("createPr", () => {
     expect(error.message).toContain(head);
     expect(error.message).toContain("create failed with ***");
     expect(error.cause).toBeInstanceOf(Error);
-    expect(errorStrings(error).join("\n")).not.toContain(token);
+    expect(diagnosticStrings(error).join("\n")).not.toContain(token);
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
     fake.assertAnswered();
   });
@@ -614,8 +601,8 @@ describe("isPrMerged", () => {
     expect(error.message).toContain("42");
     expect(error.message).toContain(stderr);
     expect(error.cause).toBeInstanceOf(Error);
-    expect(errorStrings(error.cause).join("\n")).toContain(stderr);
-    expect(errorStrings(error).join("\n")).not.toContain(token);
+    expect(diagnosticStrings(error.cause).join("\n")).toContain(stderr);
+    expect(diagnosticStrings(error).join("\n")).not.toContain(token);
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
     fake.assertAnswered();
   });
@@ -672,7 +659,7 @@ describe("mergePr", () => {
     const error = await failureOf(mergeCall(session, 42, "squash", headSha, dir, env), Error);
     expect(error.message).toContain("42");
     expect(error.cause).toBeInstanceOf(Error);
-    expect(errorStrings(error).join("\n")).not.toContain(token);
+    expect(diagnosticStrings(error).join("\n")).not.toContain(token);
     const prCalls = fake.calls().filter(({ args }) => args[0] === "pr");
     expect(prCalls).toHaveLength(1);
     expect(prCalls[0].args).toEqual(mergeArgs(42, "squash", headSha));
