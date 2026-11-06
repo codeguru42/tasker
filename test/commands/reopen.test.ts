@@ -20,6 +20,7 @@ import {
 import {
   expectCommandRefused,
   expectNoAssistantRun,
+  taskBranchTipOf,
   useReopenFixture,
   useStackedPlanTasks,
 } from "../helpers/task-fixtures.js";
@@ -91,12 +92,7 @@ describe("reopen", () => {
         });
         const beforeTask = latestTaskOf(fixture.started.dataRoot, KEY);
         const beforeMarker = readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id);
-        const beforeBranchHead = await gitOutput(
-          { gitDir: fixture.started.clone },
-          fixture.started.env,
-          "rev-parse",
-          `refs/heads/${String(fixture.task.branch)}`,
-        );
+        const beforeBranchHead = await taskBranchTipOf({ ...fixture.started, task: fixture.task });
         const beforeWorktreeHead = await gitOutput(
           { cwd: fixture.task.worktreePath! },
           fixture.started.env,
@@ -117,14 +113,7 @@ describe("reopen", () => {
         expect(latestTaskOf(fixture.started.dataRoot, KEY).reopenStartHead).toBe(beforeTask.reopenStartHead);
         expect(readRunMarker(databasePathOf(fixture.started.dataRoot), fixture.task.id)).toEqual(beforeMarker);
         expect(planRevisionOf(fixture.started.dataRoot, fixture.task.id, 2)).toBeUndefined();
-        expect(
-          await gitOutput(
-            { gitDir: fixture.started.clone },
-            fixture.started.env,
-            "rev-parse",
-            `refs/heads/${String(fixture.task.branch)}`,
-          ),
-        ).toBe(beforeBranchHead);
+        expect(await taskBranchTipOf({ ...fixture.started, task: fixture.task })).toBe(beforeBranchHead);
         expect(await gitOutput({ cwd: fixture.task.worktreePath! }, fixture.started.env, "rev-parse", "HEAD")).toBe(
           beforeWorktreeHead,
         );
@@ -205,23 +194,13 @@ describe("reopen", () => {
   it("keeps the published revision when resync moves HEAD", async () => {
     const fixture = await useReopenFixture({ stream: answerStream(V2) }, "pushed");
     const published = fixture.task.publishedRevision;
-    const beforeHead = await gitOutput(
-      { gitDir: fixture.started.clone },
-      fixture.started.env,
-      "rev-parse",
-      `refs/heads/${String(fixture.task.branch)}`,
-    );
+    const beforeHead = await taskBranchTipOf({ ...fixture.started, task: fixture.task });
     await fixture.started.origin.addCommit("main", { file: "moved-base.txt" });
 
     const result = await runReopen();
 
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
-    const afterHead = await gitOutput(
-      { gitDir: fixture.started.clone },
-      fixture.started.env,
-      "rev-parse",
-      `refs/heads/${String(fixture.task.branch)}`,
-    );
+    const afterHead = await taskBranchTipOf({ ...fixture.started, task });
     expect(result.code).toBe(0);
     expect(afterHead).not.toBe(beforeHead);
     expect(task.publishedRevision).toBe(published);
@@ -249,12 +228,7 @@ describe("reopen", () => {
 
   it("reports the moved HEAD when the resync database write fails", async () => {
     const fixture = await useReopenFixture({ stream: answerStream(V2) });
-    const priorHead = await gitOutput(
-      { gitDir: fixture.started.clone },
-      fixture.started.env,
-      "rev-parse",
-      `refs/heads/${String(fixture.task.branch)}`,
-    );
+    const priorHead = await taskBranchTipOf({ ...fixture.started, task: fixture.task });
     await fixture.started.origin.addCommit("main", { file: "database-failure-base.txt" });
     withRawDatabase(databasePathOf(fixture.started.dataRoot), (db) => {
       db.exec(`CREATE TRIGGER reject_reopen_record BEFORE UPDATE OF synced_base_tip ON tasks
@@ -264,12 +238,7 @@ describe("reopen", () => {
 
     const result = await runReopen();
 
-    const movedHead = await gitOutput(
-      { gitDir: fixture.started.clone },
-      fixture.started.env,
-      "rev-parse",
-      `refs/heads/${String(fixture.task.branch)}`,
-    );
+    const movedHead = await taskBranchTipOf({ ...fixture.started, task: fixture.task });
     expect(movedHead).not.toBe(priorHead);
     expect(result.code).toBe(1);
     expect(result.err).toContain("reopen record failed");

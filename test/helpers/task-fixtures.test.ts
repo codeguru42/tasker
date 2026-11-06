@@ -870,12 +870,7 @@ describe("useChainedTasks", () => {
 
   it("makes main the tip of issue 6 when both parents land", async () => {
     const fixture = await useChainedTasks();
-    const tip = await gitOutput(
-      { gitDir: fixture.clone },
-      fixture.env,
-      "rev-parse",
-      `refs/heads/${fixture.parent.branch}`,
-    );
+    const tip = await taskBranchTipOf({ ...fixture, task: fixture.parent.task });
 
     await landParent({ ...fixture, parent: fixture.grandparent }, ["accepted", "landed"]);
     await landParent(fixture, ["accepted", "landed"]);
@@ -904,12 +899,7 @@ describe("useStackedPlanTasks", () => {
 describe("landParent", () => {
   it("makes the tip of the parent branch the head of main on origin and moves the parent task", async () => {
     const fixture = await useStackedTasks();
-    const tip = await gitOutput(
-      { gitDir: fixture.clone },
-      fixture.env,
-      "rev-parse",
-      `refs/heads/${fixture.parent.branch}`,
-    );
+    const tip = await taskBranchTipOf({ ...fixture, task: fixture.parent.task });
 
     await landParent(fixture, ["accepted", "landed"]);
 

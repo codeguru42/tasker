@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import type { Io } from "../cli.js";
+import { errorMessage } from "../error-message.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { issueProviderFor } from "../issues/provider.js";
@@ -77,7 +78,7 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
             { cause: error },
           );
         }
-        const reason = error instanceof Error ? error.message : String(error);
+        const reason = errorMessage(error);
         throw new Error(
           `cannot abort ${ref.key}: cannot delete the task branch ${task.branch} on origin: ${reason}; run tasker abort ${ref.key} again, or delete the branch from a clone of your own`,
           { cause: error },

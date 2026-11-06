@@ -2,6 +2,7 @@ import { lstatSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { relative, resolve, sep } from "node:path";
 import { errnoCode } from "../../errno.js";
+import { errorMessage } from "../../error-message.js";
 import { isObject } from "../../object.js";
 import { isInside } from "../../real-path.js";
 import { shellQuote } from "../../shell-quote.js";
@@ -116,6 +117,6 @@ export function editHookAnswer(input: string, worktree: string, denied: readonly
     }
     return "";
   } catch (error) {
-    return deny(`the edit hook failed: ${error instanceof Error ? error.message : String(error)}`);
+    return deny(`the edit hook failed: ${errorMessage(error)}`);
   }
 }

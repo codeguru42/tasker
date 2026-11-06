@@ -312,7 +312,11 @@ export async function taskWorkspaceState(
 }
 
 // The tip of the task branch in the clone: the exact ref refs/heads/<branch>, read with git show-ref and not from HEAD.
-export async function taskBranchTipOf(fixture: Pick<WorkReviewTask, "clone" | "env" | "task">): Promise<string> {
+export async function taskBranchTipOf(fixture: {
+  clone: string;
+  env: NodeJS.ProcessEnv;
+  task: Pick<Task, "branch">;
+}): Promise<string> {
   const { branch } = fixture.task;
   if (branch === null) throw new Error("the task has no branch");
   return gitOutput(
@@ -857,12 +861,11 @@ async function publishTaskBranch<
     branch: fixture.branch,
     env: fixture.env,
   });
-  const publishedRevision = await gitOutput(
-    { gitDir: fixture.clone },
-    fixture.env,
-    "rev-parse",
-    `refs/heads/${fixture.branch}`,
-  );
+  const publishedRevision = await taskBranchTipOf({
+    clone: fixture.clone,
+    env: fixture.env,
+    task: { branch: fixture.branch },
+  });
   const task = withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.task.id, { publishedRevision }));
   return { ...fixture, task, publishedRevision };
 }

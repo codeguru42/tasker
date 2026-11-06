@@ -17,7 +17,7 @@ import {
   trackerWriteCalls,
   writeFakeGh,
 } from "../helpers/fake-gh.js";
-import { commitInWorktree, gitOutput, taskNames } from "../helpers/git.js";
+import { commitInWorktree, taskNames } from "../helpers/git.js";
 import { spawnTasker, startLockHolder, waitUntil, waitUntilGone } from "../helpers/processes.js";
 import {
   dayAt,
@@ -34,6 +34,7 @@ import {
   fixtureTrackerAnswer,
   fixtureTrackerCall,
   startIssueTask,
+  taskBranchTipOf,
   trackerRepo,
   useStartFixture,
 } from "../helpers/task-fixtures.js";
@@ -273,12 +274,11 @@ describe("start", () => {
       writeFileSync(ok, "");
       const task = latestTaskOf(fixture.dataRoot, KEY);
       const first = task.syncedBaseTip;
-      const branchTip = await gitOutput(
-        { gitDir: repoPaths(fixture.dataRoot, PROJECT).clone },
-        fixture.origin.env,
-        "rev-parse",
-        `refs/heads/${String(task.branch)}`,
-      );
+      const branchTip = await taskBranchTipOf({
+        clone: repoPaths(fixture.dataRoot, PROJECT).clone,
+        env: fixture.origin.env,
+        task,
+      });
       expect(first).toBe(branchTip);
       expect(eventsOf(fixture.dataRoot, KEY).find((event) => event.type === "workspace")?.data).toMatchObject({
         state: "created",
