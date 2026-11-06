@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it, onTestFinished } from "vitest";
+import { describe, expect, it } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
@@ -13,7 +13,7 @@ import { startTask } from "../../src/tasks/start.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
 import { AUTH_STATUS_ARGS, fakeAcli, jiraRefOf, MEASURED_AUTH_STATUS } from "../helpers/fake-acli.js";
-import { copyCloneBranchToOrigin, gitBeforePushEnv, rejectOriginPush } from "../helpers/git.js";
+import { captureRejectedRemoteTaskBranchDeletion, copyCloneBranchToOrigin, gitBeforePushEnv } from "../helpers/git.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
 import { useFakeClaudeOnPath, type FakeClaude } from "../helpers/fake-claude.js";
 import { startLockHolder } from "../helpers/processes.js";
@@ -278,10 +278,8 @@ describe("abortTask", () => {
 
   it("refuses when the remote rejects the leased deletion", async () => {
     const started = await usePublishedStartedTask();
-    const removeHook = rejectOriginPush(started.origin, { message: "transport unavailable" });
-    onTestFinished(removeHook);
+    const providerReason = await captureRejectedRemoteTaskBranchDeletion(started);
     const pushLog = pushCallLog();
-    const providerError = `cannot delete the task branch on origin: ${started.branch}: remote: transport unavailable        \nTo ${started.origin.path}\n ! [remote rejected] ${started.branch} (pre-receive hook declined)\nerror: failed to push some refs to '${started.origin.path}'`;
 
     await expectAbortRefusal(
       started,
@@ -294,7 +292,7 @@ describe("abortTask", () => {
             env: pushLog.env,
           }),
         ),
-      `cannot abort ${started.key}: cannot delete the task branch ${started.branch} on origin: ${providerError}; run tasker abort ${started.key} again, or delete the branch from a clone of your own`,
+      `cannot abort ${started.key}: cannot delete the task branch ${started.branch} on origin: ${providerReason}; run tasker abort ${started.key} again, or delete the branch from a clone of your own`,
       pushLog,
       1,
     );

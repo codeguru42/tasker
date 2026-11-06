@@ -1,5 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { onTestFinished } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { shellQuote } from "../../src/shell-quote.js";
 import { provisionClone } from "../../src/vcs/git/provision.js";
@@ -8,6 +9,7 @@ import { GitError, runGit } from "../../src/vcs/git/run.js";
 import { taskBranchName, taskWorktreePath } from "../../src/vcs/git/worktree.js";
 import { createVcsProvider, type VcsContext, type VcsProvider } from "../../src/vcs/provider.js";
 import { logLine, pathWithFirst, readArgLog, realCommandPath, writeFakeCommand } from "./fake-commands.js";
+import { failureOf } from "./errors.js";
 import { makeTempDir, writeFileWithParents } from "./temp.js";
 
 // The fixed author and committer of every commit that a git test makes.
@@ -62,6 +64,30 @@ export function rejectOriginPush(
     mode: 0o755,
   });
   return () => rmSync(hook, { force: true });
+}
+
+// Rejects deletion of a published task branch and returns the provider's error message.
+export async function captureRejectedRemoteTaskBranchDeletion(fixture: {
+  origin: GitOrigin;
+  dataRoot: string;
+  repoKey: string;
+  env: NodeJS.ProcessEnv;
+  task: { branch: string | null; publishedRevision: string | null };
+}): Promise<string> {
+  const { branch, publishedRevision } = fixture.task;
+  if (branch === null || publishedRevision === null) {
+    throw new Error("the task branch is not published");
+  }
+  const removeHook = rejectOriginPush(fixture.origin, { message: "transport unavailable" });
+  onTestFinished(removeHook);
+  const error = await failureOf(
+    gitProvider(fixture.origin.path).deleteRemoteTaskRef(
+      { dataRoot: fixture.dataRoot, repoKey: fixture.repoKey, env: fixture.env },
+      { taskRef: branch, published: publishedRevision },
+    ),
+    Error,
+  );
+  return error.message;
 }
 
 // Git reads a name that starts with "-" as an option.
@@ -425,6 +451,6 @@ export function writeGitFailAfter(binDir: string, subcommand: string): void {
 }
 
 // A git provider for a test that uses only its pure functions. It reads no remote.
-export function gitProvider(): VcsProvider {
-  return createVcsProvider({ remote: "/no-remote", vcs: { provider: "git", config: {} } });
+export function gitProvider(remote = "/no-remote"): VcsProvider {
+  return createVcsProvider({ remote, vcs: { provider: "git", config: {} } });
 }

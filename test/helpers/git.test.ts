@@ -29,7 +29,6 @@ import {
   recordedPushCalls,
   gitTestEnv,
   rejectOriginPush,
-  // @ts-expect-error The shared helper is added in the green step.
   captureRejectedRemoteTaskBranchDeletion,
   type GitOrigin,
   localBranches,
@@ -181,21 +180,15 @@ describe("captureRejectedRemoteTaskBranchDeletion", () => {
     const branch = started.task.branch;
     if (branch === null) throw new Error("the published task has no branch");
     const published = started.publishedRevision;
-    const removeHook = rejectOriginPush(started.origin, { message: "transport unavailable" });
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      const reason = await captureRejectedRemoteTaskBranchDeletion(started);
+    const reason = await captureRejectedRemoteTaskBranchDeletion(started);
 
-      expect(reason).toContain("transport unavailable");
-      expect(await started.origin.branchHead(branch)).toBe(published);
-      expect(latestTaskOf(started.dataRoot, started.key)).toMatchObject({
-        id: started.task.id,
-        branch,
-        publishedRevision: published,
-      });
-    } finally {
-      removeHook();
-    }
+    expect(reason).toContain("transport unavailable");
+    expect(await started.origin.branchHead(branch)).toBe(published);
+    expect(latestTaskOf(started.dataRoot, started.key)).toMatchObject({
+      id: started.task.id,
+      branch,
+      publishedRevision: published,
+    });
   });
 });
 
