@@ -72,18 +72,15 @@ export async function captureRejectedRemoteTaskBranchDeletion(fixture: {
   dataRoot: string;
   repoKey: string;
   env: NodeJS.ProcessEnv;
-  task: { branch: string | null; publishedRevision: string | null };
+  branch: string;
+  publishedRevision: string;
 }): Promise<string> {
-  const { branch, publishedRevision } = fixture.task;
-  if (branch === null || publishedRevision === null) {
-    throw new Error("the task branch is not published");
-  }
   const removeHook = rejectOriginPush(fixture.origin, { message: "transport unavailable" });
   onTestFinished(removeHook);
   const error = await failureOf(
     gitProvider(fixture.origin.path).deleteRemoteTaskRef(
       { dataRoot: fixture.dataRoot, repoKey: fixture.repoKey, env: fixture.env },
-      { taskRef: branch, published: publishedRevision },
+      { taskRef: fixture.branch, published: fixture.publishedRevision },
     ),
     Error,
   );
@@ -450,7 +447,7 @@ export function writeGitFailAfter(binDir: string, subcommand: string): void {
   );
 }
 
-// A git provider for a test that uses only its pure functions. It reads no remote.
+// A git provider with an explicit remote supports local remote operations. The default is a placeholder for pure tests.
 export function gitProvider(remote = "/no-remote"): VcsProvider {
   return createVcsProvider({ remote, vcs: { provider: "git", config: {} } });
 }
