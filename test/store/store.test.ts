@@ -219,6 +219,7 @@ describe("task store", () => {
       reopenStartHead: null,
       acceptedRevision: null,
       publishedRevision: null,
+      prNumber: null,
       trackerMarked: false,
       parentTaskId: null,
       attempt: 1,
@@ -916,7 +917,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(20);
+        expect(schemaVersion(raw)).toBe(21);
         expect(raw.prepare("SELECT published_revision FROM tasks WHERE id = 1").get()).toEqual({
           published_revision: null,
         });
@@ -982,7 +983,6 @@ describe("task store", () => {
       expect(task.prNumber).toBeNull();
       const pr = { number: 42, url: "https://example.test/pull/42", head: task.branch!, base: "main", adopted: false };
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- The state helper is added by the green step.
       const moved = transitionWithPrOpened(store, task.id, pr);
 
       expect(moved).toMatchObject({ state: "in_peer_review", prNumber: 42 });
@@ -1007,7 +1007,6 @@ describe("task store", () => {
       const events = store.listEvents(task.id);
 
       expect(() =>
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- The state helper is added by the green step.
         transitionWithPrOpened(store, task.id, {
           number: 42,
           url: "https://example.test/pull/42",
@@ -1037,7 +1036,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(20);
+        expect(schemaVersion(raw)).toBe(21);
         expect(raw.prepare("SELECT reopen_start_head FROM tasks WHERE id = 1").get()).toEqual({
           reopen_start_head: null,
         });
@@ -1234,7 +1233,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(20);
+        expect(migrations.length).toBe(21);
       });
     });
   });

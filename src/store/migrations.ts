@@ -159,4 +159,5 @@ ALTER TABLE sessions ADD COLUMN usage_total_cache_creation_input_tokens INTEGER;
 ALTER TABLE sessions ADD COLUMN usage_total_cache_read_input_tokens INTEGER;`,
   `ALTER TABLE tasks ADD COLUMN published_revision TEXT;`,
   `ALTER TABLE tasks ADD COLUMN reopen_start_head TEXT;`,
+  `ALTER TABLE tasks ADD COLUMN pr_number INTEGER;`,
 ];

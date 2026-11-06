@@ -57,7 +57,7 @@ const expectSparseLanding = (
 ) => {
   const after = latestTaskOf(dataRoot, KEY);
   expect(after).toMatchObject({ ...before, state: "landed", updatedAt: expect.any(String) });
-  expect(Object.hasOwn(after, "prNumber")).toBe(false);
+  expect(after.prNumber).toBe(before.prNumber);
   expect(eventsOf(dataRoot, KEY).slice(0, events.length)).toEqual(events);
   expect(eventsOf(dataRoot, KEY).slice(events.length)).toEqual([
     { type: "marked_landed", data: { from: "accepted", to: "landed" } },

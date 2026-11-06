@@ -7,6 +7,7 @@ import type {
   ResumeWrites,
   NewPlanRevision,
   NewVerifyRun,
+  PullRequestRecord,
   Task,
   TaskEvent,
   TaskStore,
@@ -410,6 +411,11 @@ export function transitionWithPublication(
   publication: { branch: string; lease: boolean; pushed: boolean },
 ): Task {
   return store.recordPublication(id, revision, transitionCheck("published", "pushed", { ...publication, revision }));
+}
+
+// Appends the pr_opened event and moves opening_pr to in_peer_review in one transaction.
+export function transitionWithPrOpened(store: TaskStore, id: number, pullRequest: PullRequestRecord): Task {
+  return store.recordPullRequest(id, pullRequest, transitionCheck("pr_opened", "in_peer_review", { ...pullRequest }));
 }
 
 // Appends the landed event { revision, base, pushed, from, to } and moves the task to landed, in one transaction.
