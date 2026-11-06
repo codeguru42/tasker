@@ -1,41 +1,71 @@
 import type { GhSession } from "../../github/forge-session.js";
 import type { CiStatus } from "../provider.js";
 
-interface CheckRun {
-  status?: unknown;
-  conclusion?: unknown;
+interface Source {
+  name: string;
+  collection: string;
+  run: boolean;
 }
 
-interface CommitStatus {
-  state?: unknown;
+const checks: Source = { name: "check runs", collection: "check_runs", run: true };
+const statuses: Source = { name: "commit statuses", collection: "statuses", run: false };
+const workflows: Source = { name: "workflow runs", collection: "workflow_runs", run: true };
+
+type ResultState = "pending" | "passed" | "failed";
+
+function malformed(sha: string, source: Source, field: string): Error {
+  return new Error(`ciStatus for ${sha}: malformed ${source.name} response field ${field}`);
 }
 
-interface WorkflowRun {
-  status?: unknown;
-  conclusion?: unknown;
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function records(stdout: string, key: string): Record<string, unknown>[] {
-  const pages: unknown = JSON.parse(stdout);
-  if (!Array.isArray(pages)) throw new Error(`expected an array of ${key} pages`);
-  return pages.flatMap((page: unknown) => {
-    if (page === null || typeof page !== "object" || !(key in page)) {
-      throw new Error(`expected ${key} in each page`);
+function responseResults(stdout: string, sha: string, source: Source): Record<string, unknown>[] {
+  let pages: unknown;
+  try {
+    pages = JSON.parse(stdout);
+  } catch {
+    throw malformed(sha, source, "JSON");
+  }
+  if (!Array.isArray(pages)) throw malformed(sha, source, "pages");
+
+  const results: Record<string, unknown>[] = [];
+  for (const page of pages) {
+    if (!isObject(page)) throw malformed(sha, source, "page");
+    const collection = page[source.collection];
+    if (!Array.isArray(collection)) throw malformed(sha, source, source.collection);
+    for (const entry of collection) {
+      if (!isObject(entry)) throw malformed(sha, source, `${source.collection} entry`);
+      if (source.run) {
+        if (typeof entry.status !== "string") throw malformed(sha, source, "status");
+        if (entry.conclusion !== null && typeof entry.conclusion !== "string") {
+          throw malformed(sha, source, "conclusion");
+        }
+      } else if (typeof entry.state !== "string") {
+        throw malformed(sha, source, "state");
+      }
+      results.push(entry);
     }
-    const values = (page as Record<string, unknown>)[key];
-    if (!Array.isArray(values)) throw new Error(`expected ${key} to be an array`);
-    return values as Record<string, unknown>[];
-  });
+  }
+  return results;
 }
 
-function passingRun(run: CheckRun | WorkflowRun): boolean {
-  return run.status === "completed" && ["success", "neutral", "skipped"].includes(String(run.conclusion));
+function classifyRun(run: Record<string, unknown>): ResultState {
+  if (run.status !== "completed") return "pending";
+  return ["success", "neutral", "skipped"].includes(run.conclusion as string) ? "passed" : "failed";
 }
 
-function hasPass(checkRuns: CheckRun[], statuses: CommitStatus[], workflowRuns: WorkflowRun[]): boolean {
-  return (
-    checkRuns.some(passingRun) || statuses.some((status) => status.state === "success") || workflowRuns.some(passingRun)
-  );
+function classifyStatus(status: Record<string, unknown>): ResultState {
+  if (status.state === "success") return "passed";
+  if (status.state === "pending") return "pending";
+  return "failed";
+}
+
+function combinedStatus(results: ResultState[]): CiStatus {
+  if (results.includes("failed")) return "failed";
+  if (results.length === 0 || results.includes("pending")) return "pending";
+  return "passed";
 }
 
 export async function ciStatus(
@@ -58,8 +88,12 @@ export async function ciStatus(
       env,
     }),
   ]);
-  const checkRuns = records(checkStdout, "check_runs") as CheckRun[];
-  const statuses = records(statusStdout, "statuses") as CommitStatus[];
-  const workflowRuns = records(workflowStdout, "workflow_runs") as WorkflowRun[];
-  return hasPass(checkRuns, statuses, workflowRuns) ? "passed" : "pending";
+  const checkRuns = responseResults(checkStdout, sha, checks);
+  const commitStatuses = responseResults(statusStdout, sha, statuses);
+  const workflowRuns = responseResults(workflowStdout, sha, workflows);
+  return combinedStatus([
+    ...checkRuns.map(classifyRun),
+    ...commitStatuses.map(classifyStatus),
+    ...workflowRuns.map(classifyRun),
+  ]);
 }

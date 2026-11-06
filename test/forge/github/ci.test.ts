@@ -239,15 +239,15 @@ describe("ciStatus", () => {
   it("reads more than 100 results from every source and uses results on later pages", async () => {
     const dir = useTempDir("tasker-ci-status-many-results-");
     const checks = JSON.stringify([
-      { check_runs: Array.from({ length: 101 }, () => ({ status: "completed", conclusion: "failure" })) },
+      { check_runs: Array.from({ length: 101 }, () => ({ status: "completed", conclusion: "success" })) },
       { check_runs: [{ status: "completed", conclusion: "success" }] },
     ]);
     const statuses = JSON.stringify([
-      { statuses: Array.from({ length: 101 }, () => ({ state: "failure" })) },
+      { statuses: Array.from({ length: 101 }, () => ({ state: "success" })) },
       { statuses: [{ state: "success" }] },
     ]);
     const workflows = JSON.stringify([
-      { workflow_runs: Array.from({ length: 101 }, () => ({ status: "completed", conclusion: "failure" })) },
+      { workflow_runs: Array.from({ length: 101 }, () => ({ status: "completed", conclusion: "success" })) },
       { workflow_runs: [{ status: "completed", conclusion: "success" }] },
     ]);
     const fake = forgeGh(dir, token, answers({ checks, statuses, workflows }));
