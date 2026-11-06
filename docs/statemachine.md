@@ -190,8 +190,9 @@ flowchart LR
 ```
 
 - `push` publishes the task branch only. It never pushes the base branch.
-- `open-pr` does not push. It needs `forge`. It adopts a PR that is already open from the task branch, so a resume never
-  opens a second one.
+- `open-pr` does not push. It needs `forge`. It checks for an open pull request from the task branch and adopts a
+  matching one before it creates a PR. If tasker creates a PR but cannot store its record, retry or resume runs
+  `open-pr` again. The lookup then adopts that PR before tasker can create another one.
 - `merge` from `in_peer_review` merges the PR through the forge with `forge.mergeMethod`, only at the sha that `push`
   published. It lands the task only when the forge then says that the PR is merged. It does not wait for CI.
 - After `landed`, the path is the same as the trunk path. `finish` refuses a task in `in_peer_review`.
@@ -263,7 +264,7 @@ flowchart LR
 | `verifying` (interrupted only)              | `executed`                             | `verify`                                                             |
 | `reviewing`                                 | `awaiting_work_review`                 | `review` (in a new session)                                          |
 | `pushing` (interrupted only)                | `accepted`                             | `push`. No second push if `origin` already has the sha.              |
-| `opening_pr` (interrupted only)             | `pushed`                               | `open-pr`. It adopts an open PR and does not open a second one.      |
+| `opening_pr` (interrupted only)             | `pushed`                               | `open-pr`. It adopts a matching PR from an earlier create.           |
 | `merging` (interrupted only)                | the recorded merge origin (`accepted`) | `merge`. No second push or merge if the work is already on the base. |
 | `finishing` (interrupted only)              | `landed`                               | `finish`. Each cleanup step skips what is already done.              |
 | `updating_branch` (interrupted only)        | its origin state                       | nothing. Run `update-branch` again.                                  |
@@ -299,7 +300,7 @@ flowchart LR
 | `reviewing`                                                 | `awaiting_work_review`                                                                                                    | `review` (new session). Retry deletes the review session of the next review number.                                     |
 | `accepted` (a failed `tasker push`)                         | `accepted`                                                                                                                | `push`                                                                                                                  |
 | `pushing` (a failed `tasker push`)                          | `accepted`                                                                                                                | `push`. No second push if `origin` already has the sha.                                                                 |
-| `opening_pr`                                                | `pushed`                                                                                                                  | `open-pr`. It adopts an open PR and does not open a second one.                                                         |
+| `opening_pr`                                                | `pushed`                                                                                                                  | `open-pr`. It adopts a matching PR from an earlier create.                                                              |
 | `merging`                                                   | the recorded merge origin (`accepted`)                                                                                    | `merge`. It lands with no second push or merge if the work is already on the base.                                      |
 | `quota_blocked`, `awaiting_quota_approval` or `interrupted` | after `planning`, `executing`, `verifying` or `reviewing`: the target of that row. After each other state, retry refuses. | the command of that row. Nothing runs after a refusal.                                                                  |
 
@@ -371,7 +372,7 @@ read one table. The table lives in `src/state/commands.ts`.
 | `awaiting_work_review`                                                                                                                                                   | none              | `review`, `accept`, `update-branch`, `abort`                       |
 | `reviewed`                                                                                                                                                               | none              | `refine`, `dismiss-review`, `update-branch`, `abort`               |
 | `accepted`                                                                                                                                                               | none              | `merge`, `push`, `mark-landed`, `update-branch`, `reopen`, `abort` |
-| `pushed`                                                                                                                                                                 | none              | `mark-landed`, `update-branch`, `reopen`, `abort`                  |
+| `pushed`                                                                                                                                                                 | none              | `open-pr`, `mark-landed`, `update-branch`, `reopen`, `abort`       |
 | `in_peer_review`                                                                                                                                                         | none              | `mark-landed`, `update-branch`, `abort`                            |
 | `landed`                                                                                                                                                                 | `finish`          | `finish`, `abort`                                                  |
 | `cleanup_failed`                                                                                                                                                         | `finish`          | `finish`, `update-branch`, `abort`                                 |
