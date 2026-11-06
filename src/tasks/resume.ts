@@ -212,10 +212,10 @@ export async function moveFromPause(
   task: Task,
   events: readonly TaskEvent[],
   command: "resume" | "approve-credits",
-  extra: readonly NewEvent[] = [],
-  recoveryRequest?: Pick<ResumeRequest, "config" | "env" | "repoLockWaitMs">,
+  extra: readonly NewEvent[],
+  recoveryRequest: Pick<ResumeRequest, "config" | "env" | "repoLockWaitMs">,
 ): Promise<ResumeResult> {
   const move = resumeMoveOf(task, events, command);
-  const restored = recoveryRequest === undefined ? false : await restorePendingReopen(store, recoveryRequest, task);
+  const restored = await restorePendingReopen(store, recoveryRequest, task);
   return applyResumeMove(store, task, events, move, extra, {}, restored);
 }
