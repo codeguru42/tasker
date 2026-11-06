@@ -303,6 +303,23 @@ describe("listOpenPrs", () => {
     fake.assertAnswered();
   });
 
+  it("accepts reordered state keys with extra fields", async () => {
+    const dir = useTempDir("tasker-is-pr-merged-extra-state-");
+    const { env, fake, session } = setup(
+      [
+        {
+          args: ["pr", "view", "42", "--json", "state"],
+          stdout: ` { "url": "https://example.test/pull/42", "extra": true, "state": "MERGED" } `,
+        },
+      ],
+      dir,
+    );
+
+    await expect(mergedCall(session, 42, dir, env)).resolves.toBe(true);
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+
   it("rejects a failed later read without returning an earlier partial list", async () => {
     const firstPage = Array.from({ length: 100 }, (_, index) => pr(index + 1));
     const { dir, env, fake, session } = setup([
@@ -529,13 +546,15 @@ describe("isPrMerged", () => {
     fake.assertAnswered();
   });
 
-  it("wraps a failed state read with its number and safe cause", async () => {
+  it("wraps a missing-request state read with its number and safe cause", async () => {
     const dir = useTempDir("tasker-is-pr-merged-failure-");
+    const stderr = "GraphQL: Could not resolve to a PullRequest with the number of 42. (repository.pullRequest)";
     const { env, fake, session } = setup(
       [
         {
           args: ["pr", "view", "42", "--json", "state"],
-          stderr: `view failed with ${token}`,
+          stdout: '{"state":"MERGED"}',
+          stderr,
           exitCode: 1,
         },
       ],
@@ -543,9 +562,11 @@ describe("isPrMerged", () => {
     );
 
     const error = await failureOf(mergedCall(session, 42, dir, env), Error);
+    expect(error.message).toContain("read merged state");
     expect(error.message).toContain("42");
-    expect(error.message).toContain("view failed with ***");
+    expect(error.message).toContain(stderr);
     expect(error.cause).toBeInstanceOf(Error);
+    expect(errorStrings(error.cause).join("\n")).toContain(stderr);
     expect(errorStrings(error).join("\n")).not.toContain(token);
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
     fake.assertAnswered();
