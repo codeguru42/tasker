@@ -120,7 +120,7 @@ describe("ciStatus", () => {
     expect(calls[0]).toEqual(expectedCalls[0]);
     const byArgs = (left: { args: string[] }, right: { args: string[] }) =>
       JSON.stringify(left.args).localeCompare(JSON.stringify(right.args));
-    expect([...calls.slice(1)].sort(byArgs)).toEqual([...expectedCalls.slice(1)].sort(byArgs));
+    expect(calls.slice(1).sort(byArgs)).toEqual(expectedCalls.slice(1).sort(byArgs));
     fake.assertAnswered();
   });
 
