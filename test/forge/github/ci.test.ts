@@ -59,6 +59,23 @@ function answers(
 }
 
 describe("ciStatus", () => {
+  it("keeps login guidance when the token lookup fails without stderr", async () => {
+    const dir = useTempDir("tasker-ci-status-login-error-");
+    const account = "synthetic-account";
+    const fake = forgeGh(dir, token, [
+      { args: ["auth", "token", "--user", account], stdout: "", stderr: "", exitCode: 1 },
+    ]);
+
+    const error = await failureOf(callCiStatus(createGhSession(account), sha, dir, taskerEnv(fake.env)), Error);
+
+    expect(error.message).toContain(account);
+    expect(error.message).toContain("gh auth login");
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(exposedStrings(error).join("\n")).not.toContain(token);
+    expect(fake.calls().map((call) => call.args)).toEqual([["auth", "token", "--user", account]]);
+    fake.assertAnswered();
+  });
+
   it("reads all paginated sources from the supplied worktree and leaves empty results pending", async () => {
     const dir = useTempDir("tasker-ci-status-empty-");
     const worktree = join(dir, "worktree");
