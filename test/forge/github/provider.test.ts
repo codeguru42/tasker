@@ -151,14 +151,18 @@ describe("createGitHubForge", () => {
       { args: ["auth", "token", "--user", account], stdout: `${token}\n` },
       { args: ["pr", "view", "42", "--json", "state"], stdout: '{"state":"MERGED"}' },
     ]);
-    const environment = (fake: ReturnType<typeof forgeGh>): NodeJS.ProcessEnv => ({
-      ...fake.env,
-      TASKER_PATH: fake.env.PATH,
+    const firstEnv: NodeJS.ProcessEnv = {
+      ...firstFake.env,
+      TASKER_PATH: firstFake.env.PATH,
       TASKER_HOME: "/tasker/home",
       TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
-    });
-    const firstEnv = environment(firstFake);
-    const secondEnv = environment(secondFake);
+    };
+    const secondEnv: NodeJS.ProcessEnv = {
+      ...secondFake.env,
+      TASKER_PATH: secondFake.env.PATH,
+      TASKER_HOME: "/tasker/home",
+      TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
+    };
     const firstEnvBefore = { ...firstEnv };
     const secondEnvBefore = { ...secondEnv };
     const processEnvBefore = { ...process.env };
