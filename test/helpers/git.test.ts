@@ -10,6 +10,8 @@ import {
   taskWorktreePath,
 } from "../../src/vcs/git/worktree.js";
 import { failureOf } from "./errors.js";
+import { usePublishedStartedTask } from "./task-fixtures.js";
+import { latestTaskOf } from "./store.js";
 import { readArgLog, realCommandPath } from "./fake-commands.js";
 import {
   addCloneCommit,
@@ -27,6 +29,8 @@ import {
   recordedPushCalls,
   gitTestEnv,
   rejectOriginPush,
+  // @ts-expect-error The shared helper is added in the green step.
+  captureRejectedRemoteTaskBranchDeletion,
   type GitOrigin,
   localBranches,
   makeGitClone,
@@ -167,6 +171,30 @@ describe("rejectOriginPush", () => {
       expect(await origin.branchHead(branch)).toBe(revision);
     } finally {
       origin.remove();
+    }
+  });
+});
+
+describe("captureRejectedRemoteTaskBranchDeletion", () => {
+  it("returns the provider error and leaves the published branch and task intact", async () => {
+    const started = await usePublishedStartedTask();
+    const branch = started.task.branch;
+    if (branch === null) throw new Error("the published task has no branch");
+    const published = started.publishedRevision;
+    const removeHook = rejectOriginPush(started.origin, { message: "transport unavailable" });
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      const reason = await captureRejectedRemoteTaskBranchDeletion(started);
+
+      expect(reason).toContain("transport unavailable");
+      expect(await started.origin.branchHead(branch)).toBe(published);
+      expect(latestTaskOf(started.dataRoot, started.key)).toMatchObject({
+        id: started.task.id,
+        branch,
+        publishedRevision: published,
+      });
+    } finally {
+      removeHook();
     }
   });
 });
