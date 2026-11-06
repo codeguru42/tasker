@@ -141,6 +141,53 @@ describe("createGitHubForge", () => {
     expect(fake.calls().filter(({ args }) => args[0] === "auth")).toHaveLength(2);
   });
 
+  it("retries an empty token lookup with the next call environment", async () => {
+    const firstDir = useTempDir("tasker-github-forge-provider-empty-token-");
+    const secondDir = useTempDir("tasker-github-forge-provider-retry-token-");
+    const worktree = join(useTempDir("tasker-github-forge-provider-retry-worktree-"), "worktree");
+    mkdirSync(worktree);
+    const firstFake = forgeGh(firstDir, token, [{ args: ["auth", "token", "--user", account], stdout: "" }]);
+    const secondFake = forgeGh(secondDir, token, [
+      { args: ["auth", "token", "--user", account], stdout: `${token}\n` },
+      { args: ["pr", "view", "42", "--json", "state"], stdout: '{"state":"MERGED"}' },
+    ]);
+    const environment = (fake: ReturnType<typeof forgeGh>): NodeJS.ProcessEnv => ({
+      ...fake.env,
+      TASKER_PATH: fake.env.PATH,
+      TASKER_HOME: "/tasker/home",
+      TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
+    });
+    const firstEnv = environment(firstFake);
+    const secondEnv = environment(secondFake);
+    const firstEnvBefore = { ...firstEnv };
+    const secondEnvBefore = { ...secondEnv };
+    const processEnvBefore = { ...process.env };
+    const provider = makeProvider();
+
+    await failureOf(provider.isPrMerged(prNumber, worktree, firstEnv), Error);
+    expect(firstFake.calls()).toEqual([
+      { args: ["auth", "token", "--user", account], cwd: process.cwd(), tokenMatches: false, env: {} },
+    ]);
+    await expect(provider.isPrMerged(prNumber, worktree, secondEnv)).resolves.toBe(true);
+
+    expect(secondFake.calls()).toEqual([
+      { args: ["auth", "token", "--user", account], cwd: process.cwd(), tokenMatches: false, env: {} },
+      {
+        args: ["pr", "view", "42", "--json", "state"],
+        cwd: worktree,
+        tokenMatches: true,
+        env: {},
+      },
+    ]);
+    for (const dir of [firstDir, secondDir]) {
+      expect(readFileSync(join(dir, "bin", "gh"), "utf8")).not.toContain(token);
+      expect(readFileSync(join(dir, "forge-gh.log"), "utf8")).not.toContain(token);
+    }
+    expect(firstEnv).toEqual(firstEnvBefore);
+    expect(secondEnv).toEqual(secondEnvBefore);
+    expect(process.env).toEqual(processEnvBefore);
+  });
+
   it("keeps caller and process environments unchanged while isolating child values", async () => {
     const { fake, env, worktree } = fixture(
       [{ args: ["pr", "view", "42", "--json", "state"], stdout: '{"state":"OPEN"}' }],
