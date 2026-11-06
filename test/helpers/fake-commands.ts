@@ -47,6 +47,8 @@ export interface FakeAnswer {
   args: readonly string[];
   stdout?: string; // default ""
   stderr?: string; // default ""
+  stdoutBase64?: string;
+  stderrBase64?: string;
   exitCode?: number; // default 0
   // A signal name such as "TERM": the fake prints its output, then stops itself with this signal.
   killWith?: string;
@@ -80,8 +82,8 @@ export function fakeAnswerScript(
       lines.push(`  ${shellQuote(realCommandPath("sleep"))} ${answer.delaySeconds}`);
     }
     lines.push(
-      `  printf '%s' ${shellQuote(answer.stdout ?? "")}`,
-      `  printf '%s' ${shellQuote(answer.stderr ?? "")} >&2`,
+      `  ${answer.stdoutBase64 === undefined ? `printf '%s' ${shellQuote(answer.stdout ?? "")}` : `printf '%s' ${shellQuote(answer.stdoutBase64)} | ${shellQuote(realCommandPath("base64"))} -d`}`,
+      `  ${answer.stderrBase64 === undefined ? `printf '%s' ${shellQuote(answer.stderr ?? "")}` : `printf '%s' ${shellQuote(answer.stderrBase64)} | ${shellQuote(realCommandPath("base64"))} -d`} >&2`,
     );
     if (answer.killWith !== undefined) {
       if (!signalNamePattern.test(answer.killWith)) {

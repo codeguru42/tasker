@@ -7,6 +7,7 @@ import {
   logLine,
   logEnvItems,
   readFakeCalls,
+  realCommandPath,
   writeFakeCommand,
 } from "./fake-commands.js";
 
@@ -36,11 +37,18 @@ export function forgeGh(
   const safeEnvNames = envNames.filter((name) => name !== "GH_TOKEN");
   const currentAnswers = [...answers];
   let remoteHead: string | undefined;
-  const tokenMatch = `"$(if [ "\${GH_TOKEN-}" = ${shellQuote(token)} ]; then printf set:true; else printf set:false; fi)"`;
+  const encodedToken = Buffer.from(token).toString("base64");
+  const decodedToken = `$(printf '%s' ${shellQuote(encodedToken)} | ${shellQuote(realCommandPath("base64"))} -d)`;
+  const tokenMatch = `"$(if [ "\${GH_TOKEN-}" = "${decodedToken}" ]; then printf set:true; else printf set:false; fi)"`;
   const cwd = '"set:$PWD"';
   const extra = [tokenMatch, cwd, ...logEnvItems("gh", safeEnvNames)];
   const write = () => {
-    const script = fakeAnswerScript("gh", logPath, currentAnswers, extra);
+    const encodedAnswers = currentAnswers.map(({ stdout, stderr, ...answer }) => ({
+      ...answer,
+      stdoutBase64: Buffer.from(stdout ?? "").toString("base64"),
+      stderrBase64: Buffer.from(stderr ?? "").toString("base64"),
+    }));
+    const script = fakeAnswerScript("gh", logPath, encodedAnswers, extra);
     if (remoteHead === undefined) {
       writeFakeCommand(binDir, "gh", script);
       return;
