@@ -192,12 +192,12 @@ exception: a task in `accepted`, or a task that failed in `merging`, whose head 
 reason. If the head moved, the old approval or the old verify result no longer describes the tree, so the task goes to
 the target of this table:
 
-| Origin state                                                                                    | Target                 |
-| ----------------------------------------------------------------------------------------------- | ---------------------- |
-| `approved`                                                                                      | `awaiting_plan_review` |
-| `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`                      | `executed`             |
-| `failed`, when the task failed in `reviewing`, `accepted`, `pushing`, `opening_pr` or `merging` | `executed`             |
-| Each other origin state                                                                         | The origin state       |
+| Origin state                                                                         | Target                 |
+| ------------------------------------------------------------------------------------ | ---------------------- |
+| `approved`                                                                           | `awaiting_plan_review` |
+| `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`           | `executed`             |
+| `failed`, when the task failed in `reviewing`, `accepted`, `opening_pr` or `merging` | `executed`             |
+| Each other origin state                                                              | The origin state       |
 
 For the origin `approved`, the command clears the approval of the pinned plan revision. It writes no `unapproved` event.
 
@@ -214,9 +214,10 @@ no event. It fetches nothing and runs no sync step and no base step.
 The command makes these checks, in this order, before it moves anything:
 
 1. The task is in a state that the command accepts.
-2. The worktree is clean.
-3. The task has a stored move. If not, the error is `nothing to undo for <issue key>`.
-4. `HEAD` and the task branch both name the head that the last run left. If not, the command stops with an error and
+2. The task did not fail in `pushing`. If it did, the command refuses with the error below.
+3. The worktree is clean.
+4. The task has a stored move. If not, the error is `nothing to undo for <issue key>`.
+5. `HEAD` and the task branch both name the head that the last run left. If not, the command stops with an error and
    undoes nothing.
 
 The `HEAD` error is
@@ -254,6 +255,9 @@ and nothing is written. The shared errors of no task, of [the wrong state](../SK
 and of the clone lock belong to this group:
 
 - The task has no branch, no worktree or no base.
+- The task failed in `pushing`. The error is
+  `the task of <issue key> failed in pushing; run tasker retry <issue key> first, so that tasker records what the push published`.
+  Run `tasker retry <issue key>` to record the result of the push.
 - The value of `--strategy` is not `rebase` or `merge`. The error is `--strategy must be rebase or merge: <value>`.
 - The options are `--undo` with `--strategy` or `--take-remote`. The error is
   `--undo cannot be combined with --strategy or --take-remote`.
