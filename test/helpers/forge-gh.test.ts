@@ -40,6 +40,37 @@ describe("the forge gh helper", () => {
     expect(JSON.stringify(fake.calls())).not.toContain(token);
   });
 
+  it("prints empty output plainly and decodes token-bearing output", () => {
+    const dir = useTempDir("tasker-forge-gh-output-branches-");
+    const token = "branch-token-secret";
+    const fake = forgeGh(dir, token, [
+      { args: ["empty"], stdout: "", stderr: "" },
+      { args: ["token"], stdout: token, stderr: `lookup failed: ${token}` },
+    ]);
+    const executable = readFileSync(join(dir, "bin", "gh"), "utf8");
+    const emptyArg = executable.indexOf("empty");
+    const emptyBranchStart = executable.lastIndexOf("if ", emptyArg);
+    const emptyBranchEnd = executable.indexOf("\nfi", emptyArg);
+    const emptyBranch = executable.slice(emptyBranchStart, emptyBranchEnd);
+    const tokenArg = executable.indexOf("token", emptyBranchEnd);
+    const tokenBranchStart = executable.lastIndexOf("if ", tokenArg);
+    const tokenBranchEnd = executable.indexOf("\nfi", tokenArg);
+    const tokenBranch = executable.slice(tokenBranchStart, tokenBranchEnd);
+
+    expect(runFakeGh({ ...fake.env, GH_TOKEN: token }, ["empty"])).toMatchObject({ status: 0, stdout: "", stderr: "" });
+    expect(emptyBranch).toContain("printf '%s' ''");
+    expect(emptyBranch).not.toContain("base64");
+    expect(tokenBranch).toContain("base64");
+    expect(runFakeGh({ ...fake.env, GH_TOKEN: token }, ["token"])).toMatchObject({
+      status: 0,
+      stdout: token,
+      stderr: `lookup failed: ${token}`,
+    });
+    expect(executable).not.toContain(token);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+    expect(fake.calls().map(({ args: callArgs }) => callArgs)).toEqual([["empty"], ["token"]]);
+  });
+
   it("uses the current remote head on each call and logs no token text", () => {
     const dir = useTempDir("tasker-forge-gh-head-");
     const token = "head-token-secret";
