@@ -25,3 +25,12 @@ new one.
 A merge request includes the expected head revision. The forge refuses the request if the remote head has changed. When
 the forge accepts a merge request, that acceptance does not mean that the pull request has merged. The caller reads the
 pull request state separately to establish completion.
+
+## Provider selection
+
+`forgeForRepo()` selects a provider from `repos.<key>.forge`. The forge account is separate from the issue tracker
+account. The configuration schema and the provider registry must support the same provider names. The schema currently
+accepts `github`, and the registry registers `github`. The registry passes the configured forge account to a new
+provider.
+
+After `mergePr()` returns, the caller reads the pull request state with `isPrMerged()` to establish completion.
