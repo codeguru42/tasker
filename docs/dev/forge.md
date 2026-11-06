@@ -33,4 +33,4 @@ account. The configuration schema and the provider registry must support the sam
 accepts `github`, and the registry registers `github`. The registry passes the configured forge account to a new
 provider.
 
-After `mergePr()` returns, the caller reads the pull request state with `isPrMerged()` to establish completion.
+For merge completion, see [Pull requests](#pull-requests).
