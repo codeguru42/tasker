@@ -281,6 +281,39 @@ describe("resumeTask origins", () => {
   });
 });
 
+describe("resumeTask opening PR recovery", () => {
+  it("returns an interrupted PR opening to pushed without clearing task data", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    const sessions = sessionsOf(dataRoot, task);
+    withDataRootStore(dataRoot, (store) => {
+      store.updateTask(task.id, { prNumber: 73 });
+      pauseTaskVia(store, task.id, "pushed", "opening_pr");
+    });
+
+    const result = await resume(dataRoot, task);
+
+    expect(result).toEqual({ origin: "opening_pr", target: "pushed", next: "open-pr" });
+    expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: "pushed", prNumber: 73 });
+    expect(sessionsOf(dataRoot, task)).toEqual(sessions);
+    expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "opening_pr", target: "pushed" }]);
+  });
+
+  it("refuses a quota pause from opening_pr", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    withDataRootStore(dataRoot, (store) => {
+      store.startRun(task.id, "opening_pr");
+      store.endRun(task.id, "quota_blocked");
+      store.appendEvent(task.id, "transition", { from: "opening_pr", to: "quota_blocked", cause: "rate_limit" });
+    });
+
+    await expectRefusedWithoutChange(
+      { dataRoot, key: KEY },
+      () => resume(dataRoot, task),
+      `the task of ${KEY} was paused from opening_pr; tasker resume has no step for it`,
+    );
+  });
+});
+
 describe("resumeTask checks", () => {
   // Expects that resume refuses with message, and that the state, the events and the sessions stay the same.
   async function expectResumeRefused(dataRoot: string, task: Task, message: string) {

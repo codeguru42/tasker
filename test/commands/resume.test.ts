@@ -8,6 +8,7 @@ import { transitionWithReopenStart, type TransitionDetail } from "../../src/stat
 import { GitError } from "../../src/vcs/git/run.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { forgeGh } from "../helpers/forge-gh.js";
 import { failureOf } from "../helpers/errors.js";
 import { commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
 import {
@@ -63,11 +64,26 @@ import {
   useWorkReviewTask,
   type WorkReviewTask,
 } from "../helpers/task-fixtures.js";
+import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
 const KEY = "codeguru42/tasker#5";
+const REPO = "codeguru42/tasker";
 const FEEDBACK = "Keep the loop.";
 const TODOS = [planTodo("a"), planTodo("b", ["a"])];
 const PAUSES = ["quota_blocked", "interrupted"] as const;
+const FORGE_ACCOUNT = "forge-team";
+const FORGE_TOKEN = "forge-token-private";
+
+function installForgeGh(answers: Parameters<typeof forgeGh>[2]) {
+  const fake = forgeGh(useTempDir("tasker-resume-open-pr-gh-"), FORGE_TOKEN, answers);
+  useProcessEnv({
+    TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
+    TASKER_PATH: `${String(fake.env.PATH)}:${String(process.env.PATH)}`,
+    TASKER_GH_CONFIG_DIR: "/tasker/resume-forge-gh-config",
+    TASKER_HOME: "/tasker/resume-forge-home",
+  });
+  return fake;
+}
 
 const runResume = (key = KEY, ...extra: string[]) => runCommand(resume, "resume", key, ...extra);
 
@@ -85,6 +101,43 @@ const V2_ANSWER = validPlanAnswer({
 });
 
 describe("tasker resume", () => {
+  it("adopts a PR after an interrupted create and passes through open-pr output", async () => {
+    const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
+    const url = "https://github.com/codeguru42/tasker/pull/42";
+    withDataRootStore(accepted.dataRoot, (store) => {
+      store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision });
+      pauseTaskVia(store, accepted.task.id, "pushed", "opening_pr");
+    });
+    const head = accepted.task.branch!;
+    const tokenAnswer = { args: ["auth", "token", "--user", FORGE_ACCOUNT], stdout: `${FORGE_TOKEN}\n` };
+    const listArgs = [
+      "pr",
+      "list",
+      "--head",
+      head,
+      "--state",
+      "open",
+      "--json",
+      "number,url,baseRefName,isCrossRepository",
+      "--limit",
+      "100",
+    ];
+    const fake = installForgeGh([
+      tokenAnswer,
+      { args: listArgs, stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]) },
+    ]);
+
+    const result = await runResume(KEY, "--repo", REPO);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `resumed ${KEY}: paused in opening_pr, back in pushed\nadopted PR #42: ${url}\nstate: in_peer_review\n`,
+      err: "",
+    });
+    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
+    expect(fake.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs]);
+  });
+
   it.each(["accepted", "pushed"] as const)(
     "restores a stopped reopen from %s and reuses its feedback",
     async (origin) => {
