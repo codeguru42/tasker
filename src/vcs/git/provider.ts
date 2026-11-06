@@ -9,6 +9,7 @@ import {
   trackedPaths,
 } from "./assistant-surface.js";
 import { baseRevision as baseRevisionOf, resolveBaseBranch } from "./base-branch.js";
+import { fetchRemoteDefaultBranch } from "./default-branch.js";
 import {
   changedPaths,
   fetchBaseContainment,
@@ -114,6 +115,10 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
         defaultBaseBranch: defaultBase,
         ask,
       });
+    },
+    async defaultBase(ctx) {
+      const { clone } = pathsOf(ctx);
+      return fetchRemoteDefaultBranch({ clone, remote, sshKey: config.sshKey, env: ctx.env });
     },
     baseRevision: (base) => baseRevisionOf(base),
     async diffAgainstBase(ctx, { path, baseRevision }) {

@@ -144,15 +144,12 @@ describe("createGitProvider", () => {
       const git = provider();
       await git.provision(fixture.context);
       const clone = paths().clone;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- The helper is added by the green step.
       const direct = await fetchRemoteDefaultBranch({
         clone,
         remote: fixture.origin.path,
         sshKey: undefined,
         env: fixture.context.env,
       });
-      // @ts-expect-error The provider method is added by the green step.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- The provider method is added by the green step.
       const mapped = await git.defaultBase(fixture.context);
       expect(mapped).toBe(direct);
       expect(mapped).toBe("main");
