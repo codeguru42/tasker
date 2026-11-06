@@ -14,7 +14,7 @@ async function registrySelector(): Promise<(config: Config, repoKey: string) => 
 }
 
 function configFor(
-  tracker: Record<string, unknown> = { tracker: "jira", project: "TEST", site: "one.atlassian.net" },
+  tracker: Record<string, unknown> = { provider: "jira", project: "TEST", site: "one.atlassian.net" },
 ): Config {
   const config = configWithTrackers({ repo: tracker });
   config.repos.repo.forge = { provider: "github", account: "forge-owner", mergeMethod: "merge" };
@@ -90,7 +90,7 @@ describe("forgeForRepo", () => {
   it("returns a fresh provider for each selection and keeps forge identity separate", async () => {
     const select = await registrySelector();
     const gh = fake();
-    const config = configFor({ tracker: "github", account: "tracker-owner" });
+    const config = configFor({ provider: "github", account: "tracker-owner" });
 
     const first = select(config, "repo");
     const second = select(config, "repo");
