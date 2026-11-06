@@ -22,8 +22,10 @@ function commandFailure(sha: string, source: Source, cause: unknown): Error {
     cause !== null && typeof cause === "object" && "stderr" in cause && typeof cause.stderr === "string"
       ? cause.stderr.trim()
       : "";
-  const detail = stderr === "" ? "" : `: ${stderr}`;
-  return new Error(`ciStatus for ${sha}: ${source.name} command failed${detail}`, { cause });
+  const detail = stderr || (cause instanceof Error ? cause.message.trim() : "");
+  return new Error(`ciStatus for ${sha}: ${source.name} command failed${detail === "" ? "" : `: ${detail}`}`, {
+    cause,
+  });
 }
 
 function readSource(
