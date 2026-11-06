@@ -53,6 +53,15 @@ describe("run", () => {
     expect(io.out.join("")).toContain("Say hello");
   });
 
+  it("lists open-pr in the tasker command help", async () => {
+    const io = captureIo();
+
+    const code = await run(["--help"], { io });
+
+    expect(code).toBe(0);
+    expect(io.out.join("")).toContain("open-pr");
+  });
+
   it("lists the options of a command in <command> --help", async () => {
     const io = captureIo();
 

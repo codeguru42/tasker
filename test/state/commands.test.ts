@@ -28,6 +28,7 @@ const ACCEPTED: Record<TaskCommand, readonly string[]> = {
   "dismiss-review": ["reviewed"],
   accept: ["awaiting_work_review"],
   merge: ["accepted"],
+  "open-pr": ["pushed"],
   push: ["accepted"],
   "mark-landed": ["accepted", "pushed", "in_peer_review"],
   reopen: ["accepted", "pushed"],
@@ -73,6 +74,10 @@ describe("stateCommands", () => {
   it("offers reopen beside landing commands for accepted and pushed tasks", () => {
     expect(stateCommands("accepted")?.commands).toContain("reopen");
     expect(stateCommands("pushed")?.commands).toContain("reopen");
+  });
+
+  it("offers open-pr before landing for a pushed task", () => {
+    expect(stateCommands("pushed")?.commands).toEqual(["open-pr", "mark-landed", "update-branch", "reopen", "abort"]);
   });
 
   it.each(STATES)("gives the expected row for %s", (state) => {
