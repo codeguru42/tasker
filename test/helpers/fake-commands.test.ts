@@ -129,7 +129,7 @@ describe("fakeAnswerScript", () => {
   });
 
   it("prints token-bearing lookup output and diagnostics unchanged", () => {
-    const dir = useTempDir("tasker-token-output-");
+    const dir = useTempDir("tasker-output-");
     const token = "lookup-token-secret";
     const bin = join(dir, "bin");
     const output = `lookup output: ${token}`;
@@ -137,13 +137,25 @@ describe("fakeAnswerScript", () => {
     writeFakeCommand(
       bin,
       "tool",
-      fakeAnswerScript("tool", join(dir, "tool.log"), [{ args: ["lookup"], stdout: output, stderr: diagnostic }], []),
+      fakeAnswerScript(
+        "tool",
+        join(dir, "tool.log"),
+        [
+          {
+            args: ["lookup"],
+            stdoutBase64: Buffer.from(output).toString("base64"),
+            stderrBase64: Buffer.from(diagnostic).toString("base64"),
+          },
+        ],
+        [],
+      ),
     );
 
     const result = spawnSync(join(bin, "tool"), ["lookup"], { env: { PATH: bin }, encoding: "utf8" });
 
     expect(result.stdout).toBe(output);
     expect(result.stderr).toBe(diagnostic);
+    expect(readFileSync(join(bin, "tool"), "utf8")).not.toContain("token");
   });
 
   it("exits 99 for an unlisted call and logs it as unanswered", () => {
