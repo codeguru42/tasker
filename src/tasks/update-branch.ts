@@ -161,7 +161,7 @@ const DEMOTED_TO: Readonly<Partial<Record<TaskState, TaskState>>> = {
 };
 
 // The states a task failed in that a demotion moves to executed.
-const FAILED_IN_DEMOTED: readonly TaskState[] = ["reviewing", "accepted", "pushing", "opening_pr", "merging"];
+const FAILED_IN_DEMOTED: readonly TaskState[] = ["reviewing", "accepted", "opening_pr", "merging"];
 
 function demotedTarget(origin: TaskState, failedIn: TaskState | undefined): TaskState {
   if (origin === "failed") {
@@ -251,6 +251,13 @@ export async function updateBranchTask(store: TaskStore, request: UpdateBranchRe
 async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest): Promise<UpdateBranchResult> {
   const { config, env, io } = request;
   const task = taskInState(store, request.taskId, "update-branch");
+  const origin = task.state as TaskState;
+  const failedIn = origin === "failed" ? transitionFromEvents(store.listEvents(task.id), "failed") : undefined;
+  if (failedIn === "pushing") {
+    throw new Error(
+      `the task of ${task.issueKey} failed in pushing; run tasker retry ${task.issueKey} first, so that tasker records what the push published`,
+    );
+  }
   const branch = requireBranch(task);
   const path = requireWorktree(task);
   const base = requireBase(task);
@@ -269,8 +276,6 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
     );
   }
   const before: BranchSnapshot = { head: start.head, base, baseRevision, syncedBaseTip: task.syncedBaseTip };
-  const origin = task.state as TaskState;
-  const failedIn = origin === "failed" ? transitionFromEvents(store.listEvents(task.id), "failed") : undefined;
   const run: UpdateRun = { store, task, vcs, ctx, io, path, branch, before, origin };
   if (request.undo) return undoLastUpdate(run, request, failedIn);
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
