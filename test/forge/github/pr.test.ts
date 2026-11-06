@@ -258,6 +258,21 @@ describe("createPr", () => {
     fake.assertAnswered();
   });
 
+  it("ignores pull URLs with path segments before the owner and repository", async () => {
+    const dir = useTempDir("tasker-create-pr-url-prefix-");
+    const target = { ...createTarget, cwd: dir };
+    const output = ["https://example.test/docs/acme/project/pull/234", "https://github.com/acme/project/pull/42"].join(
+      "\n",
+    );
+    const { env, fake, session } = setup([{ args: createArgs(target), stdout: output }], dir);
+
+    await expect(createCall(session, target, env)).resolves.toEqual({
+      number: 42,
+      url: "https://github.com/acme/project/pull/42",
+    } satisfies PullRequest);
+    fake.assertAnswered();
+  });
+
   it("accepts a GitHub Enterprise pull request URL", async () => {
     const dir = useTempDir("tasker-create-pr-enterprise-");
     const target = { ...createTarget, cwd: dir };
