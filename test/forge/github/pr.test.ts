@@ -510,4 +510,27 @@ describe("mergePr", () => {
     expect(fake.calls().some(({ args }) => args[0] === "pr" && args[1] === "view")).toBe(false);
     fake.assertAnswered();
   });
+
+  it("reads merged state after an accepted merge completes", async () => {
+    const dir = useTempDir("tasker-merge-pr-completion-");
+    const headSha = "expected-head-sha-123";
+    const { env, fake, session } = setup([{ args: mergeArgs(42, "merge", headSha), stdout: "Merge accepted." }], dir);
+
+    await expect(mergeCall(session, 42, "merge", headSha, dir, env)).resolves.toBeUndefined();
+    fake.setMergeState("OPEN");
+    await expect(mergedCall(session, 42, dir, env)).resolves.toBe(false);
+    fake.setMergeState("MERGED");
+    await expect(mergedCall(session, 42, dir, env)).resolves.toBe(true);
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([
+      mergeArgs(42, "merge", headSha),
+      ["pr", "view", "42", "--json", "state"],
+      ["pr", "view", "42", "--json", "state"],
+    ]);
+    fake.assertAnswered();
+  });
 });

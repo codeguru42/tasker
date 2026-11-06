@@ -56,8 +56,8 @@ describe("the forge gh helper", () => {
       return runFakeGh(env, ["pr", "view", "42", "--json", "state"]);
     };
 
-    expect(readState("OPEN")).toMatchObject({ status: 0, stdout: "OPEN" });
-    expect(readState("MERGED")).toMatchObject({ status: 0, stdout: "MERGED" });
+    expect(readState("OPEN")).toMatchObject({ status: 0, stdout: JSON.stringify({ state: "OPEN" }) });
+    expect(readState("MERGED")).toMatchObject({ status: 0, stdout: JSON.stringify({ state: "MERGED" }) });
     expect(fake.calls().map(({ args }) => args)).toEqual([
       ["pr", "view", "42", "--json", "state"],
       ["pr", "view", "42", "--json", "state"],
