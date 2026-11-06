@@ -8,7 +8,7 @@ import type { CreatePrInput, MergeMethod, OpenPullRequest, PullRequest } from ".
 import { failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
 import type { FakeAnswer } from "../../helpers/fake-commands.js";
-import { useTempDir } from "../../helpers/temp.js";
+import { useProcessEnv, useTempDir } from "../../helpers/temp.js";
 
 const listOpenPrs = untypedListOpenPrs;
 const createPr = untypedCreatePr;
@@ -55,8 +55,12 @@ function mergeCall(
   return mergePr(session, number, method, headSha, cwd, env);
 }
 
-function setup(answers: readonly FakeAnswer[], dir = useTempDir("tasker-list-open-prs-")) {
-  const fake = forgeGh(dir, token, [tokenAnswer(), ...answers], baseEnvNames);
+function setup(
+  answers: readonly FakeAnswer[],
+  dir = useTempDir("tasker-list-open-prs-"),
+  extraEnvNames: readonly string[] = [],
+) {
+  const fake = forgeGh(dir, token, [tokenAnswer(), ...answers], [...baseEnvNames, ...extraEnvNames]);
   const env: NodeJS.ProcessEnv = {
     ...fake.env,
     TASKER_PATH: fake.env.PATH,
@@ -354,6 +358,50 @@ describe("listOpenPrs", () => {
 });
 
 describe("createPr", () => {
+  it("isolates caller and ambient forge inputs", async () => {
+    useProcessEnv({
+      GH_HOST: "ambient.example",
+      GH_REPO: "ambient/repo",
+      GH_TOKEN: "ambient-parent-token",
+    });
+    const parentEnvBefore = {
+      GH_HOST: process.env.GH_HOST,
+      GH_REPO: process.env.GH_REPO,
+      GH_TOKEN: process.env.GH_TOKEN,
+    };
+    const dir = useTempDir("tasker-create-pr-isolation-");
+    const target = { ...createTarget, cwd: dir };
+    const { env, fake, session } = setup(
+      [{ args: createArgs(target), stdout: "https://github.com/acme/project/pull/42" }],
+      dir,
+      ["GH_HOST", "GH_REPO"],
+    );
+    const callerEnv = {
+      ...env,
+      GH_HOST: "caller.example",
+      GH_REPO: "caller/repo",
+      GH_TOKEN: "unrelated-caller-token",
+    };
+    const callerEnvBefore = { ...callerEnv };
+
+    await expect(createCall(session, target, callerEnv)).resolves.toEqual({
+      number: 42,
+      url: "https://github.com/acme/project/pull/42",
+    });
+
+    const calls = fake.calls();
+    expect(calls.map(({ args }) => args)).toEqual([tokenAnswer().args, createArgs(target)]);
+    expect(calls[0]).toMatchObject({ cwd: process.cwd(), tokenMatches: false });
+    expect(calls[1]).toMatchObject({ cwd: dir, tokenMatches: true, args: createArgs(target) });
+    expect(calls.every(({ env: childEnv }) => childEnv.GH_HOST === undefined)).toBe(true);
+    expect(calls.every(({ env: childEnv }) => childEnv.GH_REPO === undefined)).toBe(true);
+    expect(callerEnv).toEqual(callerEnvBefore);
+    expect({ GH_HOST: process.env.GH_HOST, GH_REPO: process.env.GH_REPO, GH_TOKEN: process.env.GH_TOKEN }).toEqual(
+      parentEnvBefore,
+    );
+    fake.assertAnswered();
+  });
+
   it.each([
     ["https://github.com/acme/project/pull/42", "https://github.com/acme/project/pull/42/"],
     ["https://github.com/acme/project/pull/42/", "https://github.com/acme/project/pull/42"],
