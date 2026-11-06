@@ -97,10 +97,6 @@ describe("codexArgs: the keys of the deny table", () => {
     return argsOf({ env, sandbox: sandboxLimits({ denyRead }) });
   }
 
-  function realTempDir(): string {
-    return realpathSync(useTempDir("tasker-codex-table-"));
-  }
-
   it("writes the target for a deny key that is a link", () => {
     const dir = realTempDir();
     mkdirSync(join(dir, "real"));
