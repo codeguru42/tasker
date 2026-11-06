@@ -2,7 +2,7 @@ import { relative, join } from "node:path";
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../src/github/forge-session.js";
-import { failureOf, thrownBy } from "../helpers/errors.js";
+import { diagnosticStrings, failureOf, thrownBy } from "../helpers/errors.js";
 import { forgeGh } from "../helpers/forge-gh.js";
 import { writeFakeCommand } from "../helpers/fake-commands.js";
 import { startFixture } from "../helpers/processes.js";
@@ -32,19 +32,6 @@ const run = (
   cwd: string,
   env: NodeJS.ProcessEnv,
 ) => session.run(args, { cwd, env });
-
-function diagnosticStrings(value: unknown, seen = new Set<object>()): string[] {
-  if (typeof value === "string") return [value];
-  if (value === null || typeof value !== "object" || seen.has(value)) return [];
-  seen.add(value);
-  return Object.getOwnPropertyNames(value).flatMap((name) => {
-    try {
-      return diagnosticStrings((value as Record<string, unknown>)[name], seen);
-    } catch {
-      return [];
-    }
-  });
-}
 
 function expectNoToken(error: Error, token: string): void {
   expect(diagnosticStrings(error).join("\n")).not.toContain(token);

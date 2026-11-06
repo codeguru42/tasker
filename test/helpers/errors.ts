@@ -1,5 +1,23 @@
 import { ConfigError } from "../../src/config/schema.js";
 
+export function diagnosticStrings(value: unknown): string[] {
+  const seen = new Set<object>();
+  return collect(value);
+
+  function collect(current: unknown): string[] {
+    if (typeof current === "string") return [current];
+    if (current === null || typeof current !== "object" || seen.has(current)) return [];
+    seen.add(current);
+    return Object.getOwnPropertyNames(current).flatMap((name) => {
+      try {
+        return collect((current as Record<string, unknown>)[name]);
+      } catch {
+        return [];
+      }
+    });
+  }
+}
+
 // The error that fn throws. It throws, so the test fails, when fn returns. wanted names what the test
 // needs in that message.
 export function thrownBy(fn: () => unknown, wanted = "a throw"): unknown {

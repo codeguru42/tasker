@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError } from "../../src/config/schema.js";
 import { GitError } from "../../src/vcs/git/run.js";
-import { configIssuesOf, failureOf, thrownBy } from "./errors.js";
-// @ts-expect-error The shared export is added in the next commit.
-import { diagnosticStrings } from "./errors.js";
+import { configIssuesOf, diagnosticStrings, failureOf, thrownBy } from "./errors.js";
 
 function callDiagnosticStrings(value: unknown): string[] {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return diagnosticStrings(value);
 }
 

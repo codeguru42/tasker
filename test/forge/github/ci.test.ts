@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../../src/github/forge-session.js";
 import { ciStatus } from "../../../src/forge/github/ci.js";
-import { failureOf } from "../../helpers/errors.js";
+import { diagnosticStrings, failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
 import type { FakeAnswer } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
@@ -23,19 +23,6 @@ const callCiStatus = (
 ) => {
   return ciStatus(session, commit, cwd, env);
 };
-
-function exposedStrings(value: unknown, seen = new Set<object>()): string[] {
-  if (typeof value === "string") return [value];
-  if (value === null || typeof value !== "object" || seen.has(value)) return [];
-  seen.add(value);
-  return Object.getOwnPropertyNames(value).flatMap((name) => {
-    try {
-      return exposedStrings((value as Record<string, unknown>)[name], seen);
-    } catch {
-      return [];
-    }
-  });
-}
 
 function answers(
   results: { checks?: string; statuses?: string; workflows?: string } = {},
@@ -71,7 +58,7 @@ describe("ciStatus", () => {
     expect(error.message).toContain(account);
     expect(error.message).toContain("gh auth login");
     expect(error.cause).toBeInstanceOf(Error);
-    expect(exposedStrings(error).join("\n")).not.toContain(token);
+    expect(diagnosticStrings(error).join("\n")).not.toContain(token);
     expect(fake.calls().map((call) => call.args)).toEqual([["auth", "token", "--user", account]]);
     fake.assertAnswered();
   });
@@ -356,7 +343,7 @@ describe("ciStatus", () => {
     expect(error.message).toContain("HTTP 422: request failed with ***");
     expect(error.cause).toBeInstanceOf(Error);
     expect((error.cause as Error & { stderr?: string }).stderr).toBe("HTTP 422: request failed with ***");
-    expect(exposedStrings(error).join("\n")).not.toContain(token);
+    expect(diagnosticStrings(error).join("\n")).not.toContain(token);
     fake.assertAnswered();
   });
 
