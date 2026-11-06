@@ -9,6 +9,7 @@ import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { runTrackerWrite, trackerTargets, type TrackerWrite } from "./tracker-write.js";
 import { cleanUpTaskWorkspace, findTaskWorkspace } from "./workspace-cleanup.js";
+import { RemoteTaskRefMovedError } from "../vcs/errors.js";
 import { uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
 
 export interface AbortRequest {
@@ -62,10 +63,26 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
     if (request.keepRemote && task.branch !== null) {
       report(`kept ${task.branch} on origin; to delete it: git push origin --delete ${task.branch}`);
     } else if (!request.keepRemote && task.branch !== null && task.publishedRevision !== null) {
-      const deletion = await vcs.deleteRemoteTaskRef(ctx, {
-        taskRef: task.branch,
-        published: task.publishedRevision,
-      });
+      let deletion;
+      try {
+        deletion = await vcs.deleteRemoteTaskRef(ctx, {
+          taskRef: task.branch,
+          published: task.publishedRevision,
+        });
+      } catch (error) {
+        if (error instanceof RemoteTaskRefMovedError) {
+          const actual = error.tip.state === "present" ? error.tip.revision : "missing";
+          throw new Error(
+            `cannot abort ${ref.key}: the task branch ${task.branch} moved on origin: tasker published ${String(error.published)}, origin has ${actual}; someone else pushed to it; use --keep-remote to keep that branch`,
+            { cause: error },
+          );
+        }
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `cannot abort ${ref.key}: cannot delete the task branch ${task.branch} on origin: ${reason}; run tasker abort ${ref.key} again, or delete the branch from a clone of your own`,
+          { cause: error },
+        );
+      }
       if (deletion.state === "deleted") report(`deleted ${task.branch} on origin`);
     }
     if (entry !== undefined && changes.length > 0) {
