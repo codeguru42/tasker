@@ -268,8 +268,9 @@ When the command deletes the remote branch, it prints `deleted <branch> on origi
 branch is already gone. When the task has no stored branch or no stored publication revision, it skips remote deletion.
 If you pass `--keep-remote`, the command skips remote deletion and prints
 `kept <branch> on origin; to delete it: git push origin --delete <branch>` when the task has a stored branch. It prints
-no keep hint when the task has no stored branch. After the steps, it prints `cancelled <issue>`. Deleting a remote
-branch can remove the head branch of an open or queued PR. Use `--keep-remote` to preserve it.
+no keep hint when the task has no stored branch. After the steps, it prints `cancelled <issue>`.
+
+Deleting a remote branch can remove the head branch of an open or queued PR. Use `--keep-remote` to preserve it.
 
 If remote deletion fails, the command exits with code 1 and writes an error to stderr. A moved branch gives this exact
 error:
