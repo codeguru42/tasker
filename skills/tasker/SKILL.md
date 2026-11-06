@@ -285,8 +285,9 @@ quota window, and runs the same command again. See [the reference](references/re
 
 ### `tasker abort`
 
-Cancels an active task and removes its worktree and local branch. It needs any state except `finished` and `cancelled`.
-See [the reference](references/recovery.md#tasker-abort).
+Cancels an active task and removes its worktree and local branch. It deletes the published branch on origin first. Pass
+`--keep-remote` to keep the remote branch. It accepts any state except `finished` and `cancelled`. See
+[the reference](references/recovery.md#tasker-abort).
 
 ### `tasker status`
 
