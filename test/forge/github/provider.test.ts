@@ -56,6 +56,7 @@ function fixture(answers: Parameters<typeof forgeGh>[2] = [], envNames: string[]
 describe("createGitHubForge", () => {
   it("creates the exact provider interface without starting gh", async () => {
     const { fake } = fixture();
+    useProcessEnv(fake.env);
     const provider = makeProvider();
 
     expect(provider.id).toBe("github");
