@@ -152,7 +152,8 @@ the entry is gone.
 The remove and the delete have one home in `src/tasks/`. Abort and [Finish](#finish) both call it, and the abort keeps
 its discard step before that call.
 
-The abort does not delete the task branch on `origin`. No ticket has added remote branch deletion yet.
+Remote deletion comes first so that a failed deletion leaves local work available for recovery. An explicit keep permits
+cancellation with the remote branch intact.
 
 A worktree or a branch that start made but did not store stays after an abort. The abort works only on what the task
 stores.
