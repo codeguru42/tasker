@@ -103,10 +103,10 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 - [docs/dev/issue-keys.md](docs/dev/issue-keys.md): the issue key forms, the short refs, the resolve of a key to its
   repo and the stored spelling.
 - [docs/dev/tasks.md](docs/dev/tasks.md): the task commands start, abort, plan, refine, approve, unapprove, execute,
-  verify, review, retry, accept, reopen, merge, push and mark-landed, and the result of an assistant run: the purpose of
-  start, the order of its steps, the locks and the lock order, the rules of a second run, the reasons of abort, the
-  order of the steps of plan and refine, the approve, the execute run, the verify run, the review, the retry, the
-  accept, the merge, the push, the mark-landed and the result of an assistant run.
+  verify, review, retry, accept, reopen, open-pr, merge, push and mark-landed, and the result of an assistant run: the
+  purpose of start, the order of its steps, the locks and the lock order, the rules of a second run, the reasons of
+  abort, the order of the steps of plan and refine, the approve, the execute run, the verify run, the review, the retry,
+  the accept, the reopen, the open PR, the merge, the push, the mark-landed and the result of an assistant run.
 - [docs/dev/phases.md](docs/dev/phases.md): the phases: the environment of a phase, the deadline, the stop rules, the
   log and the marker.
 - [docs/dev/assistants.md](docs/dev/assistants.md): the assistant provider interface: its purpose, the rule "refuse,
