@@ -45,8 +45,8 @@ export function forgeGh(
   const write = () => {
     const encodedAnswers = currentAnswers.map(({ stdout, stderr, ...answer }) => ({
       ...answer,
-      stdoutBase64: Buffer.from(stdout ?? "").toString("base64"),
-      stderrBase64: Buffer.from(stderr ?? "").toString("base64"),
+      ...(stdout ? { stdoutBase64: Buffer.from(stdout).toString("base64") } : { stdout: "" }),
+      ...(stderr ? { stderrBase64: Buffer.from(stderr).toString("base64") } : { stderr: "" }),
     }));
     const script = fakeAnswerScript("gh", logPath, encodedAnswers, extra);
     if (remoteHead === undefined) {

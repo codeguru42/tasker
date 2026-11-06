@@ -60,8 +60,8 @@ const signalNamePattern = /^[A-Z0-9]+$/;
 
 // The script body of a fake command named tool. It logs each call at logPath (see logLine() for extra), then
 // prints the first answer that matches. A call that no answer matches goes in the log <logPath>.unanswered,
-// prints an error and exits with 99. It uses shell builtins. Only for a delay, it runs the real sleep by its
-// absolute path.
+// prints an error and exits with 99. It uses shell builtins. For encoded output, it runs the real base64 by its
+// absolute path. For a delay, it runs the real sleep by its absolute path.
 export function fakeAnswerScript(
   tool: string,
   logPath: string,
