@@ -97,9 +97,9 @@ describe("ciStatus", () => {
         },
       },
       ...[
-        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
-        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
         ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`],
+        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
+        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
       ].map((args) => ({
         args,
         tokenMatches: true,
@@ -129,9 +129,9 @@ describe("ciStatus", () => {
     await expect(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env))).resolves.toBe("passed");
     expect(fake.calls().map((entry) => entry.args)).toEqual([
       ["auth", "token", "--user", "octo"],
-      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
-      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
       ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`],
+      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
+      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
     ]);
     fake.assertAnswered();
   });
