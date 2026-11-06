@@ -174,6 +174,65 @@ describe("listOpenPrs", () => {
     fake.assertAnswered();
   });
 
+  it("returns an empty list for a complete fork-only response", async () => {
+    const forks = [pr(31, "main", true), pr(32, "release/4", true)];
+    const { dir, env, fake, session } = setup([{ args: listArgs(head, 100), stdout: JSON.stringify(forks) }]);
+
+    await expect(listCall(session, dir, head, env)).resolves.toEqual([]);
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([listArgs(head, 100)]);
+    fake.assertAnswered();
+  });
+
+  it("returns 150 origin requests once from the final larger read", async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => pr(index + 1));
+    const finalPage = Array.from({ length: 150 }, (_, index) => pr(index + 201));
+    const { dir, env, fake, session } = setup([
+      { args: listArgs(head, 100), stdout: JSON.stringify(firstPage) },
+      { args: listArgs(head, 200), stdout: JSON.stringify(finalPage) },
+    ]);
+
+    await expect(listCall(session, dir, head, env)).resolves.toEqual(
+      finalPage.map((_, index) => ({
+        number: index + 201,
+        url: `https://github.com/acme/project/pull/${index + 201}`,
+        base: "main",
+      })),
+    );
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([listArgs(head, 100), listArgs(head, 200)]);
+    fake.assertAnswered();
+  });
+
+  it("counts 100 forks toward the limit before returning origin requests", async () => {
+    const forks = Array.from({ length: 100 }, (_, index) => pr(index + 1, "main", true));
+    const origins = [pr(201, "main"), pr(202, "release/4")];
+    const { dir, env, fake, session } = setup([
+      { args: listArgs(head, 100), stdout: JSON.stringify(forks) },
+      { args: listArgs(head, 200), stdout: JSON.stringify([...forks, ...origins]) },
+    ]);
+
+    await expect(listCall(session, dir, head, env)).resolves.toEqual([
+      { number: 201, url: "https://github.com/acme/project/pull/201", base: "main" },
+      { number: 202, url: "https://github.com/acme/project/pull/202", base: "release/4" },
+    ] satisfies OpenPullRequest[]);
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([listArgs(head, 100), listArgs(head, 200)]);
+    fake.assertAnswered();
+  });
+
   it.each([
     ["not an array", "{}"],
     ["invalid JSON", "{"],
