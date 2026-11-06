@@ -17,6 +17,7 @@ export interface AbortRequest {
   // The task that the lookup found. The abort reads it again under the task lock.
   taskId: number;
   force: boolean;
+  keepRemote: boolean;
   env: NodeJS.ProcessEnv;
   // How long the abort waits for the lock of the clone.
   repoLockWaitMs: number;
@@ -58,7 +59,9 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
     );
   }
   return withRepoLock(store, ref.repoKey, request.repoLockWaitMs, async () => {
-    if (task.branch !== null && task.publishedRevision !== null) {
+    if (request.keepRemote && task.branch !== null) {
+      report(`kept ${task.branch} on origin; to delete it: git push origin --delete ${task.branch}`);
+    } else if (!request.keepRemote && task.branch !== null && task.publishedRevision !== null) {
       const deletion = await vcs.deleteRemoteTaskRef(ctx, {
         taskRef: task.branch,
         published: task.publishedRevision,

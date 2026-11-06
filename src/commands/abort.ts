@@ -12,11 +12,12 @@ import {
 export const abort: RegisterCommand = (program, io) => {
   program
     .command("abort")
-    .description("Remove the worktree and the task branch of an active task, and move the task to cancelled")
+    .description("Cancel an active task and remove its worktree and published task branch.")
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .option("--force", "Discard the uncommitted changes of the worktree before the abort")
-    .action(async (issue: string, options: { repo?: string; force?: boolean }) => {
+    .option("--keep-remote", "Keep the task branch on origin during the abort.")
+    .action(async (issue: string, options: { repo?: string; force?: boolean; keepRemote?: boolean }) => {
       const config = loadConfigOrFail(io);
       await orFailAsync(io, async () => {
         const task = await withIssueTaskAsync(io, config, issue, { repo: options.repo }, (store, found, ref) =>
@@ -25,6 +26,7 @@ export const abort: RegisterCommand = (program, io) => {
             ref,
             taskId: found.id,
             force: options.force === true,
+            keepRemote: options.keepRemote === true,
             env: process.env,
             repoLockWaitMs: REPO_LOCK_WAIT_MS,
             report: (line) => io.stdout(`${line}\n`),

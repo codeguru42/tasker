@@ -39,6 +39,7 @@ function abortWith(
 ): Promise<Task> {
   return abortTask(store, {
     force: false,
+    keepRemote: false,
     env: process.env,
     repoLockWaitMs: 300,
     report: () => {},
