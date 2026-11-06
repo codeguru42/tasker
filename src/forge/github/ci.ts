@@ -17,6 +17,27 @@ function malformed(sha: string, source: Source, field: string): Error {
   return new Error(`ciStatus for ${sha}: malformed ${source.name} response field ${field}`);
 }
 
+function commandFailure(sha: string, source: Source, cause: unknown): Error {
+  const stderr =
+    cause !== null && typeof cause === "object" && "stderr" in cause && typeof cause.stderr === "string"
+      ? cause.stderr.trim()
+      : "";
+  const detail = stderr === "" ? "" : `: ${stderr}`;
+  return new Error(`ciStatus for ${sha}: ${source.name} command failed${detail}`, { cause });
+}
+
+function readSource(
+  session: GhSession,
+  args: readonly string[],
+  options: { cwd: string; env: NodeJS.ProcessEnv },
+  sha: string,
+  source: Source,
+): Promise<string> {
+  return session.run(args, options).catch((error: unknown) => {
+    throw commandFailure(sha, source, error);
+  });
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -75,18 +96,27 @@ export async function ciStatus(
   env: NodeJS.ProcessEnv,
 ): Promise<CiStatus> {
   const [checkStdout, statusStdout, workflowStdout] = await Promise.all([
-    session.run(["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`], {
-      cwd,
-      env,
-    }),
-    session.run(["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`], {
-      cwd,
-      env,
-    }),
-    session.run(["api", "--paginate", "--slurp", `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`], {
-      cwd,
-      env,
-    }),
+    readSource(
+      session,
+      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
+      { cwd, env },
+      sha,
+      checks,
+    ),
+    readSource(
+      session,
+      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
+      { cwd, env },
+      sha,
+      statuses,
+    ),
+    readSource(
+      session,
+      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`],
+      { cwd, env },
+      sha,
+      workflows,
+    ),
   ]);
   const checkRuns = responseResults(checkStdout, sha, checks);
   const commitStatuses = responseResults(statusStdout, sha, statuses);
