@@ -41,7 +41,6 @@ async function callOpenPr(
   repoLockWaitMs = 300,
 ) {
   const io = captureIo();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- The task module is added by the feature green step.
   const result = await openPrTask(store, {
     config: fixture.config,
     ref: taskRefOf(fixture),
@@ -144,7 +143,7 @@ describe("openPrTask", () => {
     for (const [field, value, message] of [
       ["branch", null, "has no branch"],
       ["worktreePath", null, "has no worktree"],
-      ["base", null, "has no base revision"],
+      ["base", null, "has no base"],
     ] as const) {
       const fixture = await pushedTask();
       withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.task.id, { [field]: value }));
@@ -199,15 +198,13 @@ describe("openPrTask", () => {
       openPrs: [{ number: 28, url: "https://example.test/pull/28", base: "release" }],
     });
 
-    const failure = await failureOf(
-      withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake)),
-      Error,
-    );
+    const { result, io } = await withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake));
 
-    expect(failure.message).toContain("#28");
-    expect(failure.message).toContain("https://example.test/pull/28");
-    expect(failure.message).toContain("release");
-    expect(failure.message.toLowerCase()).toContain("correct");
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toContain("#28");
+    expect(io.err.join("")).toContain("https://example.test/pull/28");
+    expect(io.err.join("")).toContain("release");
+    expect(io.err.join("").toLowerCase()).toContain("correct");
     expect(fake.calls.created).toEqual([]);
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("failed");
   });

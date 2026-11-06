@@ -95,6 +95,43 @@ it to `interrupted`. Run `tasker resume` to continue publication. See [tasker re
 Do not change tasker-owned worktrees or branch refs outside tasker. Tasker does not protect publication against those
 concurrent changes.
 
+## `tasker open-pr`
+
+Opens or adopts a pull request (PR) for a task in `pushed`: `tasker open-pr <issue> [--repo <key>]`. A PR asks for
+external review. The repo must have a configured forge. The task must have a branch, worktree and stored base.
+
+Tasker fetches `origin` and reads the branch named by its symbolic `HEAD`. If that default base cannot be resolved, or
+if it differs from the task's stored base, the command stops before it enters `opening_pr`. Correct the task base before
+trying again. This check also refuses a task based on a local or stacked branch.
+
+After the task enters `opening_pr`, tasker lists open origin PRs for the exact task branch. It adopts a PR whose base
+matches the resolved default base. If open PRs exist only for another base, the command names a PR number, URL and base,
+then fails without creating another PR. If lookup fails, tasker fails the run and does not treat the error as an empty
+list.
+
+If no open origin PR exists, tasker creates one with title `<summary> (<issue key>)` and body `Task: <issue key>`, a
+blank line, then the summary. The summary is the stored task title, or the issue key when the title is missing.
+
+On success, tasker prints one of these forms on stdout:
+
+```text
+opened PR #<number>: <url>
+state: in_peer_review
+```
+
+```text
+adopted PR #<number>: <url>
+state: in_peer_review
+```
+
+The PR number, `pr_opened` event and move to `in_peer_review` share one database transaction. The task stores the PR
+number for later use. If tasker creates a PR but cannot record it, it reports the PR number and URL, then moves the task
+to `failed`. A lookup, create or record failure after `opening_pr` also moves the task to `failed` and prints the error
+on stderr. Retry with `tasker retry` to look up and adopt an existing PR.
+
+The command does not push the branch, start an assistant, wait for CI or merge the PR. `in_peer_review` records that an
+external PR is open. It does not mean that someone approved it or that CI passed.
+
 ## `tasker merge`
 
 Lands the work of a task in the state `accepted` on the base branch of `origin`: `tasker merge <issue>`. The task goes

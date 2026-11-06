@@ -11,6 +11,7 @@ export type TaskCommand =
   | "review"
   | "dismiss-review"
   | "accept"
+  | "open-pr"
   | "merge"
   | "push"
   | "reopen"
@@ -48,7 +49,7 @@ export const STATE_COMMANDS: Readonly<Partial<Record<TaskState, StateCommands>>>
   reviewed: { commands: ["refine", "dismiss-review", "update-branch", "abort"] },
   accepted: { commands: ["merge", "push", "mark-landed", "update-branch", "reopen", "abort"] },
   pushing: ABORT_ONLY,
-  pushed: { commands: ["mark-landed", "update-branch", "reopen", "abort"] },
+  pushed: { commands: ["open-pr", "mark-landed", "update-branch", "reopen", "abort"] },
   opening_pr: ABORT_ONLY,
   in_peer_review: { commands: ["mark-landed", "update-branch", "abort"] },
   merging: ABORT_ONLY,
