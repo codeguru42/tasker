@@ -585,6 +585,13 @@ run on macOS or Windows is unmeasured.
   `$XDG_RUNTIME_DIR/bus`, to `/var/run/docker.sock` and to `/run/docker.sock` works. With deny keys for the real paths
   of `XDG_RUNTIME_DIR` and of `/var/run/docker.sock`, each connect fails with `Permission denied`. A connect to an
   abstract socket still works.
+
+  On 2026-11-05, `codexArgs()` with this branch and the host env built a `read-only` table with deny keys
+  `/home/codeguru/.config/herdr`, `/run/user/30033` and `/run/docker.sock`. With that table and the network on,
+  `codex sandbox` returned `EACCES Permission denied` for connects to `/run/user/30033/bus`, `/var/run/docker.sock` and
+  `/run/docker.sock`. One real `codex exec` with the final `read-only` arguments exited 0 and gave `thread.started` and
+  `turn.completed`.
+
 - Keys of the table (2026-11-01): a key that is a symbolic link makes the start fail with
   `bwrap: Can't mount on symlink destination`. An existing path under a denied folder makes the start fail with
   `bwrap: Can't create file ...: Read-only file system`. A missing path under a denied folder is fine. A deny key under
