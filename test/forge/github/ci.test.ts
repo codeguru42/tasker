@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../../src/github/forge-session.js";
 import { ciStatus } from "../../../src/forge/github/ci.js";
+import { failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
 import type { FakeAnswer } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
@@ -158,6 +159,141 @@ describe("ciStatus", () => {
     );
     expect(supplied).toEqual(before);
     expect({ PATH: process.env.PATH, HOME: process.env.HOME, GH_TOKEN: process.env.GH_TOKEN }).toEqual(ambient);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["a running check", { checks: '[{"check_runs":[{"status":"in_progress","conclusion":null}]}]' }, "pending"],
+    ["a running workflow", { workflows: '[{"workflow_runs":[{"status":"queued","conclusion":null}]}]' }, "pending"],
+    ["a pending commit status", { statuses: '[{"statuses":[{"state":"pending"}]}]' }, "pending"],
+    [
+      "a neutral completed check",
+      { checks: '[{"check_runs":[{"status":"completed","conclusion":"neutral"}]}]' },
+      "passed",
+    ],
+    [
+      "a skipped completed workflow",
+      { workflows: '[{"workflow_runs":[{"status":"completed","conclusion":"skipped"}]}]' },
+      "passed",
+    ],
+    [
+      "a failed completed check",
+      { checks: '[{"check_runs":[{"status":"completed","conclusion":"failure"}]}]' },
+      "failed",
+    ],
+    [
+      "a cancelled completed workflow",
+      { workflows: '[{"workflow_runs":[{"status":"completed","conclusion":"cancelled"}]}]' },
+      "failed",
+    ],
+    ["an error commit status", { statuses: '[{"statuses":[{"state":"error"}]}]' }, "failed"],
+  ] as const)("classifies %s", async (_label, result, expected) => {
+    const dir = useTempDir("tasker-ci-status-classification-");
+    const fake = forgeGh(dir, token, answers(result));
+
+    await expect(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env))).resolves.toBe(expected);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    [
+      "failure before a later pass",
+      '[{"check_runs":[{"status":"completed","conclusion":"failure"}]}]',
+      '[{"statuses":[{"state":"success"}]}]',
+      "failed",
+    ],
+    [
+      "pending before a later pass",
+      '[{"check_runs":[{"status":"queued","conclusion":null}]}]',
+      '[{"statuses":[{"state":"success"}]}]',
+      "pending",
+    ],
+    [
+      "failure from a later page",
+      '[{"check_runs":[]},{"check_runs":[{"status":"completed","conclusion":"failure"}]}]',
+      '[{"statuses":[{"state":"success"}]}]',
+      "failed",
+    ],
+    [
+      "pending from a later page",
+      '[{"check_runs":[]},{"check_runs":[{"status":"in_progress","conclusion":null}]}]',
+      '[{"statuses":[{"state":"success"}]}]',
+      "pending",
+    ],
+  ] as const)("applies precedence for %s", async (_label, checks, statuses, expected) => {
+    const dir = useTempDir("tasker-ci-status-precedence-");
+    const fake = forgeGh(dir, token, answers({ checks, statuses }));
+
+    await expect(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env))).resolves.toBe(expected);
+    fake.assertAnswered();
+  });
+
+  it("uses individual commit statuses and ignores the combined page state", async () => {
+    const dir = useTempDir("tasker-ci-status-page-state-");
+    const fake = forgeGh(dir, token, answers({ statuses: '[{"state":"failure","statuses":[{"state":"success"}]}]' }));
+
+    await expect(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env))).resolves.toBe("passed");
+    fake.assertAnswered();
+  });
+
+  it("reads more than 100 results from every source and uses results on later pages", async () => {
+    const dir = useTempDir("tasker-ci-status-many-results-");
+    const checks = JSON.stringify([
+      { check_runs: Array.from({ length: 101 }, () => ({ status: "completed", conclusion: "failure" })) },
+      { check_runs: [{ status: "completed", conclusion: "success" }] },
+    ]);
+    const statuses = JSON.stringify([
+      { statuses: Array.from({ length: 101 }, () => ({ state: "failure" })) },
+      { statuses: [{ state: "success" }] },
+    ]);
+    const workflows = JSON.stringify([
+      { workflow_runs: Array.from({ length: 101 }, () => ({ status: "completed", conclusion: "failure" })) },
+      { workflow_runs: [{ status: "completed", conclusion: "success" }] },
+    ]);
+    const fake = forgeGh(dir, token, answers({ checks, statuses, workflows }));
+
+    await expect(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env))).resolves.toBe("passed");
+    fake.assertAnswered();
+  });
+
+  it("accepts extra fields, key order, and whitespace in page responses", async () => {
+    const dir = useTempDir("tasker-ci-status-extra-fields-");
+    const fake = forgeGh(
+      dir,
+      token,
+      answers({
+        checks:
+          '[ { "total_count": 1, "extra": true, "check_runs": [ { "conclusion": "success", "status": "completed", "name": "build" } ] } ]',
+        statuses: '[ { "statuses": [], "state": "failure", "extra": true } ]',
+        workflows: '[ { "workflow_runs": [], "extra": true } ]',
+      }),
+    );
+
+    await expect(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env))).resolves.toBe("passed");
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["check run", { checks: '[{"check_runs":[]},{"check_runs":[{"status":"completed","conclusion":7}]}]' }],
+    ["workflow run", { workflows: '[{"workflow_runs":[]},{"workflow_runs":[{"status":false,"conclusion":null}]}]' }],
+    ["commit status", { statuses: '[{"statuses":[]},{"statuses":[{"state":null}]}]' }],
+  ] as const)("rejects a malformed %s on a later page", async (_label, result) => {
+    const dir = useTempDir("tasker-ci-status-malformed-entry-");
+    const fake = forgeGh(dir, token, answers(result));
+
+    await failureOf(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env)), Error);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["check runs", { checks: '[{"check_runs":[]},{"check_runs":null}]' }],
+    ["statuses", { statuses: '[{"statuses":[]},{"statuses":false}]' }],
+    ["workflow runs", { workflows: '[{"workflow_runs":[]},{"workflow_runs":{}}]' }],
+  ] as const)("rejects a malformed %s array on a later page", async (_label, result) => {
+    const dir = useTempDir("tasker-ci-status-malformed-array-");
+    const fake = forgeGh(dir, token, answers(result));
+
+    await failureOf(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env)), Error);
     fake.assertAnswered();
   });
 });
