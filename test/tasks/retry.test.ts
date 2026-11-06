@@ -119,6 +119,27 @@ describe("retryTask checks", () => {
   });
 });
 
+describe("retryTask opening PR recovery", () => {
+  it("returns a failed PR opening to pushed without clearing task data", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    const sessions = sessionsOf(dataRoot, task);
+    withDataRootStore(dataRoot, (store) => {
+      store.updateTask(task.id, { prNumber: 73 });
+      failTaskVia(store, task.id, "pushed", "opening_pr");
+    });
+
+    const result = await retry(dataRoot, task);
+
+    expect(result).toEqual({ origin: "opening_pr", target: "pushed", next: "open-pr" });
+    expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: "pushed", prNumber: 73 });
+    expect(sessionsOf(dataRoot, task)).toEqual(sessions);
+    expect(eventsOf(dataRoot, KEY).at(-1)).toMatchObject({
+      type: "retry",
+      data: { origin: "opening_pr", target: "pushed", resumeExecute: false, from: "failed", to: "pushed" },
+    });
+  });
+});
+
 describe("retryTask origins", () => {
   const kept = { plan: true, execute: true, review: [1] };
   const rows: {
