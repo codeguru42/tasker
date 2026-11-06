@@ -1,16 +1,16 @@
 # The task commands
 
 This page gives the reasons and limits of the task commands. It also explains the result of an assistant run. The
-commands are start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, merge, push,
-mark-landed, update-branch, finish, retry, resume, approve-credits, accept and reopen. The user reference files show
-their output. [SKILL.md](../../skills/tasker/SKILL.md) links to reference files in `skills/tasker/references/`, which
-explain the commands of each phase.
+commands are start, abort, plan, refine, approve, unapprove, execute, verify, review, dismiss-review, open-pr, merge,
+push, mark-landed, update-branch, finish, retry, resume, approve-credits, accept and reopen. The user reference files
+show their output. [SKILL.md](../../skills/tasker/SKILL.md) links to reference files in `skills/tasker/references/`,
+which explain the commands of each phase.
 
-The commands abort, plan, refine, approve, unapprove, execute, accept, reopen, resume, approve-credits, merge, push,
-mark-landed, update-branch and finish share a preflight rule. Each checks its guards before its first write, so a
-preflight refusal leaves the task, files and events as they were. A failure after reopen starts follows its failed-run
-path. [Accept](#accept) gives an exception for the refs of the clone. A refused approve or unapprove also leaves the
-plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in
+The commands abort, plan, refine, approve, unapprove, execute, accept, reopen, open-pr, resume, approve-credits, merge,
+push, mark-landed, update-branch and finish share a preflight rule. Each checks its guards before its first write, so a
+preflight refusal leaves the task, files and events as they were. A failure after reopen or open-pr starts follows its
+failed-run path. [Accept](#accept) gives an exception for the refs of the clone. A refused approve or unapprove also
+leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in
 [The locks](#the-locks).
 
 ## Start
@@ -547,7 +547,7 @@ pause picks a row from the direct retry table. The origin is the `from` value of
 
 A failure from `accepted`, or from `pushing` after `accepted`, returns to `accepted` and runs `tasker push`. A failure
 from `interrupted` after a push has no retry row and remains refused. A state without a matching row also has no retry
-step, so the command refuses it.
+step, so the command refuses it. A failure in `opening_pr` returns to `pushed` and runs `tasker open-pr` again.
 
 The move, the delete of the sessions, the todo marks, the fix turn and one `retry` event share one transaction. The
 `retry` event has the data `{ origin, target, resumeExecute, from, to }` and takes the place of the `transition` event
@@ -588,14 +588,18 @@ These reasons explain its rules:
 `tasker resume` moves a task in `quota_blocked` or `interrupted` back to the state before the run that stopped, and runs
 the same command again, except for a task that stopped in `updating_branch`. For that task, the command first restores
 the worktree, and then it runs nothing. The state that the task left when the run stopped is the origin. Resume has rows
-for `planning`, `executing`, `verifying`, `reviewing`, `merging`, `pushing`, `finishing` and `updating_branch`. It also
-has rows for `refining` when its origin is `awaiting_plan_review`, `failed`, `reviewed` or `awaiting_work_review`.
+for `planning`, `executing`, `verifying`, `reviewing`, `merging`, `pushing`, `opening_pr`, `finishing` and
+`updating_branch`. It also has rows for `refining` when its origin is `awaiting_plan_review`, `failed`, `reviewed` or
+`awaiting_work_review`.
 
-The origins `verifying`, `merging`, `pushing`, `finishing` and `updating_branch` work only from `interrupted`.
-[The Pauses table](../statemachine.md#pauses) gives their targets and next commands. This page does not copy that table.
-For `refining`, the refine origin picks the row, as in [Retry](#retry). For `merging`, the state that the task left when
-the merge started picks the row. For `updating_branch`, the update origin picks the row, and the task returns to it.
-Resume refuses any other origin, a merge origin with no row and an update origin with no row.
+The origins `verifying`, `merging`, `pushing`, `opening_pr`, `finishing` and `updating_branch` work only from
+`interrupted`. [The Pauses table](../statemachine.md#pauses) gives their targets and next commands. This page does not
+copy that table. For `refining`, the refine origin picks the row, as in [Retry](#retry). For `merging`, the state that
+the task left when the merge started picks the row. For `updating_branch`, the update origin picks the row, and the task
+returns to it. Resume refuses any other origin, a merge origin with no row and an update origin with no row.
+
+An interruption from `opening_pr` returns the task to `pushed`, then runs `tasker open-pr`. This lets the lookup find a
+pull request that the earlier run created before it stored the PR number.
 
 A guard in the shared move refuses a pause that the state machine cannot reach from the origin. The state machine has no
 edge from the origin into that pause, so no run stopped that way. As a result, `verifying`, `merging` or `finishing` in
@@ -705,6 +709,26 @@ assistant starts. The repo lock covers the restore, and the caller releases it b
 locks.
 
 See [Retry](#retry) for recovery after a failed reopen.
+
+## Open PR
+
+`tasker open-pr <issue>` opens or adopts a pull request for a task in `pushed`. The task must have a configured forge,
+branch, stored base and worktree. It does not push the branch, wait for CI or merge the pull request.
+
+The command takes the task lock before the repo lock. Under the repo lock, it fetches `origin` and resolves the default
+base from origin's symbolic `HEAD`. It refuses a task whose stored base differs from that default before it enters
+`opening_pr` or calls the forge. Then it lists open pull requests for the exact task branch. It adopts one whose base
+matches the resolved default, refuses a pull request with a different base, or creates a pull request when none is open.
+
+Lookup precedes creation so recovery adopts a PR that tasker created before its record failed.
+
+The PR number, URL, head, base and adopted status are stored with a `pr_opened` event in one transaction. The task moves
+from `opening_pr` to `in_peer_review` in that transaction. The PR number is read from the task row after this write. The
+PR number and state share one transaction so `in_peer_review` always has its PR record.
+
+If lookup or creation fails after the move to `opening_pr`, tasker moves the task to `failed`. If it creates a PR but
+cannot record it, the error includes the PR number and URL. Retry or an interrupted resume returns the task to `pushed`
+and runs `tasker open-pr`, whose lookup adopts the existing PR.
 
 ## Merge
 
