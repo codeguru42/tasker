@@ -50,6 +50,9 @@ The command reads the origin. The origin is the state that the task left when it
 When a reopen fails while refining from `accepted` or `pushed`, retry returns the task to that same state. It prints the
 retry line, then the hint for that origin from the list below.
 
+Retry prints only a hint. It starts no assistant and does not print the saved feedback. Run the command with new
+feedback.
+
 A failed reopen can stop while tasker resyncs the branch to its base. If `reopen_start_head` has a value, retry restores
 the worktree to that head under the repo lock. Retry clears the saved head in the same database transaction as the state
 move and retry event. The restore ends any unfinished resync and removes uncommitted changes and untracked files,
