@@ -1,4 +1,5 @@
 import { remoteCwd, runRemoteGit } from "./ssh.js";
+import { fetchOrigin } from "./changes.js";
 
 export interface RemoteDefaultBranchOptions {
   remote: string;
@@ -18,4 +19,13 @@ export async function remoteDefaultBranch(options: RemoteDefaultBranchOptions): 
     }
   }
   throw new Error(`the remote has no symbolic HEAD: ${remote}`);
+}
+
+// Fetches origin into the clone, then reads the branch that the remote symbolic HEAD names.
+export async function fetchRemoteDefaultBranch(
+  options: RemoteDefaultBranchOptions & { clone: string },
+): Promise<string> {
+  const { clone, remote, sshKey, env } = options;
+  await fetchOrigin({ clone, env, sshKey });
+  return remoteDefaultBranch({ remote, sshKey, env });
 }
