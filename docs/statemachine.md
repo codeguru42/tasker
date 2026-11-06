@@ -315,6 +315,9 @@ flowchart LR
 
 `tasker update-branch` enters `updating_branch` before any git work, then always leaves it.
 
+If a task failed in `pushing`, `tasker update-branch` refuses before it enters `updating_branch`. Run `tasker retry`
+first.
+
 ```mermaid
 flowchart LR
   O[origin state] -->|tasker update-branch| UB[updating_branch]
@@ -337,12 +340,12 @@ flowchart LR
 
 - If the worktree moved, the old plan approval or verify result no longer describes the tree. So the task is demoted:
 
-| Origin                                                                     | Demoted to             | Why                                                                                                                |
-| -------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `approved`                                                                 | `awaiting_plan_review` | The approval is cleared. The plan was written against the old tree.                                                |
-| `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review` | `executed`             | Landing goes back behind a real `verify` run.                                                                      |
-| `failed`, from a failed `push`, `merge`, `open-pr` or `review`             | `executed`             | The same reason. Without the demotion, a retry can push, merge, open a PR or review the moved tree with no verify. |
-| any other                                                                  | its origin             | Nothing to demote.                                                                                                 |
+| Origin                                                                     | Demoted to             | Why                                                                                                          |
+| -------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `approved`                                                                 | `awaiting_plan_review` | The approval is cleared. The plan was written against the old tree.                                          |
+| `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review` | `executed`             | Landing goes back behind a real `verify` run.                                                                |
+| `failed`, from a failed `merge`, `open-pr` or `review`                     | `executed`             | The same reason. Without the demotion, a retry can merge, open a PR or review the moved tree with no verify. |
+| any other                                                                  | its origin             | Nothing to demote.                                                                                           |
 
 - A task in `accepted`, or a task that failed from `merging`, whose head is not the accepted revision goes to
   `executed`, also when the command moved nothing. A task with no accepted revision counts the same way. A commit after
