@@ -299,14 +299,20 @@ task lock and clone lock belong to this list:
   `tasker abort --force discards them`.
 
 If you pass `--force`, abort discards the changes before it removes the worktree. If a tracker write fails, the command
-prints its warning, still moves the task to `cancelled` and exits with code 0. For a GitHub repo, the tracker step runs
-only when `issueTracker.updateOnStart` is `true` and the repo sets `inProgressLabel`. It removes the in-progress label
-and prints `cleared the in-progress marker of <issue> on the tracker`. If this write fails, stderr gets
-`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. For a Jira repo, the step runs only
-when `issueTracker.updateOnStart` is `true` and the repo sets `abortStatus`. This task must also have marked the issue
-in progress. The command moves the issue to that status and prints
+prints its warning, still moves the task to `cancelled` and exits with code 0.
+
+For a GitHub repo, the tracker step runs only when `issueTracker.updateOnStart` is `true` and the repo sets
+`inProgressLabel`. It removes the in-progress label and prints
+`cleared the in-progress marker of <issue> on the tracker`. If this write fails, stderr gets
+`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`.
+
+For a Jira repo, the step runs only when `issueTracker.updateOnStart` is `true` and the repo sets `abortStatus`. This
+task must also have marked the issue in progress. The command moves the issue to that status and prints
 `moved <issue> to the status "<status>" on the tracker`. If this write fails, stderr gets
-`warning: cannot move <issue> to the status "<status>" on the tracker: <error>`. In each other case, the step makes no
-call and prints no line. The assignee stays. A step that has nothing to do prints no line. The files under `artifacts/`
-stay. If the run of the task is dead, the notes of the dead run come on stderr before the steps. See
+`warning: cannot move <issue> to the status "<status>" on the tracker: <error>`.
+
+In each other case, the step makes no call and prints no line. The assignee stays. A step that has nothing to do prints
+no line. The files under `artifacts/` stay.
+
+If the run of the task is dead, the notes of the dead run come on stderr before the steps. See
 [A dead run](../SKILL.md#a-dead-run).
