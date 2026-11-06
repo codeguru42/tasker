@@ -9,6 +9,11 @@ import { useTempDir } from "../../helpers/temp.js";
 
 const sha = "0123456789abcdef0123456789abcdef01234567";
 const token = "forge-token-secret";
+const byArgs = (left: string[] | { args: string[] }, right: string[] | { args: string[] }) => {
+  const leftArgs = Array.isArray(left) ? left : left.args;
+  const rightArgs = Array.isArray(right) ? right : right.args;
+  return JSON.stringify(leftArgs).localeCompare(JSON.stringify(rightArgs));
+};
 const taskerEnv = (fakeEnv: NodeJS.ProcessEnv): NodeJS.ProcessEnv => ({
   TASKER_PATH: fakeEnv.PATH,
   TASKER_HOME: "/tasker/home",
@@ -118,8 +123,6 @@ describe("ciStatus", () => {
     const calls = fake.calls();
     expect(calls).toHaveLength(4);
     expect(calls[0]).toEqual(expectedCalls[0]);
-    const byArgs = (left: { args: string[] }, right: { args: string[] }) =>
-      JSON.stringify(left.args).localeCompare(JSON.stringify(right.args));
     expect(calls.slice(1).sort(byArgs)).toEqual(expectedCalls.slice(1).sort(byArgs));
     fake.assertAnswered();
   });
@@ -136,7 +139,6 @@ describe("ciStatus", () => {
     const calls = fake.calls();
     expect(calls).toHaveLength(4);
     expect(calls[0]?.args).toEqual(["auth", "token", "--user", "octo"]);
-    const byArgs = (left: string[], right: string[]) => JSON.stringify(left).localeCompare(JSON.stringify(right));
     expect(
       calls
         .slice(1)
