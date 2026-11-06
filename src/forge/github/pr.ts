@@ -168,7 +168,7 @@ function pullRequestFromOutput(output: string): PullRequest {
       } catch {
         continue;
       }
-      const numberMatch = /\/pull\/([1-9]\d*)\/?$/.exec(pathname);
+      const numberMatch = /\/[^/]+\/[^/]+\/pull\/([1-9]\d*)\/?$/.exec(pathname);
       if (numberMatch === null) continue;
       const number = Number(numberMatch[1]);
       if (!Number.isSafeInteger(number)) continue;

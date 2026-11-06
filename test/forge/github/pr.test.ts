@@ -238,7 +238,7 @@ describe("createPr", () => {
 
     await expect(createCall(session, target, env)).resolves.toEqual({
       number: 42,
-      url: "https://github.com/acme/project/pull/42",
+      url: "https://github.com/acme/project/pull/42/",
     } satisfies PullRequest);
     fake.assertAnswered();
   });
