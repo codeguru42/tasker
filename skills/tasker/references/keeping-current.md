@@ -208,8 +208,8 @@ error is
 ### Undo the last update
 
 `tasker update-branch <issue> --undo` puts the task branch and the worktree back at the head from before the last run
-that moved the head. It also puts the synced base tip back. The command reads these values from the task row. It reads
-no event. It fetches nothing and runs no sync step and no base step.
+that moved the head. It also puts the synced base tip back. The command reads these values from the task row. It fetches
+nothing and runs no sync step and no base step.
 
 The command makes these checks, in this order, before it moves anything:
 
