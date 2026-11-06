@@ -230,6 +230,21 @@ describe("listOpenPrs", () => {
 });
 
 describe("createPr", () => {
+  it.each([
+    ["https://github.com/acme/project/pull/42", "https://github.com/acme/project/pull/42/"],
+    ["https://github.com/acme/project/pull/42/", "https://github.com/acme/project/pull/42"],
+  ])("treats trailing slash variants as one pull request and keeps the first URL", async (firstUrl, secondUrl) => {
+    const dir = useTempDir("tasker-create-pr-slash-identity-");
+    const target = { ...createTarget, cwd: dir };
+    const { env, fake, session } = setup([{ args: createArgs(target), stdout: `${firstUrl}\n${secondUrl}` }], dir);
+
+    await expect(createCall(session, target, env)).resolves.toEqual({
+      number: 42,
+      url: firstUrl,
+    } satisfies PullRequest);
+    fake.assertAnswered();
+  });
+
   it("ignores pull URLs without an owner and repository path", async () => {
     const dir = useTempDir("tasker-create-pr-url-path-");
     const target = { ...createTarget, cwd: dir };
