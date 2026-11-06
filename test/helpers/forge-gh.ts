@@ -4,6 +4,7 @@ import {
   answerChecks,
   type FakeAnswer,
   fakeAnswerScript,
+  logLine,
   logEnvItems,
   readFakeCalls,
   writeFakeCommand,
@@ -34,10 +35,34 @@ export function forgeGh(
   const logPath = join(dir, "forge-gh.log");
   const safeEnvNames = envNames.filter((name) => name !== "GH_TOKEN");
   const currentAnswers = [...answers];
+  let remoteHead: string | undefined;
   const tokenMatch = `"$(if [ "\${GH_TOKEN-}" = ${shellQuote(token)} ]; then printf set:true; else printf set:false; fi)"`;
   const cwd = '"set:$PWD"';
   const extra = [tokenMatch, cwd, ...logEnvItems("gh", safeEnvNames)];
-  const write = () => writeFakeCommand(binDir, "gh", fakeAnswerScript("gh", logPath, currentAnswers, extra));
+  const write = () => {
+    const script = fakeAnswerScript("gh", logPath, currentAnswers, extra);
+    if (remoteHead === undefined) {
+      writeFakeCommand(binDir, "gh", script);
+      return;
+    }
+    const guard = [
+      'if [ "$1" = "pr" ] && [ "$2" = "merge" ]; then',
+      "  has_match_head=0",
+      "  match_head=",
+      "  previous_arg=",
+      "  for arg do",
+      '    if [ "$previous_arg" = "--match-head-commit" ]; then has_match_head=1; match_head="$arg"; break; fi',
+      '    previous_arg="$arg"',
+      "  done",
+      `  if [ "$has_match_head" = "1" ] && [ "$match_head" != ${shellQuote(remoteHead)} ]; then`,
+      "    printf '%s\\n' 'fake gh: --match-head-commit does not match the current remote head' >&2",
+      "    exit 1",
+      "  fi",
+      "fi",
+    ].join("\n");
+    const logLineEnd = script.indexOf(logLine(logPath, extra)) + logLine(logPath, extra).length;
+    writeFakeCommand(binDir, "gh", `${script.slice(0, logLineEnd)}\n${guard}${script.slice(logLineEnd)}`);
+  };
   const setAnswer = (args: readonly string[], stdout: string) => {
     const index = currentAnswers.findIndex((answer) => answer.args.join("\0") === args.join("\0"));
     const answer: FakeAnswer = { args, stdout };
@@ -57,7 +82,10 @@ export function forgeGh(
         env: call.env,
       })),
     assertAnswered: checks.assertAnswered,
-    setRemoteHead: (head) => setAnswer(["pr", "view", "42", "--json", "headRefOid"], head),
+    setRemoteHead: (head) => {
+      remoteHead = head;
+      setAnswer(["pr", "view", "42", "--json", "headRefOid"], head);
+    },
     setMergeState: (state) => setAnswer(["pr", "view", "42", "--json", "state"], JSON.stringify({ state })),
   };
 }
