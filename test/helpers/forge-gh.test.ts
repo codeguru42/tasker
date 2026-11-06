@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runFakeGh } from "./fake-gh.js";
 import { forgeGh } from "./forge-gh.js";
@@ -19,6 +21,22 @@ describe("the forge gh helper", () => {
         env: { TASKER_HOME: "/home/tester", NO_COLOR: "1" },
       },
     ]);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+  });
+
+  it("keeps the token out of the executable and preserves token-bearing output", () => {
+    const dir = useTempDir("tasker-forge-gh-token-output-");
+    const token = "diagnostic-token-secret";
+    const args = ["auth", "status"];
+    const fake = forgeGh(dir, token, [{ args, stdout: token, stderr: `lookup failed: ${token}` }]);
+    const executable = readFileSync(join(dir, "bin", "gh"), "utf8");
+
+    expect(executable).not.toContain(token);
+    expect(runFakeGh({ ...fake.env, GH_TOKEN: token }, args)).toMatchObject({
+      status: 0,
+      stdout: token,
+      stderr: `lookup failed: ${token}`,
+    });
     expect(JSON.stringify(fake.calls())).not.toContain(token);
   });
 

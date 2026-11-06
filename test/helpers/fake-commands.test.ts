@@ -128,6 +128,24 @@ describe("fakeAnswerScript", () => {
     expect(readFileSync(logPath, "utf8")).toContain("ask");
   });
 
+  it("prints token-bearing lookup output and diagnostics unchanged", () => {
+    const dir = useTempDir("tasker-token-output-");
+    const token = "lookup-token-secret";
+    const bin = join(dir, "bin");
+    const output = `lookup output: ${token}`;
+    const diagnostic = `lookup diagnostic: ${token}`;
+    writeFakeCommand(
+      bin,
+      "tool",
+      fakeAnswerScript("tool", join(dir, "tool.log"), [{ args: ["lookup"], stdout: output, stderr: diagnostic }], []),
+    );
+
+    const result = spawnSync(join(bin, "tool"), ["lookup"], { env: { PATH: bin }, encoding: "utf8" });
+
+    expect(result.stdout).toBe(output);
+    expect(result.stderr).toBe(diagnostic);
+  });
+
   it("exits 99 for an unlisted call and logs it as unanswered", () => {
     const { bin, logPath } = setup();
 
