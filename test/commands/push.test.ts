@@ -18,7 +18,7 @@ const runPush = async (key = KEY) => {
 describe("tasker push", () => {
   it("publishes only the task branch and records the provider result", async () => {
     const accepted = await useAcceptedTask();
-    withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { base: null }));
+    withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { base: null, prNumber: 73 }));
     const base = await accepted.origin.branchHead("main");
     const ghCalls = accepted.gh.calls();
     const before = eventsOf(accepted.dataRoot, KEY);
@@ -35,6 +35,7 @@ describe("tasker push", () => {
     expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({
       state: "pushed",
       publishedRevision: accepted.revision,
+      prNumber: 73,
     });
     expect(eventsOf(accepted.dataRoot, KEY).slice(before.length)).toEqual([
       { type: "transition", data: { from: "accepted", to: "pushing" } },

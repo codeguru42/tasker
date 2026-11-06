@@ -18,7 +18,12 @@ import {
   type VerifyRunResult,
 } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
-import { TERMINAL_STATES, transitionWithPublication, transitionWithReopenStart } from "../../src/state/machine.js";
+import {
+  TERMINAL_STATES,
+  transitionWithPrOpened,
+  transitionWithPublication,
+  transitionWithReopenStart,
+} from "../../src/state/machine.js";
 import { thrownBy } from "../helpers/errors.js";
 import { claudeRateLimitEvent } from "../helpers/fake-claude.js";
 import { findingEntries, reviewFinding } from "../helpers/review.js";
@@ -950,6 +955,71 @@ describe("task store", () => {
       expect(store.getTask(task.id)).toMatchObject({ state: "pushing", publishedRevision: null });
       expect(store.listEvents(task.id)).toEqual(eventsBefore);
       expect(readRunMarker(dbPath, task.id)).toMatchObject({ state: "pushing" });
+    });
+  });
+
+  describe("pull request record", () => {
+    it("adds nullable pr_number in schema version 21 and leaves old rows null", () => {
+      const oldPath = join(dir, "old20.db");
+      makeOldDatabase(oldPath, 20);
+      withRawDatabase(oldPath, (raw) => insertRawTask(raw, "tasker", "pushed"));
+
+      withStoreFile(
+        oldPath,
+        (upgraded) => {
+          expect(upgraded.getTask(1)).toMatchObject({ prNumber: null });
+        },
+        { now },
+      );
+      withRawDatabase(oldPath, (raw) => {
+        expect(schemaVersion(raw)).toBe(21);
+        expect(raw.prepare("SELECT pr_number FROM tasks WHERE id = 1").get()).toEqual({ pr_number: null });
+      });
+    });
+
+    it("records the PR number, exact event, state, and marker removal together", () => {
+      const task = runningTask("opening_pr");
+      expect(task.prNumber).toBeNull();
+      const pr = { number: 42, url: "https://example.test/pull/42", head: task.branch!, base: "main", adopted: false };
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- The state helper is added by the green step.
+      const moved = transitionWithPrOpened(store, task.id, pr);
+
+      expect(moved).toMatchObject({ state: "in_peer_review", prNumber: 42 });
+      expect(store.getTask(task.id)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
+      expect(store.listEvents(task.id).at(-1)).toEqual({
+        id: expect.any(Number),
+        taskId: task.id,
+        at: clock.toISOString(),
+        type: "pr_opened",
+        data: { ...pr, from: "opening_pr", to: "in_peer_review" },
+      });
+      expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+    });
+
+    it("rolls back the PR number, state, event, and marker when event insertion fails", () => {
+      const task = runningTask("opening_pr");
+      withRawDatabase(dbPath, (raw) =>
+        raw.exec(
+          "CREATE TRIGGER reject_pr_opened BEFORE INSERT ON events WHEN NEW.type = 'pr_opened' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+        ),
+      );
+      const events = store.listEvents(task.id);
+
+      expect(() =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- The state helper is added by the green step.
+        transitionWithPrOpened(store, task.id, {
+          number: 42,
+          url: "https://example.test/pull/42",
+          head: task.branch!,
+          base: "main",
+          adopted: false,
+        }),
+      ).toThrow("event rejected");
+
+      expect(store.getTask(task.id)).toMatchObject({ state: "opening_pr", prNumber: null });
+      expect(store.listEvents(task.id)).toEqual(events);
+      expect(readRunMarker(dbPath, task.id)).toMatchObject({ state: "opening_pr" });
     });
   });
 
