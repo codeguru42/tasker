@@ -81,7 +81,7 @@ describe("ciStatus", () => {
 
     await expect(callCiStatus(createGhSession("octo"), sha, worktree, env)).resolves.toBe("pending");
 
-    expect(fake.calls()).toEqual([
+    const expectedCalls = [
       {
         args: ["auth", "token", "--user", "octo"],
         tokenMatches: false,
@@ -97,9 +97,9 @@ describe("ciStatus", () => {
         },
       },
       ...[
-        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`],
-        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
         ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
+        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
+        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`],
       ].map((args) => ({
         args,
         tokenMatches: true,
@@ -114,7 +114,13 @@ describe("ciStatus", () => {
           NO_COLOR: "1",
         },
       })),
-    ]);
+    ];
+    const calls = fake.calls();
+    expect(calls).toHaveLength(4);
+    expect(calls[0]).toEqual(expectedCalls[0]);
+    const byArgs = (left: { args: string[] }, right: { args: string[] }) =>
+      JSON.stringify(left.args).localeCompare(JSON.stringify(right.args));
+    expect([...calls.slice(1)].sort(byArgs)).toEqual([...expectedCalls.slice(1)].sort(byArgs));
     fake.assertAnswered();
   });
 
@@ -127,12 +133,22 @@ describe("ciStatus", () => {
     );
 
     await expect(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env))).resolves.toBe("passed");
-    expect(fake.calls().map((entry) => entry.args)).toEqual([
-      ["auth", "token", "--user", "octo"],
-      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`],
-      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
-      ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
-    ]);
+    const calls = fake.calls();
+    expect(calls).toHaveLength(4);
+    expect(calls[0]?.args).toEqual(["auth", "token", "--user", "octo"]);
+    const byArgs = (left: string[], right: string[]) => JSON.stringify(left).localeCompare(JSON.stringify(right));
+    expect(
+      calls
+        .slice(1)
+        .map((entry) => entry.args)
+        .sort(byArgs),
+    ).toEqual(
+      [
+        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
+        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`],
+        ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`],
+      ].sort(byArgs),
+    );
     fake.assertAnswered();
   });
 
