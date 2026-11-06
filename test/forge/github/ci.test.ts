@@ -24,6 +24,19 @@ const callCiStatus = (
   return ciStatus(session, commit, cwd, env);
 };
 
+function exposedStrings(value: unknown, seen = new Set<object>()): string[] {
+  if (typeof value === "string") return [value];
+  if (value === null || typeof value !== "object" || seen.has(value)) return [];
+  seen.add(value);
+  return Object.getOwnPropertyNames(value).flatMap((name) => {
+    try {
+      return exposedStrings((value as Record<string, unknown>)[name], seen);
+    } catch {
+      return [];
+    }
+  });
+}
+
 function answers(
   results: { checks?: string; statuses?: string; workflows?: string } = {},
   account = "octo",
@@ -294,6 +307,54 @@ describe("ciStatus", () => {
     const fake = forgeGh(dir, token, answers(result));
 
     await failureOf(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env)), Error);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["check runs", "/check-runs?", "check runs"],
+    ["commit status", "/status?", "commit statuses"],
+    ["workflow runs", "/actions/runs?", "workflow runs"],
+  ] as const)("reports a safe failure from %s without a partial result", async (_label, endpoint, source) => {
+    const dir = useTempDir("tasker-ci-status-command-error-");
+    const safeStderr = `  HTTP 422: request failed with ${token}  \n`;
+    const fake = forgeGh(
+      dir,
+      token,
+      answers({
+        checks: '[{"check_runs":[{"status":"completed","conclusion":"success"}]}]',
+        statuses: '[{"statuses":[{"state":"success"}]}]',
+        workflows: '[{"workflow_runs":[{"status":"completed","conclusion":"success"}]}]',
+      }).map((answer) =>
+        answer.args.some((arg) => arg.includes(endpoint))
+          ? { ...answer, stdout: '[{"partial":true}]', stderr: safeStderr, exitCode: 1 }
+          : answer,
+      ),
+    );
+
+    const error = await failureOf(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env)), Error);
+
+    expect(error.message).toContain("ciStatus");
+    expect(error.message).toContain(sha);
+    expect(error.message).toContain(source);
+    expect(error.message).toContain("HTTP 422: request failed with ***");
+    expect(error.cause).toBeInstanceOf(Error);
+    expect((error.cause as Error & { stderr?: string }).stderr).toBe("HTTP 422: request failed with ***");
+    expect(exposedStrings(error).join("\n")).not.toContain(token);
+    fake.assertAnswered();
+  });
+
+  it("accepts empty successful workflow runs when another source passes", async () => {
+    const dir = useTempDir("tasker-ci-status-empty-workflows-");
+    const fake = forgeGh(
+      dir,
+      token,
+      answers({
+        checks: '[{"check_runs":[{"status":"completed","conclusion":"success"}]}]',
+        workflows: "[]",
+      }),
+    );
+
+    await expect(callCiStatus(createGhSession("octo"), sha, dir, taskerEnv(fake.env))).resolves.toBe("passed");
     fake.assertAnswered();
   });
 });
