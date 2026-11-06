@@ -784,6 +784,8 @@ demotion table in [the state machine](../statemachine.md#update-branch).
 
 These reasons explain its rules:
 
+- A failed push can publish the task branch before tasker records its revision. Retry must record that publication
+  result before an update changes the task branch.
 - The order of the steps: the command makes all its checks before any write, so a refused command changes nothing. The
   command takes the repo lock before the move to `updating_branch`, so a busy lock changes no state.
 - The locks: the task lock does not wait, as [The locks](#the-locks) says. The repo lock waits, because the fetch and
