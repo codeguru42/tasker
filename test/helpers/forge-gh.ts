@@ -58,6 +58,6 @@ export function forgeGh(
       })),
     assertAnswered: checks.assertAnswered,
     setRemoteHead: (head) => setAnswer(["pr", "view", "42", "--json", "headRefOid"], head),
-    setMergeState: (state) => setAnswer(["pr", "view", "42", "--json", "state"], state),
+    setMergeState: (state) => setAnswer(["pr", "view", "42", "--json", "state"], JSON.stringify({ state })),
   };
 }
