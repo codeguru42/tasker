@@ -65,7 +65,7 @@ async function failedPendingReopen(origin: "accepted" | "pushed" = "accepted") {
   const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
   const startHead = await startConflictedReopenResync(fixture);
   withDataRootStore(fixture.started.dataRoot, (store) => {
-    store.updateTask(fixture.task.id, { state: origin, reopenStartHead: startHead });
+    store.updateTask(fixture.task.id, { state: origin, reopenStartHead: startHead, prNumber: 73 });
     failRefineFrom(store, fixture.task.id, origin);
   });
   return { ...fixture, startHead, task: latestTaskOf(fixture.started.dataRoot, KEY) };
@@ -324,7 +324,11 @@ describe("retryTask pending reopen recovery", () => {
     });
 
     expect(result).toEqual({ origin: "refining", target: origin, next: "reopen-hint" });
-    expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({ state: origin, reopenStartHead: null });
+    expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({
+      state: origin,
+      reopenStartHead: null,
+      prNumber: 73,
+    });
     expect(await gitOutput({ cwd: path }, fixture.started.env, "rev-parse", "HEAD")).toBe(fixture.startHead);
     expect(await gitOutput({ cwd: path }, fixture.started.env, "status", "--porcelain")).toBe("");
   });

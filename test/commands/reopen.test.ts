@@ -50,6 +50,7 @@ describe("reopen", () => {
     "resyncs a %s task, continues its plan session, and records an unapproved reopen revision",
     async (origin) => {
       const fixture = await useReopenFixture({ stream: answerStream(V2) }, origin);
+      withDataRootStore(fixture.started.dataRoot, (store) => store.updateTask(fixture.task.id, { prNumber: 73 }));
       const before = eventsOf(fixture.started.dataRoot, KEY);
       const priorPublished = fixture.task.publishedRevision;
 
@@ -63,6 +64,7 @@ describe("reopen", () => {
       expect(result.out).toContain("state: awaiting_plan_review\n");
       expect(task.state).toBe("awaiting_plan_review");
       expect(task.publishedRevision).toBe(priorPublished);
+      expect(task.prNumber).toBe(73);
       expect(revision).toMatchObject({ source: "reopen", feedback: FEEDBACK, answer: V2, approvedAt: null });
       expect(stdin).toContain(
         "<context>A bug was found after acceptance. The user needs a new complete plan revision.</context>",
@@ -193,6 +195,7 @@ describe("reopen", () => {
 
   it("keeps the published revision when resync moves HEAD", async () => {
     const fixture = await useReopenFixture({ stream: answerStream(V2) }, "pushed");
+    withDataRootStore(fixture.started.dataRoot, (store) => store.updateTask(fixture.task.id, { prNumber: 73 }));
     const published = fixture.task.publishedRevision;
     const beforeHead = await taskBranchTipOf({ ...fixture.started, task: fixture.task });
     await fixture.started.origin.addCommit("main", { file: "moved-base.txt" });
@@ -204,6 +207,7 @@ describe("reopen", () => {
     expect(result.code).toBe(0);
     expect(afterHead).not.toBe(beforeHead);
     expect(task.publishedRevision).toBe(published);
+    expect(task.prNumber).toBe(73);
   });
 
   it("reports a failed base fetch and starts no assistant", async () => {
