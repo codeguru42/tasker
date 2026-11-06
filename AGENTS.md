@@ -20,8 +20,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   helpers, the code rules, the simple-english skill, the memory rule, the outside-document rule, the short-exception
   rule, the installed skill and `AGENTS.md`).
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to start work as a contributor to tasker.
-- [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the layout, the steps to add a command, the imports, the
-  zod facts and the tests.
+- [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the layout, the steps to add a command and a forge
+  provider, the imports, the zod facts and the tests.
 - [docs/config.md](docs/config.md): the configuration.
 - [docs/statemachine.md](docs/statemachine.md): the task states, the rules of the edges, the main lifecycle, the plan,
   build, work review and landing sections, the pauses, the failure and retry targets, update branch and the demotion
@@ -92,8 +92,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   environment, the gh and GitHub facts that the code guards against, and the doctor checks.
 - [docs/dev/github.md](docs/dev/github.md): the shared GitHub process boundary and the separate tracker and forge
   environment and credential rules.
-- [docs/dev/forge.md](docs/dev/forge.md): the forge purpose and provider boundary, including how the forge account
-  differs from the issue tracker account and which code uses the shared interface.
+- [docs/dev/forge.md](docs/dev/forge.md): the forge purpose and provider boundary, provider selection, and how the forge
+  account differs from the issue tracker account.
 - [docs/dev/jira.md](docs/dev/jira.md): the Jira tracker code: the Jira folder, `runAcli()`, the commands that tasker
   never runs, `TASKER_ACLI_BIN`, the active site, the site guard, the conversion of ADF, the read of an issue and its
   comments, the blockers of an issue, the writes, the in-progress check, the in-progress clear, the abort write, the
