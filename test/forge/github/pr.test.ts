@@ -230,6 +230,42 @@ describe("listOpenPrs", () => {
 });
 
 describe("createPr", () => {
+  it("ignores pull URLs without an owner and repository path", async () => {
+    const dir = useTempDir("tasker-create-pr-url-path-");
+    const target = { ...createTarget, cwd: dir };
+    const output = ["https://example.test/pull/234", "  https://github.com/acme/project/pull/42/  ", ""].join("\n");
+    const { env, fake, session } = setup([{ args: createArgs(target), stdout: output }], dir);
+
+    await expect(createCall(session, target, env)).resolves.toEqual({
+      number: 42,
+      url: "https://github.com/acme/project/pull/42",
+    } satisfies PullRequest);
+    fake.assertAnswered();
+  });
+
+  it("accepts a GitHub Enterprise pull request URL", async () => {
+    const dir = useTempDir("tasker-create-pr-enterprise-");
+    const target = { ...createTarget, cwd: dir };
+    const url = "https://github.enterprise.test/acme/project/pull/42";
+    const { env, fake, session } = setup([{ args: createArgs(target), stdout: `  ${url}  ` }], dir);
+
+    await expect(createCall(session, target, env)).resolves.toEqual({ number: 42, url } satisfies PullRequest);
+    fake.assertAnswered();
+  });
+
+  it("rejects an informational-only response", async () => {
+    const dir = useTempDir("tasker-create-pr-info-only-");
+    const target = { ...createTarget, cwd: dir };
+    const { env, fake, session } = setup(
+      [{ args: createArgs(target), stdout: "https://example.test/pull/234 is an example" }],
+      dir,
+    );
+
+    const error = await failureOf(createCall(session, target, env), Error);
+    expect(error.message).toContain(head);
+    fake.assertAnswered();
+  });
+
   it("preserves title and body and returns the pull request among informational lines", async () => {
     const dir = useTempDir("tasker-create-pr-");
     const target = { ...createTarget, cwd: dir };
