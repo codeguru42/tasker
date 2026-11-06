@@ -3,6 +3,7 @@ import type { Config } from "../config/schema.js";
 import { executeIssue } from "./execute.js";
 import { finishIssue } from "./finish.js";
 import { mergeIssue } from "./merge.js";
+import { openPrIssue } from "./open-pr.js";
 import { planIssue } from "./plan.js";
 import { pushIssue } from "./push.js";
 import { refineIssue } from "./refine.js";
@@ -13,7 +14,7 @@ import { verifyIssue } from "./verify.js";
 
 // The command that runs after the move of tasker retry or tasker resume. The refine commands need the feedback.
 export type NextRun =
-  | { command: "start" | "plan" | "execute" | "verify" | "review" | "merge" | "push" | "finish" }
+  | { command: "start" | "plan" | "execute" | "verify" | "review" | "merge" | "push" | "finish" | "open-pr" }
   | { command: "refine"; feedback: string | undefined }
   | { command: "reopen"; feedback: string }
   | { command: "review-feedback"; feedback: string };
@@ -59,6 +60,9 @@ export async function runNextCommand(
       break;
     case "push":
       await pushIssue(io, config, issue, options);
+      break;
+    case "open-pr":
+      await openPrIssue(io, config, issue, options);
       break;
   }
 }

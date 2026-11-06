@@ -31,7 +31,8 @@ export type RetryNext =
   | "verify"
   | "review"
   | "merge"
-  | "push";
+  | "push"
+  | "open-pr";
 
 export interface RetryRequest {
   config: Config;
@@ -69,6 +70,7 @@ const RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   verifying: { target: "executed", next: "verify", clears: {} },
   reviewing: { target: "awaiting_work_review", next: "review", clears: { review: true } },
   accepted: { target: "accepted", next: "push", clears: {} },
+  opening_pr: { target: "pushed", next: "open-pr", clears: {} },
 };
 
 // The rows of a task that failed in refining: the origin of the refine (the state that the task left when the last
