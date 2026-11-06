@@ -806,7 +806,6 @@ describe("tasker update-branch", () => {
     it.each<[TaskState, TaskState]>([
       ["reviewing", "executed"],
       ["accepted", "executed"],
-      ["pushing", "executed"],
       ["opening_pr", "executed"],
       ["merging", "executed"],
       ["executing", "failed"],
@@ -818,6 +817,45 @@ describe("tasker update-branch", () => {
 
       expect(result.code).toBe(0);
       expect(latestTaskOf(work.dataRoot, KEY).state).toBe(target);
+    });
+
+    it.each([
+      ["plain update with an unchanged base", "unchanged", []],
+      ["--strategy merge with a moved base", "moved", ["--strategy", "merge"]],
+      ["--take-remote with a moved base", "moved", ["--take-remote"]],
+      ["--undo with a valid undo record", "moved", ["--undo"]],
+    ] as const)("refuses %s after a failed push", async (_label, base, args) => {
+      const work = base === "moved" ? await useMovedBaseTask() : await useWorkReviewTask();
+      if (args[0] === "--undo") {
+        expect((await runUpdateBranch()).code).toBe(0);
+        await work.origin.addCommit("main");
+      }
+      withDataRootStore(work.dataRoot, (store) => failTaskFrom(store, work.task.id, "pushing"));
+
+      const task = latestTaskOf(work.dataRoot, KEY);
+      const events = eventsOf(work.dataRoot, KEY);
+      const marker = readRunMarker(databasePathOf(work.dataRoot), task.id);
+      const head = await gitOutput({ cwd: work.task.worktreePath! }, work.env, "rev-parse", "HEAD");
+      const taskTip = await taskBranchTipOf(work);
+      const trackedBase = await gitOutput({ cwd: work.clone }, work.env, "rev-parse", "refs/remotes/origin/main");
+      const originBase = await work.origin.branchHead("main");
+      const originTask = await work.origin.branchHead(String(work.task.branch));
+
+      await expectCommandRefused(
+        work,
+        () => runUpdateBranch(...args),
+        `the task of ${KEY} failed in pushing; run tasker retry ${KEY} first, so that tasker records what the push published\n`,
+      );
+
+      expect(latestTaskOf(work.dataRoot, KEY)).toEqual(task);
+      expect(eventsOf(work.dataRoot, KEY)).toEqual(events);
+      expect(readRunMarker(databasePathOf(work.dataRoot), task.id)).toEqual(marker);
+      expect(await gitOutput({ cwd: work.task.worktreePath! }, work.env, "rev-parse", "HEAD")).toBe(head);
+      expect(await taskBranchTipOf(work)).toBe(taskTip);
+      expect(await gitOutput({ cwd: work.clone }, work.env, "rev-parse", "refs/remotes/origin/main")).toBe(trackedBase);
+      expect(await work.origin.branchHead("main")).toBe(originBase);
+      expect(await work.origin.branchHead(String(work.task.branch))).toBe(originTask);
+      if (base === "moved") expect(originBase).not.toBe(trackedBase);
     });
 
     it("keeps the error of a task that failed in verifying and stays in failed", async () => {
