@@ -3,8 +3,9 @@
 `src/github/` starts the shared `gh` command. The issue tracker and the forge session use this boundary. Each caller
 keeps its own environment and error rules.
 
-`src/issues/github/` owns tracker behavior. `src/github/forge-session.ts` owns the forge session. This ticket adds no
-forge provider or operations.
+`src/issues/github/` owns tracker behavior. `src/github/forge-session.ts` owns the account-specific forge session and
+its child environment. `src/forge/github/provider.ts` connects that session to the shared forge interface and GitHub
+operations. `src/forge/registry.ts` selects a provider from the forge configuration of a repo.
 
 ## Shared process
 
