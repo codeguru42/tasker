@@ -58,6 +58,13 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
     );
   }
   return withRepoLock(store, ref.repoKey, request.repoLockWaitMs, async () => {
+    if (task.branch !== null && task.publishedRevision !== null) {
+      const deletion = await vcs.deleteRemoteTaskRef(ctx, {
+        taskRef: task.branch,
+        published: task.publishedRevision,
+      });
+      if (deletion.state === "deleted") report(`deleted ${task.branch} on origin`);
+    }
     if (entry !== undefined && changes.length > 0) {
       await vcs.discardWorkspaceChanges(ctx, { path: entry.path });
       report(`discarded the uncommitted changes of ${entry.path}`);
