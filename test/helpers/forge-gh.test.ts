@@ -27,10 +27,8 @@ describe("the forge gh helper", () => {
     const token = "head-token-secret";
     const fake = forgeGh(dir, token, []);
     const env = { ...fake.env, GH_TOKEN: token };
-    const setRemoteHead = (head: string) =>
-      (fake as typeof fake & { setRemoteHead(head: string): void }).setRemoteHead(head);
     const callHead = (head: string) => {
-      setRemoteHead(head);
+      fake.setRemoteHead(head);
       return runFakeGh(env, ["pr", "view", "42", "--json", "headRefOid"]);
     };
 
@@ -49,10 +47,8 @@ describe("the forge gh helper", () => {
     const token = "merge-token-secret";
     const fake = forgeGh(dir, token, []);
     const env = { ...fake.env, GH_TOKEN: token };
-    const setMergeState = (state: string) =>
-      (fake as typeof fake & { setMergeState(state: string): void }).setMergeState(state);
     const readState = (state: string) => {
-      setMergeState(state);
+      fake.setMergeState(state);
       return runFakeGh(env, ["pr", "view", "42", "--json", "state"]);
     };
 
