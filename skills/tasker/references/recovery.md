@@ -255,9 +255,9 @@ of the task lock belong to this group:
 
 ## `tasker abort`
 
-Cancels an active task and removes its worktree and local task branch: `tasker abort <issue>`. The command makes sure
-that the task is active, no run is in progress, and the worktree is clean before it changes anything. `--force` allows
-it to discard uncommitted work.
+Cancels an active task and removes its worktree and local task branch: `tasker abort <issue>`. After
+[dead-run collection](../SKILL.md#a-dead-run), abort refuses a terminal task, a live run, or dirty work without
+`--force`. `--force` allows it to discard uncommitted work.
 
 After the guards pass, the command takes the repo lock. It deletes the published task branch on origin before it changes
 local work, the tracker or the task row. The command uses the stored published revision for this deletion. It then
@@ -268,7 +268,8 @@ When the command deletes the remote branch, it prints `deleted <branch> on origi
 branch is already gone. When the task has no stored branch or no stored publication revision, it skips remote deletion.
 If you pass `--keep-remote`, the command skips remote deletion and prints
 `kept <branch> on origin; to delete it: git push origin --delete <branch>` when the task has a stored branch. It prints
-no keep hint when the task has no stored branch. After the steps, it prints `cancelled <issue>`.
+no keep hint when the task has no stored branch. After the steps, it prints `cancelled <issue>`. Deleting a remote
+branch can remove the head branch of an open or queued PR. Use `--keep-remote` to preserve it.
 
 If remote deletion fails, the command exits with code 1 and writes an error to stderr. A moved branch gives this exact
 error:
@@ -279,15 +280,15 @@ Any other remote deletion error gives this exact form:
 
 `cannot abort <issue key>: cannot delete the task branch <branch> on origin: <reason>; run tasker abort <issue key> again, or delete the branch from a clone of your own`
 
-For either error, the command leaves the task row, publication, events, run marker, worktree, local branch and tracker
-state unchanged. Use `--keep-remote` to cancel while keeping the remote branch.
+For either error, the abort steps after that collection leave the task row, publication, events, run marker, worktree,
+local branch and tracker state unchanged. Use `--keep-remote` to cancel while keeping the remote branch.
 
 If remote deletion succeeds but a later local step fails, the command keeps the `deleted <branch> on origin` line on
 stdout and writes the later error to stderr. The task stays active. Run `tasker abort <issue>` again to finish cleanup.
 The second run accepts that the remote branch is already gone and continues with the local steps.
 
-The command exits with code 1 and changes nothing on these refusals. The shared errors of the task lock and clone lock
-belong to this list:
+After dead-run collection, the command exits with code 1 and changes nothing on these refusals. The shared errors of the
+task lock and clone lock belong to this list:
 
 - The task is `finished` or `cancelled`. The error names the state. A task in any other state, including `failed`, can
   be aborted.
