@@ -38,6 +38,9 @@ The command reads the origin. The origin is the state that the task left when it
   `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to
   `landed`.
 - `accepted`: the task goes to `accepted`, and the command runs `tasker push`.
+- `opening_pr`: the task goes to `pushed`, and the command runs `tasker open-pr`. This row also covers a failed record
+  after tasker created the pull request. `tasker open-pr` looks for a matching open pull request and adopts it before it
+  creates another one.
 - `pushing`, when the state before the push is `accepted`: the task goes to `accepted`, and the command runs
   `tasker push`.
 - `quota_blocked`, `awaiting_quota_approval` or `interrupted`: the command uses the row of the state that the task left
@@ -83,9 +86,10 @@ For a task that failed in `provisioning`, the steps of `tasker start` run with n
 branch is known, run `tasker start <issue> --base <branch>`. `tasker start` continues the same task.
 
 The next command prints its output after the retry line. It keeps its own errors and exit code. It can be
-`tasker start`, `tasker plan`, `tasker execute`, `tasker verify`, `tasker review`, `tasker merge` or `tasker push`. If
-it fails, the task goes to `failed` again with a new error. You can run `tasker retry` again. For the origin `refining`,
-the command prints one hint line and exits with code 0. The line depends on the origin of the refine:
+`tasker start`, `tasker plan`, `tasker execute`, `tasker verify`, `tasker review`, `tasker merge`, `tasker push` or
+`tasker open-pr`. If it fails, the task goes to `failed` again with a new error. You can run `tasker retry` again. For
+the origin `refining`, the command prints one hint line and exits with code 0. The line depends on the origin of the
+refine:
 
 - `awaiting_plan_review` or `failed`: `run tasker refine <issue key> "<feedback>" again`
 - `reviewed`:
@@ -145,6 +149,9 @@ origin in this table:
   `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to
   `landed`.
 - `pushing`: the task goes to `accepted`, and the command runs `tasker push`.
+- `opening_pr`: only a task in `interrupted` can have this origin. The task goes to `pushed`, and the command runs
+  `tasker open-pr`. If tasker created the pull request before it stored its number, `tasker open-pr` finds and adopts
+  it.
 - `finishing`: the task goes to `landed`, and the command runs `tasker finish`. The target is `landed` also when the
   task came to `finishing` from `cleanup_failed`. The repeated cleanup skips local resources that are already gone and
   treats a remote branch that finish already deleted as already gone.
@@ -192,8 +199,9 @@ of the task lock belong to this group:
 - The task paused from a state that resume has no step for. The error is
   `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task that paused in `merging`
   after a move from a state other than `accepted` gets this error too. A task in `quota_blocked` that paused from
-  `updating_branch` gets this error, and so does an update whose origin has no record. A refine pause from `accepted` or
-  `pushed` with no recorded feedback has no resume row.
+  `updating_branch` gets this error, and so does an update whose origin has no record. Resume refuses a quota pause from
+  `opening_pr`; only an interrupted task can resume from that state. A refine pause from `accepted` or `pushed` with no
+  recorded feedback has no resume row.
 - The move into `updating_branch` recorded no start head. The error is
   `the update of <issue key> recorded no start head; tasker resume cannot restore the worktree`. The task stays in
   `interrupted` and the command writes nothing.
