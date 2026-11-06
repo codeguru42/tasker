@@ -349,7 +349,7 @@ a failed push, tasker reads the tip again, so a branch that is already gone is n
 
 A changed revision can hold work that tasker did not publish, so the provider leaves that branch in place and reports
 that it moved. A failed read proves neither that the branch is absent nor that deletion is safe, so the provider reports
-a delete error. [Finish](tasks.md#finish) gives the command policy for these outcomes.
+a delete error. [Abort](tasks.md#abort) and [Finish](tasks.md#finish) give the command policy for these outcomes.
 
 ### Side effects of publish and land
 
