@@ -1,7 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../../src/github/forge-session.js";
-// @ts-expect-error ciStatus is added by the next commit.
 import { ciStatus } from "../../../src/forge/github/ci.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
 import type { FakeAnswer } from "../../helpers/fake-commands.js";
@@ -21,7 +20,6 @@ const callCiStatus = (
   cwd: string,
   env: NodeJS.ProcessEnv,
 ) => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return ciStatus(session, commit, cwd, env);
 };
 
@@ -52,7 +50,15 @@ describe("ciStatus", () => {
     const worktree = join(dir, "worktree");
     const { mkdirSync } = await import("node:fs");
     mkdirSync(worktree);
-    const fake = forgeGh(dir, token, answers());
+    const fake = forgeGh(dir, token, answers(), [
+      "PATH",
+      "HOME",
+      "GH_CONFIG_DIR",
+      "TASKER_GH_BIN",
+      "GH_PROMPT_DISABLED",
+      "GH_NO_UPDATE_NOTIFIER",
+      "NO_COLOR",
+    ]);
     const env = taskerEnv(fake.env);
 
     await expect(callCiStatus(createGhSession("octo"), sha, worktree, env)).resolves.toBe("pending");
