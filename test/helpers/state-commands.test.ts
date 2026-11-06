@@ -31,8 +31,14 @@ describe("expectedStateCommands", () => {
 
   it("offers reopen for a pushed task", () => {
     expect(expectedStateCommands("pushed")).toEqual({
-      commands: ["mark-landed", "update-branch", "reopen", "abort"],
+      commands: ["open-pr", "mark-landed", "update-branch", "reopen", "abort"],
     });
+  });
+
+  it("lists open-pr before landing for a pushed task", () => {
+    expect(expectedShowLines("pushed", "codeguru42/tasker#5")).toBe(
+      "commands: tasker open-pr codeguru42/tasker#5, tasker mark-landed codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker reopen codeguru42/tasker#5, tasker abort codeguru42/tasker#5\n",
+    );
   });
 
   it("gives nothing for a terminal state", () => {
