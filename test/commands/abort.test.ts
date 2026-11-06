@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 import { abort } from "../../src/commands/abort.js";
 import { start } from "../../src/commands/start.js";
 import { bootstrapLogPath } from "../../src/phases/bootstrap.js";
@@ -12,7 +12,7 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { githubLabelsAfter, trackerWriteCalls } from "../helpers/fake-gh.js";
-import { gitBeforePushEnv, localBranches } from "../helpers/git.js";
+import { gitBeforePushEnv, localBranches, rejectOriginPush } from "../helpers/git.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { deadRunNote } from "../helpers/state-commands.js";
@@ -50,6 +50,60 @@ function runAbort(...args: string[]): Promise<{ code: number; out: string; err: 
 }
 
 describe("abort", () => {
+  it("reports the exact moved-branch refusal and preserves the task", async () => {
+    const started = await usePublishedStartedTask();
+    const moved = await started.origin.addCommit(started.branch);
+    const task = latestTaskOf(started.dataRoot, KEY);
+    const events = eventsOf(started.dataRoot, KEY);
+    const marker = readRunMarker(databasePathOf(started.dataRoot), task.id);
+    const workspace = await taskWorkspaceState(started);
+    const ghCalls = started.gh.calls();
+    const trackerWrites = trackerWriteCalls(started.gh);
+
+    const result = await runAbort(KEY);
+
+    expect(latestTaskOf(started.dataRoot, KEY)).toEqual(task);
+    expect(eventsOf(started.dataRoot, KEY)).toEqual(events);
+    expect(readRunMarker(databasePathOf(started.dataRoot), task.id)).toEqual(marker);
+    expect(await taskWorkspaceState(started)).toEqual(workspace);
+    expect(await started.origin.branchHead(started.branch)).toBe(moved);
+    expect(started.gh.calls()).toEqual(ghCalls);
+    expect(trackerWriteCalls(started.gh)).toEqual(trackerWrites);
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err: `cannot abort ${KEY}: the task branch ${started.branch} moved on origin: tasker published ${started.publishedRevision}, origin has ${moved}; someone else pushed to it; use --keep-remote to keep that branch\n`,
+    });
+  });
+
+  it("reports the exact remote deletion failure and preserves the task", async () => {
+    const started = await usePublishedStartedTask();
+    const removeHook = rejectOriginPush(started.origin, { message: "transport unavailable" });
+    onTestFinished(removeHook);
+    const task = latestTaskOf(started.dataRoot, KEY);
+    const events = eventsOf(started.dataRoot, KEY);
+    const marker = readRunMarker(databasePathOf(started.dataRoot), task.id);
+    const workspace = await taskWorkspaceState(started);
+    const ghCalls = started.gh.calls();
+    const trackerWrites = trackerWriteCalls(started.gh);
+    const providerError = `cannot delete the task branch on origin: ${started.branch}: remote: transport unavailable        \nTo ${started.origin.path}\n ! [remote rejected] ${started.branch} (pre-receive hook declined)\nerror: failed to push some refs to '${started.origin.path}'`;
+
+    const result = await runAbort(KEY);
+
+    expect(latestTaskOf(started.dataRoot, KEY)).toEqual(task);
+    expect(eventsOf(started.dataRoot, KEY)).toEqual(events);
+    expect(readRunMarker(databasePathOf(started.dataRoot), task.id)).toEqual(marker);
+    expect(await taskWorkspaceState(started)).toEqual(workspace);
+    expect(await started.origin.branchHead(started.branch)).toBe(started.publishedRevision);
+    expect(started.gh.calls()).toEqual(ghCalls);
+    expect(trackerWriteCalls(started.gh)).toEqual(trackerWrites);
+    expect(result).toEqual({
+      code: 1,
+      out: "",
+      err: `cannot abort ${KEY}: cannot delete the task branch ${started.branch} on origin: ${providerError}; run tasker abort ${KEY} again, or delete the branch from a clone of your own\n`,
+    });
+  });
+
   it("keeps a published branch and prints the exact removal hint", async () => {
     const started = await usePublishedStartedTask();
 

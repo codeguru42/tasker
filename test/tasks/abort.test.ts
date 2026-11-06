@@ -1,6 +1,6 @@
-import { symlinkSync } from "node:fs";
+import { existsSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
@@ -8,20 +8,26 @@ import type { Task, TaskStore } from "../../src/store/store.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { canonicalPath } from "../../src/real-path.js";
 import { abortTask, type AbortRequest } from "../../src/tasks/abort.js";
+import { GitError, runGit } from "../../src/vcs/git/run.js";
 import { startTask } from "../../src/tasks/start.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { listWorktrees } from "../../src/vcs/git/worktree.js";
 import { AUTH_STATUS_ARGS, fakeAcli, jiraRefOf, MEASURED_AUTH_STATUS } from "../helpers/fake-acli.js";
-import { copyCloneBranchToOrigin } from "../helpers/git.js";
+import { copyCloneBranchToOrigin, gitBeforePushEnv, rejectOriginPush } from "../helpers/git.js";
+import { realCommandPath } from "../helpers/fake-commands.js";
+import { useFakeClaudeOnPath, type FakeClaude } from "../helpers/fake-claude.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
   eventDataOf,
+  eventsOf,
   latestTaskOf,
   lockNames,
   readRunMarker,
   withDataRootStore,
 } from "../helpers/store.js";
+import { failureOf } from "../helpers/errors.js";
+import { trackerWriteCalls } from "../helpers/fake-gh.js";
 import {
   taskRefOf,
   taskWorkspaceState,
@@ -46,6 +52,60 @@ function abortWith(
     trackerIo: { stdout: () => {}, stderr: () => {} },
     ...request,
   });
+}
+
+// Makes sure that a rejected abort leaves the task and its local and remote work intact.
+async function expectAbortRefusal(
+  started: StartedTask,
+  call: () => Promise<unknown>,
+  expectedMessage: string,
+  callLog: { claude: FakeClaude; path: string; trace: string },
+  pushCount: 0 | 1,
+  remoteTip?: string,
+): Promise<void> {
+  const task = latestTaskOf(started.dataRoot, started.key);
+  const events = eventsOf(started.dataRoot, started.key);
+  const marker = readRunMarker(databasePathOf(started.dataRoot), task.id);
+  const workspace = await taskWorkspaceState(started);
+  const branchTip = remoteTip ?? (await started.origin.branchHead(started.branch));
+  const ghCalls = started.gh.calls();
+  const trackerWrites = trackerWriteCalls(started.gh);
+  const trackerEvents = eventDataOf(started.dataRoot, started.key, "tracker_update");
+
+  const error = await failureOf(call(), Error);
+
+  expect(latestTaskOf(started.dataRoot, started.key)).toEqual(task);
+  expect(eventsOf(started.dataRoot, started.key)).toEqual(events);
+  expect(readRunMarker(databasePathOf(started.dataRoot), task.id)).toEqual(marker);
+  expect(await taskWorkspaceState(started)).toEqual(workspace);
+  expect(await started.origin.branchHead(started.branch)).toBe(branchTip);
+  expect(started.gh.calls()).toEqual(ghCalls);
+  expect(callLog.claude.calls()).toEqual([]);
+  const gitTrace = existsSync(callLog.trace) ? readFileSync(callLog.trace, "utf8") : "";
+  expect(gitTrace).not.toMatch(/built-in: git merge(?: |$)/);
+  expect(existsSync(callLog.path)).toBe(pushCount === 1);
+  if (pushCount === 1) expect(readFileSync(callLog.path, "utf8")).toBe("x");
+  expect(trackerWriteCalls(started.gh)).toEqual(trackerWrites);
+  expect(eventDataOf(started.dataRoot, started.key, "tracker_update")).toEqual(trackerEvents);
+  expect(error.message).toBe(expectedMessage);
+}
+
+// Runs a command that records each git push, then runs the real push command.
+function pushCallLog(): { env: NodeJS.ProcessEnv; path: string; trace: string; claude: FakeClaude } {
+  const claude = useFakeClaudeOnPath({});
+  const dir = useTempDir("tasker-abort-push-log-");
+  const path = join(dir, "calls");
+  const trace = join(dir, "git.trace");
+  return {
+    env: gitBeforePushEnv(useTempDir("tasker-abort-push-bin-"), { ...process.env, GIT_TRACE: trace }, [
+      realCommandPath("sh"),
+      "-c",
+      `printf x >> '${path}'`,
+    ]),
+    path,
+    trace,
+    claude,
+  };
 }
 
 // Aborts a new task TEST-5 of a Jira repo. options.keys add to the keys of issueTracker.
@@ -135,6 +195,176 @@ describe("abortTask", () => {
     expect(remoteTip).toBeTruthy();
     expect(await started.origin.branchHead(started.branch)).toBe(remoteTip);
     expect(lines.some((line) => line.startsWith("deleted ") && line.endsWith(" on origin"))).toBe(false);
+  });
+
+  it("refuses when the published branch moved before abort", async () => {
+    const started = await usePublishedStartedTask();
+    const moved = await started.origin.addCommit(started.branch);
+    const pushLog = pushCallLog();
+
+    await expectAbortRefusal(
+      started,
+      () =>
+        withDataRootStore(started.dataRoot, (store) =>
+          abortWith(store, {
+            config: started.config,
+            ref: taskRefOf(started),
+            taskId: started.task.id,
+            env: pushLog.env,
+          }),
+        ),
+      `cannot abort ${started.key}: the task branch ${started.branch} moved on origin: tasker published ${started.publishedRevision}, origin has ${moved}; someone else pushed to it; use --keep-remote to keep that branch`,
+      pushLog,
+      0,
+      moved,
+    );
+  });
+
+  it("refuses when the branch moves between the remote read and leased deletion", async () => {
+    const started = await usePublishedStartedTask();
+    await started.origin.createBranch("tasker/other");
+    const moved = await started.origin.addCommit("tasker/other");
+    const pushLog = pushCallLog();
+    const env = gitBeforePushEnv(useTempDir("tasker-abort-move-bin-"), pushLog.env, [
+      realCommandPath("sh"),
+      "-c",
+      `printf x >> '${pushLog.path}' && ${realCommandPath("git")} --git-dir '${started.origin.path}' update-ref refs/heads/${started.branch} ${moved}`,
+    ]);
+
+    await expectAbortRefusal(
+      started,
+      () =>
+        withDataRootStore(started.dataRoot, (store) =>
+          abortWith(store, {
+            config: started.config,
+            ref: taskRefOf(started),
+            taskId: started.task.id,
+            env,
+          }),
+        ),
+      `cannot abort ${started.key}: the task branch ${started.branch} moved on origin: tasker published ${started.publishedRevision}, origin has ${moved}; someone else pushed to it; use --keep-remote to keep that branch`,
+      pushLog,
+      1,
+      moved,
+    );
+  });
+
+  it("refuses when the remote cannot be read", async () => {
+    const started = await usePublishedStartedTask();
+    const remote = join(useTempDir("tasker-abort-missing-origin-"), "missing.git");
+    const readError = await failureOf(
+      runGit(["ls-remote", "--", remote, `refs/heads/${started.branch}`], { cwd: "/", env: process.env }),
+      GitError,
+    );
+    const config = {
+      ...started.config,
+      repos: { ...started.config.repos, [started.repoKey]: { ...started.config.repos[started.repoKey], remote } },
+    };
+    const pushLog = pushCallLog();
+    const reason = `the remote does not answer: ${remote}: ${readError.stderr.trim()}`;
+    const providerError = `cannot delete the task branch on origin: ${started.branch}: ${reason}`;
+
+    await expectAbortRefusal(
+      started,
+      () =>
+        withDataRootStore(started.dataRoot, (store) =>
+          abortWith(store, { config, ref: taskRefOf(started), taskId: started.task.id, env: pushLog.env }),
+        ),
+      `cannot abort ${started.key}: cannot delete the task branch ${started.branch} on origin: ${providerError}; run tasker abort ${started.key} again, or delete the branch from a clone of your own`,
+      pushLog,
+      0,
+    );
+  });
+
+  it("refuses when the remote rejects the leased deletion", async () => {
+    const started = await usePublishedStartedTask();
+    const removeHook = rejectOriginPush(started.origin, { message: "transport unavailable" });
+    onTestFinished(removeHook);
+    const pushLog = pushCallLog();
+    const providerError = `cannot delete the task branch on origin: ${started.branch}: remote: transport unavailable        \nTo ${started.origin.path}\n ! [remote rejected] ${started.branch} (pre-receive hook declined)\nerror: failed to push some refs to '${started.origin.path}'`;
+
+    await expectAbortRefusal(
+      started,
+      () =>
+        withDataRootStore(started.dataRoot, (store) =>
+          abortWith(store, {
+            config: started.config,
+            ref: taskRefOf(started),
+            taskId: started.task.id,
+            env: pushLog.env,
+          }),
+        ),
+      `cannot abort ${started.key}: cannot delete the task branch ${started.branch} on origin: ${providerError}; run tasker abort ${started.key} again, or delete the branch from a clone of your own`,
+      pushLog,
+      1,
+    );
+  });
+
+  it("refuses a live run before it tries to delete the published branch", async () => {
+    const started = await usePublishedStartedTask();
+    withDataRootStore(started.dataRoot, (store) => transitionTask(store, started.task.id, "planning"));
+    const pushLog = pushCallLog();
+
+    await expectAbortRefusal(
+      started,
+      () =>
+        withDataRootStore(started.dataRoot, (store) =>
+          abortWith(store, {
+            config: started.config,
+            ref: taskRefOf(started),
+            taskId: started.task.id,
+            env: pushLog.env,
+          }),
+        ),
+      `the task of ${started.key} has a run in progress in planning (tasker process ${process.pid}); wait for it, or stop that process`,
+      pushLog,
+      0,
+    );
+  });
+
+  it("refuses a terminal task before it tries to delete the published branch", async () => {
+    const started = await usePublishedStartedTask();
+    withDataRootStore(started.dataRoot, (store) => transitionTask(store, started.task.id, "cancelled"));
+    const pushLog = pushCallLog();
+
+    await expectAbortRefusal(
+      started,
+      () =>
+        withDataRootStore(started.dataRoot, (store) =>
+          abortWith(store, {
+            config: started.config,
+            ref: taskRefOf(started),
+            taskId: started.task.id,
+            env: pushLog.env,
+          }),
+        ),
+      `the task of ${started.key} is cancelled: tasker abort works only on an active task`,
+      pushLog,
+      0,
+    );
+  });
+
+  it("refuses dirty work before it tries to delete the published branch", async () => {
+    const started = await usePublishedStartedTask();
+    writeFileSync(join(started.worktree, "changed.txt"), "keep this work\n");
+    const pushLog = pushCallLog();
+
+    await expectAbortRefusal(
+      started,
+      () =>
+        withDataRootStore(started.dataRoot, (store) =>
+          abortWith(store, {
+            config: started.config,
+            ref: taskRefOf(started),
+            taskId: started.task.id,
+            env: pushLog.env,
+          }),
+        ),
+      `the worktree has uncommitted changes: ${canonicalPath(started.worktree)}\n?? changed.txt\ntasker abort --force discards them`,
+      pushLog,
+      0,
+    );
+    expect(readFileSync(join(started.worktree, "changed.txt"), "utf8")).toBe("keep this work\n");
   });
 
   it("removes the worktree when the data root goes through a symlink", async () => {
