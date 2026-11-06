@@ -10,7 +10,7 @@ import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
-import { runCommand } from "../helpers/cli.js";
+import { runCommand, runHelp } from "../helpers/cli.js";
 import { githubLabelsAfter, trackerWriteCalls } from "../helpers/fake-gh.js";
 import { gitBeforePushEnv, localBranches } from "../helpers/git.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
@@ -50,6 +50,55 @@ function runAbort(...args: string[]): Promise<{ code: number; out: string; err: 
 }
 
 describe("abort", () => {
+  it("keeps a published branch and prints the exact removal hint", async () => {
+    const started = await usePublishedStartedTask();
+
+    const result = await runAbort(KEY, "--keep-remote");
+
+    expect(result).toEqual({
+      code: 0,
+      out: `kept ${started.branch} on origin; to delete it: git push origin --delete ${started.branch}\nremoved the worktree ${canonicalPath(started.worktree)}\ndeleted the branch ${started.branch}\ncancelled ${KEY}\n`,
+      err: "",
+    });
+    expect(await started.origin.branchHead(started.branch)).toBe(started.publishedRevision);
+    expect(await taskWorkspaceState(started)).toMatchObject({ state: "cancelled", worktree: false, branch: false });
+  });
+
+  it("prints the keep hint for a stored branch without a publication record", async () => {
+    const started = await usePublishedStartedTask();
+    withDataRootStore(started.dataRoot, (store) => store.updateTask(started.task.id, { publishedRevision: null }));
+
+    const result = await runAbort(KEY, "--keep-remote");
+
+    expect(result).toEqual({
+      code: 0,
+      out: `kept ${started.branch} on origin; to delete it: git push origin --delete ${started.branch}\nremoved the worktree ${canonicalPath(started.worktree)}\ndeleted the branch ${started.branch}\ncancelled ${KEY}\n`,
+      err: "",
+    });
+    expect(await started.origin.branchHead(started.branch)).toBe(started.publishedRevision);
+    expect(latestTaskOf(started.dataRoot, KEY).state).toBe("cancelled");
+  });
+
+  it("prints no keep hint when the task has no stored branch", async () => {
+    const fixture = await useStartFixture();
+    seedTasks(fixture.dataRoot, [
+      { issueKey: KEY, repoKey: REPO, state: "provisioning", at: "2026-01-01T00:00:00.000Z" },
+    ]);
+
+    const result = await runAbort(KEY, "--keep-remote");
+
+    expect(result).toEqual({ code: 0, out: `cancelled ${KEY}\n`, err: "" });
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("cancelled");
+  });
+
+  it("shows the exact description and keep option help", async () => {
+    const { code, help } = await runHelp(abort, "abort");
+
+    expect(code).toBe(0);
+    expect(help).toContain("Cancel an active task and remove its worktree and published task branch.");
+    expect(help).toContain("--keep-remote Keep the task branch on origin during the abort.");
+  });
+
   it("deletes the published branch before discard, cleanup, and tracker writes", async () => {
     const started = await usePublishedStartedTask({
       repo: trackerRepo({ updateOnStart: true, inProgressLabel: "in progress" }),
