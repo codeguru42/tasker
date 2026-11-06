@@ -233,6 +233,34 @@ describe("listOpenPrs", () => {
     fake.assertAnswered();
   });
 
+  it("rejects malformed JSON on a later read without returning an earlier partial list", async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => pr(index + 1));
+    const { dir, env, fake, session } = setup([
+      { args: listArgs(head, 100), stdout: JSON.stringify(firstPage) },
+      { args: listArgs(head, 200), stdout: "{" },
+    ]);
+
+    const error = await failureOf(listCall(session, dir, head, env), Error);
+    expect(error.message).toContain(head);
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([listArgs(head, 100), listArgs(head, 200)]);
+    fake.assertAnswered();
+  });
+
+  it("accepts extra fields, reordered keys, and whitespace", async () => {
+    const response = ` [ { "isCrossRepository" : false, "extra" : true, "baseRefName" : "main", "url" : "https://github.com/acme/project/pull/7", "number" : 7 } ] `;
+    const { dir, env, fake, session } = setup([{ args: listArgs(head, 100), stdout: response }]);
+
+    await expect(listCall(session, dir, head, env)).resolves.toEqual([
+      { number: 7, url: "https://github.com/acme/project/pull/7", base: "main" },
+    ] satisfies OpenPullRequest[]);
+    fake.assertAnswered();
+  });
+
   it.each([
     ["not an array", "{}"],
     ["invalid JSON", "{"],
@@ -242,16 +270,36 @@ describe("listOpenPrs", () => {
         { url: "https://github.com/acme/project/pull/1", baseRefName: "main", isCrossRepository: false },
       ]),
     ],
+    ["wrongly typed number", JSON.stringify([{ ...pr(1), number: "1" }])],
     ["nonpositive number", JSON.stringify([pr(0)])],
     ["missing URL", JSON.stringify([{ number: 1, baseRefName: "main", isCrossRepository: false }])],
+    ["wrongly typed URL", JSON.stringify([{ ...pr(1), url: 1 }])],
     ["missing base", JSON.stringify([{ number: 1, url: "https://example.test/pull/1", isCrossRepository: false }])],
-    ["missing repository identity on a fork", JSON.stringify([{ ...pr(1), isCrossRepository: "yes" }])],
+    ["wrongly typed base", JSON.stringify([{ ...pr(1), baseRefName: 1 }])],
+    [
+      "missing repository identity on an origin",
+      JSON.stringify([pr(2, "main"), { number: 1, url: "https://example.test/pull/1", baseRefName: "main" }]),
+    ],
+    ["wrongly typed repository identity on an origin", JSON.stringify([{ ...pr(1), isCrossRepository: "yes" }])],
+    [
+      "missing repository identity on a fork",
+      JSON.stringify([pr(2, "main", true), { number: 1, url: "https://example.test/pull/1", baseRefName: "main" }]),
+    ],
+    [
+      "wrongly typed repository identity on a fork",
+      JSON.stringify([pr(2, "main", true), { ...pr(1), isCrossRepository: "yes" }]),
+    ],
   ])("rejects a %s response", async (_label, stdout) => {
     const { dir, env, fake, session } = setup([{ args: listArgs(head, 100), stdout }]);
 
     const error = await failureOf(listCall(session, dir, head, env), Error);
     expect(error.message).toContain(head);
-    expect(fake.calls().some(({ args }) => args[0] === "pr")).toBe(true);
+    expect(
+      fake
+        .calls()
+        .filter(({ args }) => args[0] === "pr")
+        .map(({ args }) => args),
+    ).toEqual([listArgs(head, 100)]);
     fake.assertAnswered();
   });
 
