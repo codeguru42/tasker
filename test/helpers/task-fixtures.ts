@@ -816,6 +816,11 @@ export interface PublishedLandedTask extends LandedTask {
   publishedRevision: string;
 }
 
+export interface PublishedStartedTask extends StartedTask {
+  task: Task;
+  publishedRevision: string;
+}
+
 // Runs useAcceptedTask(options), then tasker merge for the task, and gives the task in landed. It throws when the
 // merge fails. Call it inside a test.
 export async function useLandedTask(options?: Parameters<typeof useWorkReviewTask>[0]): Promise<LandedTask> {
@@ -832,20 +837,43 @@ export async function usePublishedLandedTask(
   options?: Parameters<typeof useWorkReviewTask>[0],
 ): Promise<PublishedLandedTask> {
   const landed = await useLandedTask(options);
+  return publishTaskBranch(landed);
+}
+
+// Publishes a task branch, stores its revision, and returns the updated task.
+async function publishTaskBranch<
+  T extends {
+    origin: GitOrigin;
+    clone: string;
+    branch: string;
+    env: NodeJS.ProcessEnv;
+    dataRoot: string;
+    task: Task;
+  },
+>(fixture: T): Promise<T & { publishedRevision: string }> {
   await copyCloneBranchToOrigin({
-    origin: landed.origin.path,
-    clone: landed.clone,
-    branch: landed.branch,
-    env: landed.env,
+    origin: fixture.origin.path,
+    clone: fixture.clone,
+    branch: fixture.branch,
+    env: fixture.env,
   });
   const publishedRevision = await gitOutput(
-    { gitDir: landed.clone },
-    landed.env,
+    { gitDir: fixture.clone },
+    fixture.env,
     "rev-parse",
-    `refs/heads/${landed.branch}`,
+    `refs/heads/${fixture.branch}`,
   );
-  const task = withDataRootStore(landed.dataRoot, (store) => store.updateTask(landed.task.id, { publishedRevision }));
-  return { ...landed, task, publishedRevision };
+  const task = withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.task.id, { publishedRevision }));
+  return { ...fixture, task, publishedRevision };
+}
+
+// Runs useStartedTask(options), publishes its task branch to origin, and stores that revision on the task.
+export async function usePublishedStartedTask(
+  options: Parameters<typeof useStartFixture>[0] = {},
+): Promise<PublishedStartedTask> {
+  const started = await useStartedTask(options);
+  const task = latestTaskOf(started.dataRoot, started.key);
+  return publishTaskBranch({ ...started, task });
 }
 
 // Makes the head of the task branch the head of main on origin, as a push by someone else would.

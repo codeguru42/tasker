@@ -56,7 +56,6 @@ import {
   useExecuteFixture,
   useLandedTask,
   usePublishedLandedTask,
-  // @ts-expect-error -- red step: this fixture is added in the green step.
   usePublishedStartedTask,
   useRefineFixture,
   useReopenFixture,
@@ -742,13 +741,11 @@ describe("usePublishedLandedTask", () => {
 
 describe("usePublishedStartedTask", () => {
   it("publishes a started task branch and stores its revision", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- red step: this fixture is added in the green step.
     const started = await usePublishedStartedTask();
 
-    expect(started.task.state).toBe("started");
+    expect(started.task.state).toBe("workspace_ready");
     expect(started.task.publishedRevision).toBe(started.publishedRevision);
     expect(latestTaskOf(started.dataRoot, started.key).publishedRevision).toBe(started.publishedRevision);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- red step: this fixture is added in the green step.
     expect(await started.origin.branchHead(started.branch)).toBe(started.publishedRevision);
   });
 });
