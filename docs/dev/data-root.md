@@ -94,6 +94,12 @@ transaction. A retry of a failed reopen also restores the saved head under the r
 restore keeps the task state and recovery head. If the column is NULL, the resync was recorded, so recovery keeps the
 current worktree state.
 
+The nullable integer column `pr_number` holds the number of the pull request tasker recorded for the task, or NULL when
+there is no record. Schema version 21 adds it. Existing task rows get NULL. `tasker open-pr` writes the number, the
+`pr_opened` event, the move from `opening_pr` to `in_peer_review` and the run-marker removal in one transaction. This
+keeps the PR number, event, state and marker in sync. Later code reads `pr_number`, not the event, because events are an
+audit log and not data.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 
