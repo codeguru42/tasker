@@ -59,6 +59,7 @@ const RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   verifying: { target: "executed", next: "verify", clearReview: false },
   reviewing: { target: "awaiting_work_review", next: "review", clearReview: true },
   pushing: { target: "accepted", next: "push", clearReview: false },
+  opening_pr: { target: "pushed", next: "open-pr", clearReview: false },
   // The target is landed also when the task came to finishing from cleanup_failed: finish runs from landed too.
   finishing: { target: "landed", next: "finish", clearReview: false },
 };
