@@ -835,7 +835,7 @@ describe("tasker update-branch", () => {
       const task = latestTaskOf(work.dataRoot, KEY);
       const events = eventsOf(work.dataRoot, KEY);
       const marker = readRunMarker(databasePathOf(work.dataRoot), task.id);
-      const head = await gitOutput({ cwd: work.task.worktreePath! }, work.env, "rev-parse", "HEAD");
+      const head = await revisionOf(work, "HEAD");
       const taskTip = await taskBranchTipOf(work);
       const trackedBase = await gitOutput({ cwd: work.clone }, work.env, "rev-parse", "refs/remotes/origin/main");
       const originBase = await work.origin.branchHead("main");
@@ -850,7 +850,7 @@ describe("tasker update-branch", () => {
       expect(latestTaskOf(work.dataRoot, KEY)).toEqual(task);
       expect(eventsOf(work.dataRoot, KEY)).toEqual(events);
       expect(readRunMarker(databasePathOf(work.dataRoot), task.id)).toEqual(marker);
-      expect(await gitOutput({ cwd: work.task.worktreePath! }, work.env, "rev-parse", "HEAD")).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
       expect(await taskBranchTipOf(work)).toBe(taskTip);
       expect(await gitOutput({ cwd: work.clone }, work.env, "rev-parse", "refs/remotes/origin/main")).toBe(trackedBase);
       expect(await work.origin.branchHead("main")).toBe(originBase);
