@@ -113,6 +113,17 @@ git function with no operation adds the operation in the same change.
 6. Give the doctor checks of the provider from `doctorChecks()`.
 7. Write the tests first (see "Tests").
 
+## Add a forge provider
+
+1. Add the provider name and fields to the forge schema in `src/config/schema.ts`, and document them in
+   `docs/config.md`.
+2. Create `src/forge/<id>/provider.ts`. It implements `ForgeProvider` from `src/forge/provider.ts` and imports its
+   shared types from there.
+3. Add the provider factory to `src/forge/registry.ts`. Keep the registry names in agreement with the schema.
+4. Use the forge account from `repos.<key>.forge`. Keep it separate from the issue tracker account.
+5. Write tests first (see "Tests"). Test provider operations in `test/forge/<id>/provider.test.ts` and selection in
+   `test/forge/registry.test.ts`.
+
 ## Add an assistant provider
 
 1. Add the id to the `assistant.provider` enum in `src/config/schema.ts`, and to the `provider` row of the `assistant`
