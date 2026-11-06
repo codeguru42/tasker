@@ -61,4 +61,23 @@ describe("the forge gh helper", () => {
     expect(fake.calls().every(({ tokenMatches }) => tokenMatches)).toBe(true);
     expect(JSON.stringify(fake.calls())).not.toContain(token);
   });
+
+  it("allows a guarded merge only when the current remote head matches", () => {
+    const dir = useTempDir("tasker-forge-gh-guarded-merge-");
+    const token = "guarded-merge-token-secret";
+    const head = "expected-head-sha";
+    const args = ["pr", "merge", "42", "--squash", "--match-head-commit", head];
+    const fake = forgeGh(dir, token, [{ args, stdout: "Merge accepted." }]);
+    const env = { ...fake.env, GH_TOKEN: token };
+
+    fake.setRemoteHead(head);
+    expect(runFakeGh(env, args)).toMatchObject({ status: 0, stdout: "Merge accepted." });
+
+    fake.setRemoteHead("changed-head-sha");
+    expect(runFakeGh(env, args)).toMatchObject({ status: 1 });
+    expect(fake.calls().map(({ args: callArgs }) => callArgs)).toEqual([args, args]);
+    expect(fake.calls().every(({ tokenMatches }) => tokenMatches)).toBe(true);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+    fake.assertAnswered();
+  });
 });

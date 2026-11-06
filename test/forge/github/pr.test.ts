@@ -663,32 +663,20 @@ describe("mergePr", () => {
     },
   );
 
-  it("refuses a changed remote head and does not read completion or retry", async () => {
+  it("refuses a changed remote head through the fake guard without reading completion or retrying", async () => {
     const dir = useTempDir("tasker-merge-pr-stale-head-");
     const headSha = "expected-head-sha-123";
-    const { env, fake, session } = setup(
-      [
-        {
-          args: mergeArgs(42, "squash", headSha),
-          stderr: `expected head does not match current head near ${token}`,
-          exitCode: 1,
-        },
-      ],
-      dir,
-    );
+    const { env, fake, session } = setup([{ args: mergeArgs(42, "squash", headSha), stdout: "Merge accepted." }], dir);
     fake.setRemoteHead("changed-head-sha-456");
 
     const error = await failureOf(mergeCall(session, 42, "squash", headSha, dir, env), Error);
     expect(error.message).toContain("42");
-    expect(error.message).toContain("expected head does not match current head near ***");
     expect(error.cause).toBeInstanceOf(Error);
     expect(errorStrings(error).join("\n")).not.toContain(token);
-    expect(
-      fake
-        .calls()
-        .filter(({ args }) => args[0] === "pr")
-        .map(({ args }) => args),
-    ).toEqual([mergeArgs(42, "squash", headSha)]);
+    const prCalls = fake.calls().filter(({ args }) => args[0] === "pr");
+    expect(prCalls).toHaveLength(1);
+    expect(prCalls[0].args).toEqual(mergeArgs(42, "squash", headSha));
+    expect(prCalls.some(({ args }) => args[1] === "view")).toBe(false);
     fake.assertAnswered();
   });
 
