@@ -162,17 +162,19 @@ function pullRequestFromOutput(output: string): PullRequest {
     const matches = line.match(/https?:\/\/[^\s]+/g) ?? [];
     for (const match of matches) {
       const url = match.trim().replace(/[.,;:!?]+$/, "");
-      let pathname: string;
+      let parsedUrl: URL;
       try {
-        pathname = new URL(url).pathname;
+        parsedUrl = new URL(url);
       } catch {
         continue;
       }
+      const pathname = parsedUrl.pathname;
       const numberMatch = /\/[^/]+\/[^/]+\/pull\/([1-9]\d*)\/?$/.exec(pathname);
       if (numberMatch === null) continue;
       const number = Number(numberMatch[1]);
       if (!Number.isSafeInteger(number)) continue;
-      identities.set(url, { number, url });
+      const identity = `${parsedUrl.host}${pathname.replace(/\/$/, "")}`;
+      if (!identities.has(identity)) identities.set(identity, { number, url });
     }
   }
 
