@@ -65,6 +65,7 @@ export interface Task {
   reopenStartHead: string | null;
   acceptedRevision: string | null;
   publishedRevision: string | null;
+  prNumber: number | null;
   trackerMarked: boolean;
   parentTaskId: number | null;
   attempt: number;
@@ -105,6 +106,7 @@ export interface TaskChanges {
   reopenStartHead?: string | null;
   acceptedRevision?: string | null;
   publishedRevision?: string | null;
+  prNumber?: number | null;
   trackerMarked?: boolean;
   parentTaskId?: number | null;
 }
@@ -246,6 +248,14 @@ export interface ExecuteTodoProgress {
 
 export interface StoreOptions {
   now?: () => Date;
+}
+
+export interface PullRequestRecord {
+  number: number;
+  url: string;
+  head: string;
+  base: string;
+  adopted: boolean;
 }
 
 // The writes of tasker update-branch besides the move. base is the data of a base event.
@@ -396,6 +406,8 @@ export interface TaskStore extends LockStore {
   acceptTask(id: number, revision: string, check?: (current: Task) => NewEvent | undefined): Task;
   // Stores the published revision, appends its event, moves pushing to pushed, and removes its run marker in one transaction.
   recordPublication(id: number, revision: string, check: (current: Task) => NewEvent | undefined): Task;
+  // Stores the PR number, appends its event, moves opening_pr to in_peer_review, and removes its run marker in one transaction.
+  recordPullRequest(id: number, pullRequest: PullRequestRecord, check: (current: Task) => NewEvent | undefined): Task;
   // The questions of a revision with their state. The newest revision has only open questions.
   // A resolved question names the next version, and its answer is the feedback of that version.
   planQuestions(taskId: number, version: number): PlanQuestionState[];
@@ -505,6 +517,7 @@ interface TaskRow {
   reopen_start_head: string | null;
   accepted_revision: string | null;
   published_revision: string | null;
+  pr_number: number | null;
   tracker_marked: number;
   parent_task_id: number | null;
   attempt: number;
@@ -553,6 +566,7 @@ function rowToTask(row: TaskRow): Task {
     reopenStartHead: row.reopen_start_head,
     acceptedRevision: row.accepted_revision,
     publishedRevision: row.published_revision,
+    prNumber: row.pr_number,
     trackerMarked: row.tracker_marked === 1,
     parentTaskId: row.parent_task_id,
     attempt: row.attempt,
@@ -738,7 +752,7 @@ function setUp(db: DatabaseSync) {
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
            synced_base_tip = ?, undo_before_head = ?, undo_after_head = ?, undo_synced_base_tip = ?,
-           reopen_start_head = ?, accepted_revision = ?, published_revision = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
+           reopen_start_head = ?, accepted_revision = ?, published_revision = ?, pr_number = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -1031,6 +1045,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.reopenStartHead !== undefined) next.reopenStartHead = changes.reopenStartHead;
     if (changes.acceptedRevision !== undefined) next.acceptedRevision = changes.acceptedRevision;
     if (changes.publishedRevision !== undefined) next.publishedRevision = changes.publishedRevision;
+    if (changes.prNumber !== undefined) next.prNumber = changes.prNumber;
     if (changes.trackerMarked !== undefined) next.trackerMarked = changes.trackerMarked;
     if (changes.parentTaskId !== undefined) next.parentTaskId = changes.parentTaskId;
     const row = statements.updateTask.get(
@@ -1047,6 +1062,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.reopenStartHead,
       next.acceptedRevision,
       next.publishedRevision,
+      next.prNumber,
       next.trackerMarked ? 1 : 0,
       next.parentTaskId,
       at,
@@ -1731,6 +1747,12 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
 
     recordPublication(id, revision, check) {
       return writeTask(id, { state: "pushed", publishedRevision: revision }, check, () => endRunStep(id, "pushed"));
+    },
+
+    recordPullRequest(id, pullRequest, check) {
+      return writeTask(id, { state: "in_peer_review", prNumber: pullRequest.number }, check, () =>
+        endRunStep(id, "in_peer_review"),
+      );
     },
 
     latestPlanRevision: readLatestPlanRevision,
