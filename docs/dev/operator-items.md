@@ -7,7 +7,8 @@ The sender sends each [item](../sessions.md) to the operator with `SendMessage`.
 - The first line is one sentence that names the sender and the topic.
 - Then the id follows, in the form `<sender name>-<n>`. The number `<n>` counts from 1 in the session of the sender.
   After a handoff, the number starts at the first free item id of the handoff file, as
-  [The last item id](handoff.md#the-last-item-id) says.
+  [The last item id](handoff.md#the-last-item-id) says. Each item, also a report, gets the next number of its count. The
+  sender never gives one number to two items.
 - Then the text follows the rules of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) and
   [The form of a reply](working-with-the-user.md#the-form-of-a-reply).
 - An item about a draft gives a summary of the draft and the path of the draft file, not the draft. The path is
@@ -144,6 +145,17 @@ The operator does these things for the open items:
   as information. The message names the question as open, by the number of the sender, and gives the words. This form
   also holds when no question of the item has an answer. The sender continues its other work and does not act on the
   open question. If the send fails, [the failure rule](limits.md#the-failure-rule) applies, as for a partial answer.
+- An answer of the user or an answer of the operator covers only each question that its message answers. The sender
+  applies the answer to no other question that waits for an answer. This rule also holds for a planner or an
+  orchestrator that gets the answer from another session. A question of another item waits for the answer of its own
+  item. A planner that wants to apply the answer to a question outside an item asks that question first in a new item.
+  An orchestrator asks it in a new item at the time that the rules of that question give, for example
+  [the open-question rule](pick-the-tickets.md#the-open-question-rule).
+
+  On 2026-11-07, the user answered "a" to a question of item orchestrator-m16-5. planner-m16 also applied that "a" to a
+  separate question in a comment on #723. That question had its own choices a and b, and it had no answer of the user.
+  planner-m16 named this step in its report, and the user later chose a for that question too.
+
 - An item that needs an answer can arrive from `planner-<slug>` or `orchestrator-<slug>`. Then the operator sends an
   answer of the operator for each question that is not a question for the user alone. The operator judges whether a
   question is a question for the user alone. The operator sends the answer at once with `SendMessage`. An item with no
