@@ -1,6 +1,6 @@
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { thrownBy } from "../../helpers/errors.js";
 import { useTempDir } from "../../helpers/temp.js";
@@ -123,7 +123,6 @@ describe("writeGuardLimits", () => {
     const input = { ...runInput(), sessionDir: plainFile };
     const limits = makeLimits(input, tools);
 
-    mkdirSync(dirname(plainFile), { recursive: true });
     const error = thrownBy(() => writeLimits(input, limits));
 
     expect((error as NodeJS.ErrnoException).code).toBe("ENOTDIR");
