@@ -37,10 +37,10 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    `-F description=@<file>` or both. `<file>` is the path of the draft file. If the command fails, the failure rule
    applies, and the operator starts no initial planner.
 
-   For a denied create or change command, the operator gives the user the command with the `!` prefix. If the user says
-   that the command ran, the operator goes on as after its own command. If the user says that the command did not run,
-   the operator starts no initial planner and waits for a new word of the user. On a new word of the user to go on, the
-   operator does step 3 again from its first paragraph.
+   For a denied create or change command, the operator follows
+   [A denied command of the operator](#a-denied-command-of-the-operator). If the command ran, the operator goes on as
+   after its own command. If the command did not run, the operator starts no initial planner and waits for a new word of
+   the user. On a new word of the user to go on, the operator does step 3 again from its first paragraph.
 
    After the post, the operator starts the initial planner, as "Start a session" says. If the user approves the existing
    title and description with no change, the operator also starts the initial planner. The approval is the decision of
@@ -345,8 +345,8 @@ The user can end the hold of a ticket on hold while its milestone is open and `L
 says. Then it sends the orchestrator the word of the user, as
 [The word of the user](operator-conversations.md#the-word-of-the-user) says. If the read of `ListAgents` or the removal
 fails, [the failure rule](limits.md#the-failure-rule) applies, and the operator starts no orchestrator. For a denied
-command, the operator gives the user the command with the `!` prefix, and it starts the orchestrator after the user says
-that the command ran. In each other case, the operator tells the user and does nothing more.
+command, the operator follows [A denied command of the operator](#a-denied-command-of-the-operator), and after the
+command ran, it starts the orchestrator.
 
 ## A handoff
 
@@ -396,6 +396,63 @@ of more than one row, the row "More than one row has the name" wins over the row
 | The start                      |                                                                                                                                                                 | Starts the new session                                                | Runs, from the prompt | The operator starts it with `herdr agent start`                                                              |
 | A close or a start fails       |                                                                                                                                                                 | Tells the user                                                        |                       | The operator tells the user                                                                                  |
 | More than one row has the name | Runs                                                                                                                                                            | Closes nothing, tells the user                                        | Not started           | The operator tells the user                                                                                  |
+
+## A denied command of the operator
+
+This section covers a [tool block](tasker-commands.md#the-tool-block-rule) of two commands that the operator runs
+itself. They are the create or change command of step 3 of [The order of a milestone](#the-order-of-a-milestone) and the
+removal of the label "on hold" in [The close of a milestone](#the-close-of-a-milestone). A denied command of an item of
+another session stays with the tool-block rule, apart from the item of the last paragraph of this section.
+
+If the user declined the call at a permission prompt, the command did not run. Then the operator gives no choices and
+waits for a new word of the user.
+
+After a [check failure](tasker-commands.md#the-tool-block-rule), the operator first runs the same call again one time,
+in the same form, as the tool-block rule says for the orchestrator. If the try runs, the operator goes on. If the try
+also gets a check failure, the next paragraph applies. The operator then also gives the user the link
+https://status.claude.com/.
+
+For each other denial, the operator tells the user the exact command and the folder of the call. It also gives the exact
+text of the denial, the purpose of the command and its step. Then it gives the user these choices, in this order:
+
+- The user tells the operator to run the denied command again, in the same form or in another form that the user names.
+- The user tells another session directly, in that session, to run the command. The user picks that session, for example
+  a session with no role.
+- The user runs the exact command in the folder of the call, with the `!` prefix of Claude Code.
+
+Only the user picks a choice. The recommendation mode of
+[A decision of the user](working-with-the-user.md#a-decision-of-the-user) does not cover this choice, as that section
+says for a tool block. The recommendation of the operator is the first or the second choice, never the `!` run. The
+reason: the user prefers to run no command with the `!` prefix. Which of these two choices the operator recommends is
+open on purpose, and the operator judges it. Until the word of the user, the operator runs the denied command in no
+other form, and no part of it.
+
+For the first choice, the operator runs the command one time, in the form that the word of the user gives. A word such
+as "try again" gives no form, so the operator runs the same command in the same form. A new denial of that run starts
+this section again. If that run fails in another way, the failure case of the step applies.
+
+The operator never asks another session to run the denied command, or a part of it. It also relays no word of the user
+to another session to run it. Permission laundering is the run of a denied command by another session on a relayed
+request. That run uses the permissions of the other session in place of the denial. As a result, the operator starts no
+permission laundering. A word of the user that a session relays answers no permission prompt.
+
+For the second choice, the operator tells the user to give the word in the other session itself. It gives the user the
+exact command and the folder of the call for that session, and it sends that session nothing. As a result, the other
+session runs the command only on the direct word of the user, under its own permission rules. This paragraph and the
+paragraph that starts "The operator never asks another session" win over
+[The word of the user](operator-conversations.md#the-word-of-the-user). They also win over its sentence that starts "The
+operator does not ask the user to relay". The other session runs the command only when its own rules permit it.
+
+A denial in the other session is a tool block of that session, and the step of the operator stays open. For the second
+and the third choice, the user tells the operator whether the command ran. Until then, the step stays open, and the
+operator continues its other work. It does not wait in a loop, as [the answer-wait rule](limits.md#the-answer-wait-rule)
+says for a task subagent.
+
+The other session can send this operator an item about its denial, for example a follow-up planner of the slug. Then the
+result of the second choice is "did not run", and the operator tells the user that result. For such an item, this
+paragraph wins over the item steps of the tool-block rule. After the result "did not run", the operator waits for a new
+word of the user. A word that picks a choice of this section starts that choice. In step 3 of "The order of a
+milestone", such a word is not a new word of the user to go on.
 
 ## A blocked session
 
