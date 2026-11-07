@@ -15,7 +15,7 @@ export const merge: RegisterCommand = (program, io) => {
   program
     .command("merge")
     .description(
-      "Land the work of a task in accepted on the base branch of origin with one fast-forward push: the task goes through merging to landed, or to failed. tasker does not wait for CI",
+      "Merge a task in accepted on the base branch of origin with one fast-forward push, or merge its recorded PR in in_peer_review after the forge confirms the merge. tasker does not wait for CI",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
@@ -43,6 +43,11 @@ export async function mergeIssue(io: Io, config: Config, issue: string, options:
     throw new CommanderError(result.exitCode, "tasker.merge", "the merge did not succeed");
   }
   io.stdout(`merged ${result.issueKey}\n`);
+  if ("prNumber" in result) {
+    io.stdout(`landed PR #${result.prNumber} through ${result.forge}\n`);
+    io.stdout("state: landed\n");
+    return;
+  }
   io.stdout(
     result.pushed
       ? `landed: ${result.revision} on origin/${result.base}\n`

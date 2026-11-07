@@ -436,6 +436,15 @@ export function transitionWithLanding(
   return store.completeMerge(id, transitionCheck("landed", "landed", landing));
 }
 
+// Appends the merged event and moves a completed PR merge to landed in one transaction.
+export function transitionWithPrMerged(
+  store: TaskStore,
+  id: number,
+  detail: { forge: string; number: number; method: string; expectedHead: string; requested: boolean },
+): Task {
+  return store.completeMerge(id, transitionCheck("merged", "landed", detail));
+}
+
 // Appends the marked_landed event { from, to } and moves the task to landed, in one transaction.
 // An illegal edge writes nothing.
 export function transitionWithMarkedLanding(store: TaskStore, id: number): Task {

@@ -20,6 +20,7 @@ describe("forgeStub", () => {
       ci: [],
       merged: [],
       queried: [],
+      order: [],
     });
   });
 
@@ -64,5 +65,6 @@ describe("forgeStub", () => {
       { number: 42, cwd: "/work" },
     ]);
     expect(fake.calls.merged).toEqual([{ number: 42, method: "merge", headSha: "head-sha", cwd: "/work" }]);
+    expect(fake.calls.order).toEqual(["query", "query", "query", "merge"]);
   });
 });

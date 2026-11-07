@@ -89,18 +89,22 @@ function landedParentError(walk: ParentWalk, task: Task): Error {
 
 // Refuses to land a stacked task before each parent in its chain landed and tasker update-branch moved the task. A task
 // with no parent passes. The checks run in the order landed, cancelled, not landed.
-export function assertParentLanded(store: TaskStore, task: Task): void {
+export function assertParentLanded(store: TaskStore, task: Task, path: "trunk" | "pr" = "trunk"): void {
   assertBaseMoved(store, task);
   const parent = parentOf(store, task);
   if (parent === undefined) return;
-  if (parent.state === "cancelled") {
-    throw new Error(
-      `the parent ${parent.issueKey} of ${task.issueKey} is cancelled; ${task.issueKey} cannot land on it`,
-    );
-  }
-  throw new Error(
-    `the parent ${parent.issueKey} of ${task.issueKey} has not landed; land the parent first, then run tasker update-branch ${task.issueKey}`,
-  );
+  const messages = {
+    trunk: {
+      cancelled: `is cancelled; ${task.issueKey} cannot land on it`,
+      pending: `has not landed; land the parent first, then run tasker update-branch ${task.issueKey}`,
+    },
+    pr: {
+      cancelled: "is cancelled; this PR needs a landed parent and an updated base before it can be merged",
+      pending: `has not landed; land the parent first, then run tasker update-branch ${task.issueKey} before merging its PR`,
+    },
+  };
+  const message = messages[path][parent.state === "cancelled" ? "cancelled" : "pending"];
+  throw new Error(`the parent ${parent.issueKey} of ${task.issueKey} ${message}`);
 }
 
 // Refuses a command that judges or builds a stacked task while its parent has landed, because the branch of a landed

@@ -12,6 +12,7 @@ export interface ForgeCalls {
   ci: { sha: string; cwd: string }[];
   merged: { number: number; method: MergeMethod; headSha: string; cwd: string }[];
   queried: { number: number; cwd: string }[];
+  order: ("query" | "merge")[];
 }
 
 export interface ForgeStub {
@@ -29,10 +30,10 @@ export function forgeStub(
     account?: string;
     openPrs?: OpenPullRequest[];
     createdPr?: PullRequest;
-    mergedStatuses?: boolean[];
+    mergedStatuses?: (boolean | Error)[];
   } = {},
 ): ForgeStub {
-  const calls: ForgeCalls = { listed: [], created: [], ci: [], merged: [], queried: [] };
+  const calls: ForgeCalls = { listed: [], created: [], ci: [], merged: [], queried: [], order: [] };
   let listError: Error | undefined;
   let createError: Error | undefined;
   let queryError: Error | undefined;
@@ -46,9 +47,12 @@ export function forgeStub(
       return "pending";
     },
     async isPrMerged(number, cwd) {
+      calls.order.push("query");
       calls.queried.push({ number, cwd });
       if (queryError !== undefined) throw queryError;
-      return statuses.shift() ?? false;
+      const status = statuses.shift() ?? false;
+      if (status instanceof Error) throw status;
+      return status;
     },
     async listOpenPrs(target) {
       calls.listed.push({ cwd: target.cwd, head: target.head });
@@ -61,6 +65,7 @@ export function forgeStub(
       return options.createdPr ?? { number: 42, url: "https://example.test/pull/42" };
     },
     async mergePr(number, method, headSha, cwd) {
+      calls.order.push("merge");
       calls.merged.push({ number, method, headSha, cwd });
       if (mergeError !== undefined) throw mergeError;
     },

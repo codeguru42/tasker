@@ -109,7 +109,8 @@ describe("tasker merge", () => {
       ["auth", "token", "--user", "forge-team"],
       ["pr", "view", "42", "--json", "state"],
     ]);
-    expect(forge.calls().every(({ tokenMatches }) => tokenMatches)).toBe(true);
+    expect(forge.calls()[0].tokenMatches).toBe(false);
+    expect(forge.calls()[1].tokenMatches).toBe(true);
     expect(JSON.stringify(forge.calls())).not.toContain("forge-token-private");
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("landed");
     forge.assertAnswered();
@@ -202,7 +203,10 @@ describe("tasker merge", () => {
     it("refuses a task that is not in accepted", async () => {
       const work = await useWorkReviewTask();
 
-      await expectRefused(work, `${wrongStateError("awaiting_work_review", KEY, "merge", "accepted")}\n`);
+      await expectRefused(
+        work,
+        `${wrongStateError("awaiting_work_review", KEY, "merge", "accepted or in_peer_review")}\n`,
+      );
     });
 
     it("refuses a task with no branch", async () => {
@@ -276,7 +280,7 @@ describe("tasker merge", () => {
 
     expect(code).toBe(0);
     expect(help).toContain(
-      "Land the work of a task in accepted on the base branch of origin with one fast-forward push: the task goes through merging to landed, or to failed. tasker does not wait for CI",
+      "Merge a task in accepted on the base branch of origin with one fast-forward push, or merge its recorded PR in in_peer_review after the forge confirms the merge. tasker does not wait for CI",
     );
     expect(help).toContain("Use the repo with this key when two repos share the project of the issue");
   });
