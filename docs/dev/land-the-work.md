@@ -232,7 +232,8 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
 Several orchestrators can run at the same time, for example one for each milestone. The orchestrator of a ticket does
 the compare at two moments. The first moment is before the ticket starts. The second moment is each time a task subagent
 sends the list of files after `tasker approve`. The orchestrator that does the compare compares the files of the ticket
-with the files of each task in flight, in every milestone and not only in its own.
+with the files of each task in flight, in every milestone and not only in its own. For two tickets of different
+milestones, [the Docs rule](#the-docs-rule) also gives a landing check for a ticket that is ready to land.
 
 Before the start, the files of the ticket are the files that the shared-file bullet of
 [Pick the tickets](pick-the-tickets.md#pick-the-tickets) counts. After `tasker approve`, the files of the ticket are the
@@ -259,27 +260,31 @@ Any other exit code of `git fetch` or `git diff` is a failure. For example, `git
 no `tasker` remote. `git diff` exits with 128 when the task branch is not on the `tasker` remote. If a command of the
 compare fails, [the failure rule](limits.md#the-failure-rule) applies.
 
-For a shared file, the overlap rule sets a landing order. A ticket of an earlier milestone lands first. A ticket of the
-same milestone or of no milestone follows the bullets of [Land the work](#land-the-work). For a ticket of the milestone
-"Docs" and a ticket of a numbered milestone, [the Docs rule](#the-docs-rule) applies instead. Each orchestrator tells
-its own task subagent the landing order, also when its ticket lands first. For a stacked ticket and its parent,
-[the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over the sentence "A ticket of an earlier
-milestone lands first".
+For a shared file, the overlap rule sets a landing order. A ticket of the same milestone or of no milestone follows the
+bullets of [Land the work](#land-the-work). Each orchestrator tells its own task subagent the landing order, also when
+its ticket lands first. For two tickets of different milestones, [the Docs rule](#the-docs-rule) applies instead, so the
+first ticket that is ready lands first. For a stacked ticket and its parent,
+[the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over this paragraph.
 
 For a shared doc that two tickets edit in different sections, [the section rule](#the-section-rule) applies in place of
 a landing order.
 
-For a pair of a named set, [the set rule](#the-set-rule) wins over the sentence "A ticket of an earlier milestone lands
-first".
-
 ### The Docs rule
 
-This rule covers only a shared file between a ticket of the milestone "Docs" and a ticket of a numbered milestone. For
-these two tickets, the orchestrator of each ticket sets no landing order for the shared file. The orchestrator of each
-ticket sends no landing order to the other orchestrator. Each ticket lands when it is ready. For these two tickets and
-the shared file, these rules apply:
+This rule covers only a shared file between two tickets of different milestones. Each of the two tickets has a
+milestone, and the two milestones differ. An example is a ticket of the milestone "Docs" and a ticket of a numbered
+milestone. Another example is a ticket of "M19 — Polish" and a ticket of "M28 — Codex sessions". The rule also covers
+two such tickets of one orchestrator.
+
+For these two tickets, the orchestrator of each ticket sets no landing order for the shared file. The orchestrator of
+each ticket sends no landing order to the other orchestrator. Each ticket lands as soon as it is ready, so the first
+ticket that is ready lands first. For these two tickets and the shared file, these rules apply:
 
 - The compare of [the overlap rule](#the-overlap-rule). The orchestrator of each ticket still does the compare.
+- The landing check. Ready to land means that the task subagent of a ticket reaches `tasker accept` in step 9 of
+  [Run one ticket](run-one-ticket.md#run-one-ticket). The landing check is the last check of the base branch in
+  [the diff read](run-one-ticket.md#the-diff-read), right before `tasker accept`. The task subagent runs the landing
+  check, and the orchestrators send no message about it.
 - The update of the diff read after a landing of the other ticket. If the other ticket lands first, the task subagent of
   the ticket that lands second runs `tasker update-branch` as [the diff read](run-one-ticket.md#the-diff-read) says.
 
@@ -288,11 +293,11 @@ required". The first sentence of that bullet still applies. No rule of a landing
 tickets, because they have no landing order. An example is the wait rules of [Land the work](#land-the-work). A rule of
 a landing order is a rule that applies only when a landing order exists. The user decided this rule on 2026-10-15. The
 task subagent finds such a shared file itself. It reads the milestones of the other tasks, and the fourth case of
-[the stop rule](plan-review.md#the-stop-rule) does not count a task of the other kind. As a result, the orchestrator
-sends the task subagent no message about such a file, and the task subagent does not stop because of a task of the other
-kind. The reason: before this change, the orchestrator told its task subagent about each such file, but only about the
-tasks in flight that the orchestrator knew of. On 2026-10-24, the prompt of #401 named the Docs tasks in flight at its
-start, #388 and #413. Later, `tasker refine` showed shared files with #417 after plan v1, and with #387 after the
+[the stop rule](plan-review.md#the-stop-rule) does not count a task of another milestone. As a result, the orchestrator
+sends the task subagent no message about such a file, and the task subagent does not stop because of a task of another
+milestone. The reason: before this change, the orchestrator told its task subagent about each such file, but only about
+the tasks in flight that the orchestrator knew of. On 2026-10-24, the prompt of #401 named the Docs tasks in flight at
+its start, #388 and #413. Later, `tasker refine` showed shared files with #417 after plan v1, and with #387 after the
 add-work run. Both tasks started after the prompt. Each time, the task subagent stopped under the fourth case, and the
 answer was the Docs rule. For a stacked ticket and its parent,
 [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over this rule.
@@ -330,9 +335,8 @@ In each of these cases, the orchestrator that sets the landing order tells the o
 The other orchestrator tells its own task subagent. A landing order that already exists stays, and
 [Land the work](#land-the-work) says who changes it.
 
-For a ticket of the milestone "Docs" and a ticket of a numbered milestone, [the Docs rule](#the-docs-rule) applies
-instead. For a stacked ticket and its parent, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule)
-wins over this rule.
+For two tickets of different milestones, [the Docs rule](#the-docs-rule) applies instead. For a stacked ticket and its
+parent, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over this rule.
 
 If a task subagent stops under the fourth case of [the stop rule](plan-review.md#the-stop-rule) for a shared doc, the
 orchestrator does this compare for that doc. If this rule covers the doc, the orchestrator tells the task subagent.
@@ -361,12 +365,12 @@ confirmation or in the word of the user. A named set is a short exception, so [t
 keeps it out of the tracked docs. The [handoff file](handoff.md#the-items-of-a-handoff-file) of the orchestrator lists
 each set under the decisions of the user. A new orchestrator keeps each set that its handoff file lists.
 
-The confirmed order applies only to a pair of the set that the overlap rule covers. For such a pair, it wins over the
-sentence "A ticket of an earlier milestone lands first". For a stacked ticket and its parent,
+The confirmed order applies only to a pair of the set that the overlap rule covers. For two tickets of different
+milestones, [the Docs rule](#the-docs-rule) wins over the confirmed order. For a stacked ticket and its parent,
 [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over a confirmed order. When a compare of
 the overlap rule finds a pair of the set, an orchestrator that keeps the set uses the confirmed order. If this order
-differs from the order of the overlap rule, it tells the other orchestrator with `SendMessage`. That message is a
-relayed change.
+differs from the landing order that the two orchestrators use, it tells the other orchestrator with `SendMessage`. That
+message is a relayed change.
 
 If a relayed change has only tickets of the set and follows the confirmed order, it needs no new question. This case
 covers an orchestrator that keeps the set. For this change, the set wins over the sentence of that bullet that starts
