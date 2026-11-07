@@ -124,6 +124,16 @@ describe("piVersionCheck", () => {
     expect(await piVersionCheck().run({ PATH: emptyBin, HOME: "/home/user" })).toEqual(NOT_INSTALLED);
   });
 
+  it("names TASKER_PI_BIN when the configured program is not on PATH", async () => {
+    const emptyBin = useTempDir("tasker-empty-pi-bin-");
+
+    expect(await piVersionCheck().run({ PATH: emptyBin, TASKER_PI_BIN: "custom-pi", HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: "custom-pi is not installed or not on PATH",
+      remediation: piInstallFix,
+    });
+  });
+
   it("uses the first line of stderr for a nonzero exit", async () => {
     const fake = useFakePi([{ args: VERSION_ARGS, exitCode: 3, stderr: "broken install\nmore detail\n" }]);
 
