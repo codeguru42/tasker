@@ -10,17 +10,17 @@ export interface FakePi {
   unanswered(): string[][];
 }
 
-export function useFakePi(_answers: readonly FakeAnswer[], _logEnv: readonly string[] = []): FakePi {
+export function useFakePi(answers: readonly FakeAnswer[], logEnv: readonly string[] = []): FakePi {
   const dir = useTempDir("tasker-fake-pi-");
   const bin = join(dir, "bin");
   const program = join(bin, "pi");
   const logPath = join(dir, "pi.log");
-  writeFakeCommand(bin, "pi", fakeAnswerScript("pi", logPath, _answers, logEnvItems("pi", _logEnv)));
+  writeFakeCommand(bin, "pi", fakeAnswerScript("pi", logPath, answers, logEnvItems("pi", logEnv)));
   const checks = answerChecks("pi", logPath);
   return {
     env: { PATH: bin, TASKER_PI_BIN: program },
     logPath,
-    calls: () => readFakeCalls(logPath, 0, _logEnv).map((call) => ({ args: call.args, env: call.env })),
+    calls: () => readFakeCalls(logPath, 0, logEnv).map((call) => ({ args: call.args, env: call.env })),
     unanswered: checks.unanswered,
   };
 }
