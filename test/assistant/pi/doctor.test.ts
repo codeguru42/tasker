@@ -537,6 +537,17 @@ describe("simpleEnglishCheck", () => {
     });
   });
 
+  it("checks the user skill folder when the agent skills path is a file", async () => {
+    const home = useTempDir("tasker-simple-english-home-");
+    writeFileWithParents(join(home, ".pi", "agent", "skills"), "not a folder");
+    addSkill(join(home, ".agents", "skills"));
+
+    expect(await simpleEnglishCheck().run({ HOME: home })).toEqual({
+      status: "ok",
+      detail: `simple-english at ${join(home, ".agents", "skills", "simple-english", "SKILL.md")}`,
+    });
+  });
+
   it("reports missing simple-english when SKILL.md is only a directory", async () => {
     const home = useTempDir("tasker-simple-english-home-");
     mkdirSync(join(home, ".pi", "agent", "skills", "simple-english", "SKILL.md"), { recursive: true });
