@@ -164,22 +164,25 @@ work with gh 2.101.0:
 - The field `Priority` has the id `PVTSSF_lAHOACGSlc4BmiTLzhlK7oI`. Its options are `P0` (`79628723`), `P1` (`0a877460`)
   and `P2` (`da944a9c`). `P0` is the highest priority, and `P2` is the lowest. The priority of an issue is the value of
   this field on the card of the issue. A card with no value has no priority.
-- To read the item id of the card of an issue:
-  `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .content.number == <number>) | .id'`.
-  If the issue has no card, the command prints nothing.
 - To set the priority of an issue:
-  `gh project item-edit --project-id PVT_kwHOACGSlc4BmiTL --id <item id> --field-id PVTSSF_lAHOACGSlc4BmiTLzhlK7oI --single-select-option-id <option id>`.
+  `gh project item-edit 3 --owner codeguru42 --url https://github.com/codeguru42/tasker/issues/<number> --field Priority --value <option>`.
+  `<option>` is the name of an option of the field `Priority`, for example `P0`. This form and the form of the bullet
+  "To move a card" need gh 2.97.0 or later.
 - To read the priority of an issue:
   `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .content.number == <number>) | .priority'`.
   The command prints the option, for example `P0`. If the card has no priority, it prints an empty line. If the issue
   has no card, the command prints nothing.
 - `gh project item-list` lists at most 30 items by default. So each `gh project item-list` command of the docs gives
   `--limit 1000`.
+- The list of `gh project item-list` can miss the card of an issue. On 2026-11-04, the list missed the card of the open
+  issue #765, while `gh issue view 765 --json projectItems` showed the card in Todo. No one measured the cause. So the
+  commands of the docs that change a card find the card from the issue, not from the list.
 - A workflow of the board adds each new issue with the status Todo within a minute. The planner does not run
   `gh project item-add` for a new issue. The workflow sets no priority, so a new issue has no priority.
 - The board moves an issue to Done when the issue closes. The board archives a closed item 7 days after its last update.
 - To move a card:
-  `gh project item-edit --project-id PVT_kwHOACGSlc4BmiTL --id <item id> --field-id PVTSSF_lAHOACGSlc4BmiTLzhlK7j4 --single-select-option-id <option id>`.
+  `gh project item-edit 3 --owner codeguru42 --url https://github.com/codeguru42/tasker/issues/<number> --field Status --value "<option>"`.
+  `<option>` is the name of an option of the Status field, for example `In progress`.
 - The gh token needs the scopes `project` and `read:project`. If `gh project item-edit` fails with "missing required
   scopes [project read:project]", the user runs `gh auth refresh -s project,read:project`.
 - A fine-grained token cannot open a project of a user, because its Projects permission applies only to an organization.
