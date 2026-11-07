@@ -177,55 +177,32 @@ gives no role and no slug in the sense of [docs/sessions.md](../sessions.md).
 
 ### The state of the user
 
-The state of the user is each file, setting, login and job of the user that a program reads or runs later, also at an
-outside service. Examples are the crontab, the systemd units of the user, a configuration file, the login of a tool and
-the credits of an OpenRouter account. A scratch folder of a ticket subagent is a new folder under `/tmp` that it makes
-for one measure. Its files are not such state. A read that changes nothing is not a change of the state of the user, for
-example `crontab -l`. The steps of the planner pages are also not such a change, for example `git fetch origin`.
+[The state of the user](plan-review.md#the-state-of-the-user) of plan-review.md gives the term, the ban, the form of the
+question and the approval. They also hold for a ticket subagent and its review agents. A ticket subagent makes each
+scratch folder under `/tmp`. The review agents of a ticket subagent also run no measure that writes a file.
 
-A ticket subagent changes no state of the user, unless the user approved the command of that change. The ban also covers
-a change that the ticket subagent undoes after the measure. The review agents of the ticket subagent follow the same
-ban, and they run no measure that writes a file. Whether a write changes the state of the user is a judgment. The
-judgment is open on purpose, and the ticket subagent or the review agent makes it. In doubt, that agent treats the write
-as a change of the state of the user.
-
-A measure that needs such a change becomes an open question in the report of the ticket subagent. A review agent gives
-such a measure as a finding with its command. If the draft needs the measure, the ticket subagent makes it an open
-question. The question gives the command and its undo step word for word, and what each one changes. It also says what
-the undo step changes beyond the measure. An example is `crontab -r`, which removes the whole crontab of the user, not
-only the test job.
-
-Until the answer, the draft says next to the fact of the measure that no one tested it. The bullet of
+A review agent gives a measure that needs a change of the state of the user as a finding with its command. If the draft
+needs the measure, the ticket subagent makes the question an open question in its report. The bullet of
 [The body of an issue](#the-body-of-an-issue) that starts "Before the post, the planner tests each fact about an outside
-tool" gives these words. This subsection wins over that bullet and over the bullet that starts "An issue can name a read
-of an outside tool". The prompt of a ticket subagent asks for no measure that needs such a change, unless the user
-approved its command. Each measure that changes no state of the user still follows
-[the fact test](plan-review.md#the-fact-test).
+tool" gives the words that no one tested the fact. This subsection wins over that bullet and over the bullet that starts
+"An issue can name a read of an outside tool".
 
 The initial planner asks the user in the chat. The follow-up planner sends the question to
 [its operator](../operator.md) as an item. The draft waits for the answer, as a draft of
-[the escape hatch](#the-escape-hatch) does. Only a word of the user approves a command, as
-[The rules for the user alone](#the-rules-for-the-user-alone) says. An answer of the operator and the recommendation
-mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) do not approve it. The answer of the
-user has one of these outcomes:
+[the escape hatch](#the-escape-hatch) does. Paragraphs 5 and 6 of the subsection of plan-review.md also hold for the
+planner when it handles the answer. The answer of the user has one of these outcomes:
 
 - The user approves the command. Then the planner starts a new ticket subagent with the draft file, the approved command
-  and its undo step, word for word. That ticket subagent first runs only that command and its undo step. Then it changes
-  the draft with the result and starts at step 2 of [The review loop of a draft](#the-review-loop-of-a-draft). If the
-  command or the undo step fails, the ticket subagent runs nothing more and ends. Its report gives the state that stays,
-  and the planner tells the user.
+  and its undo step, word for word. That ticket subagent first runs them, as
+  [The state of the user](plan-review.md#the-state-of-the-user) of plan-review.md says. Then it changes the draft with
+  the result and starts at step 2 of [The review loop of a draft](#the-review-loop-of-a-draft). After a failed run, the
+  ticket subagent ends, and the planner tells the user the state that stays.
 - The user runs the command and gives the result. Then the planner starts a new ticket subagent with the draft file and
   the result. That ticket subagent changes the draft with the result and starts at step 2.
-- The user declines the measure. Words of the user that let the sender decide also count as a decline. Then the draft
-  keeps the words that no one tested the fact, and the measure is no longer an open question. For the follow-up planner,
-  the bullet of the escape hatch that starts "If the answer accepts the draft with no change" then applies.
+- The user declines the measure. Then the draft keeps the words that no one tested the fact, and the measure is no
+  longer an open question. For the follow-up planner, the bullet of the escape hatch that starts "If the answer accepts
+  the draft with no change" then applies.
 - The user rejects or drops the draft. Then the planner drops the draft, as the escape hatch says.
-
-On 2026-11-01, the user said that a test that writes to the real `$HOME/.codex` or to the data of the user waits for the
-user. On 2026-11-04, the ticket subagent of planner-m16 for #751 measured timers of `systemd-run --user` and a crontab
-with no approval of the user. It made test units, installed a test crontab and removed it with `crontab -r`. The crontab
-was empty before, and the ticket subagent removed each unit, so nothing was lost. The prompt of the ticket subagent
-asked it to measure the forms with harmless commands and to remove each test job.
 
 ### The wait for a report
 
