@@ -14,10 +14,10 @@ export function codexHome(env: NodeJS.ProcessEnv): string | undefined {
   return isSet(env.HOME) ? join(env.HOME, ".codex") : undefined;
 }
 
-// The agent folder of pi: PI_CODING_AGENT_DIR, else .pi/agent under HOME, else none.
+// The agent folder of pi: TASKER_PI_CODING_AGENT_DIR, else .pi/agent under HOME, else none.
 export function piAgentDir(env: NodeJS.ProcessEnv): string | undefined {
-  if (isSet(env.PI_CODING_AGENT_DIR)) {
-    const value = env.PI_CODING_AGENT_DIR;
+  if (isSet(env.TASKER_PI_CODING_AGENT_DIR)) {
+    const value = env.TASKER_PI_CODING_AGENT_DIR;
     if (value === "~") return isSet(env.HOME) ? env.HOME : undefined;
     if (value.startsWith("~/")) return isSet(env.HOME) ? join(env.HOME, value.slice(2)) : undefined;
     if (value.startsWith("file://")) {
