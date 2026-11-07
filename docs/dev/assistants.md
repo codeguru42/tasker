@@ -683,6 +683,12 @@ the cwd of the `pi` process. The deny path of tasker is absolute, so the two can
 adds no pi entry for a folder that is not absolute, and it never refuses a run of another provider. Nobody measured a
 full run of `pi` in a sandbox, or the cwd that tasker gives a `pi` child.
 
+With no `TASKER_PI_CODING_AGENT_DIR`, a run of the pi provider and each doctor check that starts `pi` also refuse a set
+`HOME` that is not absolute. The reason: the agent folder is then `.pi/agent` under `HOME`, so a relative `HOME` gives a
+relative agent folder. The deny list holds no pi entry for a relative folder, so `piChildEnv()` refuses such a folder
+and does not make it absolute. A set `TASKER_PI_CODING_AGENT_DIR` names the agent folder, so a relative `HOME` then
+changes no pi entry of the deny list.
+
 ### The program
 
 The variable `TASKER_PI_BIN` names the `pi` program. For the rule of the resolve, see
@@ -690,10 +696,10 @@ The variable `TASKER_PI_BIN` names the `pi` program. For the rule of the resolve
 
 ### The environment of a pi child
 
-Each `pi` child gets the agent folder as `PI_CODING_AGENT_DIR`. `piChildEnv()` gives a reason in two cases, in this
-order. In the first case, `TASKER_PI_CODING_AGENT_DIR` is set and not absolute. In the second case, `piAgentDir()` gives
-no folder. On a reason, a run refuses before the spawn, and each doctor check that starts `pi` fails. For the reason of
-the refusal of a relative value, see [The agent folder](#the-agent-folder).
+Each `pi` child gets the agent folder as `PI_CODING_AGENT_DIR`. `piChildEnv()` gives a reason in three cases, in this
+order. First, `TASKER_PI_CODING_AGENT_DIR` is set and not absolute. Second, it is not set, and `HOME` is set and not
+absolute. [The agent folder](#the-agent-folder) gives the reason for this case. Third, `piAgentDir()` gives no folder.
+On a reason, a run refuses before the spawn, and each doctor check that starts `pi` fails.
 
 ### The model forms
 
