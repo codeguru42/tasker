@@ -247,8 +247,8 @@ Resyncs accepted or pushed work to its stored base, then continues the plan sess
 
 ### `tasker merge`
 
-Lands the work of a task in `accepted` on the base branch of `origin`. See
-[the reference](references/landing.md#tasker-merge).
+For a task in `accepted`, lands its work on the base branch of `origin`. For a task in `in_peer_review`, merges its
+recorded PR. See [the reference](references/landing.md#tasker-merge).
 
 ### `tasker push`
 
