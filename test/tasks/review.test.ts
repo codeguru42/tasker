@@ -5,6 +5,7 @@ import { reviewTranscriptPath } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { reviewTask } from "../../src/tasks/review.js";
 import { captureIo } from "../helpers/cli.js";
+import { withTrustedExtensions } from "../helpers/config.js";
 import { answerStream } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { validReviewAnswer } from "../helpers/review.js";
@@ -60,12 +61,8 @@ const useSeededTask = (change: { state: string; worktreePath?: string; branch?: 
 describe("reviewTask checks", () => {
   it("records the trusted extension list for a new review session", async () => {
     const target = await useReviewFixture(CONTROL);
-    const repo = target.config.repos[REPO];
     const trustedExtensions = ["configured-review-key"];
-    target.config = {
-      ...target.config,
-      repos: { ...target.config.repos, [REPO]: { ...repo, assistant: { ...repo.assistant, trustedExtensions } } },
-    };
+    target.config = withTrustedExtensions(target.config, REPO, trustedExtensions);
     await callReview(target);
     const task = latestTaskOf(target.dataRoot, KEY);
     expect(reviewSessionRows(target.dataRoot, task.id)[0]).toMatchObject({

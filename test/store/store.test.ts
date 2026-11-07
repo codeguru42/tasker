@@ -2518,7 +2518,7 @@ describe("task store", () => {
         model: "opus",
         effort: "low",
         trustedExtensions,
-      } as never);
+      });
 
       expect(session).toMatchObject({ trustedExtensions });
       expect(store.planSession(task.id)).toMatchObject({ trustedExtensions });
@@ -2533,7 +2533,7 @@ describe("task store", () => {
         model: "opus",
         effort: "low",
         trustedExtensions: [key],
-      } as never);
+      });
       expect(trustedExtensionsJsonOf(dbPath, "s-url")).toBe(JSON.stringify([key]));
       expect(session.trustedExtensions).toEqual([key]);
       expect(store.planSession(task.id)?.trustedExtensions).toEqual([key]);

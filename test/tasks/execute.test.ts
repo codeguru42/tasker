@@ -23,6 +23,7 @@ import { requireBaseRevision } from "../../src/tasks/task-state.js";
 import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
+import { withTrustedExtensions } from "../helpers/config.js";
 import {
   moveOrigin,
   pushBranch,
@@ -250,12 +251,8 @@ describe("executeTask turns", () => {
   it("records the trusted extension list for a new execute session", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
     const repoKey = fixture.started.repoKey;
-    const repo = fixture.config.repos[repoKey];
     const trustedExtensions = ["configured-execute-key"];
-    fixture.config = {
-      ...fixture.config,
-      repos: { ...fixture.config.repos, [repoKey]: { ...repo, assistant: { ...repo.assistant, trustedExtensions } } },
-    };
+    fixture.config = withTrustedExtensions(fixture.config, repoKey, trustedExtensions);
     await runExecute(fixture);
     expect(
       withDataRootStore(fixture.started.dataRoot, (store) => store.executeSession(fixture.task.id, 1)),

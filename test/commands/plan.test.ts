@@ -8,6 +8,7 @@ import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { captureIo, runCommand } from "../helpers/cli.js";
+import { withTrustedExtensions } from "../helpers/config.js";
 import {
   TEST_SESSION_ID,
   useFakeClaudeOnPath,
@@ -165,12 +166,8 @@ describe("plan", () => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const repoKey = fixture.started.repoKey;
     const baseConfig = fixture.started.config;
-    const repo = baseConfig.repos[repoKey];
     const trustedExtensions = ["configured-plan-key"];
-    const config = {
-      ...baseConfig,
-      repos: { ...baseConfig.repos, [repoKey]: { ...repo, assistant: { ...repo.assistant, trustedExtensions } } },
-    };
+    const config = withTrustedExtensions(baseConfig, repoKey, trustedExtensions);
     await planIssue(captureIo(), config, KEY, {});
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const session = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(task.id));

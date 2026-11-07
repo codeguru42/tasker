@@ -13,6 +13,7 @@ import {
   useConfigFile,
   useThreeRepoDataRoot,
   validConfig,
+  withTrustedExtensions,
   writeDataRootConfig,
 } from "./config.js";
 
@@ -64,6 +65,23 @@ describe("configWithTrackers", () => {
     const config = configWithTrackers({ "a/b": {} });
 
     expect(config.repos["a/b"].issueTracker.account).toBe("codeguru42");
+  });
+});
+
+describe("withTrustedExtensions", () => {
+  it("copies the configuration and trust list without changing the input", () => {
+    const config = parseConfig(validConfig(), {}, "/home/me");
+    const trustedExtensions = ["package", "builtin:codemode"];
+    const changed = withTrustedExtensions(config, "tasker", trustedExtensions);
+
+    expect(changed.repos.tasker.assistant.trustedExtensions).toEqual(trustedExtensions);
+    expect(changed.dataRoot).toBe(config.dataRoot);
+    expect(changed.limits).toEqual(config.limits);
+    expect(changed.repos.tasker.remote).toBe(config.repos.tasker.remote);
+    expect(config.repos.tasker.assistant.trustedExtensions).toEqual([]);
+    changed.repos.tasker.assistant.trustedExtensions.push("changed");
+    expect(trustedExtensions).toEqual(["package", "builtin:codemode"]);
+    expect(config.repos.tasker.assistant.trustedExtensions).toEqual([]);
   });
 });
 

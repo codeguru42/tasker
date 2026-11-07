@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { permissionHookSettings } from "../../src/assistant/claude-code/permission-hook.js";
 import type { Config } from "../../src/config/schema.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
+import type { RecordedSession } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
@@ -36,6 +37,7 @@ import {
   useFakeCodexRun,
 } from "../helpers/fake-codex.js";
 import { seedPlanSession, turnResultStream } from "../helpers/plan.js";
+import { withTrustedExtensions } from "../helpers/config.js";
 import {
   databasePathOf,
   NO_SESSION_VALUES,
@@ -547,7 +549,7 @@ describe("prepareTaskPlanModeRun", () => {
   it("continues a recorded session with its recorded model and effort, not the configured ones", async () => {
     const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("resume") } });
     const { started, claude } = fixture;
-    const recorded = {
+    const recorded: RecordedSession = {
       repoKey: started.repoKey,
       provider: "claude-code",
       model: "haiku",
@@ -573,13 +575,13 @@ describe("prepareTaskPlanModeRun", () => {
   it("keeps the recorded trusted extension list on a continued run", async () => {
     const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("resume") } });
     const trustedExtensions = ["old-package", "builtin:codemode"];
-    const recorded = {
+    const recorded: RecordedSession = {
       repoKey: fixture.started.repoKey,
       provider: "claude-code",
       model: "haiku",
       effort: "low",
       trustedExtensions,
-    } as never;
+    };
     const { prepared } = await runPlanMode(fixture, {
       session: { resume: true, sessionId: TEST_SESSION_ID, recorded },
     });
@@ -593,25 +595,27 @@ describe("prepareTaskPlanModeRun", () => {
       const configuredTrust = continued
         ? ["current", "builtin:llama.cpp", "current", "builtin:codemode"]
         : ["current", "builtin:llama.cpp", "builtin:codemode"];
-      const piRepo = {
-        ...repo,
-        assistant: {
-          ...repo.assistant,
-          provider: "pi",
-          trustedExtensions: configuredTrust,
-          models: {
-            ...repo.assistant.models,
-            plan: { ...repo.assistant.models.plan, model: "openrouter/auto" },
+      const piConfig: Config = {
+        ...fixture.config,
+        repos: {
+          ...fixture.config.repos,
+          [fixture.started.repoKey]: {
+            ...repo,
+            assistant: {
+              ...repo.assistant,
+              provider: "pi",
+              models: {
+                ...repo.assistant.models,
+                plan: { ...repo.assistant.models.plan, model: "openrouter/auto" },
+              },
+            },
           },
         },
       };
-      const runConfig = {
-        ...fixture.config,
-        repos: { ...fixture.config.repos, [fixture.started.repoKey]: piRepo },
-      } as Config;
+      const runConfig = withTrustedExtensions(piConfig, fixture.started.repoKey, configuredTrust);
       let trustedExtensions = ["old", "builtin:codemode"];
       let captured: RunInput | undefined;
-      const recorded = {
+      const recorded: RecordedSession = {
         repoKey: fixture.started.repoKey,
         provider: "pi" as const,
         model: "openrouter/auto",
@@ -626,7 +630,7 @@ describe("prepareTaskPlanModeRun", () => {
             model: "openrouter/auto",
             effort: "high",
             trustedExtensions: ["discarded"],
-          } as never);
+          });
           const dbPath = dataRootLayout(fixture.started.dataRoot).database;
           writeTrustedExtensionsJson(dbPath, TEST_SESSION_ID, null);
           expect(trustedExtensionsJsonOf(dbPath, TEST_SESSION_ID)).toBeNull();

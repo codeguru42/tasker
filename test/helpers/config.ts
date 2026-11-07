@@ -132,6 +132,21 @@ export function configWithTrackers(trackers: Trackers): Config {
   return parseConfig(raw, {}, "/home/test");
 }
 
+// Returns a new configuration with a new trust list for one repo.
+export function withTrustedExtensions(config: Config, repoKey: string, trustedExtensions: readonly string[]): Config {
+  const repo = config.repos[repoKey];
+  return {
+    ...config,
+    repos: {
+      ...config.repos,
+      [repoKey]: {
+        ...repo,
+        assistant: { ...repo.assistant, trustedExtensions: [...trustedExtensions] },
+      },
+    },
+  };
+}
+
 // The message of the IssueKeyError that resolveIssueKey() throws for key with the
 // configuration at configPath. It fails the test when the key resolves.
 export function issueKeyErrorMessage(key: string, configPath: string): string {
