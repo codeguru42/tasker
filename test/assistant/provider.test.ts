@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { assistantDoctorChecks, createAssistantProvider, createSessionProvider } from "../../src/assistant/provider.js";
 import { parseConfig } from "../../src/config/schema.js";
+import { checkSummaries } from "../helpers/doctor.js";
 import { validConfig } from "../helpers/config.js";
 import { configIssuesOf } from "../helpers/errors.js";
 
@@ -119,6 +120,17 @@ describe("assistantDoctorChecks", () => {
       expect(checks.map((check) => check.name)).toEqual(["codex version", "codex login"]);
     },
   );
+
+  it("selects pi checks and keeps each upstream in first-use order", () => {
+    const checks = assistantDoctorChecks(configWith({ a: "pi", b: "pi" }));
+
+    expect(checkSummaries(checks)).toEqual([
+      { name: "pi version", required: true, timeoutMs: 5000 },
+      { name: "pi-auth:openrouter", required: true, timeoutMs: 10000 },
+      { name: "superpowers:pi", required: true, timeoutMs: 5000 },
+      { name: "simple-english:pi", required: true, timeoutMs: 1000 },
+    ]);
+  });
 
   it("gives no checks for a configuration with no repo", () => {
     expect(assistantDoctorChecks(configWith({}))).toEqual([]);
