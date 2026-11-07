@@ -100,3 +100,11 @@ says.
 
 1. Install Codex: `npm install -g @openai/codex`.
 2. Log in to Codex: `codex login`.
+
+## pi
+
+1. Install pi: `curl -fsSL https://pi.dev/install.sh | sh`. No one tested this command.
+2. Log in to each upstream with `/login` in pi.
+3. Install superpowers: `pi install git:github.com/obra/superpowers`.
+4. Copy the skill folder `simple-english` that Claude Code installs in `$HOME/.claude/skills/` to
+   `$HOME/.agents/skills/`.
