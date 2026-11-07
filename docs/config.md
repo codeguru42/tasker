@@ -179,7 +179,7 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 | ------------------- | ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `provider`          | `"claude-code"`, `"copilot"`, `"pi"` or `"codex"` | required | The assistant to run. The loader accepts `copilot`, but it is not available in this version. The loader accepts `pi`, and `tasker doctor` checks it. A task run refuses `pi` in this version. The loader also accepts `codex`. `codex` runs each step. |
 | `models`            | object                                            | required | Has the keys `plan`, `execute` and `review`. All three are required.                                                                                                                                                                                   |
-| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust. Only the `pi` provider accepts this key. The loader refuses the key for each other provider.                                                                                                              |
+| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust. Only the `pi` provider accepts this key. The loader refuses the key for each other provider. See the paragraph that starts '`trustedExtensions` lists'.                                                   |
 | `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                                                                                                                    |
 | `correctiveTurns`   | integer, 0 or more                                | `1`      | How many corrective turns the assistant can take.                                                                                                                                                                                                      |
 
@@ -188,6 +188,25 @@ or `"high"`).
 
 The model and the effort of a role apply to new sessions only. A continued session keeps the provider, the model and the
 effort that it started with.
+
+`trustedExtensions` lists the keys of the extensions that a pi run of each role can load. An extension is a code file
+that pi loads into its own process. Before each start, a pi run refuses while pi can load an extension whose key the
+list does not hold. A key matches only an equal string. A continued session trusts the list that it recorded at its
+start, and the current list.
+
+The key of each source:
+
+- A file or a folder in `extensions/` of [the agent folder of pi](dev/assistants.md#the-agent-folder): its absolute
+  path, with no symbolic link resolved, as a refusal prints it. Each entry of the folder needs its key, also a file that
+  pi does not load.
+- An entry of `extensions` in the `settings.json` of pi: the entry as written, with no leading `+`.
+- An entry of `packages` in the `settings.json` of pi: the entry as written, or its `source`.
+- A built-in extension of pi: `builtin:<name>`, for example `builtin:codemode`.
+
+The doctor check `superpowers:pi` needs the superpowers package, so a pi run needs the source of that package in the
+list. The list needs no key for a built-in extension that an entry `-builtin:<name>` in `extensions` of the
+`settings.json` of pi stops. The list needs no key `builtin:mcp`, because each pi run turns off MCP with `--no-mcp`. An
+entry `+builtin:mcp` in that `settings.json` still needs the key.
 
 For the `claude-code` provider, `model` must have one of these forms:
 
