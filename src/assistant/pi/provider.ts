@@ -1,6 +1,5 @@
-import { timedCheck } from "../../doctor/timed-check.js";
 import type { AssistantProvider, RunInput, RunOutcome } from "../provider.js";
-import { modelIssue } from "../models.js";
+import { assistantModelCheck } from "../model-check.js";
 import { piChildEnv } from "./child-env.js";
 import { piDoctorChecks } from "./doctor.js";
 
@@ -27,14 +26,7 @@ export function createPiProvider(): AssistantProvider {
       return refused(input, reason);
     },
     doctorChecks: (repos) => piDoctorChecks(repos),
-    modelChecks: (model) => [
-      timedCheck({ name: `pi model: ${model}`, required: true, timeoutMs: 1000 }, async () => {
-        const issue = modelIssue("pi", model);
-        return issue === undefined
-          ? { status: "ok", detail: `${model} is a pi model` }
-          : { status: "error", detail: issue };
-      }),
-    ],
+    modelChecks: (model) => [assistantModelCheck("pi", `pi model: ${model}`, model)],
     detectQuotaApprovalWarning: () => undefined,
     isQuotaEvent: () => false,
     shouldSuppressQuotaApprovalPause: () => false,

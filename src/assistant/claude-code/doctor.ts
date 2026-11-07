@@ -1,7 +1,7 @@
 import type { Check } from "../../doctor/check.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import { childEnv } from "../../process/child-env.js";
-import { modelIssue } from "../models.js";
+import { assistantModelCheck } from "../model-check.js";
 import { programVersionCheck } from "../program-check.js";
 import { isOnPath } from "./sandbox.js";
 
@@ -20,12 +20,7 @@ export function claudeVersionCheck(timeoutMs = 5000): Check {
 
 // The model forms have one home, modelIssue().
 export function claudeModelCheck(model: string): Check {
-  return timedCheck({ name: `claude model: ${model}`, required: true, timeoutMs: 1000 }, async () => {
-    const issue = modelIssue("claude-code", model);
-    return issue === undefined
-      ? { status: "ok", detail: `${model} is a claude-code model` }
-      : { status: "error", detail: issue };
-  });
+  return assistantModelCheck("claude-code", `claude model: ${model}`, model);
 }
 
 // A program that the sandbox needs on Linux. Only the missing program gets the fix, with its package.
