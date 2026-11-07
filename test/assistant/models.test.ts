@@ -67,12 +67,10 @@ describe("upstreamOf", () => {
     ["openrouter/openrouter/auto", "openrouter"],
     ["openrouter/auto:free", "openrouter"],
   ])("returns the upstream for %s", (model, upstream) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(upstreamOf(model)).toBe(upstream);
   });
 
   it.each(["/auto", "openrouter/", "openrouter", "openrouter/auto now"])("returns undefined for %j", (model) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(upstreamOf(model)).toBeUndefined();
   });
 });

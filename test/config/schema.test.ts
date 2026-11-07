@@ -528,10 +528,12 @@ describe("parseConfig assistant", () => {
     const raw = validConfig();
     raw.repos.tasker.assistant.provider = "pi";
     raw.repos.tasker.assistant.models.plan.model = model;
-    const issues = issuesOf(raw);
+    raw.repos.tasker.assistant.models.execute.model = "openrouter/auto";
+    raw.repos.tasker.assistant.models.review.model = "openrouter/auto";
     if (error === undefined) {
-      expect(issues).toEqual([]);
+      expect(() => parseConfig(raw, {}, home)).not.toThrow();
     } else {
+      const issues = issuesOf(raw);
       expect(issues).toEqual([`repos.tasker.assistant.models.plan.model: ${error}`]);
     }
   });
