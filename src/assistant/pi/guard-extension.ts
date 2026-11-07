@@ -18,10 +18,30 @@ const LIMITS_FIELD_NAMES = [
 
 interface PiApi {
   registerFlag(name: string, description: string): void;
+  getAllTools(): PiTool[];
+  on(event: "tool_call", handler: (event: unknown, context: PiContext) => unknown): void;
+}
+
+interface PiTool {
+  name: string;
+  sourceInfo: { path: string; source: string };
+}
+
+interface PiContext {
+  executeTool(name: string, input: unknown): Promise<unknown>;
 }
 
 export default function guardExtension(pi: PiApi): void {
   pi.registerFlag("tasker-guard-limits", "Path to the limits file for the tasker pi guard");
+  const state: { limits: GuardLimits | undefined } = { limits: undefined };
+  pi.on("tool_call", (event) => {
+    try {
+      if (state.limits === undefined) return blocked("the guard has no validated limits");
+      return checkToolCall(event, pi, state.limits);
+    } catch {
+      return blocked("the pi guard failure blocked the tool call");
+    }
+  });
 
   const path = limitsFileArg(process.argv);
   let contents: string;
@@ -37,7 +57,29 @@ export default function guardExtension(pi: PiApi): void {
   } catch {
     throw new Error("tasker could not parse the pi guard limits");
   }
-  validateLimits(value);
+  state.limits = validateLimits(value);
+}
+
+function checkToolCall(event: unknown, pi: PiApi, limits: GuardLimits): { block: true; reason: string } | undefined {
+  if (!isRecord(event) || typeof event.toolName !== "string" || event.toolName.length === 0) {
+    return blocked("the guard cannot check a tool call with no tool name");
+  }
+
+  const current = pi.getAllTools().find((tool) => tool.name === event.toolName);
+  const configured = limits.tools.find((tool) => tool.name === event.toolName);
+  if (configured === undefined) return blocked("the tool is missing from the guard limits");
+  if (current === undefined) return blocked("the tool is no longer available");
+  if (current.sourceInfo.path !== configured.path || current.sourceInfo.source !== configured.source) {
+    return blocked("the tool source does not match the guard limits");
+  }
+  if (event.toolName === "bash" || event.toolName === "powershell") {
+    return blocked("the guard has no command test for shell tools");
+  }
+  return undefined;
+}
+
+function blocked(reason: string): { block: true; reason: string } {
+  return { block: true, reason };
 }
 
 function limitsFileArg(args: readonly string[]): string {
